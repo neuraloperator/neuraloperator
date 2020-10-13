@@ -1,1 +1,2 @@
-# fourier_neural_operator
+# Fourier Neural Operator
+
