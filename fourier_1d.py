@@ -92,7 +92,7 @@ class SimpleBlock1d(nn.Module):
         x2 = self.w2(x)
         x = self.bn2(x1 + x2)
         x = F.relu(x)
-        x = self.conv3(x)
+        x1 = self.conv3(x)
         x2 = self.w3(x)
         x = self.bn3(x1 + x2)
 

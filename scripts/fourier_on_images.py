@@ -31,12 +31,12 @@ def compl_mul2d(a, b):
 
 
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, modes1, modes2):
+    def __init__(self, in_channels, out_channels, mode):
         super(SpectralConv2d, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.modes1 = modes1 #Number of Fourier modes to multiply, at most floor(N/2) + 1
-        self.modes2 = modes2
+        self.modes1 = mode #Number of Fourier modes to multiply, at most floor(N/2) + 1
+        self.modes2 = mode
 
         self.scale = (1 / (in_channels * out_channels))
         self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, 2))
@@ -63,9 +63,9 @@ class SimpleBlock2d(nn.Module):
     def __init__(self, modes):
         super(SimpleBlock2d, self).__init__()
 
-        self.conv1 = SpectralConv2d(1, 16, modes=5)
-        self.conv2 = SpectralConv2d(16, 32, modes=5)
-        self.conv3 = SpectralConv2d(32, 64, modes=5)
+        self.conv1 = SpectralConv2d(1, 16, modes=modes)
+        self.conv2 = SpectralConv2d(16, 32, modes=modes)
+        self.conv3 = SpectralConv2d(32, 64, modes=modes)
 
         self.pool = nn.MaxPool2d(2, 2)
 
@@ -93,7 +93,7 @@ class Net2d(nn.Module):
     def __init__(self):
         super(Net2d, self).__init__()
 
-        self.conv = SimpleBlock2d(10)
+        self.conv = SimpleBlock2d(5)
 
     def forward(self, x):
         x = self.conv(x)
