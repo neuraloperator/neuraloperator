@@ -113,7 +113,7 @@ class SimpleBlock2d(nn.Module):
         x = F.relu(x)
         x1 = self.conv3(x)
         x2 = self.w3(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y, size_z)
-        x = self.bn3(x1)
+        x = self.bn3(x1 + x2)
 
 
         x = x.permute(0, 2, 3, 4, 1)
