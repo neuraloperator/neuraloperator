@@ -15,14 +15,14 @@ It follows from the previous works:
 ## Files
 The code is in the form of simple scripts. Each script shall be stand-alone and directly runnable.
 
-- 'fourier_1d.py' is the Fourier Neural Operator for 1D problem such as the (time-independent) Burgers equation discussed in Section 5.1 in the [paper](https://arxiv.org/pdf/2010.08895.pdf).
-- 'fourier_2d.py' is the Fourier Neural Operator for 2D problem such as the Darcy Flow discussed in Section 5.2 in the [paper](https://arxiv.org/pdf/2010.08895.pdf).
-- 'fourier_2d_rnn.py' is the Fourier Neural Operator for 2D problem such as the Navier-Stokes equation discussed in Section 5.3 in the [paper](https://arxiv.org/pdf/2010.08895.pdf), 
+- `fourier_1d.py` is the Fourier Neural Operator for 1D problem such as the (time-independent) Burgers equation discussed in Section 5.1 in the [paper](https://arxiv.org/pdf/2010.08895.pdf).
+- `fourier_2d.py` is the Fourier Neural Operator for 2D problem such as the Darcy Flow discussed in Section 5.2 in the [paper](https://arxiv.org/pdf/2010.08895.pdf).
+- `fourier_2d_rnn.py` is the Fourier Neural Operator for 2D problem such as the Navier-Stokes equation discussed in Section 5.3 in the [paper](https://arxiv.org/pdf/2010.08895.pdf), 
 which uses a recurrent structure to propagates in time.
-- 'fourier_3d.py' is the Fourier Neural Operator for 3D problem such as the Navier-Stokes equation discussed in Section 5.3 in the [paper](https://arxiv.org/pdf/2010.08895.pdf),
+- `fourier_3d.py` is the Fourier Neural Operator for 3D problem such as the Navier-Stokes equation discussed in Section 5.3 in the [paper](https://arxiv.org/pdf/2010.08895.pdf),
 which takes the 2D spatial + 1D temporal equation directly as a 3D problem
 - The lowrank methods are similar. These scripts are the Lowrank neural operators for the corresponding settings.
-- 'data_generation' is the conventional pseudo-spectral solver we used to generate the data for the Navier-Stokes equation.
+- `data_generation` is the conventional pseudo-spectral solver we used to generate the data for the Navier-Stokes equation.
 
 ## Datasets
 We provide the Burgers equation, Darcy flow, and Navier-Stokes equation datasets we used in the paper. 
@@ -36,8 +36,8 @@ Here are the pre-trained models. It can be evaluated using _eval.py_ or _super_r
 
 ## Citations
 
->> 
->@misc{li2020fourier,
+```
+@misc{li2020fourier,
       title={Fourier Neural Operator for Parametric Partial Differential Equations}, 
       author={Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar},
       year={2020},
@@ -45,8 +45,8 @@ Here are the pre-trained models. It can be evaluated using _eval.py_ or _super_r
       archivePrefix={arXiv},
       primaryClass={cs.LG}
 }
->
->@misc{li2020neural,
+
+@misc{li2020neural,
       title={Neural Operator: Graph Kernel Network for Partial Differential Equations}, 
       author={Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar},
       year={2020},
@@ -54,3 +54,4 @@ Here are the pre-trained models. It can be evaluated using _eval.py_ or _super_r
       archivePrefix={arXiv},
       primaryClass={cs.LG}
 }
+```
