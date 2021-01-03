@@ -1,3 +1,9 @@
+"""
+@author: Zongyi Li
+This file is the Fourier Neural Operator for 1D problem such as the (time-independent) Burgers equation discussed in Section 5.1 in the [paper](https://arxiv.org/pdf/2010.08895.pdf).
+"""
+
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -29,10 +35,14 @@ def compl_mul1d(a, b):
 class SpectralConv1d(nn.Module):
     def __init__(self, in_channels, out_channels, modes1):
         super(SpectralConv1d, self).__init__()
+
+        """
+        1D Fourier layer. It does FFT, linear transform, and Inverse FFT.    
+        """
+
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.modes1 = modes1  #Number of Fourier modes to multiply, at most floor(N/2) + 1
-
 
         self.scale = (1 / (in_channels*out_channels))
         self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, 2))
@@ -54,9 +64,22 @@ class SimpleBlock1d(nn.Module):
     def __init__(self, modes, width):
         super(SimpleBlock1d, self).__init__()
 
+        """
+        The overall network. It contains 4 layers of the Fourier layer.
+        1. Lift the input to the desire channel dimension by self.fc0 .
+        2. 4 layers of the integral operators u' = (W + K)(u).
+            W defined by self.w; K defined by self.conv .
+        3. Project from the channel space to the output space by self.fc1 and self.fc2 .
+        
+        input: the solution of the initial condition and location (a(x), x)
+        input shape: (batchsize, x=s, c=2)
+        output: the solution of a later timestep
+        output shape: (batchsize, x=s, c=1)
+        """
+
         self.modes1 = modes
         self.width = width
-        self.fc0 = nn.Linear(2, self.width)
+        self.fc0 = nn.Linear(2, self.width) # input channel is 2: (a(x), x)
 
         self.conv0 = SpectralConv1d(self.width, self.width, self.modes1)
         self.conv1 = SpectralConv1d(self.width, self.width, self.modes1)
@@ -106,6 +129,10 @@ class SimpleBlock1d(nn.Module):
 class Net1d(nn.Module):
     def __init__(self, modes, width):
         super(Net1d, self).__init__()
+
+        """
+        A wrapper function
+        """
 
         self.conv1 = SimpleBlock1d(modes, width)
 
@@ -190,7 +217,7 @@ for ep in range(epochs):
         mse = F.mse_loss(out, y, reduction='mean')
         # mse.backward()
         l2 = myloss(out.view(batch_size, -1), y.view(batch_size, -1))
-        l2.backward()
+        l2.backward() # use the l2 relative loss
 
         optimizer.step()
         train_mse += mse.item()

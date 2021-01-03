@@ -1,3 +1,7 @@
+"""
+@author: Zongyi Li
+This file is the Fourier Neural Operator for 2D problem such as the Darcy Flow discussed in Section 5.2 in the [paper](https://arxiv.org/pdf/2010.08895.pdf).
+"""
 
 import numpy as np
 import torch
@@ -33,6 +37,11 @@ def compl_mul2d(a, b):
 class SpectralConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, modes1, modes2):
         super(SpectralConv2d, self).__init__()
+
+        """
+        2D Fourier layer. It does FFT, linear transform, and Inverse FFT.    
+        """
+
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.modes1 = modes1 #Number of Fourier modes to multiply, at most floor(N/2) + 1
@@ -62,10 +71,23 @@ class SimpleBlock2d(nn.Module):
     def __init__(self, modes1, modes2,  width):
         super(SimpleBlock2d, self).__init__()
 
+        """
+        The overall network. It contains 4 layers of the Fourier layer.
+        1. Lift the input to the desire channel dimension by self.fc0 .
+        2. 4 layers of the integral operators u' = (W + K)(u).
+            W defined by self.w; K defined by self.conv .
+        3. Project from the channel space to the output space by self.fc1 and self.fc2 .
+        
+        input: the solution of the coefficient function and locations (a(x, y), x, y)
+        input shape: (batchsize, x=s, y=s, c=3)
+        output: the solution 
+        output shape: (batchsize, x=s, y=s, c=1)
+        """
+
         self.modes1 = modes1
         self.modes2 = modes2
         self.width = width
-        self.fc0 = nn.Linear(3, self.width)
+        self.fc0 = nn.Linear(3, self.width) # input channel is 3: (a(x, y), x, y)
 
         self.conv0 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
         self.conv1 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
@@ -117,6 +139,10 @@ class SimpleBlock2d(nn.Module):
 class Net2d(nn.Module):
     def __init__(self, modes, width):
         super(Net2d, self).__init__()
+
+        """
+        A wrapper function
+        """
 
         self.conv1 = SimpleBlock2d(modes, modes,  width)
 

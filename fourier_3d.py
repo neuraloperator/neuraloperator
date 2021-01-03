@@ -1,3 +1,10 @@
+"""
+@author: Zongyi Li
+This file is the Fourier Neural Operator for 3D problem such as the Navier-Stokes equation discussed in Section 5.3 in the [paper](https://arxiv.org/pdf/2010.08895.pdf),
+which takes the 2D spatial + 1D temporal equation directly as a 3D problem
+"""
+
+
 import torch
 import numpy as np
 import torch.nn as nn
@@ -16,12 +23,7 @@ import scipy.io
 torch.manual_seed(0)
 np.random.seed(0)
 
-activation = F.relu
-
-################################################################
-# 3d fourier layers
-################################################################
-
+#Complex multiplication
 def compl_mul3d(a, b):
     # (batch, in_channel, x,y,t ), (in_channel, out_channel, x,y,t) -> (batch, out_channel, x,y,t)
     op = partial(torch.einsum, "bixyz,ioxyz->boxyz")
@@ -30,9 +32,18 @@ def compl_mul3d(a, b):
         op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
     ], dim=-1)
 
+################################################################
+# 3d fourier layers
+################################################################
+
 class SpectralConv3d_fast(nn.Module):
     def __init__(self, in_channels, out_channels, modes1, modes2, modes3):
         super(SpectralConv3d_fast, self).__init__()
+
+        """
+        3D Fourier layer. It does FFT, linear transform, and Inverse FFT.    
+        """
+
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.modes1 = modes1 #Number of Fourier modes to multiply, at most floor(N/2) + 1
@@ -65,15 +76,30 @@ class SpectralConv3d_fast(nn.Module):
         x = torch.irfft(out_ft, 3, normalized=True, onesided=True, signal_sizes=(x.size(-3), x.size(-2), x.size(-1)))
         return x
 
-class SimpleBlock2d(nn.Module):
+class SimpleBlock3d(nn.Module):
     def __init__(self, modes1, modes2, modes3, width):
-        super(SimpleBlock2d, self).__init__()
+        super(SimpleBlock3d, self).__init__()
+
+        """
+        The overall network. It contains 4 layers of the Fourier layer.
+        1. Lift the input to the desire channel dimension by self.fc0 .
+        2. 4 layers of the integral operators u' = (W + K)(u).
+            W defined by self.w; K defined by self.conv .
+        3. Project from the channel space to the output space by self.fc1 and self.fc2 .
+        
+        input: the solution of the first 10 timesteps + 3 locations (u(1, x, y), ..., u(10, x, y),  x, y, t). It's a constant function in time, except for the last index.
+        input shape: (batchsize, x=64, y=64, t=40, c=13)
+        output: the solution of the next 40 timesteps
+        output shape: (batchsize, x=64, y=64, t=40, c=1)
+        """
 
         self.modes1 = modes1
         self.modes2 = modes2
         self.modes3 = modes3
         self.width = width
         self.fc0 = nn.Linear(13, self.width)
+        # input channel is 12: the solution of the first 10 timesteps + 3 locations (u(1, x, y), ..., u(10, x, y),  x, y, t)
+
 
         self.conv0 = SpectralConv3d_fast(self.width, self.width, self.modes1, self.modes2, self.modes3)
         self.conv1 = SpectralConv3d_fast(self.width, self.width, self.modes1, self.modes2, self.modes3)
@@ -122,11 +148,15 @@ class SimpleBlock2d(nn.Module):
         x = self.fc2(x)
         return x
 
-class Net2d(nn.Module):
+class Net3d(nn.Module):
     def __init__(self, modes, width):
-        super(Net2d, self).__init__()
+        super(Net3d, self).__init__()
 
-        self.conv1 = SimpleBlock2d(modes, modes, modes, width)
+        """
+        A wrapper function
+        """
+
+        self.conv1 = SimpleBlock3d(modes, modes, modes, width)
 
 
     def forward(self, x):
@@ -180,7 +210,7 @@ runtime = np.zeros(2, )
 t1 = default_timer()
 
 
-sub = 2
+sub = 1
 S = 64 // sub
 T_in = 10
 T = 40
@@ -237,7 +267,7 @@ device = torch.device('cuda')
 ################################################################
 # training and evaluation
 ################################################################
-model = Net2d(modes, width).cuda()
+model = Net3d(modes, width).cuda()
 # model = torch.load('model/ns_fourier_V100_N1000_ep100_m8_w20')
 
 print(model.count_params())
