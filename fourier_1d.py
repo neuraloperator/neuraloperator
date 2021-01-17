@@ -155,8 +155,8 @@ class Net1d(nn.Module):
 ntrain = 1000
 ntest = 100
 
-sub = 1 #subsampling rate
-h = 2**10 // sub
+sub = 2**3 #subsampling rate
+h = 2**13 // sub #total grid size divided by the subsampling rate
 s = h
 
 batch_size = 20
@@ -173,6 +173,8 @@ width = 64
 ################################################################
 # read data
 ################################################################
+
+# Data is of the shape (number of samples, grid size)
 dataloader = MatReader('data/burgers_data_R10.mat')
 x_data = dataloader.read_field('a')[:,::sub]
 y_data = dataloader.read_field('u')[:,::sub]

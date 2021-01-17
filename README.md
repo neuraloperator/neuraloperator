@@ -1,4 +1,5 @@
 # Fourier Neural Operator
+
 This repository contains the code for the paper:
 - [(FNO) Fourier Neural Operator for Parametric Partial Differential Equations](https://arxiv.org/abs/2010.08895)
 
@@ -27,8 +28,15 @@ which takes the 2D spatial + 1D temporal equation directly as a 3D problem
 ## Datasets
 We provide the Burgers equation, Darcy flow, and Navier-Stokes equation datasets we used in the paper. 
 The data generation configuration can be found in the paper.
-The datasets are given in the form of matlab file. They can be loaded with the scripts provided in utilities.py. 
 - [PDE datasets](https://drive.google.com/drive/folders/1UnbQh2WWc6knEHbLn-ZaXrKUZhp7pjt-?usp=sharing)
+
+The datasets are given in the form of matlab file. They can be loaded with the scripts provided in utilities.py. 
+Each data file is loaded as a tensor. The first index is the samples; the rest of indices are the discretization.
+For example, 
+- `Burgers_R10.mat` contains the dataset for the Burgers equation. It is of the shape [1000, 8192], 
+meaning it has 1000 training samples on a grid of 8192.
+- `NavierStokes_V1e-3_N5000_T50.mat` contains the dataset for the 2D Navier-Stokes equation. It is of the shape [5000, 64, 64, 50], 
+meaning it has 5000 training samples on a grid of (64, 64) with 50 time steps.
 
 ## Models
 Here are the pre-trained models. It can be evaluated using _eval.py_ or _super_resolution.py_.
