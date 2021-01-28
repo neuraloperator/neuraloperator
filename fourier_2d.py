@@ -97,10 +97,6 @@ class SimpleBlock2d(nn.Module):
         self.w1 = nn.Conv1d(self.width, self.width, 1)
         self.w2 = nn.Conv1d(self.width, self.width, 1)
         self.w3 = nn.Conv1d(self.width, self.width, 1)
-        self.bn0 = torch.nn.BatchNorm2d(self.width)
-        self.bn1 = torch.nn.BatchNorm2d(self.width)
-        self.bn2 = torch.nn.BatchNorm2d(self.width)
-        self.bn3 = torch.nn.BatchNorm2d(self.width)
 
 
         self.fc1 = nn.Linear(self.width, 128)
@@ -115,20 +111,22 @@ class SimpleBlock2d(nn.Module):
 
         x1 = self.conv0(x)
         x2 = self.w0(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y)
-        x = self.bn0(x1 + x2)
+        x = x1 + x2
         x = F.relu(x)
+
         x1 = self.conv1(x)
         x2 = self.w1(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y)
-        x = self.bn1(x1 + x2)
+        x = x1 + x2
         x = F.relu(x)
+
         x1 = self.conv2(x)
         x2 = self.w2(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y)
-        x = self.bn2(x1 + x2)
+        x = x1 + x2
         x = F.relu(x)
+
         x1 = self.conv3(x)
         x2 = self.w3(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y)
-        x = self.bn3(x1 + x2)
-
+        x = x1 + x2
 
         x = x.permute(0, 2, 3, 1)
         x = self.fc1(x)
