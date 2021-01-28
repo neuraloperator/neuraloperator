@@ -23,7 +23,7 @@ which uses a recurrent structure to propagates in time.
 - `fourier_3d.py` is the Fourier Neural Operator for 3D problem such as the Navier-Stokes equation discussed in Section 5.3 in the [paper](https://arxiv.org/pdf/2010.08895.pdf),
 which takes the 2D spatial + 1D temporal equation directly as a 3D problem
 - The lowrank methods are similar. These scripts are the Lowrank neural operators for the corresponding settings.
-- `data_generation` is the conventional pseudo-spectral solver we used to generate the data for the Navier-Stokes equation.
+- `data_generation` are the conventional solvers we used to generate the datasets for the Burgers equation, Darcy flow, and Navier-Stokes equation.
 
 ## Datasets
 We provide the Burgers equation, Darcy flow, and Navier-Stokes equation datasets we used in the paper. 
@@ -37,6 +37,8 @@ For example,
 meaning it has 1000 training samples on a grid of 8192.
 - `NavierStokes_V1e-3_N5000_T50.mat` contains the dataset for the 2D Navier-Stokes equation. It is of the shape [5000, 64, 64, 50], 
 meaning it has 5000 training samples on a grid of (64, 64) with 50 time steps.
+
+We also provide the data generation scripts at `data_generation`.
 
 ## Models
 Here are the pre-trained models. It can be evaluated using _eval.py_ or _super_resolution.py_.
