@@ -21,6 +21,15 @@ from utilities3 import *
 torch.manual_seed(0)
 np.random.seed(0)
 
+#Complex multiplication
+def compl_mul2d(a, b):
+    # (batch, in_channel, x,y ), (in_channel, out_channel, x,y) -> (batch, out_channel, x,y)
+    op = partial(torch.einsum, "bixy,ioxy->boxy")
+    return torch.stack([
+        op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
+        op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
+    ], dim=-1)
+
 
 ################################################################
 # fourier layer
@@ -39,33 +48,28 @@ class SpectralConv2d(nn.Module):
         self.modes2 = modes2
 
         self.scale = (1 / (in_channels * out_channels))
-        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
-        self.weights2 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
-
-    # Complex multiplication
-    def compl_mul2d(self, input, weights):
-        # (batch, in_channel, x,y ), (in_channel, out_channel, x,y) -> (batch, out_channel, x,y)
-        return torch.einsum("bixy,ioxy->boxy", input, weights)
+        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, 2))
+        self.weights2 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, 2))
 
     def forward(self, x):
         batchsize = x.shape[0]
         #Compute Fourier coeffcients up to factor of e^(- something constant)
-        x_ft = torch.fft.rfft2(x)
+        x_ft = torch.rfft(x, 2, normalized=True, onesided=True)
 
         # Multiply relevant Fourier modes
-        out_ft = torch.zeros(batchsize, self.in_channels,  x.size(-2), x.size(-1)//2 + 1, dtype=torch.cfloat, device=x.device)
+        out_ft = torch.zeros(batchsize, self.in_channels,  x.size(-2), x.size(-1)//2 + 1, 2, device=x.device)
         out_ft[:, :, :self.modes1, :self.modes2] = \
-            self.compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
+            compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
         out_ft[:, :, -self.modes1:, :self.modes2] = \
-            self.compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
+            compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
 
         #Return to physical space
-        x = torch.fft.irfft2(out_ft, s=(x.size(-2), x.size(-1)))
+        x = torch.irfft(out_ft, 2, normalized=True, onesided=True, signal_sizes=( x.size(-2), x.size(-1)))
         return x
 
-class FNO2d(nn.Module):
+class SimpleBlock2d(nn.Module):
     def __init__(self, modes1, modes2,  width):
-        super(FNO2d, self).__init__()
+        super(SimpleBlock2d, self).__init__()
 
         """
         The overall network. It contains 4 layers of the Fourier layer.
@@ -130,6 +134,28 @@ class FNO2d(nn.Module):
         x = self.fc2(x)
         return x
 
+class Net2d(nn.Module):
+    def __init__(self, modes, width):
+        super(Net2d, self).__init__()
+
+        """
+        A wrapper function
+        """
+
+        self.conv1 = SimpleBlock2d(modes, modes,  width)
+
+
+    def forward(self, x):
+        x = self.conv1(x)
+        return x.squeeze()
+
+
+    def count_params(self):
+        c = 0
+        for p in self.parameters():
+            c += reduce(operator.mul, list(p.size()))
+
+        return c
 
 ################################################################
 # configs
@@ -187,8 +213,8 @@ test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test,
 ################################################################
 # training and evaluation
 ################################################################
-model = FNO2d(modes, modes, width).cuda()
-print(count_params(model))
+model = Net2d(modes, width).cuda()
+print(model.count_params())
 
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
@@ -198,36 +224,39 @@ y_normalizer.cuda()
 for ep in range(epochs):
     model.train()
     t1 = default_timer()
-    train_l2 = 0
+    train_mse = 0
     for x, y in train_loader:
         x, y = x.cuda(), y.cuda()
 
         optimizer.zero_grad()
-        out = model(x).reshape(batch_size, s, s)
+        # loss = F.mse_loss(model(x).view(-1), y.view(-1), reduction='mean')
+        out = model(x)
         out = y_normalizer.decode(out)
         y = y_normalizer.decode(y)
-
         loss = myloss(out.view(batch_size,-1), y.view(batch_size,-1))
         loss.backward()
 
+
         optimizer.step()
-        train_l2 += loss.item()
+        train_mse += loss.item()
 
     scheduler.step()
 
     model.eval()
-    test_l2 = 0.0
+    abs_err = 0.0
+    rel_err = 0.0
     with torch.no_grad():
         for x, y in test_loader:
             x, y = x.cuda(), y.cuda()
 
-            out = model(x).reshape(batch_size, s, s)
-            out = y_normalizer.decode(out)
+            out = model(x)
+            out = y_normalizer.decode(model(x))
 
-            test_l2 += myloss(out.view(batch_size,-1), y.view(batch_size,-1)).item()
+            rel_err += myloss(out.view(batch_size,-1), y.view(batch_size,-1)).item()
 
-    train_l2/= ntrain
-    test_l2 /= ntest
+    train_mse/= ntrain
+    abs_err /= ntest
+    rel_err /= ntest
 
     t2 = default_timer()
-    print(ep, t2-t1, train_l2, test_l2)
+    print(ep, t2-t1, train_mse, rel_err)

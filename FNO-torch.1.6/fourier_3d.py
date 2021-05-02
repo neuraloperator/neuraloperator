@@ -23,14 +23,22 @@ import scipy.io
 torch.manual_seed(0)
 np.random.seed(0)
 
+#Complex multiplication
+def compl_mul3d(a, b):
+    # (batch, in_channel, x,y,t ), (in_channel, out_channel, x,y,t) -> (batch, out_channel, x,y,t)
+    op = partial(torch.einsum, "bixyz,ioxyz->boxyz")
+    return torch.stack([
+        op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
+        op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
+    ], dim=-1)
 
 ################################################################
 # 3d fourier layers
 ################################################################
 
-class SpectralConv3d(nn.Module):
+class SpectralConv3d_fast(nn.Module):
     def __init__(self, in_channels, out_channels, modes1, modes2, modes3):
-        super(SpectralConv3d, self).__init__()
+        super(SpectralConv3d_fast, self).__init__()
 
         """
         3D Fourier layer. It does FFT, linear transform, and Inverse FFT.    
@@ -43,39 +51,34 @@ class SpectralConv3d(nn.Module):
         self.modes3 = modes3
 
         self.scale = (1 / (in_channels * out_channels))
-        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=torch.cfloat))
-        self.weights2 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=torch.cfloat))
-        self.weights3 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=torch.cfloat))
-        self.weights4 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=torch.cfloat))
-
-    # Complex multiplication
-    def compl_mul3d(self, input, weights):
-        # (batch, in_channel, x,y,t ), (in_channel, out_channel, x,y,t) -> (batch, out_channel, x,y,t)
-        return torch.einsum("bixyz,ioxyz->boxyz", input, weights)
+        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, 2))
+        self.weights2 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, 2))
+        self.weights3 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, 2))
+        self.weights4 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, 2))
 
     def forward(self, x):
         batchsize = x.shape[0]
         #Compute Fourier coeffcients up to factor of e^(- something constant)
-        x_ft = torch.fft.rfftn(x, dim=[-3,-2,-1])
+        x_ft = torch.rfft(x, 3, normalized=True, onesided=True)
 
         # Multiply relevant Fourier modes
-        out_ft = torch.zeros(batchsize, self.in_channels, x.size(-3), x.size(-2), x.size(-1)//2 + 1, dtype=torch.cfloat, device=x.device)
+        out_ft = torch.zeros(batchsize, self.in_channels, x.size(-3), x.size(-2), x.size(-1)//2 + 1, 2, device=x.device)
         out_ft[:, :, :self.modes1, :self.modes2, :self.modes3] = \
-            self.compl_mul3d(x_ft[:, :, :self.modes1, :self.modes2, :self.modes3], self.weights1)
+            compl_mul3d(x_ft[:, :, :self.modes1, :self.modes2, :self.modes3], self.weights1)
         out_ft[:, :, -self.modes1:, :self.modes2, :self.modes3] = \
-            self.compl_mul3d(x_ft[:, :, -self.modes1:, :self.modes2, :self.modes3], self.weights2)
+            compl_mul3d(x_ft[:, :, -self.modes1:, :self.modes2, :self.modes3], self.weights2)
         out_ft[:, :, :self.modes1, -self.modes2:, :self.modes3] = \
-            self.compl_mul3d(x_ft[:, :, :self.modes1, -self.modes2:, :self.modes3], self.weights3)
+            compl_mul3d(x_ft[:, :, :self.modes1, -self.modes2:, :self.modes3], self.weights3)
         out_ft[:, :, -self.modes1:, -self.modes2:, :self.modes3] = \
-            self.compl_mul3d(x_ft[:, :, -self.modes1:, -self.modes2:, :self.modes3], self.weights4)
+            compl_mul3d(x_ft[:, :, -self.modes1:, -self.modes2:, :self.modes3], self.weights4)
 
         #Return to physical space
-        x = torch.fft.irfftn(out_ft, s=(x.size(-3), x.size(-2), x.size(-1)))
+        x = torch.irfft(out_ft, 3, normalized=True, onesided=True, signal_sizes=(x.size(-3), x.size(-2), x.size(-1)))
         return x
 
-class FNO3d(nn.Module):
+class SimpleBlock3d(nn.Module):
     def __init__(self, modes1, modes2, modes3, width):
-        super(FNO3d, self).__init__()
+        super(SimpleBlock3d, self).__init__()
 
         """
         The overall network. It contains 4 layers of the Fourier layer.
@@ -97,10 +100,11 @@ class FNO3d(nn.Module):
         self.fc0 = nn.Linear(13, self.width)
         # input channel is 12: the solution of the first 10 timesteps + 3 locations (u(1, x, y), ..., u(10, x, y),  x, y, t)
 
-        self.conv0 = SpectralConv3d(self.width, self.width, self.modes1, self.modes2, self.modes3)
-        self.conv1 = SpectralConv3d(self.width, self.width, self.modes1, self.modes2, self.modes3)
-        self.conv2 = SpectralConv3d(self.width, self.width, self.modes1, self.modes2, self.modes3)
-        self.conv3 = SpectralConv3d(self.width, self.width, self.modes1, self.modes2, self.modes3)
+
+        self.conv0 = SpectralConv3d_fast(self.width, self.width, self.modes1, self.modes2, self.modes3)
+        self.conv1 = SpectralConv3d_fast(self.width, self.width, self.modes1, self.modes2, self.modes3)
+        self.conv2 = SpectralConv3d_fast(self.width, self.width, self.modes1, self.modes2, self.modes3)
+        self.conv3 = SpectralConv3d_fast(self.width, self.width, self.modes1, self.modes2, self.modes3)
         self.w0 = nn.Conv1d(self.width, self.width, 1)
         self.w1 = nn.Conv1d(self.width, self.width, 1)
         self.w2 = nn.Conv1d(self.width, self.width, 1)
@@ -109,6 +113,7 @@ class FNO3d(nn.Module):
         self.bn1 = torch.nn.BatchNorm3d(self.width)
         self.bn2 = torch.nn.BatchNorm3d(self.width)
         self.bn3 = torch.nn.BatchNorm3d(self.width)
+
 
         self.fc1 = nn.Linear(self.width, 128)
         self.fc2 = nn.Linear(128, 1)
@@ -122,19 +127,20 @@ class FNO3d(nn.Module):
 
         x1 = self.conv0(x)
         x2 = self.w0(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y, size_z)
-        x = x1 + x2
+        x = self.bn0(x1 + x2)
         x = F.relu(x)
         x1 = self.conv1(x)
         x2 = self.w1(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y, size_z)
-        x = x1 + x2
+        x = self.bn1(x1 + x2)
         x = F.relu(x)
         x1 = self.conv2(x)
         x2 = self.w2(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y, size_z)
-        x = x1 + x2
+        x = self.bn2(x1 + x2)
         x = F.relu(x)
         x1 = self.conv3(x)
         x2 = self.w3(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y, size_z)
-        x = x1 + x2
+        x = self.bn3(x1 + x2)
+
 
         x = x.permute(0, 2, 3, 4, 1)
         x = self.fc1(x)
@@ -142,25 +148,51 @@ class FNO3d(nn.Module):
         x = self.fc2(x)
         return x
 
+class Net3d(nn.Module):
+    def __init__(self, modes, width):
+        super(Net3d, self).__init__()
+
+        """
+        A wrapper function
+        """
+
+        self.conv1 = SimpleBlock3d(modes, modes, modes, width)
+
+
+    def forward(self, x):
+        x = self.conv1(x)
+        return x.squeeze()
+
+
+    def count_params(self):
+        c = 0
+        for p in self.parameters():
+            c += reduce(operator.mul, list(p.size()))
+
+        return c
 
 ################################################################
 # configs
 ################################################################
 
+# TRAIN_PATH = 'data/ns_data_V1000_N1000_train.mat'
+# TEST_PATH = 'data/ns_data_V1000_N1000_train_2.mat'
+# TRAIN_PATH = 'data/ns_data_V1000_N5000.mat'
+# TEST_PATH = 'data/ns_data_V1000_N5000.mat'
 TRAIN_PATH = 'data/ns_data_V100_N1000_T50_1.mat'
 TEST_PATH = 'data/ns_data_V100_N1000_T50_2.mat'
 
 ntrain = 1000
 ntest = 200
 
-modes = 8
+modes = 4
 width = 20
 
 batch_size = 10
 batch_size2 = batch_size
 
-epochs = 500
-learning_rate = 0.001
+epochs = 10
+learning_rate = 0.0025
 scheduler_step = 100
 scheduler_gamma = 0.5
 
@@ -235,10 +267,10 @@ device = torch.device('cuda')
 ################################################################
 # training and evaluation
 ################################################################
-model = FNO3d(modes, modes, modes, width).cuda()
+model = Net3d(modes, width).cuda()
 # model = torch.load('model/ns_fourier_V100_N1000_ep100_m8_w20')
 
-print(count_params(model))
+print(model.count_params())
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
 
@@ -254,7 +286,7 @@ for ep in range(epochs):
         x, y = x.cuda(), y.cuda()
 
         optimizer.zero_grad()
-        out = model(x).view(batch_size, S, S, T)
+        out = model(x)
 
         mse = F.mse_loss(out, y, reduction='mean')
         # mse.backward()
@@ -276,7 +308,7 @@ for ep in range(epochs):
         for x, y in test_loader:
             x, y = x.cuda(), y.cuda()
 
-            out = model(x).view(batch_size, S, S, T)
+            out = model(x)
             out = y_normalizer.decode(out)
             test_l2 += myloss(out.view(batch_size, -1), y.view(batch_size, -1)).item()
 

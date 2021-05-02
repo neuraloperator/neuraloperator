@@ -2,10 +2,11 @@ import torch
 import numpy as np
 import scipy.io
 import h5py
-import sklearn.metrics
 import torch.nn as nn
-from scipy.ndimage import gaussian_filter
 
+import operator
+from functools import reduce
+from functools import partial
 
 #################################################
 #
@@ -230,3 +231,11 @@ class DenseNet(torch.nn.Module):
             x = l(x)
 
         return x
+
+
+# print the number of parameters
+def count_params(model):
+    c = 0
+    for p in list(model.parameters()):
+        c += reduce(operator.mul, list(p.size()))
+    return c

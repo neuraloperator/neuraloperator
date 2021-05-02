@@ -23,6 +23,13 @@ import scipy.io
 torch.manual_seed(0)
 np.random.seed(0)
 
+#Complex multiplication
+def compl_mul2d(a, b):
+    op = partial(torch.einsum, "bctq,dctq->bdtq")
+    return torch.stack([
+        op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
+        op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
+    ], dim=-1)
 
 ################################################################
 # fourier layer
@@ -42,33 +49,28 @@ class SpectralConv2d_fast(nn.Module):
         self.modes2 = modes2
 
         self.scale = (1 / (in_channels * out_channels))
-        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
-        self.weights2 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
-
-    # Complex multiplication
-    def compl_mul2d(self, input, weights):
-        # (batch, in_channel, x,y ), (in_channel, out_channel, x,y) -> (batch, out_channel, x,y)
-        return torch.einsum("bixy,ioxy->boxy", input, weights)
+        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, 2))
+        self.weights2 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, 2))
 
     def forward(self, x):
         batchsize = x.shape[0]
         #Compute Fourier coeffcients up to factor of e^(- something constant)
-        x_ft = torch.fft.rfft2(x)
+        x_ft = torch.rfft(x, 2, normalized=True, onesided=True)
 
         # Multiply relevant Fourier modes
-        out_ft = torch.zeros(batchsize, self.in_channels,  x.size(-2), x.size(-1)//2 + 1, dtype=torch.cfloat, device=x.device)
+        out_ft = torch.zeros(batchsize, self.in_channels, x.size(-2), x.size(-1)//2 + 1, 2, device=x.device)
         out_ft[:, :, :self.modes1, :self.modes2] = \
-            self.compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
+            compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
         out_ft[:, :, -self.modes1:, :self.modes2] = \
-            self.compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
+            compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
 
         #Return to physical space
-        x = torch.fft.irfft2(out_ft, s=(x.size(-2), x.size(-1)))
+        x = torch.irfft(out_ft, 2, normalized=True, onesided=True, signal_sizes=(x.size(-2), x.size(-1)))
         return x
 
-class FNO2d(nn.Module):
+class SimpleBlock2d(nn.Module):
     def __init__(self, modes1, modes2, width):
-        super(FNO2d, self).__init__()
+        super(SimpleBlock2d, self).__init__()
 
         """
         The overall network. It contains 4 layers of the Fourier layer.
@@ -102,6 +104,7 @@ class FNO2d(nn.Module):
         self.bn2 = torch.nn.BatchNorm2d(self.width)
         self.bn3 = torch.nn.BatchNorm2d(self.width)
 
+
         self.fc1 = nn.Linear(self.width, 128)
         self.fc2 = nn.Linear(128, 1)
 
@@ -109,8 +112,6 @@ class FNO2d(nn.Module):
         batchsize = x.shape[0]
         size_x, size_y = x.shape[1], x.shape[2]
 
-        grid = self.get_grid(batchsize, size_x, size_y, x.device)
-        x = torch.cat((x, grid), dim=-1)
         x = self.fc0(x)
         x = x.permute(0, 3, 1, 2)
 
@@ -130,25 +131,42 @@ class FNO2d(nn.Module):
         x2 = self.w3(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y)
         x = self.bn3(x1 + x2)
 
+
         x = x.permute(0, 2, 3, 1)
         x = self.fc1(x)
         x = F.relu(x)
         x = self.fc2(x)
         return x
 
-    def get_grid(self, batchsize, size_x, size_y, device):
-        gridx = torch.tensor(np.linspace(0, 1, size_x), dtype=torch.float)
-        gridx = gridx.reshape(1, size_x, 1, 1).repeat([batchsize, 1, size_y, 1])
-        gridy = torch.tensor(np.linspace(0, 1, size_y), dtype=torch.float)
-        gridy = gridy.reshape(1, 1, size_y, 1).repeat([batchsize, size_x, 1, 1])
-        return torch.cat((gridx, gridy), dim=-1).to(device)
+class Net2d(nn.Module):
+    def __init__(self, modes, width):
+        super(Net2d, self).__init__()
+
+        """
+        A wrapper function
+        """
+
+        self.conv1 = SimpleBlock2d(modes, modes, width)
+
+
+    def forward(self, x):
+        x = self.conv1(x)
+        return x
+
+
+    def count_params(self):
+        c = 0
+        for p in self.parameters():
+            c += reduce(operator.mul, list(p.size()))
+
+        return c
+
 
 ################################################################
 # configs
 ################################################################
-
-TRAIN_PATH = 'data/ns_data_V100_N1000_T50_1.mat'
-TEST_PATH = 'data/ns_data_V100_N1000_T50_2.mat'
+TRAIN_PATH = 'data/ns_data_V10000_N1200_T20.mat'
+TEST_PATH = 'data/ns_data_V10000_N1200_T20.mat'
 
 ntrain = 1000
 ntest = 200
@@ -160,7 +178,7 @@ batch_size = 20
 batch_size2 = batch_size
 
 epochs = 500
-learning_rate = 0.001
+learning_rate = 0.0025
 scheduler_step = 100
 scheduler_gamma = 0.5
 
@@ -201,6 +219,14 @@ assert (T == train_u.shape[-1])
 train_a = train_a.reshape(ntrain,S,S,T_in)
 test_a = test_a.reshape(ntest,S,S,T_in)
 
+# pad the location (x,y)
+gridx = torch.tensor(np.linspace(0, 1, S), dtype=torch.float)
+gridx = gridx.reshape(1, S, 1, 1).repeat([1, 1, S, 1])
+gridy = torch.tensor(np.linspace(0, 1, S), dtype=torch.float)
+gridy = gridy.reshape(1, 1, S, 1).repeat([1, S, 1, 1])
+
+train_a = torch.cat((train_a, gridx.repeat([ntrain,1,1,1]), gridy.repeat([ntrain,1,1,1])), dim=-1)
+test_a = torch.cat((test_a, gridx.repeat([ntest,1,1,1]), gridy.repeat([ntest,1,1,1])), dim=-1)
 
 train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(train_a, train_u), batch_size=batch_size, shuffle=True)
 test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u), batch_size=batch_size, shuffle=False)
@@ -214,14 +240,18 @@ device = torch.device('cuda')
 # training and evaluation
 ################################################################
 
-model = FNO2d(modes, modes, width).cuda()
+model = Net2d(modes, width).cuda()
 # model = torch.load('model/ns_fourier_V100_N1000_ep100_m8_w20')
 
-print(count_params(model))
+print(model.count_params())
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
 
+
 myloss = LpLoss(size_average=False)
+gridx = gridx.to(device)
+gridy = gridy.to(device)
+
 for ep in range(epochs):
     model.train()
     t1 = default_timer()
@@ -242,7 +272,8 @@ for ep in range(epochs):
             else:
                 pred = torch.cat((pred, im), -1)
 
-            xx = torch.cat((xx[..., step:], im), dim=-1)
+            xx = torch.cat((xx[..., step:-2], im,
+                            gridx.repeat([batch_size, 1, 1, 1]), gridy.repeat([batch_size, 1, 1, 1])), dim=-1)
 
         train_l2_step += loss.item()
         l2_full = myloss(pred.reshape(batch_size, -1), yy.reshape(batch_size, -1))
@@ -250,6 +281,7 @@ for ep in range(epochs):
 
         optimizer.zero_grad()
         loss.backward()
+        # l2_full.backward()
         optimizer.step()
 
     test_l2_step = 0
@@ -270,7 +302,9 @@ for ep in range(epochs):
                 else:
                     pred = torch.cat((pred, im), -1)
 
-                xx = torch.cat((xx[..., step:], im), dim=-1)
+                xx = torch.cat((xx[..., step:-2], im,
+                                gridx.repeat([batch_size, 1, 1, 1]), gridy.repeat([batch_size, 1, 1, 1])), dim=-1)
+
 
             test_l2_step += loss.item()
             test_l2_full += myloss(pred.reshape(batch_size, -1), yy.reshape(batch_size, -1)).item()

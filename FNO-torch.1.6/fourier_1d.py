@@ -3,6 +3,7 @@
 This file is the Fourier Neural Operator for 1D problem such as the (time-independent) Burgers equation discussed in Section 5.1 in the [paper](https://arxiv.org/pdf/2010.08895.pdf).
 """
 
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -19,6 +20,14 @@ from utilities3 import *
 torch.manual_seed(0)
 np.random.seed(0)
 
+#Complex multiplication
+def compl_mul1d(a, b):
+    # (batch, in_channel, x ), (in_channel, out_channel, x) -> (batch, out_channel, x)
+    op = partial(torch.einsum, "bix,iox->box")
+    return torch.stack([
+        op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
+        op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
+    ], dim=-1)
 
 ################################################################
 #  1d fourier layer
@@ -36,29 +45,24 @@ class SpectralConv1d(nn.Module):
         self.modes1 = modes1  #Number of Fourier modes to multiply, at most floor(N/2) + 1
 
         self.scale = (1 / (in_channels*out_channels))
-        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, dtype=torch.cfloat))
-
-    # Complex multiplication
-    def compl_mul1d(self, input, weights):
-        # (batch, in_channel, x ), (in_channel, out_channel, x) -> (batch, out_channel, x)
-        return torch.einsum("bix,iox->box", input, weights)
+        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, 2))
 
     def forward(self, x):
         batchsize = x.shape[0]
         #Compute Fourier coeffcients up to factor of e^(- something constant)
-        x_ft = torch.fft.rfft(x)
+        x_ft = torch.rfft(x, 1, normalized=True, onesided=True)
 
         # Multiply relevant Fourier modes
-        out_ft = torch.zeros(batchsize, self.in_channels, x.size(-1)//2 + 1,  device=x.device, dtype=torch.cfloat)
-        out_ft[:, :, :self.modes1] = self.compl_mul1d(x_ft[:, :, :self.modes1], self.weights1)
+        out_ft = torch.zeros(batchsize, self.in_channels, x.size(-1)//2 + 1, 2, device=x.device)
+        out_ft[:, :, :self.modes1] = compl_mul1d(x_ft[:, :, :self.modes1], self.weights1)
 
         #Return to physical space
-        x = torch.fft.irfft(out_ft, n=x.size(-1))
+        x = torch.irfft(out_ft, 1, normalized=True, onesided=True, signal_sizes=(x.size(-1), ))
         return x
 
-class FNO1d(nn.Module):
+class SimpleBlock1d(nn.Module):
     def __init__(self, modes, width):
-        super(FNO1d, self).__init__()
+        super(SimpleBlock1d, self).__init__()
 
         """
         The overall network. It contains 4 layers of the Fourier layer.
@@ -120,6 +124,28 @@ class FNO1d(nn.Module):
         x = self.fc2(x)
         return x
 
+class Net1d(nn.Module):
+    def __init__(self, modes, width):
+        super(Net1d, self).__init__()
+
+        """
+        A wrapper function
+        """
+
+        self.conv1 = SimpleBlock1d(modes, width)
+
+
+    def forward(self, x):
+        x = self.conv1(x)
+        return x.squeeze()
+
+    def count_params(self):
+        c = 0
+        for p in self.parameters():
+            c += reduce(operator.mul, list(p.size()))
+
+        return c
+
 
 ################################################################
 #  configurations
@@ -166,8 +192,8 @@ train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_trai
 test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test, y_test), batch_size=batch_size, shuffle=False)
 
 # model
-model = FNO1d(modes, width).cuda()
-print(count_params(model))
+model = Net1d(modes, width).cuda()
+print(model.count_params())
 
 
 ################################################################
@@ -188,7 +214,7 @@ for ep in range(epochs):
         optimizer.zero_grad()
         out = model(x)
 
-        mse = F.mse_loss(out.view(batch_size, -1), y.view(batch_size, -1), reduction='mean')
+        mse = F.mse_loss(out, y, reduction='mean')
         # mse.backward()
         l2 = myloss(out.view(batch_size, -1), y.view(batch_size, -1))
         l2.backward() # use the l2 relative loss
@@ -214,7 +240,7 @@ for ep in range(epochs):
     t2 = default_timer()
     print(ep, t2-t1, train_mse, train_l2, test_l2)
 
-# torch.save(model, 'model/ns_fourier_burgers')
+# torch.save(model, 'model/ns_fourier_burgers_8192')
 pred = torch.zeros(y_test.shape)
 index = 0
 test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test, y_test), batch_size=1, shuffle=False)

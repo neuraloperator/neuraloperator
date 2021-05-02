@@ -3,7 +3,9 @@
 This repository contains the code for the paper:
 - [(FNO) Fourier Neural Operator for Parametric Partial Differential Equations](https://arxiv.org/abs/2010.08895)
 
-In this work, we formulate a new neural operator by parameterizing the integral kernel directly in Fourier space, allowing for an expressive and efficient architecture. We perform experiments on Burgers' equation, Darcy flow, and the Navier-Stokes equation (including the turbulent regime). Our Fourier neural operator shows state-of-the-art performance compared to existing neural network methodologies and it is up to three orders of magnitude faster compared to traditional PDE solvers.
+In this work, we formulate a new neural operator by parameterizing the integral kernel directly in Fourier space, allowing for an expressive and efficient architecture. 
+We perform experiments on Burgers' equation, Darcy flow, and the Navier-Stokes equation (including the turbulent regime). 
+Our Fourier neural operator shows state-of-the-art performance compared to existing neural network methodologies and it is up to three orders of magnitude faster compared to traditional PDE solvers.
 
 It follows from the previous works:
 - [(GKN) Neural Operator: Graph Kernel Network for Partial Differential Equations](https://arxiv.org/abs/2003.03485)
@@ -11,7 +13,10 @@ It follows from the previous works:
 
 
 ## Requirements
-- [PyTorch 1.6.0](https://pytorch.org/)
+- We have updated the files to support [PyTorch 1.8.0](https://pytorch.org/). 
+Pytorch 1.8.0 starts to support complex numbers and it has a new implementation of FFT. 
+As a result the code is about 30% faster.
+- Previous version for [PyTorch 1.6.0](https://pytorch.org/) is avaiable at `FNO-torch.1.6`.
 
 ## Files
 The code is in the form of simple scripts. Each script shall be stand-alone and directly runnable.
