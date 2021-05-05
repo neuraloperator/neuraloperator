@@ -62,7 +62,7 @@ class SpectralConv3d_fast(nn.Module):
         x_ft = torch.rfft(x, 3, normalized=True, onesided=True)
 
         # Multiply relevant Fourier modes
-        out_ft = torch.zeros(batchsize, self.in_channels, x.size(-3), x.size(-2), x.size(-1)//2 + 1, 2, device=x.device)
+        out_ft = torch.zeros(batchsize, self.out_channels, x.size(-3), x.size(-2), x.size(-1)//2 + 1, 2, device=x.device)
         out_ft[:, :, :self.modes1, :self.modes2, :self.modes3] = \
             compl_mul3d(x_ft[:, :, :self.modes1, :self.modes2, :self.modes3], self.weights1)
         out_ft[:, :, -self.modes1:, :self.modes2, :self.modes3] = \

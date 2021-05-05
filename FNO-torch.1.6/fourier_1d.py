@@ -53,7 +53,7 @@ class SpectralConv1d(nn.Module):
         x_ft = torch.rfft(x, 1, normalized=True, onesided=True)
 
         # Multiply relevant Fourier modes
-        out_ft = torch.zeros(batchsize, self.in_channels, x.size(-1)//2 + 1, 2, device=x.device)
+        out_ft = torch.zeros(batchsize, self.out_channels, x.size(-1)//2 + 1, 2, device=x.device)
         out_ft[:, :, :self.modes1] = compl_mul1d(x_ft[:, :, :self.modes1], self.weights1)
 
         #Return to physical space

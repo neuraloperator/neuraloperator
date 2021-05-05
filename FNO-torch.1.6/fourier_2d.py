@@ -57,7 +57,7 @@ class SpectralConv2d(nn.Module):
         x_ft = torch.rfft(x, 2, normalized=True, onesided=True)
 
         # Multiply relevant Fourier modes
-        out_ft = torch.zeros(batchsize, self.in_channels,  x.size(-2), x.size(-1)//2 + 1, 2, device=x.device)
+        out_ft = torch.zeros(batchsize, self.out_channels,  x.size(-2), x.size(-1)//2 + 1, 2, device=x.device)
         out_ft[:, :, :self.modes1, :self.modes2] = \
             compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
         out_ft[:, :, -self.modes1:, :self.modes2] = \
