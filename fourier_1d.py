@@ -224,7 +224,7 @@ with torch.no_grad():
         x, y = x.cuda(), y.cuda()
 
         out = model(x)
-        pred[index] = out
+        pred[index] = out.squeeze()
 
         test_l2 += myloss(out.view(1, -1), y.view(1, -1)).item()
         print(index, test_l2)
