@@ -18,6 +18,8 @@ from functools import partial
 from timeit import default_timer
 from utilities3 import *
 
+from Adam import Adam
+
 torch.manual_seed(0)
 np.random.seed(0)
 
@@ -83,53 +85,61 @@ class FNO2d(nn.Module):
         self.modes1 = modes1
         self.modes2 = modes2
         self.width = width
+        self.padding = 9 # pad the domain if input is non-periodic
         self.fc0 = nn.Linear(3, self.width) # input channel is 3: (a(x, y), x, y)
 
         self.conv0 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
         self.conv1 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
         self.conv2 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
         self.conv3 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
-        self.w0 = nn.Conv1d(self.width, self.width, 1)
-        self.w1 = nn.Conv1d(self.width, self.width, 1)
-        self.w2 = nn.Conv1d(self.width, self.width, 1)
-        self.w3 = nn.Conv1d(self.width, self.width, 1)
-
+        self.w0 = nn.Conv2d(self.width, self.width, 1)
+        self.w1 = nn.Conv2d(self.width, self.width, 1)
+        self.w2 = nn.Conv2d(self.width, self.width, 1)
+        self.w3 = nn.Conv2d(self.width, self.width, 1)
 
         self.fc1 = nn.Linear(self.width, 128)
         self.fc2 = nn.Linear(128, 1)
 
     def forward(self, x):
-        batchsize = x.shape[0]
-        size_x, size_y = x.shape[1], x.shape[2]
-
+        grid = self.get_grid(x.shape, x.device)
+        x = torch.cat((x, grid), dim=-1)
         x = self.fc0(x)
         x = x.permute(0, 3, 1, 2)
+        x = F.pad(x, [0,self.padding, 0,self.padding])
 
         x1 = self.conv0(x)
-        x2 = self.w0(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y)
+        x2 = self.w0(x)
         x = x1 + x2
-        x = F.relu(x)
+        x = F.gelu(x)
 
         x1 = self.conv1(x)
-        x2 = self.w1(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y)
+        x2 = self.w1(x)
         x = x1 + x2
-        x = F.relu(x)
+        x = F.gelu(x)
 
         x1 = self.conv2(x)
-        x2 = self.w2(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y)
+        x2 = self.w2(x)
         x = x1 + x2
-        x = F.relu(x)
+        x = F.gelu(x)
 
         x1 = self.conv3(x)
-        x2 = self.w3(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y)
+        x2 = self.w3(x)
         x = x1 + x2
 
+        x = x[..., :-self.padding, :-self.padding]
         x = x.permute(0, 2, 3, 1)
         x = self.fc1(x)
-        x = F.relu(x)
+        x = F.gelu(x)
         x = self.fc2(x)
         return x
-
+    
+    def get_grid(self, shape, device):
+        batchsize, size_x, size_y = shape[0], shape[1], shape[2]
+        gridx = torch.tensor(np.linspace(0, 1, size_x), dtype=torch.float)
+        gridx = gridx.reshape(1, size_x, 1, 1).repeat([batchsize, 1, size_y, 1])
+        gridy = torch.tensor(np.linspace(0, 1, size_y), dtype=torch.float)
+        gridy = gridy.reshape(1, 1, size_y, 1).repeat([batchsize, size_x, 1, 1])
+        return torch.cat((gridx, gridy), dim=-1).to(device)
 
 ################################################################
 # configs
@@ -172,14 +182,8 @@ x_test = x_normalizer.encode(x_test)
 y_normalizer = UnitGaussianNormalizer(y_train)
 y_train = y_normalizer.encode(y_train)
 
-grids = []
-grids.append(np.linspace(0, 1, s))
-grids.append(np.linspace(0, 1, s))
-grid = np.vstack([xx.ravel() for xx in np.meshgrid(*grids)]).T
-grid = grid.reshape(1,s,s,2)
-grid = torch.tensor(grid, dtype=torch.float)
-x_train = torch.cat([x_train.reshape(ntrain,s,s,1), grid.repeat(ntrain,1,1,1)], dim=3)
-x_test = torch.cat([x_test.reshape(ntest,s,s,1), grid.repeat(ntest,1,1,1)], dim=3)
+x_train = x_train.reshape(ntrain,s,s,1)
+x_test = x_test.reshape(ntest,s,s,1)
 
 train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True)
 test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test, y_test), batch_size=batch_size, shuffle=False)
@@ -190,7 +194,7 @@ test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test,
 model = FNO2d(modes, modes, width).cuda()
 print(count_params(model))
 
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
 
 myloss = LpLoss(size_average=False)

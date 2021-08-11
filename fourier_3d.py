@@ -18,7 +18,8 @@ from functools import reduce
 from functools import partial
 
 from timeit import default_timer
-import scipy.io
+
+from Adam import Adam
 
 torch.manual_seed(0)
 np.random.seed(0)
@@ -94,6 +95,7 @@ class FNO3d(nn.Module):
         self.modes2 = modes2
         self.modes3 = modes3
         self.width = width
+        self.padding = 6 # pad the domain if input is non-periodic
         self.fc0 = nn.Linear(13, self.width)
         # input channel is 12: the solution of the first 10 timesteps + 3 locations (u(1, x, y), ..., u(10, x, y),  x, y, t)
 
@@ -101,10 +103,10 @@ class FNO3d(nn.Module):
         self.conv1 = SpectralConv3d(self.width, self.width, self.modes1, self.modes2, self.modes3)
         self.conv2 = SpectralConv3d(self.width, self.width, self.modes1, self.modes2, self.modes3)
         self.conv3 = SpectralConv3d(self.width, self.width, self.modes1, self.modes2, self.modes3)
-        self.w0 = nn.Conv1d(self.width, self.width, 1)
-        self.w1 = nn.Conv1d(self.width, self.width, 1)
-        self.w2 = nn.Conv1d(self.width, self.width, 1)
-        self.w3 = nn.Conv1d(self.width, self.width, 1)
+        self.w0 = nn.Conv3d(self.width, self.width, 1)
+        self.w1 = nn.Conv3d(self.width, self.width, 1)
+        self.w2 = nn.Conv3d(self.width, self.width, 1)
+        self.w3 = nn.Conv3d(self.width, self.width, 1)
         self.bn0 = torch.nn.BatchNorm3d(self.width)
         self.bn1 = torch.nn.BatchNorm3d(self.width)
         self.bn2 = torch.nn.BatchNorm3d(self.width)
@@ -114,34 +116,47 @@ class FNO3d(nn.Module):
         self.fc2 = nn.Linear(128, 1)
 
     def forward(self, x):
-        batchsize = x.shape[0]
-        size_x, size_y, size_z = x.shape[1], x.shape[2], x.shape[3]
-
+        grid = self.get_grid(x.shape, x.device)
+        x = torch.cat((x, grid), dim=-1)
         x = self.fc0(x)
         x = x.permute(0, 4, 1, 2, 3)
+        x = F.pad(x, [0,self.padding, 0,self.padding, 0,self.padding])
 
         x1 = self.conv0(x)
-        x2 = self.w0(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y, size_z)
+        x2 = self.w0(x)
         x = x1 + x2
-        x = F.relu(x)
+        x = F.gelu(x)
+
         x1 = self.conv1(x)
-        x2 = self.w1(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y, size_z)
+        x2 = self.w1(x)
         x = x1 + x2
-        x = F.relu(x)
+        x = F.gelu(x)
+
         x1 = self.conv2(x)
-        x2 = self.w2(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y, size_z)
+        x2 = self.w2(x)
         x = x1 + x2
-        x = F.relu(x)
+        x = F.gelu(x)
+
         x1 = self.conv3(x)
-        x2 = self.w3(x.view(batchsize, self.width, -1)).view(batchsize, self.width, size_x, size_y, size_z)
+        x2 = self.w3(x)
         x = x1 + x2
 
+        x = x[..., :-self.padding, :-self.padding, :-self.padding]
         x = x.permute(0, 2, 3, 4, 1)
         x = self.fc1(x)
-        x = F.relu(x)
+        x = F.gelu(x)
         x = self.fc2(x)
         return x
 
+    def get_grid(self, shape, device):
+        batchsize, size_x, size_y, size_z = shape[0], shape[1], shape[2], shape[3]
+        gridx = torch.tensor(np.linspace(0, 1, size_x), dtype=torch.float)
+        gridx = gridx.reshape(1, size_x, 1, 1, 1).repeat([batchsize, 1, size_y, size_z, 1])
+        gridy = torch.tensor(np.linspace(0, 1, size_y), dtype=torch.float)
+        gridy = gridy.reshape(1, 1, size_y, 1, 1).repeat([batchsize, size_x, 1, size_z, 1])
+        gridz = torch.tensor(np.linspace(0, 1, size_z), dtype=torch.float)
+        gridz = gridz.reshape(1, 1, 1, size_z, 1).repeat([batchsize, size_x, size_y, 1, 1])
+        return torch.cat((gridx, gridy, gridz), dim=-1).to(device)
 
 ################################################################
 # configs
@@ -211,19 +226,6 @@ train_u = y_normalizer.encode(train_u)
 train_a = train_a.reshape(ntrain,S,S,1,T_in).repeat([1,1,1,T,1])
 test_a = test_a.reshape(ntest,S,S,1,T_in).repeat([1,1,1,T,1])
 
-# pad locations (x,y,t)
-gridx = torch.tensor(np.linspace(0, 1, S), dtype=torch.float)
-gridx = gridx.reshape(1, S, 1, 1, 1).repeat([1, 1, S, T, 1])
-gridy = torch.tensor(np.linspace(0, 1, S), dtype=torch.float)
-gridy = gridy.reshape(1, 1, S, 1, 1).repeat([1, S, 1, T, 1])
-gridt = torch.tensor(np.linspace(0, 1, T+1)[1:], dtype=torch.float)
-gridt = gridt.reshape(1, 1, 1, T, 1).repeat([1, S, S, 1, 1])
-
-train_a = torch.cat((gridx.repeat([ntrain,1,1,1,1]), gridy.repeat([ntrain,1,1,1,1]),
-                       gridt.repeat([ntrain,1,1,1,1]), train_a), dim=-1)
-test_a = torch.cat((gridx.repeat([ntest,1,1,1,1]), gridy.repeat([ntest,1,1,1,1]),
-                       gridt.repeat([ntest,1,1,1,1]), test_a), dim=-1)
-
 train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(train_a, train_u), batch_size=batch_size, shuffle=True)
 test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u), batch_size=batch_size, shuffle=False)
 
@@ -239,7 +241,7 @@ model = FNO3d(modes, modes, modes, width).cuda()
 # model = torch.load('model/ns_fourier_V100_N1000_ep100_m8_w20')
 
 print(count_params(model))
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
 
 
