@@ -120,7 +120,7 @@ class FNO3d(nn.Module):
         x = torch.cat((x, grid), dim=-1)
         x = self.fc0(x)
         x = x.permute(0, 4, 1, 2, 3)
-        x = F.pad(x, [0,self.padding, 0,self.padding, 0,self.padding])
+        x = F.pad(x, [0,self.padding]) # pad the domain if input is non-periodic
 
         x1 = self.conv0(x)
         x2 = self.w0(x)
@@ -141,8 +141,8 @@ class FNO3d(nn.Module):
         x2 = self.w3(x)
         x = x1 + x2
 
-        x = x[..., :-self.padding, :-self.padding, :-self.padding]
-        x = x.permute(0, 2, 3, 4, 1)
+        x = x[..., :-self.padding]
+        x = x.permute(0, 2, 3, 4, 1) # pad the domain if input is non-periodic
         x = self.fc1(x)
         x = F.gelu(x)
         x = self.fc2(x)
