@@ -31,10 +31,10 @@ def navier_stokes_2d(w0, f, visc, T, delta_t=1e-4, record_steps=1):
     steps = math.ceil(T/delta_t)
 
     #Initial vorticity to Fourier space
-    w_h = torch.rfft(w0, 2, normalized=False, onesided=False)
+    w_h = torch.fft.fft2(w0)
 
     #Forcing to Fourier space
-    f_h = torch.rfft(f, 2, normalized=False, onesided=False)
+    f_h = torch.fft.fft2(f)
 
     #If same forcing for the whole batch
     if len(f_h.size()) < len(w_h.size()):
@@ -63,58 +63,42 @@ def navier_stokes_2d(w0, f, visc, T, delta_t=1e-4, record_steps=1):
     t = 0.0
     for j in range(steps):
         #Stream function in Fourier space: solve Poisson equation
-        psi_h = w_h.clone()
-        psi_h[...,0] = psi_h[...,0]/lap
-        psi_h[...,1] = psi_h[...,1]/lap
+        psi_h = w_h / lap
 
         #Velocity field in x-direction = psi_y
-        q = psi_h.clone()
-        temp = q[...,0].clone()
-        q[...,0] = -2*math.pi*k_y*q[...,1]
-        q[...,1] = 2*math.pi*k_y*temp
-        q = torch.irfft(q, 2, normalized=False, onesided=False, signal_sizes=(N,N))
+        q = 2. * math.pi * k_y * 1j * psi_h
+        q = torch.fft.ifft2(q, s=(N, N)).real
 
         #Velocity field in y-direction = -psi_x
-        v = psi_h.clone()
-        temp = v[...,0].clone()
-        v[...,0] = 2*math.pi*k_x*v[...,1]
-        v[...,1] = -2*math.pi*k_x*temp
-        v = torch.irfft(v, 2, normalized=False, onesided=False, signal_sizes=(N,N))
+        v = -2. * math.pi * k_x * 1j * psi_h
+        v = torch.fft.ifft2(v, s=(N, N)).real
 
         #Partial x of vorticity
-        w_x = w_h.clone()
-        temp = w_x[...,0].clone()
-        w_x[...,0] = -2*math.pi*k_x*w_x[...,1]
-        w_x[...,1] = 2*math.pi*k_x*temp
-        w_x = torch.irfft(w_x, 2, normalized=False, onesided=False, signal_sizes=(N,N))
+        w_x = 2. * math.pi * k_x * 1j * w_h
+        w_x = torch.fft.ifft2(w_x, s=(N, N)).real
 
         #Partial y of vorticity
-        w_y = w_h.clone()
-        temp = w_y[...,0].clone()
-        w_y[...,0] = -2*math.pi*k_y*w_y[...,1]
-        w_y[...,1] = 2*math.pi*k_y*temp
-        w_y = torch.irfft(w_y, 2, normalized=False, onesided=False, signal_sizes=(N,N))
+        w_y = 2. * math.pi * k_y * 1j * w_h
+        w_y = torch.fft.ifft2(w_y, s=(N, N)).real
 
         #Non-linear term (u.grad(w)): compute in physical space then back to Fourier space
-        F_h = torch.rfft(q*w_x + v*w_y, 2, normalized=False, onesided=False)
+        F_h = torch.fft.fft2(q*w_x + v*w_y)
 
         #Dealias
-        F_h[...,0] = dealias* F_h[...,0]
-        F_h[...,1] = dealias* F_h[...,1]
+        F_h = dealias* F_h
 
-        #Cranck-Nicholson update
-        w_h[...,0] = (-delta_t*F_h[...,0] + delta_t*f_h[...,0] + (1.0 - 0.5*delta_t*visc*lap)*w_h[...,0])/(1.0 + 0.5*delta_t*visc*lap)
-        w_h[...,1] = (-delta_t*F_h[...,1] + delta_t*f_h[...,1] + (1.0 - 0.5*delta_t*visc*lap)*w_h[...,1])/(1.0 + 0.5*delta_t*visc*lap)
+        #Crank-Nicolson update
+        w_h = (-delta_t*F_h + delta_t*f_h + (1.0 - 0.5*delta_t*visc*lap)*w_h)/(1.0 + 0.5*delta_t*visc*lap)
 
         #Update real time (used only for recording)
         t += delta_t
 
         if (j+1) % record_time == 0:
             #Solution in physical space
-            w = torch.irfft(w_h, 2, normalized=False, onesided=False, signal_sizes=(N,N))
+            w = torch.fft.ifft2(w_h, s=(N, N))
 
             #Record solution and time
-            sol[...,c] = w
+            sol[...,c] = w.real
             sol_t[c] = t
 
             c += 1
@@ -127,7 +111,6 @@ device = torch.device('cuda')
 
 #Resolution
 s = 256
-sub = 1
 
 #Number of solutions to generate
 N = 20
@@ -139,7 +122,7 @@ GRF = GaussianRF(2, s, alpha=2.5, tau=7, device=device)
 t = torch.linspace(0, 1, s+1, device=device)
 t = t[0:-1]
 
-X,Y = torch.meshgrid(t, t)
+X,Y = torch.meshgrid(t, t, indexing='ij')
 f = 0.1*(torch.sin(2*math.pi*(X + Y)) + torch.cos(2*math.pi*(X + Y)))
 
 #Number of snapshots from solution
