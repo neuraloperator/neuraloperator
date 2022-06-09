@@ -1,10 +1,8 @@
 import torch
 import math
 
-import matplotlib.pyplot as plt
-import matplotlib
-
 from timeit import default_timer
+
 
 class GaussianRF(object):
 

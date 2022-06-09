@@ -2,16 +2,12 @@ import torch
 
 import math
 
-import matplotlib.pyplot as plt
-import matplotlib
-
-# from drawnow import drawnow, figure
-
 from random_fields import GaussianRF
 
 from timeit import default_timer
 
 import scipy.io
+
 
 #w0: initial vorticity
 #f: forcing term
