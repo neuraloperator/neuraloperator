@@ -1,10 +1,8 @@
 import torch
 import math
 
-import matplotlib.pyplot as plt
-import matplotlib
-
 from timeit import default_timer
+
 
 class GaussianRF(object):
 
@@ -54,12 +52,7 @@ class GaussianRF(object):
 
     def sample(self, N):
 
-        coeff = torch.randn(N, *self.size, 2, device=self.device)
+        coeff = torch.randn(N, *self.size, dtype=torch.cfloat, device=self.device)
+        coeff = self.sqrt_eig * coeff
 
-        coeff[...,0] = self.sqrt_eig*coeff[...,0]
-        coeff[...,1] = self.sqrt_eig*coeff[...,1]
-
-        u = torch.ifft(coeff, self.dim, normalized=False)
-        u = u[...,0]
-
-        return u
+        return torch.fft.ifftn(coeff, dim=list(range(-1, -self.dim - 1, -1))).real
