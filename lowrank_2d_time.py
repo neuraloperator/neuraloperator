@@ -15,7 +15,9 @@ import scipy.io
 
 torch.manual_seed(0)
 np.random.seed(0)
-
+if device == torch.device('cuda'):
+    torch.cuda.manual_seed(0)
+    torch.backends.cudnn.deterministic = True
 activation = F.relu
 
 ################################################################
