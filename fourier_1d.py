@@ -20,7 +20,9 @@ from Adam import Adam
 
 torch.manual_seed(0)
 np.random.seed(0)
-
+if device == torch.device('cuda'):
+    torch.cuda.manual_seed(0)
+    torch.backends.cudnn.deterministic = True
 
 ################################################################
 #  1d fourier layer
