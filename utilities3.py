@@ -71,33 +71,44 @@ class MatReader(object):
 
 # normalization, pointwise gaussian
 class UnitGaussianNormalizer(object):
-    def __init__(self, x, eps=0.00001):
+    def __init__(self, x, eps=0.00001, time_last=True):
         super(UnitGaussianNormalizer, self).__init__()
 
-        # x could be in shape of ntrain*n or ntrain*T*n or ntrain*n*T
+        # x could be in shape of ntrain*n or ntrain*T*n or ntrain*n*T in 1D
+        # x could be in shape of ntrain*w*l or ntrain*T*w*l or ntrain*w*l*T in 2D
         self.mean = torch.mean(x, 0)
         self.std = torch.std(x, 0)
         self.eps = eps
+        self.time_last = time_last # if the time dimension is the last dim
 
     def encode(self, x):
         x = (x - self.mean) / (self.std + self.eps)
         return x
 
     def decode(self, x, sample_idx=None):
+        # sample_idx is the spatial sampling mask
         if sample_idx is None:
             std = self.std + self.eps # n
             mean = self.mean
         else:
-            if len(self.mean.shape) == len(sample_idx[0].shape):
+            if self.mean.ndim == sample_idx.ndim or self.time_last:
                 std = self.std[sample_idx] + self.eps  # batch*n
                 mean = self.mean[sample_idx]
-            if len(self.mean.shape) > len(sample_idx[0].shape):
-                std = self.std[:,sample_idx]+ self.eps # T*batch*n
-                mean = self.mean[:,sample_idx]
-
-        # x is in shape of batch*n or T*batch*n
+            if self.mean.ndim > sample_idx.ndim and not self.time_last:
+                    std = self.std[...,sample_idx] + self.eps # T*batch*n
+                    mean = self.mean[...,sample_idx]
+        # x is in shape of batch*(spatial discretization size) or T*batch*(spatial discretization size)
         x = (x * std) + mean
         return x
+
+    def to(self, device):
+        if torch.is_tensor(self.mean):
+            self.mean = self.mean.to(device)
+            self.std = self.std.to(device)
+        else:
+            self.mean = torch.from_numpy(self.mean).to(device)
+            self.std = torch.from_numpy(self.std).to(device)
+        return self
 
     def cuda(self):
         self.mean = self.mean.cuda()
