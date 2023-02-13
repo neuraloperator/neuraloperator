@@ -1,0 +1,6 @@
+﻿neuralop.models.model\_dispatcher.get\_model
+============================================
+
+.. currentmodule:: neuralop.models.model_dispatcher
+
+.. autofunction:: get_model

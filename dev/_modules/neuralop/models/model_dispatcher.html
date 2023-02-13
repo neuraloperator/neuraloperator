@@ -1,0 +1,229 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>neuralop.models.model_dispatcher &#8212; neural-operator 0.1.0 documentation</title> 
+<link rel="stylesheet" href="../../../_static/tensorly_style.css">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../_static/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../_static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../../_static/favicon/favicon-16x16.png">
+<link rel="manifest" href="../../../_static/favicon/site.webmanifest">
+<link rel="mask-icon" href="../../../_static/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="../../../_static/favicon/favicon.ico">
+<meta name="theme-color" content="#ffffff">
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/tensorly_style.css" />
+
+  
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+ <script src="../../../_static/navbar_burger.js"></script>
+ <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+ 
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  </head>
+<body  class="has-navbar-fixed-top">
+
+  <header>
+    <navbar>
+      <nav class="navbar top-navbar is-fixed-top has-shadow is-flex-wrap-wrap" role="navigation" aria-label="main top navigation">
+        <div class="navbar-brand">
+        
+
+          <a class="navbar-item" href="../../../index.html">
+            <img src="../../../_static/neuraloperator_logo_small.png" height="28">
+          </a>
+          <a class="navbar-item is-hidden-desktop" href="https://github.com/neural-operators/neural-operator" target="_blank">
+              <span class="icon"><i class="fab fa-github"></i></span>
+          </a>
+
+          <a role="button" class="navbar-burger" data-target="top-nav-menu" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+
+        </div>
+        
+        <div class="navbar-menu" id="top-nav-menu">
+        
+
+          <div class="navbar-start">
+            
+              <a class="navbar-item" href="../../../install.html">
+              Install
+            </a>
+              <a class="navbar-item" href="../../../modules/api.html">
+              API
+            </a>
+              <a class="navbar-item" href="../../../user_guide/index.html">
+              User Guide
+            </a>
+          </div>
+        
+          <div class="navbar-end">
+            <div class="navbar-item">
+            
+            <a class="button is-hidden-touch is-dark" href="https://github.com/neural-operators/neural-operator" target="_blank">
+              <span class="icon-text">
+                <span class="icon is-large">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>Github</span>
+              </span>
+            </a>
+
+            </div> 
+          </div> 
+        </div> 
+
+      </nav>
+      
+    </navbar>
+  </header>
+
+
+  <div id="column-container">
+  <div class="columns is-mobile is-centered">
+	
+  
+
+  <div class="column main-column">
+
+    
+    <div class="main-section">
+
+      
+      
+
+      <div class="container content main-content">
+        
+  <h1>Source code for neuralop.models.model_dispatcher</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">.tfno</span> <span class="kn">import</span> <span class="n">TFNO2d</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+
+<div class="viewcode-block" id="get_model"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.model_dispatcher.get_model.html#neuralop.models.model_dispatcher.get_model">[docs]</a><span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns an instanciated model for the given config</span>
+
+<span class="sd">    Also prints warnings for safety, in case::</span>
+<span class="sd">    * some given arguments aren&#39;t actually used by the model</span>
+<span class="sd">    * some keyword arguments of the models aren&#39;t provided by the config</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config : Bunch or dict-like</span>
+<span class="sd">        configuration, must have </span>
+<span class="sd">        arch = config[&#39;arch&#39;] (string)</span>
+<span class="sd">        and the corresponding config[arch] (a subdict with the kwargs of the model)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    model : nn.Module</span>
+<span class="sd">        the instanciated module</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">models</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;tfno2d&#39;</span><span class="p">:</span> <span class="n">TFNO2d</span><span class="p">}</span>
+    <span class="n">arch</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;arch&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">config_arch</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arch</span><span class="p">)</span>
+
+    <span class="c1"># Set the number of input channels depending on channels in data + mg patching</span>
+    <span class="n">data_channels</span> <span class="o">=</span> <span class="n">config_arch</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;data_channels&#39;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">patching_levels</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;patching&#39;</span><span class="p">][</span><span class="s1">&#39;levels&#39;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">patching_levels</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">patching_levels</span><span class="p">:</span>
+        <span class="n">data_channels</span> <span class="o">*=</span> <span class="mi">2</span><span class="o">**</span><span class="n">patching_levels</span>
+    <span class="n">config_arch</span><span class="p">[</span><span class="s1">&#39;in_channels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_channels</span>
+
+    <span class="c1"># Dispatch model creation</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dispatch_model</span><span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">arch</span><span class="p">],</span> <span class="n">config_arch</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Got config.</span><span class="si">{</span><span class="n">arch</span><span class="si">=}</span><span class="s1">, expected one of </span><span class="si">{</span><span class="n">models</span><span class="o">.</span><span class="n">keys</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">dispatch_model</span><span class="p">(</span><span class="n">ModelClass</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;This function just creates an instance of the model ModelClass(**config)</span>
+<span class="sd">    but performs additional checks to warn users about missing/wrong arguments.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ModelClass : nn.Module</span>
+<span class="sd">        model to instancite</span>
+<span class="sd">    config : Bunch or dict-like</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ModelClass(**config) : instanciated model</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">ModelClass</span><span class="p">)</span>
+    <span class="n">model_name</span> <span class="o">=</span> <span class="n">ModelClass</span><span class="o">.</span><span class="vm">__name__</span>
+    
+    <span class="c1"># Verify that given parameters are actually arguments of the model</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Given argument </span><span class="si">{</span><span class="n">key</span><span class="si">=}</span><span class="s2"> that is not in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&#39;s signature.&quot;</span><span class="p">)</span>
+            <span class="c1"># warnings.warn(f&quot;Given argument {key=} that is not in {model_name}&#39;s signature.&quot;)</span>
+    
+    <span class="c1"># Check for model arguments not specified in the configuration</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">inspect</span><span class="o">.</span><span class="n">_empty</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Keyword argument </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> not specified for model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">, using default=</span><span class="si">{</span><span class="n">value</span><span class="o">.</span><span class="n">default</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+            <span class="c1"># warnings.warn(f&quot;Keyword argument {key} not specified for model {model_name}, using default={value.default}.&quot;)</span>
+
+    <span class="k">return</span> <span class="n">ModelClass</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span>
+</pre></div>
+
+      </div>
+
+      
+
+        <footer class="footer">
+    <div class="content has-text-centered">
+        <div class="block">
+          &copy; Copyright 2023, Jean Kossaifi, Nikola Kovachki, Zongyi Li.<br/>
+        </div>
+    </div>
+  </footer>
+
+    </div>
+
+  </div>  
+
+	
+
+  </div>  
+  </div> 
+
+  
+  <script>
+    function toggle_sidebar() {
+        var element = document.getElementById("sidebar");
+        var container = document.getElementById("column-container");
+        var localtoccolumn = document.getElementById("localtoc-column");
+        element.classList.toggle("hide-tablet");
+        element.classList.toggle("is-hidden-mobile");
+        container.classList.toggle("sidemenu-hidden");
+        localtoccolumn.classList.toggle("is-one-fifth-widescreen");
+        localtoccolumn.classList.toggle("is-2-desktop");
+        localtoccolumn.classList.toggle("is-3-desktop");
+    }
+  </script> 
+
+
+
+  </body>
+</html>

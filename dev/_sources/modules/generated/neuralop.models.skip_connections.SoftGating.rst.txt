@@ -1,0 +1,6 @@
+﻿neuralop.models.skip\_connections.SoftGating
+============================================
+
+.. currentmodule:: neuralop.models.skip_connections
+
+.. autoclass:: SoftGating

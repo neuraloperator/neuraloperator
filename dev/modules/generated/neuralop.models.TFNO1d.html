@@ -1,0 +1,308 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>neuralop.models.TFNO1d &#8212; neural-operator 0.1.0 documentation</title> 
+<link rel="stylesheet" href="../../_static/tensorly_style.css">
+<link rel="apple-touch-icon" sizes="180x180" href="../../_static/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../_static/favicon/favicon-16x16.png">
+<link rel="manifest" href="../../_static/favicon/site.webmanifest">
+<link rel="mask-icon" href="../../_static/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="../../_static/favicon/favicon.ico">
+<meta name="theme-color" content="#ffffff">
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/tensorly_style.css" />
+
+  
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+ <script src="../../_static/navbar_burger.js"></script>
+ <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+ 
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="neuralop.models.TFNO3d" href="neuralop.models.TFNO3d.html" />
+    <link rel="prev" title="neuralop.models.TFNO2d" href="neuralop.models.TFNO2d.html" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  </head>
+<body  class="has-navbar-fixed-top">
+
+  <header>
+    <navbar>
+      <nav class="navbar top-navbar is-fixed-top has-shadow is-flex-wrap-wrap" role="navigation" aria-label="main top navigation">
+        <div class="navbar-brand">
+        
+
+          <a class="navbar-item" href="../../index.html">
+            <img src="../../_static/neuraloperator_logo_small.png" height="28">
+          </a>
+          <a class="navbar-item is-hidden-desktop" href="https://github.com/neural-operators/neural-operator" target="_blank">
+              <span class="icon"><i class="fab fa-github"></i></span>
+          </a>
+
+          <a role="button" class="navbar-burger" data-target="top-nav-menu" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+
+        </div>
+        
+        <div class="navbar-menu" id="top-nav-menu">
+        
+
+          <div class="navbar-start">
+            
+              <a class="navbar-item" href="../../install.html">
+              Install
+            </a>
+              <a class="navbar-item" href="../api.html">
+              API
+            </a>
+              <a class="navbar-item" href="../../user_guide/index.html">
+              User Guide
+            </a>
+          </div>
+        
+          <div class="navbar-end">
+            <div class="navbar-item">
+            
+            <a class="button is-hidden-touch is-dark" href="https://github.com/neural-operators/neural-operator" target="_blank">
+              <span class="icon-text">
+                <span class="icon is-large">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>Github</span>
+              </span>
+            </a>
+
+            </div> 
+          </div> 
+        </div> 
+
+      </nav>
+      
+    </navbar>
+  </header>
+
+
+  <div id="column-container">
+  <div class="columns is-mobile is-centered">
+	
+  
+      <div class="column is-10-mobile is-one-third-tablet is-3-desktop is-hidden-mobile" id="sidebar">
+    
+    <aside class="sticky-nav sidebar-menu">
+<div class="sidebar-search">
+  <form class="field" id="searchbox" role="search" action="../../search.html" method="get">
+    <!-- <label class="label" id="searchlabel">Quick search</label> -->
+    <div class="field has-addons">
+      <div class="control is-expanded">
+        <input class="input" type="text" placeholder="Search the doc" name="q" aria-labelledby="searchlabel autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      </div>
+      <div class="control">
+        <input class="button is-info" type="submit" value="Go" />
+      </div>
+    </div>
+  </form>
+  <script>document.getElementById('searchbox').style.display = "block"</script>
+
+</div>
+      
+      <div class="sidebar-menu-toc">
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installing neural-operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/index.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#models">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#layers">Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#model-dispatching">Model Dispatching</a></li>
+</ul>
+</li>
+</ul>
+ 
+      </div>
+    </aside>
+  </div>
+  
+
+  <div class="column main-column">
+
+    
+    <div class="main-section">
+
+      
+      
+      <div class="side-menu-toggle">
+        <button class="button" id="toggle-sidebar" onclick="toggle_sidebar()">
+          <span class="icon"><i class="fa fa-bars" aria-hidden="true"></i></span>
+          <span>menu</span> 
+        </button>
+      </div>
+      
+
+      <div class="container content main-content">
+        
+  <section id="neuralop-models-tfno1d">
+<h1>neuralop.models.TFNO1d<a class="headerlink" href="#neuralop-models-tfno1d" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="neuralop.models.TFNO1d">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.models.</span></span><span class="sig-name descname"><span class="pre">TFNO1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_modes_height</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_channels=3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_channels=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lifting_channels=256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">projection_channels=256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_layers=4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_linearity=&lt;built-in</span> <span class="pre">function</span> <span class="pre">gelu&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_mlp=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip='soft-gating'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separable=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preactivation=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factorization='tucker'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">joint_factorization=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_rank_modes=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implementation='factorized'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomposition_kwargs={}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_padding=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_padding_mode='one-sided'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_norm='forward'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/tfno.html#TFNO1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.TFNO1d" title="Permalink to this definition"></a></dt>
+<dd><p>Generic 1D Fourier Neural Operator</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>modes_height</strong><span class="classifier">int</span></dt><dd><p>number of Fourier modes to keep along the height</p>
+</dd>
+<dt><strong>hidden_channels</strong><span class="classifier">int</span></dt><dd><p>width of the FNO (i.e. number of channels)</p>
+</dd>
+<dt><strong>in_channels</strong><span class="classifier">int, optional</span></dt><dd><p>Number of input channels, by default 3</p>
+</dd>
+<dt><strong>out_channels</strong><span class="classifier">int, optional</span></dt><dd><p>Number of output channels, by default 1</p>
+</dd>
+<dt><strong>lifting_channels</strong><span class="classifier">int, optional</span></dt><dd><p>number of hidden channels of the lifting block of the FNO, by default 256</p>
+</dd>
+<dt><strong>projection_channels</strong><span class="classifier">int, optional</span></dt><dd><p>number of hidden channels of the projection block of the FNO, by default 256</p>
+</dd>
+<dt><strong>n_layers</strong><span class="classifier">int, optional</span></dt><dd><p>Number of Fourier Layers, by default 4</p>
+</dd>
+<dt><strong>use_mlp</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to use an MLP layer after each FNO block, by default False</p>
+</dd>
+<dt><strong>mlp</strong><span class="classifier">dict, optional</span></dt><dd><p>Parameters of the MLP, by default None
+{‘expansion’: float, ‘dropout’: float}</p>
+</dd>
+<dt><strong>non_linearity</strong><span class="classifier">nn.Module, optional</span></dt><dd><p>Non-Linearity module to use, by default F.gelu</p>
+</dd>
+<dt><strong>norm</strong><span class="classifier">F.module, optional</span></dt><dd><p>Normalization layer to use, by default None</p>
+</dd>
+<dt><strong>preactivation</strong><span class="classifier">bool, default is False</span></dt><dd><p>if True, use resnet-style preactivation</p>
+</dd>
+<dt><strong>skip</strong><span class="classifier">{‘linear’, ‘identity’, ‘soft-gating’}, optional</span></dt><dd><p>Type of skip connection to use, by default ‘soft-gating’</p>
+</dd>
+<dt><strong>separable</strong><span class="classifier">bool, default is False</span></dt><dd><p>if True, use a depthwise separable spectral convolution</p>
+</dd>
+<dt><strong>factorization</strong><span class="classifier">str or None, {‘tucker’, ‘cp’, ‘tt’}, default is None</span></dt><dd><p>Tensor factorization of the parameters weight to use, by default None.
+* If None, a dense tensor parametrizes the Spectral convolutions
+* Otherwise, the specified tensor factorization is used.</p>
+</dd>
+<dt><strong>joint_factorization</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False</p>
+</dd>
+<dt><strong>rank</strong><span class="classifier">float or rank, optional</span></dt><dd><p>Rank of the tensor factorization of the Fourier weights, by default 1.0</p>
+</dd>
+<dt><strong>fixed_rank_modes</strong><span class="classifier">bool, optional</span></dt><dd><p>Modes to not factorize, by default False</p>
+</dd>
+<dt><strong>implementation</strong><span class="classifier">{‘factorized’, ‘reconstructed’}, optional, default is ‘factorized’</span></dt><dd><p>If factorization is not None, forward mode to use::
+* <cite>reconstructed</cite> : the full weight tensor is reconstructed from the factorization and used for the forward pass
+* <cite>factorized</cite> : the input is directly contracted with the factors of the decomposition</p>
+</dd>
+<dt><strong>decomposition_kwargs</strong><span class="classifier">dict, optional, default is {}</span></dt><dd><p>Optionaly additional parameters to pass to the tensor decomposition</p>
+</dd>
+<dt><strong>domain_padding</strong><span class="classifier">None or float, optional</span></dt><dd><p>If not None, percentage of padding to use, by default None</p>
+</dd>
+<dt><strong>domain_padding_mode</strong><span class="classifier">{‘symmetric’, ‘one-sided’}, optional</span></dt><dd><p>How to perform domain padding, by default ‘one-sided’</p>
+</dd>
+<dt><strong>fft_norm</strong><span class="classifier">str, optional</span></dt><dd><p>by default ‘forward’</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+      </div>
+
+      
+        <nav class="pagination" role="navigation" aria-label="pagination">
+    
+    <a class="button pagination-previous" href="neuralop.models.TFNO2d.html" title="previous page" accesskey="p">
+        <span class="icon">
+            <i class="fa fa-arrow-circle-left"></i>
+        </span>
+        <span>neuralop.models.TFNO2d</span>
+    </a>
+    
+    
+    <a class="button pagination-next" href="neuralop.models.TFNO3d.html" title="next page" accesskey="n">
+        <span>neuralop.models.TFNO3d </span>
+        <span class="icon">
+            <i class="fa fa-arrow-circle-right"></i>
+        </span>
+    </a>
+    
+</nav>
+
+      
+
+        <footer class="footer">
+    <div class="content has-text-centered">
+        <div class="block">
+          &copy; Copyright 2023, Jean Kossaifi, Nikola Kovachki, Zongyi Li.<br/>
+        </div>
+    </div>
+  </footer>
+
+    </div>
+
+  </div>  
+
+	
+    
+    <div class="column is-hidden-touch is-2-desktop is-one-fifth-widescreen" id="localtoc-column">
+
+    <aside class="sticky-nav localtoc"> 
+        <p class="menu-label"> 
+            <span class="icon-text">
+                <span class="icon"><i class="fas fa-duotone fa-list"></i></span>
+                <span> On this page </span>
+            </span>
+        </p>
+
+        <div class="menu menu-list localtoc-list">
+        <ul>
+<li><a class="reference internal" href="#">neuralop.models.TFNO1d</a><ul>
+<li><a class="reference internal" href="#neuralop.models.TFNO1d"><code class="docutils literal notranslate"><span class="pre">TFNO1d</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+    </aside>
+    </div>
+
+  
+
+  </div>  
+  </div> 
+
+  
+  <script>
+    function toggle_sidebar() {
+        var element = document.getElementById("sidebar");
+        var container = document.getElementById("column-container");
+        var localtoccolumn = document.getElementById("localtoc-column");
+        element.classList.toggle("hide-tablet");
+        element.classList.toggle("is-hidden-mobile");
+        container.classList.toggle("sidemenu-hidden");
+        localtoccolumn.classList.toggle("is-one-fifth-widescreen");
+        localtoccolumn.classList.toggle("is-2-desktop");
+        localtoccolumn.classList.toggle("is-3-desktop");
+    }
+  </script> 
+
+
+
+  </body>
+</html>
