@@ -1,0 +1,257 @@
+default: &DEFAULT
+
+  #General
+  # For computing compression
+  n_params_baseline: None #If None, will be computed
+  verbose: True
+  arch: 'tfno2d'
+
+  #Distributed computing
+  distributed:
+    use_distributed: False
+    wireup_info: 'mpi'
+    wireup_store: 'tcp'
+    model_parallel_size: 2
+    seed: 666
+
+  # FNO related
+  tfno2d:
+    data_channels: 3
+    n_modes_height: 24
+    n_modes_width: 24
+    hidden_channels: 64
+    projection_channels: 256
+    n_layers: 4
+    domain_padding: 0.078125
+    domain_padding_mode: 'one-sided' #symmetric
+    fft_norm: 'forward'
+    norm: None
+    skip: 'soft-gating'
+    implementation: 'reconstructed'
+    
+    use_mlp: 1
+    mlp:
+        expansion: 0.5
+        dropout: 0
+
+    separable: False
+    factorization: None
+    rank: 1.0
+    fixed_rank_modes: None
+    dropout: 0.0
+    tensor_lasso_penalty: 0.0
+    joint_factorization: False
+
+  # Optimizer
+  opt:
+    n_epochs: 500
+    learning_rate: 1e-3
+    training_loss: 'h1'
+    weight_decay: 1e-4
+    amp_autocast: False
+
+    scheduler_T_max: 500 # For cosine only, typically take n_epochs
+    scheduler_patience: 5 # For ReduceLROnPlateau only
+    scheduler: 'StepLR' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
+    step_size: 100
+    gamma: 0.5
+
+  # Dataset related
+  data:
+    # folder: '/home/nikola/HDD/NavierStokes/2D'
+    folder: /data/navier_stokes/
+    # folder: '/data'
+    batch_size: 16
+    n_train: 10000
+    train_resolution: 128
+    n_tests: [2000, 1000, 1000] #, 1000]
+    test_resolutions: [128, 256, 512] #, 1024] 
+    test_batch_sizes: [16, 8, 4] #, 1]
+    positional_encoding: True
+
+    encode_input: True
+    encode_output: False
+    num_workers: 0
+    pin_memory: False
+    persistent_workers: False
+
+  # Patching
+  patching:
+    levels: 0 #1
+    padding: 0 #0.078125
+    stitching: True
+
+  # Weights and biases
+  wandb:
+    log: True
+    name: None # If None, config will be used but you can override it here
+    group: 'super-resolution' 
+    project: "Refactored-TFNO"
+    entity: "nvr-ai-algo" # put your username here
+    sweep: False
+    log_output: True
+    log_test_interval: 1
+
+original_fno:
+  arch: 'tfno2d'
+
+  tfno2d:
+    modes_height: 64
+    modes_width: 64
+    width: 64
+    fc_channels: 256
+    n_layers: 4
+    domain_padding: 0.078125
+    domain_padding_mode: 'one-sided'
+    fft_norm: 'forward'
+    norm: None
+    skip: 'linear'
+    
+    use_mlp: 0
+    mlp:
+        expansion: 0.5
+        dropout: 0
+
+    separable: False
+    factorization: None
+    rank: 1.0
+    fixed_rank_modes: None
+
+  wandb:
+    log: True
+    name: None # If None, config will be used but you can override it here
+    group: 'comparisons'
+    
+original_fno_GN:
+  arch: 'tfno2d'
+
+  tfno2d:
+    modes_height: 64
+    modes_width: 64
+    width: 64
+    fc_channels: 256
+    n_layers: 4
+    domain_padding: 0.078125
+    domain_padding_mode: 'one-sided'
+    fft_norm: 'forward'
+    norm: None
+    preactivation: False
+    skip: 'linear'
+    
+    use_mlp: 0
+    mlp:
+        expansion: 0.5
+        dropout: 0
+
+    separable: False
+    factorization: None
+    rank: 1.0
+    fixed_rank_modes: None
+
+  wandb:
+    log: True
+    name: None # If None, config will be used but you can override it here
+    group: 'comparisons' 
+
+
+GN_fno_linear_skip_preact:
+  arch: 'tfno2d'
+
+  tfno2d: 
+    modes_height: 64
+    modes_width: 64
+    width: 64
+    fc_channels: 256
+    n_layers: 4
+    domain_padding: 0.078125
+    domain_padding_mode: 'one-sided'
+    fft_norm: 'forward'
+    norm: 'group_norm'
+    skip: 'linear'
+    
+    use_mlp: 0
+    mlp:
+        expansion: 0.5
+        dropout: 0
+
+    separable: False
+    factorization: None
+    rank: 1.0
+    fixed_rank_modes: None
+
+  wandb:
+    log: True
+    name: None # If None, config will be used but you can override it here
+    group: 'comparisons' 
+
+  
+
+unet_baseline_64_5e4_encode_out:
+  arch: 'unet2d'
+
+  unet2d:
+    data_channels: 3
+    n_features: 64
+
+  patching:
+    levels: 0
+    padding: 0
+    stitching: True
+
+  data:
+    batch_size: 32
+    test_resolutions: [128, 256, 512] #, 1024] 
+    n_tests: [2000, 1000, 1000] #, 1000]
+    test_batch_sizes: [32, 16, 8] #, 2] #, 1]
+    encode_output: True
+
+
+  opt:
+    n_epochs: 500
+    learning_rate: 5e-4
+
+regular_tucker:
+  tfno2d:
+    factorization: Tucker
+    compression: 0.42
+    domain_padding: 9
+  patching:
+    levels: 1
+    padding: 16
+    stitching: True
+
+distributed_tucker:
+  tfno2d:
+    factorization: Tucker
+    compression: 0.42
+    domain_padding: 9
+  distributed:
+    use_distributed: True
+    wireup_info: 'mpi'
+    wireup_store: 'tcp'
+    model_parallel_size: 2
+    seed: 666
+  patching:
+    levels: 1
+    padding: 16
+    stitching: True
+
+baseline_separable:
+  wandb:
+    log: False
+  tfno2d:
+    domain_padding: None
+    implementation: 'reconstructed'
+    width: 128
+  patching:
+    levels: 0
+    padding: 0
+    stitching: True
+  # data:
+  #   batch_size: 16
+  #   n_train: 100
+  #   train_resolution: 128
+  #   n_tests: [200, 100] #, 1000]
+  #   test_resolutions: [128, 256] #, 1024] 
+  #   test_batch_sizes: [16, 8] #, 1]
+

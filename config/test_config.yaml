@@ -1,0 +1,57 @@
+default: &DEFAULT
+
+  #General
+  verbose: True
+  arch: 'tfno2d'
+
+  # FNO related
+  tfno2d:
+    data_channels: 3
+    n_modes_height: 8
+    n_modes_width: 8
+    hidden_channels: 32
+    projection_channels: 32
+    n_layers: 2
+    domain_padding: 0
+    domain_padding_mode: 'symmetric'
+    fft_norm: 'forward'
+    norm: None
+    skip: 'soft-gating'
+    implementation: 'factorized'
+    
+    use_mlp: 1
+    mlp:
+        expansion: 0.5
+        dropout: 0
+
+    factorization: None
+    rank: 1.0
+    fixed_rank_modes: None
+    dropout: 0.0
+    tensor_lasso_penalty: 0.0
+    joint_factorization: False
+  
+  data:
+    batch_size: 4
+    n_train: 10
+    size: 32
+
+  # Optimizer
+  opt:
+    n_epochs: 500
+    learning_rate: 1e-3
+    training_loss: 'h1'
+    weight_decay: 1e-4
+    amp_autocast: False
+
+    scheduler_T_max: 500 # For cosine only, typically take n_epochs
+    scheduler_patience: 5 # For ReduceLROnPlateau only
+    scheduler: 'StepLR' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
+    step_size: 100
+    gamma: 0.5
+
+  # Patching
+  patching:
+    levels: 0
+    padding: 0 #.1
+    stitching: True
