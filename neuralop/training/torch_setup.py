@@ -79,9 +79,12 @@ def setup(config):
         if 'seed' in config.distributed:
             torch.cuda.manual_seed(seed)
         increase_l2_fetch_granularity()
-
+        try:
+            torch.set_float32_matmul_precision('high')
+        except AttributeError:
+            pass
+        
         torch.backends.cudnn.benchmark = True
-        torch.set_float32_matmul_precision('high')
 
     if 'seed' in config.distributed:
         torch.manual_seed(seed)

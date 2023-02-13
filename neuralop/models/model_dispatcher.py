@@ -4,7 +4,7 @@ import warnings
 
 
 def get_model(config):
-    """Returns an instanciated model for the given config
+    """Returns an instantiated model for the given config
 
     Also prints warnings for safety, in case::
     * some given arguments aren't actually used by the model
