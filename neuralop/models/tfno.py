@@ -185,6 +185,8 @@ class TFNO(nn.Module):
 
 
     def forward(self, x):
+        """TFNO's forward pass
+        """
         x = self.lifting(x)
 
         if self.domain_padding is not None:
