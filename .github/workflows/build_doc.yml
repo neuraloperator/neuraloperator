@@ -52,6 +52,7 @@ jobs:
         rm -rf dev/*
         cp -r doc/build/html/* dev
         git add dev
+        touch dev/.nojekyll
         # If the doc is up to date, the script shouldn't fail, hence --allow-empty
         # Might be a cleaner way to check 
         git commit --allow-empty -m "Deployed to GitHub Pages"
