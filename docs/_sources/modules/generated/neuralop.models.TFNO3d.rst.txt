@@ -1,6 +1,0 @@
-﻿neuralop.models.TFNO3d
-======================
-
-.. currentmodule:: neuralop.models
-
-.. autoclass:: TFNO3d

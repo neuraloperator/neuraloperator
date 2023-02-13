@@ -1,6 +1,0 @@
-﻿neuralop.models.fno\_block.FactorizedSpectralConv2d
-===================================================
-
-.. currentmodule:: neuralop.models.fno_block
-
-.. autoclass:: FactorizedSpectralConv2d
