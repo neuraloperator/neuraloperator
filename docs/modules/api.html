@@ -1,0 +1,337 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>API reference &#8212; neural-operator 0.1.0 documentation</title> 
+<link rel="stylesheet" href="../_static/tensorly_style.css">
+<link rel="apple-touch-icon" sizes="180x180" href="../_static/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../_static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../_static/favicon/favicon-16x16.png">
+<link rel="manifest" href="../_static/favicon/site.webmanifest">
+<link rel="mask-icon" href="../_static/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="../_static/favicon/favicon.ico">
+<meta name="theme-color" content="#ffffff">
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/tensorly_style.css" />
+
+  
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+ <script src="../_static/navbar_burger.js"></script>
+ <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+ 
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="neuralop.models.TFNO" href="generated/neuralop.models.TFNO.html" />
+    <link rel="prev" title="Fourier Neural Operators" href="../user_guide/fno.html" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  </head>
+<body  class="has-navbar-fixed-top">
+
+  <header>
+    <navbar>
+      <nav class="navbar top-navbar is-fixed-top has-shadow is-flex-wrap-wrap" role="navigation" aria-label="main top navigation">
+        <div class="navbar-brand">
+        
+
+          <a class="navbar-item" href="../index.html">
+            <img src="../_static/neuraloperator_logo_small.png" height="28">
+          </a>
+          <a class="navbar-item is-hidden-desktop" href="https://github.com/neural-operators/neural-operator" target="_blank">
+              <span class="icon"><i class="fab fa-github"></i></span>
+          </a>
+
+          <a role="button" class="navbar-burger" data-target="top-nav-menu" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+
+        </div>
+        
+        <div class="navbar-menu" id="top-nav-menu">
+        
+
+          <div class="navbar-start">
+            
+              <a class="navbar-item" href="../install.html">
+              Install
+            </a>
+              <a class="navbar-item" href="#">
+              API
+            </a>
+              <a class="navbar-item" href="../user_guide/index.html">
+              User Guide
+            </a>
+          </div>
+        
+          <div class="navbar-end">
+            <div class="navbar-item">
+            
+            <a class="button is-hidden-touch is-dark" href="https://github.com/neural-operators/neural-operator" target="_blank">
+              <span class="icon-text">
+                <span class="icon is-large">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>Github</span>
+              </span>
+            </a>
+
+            </div> 
+          </div> 
+        </div> 
+
+      </nav>
+      
+    </navbar>
+  </header>
+
+
+  <div id="column-container">
+  <div class="columns is-mobile is-centered">
+	
+  
+      <div class="column is-10-mobile is-one-third-tablet is-3-desktop is-hidden-mobile" id="sidebar">
+    
+    <aside class="sticky-nav sidebar-menu">
+<div class="sidebar-search">
+  <form class="field" id="searchbox" role="search" action="../search.html" method="get">
+    <!-- <label class="label" id="searchlabel">Quick search</label> -->
+    <div class="field has-addons">
+      <div class="control is-expanded">
+        <input class="input" type="text" placeholder="Search the doc" name="q" aria-labelledby="searchlabel autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      </div>
+      <div class="control">
+        <input class="button is-info" type="submit" value="Go" />
+      </div>
+    </div>
+  </form>
+  <script>document.getElementById('searchbox').style.display = "block"</script>
+
+</div>
+      
+      <div class="sidebar-menu-toc">
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installing neural-operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide/index.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#models">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#layers">Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#model-dispatching">Model Dispatching</a></li>
+</ul>
+</li>
+</ul>
+ 
+      </div>
+    </aside>
+  </div>
+  
+
+  <div class="column main-column">
+
+    
+    <div class="main-section">
+
+      
+      
+      <div class="side-menu-toggle">
+        <button class="button" id="toggle-sidebar" onclick="toggle_sidebar()">
+          <span class="icon"><i class="fa fa-bars" aria-hidden="true"></i></span>
+          <span>menu</span> 
+        </button>
+      </div>
+      
+
+      <div class="container content main-content">
+        
+  <section id="api-reference">
+<h1>API reference<a class="headerlink" href="#api-reference" title="Permalink to this heading"></a></h1>
+<p><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop</span></code>: Neural Operators in Python</p>
+<span class="target" id="module-neuralop.models"></span><section id="models">
+<span id="neuralop-models-ref"></span><h2>Models<a class="headerlink" href="#models" title="Permalink to this heading"></a></h2>
+<p>In <cite>neuralop</cite>, we provide a general Tensorized Fourier Neural Operator (TFNO) that supports most usecases.</p>
+<p>We have a generic interface that works for any dimension, which is inferred based on <cite>n_modes</cite>
+(a tuple with the number of modes to keep in the Fourier domain for each dimension.)</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.TFNO.html#neuralop.models.TFNO" title="neuralop.models.TFNO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFNO</span></code></a>(n_modes, hidden_channels[, ...])</p></td>
+<td><p>Generic N-D Tensorized Fourier Neural Operator</p></td>
+</tr>
+</tbody>
+</table>
+<p>We also have dimension-specific classes:</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.TFNO2d.html#neuralop.models.TFNO2d" title="neuralop.models.TFNO2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFNO2d</span></code></a>(n_modes_height, n_modes_width, ...[, ...])</p></td>
+<td><p>Generic 2D Fourier Neural Operator</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.models.TFNO1d.html#neuralop.models.TFNO1d" title="neuralop.models.TFNO1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFNO1d</span></code></a>(n_modes_height, hidden_channels[, ...])</p></td>
+<td><p>Generic 1D Fourier Neural Operator</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.TFNO3d.html#neuralop.models.TFNO3d" title="neuralop.models.TFNO3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFNO3d</span></code></a>(n_modes_height, n_modes_width, ...[, ...])</p></td>
+<td><p>Generic 3D Fourier Neural Operator</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="layers">
+<h2>Layers<a class="headerlink" href="#layers" title="Permalink to this heading"></a></h2>
+<p>In addition to the full architectures, we also provide building blocks:</p>
+<span class="target" id="module-neuralop.models.fno_block"></span><table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.fno_block.FactorizedSpectralConv.html#neuralop.models.fno_block.FactorizedSpectralConv" title="neuralop.models.fno_block.FactorizedSpectralConv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FactorizedSpectralConv</span></code></a>(in_channels, ...[, ...])</p></td>
+<td><p>Generic N-Dimensional Fourier Neural Operator</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.models.fno_block.FactorizedSpectralConv1d.html#neuralop.models.fno_block.FactorizedSpectralConv1d" title="neuralop.models.fno_block.FactorizedSpectralConv1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FactorizedSpectralConv1d</span></code></a>(in_channels, ...[, ...])</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.fno_block.FactorizedSpectralConv2d.html#neuralop.models.fno_block.FactorizedSpectralConv2d" title="neuralop.models.fno_block.FactorizedSpectralConv2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FactorizedSpectralConv2d</span></code></a>(in_channels, ...[, ...])</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.models.fno_block.FactorizedSpectralConv3d.html#neuralop.models.fno_block.FactorizedSpectralConv3d" title="neuralop.models.fno_block.FactorizedSpectralConv3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FactorizedSpectralConv3d</span></code></a>(in_channels, ...[, ...])</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+</tbody>
+</table>
+<p>Automatically apply resolution dependent domain padding:</p>
+<span class="target" id="module-neuralop.models.padding"></span><table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.padding.DomainPadding.html#neuralop.models.padding.DomainPadding" title="neuralop.models.padding.DomainPadding"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DomainPadding</span></code></a>(domain_padding[, padding_mode])</p></td>
+<td><p>Applies domain padding scaled automatically to the input's resolution</p></td>
+</tr>
+</tbody>
+</table>
+<span class="target" id="module-neuralop.models.skip_connections"></span><table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.skip_connections.SoftGating.html#neuralop.models.skip_connections.SoftGating" title="neuralop.models.skip_connections.SoftGating"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SoftGating</span></code></a>(in_features[, out_features, ...])</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+</tbody>
+</table>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.skip_connections.skip_connection.html#neuralop.models.skip_connections.skip_connection" title="neuralop.models.skip_connections.skip_connection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skip_connection</span></code></a>(in_features, out_features[, ...])</p></td>
+<td><p>A wrapper for several types of skip connections.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="model-dispatching">
+<h2>Model Dispatching<a class="headerlink" href="#model-dispatching" title="Permalink to this heading"></a></h2>
+<p>We provide a utility function to create model instances from a configuration.
+It has the advantage of doing some checks on the parameters it receives.</p>
+<span class="target" id="module-neuralop.models.model_dispatcher"></span><table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.model_dispatcher.get_model.html#neuralop.models.model_dispatcher.get_model" title="neuralop.models.model_dispatcher.get_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_model</span></code></a>(config)</p></td>
+<td><p>Returns an instanciated model for the given config</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+      </div>
+
+      
+        <nav class="pagination" role="navigation" aria-label="pagination">
+    
+    <a class="button pagination-previous" href="../user_guide/fno.html" title="previous page" accesskey="p">
+        <span class="icon">
+            <i class="fa fa-arrow-circle-left"></i>
+        </span>
+        <span>Fourier Neural Operators</span>
+    </a>
+    
+    
+    <a class="button pagination-next" href="generated/neuralop.models.TFNO.html" title="next page" accesskey="n">
+        <span>neuralop.models.TFNO </span>
+        <span class="icon">
+            <i class="fa fa-arrow-circle-right"></i>
+        </span>
+    </a>
+    
+</nav>
+
+      
+
+        <footer class="footer">
+    <div class="content has-text-centered">
+        <div class="block">
+          &copy; Copyright 2023, Jean Kossaifi, Nikola Kovachki, Zongyi Li.<br/>
+        </div>
+    </div>
+  </footer>
+
+    </div>
+
+  </div>  
+
+	
+    
+    <div class="column is-hidden-touch is-2-desktop is-one-fifth-widescreen" id="localtoc-column">
+
+    <aside class="sticky-nav localtoc"> 
+        <p class="menu-label"> 
+            <span class="icon-text">
+                <span class="icon"><i class="fas fa-duotone fa-list"></i></span>
+                <span> On this page </span>
+            </span>
+        </p>
+
+        <div class="menu menu-list localtoc-list">
+        <ul>
+<li><a class="reference internal" href="#">API reference</a><ul>
+<li><a class="reference internal" href="#models">Models</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#layers">Layers</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#model-dispatching">Model Dispatching</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+    </aside>
+    </div>
+
+  
+
+  </div>  
+  </div> 
+
+  
+  <script>
+    function toggle_sidebar() {
+        var element = document.getElementById("sidebar");
+        var container = document.getElementById("column-container");
+        var localtoccolumn = document.getElementById("localtoc-column");
+        element.classList.toggle("hide-tablet");
+        element.classList.toggle("is-hidden-mobile");
+        container.classList.toggle("sidemenu-hidden");
+        localtoccolumn.classList.toggle("is-one-fifth-widescreen");
+        localtoccolumn.classList.toggle("is-2-desktop");
+        localtoccolumn.classList.toggle("is-3-desktop");
+    }
+  </script> 
+
+
+
+  </body>
+</html>

@@ -1,0 +1,6 @@
+﻿neuralop.models.skip\_connections.skip\_connection
+==================================================
+
+.. currentmodule:: neuralop.models.skip_connections
+
+.. autofunction:: skip_connection
