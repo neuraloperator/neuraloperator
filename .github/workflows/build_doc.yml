@@ -50,7 +50,7 @@ jobs:
         git checkout gh-pages
         [ -d foo ] || mkdir docs
         rm -rf docs/*
-        cp -r doc/_build/html/* docs
+        cp -r doc/build/html/* docs
         git add docs
         # If the doc is up to date, the script shouldn't fail, hence --allow-empty
         # Might be a cleaner way to check 
