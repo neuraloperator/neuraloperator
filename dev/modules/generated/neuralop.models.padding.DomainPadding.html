@@ -155,7 +155,7 @@
       <div class="container content main-content">
         
   <section id="neuralop-models-padding-domainpadding">
-<h1>neuralop.models.padding.DomainPadding<a class="headerlink" href="#neuralop-models-padding-domainpadding" title="Permalink to this heading"></a></h1>
+<h1><a class="reference internal" href="../api.html#module-neuralop.models.padding" title="neuralop.models.padding"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.padding</span></code></a>.DomainPadding<a class="headerlink" href="#neuralop-models-padding-domainpadding" title="Permalink to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="neuralop.models.padding.DomainPadding">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.models.padding.</span></span><span class="sig-name descname"><span class="pre">DomainPadding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain_padding</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'one-sided'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/padding.html#DomainPadding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.padding.DomainPadding" title="Permalink to this definition"></a></dt>
@@ -176,20 +176,39 @@
 <p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code>(x)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.models.padding.DomainPadding.forward" title="neuralop.models.padding.DomainPadding.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x)</p></td>
 <td><p>forward pass: pad the input</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">pad</span></code>(x)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#neuralop.models.padding.DomainPadding.pad" title="neuralop.models.padding.DomainPadding.pad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pad</span></code></a>(x)</p></td>
 <td><p>Take an input and pad it by the desired fraction</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">unpad</span></code>(x)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.models.padding.DomainPadding.unpad" title="neuralop.models.padding.DomainPadding.unpad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unpad</span></code></a>(x)</p></td>
 <td><p>Remove the padding from padding inputs</p></td>
 </tr>
 </tbody>
 </table>
+<dl class="py method">
+<dt class="sig sig-object py" id="neuralop.models.padding.DomainPadding.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/padding.html#DomainPadding.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.padding.DomainPadding.forward" title="Permalink to this definition"></a></dt>
+<dd><p>forward pass: pad the input</p>
 </dd></dl>
 
-</section>
+<dl class="py method">
+<dt class="sig sig-object py" id="neuralop.models.padding.DomainPadding.pad">
+<span class="sig-name descname"><span class="pre">pad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/padding.html#DomainPadding.pad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.padding.DomainPadding.pad" title="Permalink to this definition"></a></dt>
+<dd><p>Take an input and pad it by the desired fraction</p>
+<p>The amount of padding will be automatically scaled with the resolution</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="neuralop.models.padding.DomainPadding.unpad">
+<span class="sig-name descname"><span class="pre">unpad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/padding.html#DomainPadding.unpad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.padding.DomainPadding.unpad" title="Permalink to this definition"></a></dt>
+<dd><p>Remove the padding from padding inputs</p>
+</dd></dl>
+
+</dd></dl>
+
+<div class="clearer"></div></section>
 
 
       </div>
@@ -201,12 +220,12 @@
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span>neuralop.models.fno_block.FactorizedSpectralConv3d</span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.fno_block</span></code>.FactorizedSpectralConv3d</span>
     </a>
     
     
     <a class="button pagination-next" href="neuralop.models.skip_connections.SoftGating.html" title="next page" accesskey="n">
-        <span>neuralop.models.skip_connections.SoftGating </span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.skip_connections</span></code>.SoftGating </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>
@@ -242,8 +261,13 @@
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#">neuralop.models.padding.DomainPadding</a><ul>
-<li><a class="reference internal" href="#neuralop.models.padding.DomainPadding"><code class="docutils literal notranslate"><span class="pre">DomainPadding</span></code></a></li>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.padding</span></code>.DomainPadding</a><ul>
+<li><a class="reference internal" href="#neuralop.models.padding.DomainPadding"><code class="docutils literal notranslate"><span class="pre">DomainPadding</span></code></a><ul>
+<li><a class="reference internal" href="#neuralop.models.padding.DomainPadding.forward"><code class="docutils literal notranslate"><span class="pre">DomainPadding.forward()</span></code></a></li>
+<li><a class="reference internal" href="#neuralop.models.padding.DomainPadding.pad"><code class="docutils literal notranslate"><span class="pre">DomainPadding.pad()</span></code></a></li>
+<li><a class="reference internal" href="#neuralop.models.padding.DomainPadding.unpad"><code class="docutils literal notranslate"><span class="pre">DomainPadding.unpad()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

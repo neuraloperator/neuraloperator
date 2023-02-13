@@ -155,21 +155,42 @@
       <div class="container content main-content">
         
   <section id="neuralop-models-fno-block-factorizedspectralconv2d">
-<h1>neuralop.models.fno_block.FactorizedSpectralConv2d<a class="headerlink" href="#neuralop-models-fno-block-factorizedspectralconv2d" title="Permalink to this heading"></a></h1>
+<h1><a class="reference internal" href="../api.html#module-neuralop.models.fno_block" title="neuralop.models.fno_block"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.fno_block</span></code></a>.FactorizedSpectralConv2d<a class="headerlink" href="#neuralop-models-fno-block-factorizedspectralconv2d" title="Permalink to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="neuralop.models.fno_block.FactorizedSpectralConv2d">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.models.fno_block.</span></span><span class="sig-name descname"><span class="pre">FactorizedSpectralConv2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modes_height</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modes_width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'backward'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implementation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'reconstucted'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">joint_factorization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factorization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_rank_modes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomposition_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/fno_block.html#FactorizedSpectralConv2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.fno_block.FactorizedSpectralConv2d" title="Permalink to this definition"></a></dt>
 <dd><p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code>(x[, indices])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.models.fno_block.FactorizedSpectralConv2d.forward" title="neuralop.models.fno_block.FactorizedSpectralConv2d.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x[, indices])</p></td>
 <td><p>Generic forward pass for the Factorized Spectral Conv</p></td>
 </tr>
 </tbody>
 </table>
+<dl class="py method">
+<dt class="sig sig-object py" id="neuralop.models.fno_block.FactorizedSpectralConv2d.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/fno_block.html#FactorizedSpectralConv2d.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.fno_block.FactorizedSpectralConv2d.forward" title="Permalink to this definition"></a></dt>
+<dd><p>Generic forward pass for the Factorized Spectral Conv</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>x</strong><span class="classifier">torch.Tensor</span></dt><dd><p>input activation of size (batch_size, channels, d1, …, dN)</p>
+</dd>
+<dt><strong>indices</strong><span class="classifier">int, default is 0</span></dt><dd><p>if joint_factorization, index of the layers for n_layers &gt; 1</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>tensorized_spectral_conv(x)</dt><dd></dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
-</section>
+</dd></dl>
+
+<div class="clearer"></div></section>
 
 
       </div>
@@ -181,12 +202,12 @@
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span>neuralop.models.fno_block.FactorizedSpectralConv1d</span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.fno_block</span></code>.FactorizedSpectralConv1d</span>
     </a>
     
     
     <a class="button pagination-next" href="neuralop.models.fno_block.FactorizedSpectralConv3d.html" title="next page" accesskey="n">
-        <span>neuralop.models.fno_block.FactorizedSpectralConv3d </span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.fno_block</span></code>.FactorizedSpectralConv3d </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>
@@ -222,8 +243,11 @@
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#">neuralop.models.fno_block.FactorizedSpectralConv2d</a><ul>
-<li><a class="reference internal" href="#neuralop.models.fno_block.FactorizedSpectralConv2d"><code class="docutils literal notranslate"><span class="pre">FactorizedSpectralConv2d</span></code></a></li>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.fno_block</span></code>.FactorizedSpectralConv2d</a><ul>
+<li><a class="reference internal" href="#neuralop.models.fno_block.FactorizedSpectralConv2d"><code class="docutils literal notranslate"><span class="pre">FactorizedSpectralConv2d</span></code></a><ul>
+<li><a class="reference internal" href="#neuralop.models.fno_block.FactorizedSpectralConv2d.forward"><code class="docutils literal notranslate"><span class="pre">FactorizedSpectralConv2d.forward()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

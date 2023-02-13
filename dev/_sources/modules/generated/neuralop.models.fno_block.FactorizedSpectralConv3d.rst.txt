@@ -1,6 +1,11 @@
-﻿neuralop.models.fno\_block.FactorizedSpectralConv3d
-===================================================
+﻿:mod:`neuralop.models.fno_block`.FactorizedSpectralConv3d
+================================================================
 
 .. currentmodule:: neuralop.models.fno_block
 
 .. autoclass:: FactorizedSpectralConv3d
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

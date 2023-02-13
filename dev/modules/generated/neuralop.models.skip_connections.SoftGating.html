@@ -155,21 +155,35 @@
       <div class="container content main-content">
         
   <section id="neuralop-models-skip-connections-softgating">
-<h1>neuralop.models.skip_connections.SoftGating<a class="headerlink" href="#neuralop-models-skip-connections-softgating" title="Permalink to this heading"></a></h1>
+<h1><a class="reference internal" href="../api.html#module-neuralop.models.skip_connections" title="neuralop.models.skip_connections"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.skip_connections</span></code></a>.SoftGating<a class="headerlink" href="#neuralop-models-skip-connections-softgating" title="Permalink to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="neuralop.models.skip_connections.SoftGating">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.models.skip_connections.</span></span><span class="sig-name descname"><span class="pre">SoftGating</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/skip_connections.html#SoftGating"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.skip_connections.SoftGating" title="Permalink to this definition"></a></dt>
 <dd><p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code>(x)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.models.skip_connections.SoftGating.forward" title="neuralop.models.skip_connections.SoftGating.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x)</p></td>
 <td><p>Defines the computation performed at every call.</p></td>
 </tr>
 </tbody>
 </table>
+<dl class="py method">
+<dt class="sig sig-object py" id="neuralop.models.skip_connections.SoftGating.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/skip_connections.html#SoftGating.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.skip_connections.SoftGating.forward" title="Permalink to this definition"></a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
 </dd></dl>
 
-</section>
+</dd></dl>
+
+<div class="clearer"></div></section>
 
 
       </div>
@@ -181,12 +195,12 @@
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span>neuralop.models.padding.DomainPadding</span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.padding</span></code>.DomainPadding</span>
     </a>
     
     
     <a class="button pagination-next" href="neuralop.models.skip_connections.skip_connection.html" title="next page" accesskey="n">
-        <span>neuralop.models.skip_connections.skip_connection </span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.skip_connections</span></code>.skip_connection </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>
@@ -222,8 +236,11 @@
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#">neuralop.models.skip_connections.SoftGating</a><ul>
-<li><a class="reference internal" href="#neuralop.models.skip_connections.SoftGating"><code class="docutils literal notranslate"><span class="pre">SoftGating</span></code></a></li>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.skip_connections</span></code>.SoftGating</a><ul>
+<li><a class="reference internal" href="#neuralop.models.skip_connections.SoftGating"><code class="docutils literal notranslate"><span class="pre">SoftGating</span></code></a><ul>
+<li><a class="reference internal" href="#neuralop.models.skip_connections.SoftGating.forward"><code class="docutils literal notranslate"><span class="pre">SoftGating.forward()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

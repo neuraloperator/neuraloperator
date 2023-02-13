@@ -1,6 +1,11 @@
-﻿neuralop.models.TFNO3d
-======================
+﻿:mod:`neuralop.models`.TFNO3d
+====================================
 
 .. currentmodule:: neuralop.models
 
 .. autoclass:: TFNO3d
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

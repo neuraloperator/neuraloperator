@@ -1,6 +1,10 @@
-﻿neuralop.models.skip\_connections.skip\_connection
-==================================================
+﻿:mod:`neuralop.models.skip_connections`.skip_connection
+====================================================================
 
 .. currentmodule:: neuralop.models.skip_connections
 
 .. autofunction:: skip_connection
+
+.. raw:: html
+
+    <div class="clearer"></div>

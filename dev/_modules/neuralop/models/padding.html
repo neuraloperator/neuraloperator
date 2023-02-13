@@ -139,11 +139,11 @@
         <span class="c1"># dict(f&#39;{resolution}&#39;=indices_to_unpad) such that unpadded = x[indices]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_unpad_indices</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<div class="viewcode-block" id="DomainPadding.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.padding.DomainPadding.html#neuralop.models.padding.DomainPadding.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;forward pass: pad the input&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
     
-    <span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<div class="viewcode-block" id="DomainPadding.pad"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.padding.DomainPadding.html#neuralop.models.padding.DomainPadding.pad">[docs]</a>    <span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Take an input and pad it by the desired fraction</span>
 <span class="sd">        </span>
 <span class="sd">        The amount of padding will be automatically scaled with the resolution</span>
@@ -178,14 +178,14 @@
 
             <span class="n">padded</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">padding</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_unpad_indices</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">padded</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">unpad_indices</span>
-            <span class="k">return</span> <span class="n">padded</span>
+            <span class="k">return</span> <span class="n">padded</span></div>
 
-    <span class="k">def</span> <span class="nf">unpad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<div class="viewcode-block" id="DomainPadding.unpad"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.padding.DomainPadding.html#neuralop.models.padding.DomainPadding.unpad">[docs]</a>    <span class="k">def</span> <span class="nf">unpad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the padding from padding inputs</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">unpad_indices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unpad_indices</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span>
 
-        <span class="k">return</span> <span class="n">x</span><span class="p">[</span><span class="n">unpad_indices</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="n">x</span><span class="p">[</span><span class="n">unpad_indices</span><span class="p">]</span></div></div>
 </pre></div>
 
       </div>
