@@ -17,11 +17,11 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'neural-operator'
+project = 'neuraloperator'
 from datetime import datetime
 year = datetime.now().year
-copyright = f'{year}, Jean Kossaifi, Nikola Kovachki, Zongyi Li'
-author = 'Jean Kossaifi, Nikola Kovachki, Zongyi Li'
+copyright = f'{year}, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar'
+author = 'Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar'
 
 # The full version, including alpha/beta/rc tags
 import neuralop
@@ -84,7 +84,7 @@ html_logo = '_static/logos/neuraloperator_logo_small.png'
 html_show_sphinx = False
 
 html_theme_options = {
-    'github_url': 'https://github.com/neural-operators/neural-operator',
+    'github_url': 'https://github.com/neuraloperator/neuraloperator',
     # 'google_analytics' : 'G-QSPLEF75VT',
     'nav_links' : [('Install', 'install'),
                    ('API', 'modules/api'),

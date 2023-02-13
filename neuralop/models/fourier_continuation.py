@@ -44,7 +44,7 @@ class FCLegendre(nn.Module):
         self.register_buffer('ext_mat_T', self.ext_mat.T.clone())
 
         return self.ext_mat
-    
+
     def extend_left_right(self, x):
         right_bnd = x[...,-self.n:]
         left_bnd = x[...,0:self.n]
