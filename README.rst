@@ -1,5 +1,15 @@
+.. image:: https://img.shields.io/pypi/v/neuraloperator
+   :alt: PyPI
+
+.. image:: https://github.com/NeuralOperator/neuraloperator/actions/workflows/test.yml/badge.svg
+   :target: https://github.com/NeuralOperator/neuraloperator/actions/workflows/test.yml
+
+
+===============
 Neural Operator
 ===============
+
+This repository provides all the tools to learn neural operators, i.e. mapping between function spaces, in PyTorch.
 
 Installation
 ------------
