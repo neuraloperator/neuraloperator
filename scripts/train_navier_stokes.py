@@ -5,7 +5,7 @@ from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from neuralop import get_model
 from neuralop import Trainer
 from neuralop.training import setup
-from neuralop.data.navier_stokes import load_navier_stokes_pt
+from neuralop.datasets.navier_stokes import load_navier_stokes_pt
 from neuralop.utils import get_wandb_api_key, count_params
 from neuralop import LpLoss, H1Loss
 

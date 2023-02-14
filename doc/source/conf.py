@@ -41,7 +41,14 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.mathjax', #'sphinx.ext.imgmath',
     'numpydoc.numpydoc',
+    'sphinx_gallery.gen_gallery',
 ]
+
+sphinx_gallery_conf = {
+     'examples_dirs': '../../examples',   # path to your example scripts
+     'gallery_dirs': 'auto_examples',  # path to where to save gallery generated output
+}
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -87,8 +94,9 @@ html_theme_options = {
     'github_url': 'https://github.com/neuraloperator/neuraloperator',
     # 'google_analytics' : 'G-QSPLEF75VT',
     'nav_links' : [('Install', 'install'),
-                   ('API', 'modules/api'),
                    ('User Guide', 'user_guide/index'),
+                   ('API', 'modules/api'),
+                   ('Examples', 'auto_examples/index')
                   ],
     # 'external_nav_links' : [('TensorLy', 'http://tensorly.org/dev')]
 }

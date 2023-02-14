@@ -35,6 +35,10 @@ def _contract_dense(x, weight, separable=False):
 
     return tl.einsum(eq, x, weight)
 
+def _contract_dense_separable(x, weight, separable=True):
+    if separable == False:
+        raise ValueError('This function is only for separable=True')
+    return x*weight
 
 def _contract_cp(x, cp_weight, separable=False):
     order = tl.ndim(x)
@@ -111,11 +115,11 @@ def get_contract_fun(weight, implementation='reconstructed', separable=False):
     function : (x, weight) -> x * weight in Fourier space
     """
     if implementation == 'reconstructed':
-        # if separable:
-        #     print('SEPARABLE')
-        #     return _contract_dense_separable
-        # else:
-        return _contract_dense
+        if separable:
+            print('SEPARABLE')
+            return _contract_dense_separable
+        else:
+            return _contract_dense
     elif implementation == 'factorized':
         if torch.is_tensor(weight):
             return _contract_dense
