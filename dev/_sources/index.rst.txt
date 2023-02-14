@@ -68,7 +68,7 @@ by simply using a Tucker Tensorized FNO with just a few parameters:
                    out_channels=1,
                    factorization='tucker',
                    implementation='factorized'
-                   rank=0.5)
+                   rank=0.05)
 
 This will use a Tucker factorization of the weights. The forward pass
 will be efficient by contracting directly the inputs with the factors
