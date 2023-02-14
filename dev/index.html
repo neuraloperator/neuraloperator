@@ -31,7 +31,7 @@
  
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Installing neural-operator" href="install.html" />
+    <link rel="next" title="Installing NeuralOperator" href="install.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -44,7 +44,7 @@
         
 
           <a class="navbar-item" href="#">
-            <img src="_static/neuraloperator_logo_small.png" height="28">
+            <img src="_static/neuraloperator_logo.png" height="28">
           </a>
           <a class="navbar-item is-hidden-desktop" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
               <span class="icon"><i class="fab fa-github"></i></span>
@@ -114,12 +114,42 @@
   <br/><br/><div class="has-text-centered">
    <h2> Neural Operators in PyTorch </h2>
 </div>
-<br/><br/><a class="reference internal image-reference" href="_images/neuraloperator_logo.png"><img alt="_images/neuraloperator_logo.png" class="align-center" src="_images/neuraloperator_logo.png" style="width: 500px;" /></a>
+<br/><br/><a class="reference internal image-reference" href="_images/neuraloperator_logo_long.png"><img alt="_images/neuraloperator_logo_long.png" class="align-center" src="_images/neuraloperator_logo_long.png" style="width: 500px;" /></a>
 <p><code class="docutils literal notranslate"><span class="pre">neuraloperator</span></code> is a comprehensive library for
 learning neural operators in PyTorch.
 It is the official implementation for Fourier Neural Operators
 and Tensorized Neural Operators.</p>
-<p>We provide all the tools to learn mapping between function spaces.</p>
+<p>Unlike regular neural networks, neural operators
+enable learning mapping between function spaces, and this library
+provides all of the tools to do so on your own data.</p>
+<p>NeuralOperators are also resolution invariant,
+so your trained operator can be applied on data of any resolution.</p>
+<section id="quickstart">
+<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this heading"></a></h1>
+<p>Just import install neural operator and import a TFNO to get started!</p>
+<p>First install the library <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">neuraloperator</span></code> (see <a class="reference internal" href="install.html"><span class="doc">Installing NeuralOperator</span></a> for more options).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">TFNO</span>
+
+<span class="n">operator</span> <span class="o">=</span> <span class="n">TFNO</span><span class="p">(</span><span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+                <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Tensorization is also provided out of the box: you can improve the previous models
+by simply using a Tucker Tensorized FNO with just a few parameters:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">TFNO</span>
+
+<span class="n">operator</span> <span class="o">=</span> <span class="n">TFNO</span><span class="p">(</span><span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+                <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;tucker&#39;</span><span class="p">,</span>
+                <span class="n">implementation</span><span class="o">=</span><span class="s1">&#39;factorized&#39;</span>
+                <span class="n">rank</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This will use a Tucker factorization of the weights. The forward pass
+will be efficient by contracting directly the inputs with the factors
+of the decomposition. The Fourier layers will have 5% of the parameters
+of an equivalent, dense Fourier Neural Operator!</p>
 <div class="toctree-wrapper compound">
 </div>
 <br/> <br/>
@@ -129,7 +159,8 @@ and Tensorized Neural Operators.</p>
 <a class="button is-medium is-dark is-primary" href="install.html">
    Install
 </a>
-</div>
+</div></section>
+
 
       </div>
 

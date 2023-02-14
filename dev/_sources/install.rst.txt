@@ -1,6 +1,6 @@
-==========================
-Installing neural-operator
-==========================
+=========================
+Installing NeuralOperator
+=========================
 
 The package is called ``neuraloperator`` and provides all the tools for operator learning.
 Once install, you can import it as ``neuralop``::

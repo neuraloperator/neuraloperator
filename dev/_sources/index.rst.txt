@@ -24,7 +24,7 @@
    Neural Operators in PyTorch
    ===========================
 
-.. image:: _static/logos/neuraloperator_logo.png
+.. image:: _static/logos/neuraloperator_logo_long.png
    :align: center
    :width: 500
 
@@ -34,7 +34,46 @@ learning neural operators in PyTorch.
 It is the official implementation for Fourier Neural Operators 
 and Tensorized Neural Operators.
 
-We provide all the tools to learn mapping between function spaces.
+Unlike regular neural networks, neural operators
+enable learning mapping between function spaces, and this library
+provides all of the tools to do so on your own data.
+
+NeuralOperators are also resolution invariant, 
+so your trained operator can be applied on data of any resolution.
+
+Quickstart
+==========
+
+Just import install neural operator and import a TFNO to get started!
+
+First install the library ``pip install neuraloperator`` (see :doc:`install` for more options).
+
+
+.. code-block:: python
+
+   from neuralop.models import TFNO
+
+   operator = TFNO(n_modes=(16, 16), hidden_channels=64,
+                   in_channels=3, out_channels=1)
+
+Tensorization is also provided out of the box: you can improve the previous models
+by simply using a Tucker Tensorized FNO with just a few parameters:
+
+.. code-block:: python
+
+   from neuralop.models import TFNO
+
+   operator = TFNO(n_modes=(16, 16), hidden_channels=64,
+                   in_channels=3, 
+                   out_channels=1,
+                   factorization='tucker',
+                   implementation='factorized'
+                   rank=0.5)
+
+This will use a Tucker factorization of the weights. The forward pass
+will be efficient by contracting directly the inputs with the factors
+of the decomposition. The Fourier layers will have 5% of the parameters
+of an equivalent, dense Fourier Neural Operator!
 
 
 .. toctree::
