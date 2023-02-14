@@ -158,20 +158,21 @@
         
   <section id="installing-neural-operator">
 <h1>Installing neural-operator<a class="headerlink" href="#installing-neural-operator" title="Permalink to this heading"></a></h1>
-<p>The package is called <code class="docutils literal notranslate"><span class="pre">neural-operator</span></code> and provides all the tools for operator learning.
+<p>The package is called <code class="docutils literal notranslate"><span class="pre">neuraloperator</span></code> and provides all the tools for operator learning.
 Once install, you can import it as <code class="docutils literal notranslate"><span class="pre">neuralop</span></code>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">neuralop</span>
 </pre></div>
 </div>
 <section id="pre-requisite">
 <h2>Pre-requisite<a class="headerlink" href="#pre-requisite" title="Permalink to this heading"></a></h2>
-<p>You will need to have Python 3 installed, as well as NumPy, Scipy and PyTorch.
-If you are starting with Python or generally want a pain-free experience, I recommend you install the <a class="reference external" href="https://www.anaconda.com/download/">Anaconda distribiution</a>. It comes with all you need shipped-in and ready to use!</p>
+<p>You will need to have Python 3 installed, as well as NumPy, Scipy, PyTorch, TensorLy and TensorLy-Torch.
+If you are starting with Python or generally want a pain-free experience,
+I recommend you install the <a class="reference external" href="https://www.anaconda.com/download/">Anaconda distribiution</a>. It comes with all you need shipped-in and ready to use!</p>
 </section>
 <section id="installing-with-pip-recommended">
 <h2>Installing with pip (recommended)<a class="headerlink" href="#installing-with-pip-recommended" title="Permalink to this heading"></a></h2>
 <p>Simply run, in your terminal:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">U</span> <span class="n">neural</span><span class="o">-</span><span class="n">operator</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">U</span> <span class="n">neuraloperator</span>
 </pre></div>
 </div>
 <p>(the <cite>-U</cite> is optional, use it if you want to update the package).</p>
@@ -179,8 +180,12 @@ If you are starting with Python or generally want a pain-free experience, I reco
 <section id="cloning-the-github-repository">
 <h2>Cloning the github repository<a class="headerlink" href="#cloning-the-github-repository" title="Permalink to this heading"></a></h2>
 <p>Clone the repository and cd there:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">neural</span><span class="o">-</span><span class="n">operators</span><span class="o">/</span><span class="n">neural</span><span class="o">-</span><span class="n">operator</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">NeuralOperator</span><span class="o">/</span><span class="n">neuraloperator</span>
 <span class="n">cd</span> <span class="n">torch</span>
+</pre></div>
+</div>
+<p>You can install the requirements easily:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">requirements</span><span class="o">.</span><span class="n">txt</span>
 </pre></div>
 </div>
 <p>Then install the package (here in editable mode with <cite>-e</cite> or equivalently <cite>–editable</cite>:</p>
@@ -190,7 +195,7 @@ If you are starting with Python or generally want a pain-free experience, I reco
 </section>
 <section id="running-the-tests">
 <h2>Running the tests<a class="headerlink" href="#running-the-tests" title="Permalink to this heading"></a></h2>
-<p>Uni-testing is an vital part of this package.
+<p>Uni-testing is an important part of this package.
 You can run all the tests using <cite>pytest</cite>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">pytest</span>
 <span class="n">pytest</span> <span class="n">neuralop</span>
@@ -199,15 +204,16 @@ You can run all the tests using <cite>pytest</cite>:</p>
 </section>
 <section id="building-the-documentation">
 <h2>Building the documentation<a class="headerlink" href="#building-the-documentation" title="Permalink to this heading"></a></h2>
-<p>You will need to install slimit and minify:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">slimit</span> <span class="n">rcssmin</span>
+<p>You will need to install the dependencies:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">doc</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">requirements_doc</span><span class="o">.</span><span class="n">txt</span>
 </pre></div>
 </div>
 <p>You are now ready to build the doc (here in html):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">html</span>
 </pre></div>
 </div>
-<p>The results will be in <code class="docutils literal notranslate"><span class="pre">_build/html</span></code></p>
+<p>The results will be in <code class="docutils literal notranslate"><span class="pre">build/html</span></code> (the main page will be <code class="docutils literal notranslate"><span class="pre">build/html/index.html</span></code>)</p>
 </section>
 </section>
 
