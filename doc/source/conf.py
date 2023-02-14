@@ -80,7 +80,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # a list of builtin themes.
 #
 html_theme = 'tensorly_sphinx_theme'
-html_logo = '_static/logos/neuraloperator_logo_small.png'
+html_logo = '_static/logos/neuraloperator_logo.png'
 html_show_sphinx = False
 
 html_theme_options = {
