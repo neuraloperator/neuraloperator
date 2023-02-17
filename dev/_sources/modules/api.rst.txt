@@ -96,3 +96,18 @@ It has the advantage of doing some checks on the parameters it receives.
     :template: function.rst
 
     get_model
+
+Datasets
+========
+
+We ship a small dataset for testing:
+
+.. automodule:: neuralop.datasets
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: function.rst
+
+    load_darcy_flow_small

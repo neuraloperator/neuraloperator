@@ -1,0 +1,10 @@
+﻿:mod:`neuralop.datasets`.load_darcy_flow_small
+===========================================================
+
+.. currentmodule:: neuralop.datasets
+
+.. autofunction:: load_darcy_flow_small
+
+.. raw:: html
+
+    <div class="clearer"></div>

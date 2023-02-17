@@ -147,6 +147,10 @@
 
     <span class="k">return</span> <span class="n">tl</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">weight</span><span class="p">)</span>
 
+<span class="k">def</span> <span class="nf">_contract_dense_separable</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">separable</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">separable</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;This function is only for separable=True&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">*</span><span class="n">weight</span>
 
 <span class="k">def</span> <span class="nf">_contract_cp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">cp_weight</span><span class="p">,</span> <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="n">order</span> <span class="o">=</span> <span class="n">tl</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
@@ -223,11 +227,11 @@
 <span class="sd">    function : (x, weight) -&gt; x * weight in Fourier space</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">implementation</span> <span class="o">==</span> <span class="s1">&#39;reconstructed&#39;</span><span class="p">:</span>
-        <span class="c1"># if separable:</span>
-        <span class="c1">#     print(&#39;SEPARABLE&#39;)</span>
-        <span class="c1">#     return _contract_dense_separable</span>
-        <span class="c1"># else:</span>
-        <span class="k">return</span> <span class="n">_contract_dense</span>
+        <span class="k">if</span> <span class="n">separable</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;SEPARABLE&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">_contract_dense_separable</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_contract_dense</span>
     <span class="k">elif</span> <span class="n">implementation</span> <span class="o">==</span> <span class="s1">&#39;factorized&#39;</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">weight</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">_contract_dense</span>

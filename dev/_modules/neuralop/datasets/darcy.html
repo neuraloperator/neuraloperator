@@ -1,0 +1,290 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>neuralop.datasets.darcy &#8212; neuraloperator 0.1.0 documentation</title> 
+<link rel="stylesheet" href="../../../_static/tensorly_style.css">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../_static/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../_static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../../_static/favicon/favicon-16x16.png">
+<link rel="manifest" href="../../../_static/favicon/site.webmanifest">
+<link rel="mask-icon" href="../../../_static/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="../../../_static/favicon/favicon.ico">
+<meta name="theme-color" content="#ffffff">
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/tensorly_style.css" />
+
+  
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+ <script src="../../../_static/navbar_burger.js"></script>
+ <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+ 
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  </head>
+<body  class="has-navbar-fixed-top">
+
+  <header>
+    <navbar>
+      <nav class="navbar top-navbar is-fixed-top has-shadow is-flex-wrap-wrap" role="navigation" aria-label="main top navigation">
+        <div class="navbar-brand">
+        
+
+          <a class="navbar-item" href="../../../index.html">
+            <img src="../../../_static/neuraloperator_logo.png" height="28">
+          </a>
+          <a class="navbar-item is-hidden-desktop" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon"><i class="fab fa-github"></i></span>
+          </a>
+
+          <a role="button" class="navbar-burger" data-target="top-nav-menu" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+
+        </div>
+        
+        <div class="navbar-menu" id="top-nav-menu">
+        
+
+          <div class="navbar-start">
+            
+              <a class="navbar-item" href="../../../install.html">
+              Install
+            </a>
+              <a class="navbar-item" href="../../../modules/api.html">
+              API
+            </a>
+              <a class="navbar-item" href="../../../user_guide/index.html">
+              User Guide
+            </a>
+          </div>
+        
+          <div class="navbar-end">
+            <div class="navbar-item">
+            
+            <a class="button is-hidden-touch is-dark" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon-text">
+                <span class="icon is-large">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>Github</span>
+              </span>
+            </a>
+
+            </div> 
+          </div> 
+        </div> 
+
+      </nav>
+      
+    </navbar>
+  </header>
+
+
+  <div id="column-container">
+  <div class="columns is-mobile is-centered">
+	
+  
+
+  <div class="column main-column">
+
+    
+    <div class="main-section">
+
+      
+      
+
+      <div class="container content main-content">
+        
+  <h1>Source code for neuralop.datasets.darcy</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">UnitGaussianNormalizer</span>
+<span class="kn">from</span> <span class="nn">.tensor_dataset</span> <span class="kn">import</span> <span class="n">TensorDataset</span>
+<span class="kn">from</span> <span class="nn">.transforms</span> <span class="kn">import</span> <span class="n">PositionalEmbedding</span>
+
+
+<div class="viewcode-block" id="load_darcy_flow_small"><a class="viewcode-back" href="../../../modules/generated/neuralop.datasets.load_darcy_flow_small.html#neuralop.datasets.load_darcy_flow_small">[docs]</a><span class="k">def</span> <span class="nf">load_darcy_flow_small</span><span class="p">(</span><span class="n">n_train</span><span class="p">,</span> <span class="n">n_tests</span><span class="p">,</span>
+                <span class="n">batch_size</span><span class="p">,</span> <span class="n">test_batch_sizes</span><span class="p">,</span>
+                <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">],</span>
+                <span class="n">grid_boundaries</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]],</span>
+                <span class="n">positional_encoding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">encode_input</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">encode_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;channel-wise&#39;</span><span class="p">,</span> 
+                <span class="n">channel_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a small Darcy-Flow dataset</span>
+<span class="sd">    </span>
+<span class="sd">    Training contains 2000 samples in resolution 32x32. </span>
+<span class="sd">    Testing contains 200 samples at resolution 32x32 and</span>
+<span class="sd">    100 samples at resolution 64x64.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    n_train : int</span>
+<span class="sd">    n_tests : int</span>
+<span class="sd">    batch_size : int</span>
+<span class="sd">    test_batch_sizes : int list</span>
+<span class="sd">    test_resolutions : int list, default is [32, 64],</span>
+<span class="sd">    grid_boundaries : int list, default is [[0,1],[0,1]],</span>
+<span class="sd">    positional_encoding : bool, default is True</span>
+<span class="sd">    encode_input : bool, default is False</span>
+<span class="sd">    encode_output : bool, default is True</span>
+<span class="sd">    encoding : &#39;channel-wise&#39;</span>
+<span class="sd">    channel_dim : int, default is 1</span>
+<span class="sd">        where to put the channel dimension, defaults size is batch, channel, height, width</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    training_dataloader, testing_dataloaders</span>
+
+<span class="sd">    training_dataloader : torch DataLoader</span>
+<span class="sd">    testing_dataloaders : dict (key: DataLoader)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">test_resolutions</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">res</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Only 32 and 64 are supported for test resolution, but got </span><span class="si">{</span><span class="n">test_resolutions</span><span class="si">=}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">load_darcy_pt</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> 
+                         <span class="n">n_train</span><span class="o">=</span><span class="n">n_train</span><span class="p">,</span> <span class="n">n_tests</span><span class="o">=</span><span class="n">n_tests</span><span class="p">,</span> 
+                         <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">test_batch_sizes</span><span class="o">=</span><span class="n">test_batch_sizes</span><span class="p">,</span>
+                         <span class="n">test_resolutions</span><span class="o">=</span><span class="n">test_resolutions</span><span class="p">,</span> <span class="n">train_resolution</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+                         <span class="n">grid_boundaries</span><span class="o">=</span><span class="n">grid_boundaries</span><span class="p">,</span>
+                         <span class="n">positional_encoding</span><span class="o">=</span><span class="n">positional_encoding</span><span class="p">,</span>
+                         <span class="n">encode_input</span><span class="o">=</span><span class="n">encode_input</span><span class="p">,</span>
+                         <span class="n">encode_output</span><span class="o">=</span><span class="n">encode_output</span><span class="p">,</span>
+                         <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span>
+                         <span class="n">channel_dim</span><span class="o">=</span><span class="n">channel_dim</span><span class="p">)</span></div>
+
+<span class="k">def</span> <span class="nf">load_darcy_pt</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span> 
+                <span class="n">n_train</span><span class="p">,</span> <span class="n">n_tests</span><span class="p">,</span>
+                <span class="n">batch_size</span><span class="p">,</span> <span class="n">test_batch_sizes</span><span class="p">,</span>
+                <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">32</span><span class="p">],</span>
+                <span class="n">train_resolution</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+                <span class="n">grid_boundaries</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]],</span>
+                <span class="n">positional_encoding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">encode_input</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">encode_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;channel-wise&#39;</span><span class="p">,</span> 
+                <span class="n">channel_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the Navier-Stokes dataset</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;darcy_train_</span><span class="si">{</span><span class="n">train_resolution</span><span class="si">}</span><span class="s1">.pt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">())</span>
+    <span class="n">x_train</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="n">n_train</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span>
+    <span class="n">y_train</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="n">n_train</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">data</span>
+
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">test_resolutions</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">train_resolution</span><span class="p">)</span>
+    <span class="n">test_resolutions</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+    <span class="n">n_test</span> <span class="o">=</span> <span class="n">n_tests</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+    <span class="n">test_batch_size</span> <span class="o">=</span> <span class="n">test_batch_sizes</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;darcy_test_</span><span class="si">{</span><span class="n">train_resolution</span><span class="si">}</span><span class="s1">.pt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">())</span>
+    <span class="n">x_test</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][:</span><span class="n">n_test</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span>
+    <span class="n">y_test</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][:</span><span class="n">n_test</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">data</span>
+    
+    <span class="k">if</span> <span class="n">encode_input</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">encoding</span> <span class="o">==</span> <span class="s1">&#39;channel-wise&#39;</span><span class="p">:</span>
+            <span class="n">reduce_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">x_train</span><span class="o">.</span><span class="n">ndim</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">encoding</span> <span class="o">==</span> <span class="s1">&#39;pixel-wise&#39;</span><span class="p">:</span>
+            <span class="n">reduce_dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">input_encoder</span> <span class="o">=</span> <span class="n">UnitGaussianNormalizer</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">reduce_dim</span><span class="o">=</span><span class="n">reduce_dims</span><span class="p">)</span>
+        <span class="n">x_train</span> <span class="o">=</span> <span class="n">input_encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">x_train</span><span class="p">)</span>
+        <span class="n">x_test</span> <span class="o">=</span> <span class="n">input_encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">x_test</span><span class="o">.</span><span class="n">contiguous</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">input_encoder</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">encode_output</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">encoding</span> <span class="o">==</span> <span class="s1">&#39;channel-wise&#39;</span><span class="p">:</span>
+            <span class="n">reduce_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">y_train</span><span class="o">.</span><span class="n">ndim</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">encoding</span> <span class="o">==</span> <span class="s1">&#39;pixel-wise&#39;</span><span class="p">:</span>
+            <span class="n">reduce_dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">output_encoder</span> <span class="o">=</span> <span class="n">UnitGaussianNormalizer</span><span class="p">(</span><span class="n">y_train</span><span class="p">,</span> <span class="n">reduce_dim</span><span class="o">=</span><span class="n">reduce_dims</span><span class="p">)</span>
+        <span class="n">y_train</span> <span class="o">=</span> <span class="n">output_encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">y_train</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">output_encoder</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">train_db</span> <span class="o">=</span> <span class="n">TensorDataset</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">transform_x</span><span class="o">=</span><span class="n">PositionalEmbedding</span><span class="p">(</span><span class="n">grid_boundaries</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">positional_encoding</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">train_loader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">train_db</span><span class="p">,</span>
+                                            <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                            <span class="n">num_workers</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">persistent_workers</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">test_db</span> <span class="o">=</span> <span class="n">TensorDataset</span><span class="p">(</span><span class="n">x_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">,</span><span class="n">transform_x</span><span class="o">=</span><span class="n">PositionalEmbedding</span><span class="p">(</span><span class="n">grid_boundaries</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">positional_encoding</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">test_loader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">test_db</span><span class="p">,</span>
+                                              <span class="n">batch_size</span><span class="o">=</span><span class="n">test_batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                              <span class="n">num_workers</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">persistent_workers</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">test_loaders</span> <span class="o">=</span>  <span class="p">{</span><span class="n">train_resolution</span><span class="p">:</span> <span class="n">test_loader</span><span class="p">}</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">n_test</span><span class="p">,</span> <span class="n">test_batch_size</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">test_resolutions</span><span class="p">,</span> <span class="n">n_tests</span><span class="p">,</span> <span class="n">test_batch_sizes</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Loading test db at resolution </span><span class="si">{</span><span class="n">res</span><span class="si">}</span><span class="s1"> with </span><span class="si">{</span><span class="n">n_test</span><span class="si">}</span><span class="s1"> samples and batch-size=</span><span class="si">{</span><span class="n">test_batch_size</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;darcy_test_</span><span class="si">{</span><span class="n">res</span><span class="si">}</span><span class="s1">.pt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">())</span>
+        <span class="n">x_test</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][:</span><span class="n">n_test</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span>
+        <span class="n">y_test</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][:</span><span class="n">n_test</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">input_encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x_test</span> <span class="o">=</span> <span class="n">input_encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">x_test</span><span class="p">)</span>
+
+        <span class="n">test_db</span> <span class="o">=</span> <span class="n">TensorDataset</span><span class="p">(</span><span class="n">x_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">transform_x</span><span class="o">=</span><span class="n">PositionalEmbedding</span><span class="p">(</span><span class="n">grid_boundaries</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">positional_encoding</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">test_loader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">test_db</span><span class="p">,</span>
+                                                  <span class="n">batch_size</span><span class="o">=</span><span class="n">test_batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                  <span class="n">num_workers</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">persistent_workers</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">test_loaders</span><span class="p">[</span><span class="n">res</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_loader</span>
+
+    <span class="k">return</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">output_encoder</span>
+</pre></div>
+
+      </div>
+
+      
+
+        <footer class="footer">
+    <div class="content has-text-centered">
+        <div class="block">
+          &copy; Copyright 2023, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+        </div>
+    </div>
+  </footer>
+
+    </div>
+
+  </div>  
+
+	
+
+  </div>  
+  </div> 
+
+  
+  <script>
+    function toggle_sidebar() {
+        var element = document.getElementById("sidebar");
+        var container = document.getElementById("column-container");
+        var localtoccolumn = document.getElementById("localtoc-column");
+        element.classList.toggle("hide-tablet");
+        element.classList.toggle("is-hidden-mobile");
+        container.classList.toggle("sidemenu-hidden");
+        localtoccolumn.classList.toggle("is-one-fifth-widescreen");
+        localtoccolumn.classList.toggle("is-2-desktop");
+        localtoccolumn.classList.toggle("is-3-desktop");
+    }
+  </script> 
+
+
+
+  </body>
+</html>

@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>neuralop.models.skip_connections.skip_connection &#8212; neuraloperator 0.1.0 documentation</title> 
+    <title>neuralop.datasets.load_darcy_flow_small &#8212; neuraloperator 0.1.0 documentation</title> 
 <link rel="stylesheet" href="../../_static/tensorly_style.css">
 <link rel="apple-touch-icon" sizes="180x180" href="../../_static/favicon/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon/favicon-32x32.png">
@@ -31,8 +31,7 @@
  
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="neuralop.models.model_dispatcher.get_model" href="neuralop.models.model_dispatcher.get_model.html" />
-    <link rel="prev" title="neuralop.models.skip_connections.SoftGating" href="neuralop.models.skip_connections.SoftGating.html" />
+    <link rel="prev" title="neuralop.models.model_dispatcher.get_model" href="neuralop.models.model_dispatcher.get_model.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -126,9 +125,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../user_guide/index.html">User guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../api.html">API reference</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="../api.html#models">Models</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="../api.html#layers">Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#layers">Layers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api.html#model-dispatching">Model Dispatching</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../api.html#datasets">Datasets</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#datasets">Datasets</a></li>
 </ul>
 </li>
 </ul>
@@ -155,33 +154,37 @@
 
       <div class="container content main-content">
         
-  <section id="neuralop-models-skip-connections-skip-connection">
-<h1><a class="reference internal" href="../api.html#module-neuralop.models.skip_connections" title="neuralop.models.skip_connections"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.skip_connections</span></code></a>.skip_connection<a class="headerlink" href="#neuralop-models-skip-connections-skip-connection" title="Permalink to this heading"></a></h1>
+  <section id="neuralop-datasets-load-darcy-flow-small">
+<h1><a class="reference internal" href="../api.html#module-neuralop.datasets" title="neuralop.datasets"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.datasets</span></code></a>.load_darcy_flow_small<a class="headerlink" href="#neuralop-datasets-load-darcy-flow-small" title="Permalink to this heading"></a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="neuralop.models.skip_connections.skip_connection">
-<span class="sig-prename descclassname"><span class="pre">neuralop.models.skip_connections.</span></span><span class="sig-name descname"><span class="pre">skip_connection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'soft-gating'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/skip_connections.html#skip_connection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.skip_connections.skip_connection" title="Permalink to this definition"></a></dt>
-<dd><p>A wrapper for several types of skip connections.
-Returns an nn.Module skip connections, one of  {‘identity’, ‘linear’, soft-gating’}</p>
+<dt class="sig sig-object py" id="neuralop.datasets.load_darcy_flow_small">
+<span class="sig-prename descclassname"><span class="pre">neuralop.datasets.</span></span><span class="sig-name descname"><span class="pre">load_darcy_flow_small</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_tests</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_batch_sizes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_resolutions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[32,</span> <span class="pre">64]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_boundaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[[0,</span> <span class="pre">1],</span> <span class="pre">[0,</span> <span class="pre">1]]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positional_encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'channel-wise'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/darcy.html#load_darcy_flow_small"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.datasets.load_darcy_flow_small" title="Permalink to this definition"></a></dt>
+<dd><p>Loads a small Darcy-Flow dataset</p>
+<p>Training contains 2000 samples in resolution 32x32. 
+Testing contains 200 samples at resolution 32x32 and
+100 samples at resolution 64x64.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>in_features</strong><span class="classifier">int</span></dt><dd><p>number of input features</p>
-</dd>
-<dt><strong>out_features</strong><span class="classifier">int</span></dt><dd><p>number of output features</p>
-</dd>
-<dt><strong>n_dim</strong><span class="classifier">int, default is 2</span></dt><dd><p>Dimensionality of the input (excluding batch-size and channels).
-<code class="docutils literal notranslate"><span class="pre">n_dim=2</span></code> corresponds to having Module2D.</p>
-</dd>
-<dt><strong>bias</strong><span class="classifier">bool, optional</span></dt><dd><p>whether to use a bias, by default False</p>
-</dd>
-<dt><strong>type</strong><span class="classifier">{‘identity’, ‘linear’, soft-gating’}</span></dt><dd><p>kind of skip connection to use, by default “soft-gating”</p>
+<dt><strong>n_train</strong><span class="classifier">int</span></dt><dd></dd>
+<dt><strong>n_tests</strong><span class="classifier">int</span></dt><dd></dd>
+<dt><strong>batch_size</strong><span class="classifier">int</span></dt><dd></dd>
+<dt><strong>test_batch_sizes</strong><span class="classifier">int list</span></dt><dd></dd>
+<dt><strong>test_resolutions</strong><span class="classifier">int list, default is [32, 64],</span></dt><dd></dd>
+<dt><strong>grid_boundaries</strong><span class="classifier">int list, default is [[0,1],[0,1]],</span></dt><dd></dd>
+<dt><strong>positional_encoding</strong><span class="classifier">bool, default is True</span></dt><dd></dd>
+<dt><strong>encode_input</strong><span class="classifier">bool, default is False</span></dt><dd></dd>
+<dt><strong>encode_output</strong><span class="classifier">bool, default is True</span></dt><dd></dd>
+<dt><strong>encoding</strong><span class="classifier">‘channel-wise’</span></dt><dd></dd>
+<dt><strong>channel_dim</strong><span class="classifier">int, default is 1</span></dt><dd><p>where to put the channel dimension, defaults size is batch, channel, height, width</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt>nn.Module</dt><dd><p>module that takes in x and returns skip(x)</p>
-</dd>
+<dt>training_dataloader, testing_dataloaders</dt><dd></dd>
+<dt><strong>training_dataloader</strong><span class="classifier">torch DataLoader</span></dt><dd></dd>
+<dt><strong>testing_dataloaders</strong><span class="classifier">dict (key: DataLoader)</span></dt><dd></dd>
 </dl>
 </dd>
 </dl>
@@ -195,20 +198,13 @@ Returns an nn.Module skip connections, one of  {‘identity’, ‘linear’, so
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="neuralop.models.skip_connections.SoftGating.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="neuralop.models.model_dispatcher.get_model.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.skip_connections</span></code>.SoftGating</span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.model_dispatcher</span></code>.get_model</span>
     </a>
     
-    
-    <a class="button pagination-next" href="neuralop.models.model_dispatcher.get_model.html" title="next page" accesskey="n">
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.model_dispatcher</span></code>.get_model </span>
-        <span class="icon">
-            <i class="fa fa-arrow-circle-right"></i>
-        </span>
-    </a>
     
 </nav>
 
@@ -240,8 +236,8 @@ Returns an nn.Module skip connections, one of  {‘identity’, ‘linear’, so
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.skip_connections</span></code>.skip_connection</a><ul>
-<li><a class="reference internal" href="#neuralop.models.skip_connections.skip_connection"><code class="docutils literal notranslate"><span class="pre">skip_connection()</span></code></a></li>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.datasets</span></code>.load_darcy_flow_small</a><ul>
+<li><a class="reference internal" href="#neuralop.datasets.load_darcy_flow_small"><code class="docutils literal notranslate"><span class="pre">load_darcy_flow_small()</span></code></a></li>
 </ul>
 </li>
 </ul>
