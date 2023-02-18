@@ -3,10 +3,9 @@ Training a neural operator on Darcy-Flow
 ========================================
 In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
 """
-#!/usr/bin/env python
-# coding: utf-8
 
 # %%
+# 
 
 
 import torch
