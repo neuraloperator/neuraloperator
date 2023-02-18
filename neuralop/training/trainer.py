@@ -75,7 +75,7 @@ class Trainer:
 
         if self.verbose:
             print(f'Training on {n_train} samples')
-            print(f'Training on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
+            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
                   f'         on resolutions {[name for name in test_loaders]}.')
             sys.stdout.flush()
 
