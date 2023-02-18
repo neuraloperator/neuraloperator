@@ -17,6 +17,10 @@
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/tensorly_style.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css" />
 
   
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
@@ -64,11 +68,14 @@
               <a class="navbar-item" href="../../../install.html">
               Install
             </a>
+              <a class="navbar-item" href="../../../user_guide/index.html">
+              User Guide
+            </a>
               <a class="navbar-item" href="../../../modules/api.html">
               API
             </a>
-              <a class="navbar-item" href="../../../user_guide/index.html">
-              User Guide
+              <a class="navbar-item" href="../../../auto_examples/index.html">
+              Examples
             </a>
           </div>
         
@@ -120,7 +127,7 @@
 
 <div class="viewcode-block" id="load_darcy_flow_small"><a class="viewcode-back" href="../../../modules/generated/neuralop.datasets.load_darcy_flow_small.html#neuralop.datasets.load_darcy_flow_small">[docs]</a><span class="k">def</span> <span class="nf">load_darcy_flow_small</span><span class="p">(</span><span class="n">n_train</span><span class="p">,</span> <span class="n">n_tests</span><span class="p">,</span>
                 <span class="n">batch_size</span><span class="p">,</span> <span class="n">test_batch_sizes</span><span class="p">,</span>
-                <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">],</span>
+                <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span>
                 <span class="n">grid_boundaries</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]],</span>
                 <span class="n">positional_encoding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">encode_input</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -129,9 +136,9 @@
                 <span class="n">channel_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a small Darcy-Flow dataset</span>
 <span class="sd">    </span>
-<span class="sd">    Training contains 2000 samples in resolution 32x32. </span>
-<span class="sd">    Testing contains 200 samples at resolution 32x32 and</span>
-<span class="sd">    100 samples at resolution 64x64.</span>
+<span class="sd">    Training contains 1000 samples in resolution 16x16. </span>
+<span class="sd">    Testing contains 100 samples at resolution 16x16 and</span>
+<span class="sd">    50 samples at resolution 32x32.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -139,7 +146,7 @@
 <span class="sd">    n_tests : int</span>
 <span class="sd">    batch_size : int</span>
 <span class="sd">    test_batch_sizes : int list</span>
-<span class="sd">    test_resolutions : int list, default is [32, 64],</span>
+<span class="sd">    test_resolutions : int list, default is [16, 32],</span>
 <span class="sd">    grid_boundaries : int list, default is [[0,1],[0,1]],</span>
 <span class="sd">    positional_encoding : bool, default is True</span>
 <span class="sd">    encode_input : bool, default is False</span>
@@ -156,13 +163,13 @@
 <span class="sd">    testing_dataloaders : dict (key: DataLoader)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">test_resolutions</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">res</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">res</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Only 32 and 64 are supported for test resolution, but got </span><span class="si">{</span><span class="n">test_resolutions</span><span class="si">=}</span><span class="s1">&#39;</span><span class="p">)</span>
     <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">load_darcy_pt</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> 
                          <span class="n">n_train</span><span class="o">=</span><span class="n">n_train</span><span class="p">,</span> <span class="n">n_tests</span><span class="o">=</span><span class="n">n_tests</span><span class="p">,</span> 
                          <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">test_batch_sizes</span><span class="o">=</span><span class="n">test_batch_sizes</span><span class="p">,</span>
-                         <span class="n">test_resolutions</span><span class="o">=</span><span class="n">test_resolutions</span><span class="p">,</span> <span class="n">train_resolution</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+                         <span class="n">test_resolutions</span><span class="o">=</span><span class="n">test_resolutions</span><span class="p">,</span> <span class="n">train_resolution</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
                          <span class="n">grid_boundaries</span><span class="o">=</span><span class="n">grid_boundaries</span><span class="p">,</span>
                          <span class="n">positional_encoding</span><span class="o">=</span><span class="n">positional_encoding</span><span class="p">,</span>
                          <span class="n">encode_input</span><span class="o">=</span><span class="n">encode_input</span><span class="p">,</span>
@@ -184,8 +191,8 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the Navier-Stokes dataset</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;darcy_train_</span><span class="si">{</span><span class="n">train_resolution</span><span class="si">}</span><span class="s1">.pt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">())</span>
-    <span class="n">x_train</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="n">n_train</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span>
-    <span class="n">y_train</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="n">n_train</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span>
+    <span class="n">x_train</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="n">n_train</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+    <span class="n">y_train</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="n">n_train</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
     <span class="k">del</span> <span class="n">data</span>
 
     <span class="n">idx</span> <span class="o">=</span> <span class="n">test_resolutions</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">train_resolution</span><span class="p">)</span>
@@ -194,8 +201,8 @@
     <span class="n">test_batch_size</span> <span class="o">=</span> <span class="n">test_batch_sizes</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;darcy_test_</span><span class="si">{</span><span class="n">train_resolution</span><span class="si">}</span><span class="s1">.pt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">())</span>
-    <span class="n">x_test</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][:</span><span class="n">n_test</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span>
-    <span class="n">y_test</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][:</span><span class="n">n_test</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span>
+    <span class="n">x_test</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][:</span><span class="n">n_test</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+    <span class="n">y_test</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][:</span><span class="n">n_test</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
     <span class="k">del</span> <span class="n">data</span>
     
     <span class="k">if</span> <span class="n">encode_input</span><span class="p">:</span>
@@ -234,8 +241,9 @@
     <span class="k">for</span> <span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">n_test</span><span class="p">,</span> <span class="n">test_batch_size</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">test_resolutions</span><span class="p">,</span> <span class="n">n_tests</span><span class="p">,</span> <span class="n">test_batch_sizes</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Loading test db at resolution </span><span class="si">{</span><span class="n">res</span><span class="si">}</span><span class="s1"> with </span><span class="si">{</span><span class="n">n_test</span><span class="si">}</span><span class="s1"> samples and batch-size=</span><span class="si">{</span><span class="n">test_batch_size</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;darcy_test_</span><span class="si">{</span><span class="n">res</span><span class="si">}</span><span class="s1">.pt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">())</span>
-        <span class="n">x_test</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][:</span><span class="n">n_test</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span>
-        <span class="n">y_test</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][:</span><span class="n">n_test</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span>
+        <span class="n">x_test</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][:</span><span class="n">n_test</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+        <span class="n">y_test</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][:</span><span class="n">n_test</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+        <span class="k">del</span> <span class="n">data</span> 
         <span class="k">if</span> <span class="n">input_encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">x_test</span> <span class="o">=</span> <span class="n">input_encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">x_test</span><span class="p">)</span>
 

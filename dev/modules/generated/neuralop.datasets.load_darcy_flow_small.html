@@ -18,6 +18,10 @@
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/tensorly_style.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css" />
 
   
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
@@ -31,6 +35,7 @@
  
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Gallery of examples" href="../../auto_examples/index.html" />
     <link rel="prev" title="neuralop.models.model_dispatcher.get_model" href="neuralop.models.model_dispatcher.get_model.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
@@ -66,11 +71,14 @@
               <a class="navbar-item" href="../../install.html">
               Install
             </a>
+              <a class="navbar-item" href="../../user_guide/index.html">
+              User Guide
+            </a>
               <a class="navbar-item" href="../api.html">
               API
             </a>
-              <a class="navbar-item" href="../../user_guide/index.html">
-              User Guide
+              <a class="navbar-item" href="../../auto_examples/index.html">
+              Examples
             </a>
           </div>
         
@@ -130,6 +138,7 @@
 <li class="toctree-l2 current"><a class="reference internal" href="../api.html#datasets">Datasets</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_examples/index.html">Gallery of examples</a></li>
 </ul>
  
       </div>
@@ -158,11 +167,11 @@
 <h1><a class="reference internal" href="../api.html#module-neuralop.datasets" title="neuralop.datasets"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.datasets</span></code></a>.load_darcy_flow_small<a class="headerlink" href="#neuralop-datasets-load-darcy-flow-small" title="Permalink to this heading"></a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="neuralop.datasets.load_darcy_flow_small">
-<span class="sig-prename descclassname"><span class="pre">neuralop.datasets.</span></span><span class="sig-name descname"><span class="pre">load_darcy_flow_small</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_tests</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_batch_sizes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_resolutions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[32,</span> <span class="pre">64]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_boundaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[[0,</span> <span class="pre">1],</span> <span class="pre">[0,</span> <span class="pre">1]]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positional_encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'channel-wise'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/darcy.html#load_darcy_flow_small"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.datasets.load_darcy_flow_small" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">neuralop.datasets.</span></span><span class="sig-name descname"><span class="pre">load_darcy_flow_small</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_tests</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_batch_sizes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_resolutions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[16,</span> <span class="pre">32]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_boundaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[[0,</span> <span class="pre">1],</span> <span class="pre">[0,</span> <span class="pre">1]]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positional_encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'channel-wise'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/darcy.html#load_darcy_flow_small"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.datasets.load_darcy_flow_small" title="Permalink to this definition"></a></dt>
 <dd><p>Loads a small Darcy-Flow dataset</p>
-<p>Training contains 2000 samples in resolution 32x32. 
-Testing contains 200 samples at resolution 32x32 and
-100 samples at resolution 64x64.</p>
+<p>Training contains 1000 samples in resolution 16x16. 
+Testing contains 100 samples at resolution 16x16 and
+50 samples at resolution 32x32.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
@@ -170,7 +179,7 @@ Testing contains 200 samples at resolution 32x32 and
 <dt><strong>n_tests</strong><span class="classifier">int</span></dt><dd></dd>
 <dt><strong>batch_size</strong><span class="classifier">int</span></dt><dd></dd>
 <dt><strong>test_batch_sizes</strong><span class="classifier">int list</span></dt><dd></dd>
-<dt><strong>test_resolutions</strong><span class="classifier">int list, default is [32, 64],</span></dt><dd></dd>
+<dt><strong>test_resolutions</strong><span class="classifier">int list, default is [16, 32],</span></dt><dd></dd>
 <dt><strong>grid_boundaries</strong><span class="classifier">int list, default is [[0,1],[0,1]],</span></dt><dd></dd>
 <dt><strong>positional_encoding</strong><span class="classifier">bool, default is True</span></dt><dd></dd>
 <dt><strong>encode_input</strong><span class="classifier">bool, default is False</span></dt><dd></dd>
@@ -205,6 +214,13 @@ Testing contains 200 samples at resolution 32x32 and
         <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.model_dispatcher</span></code>.get_model</span>
     </a>
     
+    
+    <a class="button pagination-next" href="../../auto_examples/index.html" title="next page" accesskey="n">
+        <span>Gallery of examples </span>
+        <span class="icon">
+            <i class="fa fa-arrow-circle-right"></i>
+        </span>
+    </a>
     
 </nav>
 

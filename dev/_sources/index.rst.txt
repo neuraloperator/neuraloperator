@@ -83,6 +83,7 @@ of an equivalent, dense Fourier Neural Operator!
    install
    user_guide/index
    modules/api
+   auto_examples/index
 
 
 .. only:: html
