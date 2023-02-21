@@ -2,7 +2,7 @@ default: &DEFAULT
 
   #General
   # For computing compression
-  n_params_baseline: None #If None, will be computed
+  n_params_baseline: None
   verbose: True
   arch: 'tfno2d'
 
@@ -17,12 +17,12 @@ default: &DEFAULT
   # FNO related
   tfno2d:
     data_channels: 3
-    n_modes_height: 64
-    n_modes_width: 64
-    hidden_channels: 64
-    projection_channels: 256
+    n_modes_height: 16
+    n_modes_width: 16
+    hidden_channels: 32
+    projection_channels: 64
     n_layers: 4
-    domain_padding: 0.078125
+    domain_padding: None #0.078125
     domain_padding_mode: 'one-sided' #symmetric
     fft_norm: 'forward'
     norm: 'group_norm'
@@ -59,14 +59,12 @@ default: &DEFAULT
 
   # Dataset related
   data:
-    #folder: '/Users/jean/data/darcy_small/'
-    folder: '/data/darcy_flow/'
     batch_size: 16
-    n_train: 10000
-    train_resolution: 64
-    n_tests: [500, 500] #, 1000]
-    test_resolutions: [64, 128] #, 1024] 
-    test_batch_sizes: [32, 32] #, 1]
+    n_train: 1000
+    train_resolution: 16
+    n_tests: [100, 50]
+    test_resolutions: [16, 32]
+    test_batch_sizes: [16, 16]
     positional_encoding: True
 
     encode_input: True
@@ -80,11 +78,11 @@ default: &DEFAULT
 
   # Weights and biases
   wandb:
-    log: True
+    log: False
     name: None # If None, config will be used but you can override it here
-    group: 'darcy' 
-    project: "test-bootcamp"
-    entity: "nvr-ai-algo" # put your username here
+    group: '' 
+    project: ""
+    entity: "" # put your username here
     sweep: False
     log_output: True
     log_test_interval: 1

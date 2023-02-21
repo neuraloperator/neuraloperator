@@ -5,11 +5,10 @@ from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from neuralop import get_model
 from neuralop import Trainer
 from neuralop.training import setup
-from neuralop.datasets import load_darcy_pt
+from neuralop.datasets import load_darcy_flow_small
 from neuralop.utils import get_wandb_api_key, count_params
 from neuralop import LpLoss, H1Loss
 
-import neuralop.mpu.comm as comm
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 
@@ -55,8 +54,8 @@ if config.verbose and is_logger:
     sys.stdout.flush()
 
 # Loading the Navier-Stokes dataset in 128x128 resolution
-train_loader, test_loaders, output_encoder = load_darcy_pt(
-        config.data.folder, train_resolution=config.data.train_resolution, n_train=config.data.n_train, batch_size=config.data.batch_size, 
+train_loader, test_loaders, output_encoder = load_darcy_flow_small(
+        n_train=config.data.n_train, batch_size=config.data.batch_size, 
         positional_encoding=config.data.positional_encoding,
         test_resolutions=config.data.test_resolutions, n_tests=config.data.n_tests, test_batch_sizes=config.data.test_batch_sizes,
         encode_input=config.data.encode_input, encode_output=config.data.encode_output,
