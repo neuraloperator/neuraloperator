@@ -1,4 +1,5 @@
 .. image:: https://img.shields.io/pypi/v/neuraloperator
+   :target: https://pypi.org/project/neuraloperator/
    :alt: PyPI
 
 .. image:: https://github.com/NeuralOperator/neuraloperator/actions/workflows/test.yml/badge.svg
