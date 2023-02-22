@@ -255,7 +255,7 @@ So it’s usually more efficient to represent them in Fourier space.</p>
 <p>The convolution in the spatial domain is equivalent to the pointwise multiplication in the Fourier domain. To implement the (global) convolution operator,
 we first do a Fourier transform, then a linear transform, and an inverse Fourier transform,
 As shown in the top part of the figure:</p>
-<a class="reference internal image-reference" href="../_images/fourier_layer.png"><img alt="../_images/fourier_layer.png" src="../_images/fourier_layer.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="../_images/fourier_layer.jpg"><img alt="../_images/fourier_layer.jpg" src="../_images/fourier_layer.jpg" style="width: 800px;" /></a>
 <dl class="simple">
 <dt>The Fourier layer just consists of three steps:</dt><dd><ul class="simple">
 <li><p>Fourier transform <span class="math notranslate nohighlight">\(\mathcal{F}\)</span></p></li>
@@ -285,7 +285,7 @@ based on PyTorch’s fast Fourier transform <code class="code docutils literal n
 <span class="pre">:code:`self.weights1</span></code> and <code class="code docutils literal notranslate"><span class="pre">self.weights2</span></code> are the weight matrices;
 <code class="code docutils literal notranslate"><span class="pre">self.mode1</span></code> and _self.mode2` truncate the lower frequency modes;
 and :code:<a href="#id1"><span class="problematic" id="id2">`</span></a>compl_mul2d()1 is the matrix multiplication for complex numbers.</p>
-<a class="reference internal image-reference" href="../_images/filters.png"><img alt="../_images/filters.png" src="../_images/filters.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="../_images/filters.jpg"><img alt="../_images/filters.jpg" src="../_images/filters.jpg" style="width: 800px;" /></a>
 <p>Filters in convolution neural networks are usually local.
 They are good to capture local patterns such as edges and shapes.
 Fourier filters are global sinusoidal functions.
@@ -439,7 +439,7 @@ defined by <span class="math notranslate nohighlight">\(a \mapsto u\)</span>. No
 </tbody>
 </table>
 </div></blockquote>
-<a class="reference internal image-reference" href="../_images/fourier_error.png"><img alt="../_images/fourier_error.png" src="../_images/fourier_error.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="../_images/fourier_error.jpg"><img alt="../_images/fourier_error.jpg" src="../_images/fourier_error.jpg" style="width: 800px;" /></a>
 <p>Benchmarks for time-independent problems (Burgers and Darcy):</p>
 <blockquote>
 <div><ul class="simple">
@@ -523,7 +523,7 @@ decreasing the final time <span class="math notranslate nohighlight">\(T\)</span
 </tbody>
 </table>
 </div></blockquote>
-<a class="reference internal image-reference" href="../_images/fourier_ns1e4.png"><img alt="../_images/fourier_ns1e4.png" src="../_images/fourier_ns1e4.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="../_images/fourier_ns1e4.jpg"><img alt="../_images/fourier_ns1e4.jpg" src="../_images/fourier_ns1e4.jpg" style="width: 800px;" /></a>
 <p>Benchmarks for time-dependent problems (Navier-Stokes):</p>
 <blockquote>
 <div><ul class="simple">
@@ -554,7 +554,7 @@ We compare the Fourier neural operator acting as a surrogate model
 with the traditional solvers used to generate our train-test data (both run on GPU).
 We generate 25,000 samples from the posterior (with a 5,000 sample burn-in period),
 requiring 30,000 evaluations of the forward operator.</p>
-<a class="reference internal image-reference" href="../_images/fourier_bayesian.png"><img alt="../_images/fourier_bayesian.png" src="../_images/fourier_bayesian.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="../_images/fourier_bayesian.jpg"><img alt="../_images/fourier_bayesian.jpg" src="../_images/fourier_bayesian.jpg" style="width: 800px;" /></a>
 <p>The top left panel shows the true initial vorticity while the bottom left panel shows
 the true observed vorticity at <span class="math notranslate nohighlight">\(T=50\)</span> with black dots indicating
 the locations of the observation points placed on a <span class="math notranslate nohighlight">\(7 \times 7\)</span> grid.

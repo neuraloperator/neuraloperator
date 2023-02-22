@@ -102,7 +102,7 @@ The convolution in the spatial domain is equivalent to the pointwise multiplicat
 we first do a Fourier transform, then a linear transform, and an inverse Fourier transform,
 As shown in the top part of the figure:
 
-.. image:: /_static/images/fourier_layer.png
+.. image:: /_static/images/fourier_layer.jpg
   :width: 800
 
 The Fourier layer just consists of three steps:
@@ -154,7 +154,7 @@ where the input :code:`v_ has the shape (N,C,H,W),
 :code:`self.mode1` and _self.mode2` truncate the lower frequency modes;
 and :code:`compl_mul2d()1 is the matrix multiplication for complex numbers.
 
-.. image:: /_static/images/filters.png
+.. image:: /_static/images/filters.jpg
   :width: 800
 
 Filters in convolution neural networks are usually local.
@@ -249,7 +249,7 @@ defined by :math:`a \mapsto u`. Note that although the PDE is linear, the soluti
   FNO        0.0108   0.0109   0.0109   0.0098
  ========== ======== ======== ======== ========
 
-.. image:: /_static/images/fourier_error.png
+.. image:: /_static/images/fourier_error.jpg
   :width: 800
 
 Benchmarks for time-independent problems (Burgers and Darcy):
@@ -299,7 +299,7 @@ decreasing the final time :math:`T` as the dynamic becomes chaotic.
   ResNet    266,641      78.47s           0.0701    0.2311    0.2753   
  ========= ============ ================ ========= ========= ========= 
 
-.. image:: /_static/images/fourier_ns1e4.png
+.. image:: /_static/images/fourier_ns1e4.jpg
   :width: 800
 
 Benchmarks for time-dependent problems (Navier-Stokes):
@@ -335,7 +335,7 @@ with the traditional solvers used to generate our train-test data (both run on G
 We generate 25,000 samples from the posterior (with a 5,000 sample burn-in period),
 requiring 30,000 evaluations of the forward operator.
 
-.. image:: /_static/images/fourier_bayesian.png
+.. image:: /_static/images/fourier_bayesian.jpg
   :width: 800
 
 The top left panel shows the true initial vorticity while the bottom left panel shows
