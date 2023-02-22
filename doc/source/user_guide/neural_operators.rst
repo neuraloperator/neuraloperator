@@ -87,7 +87,7 @@ and cast the problem in finite-dimensional Euclidean space.
 Indeed, hundred years of effort has been made to develop numerical solvers
 such as the finite element method and finite difference method.
 
-.. image:: /_static/images/grids.png
+.. image:: /_static/images/grids.jpg
   :width: 800
 Three examples of discretization.
 The left one is a regular grid used in the finite difference method;
@@ -268,7 +268,7 @@ taking as input edge features and as output
 a matrix in :math:`\mathbb{R}^{n \times n}`.
 Relating to our kernel formulation, :math:`e(x,y) = (x,y,a(x),a(y))`.
 
-.. image:: /_static/images/graph.png
+.. image:: /_static/images/graph.jpg
   :width: 800
 
 Nystrom Approximation
@@ -306,7 +306,7 @@ to learn the operator :math:`\mathcal{F}: f \mapsto u`.
 poisson equation
 ----------------
 
-.. image:: /_static/images/nik_kernel.png
+.. image:: /_static/images/nik_kernel.jpg
   :width: 800
 
 As shown in the figure above, we compare the true analytic Green function :math:`G(x,y)` (left)
@@ -317,7 +317,7 @@ which means are neural network formulation does match the Green function express
 2D poisson equation
 -------------------
 
-.. image:: /_static/images/GKN_compare.png
+.. image:: /_static/images/GKN_compare.jpg
   :width: 800
 
 By assuming the kernel structure,
@@ -350,7 +350,7 @@ which means the graph kernel network can
 also generalize in the semi-supervised setting.
 An figure for :math:`s=16, s'=241` is following (where error is absolute squared error):
 
-.. image:: /_static/images/uai_16to241.png
+.. image:: /_static/images/uai_16to241.jpg
   :width: 800
 
 Conclusion
