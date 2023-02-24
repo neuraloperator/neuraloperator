@@ -82,4 +82,29 @@ Create a file in `neuraloperator/config` called `wandb_api_key.txt` and paste yo
 You can configure the project you want to use and your username in the main yaml configuration files.
 
 
+Citing
+------
 
+If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
+
+   @misc{li2020fourier,
+         title={Fourier Neural Operator for Parametric Partial Differential Equations}, 
+         author={Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar},
+         year={2020},
+         eprint={2010.08895},
+         archivePrefix={arXiv},
+         primaryClass={cs.LG}
+   }
+
+   @misc{li2020neural,
+         title={Neural Operator: Graph Kernel Network for Partial Differential Equations}, 
+         author={Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar},
+         year={2020},
+         eprint={2003.03485},
+         archivePrefix={arXiv},
+         primaryClass={cs.LG}
+   }
+
+.. [1] Li, Z., Kovachki, N., Azizzadenesheli, K., Liu, B., Bhattacharya, K., Stuart, A., and Anandkumar A., “Fourier Neural Operator for Parametric Partial Differential Equations”, ICLR, 2021. doi:10.48550/arXiv.2010.08895.
+
+.. [2] Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar A., “Neural Operator: Learning Maps Between Function Spaces”, JMLR, 2021. doi:10.48550/arXiv.2108.08481.
