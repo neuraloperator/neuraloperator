@@ -99,3 +99,68 @@ of an equivalent, dense Fourier Neural Operator!
       </a>
       </div>
 
+
+      <!-- CITE -->
+      <div class="container mt-6 pt-6">
+         <div class="card">
+         <div class="card-content">
+         <p>
+            If you use NeuralOperator, please consider citing us:
+         </p>
+         <p>
+            <it> Li, Z., Kovachki, N., Azizzadenesheli, K., Liu, B., Bhattacharya, K., Stuart, A., and Anandkumar A. </it>, 
+            <strong> “Fourier Neural Operator for Parametric Partial Differential Equations”</strong>, 
+            ICLR, 2021. 
+            <br/> <a href="https://arxiv.org/abs/2010.08895">https://arxiv.org/abs/2010.08895</a>.
+         </p>
+         <p>
+            <it> Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar A. </it>,
+            <strong>  “Neural Operator: Learning Maps Between Function Spaces”, </strong>, 
+            JMLR, 2021. 
+            <br/> <a href="https://arxiv.org/abs/2108.08481">https://arxiv.org/abs/2108.08481</a>.
+         </p>
+
+         <blockquote id="bibtex" class="is-hidden">
+            @misc{li2020fourier,<br/>
+            &emsp; title={Fourier Neural Operator for Parametric Partial Differential Equations}, <br/>
+            &emsp; author={Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar},<br/>
+            &emsp; year={2020},<br/>
+            &emsp; eprint={2010.08895},<br/>
+            &emsp; archivePrefix={arXiv},<br/>
+            &emsp; primaryClass={cs.LG}<br/>
+            } <br/><br/>
+            @misc{li2020neural,<br/>
+            &emsp; title={Neural Operator: Graph Kernel Network for Partial Differential Equations}, <br/>
+            &emsp; author={Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar},<br/>
+            &emsp; year={2020},<br/>
+            &emsp; eprint={2003.03485},<br/>
+            &emsp; archivePrefix={arXiv},<br/>
+            &emsp; primaryClass={cs.LG}<br/>
+            }<br/>
+         </blockquote>
+         </div>
+   
+         <footer class="card-footer">
+         <p class="card-footer-item">
+         <a onclick="javascrip:toggle_bibtex();" >
+            <span class="button" id="bibtex-toggle">show bibtex</span>
+         </a>
+         </p>
+         </footer>
+   
+         </div>
+      </div>
+   
+      <script>
+         function toggle_bibtex() {
+            var bibtex = document.getElementById("bibtex");
+            var toggle = document.getElementById("bibtex-toggle");
+            bibtex.classList.toggle('is-hidden');
+            if (toggle.textContent == 'show bibtex') {
+               toggle.textContent = 'hide bibtex';
+            }
+            else {
+               toggle.textContent = 'show bibtex';
+            }
+         };
+      </script>
