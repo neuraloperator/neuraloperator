@@ -1,7 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from .mlp import MLP
+from functools import partial, partialmethod
 
+from .mlp import MLP
 from .fno_block import FactorizedSpectralConv3d, FactorizedSpectralConv2d, FactorizedSpectralConv1d
 from .fno_block import FactorizedSpectralConv
 from .skip_connections import skip_connection
@@ -38,8 +39,8 @@ class Projection(nn.Module):
         return x
 
 
-class TFNO(nn.Module):
-    """Generic N-D Tensorized Fourier Neural Operator
+class FNO(nn.Module):
+    """N-Dimensional Fourier Neural Operator
 
     Parameters
     ----------
@@ -73,7 +74,7 @@ class TFNO(nn.Module):
         Type of skip connection to use, by default 'soft-gating'
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
-    factorization : str or None, {'tucker', 'cp', 'tt'}, default is None
+    factorization : str or None, {'tucker', 'cp', 'tt'}
         Tensor factorization of the parameters weight to use, by default None.
         * If None, a dense tensor parametrizes the Spectral convolutions
         * Otherwise, the specified tensor factorization is used.
@@ -107,7 +108,7 @@ class TFNO(nn.Module):
                  norm=None, preactivation=False,
                  skip='soft-gating',
                  separable=False,
-                 factorization='tucker', 
+                 factorization=None,
                  rank=1.0,
                  joint_factorization=False, 
                  fixed_rank_modes=False,
@@ -232,8 +233,8 @@ class TFNO(nn.Module):
         return x
 
 
-class TFNO1d(TFNO):
-    """Generic 1D Fourier Neural Operator
+class FNO1d(FNO):
+    """1D Fourier Neural Operator
 
     Parameters
     ----------
@@ -266,7 +267,7 @@ class TFNO1d(TFNO):
         Type of skip connection to use, by default 'soft-gating'
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
-    factorization : str or None, {'tucker', 'cp', 'tt'}, default is None
+    factorization : str or None, {'tucker', 'cp', 'tt'}
         Tensor factorization of the parameters weight to use, by default None.
         * If None, a dense tensor parametrizes the Spectral convolutions
         * Otherwise, the specified tensor factorization is used.
@@ -304,7 +305,7 @@ class TFNO1d(TFNO):
         skip='soft-gating',
         separable=False,
         preactivation=False,
-        factorization='tucker', 
+        factorization=None, 
         rank=1.0,
         joint_factorization=False, 
         fixed_rank_modes=False,
@@ -354,8 +355,8 @@ class TFNO1d(TFNO):
         )
 
 
-class TFNO2d(TFNO):
-    """Generic 2D Fourier Neural Operator
+class FNO2d(FNO):
+    """2D Fourier Neural Operator
 
     Parameters
     ----------
@@ -390,7 +391,7 @@ class TFNO2d(TFNO):
         Type of skip connection to use, by default 'soft-gating'
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
-    factorization : str or None, {'tucker', 'cp', 'tt'}, default is None
+    factorization : str or None, {'tucker', 'cp', 'tt'}
         Tensor factorization of the parameters weight to use, by default None.
         * If None, a dense tensor parametrizes the Spectral convolutions
         * Otherwise, the specified tensor factorization is used.
@@ -429,7 +430,7 @@ class TFNO2d(TFNO):
         skip='soft-gating',
         separable=False,
         preactivation=False,
-        factorization='tucker', 
+        factorization=None, 
         rank=1.0,
         joint_factorization=False, 
         fixed_rank_modes=False,
@@ -481,8 +482,8 @@ class TFNO2d(TFNO):
         )
 
 
-class TFNO3d(TFNO):
-    """Generic 3D Fourier Neural Operator
+class FNO3d(FNO):
+    """3D Fourier Neural Operator
 
     Parameters
     ----------
@@ -519,7 +520,7 @@ class TFNO3d(TFNO):
         Type of skip connection to use, by default 'soft-gating'
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
-    factorization : str or None, {'tucker', 'cp', 'tt'}, default is None
+    factorization : str or None, {'tucker', 'cp', 'tt'}
         Tensor factorization of the parameters weight to use, by default None.
         * If None, a dense tensor parametrizes the Spectral convolutions
         * Otherwise, the specified tensor factorization is used.
@@ -558,7 +559,7 @@ class TFNO3d(TFNO):
         skip='soft-gating',
         separable=False,
         preactivation=False,
-        factorization='tucker', 
+        factorization=None, 
         rank=1.0,
         joint_factorization=False, 
         fixed_rank_modes=False,
@@ -610,3 +611,34 @@ class TFNO3d(TFNO):
             n_layers=n_layers,
         )
 
+
+
+def partialclass(new_name, cls, *args, **kwargs):
+    """Create a new class with different default values
+
+    Notes
+    -----
+    An obvious alternative would be to use functools.partial
+    >>> new_class = partial(cls, **kwargs)
+
+    The issue is twofold:
+    1. the class doesn't have a name, so one would have to set it explicitly:
+    >>> new_class.__name__ = new_name
+
+    2. the new class will be a functools object and one cannot inherit from it.
+
+    Instead, here, we define dynamically a new class, inheriting from the existing one.
+    """
+    __init__ = partialmethod(cls.__init__, *args, **kwargs)
+    new_class = type(new_name, (cls,),  {
+        '__init__': __init__,
+        '__doc__': cls.__doc__,
+        'forward': cls.forward, 
+    })
+    return new_class
+
+
+TFNO   = partialclass('TFNO', FNO, factorization='Tucker')
+TFNO1d = partialclass('TFNO1d', FNO1d, factorization='Tucker')
+TFNO2d = partialclass('TFNO2d', FNO2d, factorization='Tucker')
+TFNO3d = partialclass('TFNO3d', FNO3d, factorization='Tucker')

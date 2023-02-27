@@ -131,6 +131,7 @@ Here is a simple example of the 2d Fourier layer
 based on PyTorch's fast Fourier transform :code:`torch.fft.rfft()` and :code:`torch.fft.irfft()`:
 
 .. code:: python
+  
     def forward(self, x):
         batchsize = x.shape[0]
         #Compute Fourier coeffcients up to factor of e^(- something constant)

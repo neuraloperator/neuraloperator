@@ -1,6 +1,22 @@
-from .tfno import TFNO2d
+from .tfno import TFNO, TFNO1d, TFNO2d, TFNO3d
+from .tfno import FNO, FNO1d, FNO2d, FNO3d
 import inspect
-import warnings
+
+
+MODEL_ZOO = {
+    'tfno'   : TFNO,
+    'tfno1d' : TFNO1d,
+    'tfno2d' : TFNO2d,
+    'tfno3d' : TFNO3d,
+    'fno'    : FNO,
+    'fno1d'  : FNO1d,
+    'fno2d'  : FNO2d,
+    'fno3d'  : FNO3d,
+}
+
+
+def available_models():
+    return list(MODEL_ZOO.keys())
 
 
 def get_model(config):
@@ -22,7 +38,6 @@ def get_model(config):
     model : nn.Module
         the instanciated module
     """
-    models = {'tfno2d': TFNO2d}
     arch = config['arch'].lower()
     config_arch = config.get(arch)
 
@@ -38,9 +53,9 @@ def get_model(config):
 
     # Dispatch model creation
     try:
-        return dispatch_model(models[arch], config_arch)
+        return dispatch_model(MODEL_ZOO[arch], config_arch)
     except KeyError:
-        raise ValueError(f'Got config.{arch=}, expected one of {models.keys}.')
+        raise ValueError(f'Got config.{arch=}, expected one of {MODEL_ZOO.keys}.')
 
 
 def dispatch_model(ModelClass, config):

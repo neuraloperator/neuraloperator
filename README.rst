@@ -49,9 +49,9 @@ After you've installed the library, you can start training operators seemlessly:
 
 .. code-block:: python
 
-   from neuralop.models import TFNO
+   from neuralop.models import FNO
 
-   operator = TFNO(n_modes=(16, 16), hidden_channels=64,
+   operator = FNO(n_modes=(16, 16), hidden_channels=64,
                    in_channels=3, out_channels=1)
 
 Tensorization is also provided out of the box: you can improve the previous models
