@@ -155,23 +155,23 @@
 
 
 <div class="viewcode-block" id="SoftGating"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.skip_connections.SoftGating.html#neuralop.models.skip_connections.SoftGating">[docs]</a><span class="k">class</span> <span class="nc">SoftGating</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Applies soft-gating by weighting the channels of the given input</span>
+
+<span class="sd">    Given an input x of size `(batch-size, channels, height, width)`,</span>
+<span class="sd">    this returns `x * w `</span>
+<span class="sd">    where w is of shape `(1, channels, 1, 1)`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    in_features : int</span>
+<span class="sd">    out_features : None</span>
+<span class="sd">        this is provided for API compatibility with nn.Linear only</span>
+<span class="sd">    n_dim : int, default is 2</span>
+<span class="sd">        Dimensionality of the input (excluding batch-size and channels).</span>
+<span class="sd">        ``n_dim=2`` corresponds to having Module2D. </span>
+<span class="sd">    bias : bool, default is False</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_features</span><span class="p">,</span> <span class="n">out_features</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Applies soft-gating by weighting the channels of the given input</span>
-
-<span class="sd">        Given an input x of size `(batch-size, channels, height, width)`,</span>
-<span class="sd">        this returns `x * w `</span>
-<span class="sd">        where w is of shape `(1, channels, 1, 1)`</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        in_features : int</span>
-<span class="sd">        out_features : None</span>
-<span class="sd">            this is provided for API compatibility with nn.Linear only</span>
-<span class="sd">        n_dim : int, default is 2</span>
-<span class="sd">            Dimensionality of the input (excluding batch-size and channels).</span>
-<span class="sd">            ``n_dim=2`` corresponds to having Module2D. </span>
-<span class="sd">        bias : bool, default is False</span>
-<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">out_features</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">in_features</span> <span class="o">!=</span> <span class="n">out_features</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Got </span><span class="si">{</span><span class="n">in_features</span><span class="si">=}</span><span class="s2"> and </span><span class="si">{</span><span class="n">out_features</span><span class="si">=}</span><span class="s2">&quot;</span>
@@ -185,6 +185,8 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="SoftGating.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.skip_connections.SoftGating.html#neuralop.models.skip_connections.SoftGating.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Applies soft-gating to a batch of activations</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span>
         <span class="k">else</span><span class="p">:</span>

@@ -168,26 +168,35 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="neuralop.models.skip_connections.SoftGating">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.models.skip_connections.</span></span><span class="sig-name descname"><span class="pre">SoftGating</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/skip_connections.html#SoftGating"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.skip_connections.SoftGating" title="Permalink to this definition"></a></dt>
-<dd><p class="rubric">Methods</p>
+<dd><p>Applies soft-gating by weighting the channels of the given input</p>
+<p>Given an input x of size <cite>(batch-size, channels, height, width)</cite>,
+this returns <cite>x * w `
+where w is of shape `(1, channels, 1, 1)</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>in_features</strong><span class="classifier">int</span></dt><dd></dd>
+<dt><strong>out_features</strong><span class="classifier">None</span></dt><dd><p>this is provided for API compatibility with nn.Linear only</p>
+</dd>
+<dt><strong>n_dim</strong><span class="classifier">int, default is 2</span></dt><dd><p>Dimensionality of the input (excluding batch-size and channels).
+<code class="docutils literal notranslate"><span class="pre">n_dim=2</span></code> corresponds to having Module2D.</p>
+</dd>
+<dt><strong>bias</strong><span class="classifier">bool, default is False</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.models.skip_connections.SoftGating.forward" title="neuralop.models.skip_connections.SoftGating.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x)</p></td>
-<td><p>Defines the computation performed at every call.</p></td>
+<td><p>Applies soft-gating to a batch of activations</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="neuralop.models.skip_connections.SoftGating.forward">
 <span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/skip_connections.html#SoftGating.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.skip_connections.SoftGating.forward" title="Permalink to this definition"></a></dt>
-<dd><p>Defines the computation performed at every call.</p>
-<p>Should be overridden by all subclasses.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Although the recipe for forward pass needs to be defined within
-this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
-instead of this since the former takes care of running the
-registered hooks while the latter silently ignores them.</p>
-</div>
+<dd><p>Applies soft-gating to a batch of activations</p>
 </dd></dl>
 
 </dd></dl>
