@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.models`.FNO2d
+===================================
+
+.. currentmodule:: neuralop.models
+
+.. autoclass:: FNO2d
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

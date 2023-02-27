@@ -119,8 +119,9 @@
   <h1>Source code for neuralop.models.tfno</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 <span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
-<span class="kn">from</span> <span class="nn">.mlp</span> <span class="kn">import</span> <span class="n">MLP</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span><span class="p">,</span> <span class="n">partialmethod</span>
 
+<span class="kn">from</span> <span class="nn">.mlp</span> <span class="kn">import</span> <span class="n">MLP</span>
 <span class="kn">from</span> <span class="nn">.fno_block</span> <span class="kn">import</span> <span class="n">FactorizedSpectralConv3d</span><span class="p">,</span> <span class="n">FactorizedSpectralConv2d</span><span class="p">,</span> <span class="n">FactorizedSpectralConv1d</span>
 <span class="kn">from</span> <span class="nn">.fno_block</span> <span class="kn">import</span> <span class="n">FactorizedSpectralConv</span>
 <span class="kn">from</span> <span class="nn">.skip_connections</span> <span class="kn">import</span> <span class="n">skip_connection</span>
@@ -157,8 +158,8 @@
         <span class="k">return</span> <span class="n">x</span>
 
 
-<div class="viewcode-block" id="TFNO"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.TFNO.html#neuralop.models.TFNO">[docs]</a><span class="k">class</span> <span class="nc">TFNO</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generic N-D Tensorized Fourier Neural Operator</span>
+<div class="viewcode-block" id="FNO"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO.html#neuralop.models.FNO">[docs]</a><span class="k">class</span> <span class="nc">FNO</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;N-Dimensional Fourier Neural Operator</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -192,7 +193,7 @@
 <span class="sd">        Type of skip connection to use, by default &#39;soft-gating&#39;</span>
 <span class="sd">    separable : bool, default is False</span>
 <span class="sd">        if True, use a depthwise separable spectral convolution</span>
-<span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}, default is None</span>
+<span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}</span>
 <span class="sd">        Tensor factorization of the parameters weight to use, by default None.</span>
 <span class="sd">        * If None, a dense tensor parametrizes the Spectral convolutions</span>
 <span class="sd">        * Otherwise, the specified tensor factorization is used.</span>
@@ -226,7 +227,7 @@
                  <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">preactivation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                  <span class="n">skip</span><span class="o">=</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span>
                  <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                 <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;tucker&#39;</span><span class="p">,</span> 
+                 <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">rank</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
                  <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
                  <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -303,7 +304,7 @@
                                      <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="TFNO.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.TFNO.html#neuralop.models.TFNO.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<div class="viewcode-block" id="FNO.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO.html#neuralop.models.FNO.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;TFNO&#39;s forward pass</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
@@ -351,8 +352,8 @@
         <span class="k">return</span> <span class="n">x</span></div></div>
 
 
-<div class="viewcode-block" id="TFNO1d"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.TFNO1d.html#neuralop.models.TFNO1d">[docs]</a><span class="k">class</span> <span class="nc">TFNO1d</span><span class="p">(</span><span class="n">TFNO</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generic 1D Fourier Neural Operator</span>
+<div class="viewcode-block" id="FNO1d"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO1d.html#neuralop.models.FNO1d">[docs]</a><span class="k">class</span> <span class="nc">FNO1d</span><span class="p">(</span><span class="n">FNO</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;1D Fourier Neural Operator</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -385,7 +386,7 @@
 <span class="sd">        Type of skip connection to use, by default &#39;soft-gating&#39;</span>
 <span class="sd">    separable : bool, default is False</span>
 <span class="sd">        if True, use a depthwise separable spectral convolution</span>
-<span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}, default is None</span>
+<span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}</span>
 <span class="sd">        Tensor factorization of the parameters weight to use, by default None.</span>
 <span class="sd">        * If None, a dense tensor parametrizes the Spectral convolutions</span>
 <span class="sd">        * Otherwise, the specified tensor factorization is used.</span>
@@ -423,7 +424,7 @@
         <span class="n">skip</span><span class="o">=</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span>
         <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">preactivation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;tucker&#39;</span><span class="p">,</span> 
+        <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
         <span class="n">rank</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
         <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
         <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -473,8 +474,8 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="TFNO2d"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.TFNO2d.html#neuralop.models.TFNO2d">[docs]</a><span class="k">class</span> <span class="nc">TFNO2d</span><span class="p">(</span><span class="n">TFNO</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generic 2D Fourier Neural Operator</span>
+<div class="viewcode-block" id="FNO2d"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO2d.html#neuralop.models.FNO2d">[docs]</a><span class="k">class</span> <span class="nc">FNO2d</span><span class="p">(</span><span class="n">FNO</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;2D Fourier Neural Operator</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -509,7 +510,7 @@
 <span class="sd">        Type of skip connection to use, by default &#39;soft-gating&#39;</span>
 <span class="sd">    separable : bool, default is False</span>
 <span class="sd">        if True, use a depthwise separable spectral convolution</span>
-<span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}, default is None</span>
+<span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}</span>
 <span class="sd">        Tensor factorization of the parameters weight to use, by default None.</span>
 <span class="sd">        * If None, a dense tensor parametrizes the Spectral convolutions</span>
 <span class="sd">        * Otherwise, the specified tensor factorization is used.</span>
@@ -548,7 +549,7 @@
         <span class="n">skip</span><span class="o">=</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span>
         <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">preactivation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;tucker&#39;</span><span class="p">,</span> 
+        <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
         <span class="n">rank</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
         <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
         <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -600,8 +601,8 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="TFNO3d"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.TFNO3d.html#neuralop.models.TFNO3d">[docs]</a><span class="k">class</span> <span class="nc">TFNO3d</span><span class="p">(</span><span class="n">TFNO</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generic 3D Fourier Neural Operator</span>
+<div class="viewcode-block" id="FNO3d"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO3d.html#neuralop.models.FNO3d">[docs]</a><span class="k">class</span> <span class="nc">FNO3d</span><span class="p">(</span><span class="n">FNO</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;3D Fourier Neural Operator</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -638,7 +639,7 @@
 <span class="sd">        Type of skip connection to use, by default &#39;soft-gating&#39;</span>
 <span class="sd">    separable : bool, default is False</span>
 <span class="sd">        if True, use a depthwise separable spectral convolution</span>
-<span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}, default is None</span>
+<span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}</span>
 <span class="sd">        Tensor factorization of the parameters weight to use, by default None.</span>
 <span class="sd">        * If None, a dense tensor parametrizes the Spectral convolutions</span>
 <span class="sd">        * Otherwise, the specified tensor factorization is used.</span>
@@ -677,7 +678,7 @@
         <span class="n">skip</span><span class="o">=</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span>
         <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">preactivation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;tucker&#39;</span><span class="p">,</span> 
+        <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
         <span class="n">rank</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
         <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
         <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -729,6 +730,37 @@
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
         <span class="p">)</span></div>
 
+
+
+<span class="k">def</span> <span class="nf">partialclass</span><span class="p">(</span><span class="n">new_name</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new class with different default values</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    An obvious alternative would be to use functools.partial</span>
+<span class="sd">    &gt;&gt;&gt; new_class = partial(cls, **kwargs)</span>
+
+<span class="sd">    The issue is twofold:</span>
+<span class="sd">    1. the class doesn&#39;t have a name, so one would have to set it explicitly:</span>
+<span class="sd">    &gt;&gt;&gt; new_class.__name__ = new_name</span>
+
+<span class="sd">    2. the new class will be a functools object and one cannot inherit from it.</span>
+
+<span class="sd">    Instead, here, we define dynamically a new class, inheriting from the existing one.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="fm">__init__</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">new_class</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">new_name</span><span class="p">,</span> <span class="p">(</span><span class="bp">cls</span><span class="p">,),</span>  <span class="p">{</span>
+        <span class="s1">&#39;__init__&#39;</span><span class="p">:</span> <span class="fm">__init__</span><span class="p">,</span>
+        <span class="s1">&#39;__doc__&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__doc__</span><span class="p">,</span>
+        <span class="s1">&#39;forward&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">forward</span><span class="p">,</span> 
+    <span class="p">})</span>
+    <span class="k">return</span> <span class="n">new_class</span>
+
+
+<span class="n">TFNO</span>   <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;TFNO&#39;</span><span class="p">,</span> <span class="n">FNO</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;Tucker&#39;</span><span class="p">)</span>
+<span class="n">TFNO1d</span> <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;TFNO1d&#39;</span><span class="p">,</span> <span class="n">FNO1d</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;Tucker&#39;</span><span class="p">)</span>
+<span class="n">TFNO2d</span> <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;TFNO2d&#39;</span><span class="p">,</span> <span class="n">FNO2d</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;Tucker&#39;</span><span class="p">)</span>
+<span class="n">TFNO3d</span> <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;TFNO3d&#39;</span><span class="p">,</span> <span class="n">FNO3d</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;Tucker&#39;</span><span class="p">)</span>
 </pre></div>
 
       </div>

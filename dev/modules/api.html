@@ -35,7 +35,7 @@
  
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="neuralop.models.TFNO" href="generated/neuralop.models.TFNO.html" />
+    <link rel="next" title="neuralop.models.FNO" href="generated/neuralop.models.FNO.html" />
     <link rel="prev" title="Fourier Neural Operators" href="../user_guide/fno.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
@@ -168,30 +168,58 @@
 <p><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop</span></code>: Neural Operators in Python</p>
 <span class="target" id="module-neuralop.models"></span><section id="models">
 <span id="neuralop-models-ref"></span><h2>Models<a class="headerlink" href="#models" title="Permalink to this heading"></a></h2>
-<p>In <cite>neuralop</cite>, we provide a general Tensorized Fourier Neural Operator (TFNO) that supports most usecases.</p>
+<p>In <cite>neuralop</cite>, we provide a general Fourier Neural Operator (TFNO) that supports most usecases.</p>
+<section id="fno">
+<h3>FNO<a class="headerlink" href="#fno" title="Permalink to this heading"></a></h3>
 <p>We have a generic interface that works for any dimension, which is inferred based on <cite>n_modes</cite>
 (a tuple with the number of modes to keep in the Fourier domain for each dimension.)</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.TFNO.html#neuralop.models.TFNO" title="neuralop.models.TFNO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFNO</span></code></a>(n_modes, hidden_channels[, ...])</p></td>
-<td><p>Generic N-D Tensorized Fourier Neural Operator</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.FNO.html#neuralop.models.FNO" title="neuralop.models.FNO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FNO</span></code></a>(n_modes, hidden_channels[, in_channels, ...])</p></td>
+<td><p>N-Dimensional Fourier Neural Operator</p></td>
 </tr>
 </tbody>
 </table>
 <p>We also have dimension-specific classes:</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.TFNO2d.html#neuralop.models.TFNO2d" title="neuralop.models.TFNO2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFNO2d</span></code></a>(n_modes_height, n_modes_width, ...[, ...])</p></td>
-<td><p>Generic 2D Fourier Neural Operator</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.FNO1d.html#neuralop.models.FNO1d" title="neuralop.models.FNO1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FNO1d</span></code></a>(n_modes_height, hidden_channels[, ...])</p></td>
+<td><p>1D Fourier Neural Operator</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.models.TFNO1d.html#neuralop.models.TFNO1d" title="neuralop.models.TFNO1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFNO1d</span></code></a>(n_modes_height, hidden_channels[, ...])</p></td>
-<td><p>Generic 1D Fourier Neural Operator</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.models.FNO2d.html#neuralop.models.FNO2d" title="neuralop.models.FNO2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FNO2d</span></code></a>(n_modes_height, n_modes_width, ...[, ...])</p></td>
+<td><p>2D Fourier Neural Operator</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.TFNO3d.html#neuralop.models.TFNO3d" title="neuralop.models.TFNO3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFNO3d</span></code></a>(n_modes_height, n_modes_width, ...[, ...])</p></td>
-<td><p>Generic 3D Fourier Neural Operator</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.FNO3d.html#neuralop.models.FNO3d" title="neuralop.models.FNO3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FNO3d</span></code></a>(n_modes_height, n_modes_width, ...[, ...])</p></td>
+<td><p>3D Fourier Neural Operator</p></td>
 </tr>
 </tbody>
 </table>
+</section>
+<section id="tensorized-fno-tfno">
+<h3>Tensorized FNO (TFNO)<a class="headerlink" href="#tensorized-fno-tfno" title="Permalink to this heading"></a></h3>
+<p>N-D version:</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.TFNO.html#neuralop.models.TFNO" title="neuralop.models.TFNO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFNO</span></code></a>(n_modes, hidden_channels[, ...])</p></td>
+<td><p>N-Dimensional Fourier Neural Operator</p></td>
+</tr>
+</tbody>
+</table>
+<p>Dimension-specific classes:</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.TFNO1d.html#neuralop.models.TFNO1d" title="neuralop.models.TFNO1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFNO1d</span></code></a>(n_modes_height, hidden_channels[, ...])</p></td>
+<td><p>1D Fourier Neural Operator</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.models.TFNO2d.html#neuralop.models.TFNO2d" title="neuralop.models.TFNO2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFNO2d</span></code></a>(n_modes_height, n_modes_width, ...[, ...])</p></td>
+<td><p>2D Fourier Neural Operator</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.TFNO3d.html#neuralop.models.TFNO3d" title="neuralop.models.TFNO3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFNO3d</span></code></a>(n_modes_height, n_modes_width, ...[, ...])</p></td>
+<td><p>3D Fourier Neural Operator</p></td>
+</tr>
+</tbody>
+</table>
+</section>
 </section>
 <section id="layers">
 <h2>Layers<a class="headerlink" href="#layers" title="Permalink to this heading"></a></h2>
@@ -278,8 +306,8 @@ It has the advantage of doing some checks on the parameters it receives.</p>
     </a>
     
     
-    <a class="button pagination-next" href="generated/neuralop.models.TFNO.html" title="next page" accesskey="n">
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code>.TFNO </span>
+    <a class="button pagination-next" href="generated/neuralop.models.FNO.html" title="next page" accesskey="n">
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code>.FNO </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>
@@ -317,6 +345,12 @@ It has the advantage of doing some checks on the parameters it receives.</p>
         <ul>
 <li><a class="reference internal" href="#">API reference</a><ul>
 <li><a class="reference internal" href="#models">Models</a><ul>
+<li><a class="reference internal" href="#fno">FNO</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#tensorized-fno-tfno">Tensorized FNO (TFNO)</a><ul>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#layers">Layers</a><ul>

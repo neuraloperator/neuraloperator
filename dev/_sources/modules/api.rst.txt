@@ -13,7 +13,10 @@ API reference
 Models
 ======
 
-In `neuralop`, we provide a general Tensorized Fourier Neural Operator (TFNO) that supports most usecases.
+In `neuralop`, we provide a general Fourier Neural Operator (TFNO) that supports most usecases.
+
+FNO
+---
 
 We have a generic interface that works for any dimension, which is inferred based on `n_modes`
 (a tuple with the number of modes to keep in the Fourier domain for each dimension.)
@@ -22,7 +25,7 @@ We have a generic interface that works for any dimension, which is inferred base
     :toctree: generated
     :template: class.rst
 
-    TFNO
+    FNO
 
 We also have dimension-specific classes:
 
@@ -30,9 +33,31 @@ We also have dimension-specific classes:
     :toctree: generated
     :template: class.rst
 
-    TFNO2d
+    FNO1d
+    FNO2d
+    FNO3d
+
+Tensorized FNO (TFNO)
+---------------------
+
+N-D version: 
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    TFNO
+
+Dimension-specific classes:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
     TFNO1d
+    TFNO2d
     TFNO3d
+
 
 Layers
 ======
