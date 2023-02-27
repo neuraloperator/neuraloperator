@@ -10,8 +10,6 @@ up to 1000x faster than traditional solvers.
 Also check out the paper https://arxiv.org/abs/2010.08895 and article
 https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/
 
-.. image:: /_static/images/ns_sr_v1e-4_labelled.gif
-  :width: 800
 
 Operator learning
 =================

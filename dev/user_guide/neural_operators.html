@@ -333,12 +333,7 @@ with <span class="math notranslate nohighlight">\(n\)</span> the dimension of th
 <div class="math notranslate nohighlight">
 \[v_0(x) = NN_1 (x, a(x))\]</div>
 <div class="math notranslate nohighlight">
-\[v_{t+1}(x) = \sigma\Big( W v_t(x)\]</div>
-<ul class="simple">
-<li><p>int_{B(x,r)} kappa_{phi}big(x,y,a(x),a(y)big)</p></li>
-</ul>
-<p>v_t(y): mathrm{d}y Big)
-quad text{for } t=1,ldots,T</p>
+\[v_{t+1}(x) = \sigma\Big( W v_t(x) + \int_{B(x,r)} \kappa_{\phi}\big(x,y,a(x),a(y)\big) v_t(y)\: \mathrm{d}y \Big) \quad \text{for } \ t=1,\ldots,T\]</div>
 <div class="math notranslate nohighlight">
 \[u(x) = NN_2 (v_T (x))\]</div>
 <p>where <span class="math notranslate nohighlight">\(NN_1\)</span> and <span class="math notranslate nohighlight">\(NN_2\)</span> are two feed-forward neural networks
@@ -371,8 +366,7 @@ Given node features <span class="math notranslate nohighlight">\(v_t(x) \in \mat
 edge features <span class="math notranslate nohighlight">\(e(x,y) \in \mathbb{R}^{n_e}\)</span>,
 and a graph <span class="math notranslate nohighlight">\(G\)</span>, the message passing neural network with averaging aggregation is</p>
 <div class="math notranslate nohighlight">
-\[v_{t+1}(x) =  \sigma\Big(W v_t(x) +\]</div>
-<p>frac{1}{<a href="#id7"><span class="problematic" id="id8">|N(x)|</span></a>} sum_{y in N(x)} kappa_{phi}big(e(x,y)big) v_t(y)Big)</p>
+\[v_{t+1}(x) =  \sigma\Big(W v_t(x) + \frac{1}{|N(x)|} \sum_{y \in N(x)} \kappa_{\phi}\big(e(x,y)\big) v_t(y)\Big)\]</div>
 <p>where <span class="math notranslate nohighlight">\(W \in \mathbb{R}^{n \times n}\)</span>,
 <span class="math notranslate nohighlight">\(N(x)\)</span> is the neighborhood of <span class="math notranslate nohighlight">\(x\)</span> according to the graph,
 <span class="math notranslate nohighlight">\(\kappa_{\phi}\big(e(x,y)\big)\)</span> is a neural network
