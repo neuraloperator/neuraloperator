@@ -44,16 +44,16 @@ so your trained operator can be applied on data of any resolution.
 Quickstart
 ==========
 
-Just import install neural operator and import a TFNO to get started!
+Just import install neural operator and import a FNO to get started!
 
 First install the library ``pip install neuraloperator`` (see :doc:`install` for more options).
 
 
 .. code-block:: python
 
-   from neuralop.models import TFNO
+   from neuralop.models import FNO
 
-   operator = TFNO(n_modes=(16, 16), hidden_channels=64,
+   operator = FNO(n_modes=(16, 16), hidden_channels=64,
                    in_channels=3, out_channels=1)
 
 Tensorization is also provided out of the box: you can improve the previous models
