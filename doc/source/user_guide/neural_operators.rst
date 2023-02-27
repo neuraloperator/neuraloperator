@@ -212,10 +212,7 @@ The overall algorithmic framework follow:
     v_0(x) = NN_1 (x, a(x))
 
 .. math::
-    v_{t+1}(x) = \sigma\Big( W v_t(x)
-+ \int_{B(x,r)} \kappa_{\phi}\big(x,y,a(x),a(y)\big)
-v_t(y)\: \mathrm{d}y \Big)
-\quad \text{for } \ t=1,\ldots,T
+    v_{t+1}(x) = \sigma\Big( W v_t(x) + \int_{B(x,r)} \kappa_{\phi}\big(x,y,a(x),a(y)\big) v_t(y)\: \mathrm{d}y \Big) \quad \text{for } \ t=1,\ldots,T
 
 .. math::
     u(x) = NN_2 (v_T (x))
@@ -258,8 +255,7 @@ edge features :math:`e(x,y) \in \mathbb{R}^{n_e}`,
 and a graph :math:`G`, the message passing neural network with averaging aggregation is
 
 .. math::
-    v_{t+1}(x) =  \sigma\Big(W v_t(x) +
-\frac{1}{|N(x)|} \sum_{y \in N(x)} \kappa_{\phi}\big(e(x,y)\big) v_t(y)\Big)
+    v_{t+1}(x) =  \sigma\Big(W v_t(x) + \frac{1}{|N(x)|} \sum_{y \in N(x)} \kappa_{\phi}\big(e(x,y)\big) v_t(y)\Big)
 
 where :math:`W \in \mathbb{R}^{n \times n}`,
 :math:`N(x)` is the neighborhood of :math:`x` according to the graph,
