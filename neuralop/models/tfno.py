@@ -184,7 +184,6 @@ class FNO(nn.Module):
         self.projection = Projection(in_channels=self.hidden_channels, out_channels=out_channels, hidden_channels=projection_channels,
                                      non_linearity=non_linearity, n_dim=self.n_dim)
 
-
     def forward(self, x):
         """TFNO's forward pass
         """

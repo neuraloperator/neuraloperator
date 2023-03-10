@@ -182,14 +182,8 @@ class FactorizedSpectralConv(nn.Module):
         self.out_channels = out_channels
         self.order = len(n_modes)
 
-        # We index quadrands only
-        # n_modes is the total number of modes kept along each dimension
-        # half_modes is half of that except in the last mode, correponding to the number of modes to keep in *each* quadrant for each dim
-        if isinstance(n_modes, int):
-            n_modes = [n_modes]
+        # Sets half_n_modes in property too
         self.n_modes = n_modes
-        half_modes = [m//2 for m in n_modes]
-        self.half_modes = half_modes
 
         self.rank = rank
         self.factorization = factorization
@@ -220,9 +214,9 @@ class FactorizedSpectralConv(nn.Module):
             if in_channels != out_channels:
                 raise ValueError('To use separable Fourier Conv, in_channels must be equal to out_channels, ',
                                  f'but got {in_channels=} and {out_channels=}')
-            weight_shape = (in_channels, *self.half_modes)
+            weight_shape = (in_channels, *self.half_n_modes)
         else:
-            weight_shape = (in_channels, out_channels, *self.half_modes)
+            weight_shape = (in_channels, out_channels, *self.half_n_modes)
         self.separable = separable
 
         if joint_factorization:
@@ -250,6 +244,21 @@ class FactorizedSpectralConv(nn.Module):
         else:
             self.bias = None
 
+    @property
+    def n_modes(self):
+        return self._n_modes
+    
+    @n_modes.setter
+    def n_modes(self, n_modes):
+        # We index quadrands only
+        # n_modes is the total number of modes kept along each dimension
+        # half_n_modes is half of that except in the last mode, correponding to the number of modes to keep in *each* quadrant for each dim
+        if isinstance(n_modes, int):
+            n_modes = [n_modes]
+        self._n_modes = n_modes
+        half_n_modes = [m//2 for m in n_modes]
+        self.half_n_modes = half_n_modes
+
     def forward(self, x, indices=0):
         """Generic forward pass for the Factorized Spectral Conv
         
@@ -276,7 +285,7 @@ class FactorizedSpectralConv(nn.Module):
         
         # We contract all corners of the Fourier coefs
         # Except for the last mode: there, we take all coefs as redundant modes were already removed
-        mode_indexing = [((None, m), (-m, None)) for m in self.half_modes[:-1]] + [((None, self.half_modes[-1]), )]
+        mode_indexing = [((None, m), (-m, None)) for m in self.half_n_modes[:-1]] + [((None, self.half_n_modes[-1]), )]
 
         for i, boundaries in enumerate(itertools.product(*mode_indexing)):
             # Keep all modes for first 2 modes (batch-size and channels)
@@ -339,7 +348,7 @@ class FactorizedSpectralConv1d(FactorizedSpectralConv):
             factorization=factorization, fixed_rank_modes=fixed_rank_modes,
             decomposition_kwargs=decomposition_kwargs
             )
-        self.half_modes_height = self.half_modes[0]
+        self.half_n_modes[0] = self.half_n_modes[0]
 
     def forward(self, x, indices=0):
         batchsize, channels, width = x.shape
@@ -347,7 +356,7 @@ class FactorizedSpectralConv1d(FactorizedSpectralConv):
         x = torch.fft.rfft(x, norm=self.fft_norm)
 
         out_fft = torch.zeros([batchsize, self.out_channels,  width//2 + 1], device=x.device, dtype=torch.cfloat)
-        out_fft[:, :, :self.half_modes_height] = self._contract(x[:, :, :self.half_modes_height], self.weight[indices], separable=self.separable)
+        out_fft[:, :, :self.half_n_modes[0]] = self._contract(x[:, :, :self.half_n_modes[0]], self.weight[indices], separable=self.separable)
 
         x = torch.fft.irfft(out_fft, n=width, norm=self.fft_norm)
 
@@ -369,7 +378,6 @@ class FactorizedSpectralConv2d(FactorizedSpectralConv):
             factorization=factorization, fixed_rank_modes=fixed_rank_modes,
             decomposition_kwargs=decomposition_kwargs
             )
-        self.half_modes_height, self.half_modes_width = self.half_modes
 
     def forward(self, x, indices=0):
         batchsize, channels, height, width = x.shape
@@ -380,10 +388,10 @@ class FactorizedSpectralConv2d(FactorizedSpectralConv):
         out_fft = torch.zeros([batchsize, self.out_channels, height, width//2 + 1], dtype=x.dtype, device=x.device)
 
         # upper block (truncate high freq)
-        out_fft[:, :, :self.half_modes_height, :self.half_modes_width] = self._contract(x[:, :, :self.half_modes_height, :self.half_modes_width], 
+        out_fft[:, :, :self.half_n_modes[0], :self.half_n_modes[1]] = self._contract(x[:, :, :self.half_n_modes[0], :self.half_n_modes[1]], 
                                                                               self.weight[2*indices], separable=self.separable)
         # Lower block
-        out_fft[:, :, -self.half_modes_height:, :self.half_modes_width] = self._contract(x[:, :, -self.half_modes_height:, :self.half_modes_width],
+        out_fft[:, :, -self.half_n_modes[0]:, :self.half_n_modes[1]] = self._contract(x[:, :, -self.half_n_modes[0]:, :self.half_n_modes[1]],
                                                                                self.weight[2*indices + 1], separable=self.separable)
 
         x = torch.fft.irfft2(out_fft, s=(height, width), dim=(-2, -1), norm=self.fft_norm)
@@ -409,7 +417,6 @@ class FactorizedSpectralConv3d(FactorizedSpectralConv):
             factorization=factorization, fixed_rank_modes=fixed_rank_modes,
             decomposition_kwargs=decomposition_kwargs
             )
-        self.half_modes_height, self.half_modes_width, self.half_modes_depth = self.half_modes
 
     def forward(self, x, indices=0):
         batchsize, channels, height, width, depth = x.shape
@@ -418,14 +425,14 @@ class FactorizedSpectralConv3d(FactorizedSpectralConv):
 
         out_fft = torch.zeros([batchsize, self.out_channels, height, width, depth//2 + 1], device=x.device, dtype=torch.cfloat)
 
-        out_fft[:, :, :self.half_modes_height, :self.half_modes_width, :self.half_modes_depth] = self._contract(
-            x[:, :, :self.half_modes_height, :self.half_modes_width, :self.half_modes_depth], self.weight[indices + 0], separable=self.separable)
-        out_fft[:, :, :self.half_modes_height, -self.half_modes_width:, :self.half_modes_depth] = self._contract(
-            x[:, :, :self.half_modes_height, -self.half_modes_width:, :self.half_modes_depth], self.weight[indices + 1], separable=self.separable)
-        out_fft[:, :, -self.half_modes_height:, :self.half_modes_width, :self.half_modes_depth] = self._contract(
-            x[:, :, -self.half_modes_height:, :self.half_modes_width, :self.half_modes_depth], self.weight[indices + 2], separable=self.separable)
-        out_fft[:, :, -self.half_modes_height:, -self.half_modes_width:, :self.half_modes_depth] = self._contract(
-            x[:, :, -self.half_modes_height:, -self.half_modes_width:, :self.half_modes_depth], self.weight[indices + 3], separable=self.separable)
+        out_fft[:, :, :self.half_n_modes[0], :self.half_n_modes[1], :self.half_n_modes[2]] = self._contract(
+            x[:, :, :self.half_n_modes[0], :self.half_n_modes[1], :self.half_n_modes[2]], self.weight[indices + 0], separable=self.separable)
+        out_fft[:, :, :self.half_n_modes[0], -self.half_n_modes[1]:, :self.half_n_modes[2]] = self._contract(
+            x[:, :, :self.half_n_modes[0], -self.half_n_modes[1]:, :self.half_n_modes[2]], self.weight[indices + 1], separable=self.separable)
+        out_fft[:, :, -self.half_n_modes[0]:, :self.half_n_modes[1], :self.half_n_modes[2]] = self._contract(
+            x[:, :, -self.half_n_modes[0]:, :self.half_n_modes[1], :self.half_n_modes[2]], self.weight[indices + 2], separable=self.separable)
+        out_fft[:, :, -self.half_n_modes[0]:, -self.half_n_modes[1]:, :self.half_n_modes[2]] = self._contract(
+            x[:, :, -self.half_n_modes[0]:, -self.half_n_modes[1]:, :self.half_n_modes[2]], self.weight[indices + 3], separable=self.separable)
 
         x = torch.fft.irfftn(out_fft, s=(height, width, depth), norm=self.fft_norm)
 
