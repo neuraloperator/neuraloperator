@@ -173,17 +173,21 @@ class FactorizedSpectralConv(nn.Module):
     decomposition_kwargs : dict, optional, default is {}
         Optionaly additional parameters to pass to the tensor decomposition
     """
-    def __init__(self, in_channels, out_channels, n_modes, n_layers=1, scale='auto', separable=False,
-                 fft_norm='backward', bias=True, implementation='reconstructed', joint_factorization=False,
-                 rank=0.5, factorization='cp', fixed_rank_modes=False, decomposition_kwargs=dict()):
+    def __init__(self, in_channels, out_channels, n_modes, n_modes_max=None,  bias=True,
+                 n_layers=1, scale='auto', separable=False, fft_norm='backward',
+                 rank=0.5, factorization='cp', implementation='reconstructed', 
+                 fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict()):
         super().__init__()
 
         self.in_channels = in_channels
         self.out_channels = out_channels
+        if isinstance(n_modes, int):
+            n_modes = [n_modes]
         self.order = len(n_modes)
 
         # Sets half_n_modes in property too
         self.n_modes = n_modes
+        self.n_modes_max = n_modes_max
 
         self.rank = rank
         self.factorization = factorization
@@ -214,9 +218,9 @@ class FactorizedSpectralConv(nn.Module):
             if in_channels != out_channels:
                 raise ValueError('To use separable Fourier Conv, in_channels must be equal to out_channels, ',
                                  f'but got {in_channels=} and {out_channels=}')
-            weight_shape = (in_channels, *self.half_n_modes)
+            weight_shape = (in_channels, *self.half_n_modes_max)
         else:
-            weight_shape = (in_channels, out_channels, *self.half_n_modes)
+            weight_shape = (in_channels, out_channels, *self.half_n_modes_max)
         self.separable = separable
 
         if joint_factorization:
@@ -258,6 +262,21 @@ class FactorizedSpectralConv(nn.Module):
         self._n_modes = n_modes
         half_n_modes = [m//2 for m in n_modes]
         self.half_n_modes = half_n_modes
+
+    @property
+    def n_modes_max(self):
+        return self.n_modes_max
+    
+    @n_modes_max.setter
+    def n_modes_max(self, n_modes_max):
+        if n_modes_max is None:
+            n_modes_max = list(self.n_modes)
+        if isinstance(n_modes_max, int):
+            n_modes_max = [n_modes_max]*len(self.n_modes)
+
+        self._n_modes_max = n_modes_max
+        half_n_modes_max = [m//2 for m in n_modes_max]
+        self.half_n_modes_max = half_n_modes_max
 
     def forward(self, x, indices=0):
         """Generic forward pass for the Factorized Spectral Conv
