@@ -185,8 +185,19 @@ class FactorizedSpectralConv(nn.Module):
             n_modes = [n_modes]
         self.order = len(n_modes)
 
-        # Sets half_n_modes in property too
+        # We index quadrands only
+        # n_modes is the total number of modes kept along each dimension
+        # half_n_modes is half of that except in the last mode, correponding to the number of modes to keep in *each* quadrant for each dim
+        if isinstance(n_modes, int):
+            n_modes = [n_modes]
         self.n_modes = n_modes
+        half_total_n_modes = [m//2 for m in n_modes]
+        self.half_total_n_modes = half_total_n_modes
+
+        # WE use half_total_n_modes to build the full weights
+        # During training we can adjust incremental_n_modes which will also
+        # update half_n_modes 
+        # So that we can train on a smaller part of the Fourier modes and total weights
         self.incremental_n_modes = incremental_n_modes
 
         self.rank = rank
@@ -218,9 +229,9 @@ class FactorizedSpectralConv(nn.Module):
             if in_channels != out_channels:
                 raise ValueError('To use separable Fourier Conv, in_channels must be equal to out_channels, ',
                                  f'but got {in_channels=} and {out_channels=}')
-            weight_shape = (in_channels, *self.half_n_modes)
+            weight_shape = (in_channels, *half_total_n_modes)
         else:
-            weight_shape = (in_channels, out_channels, *self.half_n_modes)
+            weight_shape = (in_channels, out_channels, *half_total_n_modes)
         self.separable = separable
 
         if joint_factorization:
@@ -248,22 +259,6 @@ class FactorizedSpectralConv(nn.Module):
         else:
             self.bias = None
 
-    @property
-    def n_modes(self):
-        return self._n_modes
-    
-    @n_modes.setter
-    def n_modes(self, n_modes):
-        # We index quadrands only
-        # n_modes is the total number of modes kept along each dimension
-        # half_n_modes is half of that except in the last mode, correponding to the number of modes to keep in *each* quadrant for each dim
-        if isinstance(n_modes, int):
-            n_modes = [n_modes]
-        self._n_modes = n_modes
-        half_n_modes = [m//2 for m in n_modes]
-        self.half_n_modes = half_n_modes
-        self.weight_slices = (slice(None), slice(None)) + tuple([slice(None, m) for m in self.half_n_modes])
-
     def _get_weight(self, index):
         if self.incremental_n_modes is not None:
             return self.weight[index][self.weight_slices]
@@ -273,11 +268,13 @@ class FactorizedSpectralConv(nn.Module):
     @property
     def incremental_n_modes(self):
         return self._incremental_n_modes
-    
+
     @incremental_n_modes.setter
     def incremental_n_modes(self, incremental_n_modes):
         if incremental_n_modes is None:
             self._incremental_n_modes = None
+            self.half_n_modes = [m//2 for m in self.n_modes]
+
         else:
             if isinstance(incremental_n_modes, int):
                 self._incremental_n_modes = [incremental_n_modes]*len(self.n_modes)
@@ -286,18 +283,19 @@ class FactorizedSpectralConv(nn.Module):
                     self._incremental_n_modes = incremental_n_modes
                 else:
                     raise ValueError(f'Provided {incremental_n_modes} for actual n_modes={self.n_modes}.')
-            self.weight_slices = [slice(None)]*2 + [slice(None, n//2) for n in incremental_n_modes]
+            self.weight_slices = [slice(None)]*2 + [slice(None, n//2) for n in self._incremental_n_modes]
+            self.half_n_modes = [m//2 for m in self._incremental_n_modes]
 
     def forward(self, x, indices=0):
         """Generic forward pass for the Factorized Spectral Conv
-        
-        Parameters 
+
+        Parameters
         ----------
         x : torch.Tensor
             input activation of size (batch_size, channels, d1, ..., dN)
         indices : int, default is 0
             if joint_factorization, index of the layers for n_layers > 1
-        
+
         Returns
         -------
         tensorized_spectral_conv(x)
@@ -364,21 +362,6 @@ class SubConv2d(nn.Module):
 
 
 class FactorizedSpectralConv1d(FactorizedSpectralConv):
-    def __init__(
-        self, in_channels, out_channels, modes_height,
-        n_layers=1, scale='auto', separable=False,
-        fft_norm='backward', bias=True, implementation='reconstucted',
-        joint_factorization=False, rank=0.5, factorization='cp',
-        fixed_rank_modes=False, decomposition_kwargs=dict()):
-        super().__init__(in_channels, out_channels, (modes_height, ),
-            n_layers=n_layers, scale=scale, separable=separable,
-            fft_norm=fft_norm, bias=bias, implementation=implementation,
-            joint_factorization=joint_factorization, rank=rank, 
-            factorization=factorization, fixed_rank_modes=fixed_rank_modes,
-            decomposition_kwargs=decomposition_kwargs
-            )
-        self.half_n_modes[0] = self.half_n_modes[0]
-
     def forward(self, x, indices=0):
         batchsize, channels, width = x.shape
 
@@ -396,18 +379,6 @@ class FactorizedSpectralConv1d(FactorizedSpectralConv):
 
 
 class FactorizedSpectralConv2d(FactorizedSpectralConv):
-    def __init__(self, in_channels, out_channels, modes_height, modes_width, n_layers=1, scale='auto', separable=False,
-                 fft_norm='backward', bias=True, implementation='reconstucted', joint_factorization=False,
-                 rank=0.5, factorization='cp', fixed_rank_modes=False, decomposition_kwargs=dict()):
-        super().__init__(
-            in_channels, out_channels, (modes_height, modes_width),
-            n_layers=n_layers, scale=scale, separable=separable,
-            fft_norm=fft_norm, bias=bias, implementation=implementation,
-            joint_factorization=joint_factorization, rank=rank, 
-            factorization=factorization, fixed_rank_modes=fixed_rank_modes,
-            decomposition_kwargs=decomposition_kwargs
-            )
-
     def forward(self, x, indices=0):
         batchsize, channels, height, width = x.shape
 
@@ -432,21 +403,6 @@ class FactorizedSpectralConv2d(FactorizedSpectralConv):
 
 
 class FactorizedSpectralConv3d(FactorizedSpectralConv):
-    def __init__(
-        self, in_channels, out_channels, 
-        modes_height, modes_width, modes_depth, 
-        n_layers=1, scale='auto', separable=False,
-        fft_norm='backward', bias=True, implementation='reconstucted',
-         joint_factorization=False, rank=0.5, factorization='cp',
-          fixed_rank_modes=False, decomposition_kwargs=dict()):
-        super().__init__(in_channels, out_channels, (modes_height, modes_width, modes_depth),            
-            n_layers=n_layers, scale=scale, separable=separable,
-            fft_norm=fft_norm, bias=bias, implementation=implementation,
-            joint_factorization=joint_factorization, rank=rank, 
-            factorization=factorization, fixed_rank_modes=fixed_rank_modes,
-            decomposition_kwargs=decomposition_kwargs
-            )
-
     def forward(self, x, indices=0):
         batchsize, channels, height, width, depth = x.shape
 

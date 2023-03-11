@@ -103,6 +103,7 @@ class FNO(nn.Module):
                  lifting_channels=256,
                  projection_channels=256,
                  n_layers=4,
+                 incremental_n_modes=None,
                  use_mlp=False, mlp=None,
                  non_linearity=F.gelu,
                  norm=None, preactivation=False,
@@ -121,6 +122,7 @@ class FNO(nn.Module):
         super().__init__()
         self.n_dim = len(n_modes)
         self.n_modes = n_modes
+        self._incremental_n_modes = incremental_n_modes
         self.hidden_channels = hidden_channels
         self.lifting_channels = lifting_channels
         self.projection_channels = projection_channels
@@ -147,6 +149,7 @@ class FNO(nn.Module):
 
         self.convs = FactorizedSpectralConv(
             self.hidden_channels, self.hidden_channels, self.n_modes, 
+            incremental_n_modes=incremental_n_modes,
             rank=rank,
             fft_norm=fft_norm,
             fixed_rank_modes=fixed_rank_modes, 
@@ -231,6 +234,13 @@ class FNO(nn.Module):
         x = self.projection(x)
         return x
 
+    @property
+    def incremental_n_modes(self):
+        return self._incremental_n_modes
+
+    @incremental_n_modes.setter
+    def incremental_n_modes(self, incremental_n_modes):
+        self.convs.incremental_n_modes = incremental_n_modes
 
 class FNO1d(FNO):
     """1D Fourier Neural Operator
@@ -297,6 +307,7 @@ class FNO1d(FNO):
         out_channels=1,
         lifting_channels=256,
         projection_channels=256,
+        incremental_n_modes=None,
         n_layers=4,
         non_linearity=F.gelu,
         use_mlp=False, mlp=None,
@@ -324,6 +335,7 @@ class FNO1d(FNO):
             n_layers=n_layers,
             non_linearity=non_linearity,
             use_mlp=use_mlp, mlp=mlp,
+            incremental_n_modes=incremental_n_modes,
             norm=norm,
             skip=skip,
             separable=separable,
@@ -341,7 +353,8 @@ class FNO1d(FNO):
         self.n_modes_height = n_modes_height
 
         self.convs = FactorizedSpectralConv1d(
-            self.hidden_channels, self.hidden_channels, self.n_modes_height, 
+            self.hidden_channels, self.hidden_channels, n_modes=(self.n_modes_height, ),
+            incremental_n_modes=incremental_n_modes,
             rank=rank,
             fft_norm=fft_norm,
             fixed_rank_modes=fixed_rank_modes, 
@@ -423,6 +436,7 @@ class FNO2d(FNO):
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
+        incremental_n_modes=None,
         non_linearity=F.gelu,
         use_mlp=False, mlp=None,
         norm=None,
@@ -449,6 +463,7 @@ class FNO2d(FNO):
             n_layers=n_layers,
             non_linearity=non_linearity,
             use_mlp=use_mlp, mlp=mlp,
+            incremental_n_modes=incremental_n_modes,
             norm=norm,
             skip=skip,
             separable=separable,
@@ -468,7 +483,8 @@ class FNO2d(FNO):
 
         self.convs = FactorizedSpectralConv2d(
             self.hidden_channels, self.hidden_channels,
-            self.n_modes_height, self.n_modes_width, 
+            n_modes=(self.n_modes_height, self.n_modes_width), 
+            incremental_n_modes=incremental_n_modes,
             rank=rank,
             fft_norm=fft_norm,
             fixed_rank_modes=fixed_rank_modes, 
@@ -552,6 +568,7 @@ class FNO3d(FNO):
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
+        incremental_n_modes=None,
         non_linearity=F.gelu,
         use_mlp=False, mlp=None,
         norm=None,
@@ -577,6 +594,7 @@ class FNO3d(FNO):
             projection_channels=projection_channels,
             n_layers=n_layers,
             non_linearity=non_linearity,
+            incremental_n_modes=incremental_n_modes,
             use_mlp=use_mlp, mlp=mlp,
             norm=norm,
             skip=skip,
@@ -598,7 +616,8 @@ class FNO3d(FNO):
 
         self.convs = FactorizedSpectralConv3d(
             self.hidden_channels, self.hidden_channels, 
-            self.n_modes_height, self.n_modes_width, self.n_modes_height,
+            n_modes=(self.n_modes_height, self.n_modes_width, self.n_modes_height),
+            incremental_n_modes=incremental_n_modes,
             rank=rank,
             fft_norm=fft_norm,
             fixed_rank_modes=fixed_rank_modes, 
