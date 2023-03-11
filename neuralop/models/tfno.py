@@ -59,6 +59,13 @@ class FNO(nn.Module):
         number of hidden channels of the projection block of the FNO, by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
+    incremental_n_modes : None or int tuple, default is None
+        * If not None, this allows to incrementally increase the number of modes in Fourier domain 
+          during training. Has to verify n <= N for (n, m) in zip(incremental_n_modes, n_modes).
+        
+        * If None, all the n_modes are used.
+
+        This can be updated dynamically during training.
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -261,6 +268,13 @@ class FNO1d(FNO):
         number of hidden channels of the projection block of the FNO, by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
+    incremental_n_modes : None or int tuple, default is None
+        * If not None, this allows to incrementally increase the number of modes in Fourier domain 
+          during training. Has to verify n <= N for (n, m) in zip(incremental_n_modes, n_modes).
+        
+        * If None, all the n_modes are used.
+
+        This can be updated dynamically during training.
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -388,6 +402,13 @@ class FNO2d(FNO):
         number of hidden channels of the projection block of the FNO, by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
+    incremental_n_modes : None or int tuple, default is None
+        * If not None, this allows to incrementally increase the number of modes in Fourier domain 
+          during training. Has to verify n <= N for (n, m) in zip(incremental_n_modes, n_modes).
+        
+        * If None, all the n_modes are used.
+
+        This can be updated dynamically during training.
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -520,6 +541,13 @@ class FNO3d(FNO):
         number of hidden channels of the projection block of the FNO, by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
+    incremental_n_modes : None or int tuple, default is None
+        * If not None, this allows to incrementally increase the number of modes in Fourier domain 
+          during training. Has to verify n <= N for (n, m) in zip(incremental_n_modes, n_modes).
+        
+        * If None, all the n_modes are used.
+
+        This can be updated dynamically during training.
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional

@@ -149,13 +149,20 @@ class FactorizedSpectralConv(nn.Module):
         Number of input channels
     out_channels : int, optional
         Number of output channels
-    kept_modes : int tuple
+    n_modes : int tuple
         total number of modes to keep in Fourier Layer, along each dim
     separable : bool, default is True
     scale : float or 'auto', default is 'auto'
         scale to use for the init
     n_layers : int, optional
         Number of Fourier Layers, by default 4
+    incremental_n_modes : None or int tuple, default is None
+        * If not None, this allows to incrementally increase the number of modes in Fourier domain 
+          during training. Has to verify n <= N for (n, m) in zip(incremental_n_modes, n_modes).
+        
+        * If None, all the n_modes are used.
+
+        This can be updated dynamically during training.
     joint_factorization : bool, optional
         Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False
     rank : float or rank, optional
@@ -173,7 +180,7 @@ class FactorizedSpectralConv(nn.Module):
     decomposition_kwargs : dict, optional, default is {}
         Optionaly additional parameters to pass to the tensor decomposition
     """
-    def __init__(self, in_channels, out_channels, n_modes, incremental_n_modes=None,  bias=True,
+    def __init__(self, in_channels, out_channels, n_modes, incremental_n_modes=None, bias=True,
                  n_layers=1, scale='auto', separable=False, fft_norm='backward',
                  rank=0.5, factorization='cp', implementation='reconstructed', 
                  fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict()):
