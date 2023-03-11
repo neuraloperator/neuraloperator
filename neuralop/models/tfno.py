@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from functools import partial, partialmethod
+from functools import partialmethod
 
 from .mlp import MLP
 from .fno_block import FactorizedSpectralConv3d, FactorizedSpectralConv2d, FactorizedSpectralConv1d
