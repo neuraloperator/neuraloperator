@@ -119,7 +119,7 @@
   <h1>Source code for neuralop.models.tfno</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 <span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
-<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span><span class="p">,</span> <span class="n">partialmethod</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partialmethod</span>
 
 <span class="kn">from</span> <span class="nn">.mlp</span> <span class="kn">import</span> <span class="n">MLP</span>
 <span class="kn">from</span> <span class="nn">.fno_block</span> <span class="kn">import</span> <span class="n">FactorizedSpectralConv3d</span><span class="p">,</span> <span class="n">FactorizedSpectralConv2d</span><span class="p">,</span> <span class="n">FactorizedSpectralConv1d</span>
@@ -178,6 +178,13 @@
 <span class="sd">        number of hidden channels of the projection block of the FNO, by default 256</span>
 <span class="sd">    n_layers : int, optional</span>
 <span class="sd">        Number of Fourier Layers, by default 4</span>
+<span class="sd">    incremental_n_modes : None or int tuple, default is None</span>
+<span class="sd">        * If not None, this allows to incrementally increase the number of modes in Fourier domain </span>
+<span class="sd">          during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, n_modes).</span>
+<span class="sd">        </span>
+<span class="sd">        * If None, all the n_modes are used.</span>
+
+<span class="sd">        This can be updated dynamically during training.</span>
 <span class="sd">    use_mlp : bool, optional</span>
 <span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
 <span class="sd">    mlp : dict, optional</span>
@@ -222,6 +229,7 @@
                  <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
                  <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
                  <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                 <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
                  <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">preactivation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -240,6 +248,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_modes</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span> <span class="o">=</span> <span class="n">n_modes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_incremental_n_modes</span> <span class="o">=</span> <span class="n">incremental_n_modes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span> <span class="o">=</span> <span class="n">hidden_channels</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lifting_channels</span> <span class="o">=</span> <span class="n">lifting_channels</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">projection_channels</span> <span class="o">=</span> <span class="n">projection_channels</span>
@@ -266,6 +275,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">convs</span> <span class="o">=</span> <span class="n">FactorizedSpectralConv</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span><span class="p">,</span> 
+            <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
             <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
             <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
             <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span> 
@@ -302,7 +312,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span> <span class="o">=</span> <span class="n">Lifting</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">Projection</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
                                      <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">)</span>
-
 
 <div class="viewcode-block" id="FNO.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO.html#neuralop.models.FNO.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;TFNO&#39;s forward pass</span>
@@ -349,8 +358,15 @@
             <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span><span class="o">.</span><span class="n">unpad</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">x</span></div></div>
+        <span class="k">return</span> <span class="n">x</span></div>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">incremental_n_modes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_incremental_n_modes</span>
+
+    <span class="nd">@incremental_n_modes</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">incremental_n_modes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">incremental_n_modes</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">convs</span><span class="o">.</span><span class="n">incremental_n_modes</span> <span class="o">=</span> <span class="n">incremental_n_modes</span></div>
 
 <div class="viewcode-block" id="FNO1d"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO1d.html#neuralop.models.FNO1d">[docs]</a><span class="k">class</span> <span class="nc">FNO1d</span><span class="p">(</span><span class="n">FNO</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;1D Fourier Neural Operator</span>
@@ -371,6 +387,13 @@
 <span class="sd">        number of hidden channels of the projection block of the FNO, by default 256</span>
 <span class="sd">    n_layers : int, optional</span>
 <span class="sd">        Number of Fourier Layers, by default 4</span>
+<span class="sd">    incremental_n_modes : None or int tuple, default is None</span>
+<span class="sd">        * If not None, this allows to incrementally increase the number of modes in Fourier domain </span>
+<span class="sd">          during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, n_modes).</span>
+<span class="sd">        </span>
+<span class="sd">        * If None, all the n_modes are used.</span>
+
+<span class="sd">        This can be updated dynamically during training.</span>
 <span class="sd">    use_mlp : bool, optional</span>
 <span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
 <span class="sd">    mlp : dict, optional</span>
@@ -417,6 +440,7 @@
         <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+        <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
         <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -444,6 +468,7 @@
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
             <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
             <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp</span><span class="o">=</span><span class="n">mlp</span><span class="p">,</span>
+            <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
             <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
             <span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">,</span>
             <span class="n">separable</span><span class="o">=</span><span class="n">separable</span><span class="p">,</span>
@@ -461,7 +486,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span> <span class="o">=</span> <span class="n">n_modes_height</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">convs</span> <span class="o">=</span> <span class="n">FactorizedSpectralConv1d</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span><span class="p">,</span> <span class="p">),</span>
+            <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
             <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
             <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
             <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span> 
@@ -495,6 +521,13 @@
 <span class="sd">        number of hidden channels of the projection block of the FNO, by default 256</span>
 <span class="sd">    n_layers : int, optional</span>
 <span class="sd">        Number of Fourier Layers, by default 4</span>
+<span class="sd">    incremental_n_modes : None or int tuple, default is None</span>
+<span class="sd">        * If not None, this allows to incrementally increase the number of modes in Fourier domain </span>
+<span class="sd">          during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, n_modes).</span>
+<span class="sd">        </span>
+<span class="sd">        * If None, all the n_modes are used.</span>
+
+<span class="sd">        This can be updated dynamically during training.</span>
 <span class="sd">    use_mlp : bool, optional</span>
 <span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
 <span class="sd">    mlp : dict, optional</span>
@@ -543,6 +576,7 @@
         <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
         <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -569,6 +603,7 @@
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
             <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
             <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp</span><span class="o">=</span><span class="n">mlp</span><span class="p">,</span>
+            <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
             <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
             <span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">,</span>
             <span class="n">separable</span><span class="o">=</span><span class="n">separable</span><span class="p">,</span>
@@ -588,7 +623,8 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">convs</span> <span class="o">=</span> <span class="n">FactorizedSpectralConv2d</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_width</span><span class="p">,</span> 
+            <span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_width</span><span class="p">),</span> 
+            <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
             <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
             <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
             <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span> 
@@ -624,6 +660,13 @@
 <span class="sd">        number of hidden channels of the projection block of the FNO, by default 256</span>
 <span class="sd">    n_layers : int, optional</span>
 <span class="sd">        Number of Fourier Layers, by default 4</span>
+<span class="sd">    incremental_n_modes : None or int tuple, default is None</span>
+<span class="sd">        * If not None, this allows to incrementally increase the number of modes in Fourier domain </span>
+<span class="sd">          during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, n_modes).</span>
+<span class="sd">        </span>
+<span class="sd">        * If None, all the n_modes are used.</span>
+
+<span class="sd">        This can be updated dynamically during training.</span>
 <span class="sd">    use_mlp : bool, optional</span>
 <span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
 <span class="sd">    mlp : dict, optional</span>
@@ -672,6 +715,7 @@
         <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
         <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -697,6 +741,7 @@
             <span class="n">projection_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
             <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
+            <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
             <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp</span><span class="o">=</span><span class="n">mlp</span><span class="p">,</span>
             <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
             <span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">,</span>
@@ -718,7 +763,8 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">convs</span> <span class="o">=</span> <span class="n">FactorizedSpectralConv3d</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> 
-            <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_width</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span><span class="p">,</span>
+            <span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_width</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span><span class="p">),</span>
+            <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
             <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
             <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
             <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span> 

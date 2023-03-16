@@ -22,7 +22,7 @@ Gallery of examples
 .. only:: html
 
   .. image:: /auto_examples/images/thumb/sphx_glr_plot_darcy_flow_thumb.png
-    :alt: A simple Darcy-Flow dataset
+    :alt:
 
   :ref:`sphx_glr_auto_examples_plot_darcy_flow.py`
 
@@ -39,7 +39,7 @@ Gallery of examples
 .. only:: html
 
   .. image:: /auto_examples/images/thumb/sphx_glr_plot_FNO_darcy_thumb.png
-    :alt: Training a neural operator on Darcy-Flow
+    :alt:
 
   :ref:`sphx_glr_auto_examples_plot_FNO_darcy.py`
 

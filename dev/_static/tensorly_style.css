@@ -8449,6 +8449,9 @@ code {
   div.section {
     padding: 2rem 1rem; } }
 
+.content .section {
+  padding-bottom: 1.5em; }
+
 .py {
   margin-top: 2.5em; }
   .py .field-list {
