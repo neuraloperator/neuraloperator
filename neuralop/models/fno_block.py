@@ -152,8 +152,8 @@ class FactorizedSpectralConv(nn.Module):
     n_modes : int tuple
         total number of modes to keep in Fourier Layer, along each dim
     separable : bool, default is True
-    scale : float or 'auto', default is 'auto'
-        scale to use for the init
+    init_std : float or 'auto', default is 'auto'
+        std to use for the init
     n_layers : int, optional
         Number of Fourier Layers, by default 4
     incremental_n_modes : None or int tuple, default is None
@@ -181,9 +181,10 @@ class FactorizedSpectralConv(nn.Module):
         Optionaly additional parameters to pass to the tensor decomposition
     """
     def __init__(self, in_channels, out_channels, n_modes, incremental_n_modes=None, bias=True,
-                 n_layers=1, scale='auto', separable=False, fft_norm='backward',
+                 n_layers=1, separable=False, res_scaling=None,
                  rank=0.5, factorization='cp', implementation='reconstructed', 
-                 fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict()):
+                 fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict(),
+                 init_std='auto', fft_norm='backward'):
         super().__init__()
 
         self.in_channels = in_channels
@@ -212,8 +213,15 @@ class FactorizedSpectralConv(nn.Module):
         self.n_layers = n_layers
         self.implementation = implementation
 
-        if scale == 'auto':
-            scale = (1 / (in_channels * out_channels))
+        if res_scaling is not None:
+            if isinstance(res_scaling, (float, int)):
+                res_scaling = [float(res_scaling)]*len(self.n_modes)
+        self.res_scaling = res_scaling
+
+        if init_std == 'auto':
+            init_std = (1 / (in_channels * out_channels))
+        else:
+            init_std = 0.02
 
         if isinstance(fixed_rank_modes, bool):
             if fixed_rank_modes:
@@ -221,17 +229,14 @@ class FactorizedSpectralConv(nn.Module):
                 fixed_rank_modes=[0]
             else:
                 fixed_rank_modes=None
-
-        self.mlp = None
-
         self.fft_norm = fft_norm
 
-        # Make sure we are using a Complex Factorized Tensor
+        # Make sure we are using a Complex Factorized Tensor to parametrize the conv
         if factorization is None:
             factorization = 'Dense' # No factorization
         if not factorization.lower().startswith('complex'):
             factorization = f'Complex{factorization}'
-    
+
         if separable:
             if in_channels != out_channels:
                 raise ValueError('To use separable Fourier Conv, in_channels must be equal to out_channels, ',
@@ -246,7 +251,7 @@ class FactorizedSpectralConv(nn.Module):
                                                 rank=self.rank, factorization=factorization, 
                                                 fixed_rank_modes=fixed_rank_modes,
                                                 **decomposition_kwargs)
-            self.weight.normal_(0, scale)
+            self.weight.normal_(0, init_std)
         else:
             self.weight = nn.ModuleList([
                  FactorizedTensor.new(
@@ -257,12 +262,11 @@ class FactorizedSpectralConv(nn.Module):
                     ) for _ in range((2**(self.order-1))*n_layers)]
                 )
             for w in self.weight:
-                w.normal_(0, scale)
-
+                w.normal_(0, init_std)
         self._contract = get_contract_fun(self.weight[0], implementation=implementation, separable=separable)
 
         if bias:
-            self.bias = nn.Parameter(scale * torch.randn(*((n_layers, self.out_channels) + (1, )*self.order)))
+            self.bias = nn.Parameter(init_std * torch.randn(*((n_layers, self.out_channels) + (1, )*self.order)))
         else:
             self.bias = None
 
@@ -308,6 +312,11 @@ class FactorizedSpectralConv(nn.Module):
         tensorized_spectral_conv(x)
         """
         batchsize, channels, *mode_sizes = x.shape
+
+        if self.res_scaling is not None:
+            mode_sizes = tuple([int(round(s*r)) for (s, r) in zip(mode_sizes, self.res_scaling)])
+            print(mode_sizes)
+
         fft_size = list(mode_sizes)
         fft_size[-1] = fft_size[-1]//2 + 1 # Redundant last coefficient
         

@@ -23,10 +23,10 @@ def test_FactorizedSpectralConv(factorization, implementation):
     # Test for Conv1D to Conv4D
     for dim in [1, 2, 3, 4]:
         conv = FactorizedSpectralConv(
-            3, 3, modes[:dim], n_layers=1, scale='auto', bias=False, implementation=implementation, factorization=factorization)
+            3, 3, modes[:dim], n_layers=1, bias=False, implementation=implementation, factorization=factorization)
 
         conv_dense = FactorizedSpectralConv(
-            3, 3, modes[:dim], n_layers=1, scale='auto', bias=False, implementation='reconstructed', factorization=None)
+            3, 3, modes[:dim], n_layers=1, bias=False, implementation='reconstructed', factorization=None)
 
         for i in range(2**(dim-1)):
             conv_dense.weight[i] = FactorizedTensor.from_tensor(conv.weight[i].to_tensor(), rank=None, factorization='ComplexDense')
@@ -44,6 +44,30 @@ def test_FactorizedSpectralConv(factorization, implementation):
         res = conv(x)
         assert res_shape == res.shape
 
+
+def test_FactorizedSpectralConv_res_scaling():
+    """Test FactorizedSpectralConv with upsampled or downsampled outputs
+    """
+    modes = (4, 4, 4, 4)
+    size = [6]*4
+    for dim in [1, 2, 3, 4]:
+        # Downsample outputs
+        conv = FactorizedSpectralConv(
+            3, 3, modes[:dim], n_layers=1, res_scaling=0.5)
+    
+        x = torch.randn(2, 3, *size[:dim])
+        res = conv(x)
+        assert(list(res.shape[2:]) == [m//2 for m in size[:dim]])
+        
+        # Upsample outputs
+        conv = FactorizedSpectralConv(
+            3, 3, modes[:dim], n_layers=1, res_scaling=2)
+    
+        x = torch.randn(2, 3, *size[:dim])
+        res = conv(x)
+        assert(list(res.shape[2:]) == [m*2 for m in size[:dim]])
+
+
 @pytest.mark.parametrize('factorization', ['ComplexCP', 'ComplexTucker'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
 def test_FactorizedSpectralConv3D(factorization, implementation):
@@ -54,11 +78,11 @@ def test_FactorizedSpectralConv3D(factorization, implementation):
     take with a grain of salt
     """
     conv = FactorizedSpectralConv(
-        3, 6, (4, 5, 2), n_layers=1, scale='auto', bias=False, implementation=implementation, factorization=factorization
+        3, 6, (4, 5, 2), n_layers=1, bias=False, implementation=implementation, factorization=factorization
     )
 
     conv_dense = FactorizedSpectralConv3d(
-        3, 6, (4, 5, 2), n_layers=1, scale='auto', bias=False, implementation='reconstructed', factorization=None
+        3, 6, (4, 5, 2), n_layers=1, bias=False, implementation='reconstructed', factorization=None
     )
     for i, w in enumerate(conv.weight):
         rec = w.to_tensor()
@@ -82,11 +106,11 @@ def test_FactorizedSpectralConv2D(factorization, implementation):
     take with a grain of salt
     """
     conv = FactorizedSpectralConv(
-        10, 11, (4, 5), n_layers=1, scale='auto', bias=False, implementation=implementation, factorization=factorization
+        10, 11, (4, 5), n_layers=1, bias=False, implementation=implementation, factorization=factorization
     )
 
     conv_dense = FactorizedSpectralConv2d(
-        10, 11, (4, 5), n_layers=1, scale='auto', bias=False, implementation='reconstructed', factorization=None
+        10, 11, (4, 5), n_layers=1, bias=False, implementation='reconstructed', factorization=None
     )
     for i, w in enumerate(conv.weight):
         rec = w.to_tensor()
@@ -108,11 +132,11 @@ def test_FactorizedSpectralConv1D(factorization, implementation):
     Verifies that a dense conv and factorized conv with the same weight produce the same output
     """
     conv = FactorizedSpectralConv(
-        10, 11, (5,), n_layers=1, scale='auto', bias=False, implementation=implementation, factorization=factorization
+        10, 11, (5,), n_layers=1, bias=False, implementation=implementation, factorization=factorization
     )
 
     conv_dense = FactorizedSpectralConv1d(
-        10, 11, (5,), n_layers=1, scale='auto', bias=False, implementation='reconstructed', factorization=None
+        10, 11, (5,), n_layers=1, bias=False, implementation='reconstructed', factorization=None
     )
     for i, w in enumerate(conv.weight):
         rec = w.to_tensor()
