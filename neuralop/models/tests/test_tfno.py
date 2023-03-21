@@ -36,15 +36,15 @@ def test_tfno(factorization, implementation, n_dim):
     rank = 0.2
     size = (s, )*n_dim
     m_modes = (modes,)*n_dim
-    model = TFNO(hidden_channels=width, n_modes=m_modes, 
-                            factorization=factorization,
-                            implementation=implementation,
-                            rank=rank,
-                            fixed_rank_modes=False,
-                            joint_factorization=False,
-                            n_layers=n_layers,
-                            use_mlp=use_mlp, mlp=mlp,
-                            fc_channels=fc_channels).to(device)
+    model = TFNO(hidden_channels=width, n_modes=m_modes,
+                 factorization=factorization,
+                 implementation=implementation,
+                 rank=rank,
+                 fixed_rank_modes=False,
+                 joint_factorization=False,
+                 n_layers=n_layers,
+                 use_mlp=use_mlp, mlp=mlp,
+                 fc_channels=fc_channels).to(device)
     in_data = torch.randn(batch_size, 3, *size).to(device)
 
     # Test forward pass
@@ -56,3 +56,10 @@ def test_tfno(factorization, implementation, n_dim):
     # Check backward pass
     loss = out.sum()
     loss.backward()
+
+    n_unused_params = 0
+    for param in model.parameters():
+        if param.grad is None:
+            n_unused_params += 1
+    assert n_unused_params == 0, f'{n_unused_params} parameters were unused!'
+    
