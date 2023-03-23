@@ -316,7 +316,7 @@ class FactorizedSpectralConv(nn.Module):
 
         if self.res_scaling is not None:
             mode_sizes = tuple([int(round(s*r)) for (s, r) in zip(mode_sizes, self.res_scaling)])
-            print(mode_sizes)
+            #print(mode_sizes)
 
         fft_size = list(mode_sizes)
         fft_size[-1] = fft_size[-1]//2 + 1 # Redundant last coefficient

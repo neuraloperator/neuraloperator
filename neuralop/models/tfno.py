@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partialmethod
-
+import torch
 from .mlp import MLP
 from .spectral_convolution import FactorizedSpectralConv3d, FactorizedSpectralConv2d, FactorizedSpectralConv1d
 from .spectral_convolution import FactorizedSpectralConv
@@ -58,8 +58,18 @@ class UNO(nn.Module):
         Number of Fourier Layers, by default 4
     layer_configs : list of maps describing configuaration of each of the layers. Each map contains 3
                     keys "out_channels", "n_modes", "res_scaling".
+                    example: For a 5 layer UNO architecture, the layer configurartions can be 
+                    layer_configs = [{"out_channels":20, "n_modes" : [5,5], "res_scaling" :[0.5,0.5] },\
+                                    {"out_channels":20, "n_modes" : [5,5], "res_scaling" :[1,1] },\
+                                    {"out_channels":20, "n_modes" : [5,5], "res_scaling" :[1,1] },\
+                                    {"out_channels":20, "n_modes" : [5,5], "res_scaling" :[1,1] },\
+                                    {"out_channels":10, "n_modes" : [5,5], "res_scaling" :[2,2] },\
+                                ]
     horizontal_skips_map: a map {...., b: a, ....}denoting horizontal skip connection from a-th layer to
                     b-th layer
+                    Example: For a 5 layer UNO architecture, the skip connections can be 
+                    horizontal_skips_map ={4:0,3:1}
+
     incremental_n_modes : None or int tuple, default is None
         * If not None, this allows to incrementally increase the number of modes in Fourier domain 
           during training. Has to verify n <= N for (n, m) in zip(incremental_n_modes, n_modes).
@@ -119,6 +129,7 @@ class UNO(nn.Module):
                  non_linearity=F.gelu,
                  norm=None, preactivation=False,
                  fno_skip='linear',
+                 horizontal_skip = 'linear',
                  mlp_skip='soft-gating',
                  separable=False,
                  factorization=None,
@@ -129,6 +140,7 @@ class UNO(nn.Module):
                  decomposition_kwargs=dict(),
                  domain_padding=None,
                  domain_padding_mode='one-sided',
+                 output_scale_factor = 1,
                  fft_norm='forward',
                  **kwargs):
         super().__init__()
@@ -155,8 +167,11 @@ class UNO(nn.Module):
         self.preactivation = preactivation
         self._incremental_n_modes = incremental_n_modes
 
+        assert len(self.layer_configs) == n_layers
+        
+
         if domain_padding is not None and domain_padding > 0:
-            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode)
+            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scale_factor = output_scale_factor)
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
@@ -164,15 +179,15 @@ class UNO(nn.Module):
         
 
         self.lifting = Lifting(in_channels=in_channels, out_channels=self.hidden_channels, n_dim=self.n_dim)
-        self.fno_blocks = {}
-        self.horizontal_skips = {}
+        self.fno_blocks = nn.ModuleList([])
+        self.horizontal_skips = torch.nn.ModuleDict({})
         prev_out = self.hidden_channels
         for i in range(self.n_layers):
 
-            if i in self.horizontal_skips_map.keys:
-                prev_out = prev_out + self.layer_configs[self.horizontal_skips_map.keys[i]]['out_channels']
+            if i in self.horizontal_skips_map.keys():
+                prev_out = prev_out + self.layer_configs[self.horizontal_skips_map[i]]['out_channels']
 
-            self.fno_blocks[i] = fno_blocks = FNOBlocks(
+            self.fno_blocks.append(FNOBlocks(
                                             in_channels=prev_out,
                                             out_channels= self.layer_configs[i]['out_channels'], 
                                             n_modes=self.layer_configs[i]['n_modes'],
@@ -191,20 +206,18 @@ class UNO(nn.Module):
                                             factorization=factorization,
                                             decomposition_kwargs=decomposition_kwargs,
                                             joint_factorization=joint_factorization,
-                                            n_layers=n_layers)
+                                            n_layers=n_layers))
             
-            if i in self.horizontal_skips_map.values:
-                self.horizontal_skips[i] = skip_connection( self.layer_configs[i]['out_channels'],  \
-                self.layer_configs[i]['out_channels'], type=fno_skip, n_dim=self.n_dim)
+            if i in self.horizontal_skips_map.values():
+                self.horizontal_skips[str(i)] = skip_connection( self.layer_configs[i]['out_channels'],  \
+                self.layer_configs[i]['out_channels'], type=horizontal_skip, n_dim=self.n_dim)
 
             prev_out = self.layer_configs[i]['out_channels']
 
         self.projection = Projection(in_channels=prev_out, out_channels=out_channels, hidden_channels=projection_channels,
-                                     non_linearity=non_linearity, n_dim=self.n_dim)
-        
-        def forward(self, x):
-        """TFNO's forward pass
-        """
+                                        non_linearity=non_linearity, n_dim=self.n_dim)
+     
+    def forward(self, x):
         x = self.lifting(x)
 
         if self.domain_padding is not None:
@@ -212,13 +225,15 @@ class UNO(nn.Module):
 
         skip_outputs = {}
         for layer_idx in range(self.n_layers):
-            if layer_idx in  self.horizontal_skips_map.keys:
+            if layer_idx in  self.horizontal_skips_map.keys():
                 skip_val = skip_outputs[self.horizontal_skips_map[layer_idx]]
-                res_scalings = [m/n for (m,n) in zip()]
-                t = resample(,)
+                res_scalings = [m/n for (m,n) in zip(x.shape,skip_val.shape)]
+                res_scalings = res_scalings[-1*self.n_dim:]
+                t = resample(skip_val,res_scalings, list(range(-self.n_dim, 0)))
+                x = torch.cat([x,t], dim = 1)
             x = self.fno_blocks[layer_idx](x)
-            if layer_idx in self.horizontal_skips_map.values:
-                skip_outputs[layer_idx] = self.horizontal_skips[layer_idx](x)
+            if layer_idx in self.horizontal_skips_map.values():
+                skip_outputs[layer_idx] = self.horizontal_skips[str(layer_idx)](x)
 
         if self.domain_padding is not None:
             x = self.domain_padding.unpad(x)
@@ -793,3 +808,4 @@ TFNO   = partialclass('TFNO', FNO, factorization='Tucker')
 TFNO1d = partialclass('TFNO1d', FNO1d, factorization='Tucker')
 TFNO2d = partialclass('TFNO2d', FNO2d, factorization='Tucker')
 TFNO3d = partialclass('TFNO3d', FNO3d, factorization='Tucker')
+UNO =  partialclass('UNO', UNO, factorization='Tucker')

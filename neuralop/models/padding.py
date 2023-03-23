@@ -16,10 +16,11 @@ class DomainPadding(nn.Module):
     This class works for any input resolution, as long as it is in the form
     `(batch-size, channels, d1, ...., dN)`
     """
-    def __init__(self, domain_padding, padding_mode='one-sided'):
+    def __init__(self, domain_padding, padding_mode='one-sided', output_scale_factor = 1):
         super().__init__()
         self.domain_padding = domain_padding
         self.padding_mode = padding_mode.lower()
+        self.output_scale_factor = output_scale_factor
         
         # dict(f'{resolution}'=padding) such that padded = F.pad(x, indices)
         self._padding = dict()
@@ -40,6 +41,9 @@ class DomainPadding(nn.Module):
 
         if isinstance(self.domain_padding, (float, int)):
             self.domain_padding = [float(self.domain_padding)]*len(resolution)
+        
+        if isinstance(self.output_scale_factor, (float, int)):
+            self.output_scale_factor = [float(self.output_scale_factor)]*len(resolution)
 
         try:
             padding = self._padding[f'{resolution}']
@@ -52,12 +56,12 @@ class DomainPadding(nn.Module):
 
             if self.padding_mode == 'symmetric':
                 # Pad both sides
-                unpad_indices = (Ellipsis, ) + tuple([slice(p, -p, None) for p in padding])
+                unpad_indices = (Ellipsis, ) + tuple([slice(int(p*s), -int(p*s), None) for (p,s) in zip(padding,self.output_scale_factor)])
                 padding = [i for p in padding for i in (p, p)]
 
             elif self.padding_mode == 'one-sided':
                 # One-side padding
-                unpad_indices = (Ellipsis, ) + tuple([slice(None, -p, None) for p in padding])
+                unpad_indices = (Ellipsis, ) + tuple([slice(None, -int(s*p), None) for (p,s) in zip(padding,self.output_scale_factor)])
                 padding = [i for p in padding for i in (0, p)]
             else:
                 raise ValueError(f'Got {self.padding_mode=}')
@@ -65,12 +69,12 @@ class DomainPadding(nn.Module):
             self._padding[f'{resolution}'] = padding
 
             padded = F.pad(x, padding, mode='constant')
-            self._unpad_indices[f'{padded.shape[2:]}'] = unpad_indices
+            
+            self._unpad_indices[f'{[int(s*p) for (s,p) in zip(padded.shape[2:], self.output_scale_factor)]}'] = unpad_indices
             return padded
 
     def unpad(self, x):
         """Remove the padding from padding inputs
         """
-        unpad_indices = self._unpad_indices[f'{x.shape[2:]}']
-
+        unpad_indices = self._unpad_indices[f'{list(x.shape[2:])}']
         return x[unpad_indices]
