@@ -1,10 +1,39 @@
 from torch import nn
 import torch.nn.functional as F
-
+import torch
 from .spectral_convolution import FactorizedSpectralConv
 from .skip_connections import skip_connection
 from .mlp import MLP
 
+def resample(x, res_scale, axis):
+    if isinstance(axis, list) and isinstance(res_scale, (float, int)):
+        res_scale = [res_scale]*len(axis)
+    if not isinstance(axis, list) and isinstance(res_scale,list):
+      raise Exception("Axis is not a list but Scale factors are")
+    if isinstance(axis, list) and isinstance(res_scale,list) and len(res_scale)!=len(axis):
+      raise Exception("Axis and Scal factor are in different sizes")
+
+    if isinstance(axis, list):
+        for i in range(len(res_scale)):
+            rs = res_scale[i]
+            a = axis[i]
+            x = resample(x, rs, a)
+        return x
+
+    Nx = x.shape[axis]
+    X = torch.fft.rfft(x, dim=axis, norm = 'forward')    
+    newshape = list(x.shape)
+    new_res = int(res_scale*newshape[axis])
+    newshape[axis] = new_res // 2 + 1
+
+    Y = torch.zeros(newshape, dtype=X.dtype, device=x.device)
+
+    N = min(new_res, Nx)
+    sl = [slice(None)] * x.ndim
+    sl[axis] = slice(0, N // 2 + 1)
+    Y[tuple(sl)] = X[tuple(sl)]
+    y = torch.fft.irfft(Y, new_res, dim=axis,norm = 'forward')
+    return y
 
 class FNOBlocks(nn.Module):
     def __init__(self, in_channels, out_channels, n_modes,
@@ -98,7 +127,8 @@ class FNOBlocks(nn.Module):
 
         if not self.preactivation and self.norm is not None:
             x_fno = self.norm[index](x_fno)
-
+        if self.convs.res_scaling is not None:
+            x_skip = resample(x_skip,self.convs.res_scaling, list(range(-len(self.convs.res_scaling), 0)) )
         x = x_fno + x_skip
 
         if not self.preactivation and index < (self.n_layers - index):
