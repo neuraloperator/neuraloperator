@@ -90,13 +90,14 @@ class FNOBlocks(nn.Module):
 
             if self.norm is not None:
                 x = self.norm[index](x)
+    
+        x_skip = self.fno_skips[index](x)
 
-        x_fno = self.convs[index](x)
+        x_fno = self.convs(x, index)
 
         if not self.preactivation and self.norm is not None:
             x_fno = self.norm[index](x_fno)
 
-        x_skip = self.fno_skips[index](x)
         x = x_fno + x_skip
 
         if not self.preactivation and index < (self.n_layers - index):
