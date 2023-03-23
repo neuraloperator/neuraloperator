@@ -19,6 +19,7 @@ class FNOBlocks(nn.Module):
                  separable=False,
                  factorization=None,
                  rank=1.0,
+                 SpectralConv=FactorizedSpectralConv,
                  joint_factorization=False, 
                  fixed_rank_modes=False,
                  implementation='factorized',
@@ -45,7 +46,7 @@ class FNOBlocks(nn.Module):
         self.separable = separable
         self.preactivation = preactivation
 
-        self.convs = FactorizedSpectralConv(
+        self.convs = SpectralConv(
                 self.in_channels, self.out_channels, self.n_modes, 
                 res_scaling=res_scaling,
                 incremental_n_modes=incremental_n_modes,
@@ -117,6 +118,14 @@ class FNOBlocks(nn.Module):
                     x = self.non_linearity(x)
 
         return x
+
+    @property
+    def incremental_n_modes(self):
+        return self._incremental_n_modes
+
+    @incremental_n_modes.setter
+    def incremental_n_modes(self, incremental_n_modes):
+        self.convs.incremental_n_modes = incremental_n_modes
 
     def get_block(self, indices):
         """Returns a sub-FNO Block layer from the jointly parametrized main block

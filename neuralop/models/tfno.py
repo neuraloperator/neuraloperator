@@ -208,7 +208,7 @@ class FNO(nn.Module):
 
     @incremental_n_modes.setter
     def incremental_n_modes(self, incremental_n_modes):
-        self.convs.incremental_n_modes = incremental_n_modes
+        self.fno_blocks.incremental_n_modes = incremental_n_modes
 
 
 class FNO1d(FNO):
