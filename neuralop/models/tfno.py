@@ -225,14 +225,19 @@ class UNO(nn.Module):
 
         skip_outputs = {}
         for layer_idx in range(self.n_layers):
+
             if layer_idx in  self.horizontal_skips_map.keys():
+                print("using skip", layer_idx)
                 skip_val = skip_outputs[self.horizontal_skips_map[layer_idx]]
                 res_scalings = [m/n for (m,n) in zip(x.shape,skip_val.shape)]
                 res_scalings = res_scalings[-1*self.n_dim:]
                 t = resample(skip_val,res_scalings, list(range(-self.n_dim, 0)))
                 x = torch.cat([x,t], dim = 1)
+
             x = self.fno_blocks[layer_idx](x)
+
             if layer_idx in self.horizontal_skips_map.values():
+                print("saving skip", layer_idx)
                 skip_outputs[layer_idx] = self.horizontal_skips[str(layer_idx)](x)
 
         if self.domain_padding is not None:
