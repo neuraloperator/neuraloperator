@@ -49,8 +49,9 @@ class Trainer:
         self.use_distributed = use_distributed
         self.device = device
         self.incremental_loss_gap = incremental_loss_gap
-        self.incremental = incremental
+        self.incremental_grad = incremental
         self.incremental_resolution = incremental_resolution
+        self.incremental = self.incremental_loss_gap or self.incremental_grad or self.incremental_resolution
 
         if mg_patching_levels > 0:
             self.mg_n_patches = 2**mg_patching_levels
@@ -64,11 +65,11 @@ class Trainer:
                 print(f'Training on regular inputs (no multi-grid patching).')
                 sys.stdout.flush()
         
-        if self.incremental and self.incremental_loss_gap:
+        if self.incremental_grad and self.incremental_loss_gap:
             raise ValueError("Incremental and incremental loss gap cannot be used together")
         
-        if self.incremental or self.incremental_loss_gap or self.incremental_resolution:
-            self.incremental_scheduler = Incremental(model)
+        if self.incremental:
+            self.incremental_scheduler = Incremental(model, incremental = self.incremental_grad, incremental_loss_gap = self.incremental_loss_gap, incremental_resolution = self.incremental_resolution)
         
         self.mg_patching_padding = mg_patching_padding
         self.patcher = MultigridPatching2D(model, levels=mg_patching_levels, padding_fraction=mg_patching_padding,
@@ -140,16 +141,8 @@ class Trainer:
                 loss.backward()
                             
                 # update frequency modes loss based method
-                if self.incremental_loss_gap:
-                    self.incremental_scheduler.loss_gap(loss.item())
-                
-                # update frequency modes based on explained variance               
                 if self.incremental:
-                    self.incremental_scheduler.grad_explained()
-                
-                # increase resolution
-                if self.incremental_resolution:
-                    self.incremental_scheduler.resolution()
+                    self.incremental_scheduler.step(loss.item())
                 
                 optimizer.step()
                 train_err += loss.item()

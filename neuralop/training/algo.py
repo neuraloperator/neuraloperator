@@ -6,19 +6,27 @@ import torch.nn.functional as F
 from torch import linalg as LA
 
 class Incremental:
-    def __init__(self, model) -> None:
+    def __init__(self, model, incremental, incremental_loss_gap, incremental_resolution) -> None:
         self.model = model
         self.ndim = len(model.n_modes)
+        self.incremental_grad = incremental
+        self.incremental_resolution = incremental_resolution
+        self.incremental_loss_gap = incremental_loss_gap
         
-        # incremental
-        self.buffer = 5
-        self.grad_explained_ratio_threshold = 0.99
-        self.max_iter = 1
-        self.grad_max_iter = 10
+        if self.incremental_grad:
+            # incremental
+            self.buffer = 5
+            self.grad_explained_ratio_threshold = 0.99
+            self.max_iter = 1
+            self.grad_max_iter = 10
         
-        # loss gap
-        self.eps = 1e-2
-        self.loss_list = []
+        if self.incremental_loss_gap:
+            # loss gap
+            self.eps = 1e-2
+            self.loss_list = []
+            
+        if self.incremental_resolution:
+            pass
 
     def loss_gap(self, loss):
         self.loss_list.append(loss)
@@ -67,6 +75,14 @@ class Incremental:
             self.accumulated_grad = torch.zeros_like(self.model.convs.weight[0])
             self.model.incremental_n_modes = tuple(incremental_final)
 
+    def step(self, loss = False):
+        if self.incremental_loss_gap:
+            self.loss_gap(loss)
+        if self.incremental_grad:
+            self.grad_explained()
+        if self.incremental_resolution:
+            self.incremental_resolution()
+    
     def compute_rank(self, tensor):
         rank = torch.matrix_rank(tensor).cpu()
         return rank

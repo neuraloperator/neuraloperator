@@ -143,7 +143,7 @@ print(f'\n * Test: {eval_losses}')
 sys.stdout.flush()
 
 # Create the trainer for incremental model 
-trainer = Trainer(model, n_epochs=500,
+trainer = Trainer(model, n_epochs=20,
                   device=device,
                   mg_patching_levels=0,
                   wandb_log=False,
