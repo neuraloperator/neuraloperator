@@ -71,7 +71,6 @@ trainer.train(train_loader, test_loaders,
               regularizer=False, 
               training_loss=train_loss,
               eval_losses=eval_losses)
-
 print("-------------------------------------------------------------------------------------------", "\n")
 # %%
 # We create an incremental FNO model
@@ -116,7 +115,6 @@ trainer.train(train_loader, test_loaders,
               regularizer=False, 
               training_loss=train_loss,
               eval_losses=eval_losses)
-
 print("-------------------------------------------------------------------------------------------", "\n")
 
 # %%
@@ -145,7 +143,7 @@ print(f'\n * Test: {eval_losses}')
 sys.stdout.flush()
 
 # Create the trainer for incremental model 
-trainer = Trainer(model, n_epochs=20,
+trainer = Trainer(model, n_epochs=500,
                   device=device,
                   mg_patching_levels=0,
                   wandb_log=False,

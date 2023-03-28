@@ -7,13 +7,13 @@ import neuralop.mpu.comm as comm
 
 from .patching import MultigridPatching2D
 from .losses import LpLoss
-from .algo import loss_gap, grad_explained
+from .algo import Incremental
 
 
 class Trainer:
     def __init__(self, model, n_epochs, wandb_log=True, device=None,
                  mg_patching_levels=0, mg_patching_padding=0, mg_patching_stitching=True,
-                 log_test_interval=1, log_output=False, use_distributed=False, verbose=True, incremental = False, incremental_loss_gap = None):
+                 log_test_interval=1, log_output=False, use_distributed=False, verbose=True, incremental = False, incremental_loss_gap = False, incremental_resolution = False):
         """
         A general Trainer class to train neural-operators on given datasets
 
@@ -50,6 +50,7 @@ class Trainer:
         self.device = device
         self.incremental_loss_gap = incremental_loss_gap
         self.incremental = incremental
+        self.incremental_resolution = incremental_resolution
 
         if mg_patching_levels > 0:
             self.mg_n_patches = 2**mg_patching_levels
@@ -66,18 +67,8 @@ class Trainer:
         if self.incremental and self.incremental_loss_gap:
             raise ValueError("Incremental and incremental loss gap cannot be used together")
         
-        if self.incremental:
-            self.buffer = 5
-            self.grad_explained_ratio_threshold = 0.9
-            self.max_iter = 10
-            self.grad_max_iter = 10
-            
-        if self.incremental_loss_gap:
-            self.loss_eps = 0.01
-            self.loss_list = [] 
-        
-        # number of frequency dimensions paramater
-        self.ndim = len(model.n_modes)
+        if self.incremental or self.incremental_loss_gap or self.incremental_resolution:
+            self.incremental_scheduler = Incremental(model)
         
         self.mg_patching_padding = mg_patching_padding
         self.patcher = MultigridPatching2D(model, levels=mg_patching_levels, padding_fraction=mg_patching_padding,
@@ -112,8 +103,8 @@ class Trainer:
         else:
             is_logger = True 
         
-        if self.incremental_loss_gap is not None or self.incremental:
-            print("Model is initially using number of modes", model.incremental_n_modes)
+        if self.incremental_loss_gap or self.incremental:
+            print("Model is initially using {} number of modes".format(model.incremental_n_modes))
 
         for epoch in range(self.n_epochs):
             avg_loss = 0
@@ -148,40 +139,17 @@ class Trainer:
 
                 loss.backward()
                             
-                # update frequency modes
+                # update frequency modes loss based method
                 if self.incremental_loss_gap:
-                    # append the loss list
-                    self.loss_list.append(loss.item())
-                    
-                    # we can just increase the frequency modes in all dimensions equally
-                    modes = loss_gap(self.loss_eps, model.n_modes[0], model.convs.incremental_n_modes[0], self.loss_list)
-                    modes_list = tuple([modes] * self.ndim)
-                    model.incremental_n_modes = modes_list
+                    self.incremental_scheduler.loss_gap(loss.item())
                 
+                # update frequency modes based on explained variance               
                 if self.incremental:
-                    
-                    if not hasattr(self, 'accumulated_grad'):
-                        self.accumulated_grad = torch.zeros_like(model.convs.weight[0])
-                    if not hasattr(self, 'grad_iter'):
-                        self.grad_iter = 1 
+                    self.incremental_scheduler.grad_explained()
                 
-                    if self.grad_iter <= self.grad_max_iter:
-                        self.grad_iter += 1
-                        self.accumulated_grad += model.convs.weight[0]
-                    else:
-                        # weights, grad_explained_ratio_threshold, max_modes, incremental_modes, buffer
-                        # loop over all frequency dimensions
-                        # create a list of eventual modes
-                        incremental_modes = []
-                        for i in range(self.ndim):
-                            weight = self.accumulated_grad
-                            modes = grad_explained(weight, self.grad_explained_ratio_threshold, model.n_modes[i], model.convs.incremental_n_modes[i], self.buffer)
-                            incremental_modes.append(modes)
-                        
-                        # update the modes and frequency dimensions
-                        self.grad_iter = 1
-                        self.accumulated_grad = torch.zeros_like(model.convs.weight[0])
-                        model.incremental_n_modes = tuple(incremental_modes)
+                # increase resolution
+                if self.incremental_resolution:
+                    self.incremental_scheduler.resolution()
                 
                 optimizer.step()
                 train_err += loss.item()
@@ -228,8 +196,8 @@ class Trainer:
                     print(msg)
                     sys.stdout.flush()
                     
-                if self.incremental_loss_gap is not None or self.incremental:
-                    print("Model is currently using number of modes", model.convs.incremental_n_modes)
+                if self.incremental_loss_gap or self.incremental:
+                    print("Model is currently using {} number of modes".format(model.convs.incremental_n_modes))
 
                 # Wandb loging
                 if self.wandb_log and is_logger:
