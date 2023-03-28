@@ -177,7 +177,7 @@ class UNO(nn.Module):
                                             factorization=factorization,
                                             decomposition_kwargs=decomposition_kwargs,
                                             joint_factorization=joint_factorization,
-                                            n_layers=n_layers))
+                                            n_layers=1))
             
             if i in self.horizontal_skips_map.values():
                 self.horizontal_skips[str(i)] = skip_connection( self.layer_configs[i]['out_channels'],  \
