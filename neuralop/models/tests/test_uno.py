@@ -2,24 +2,18 @@ import time
 from neuralop.models.uno import UNO
 import torch
 
-
 def test_UNO():
-    layer_configs = [{"out_channels": 20, "n_modes": [5, 5], "res_scaling":[0.5, 0.5]},
-                     {"out_channels": 20, "n_modes": [
-                         5, 5], "res_scaling":[1, 1]},
-                     {"out_channels": 20, "n_modes": [
-                         5, 5], "res_scaling":[1, 1]},
-                     {"out_channels": 20, "n_modes": [
-                         5, 5], "res_scaling":[2, 2]},
-                     {"out_channels": 10, "n_modes": [
-                         5, 5], "res_scaling":[2, 2]},
-                     ]
-    horizontal_skips_map = {4: 0, 3: 1}
-    model = UNO(3, 3, 5, layer_configs=layer_configs, horizontal_skips_map=horizontal_skips_map,
-                n_layers=5, domain_padding=0.2, output_scale_factor=2)
+    layer_configs = [{"out_channels":20, "n_modes" : [5,5], "res_scaling" :[0.5,0.5] },\
+                    {"out_channels":20, "n_modes" : [5,5], "res_scaling" :[1,1] },\
+                    {"out_channels":20, "n_modes" : [5,5], "res_scaling" :[1,1] },\
+                    {"out_channels":20, "n_modes" : [5,5], "res_scaling" :[2,2] },\
+                    {"out_channels":10, "n_modes" : [5,5], "res_scaling" :[2,2] },\
+                            ]
+    horizontal_skips_map ={4:0,3:1}
+    model = UNO(3,3,5,layer_configs = layer_configs, horizontal_skips_map = horizontal_skips_map, n_layers = 5, domain_padding = 0.2, output_scale_factor = 2)
 
     t1 = time.time()
-    in_data = torch.randn(10, 3, 20, 20)
+    in_data = torch.randn(10,3,20,20)
     out = model(in_data)
     t = time.time() - t1
     print(f'Output of size {out.shape} in {t}.')
@@ -28,7 +22,7 @@ def test_UNO():
     loss.backward()
     n_unused_params = 0
 
-    for param in model.parameters():
+    for name,param in model.named_parameters():
         if param.grad is None:
             n_unused_params += 1
 
