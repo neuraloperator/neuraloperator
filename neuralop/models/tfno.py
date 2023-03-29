@@ -1,13 +1,13 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partialmethod
-
+import torch
 from .mlp import MLP
 from .spectral_convolution import FactorizedSpectralConv3d, FactorizedSpectralConv2d, FactorizedSpectralConv1d
 from .spectral_convolution import FactorizedSpectralConv
 from .skip_connections import skip_connection
 from .padding import DomainPadding
-from .fno_block import FNOBlocks
+from .fno_block import FNOBlocks, resample
 
 
 class Lifting(nn.Module):
@@ -38,6 +38,7 @@ class Projection(nn.Module):
         x = self.non_linearity(x)
         x = self.fc2(x)
         return x
+
 
 
 class FNO(nn.Module):
