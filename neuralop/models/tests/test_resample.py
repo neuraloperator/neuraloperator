@@ -14,4 +14,4 @@ def test_resample():
         axis = [-3,-2,-1]
         b = resample(a,res_scale,axis)
 
-        assert b.shape[-1] == 4*a.shape[-1] and b.shape[-2] == 3*a.shape[-2] and b.shape[-3] == int(0.5*a.shape[-2])
+        assert b.shape[-1] == 4*a.shape[-1] and b.shape[-2] == 3*a.shape[-2] and b.shape[-3] == int(0.5*a.shape[-3])

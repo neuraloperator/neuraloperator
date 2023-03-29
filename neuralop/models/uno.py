@@ -9,7 +9,7 @@ from .spectral_convolution import FactorizedSpectralConv
 from .skip_connections import skip_connection
 from .padding import DomainPadding
 from .fno_block import FNOBlocks, resample
-
+from .tfno import partialclass
 class UNO(nn.Module):
     """N-Dimensional U-shaped Fourier Neural Operator
 
@@ -218,28 +218,6 @@ class UNO(nn.Module):
 
         return x
 
-def partialclass(new_name, cls, *args, **kwargs):
-    """Create a new class with different default values
 
-    Notes
-    -----
-    An obvious alternative would be to use functools.partial
-    >>> new_class = partial(cls, **kwargs)
-
-    The issue is twofold:
-    1. the class doesn't have a name, so one would have to set it explicitly:
-    >>> new_class.__name__ = new_name
-
-    2. the new class will be a functools object and one cannot inherit from it.
-
-    Instead, here, we define dynamically a new class, inheriting from the existing one.
-    """
-    __init__ = partialmethod(cls.__init__, *args, **kwargs)
-    new_class = type(new_name, (cls,),  {
-        '__init__': __init__,
-        '__doc__': cls.__doc__,
-        'forward': cls.forward, 
-    })
-    return new_class
 
 UNO =  partialclass('UNO', UNO, factorization='Tucker')

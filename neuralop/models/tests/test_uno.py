@@ -1,5 +1,4 @@
 import time
-from torchsummary import summary
 from neuralop.models.uno import UNO
 import torch
 
@@ -12,10 +11,9 @@ def test_UNO():
                                 ]
         horizontal_skips_map ={4:0,3:1}
         model = UNO(3,3,5,layer_configs = layer_configs, horizontal_skips_map = horizontal_skips_map, n_layers = 5, domain_padding = 0.2, output_scale_factor = 2)
-        summary(model,(3,20,20))
 
         t1 = time.time()
-        in_data = torch.randn(10,3,20,20).to('cuda')
+        in_data = torch.randn(10,3,20,20)
         out = model(in_data)
         t = time.time() - t1
         print(f'Output of size {out.shape} in {t}.')
