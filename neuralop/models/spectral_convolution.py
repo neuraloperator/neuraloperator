@@ -124,13 +124,13 @@ def get_contract_fun(weight, implementation='reconstructed', separable=False):
         if torch.is_tensor(weight):
             return _contract_dense
         elif isinstance(weight, FactorizedTensor):
-            if weight.name.lower() == 'complexdense':
+            if weight.name.lower().endswith('dense'):
                 return _contract_dense
-            elif weight.name.lower() == 'complextucker':
+            elif weight.name.lower().endswith('tucker'):
                 return _contract_tucker
-            elif weight.name.lower() == 'complextt':
+            elif weight.name.lower().endswith('tt'):
                 return _contract_tt
-            elif weight.name.lower() == 'complexcp':
+            elif weight.name.lower().endswith('cp'):
                 return _contract_cp
             else:
                 raise ValueError(f'Got unexpected factorized weight type {weight.name}')
