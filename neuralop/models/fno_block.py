@@ -100,7 +100,7 @@ class FNOBlocks(nn.Module):
             x_fno = self.norm[index](x_fno)
     
         if self.convs.res_scaling is not None:
-            x_skip = resample(x_skip, self.convs.res_scaling)
+            x_skip = resample(x_skip, self.convs.res_scaling, list(range(-len(self.convs.res_scaling), 0)))
 
         x = x_fno + x_skip
 
