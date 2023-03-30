@@ -10,6 +10,8 @@ from .skip_connections import skip_connection
 from .padding import DomainPadding
 from .fno_block import FNOBlocks, resample
 from .tfno import partialclass
+
+
 class UNO(nn.Module):
     """N-Dimensional U-shaped Fourier Neural Operator
 

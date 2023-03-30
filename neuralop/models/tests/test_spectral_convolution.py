@@ -44,6 +44,24 @@ def test_FactorizedSpectralConv(factorization, implementation):
         res = conv(x)
         assert res_shape == res.shape
 
+        # Downsample outputs
+        block = FactorizedSpectralConv(
+            3, 4, modes[:dim], n_layers=1, res_scaling=0.5)
+    
+        x = torch.randn(2, 3, *(12, )*dim)
+        res = block(x)
+        assert(list(res.shape[2:]) == [12//2]*dim)
+        
+        # Upsample outputs
+        block = FactorizedSpectralConv(
+            3, 4, modes[:dim], n_layers=1, res_scaling=2)
+    
+        x = torch.randn(2, 3, *(12, )*dim)
+        res = block(x)
+        assert res.shape[1] == 4 # Check out channels
+        assert(list(res.shape[2:]) == [12*2]*dim)
+
+
 
 def test_FactorizedSpectralConv_res_scaling():
     """Test FactorizedSpectralConv with upsampled or downsampled outputs

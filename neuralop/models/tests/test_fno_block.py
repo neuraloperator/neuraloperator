@@ -6,10 +6,10 @@ def test_FactorizedSpectralConv_res_scaling():
     """
     modes = (8, 8, 8)
     incremental_modes = (4, 4, 4)
-    size = [6]*4
+    size = [10]*3
     for dim in [1, 2, 3]:
         block = FNOBlocks(
-            3, 4, modes[:dim], n_layers=1, res_scaling=0.5)
+            3, 4, modes[:dim], n_layers=1)
         
         assert block.convs.n_modes == modes[:dim]
 
@@ -19,21 +19,20 @@ def test_FactorizedSpectralConv_res_scaling():
         block.incremental_n_modes = modes[:dim]
         assert block.convs.incremental_n_modes == modes[:dim]
 
-
-        # # Downsample outputs
-        # block = FNOBlocks(
-        #     3, 4, modes[:dim], n_layers=1, res_scaling=0.5)
+        # Downsample outputs
+        block = FNOBlocks(
+            3, 4, modes[:dim], n_layers=1, res_scaling=0.5)
     
-        # x = torch.randn(2, 3, *size[:dim])
-        # res = block(x)
-        # assert(list(res.shape[2:]) == [m//2 for m in size[:dim]])
+        x = torch.randn(2, 3, *size[:dim])
+        res = block(x)
+        assert(list(res.shape[2:]) == [m//2 for m in size[:dim]])
         
-        # # Upsample outputs
-        # block = FNOBlocks(
-        #     3, 4, modes[:dim], n_layers=1, res_scaling=2)
+        # Upsample outputs
+        block = FNOBlocks(
+            3, 4, modes[:dim], n_layers=1, res_scaling=2)
     
-        # x = torch.randn(2, 3, *size[:dim])
-        # res = block(x)
-        # assert res.shape[1] == 4 # Check out channels
-        # assert(list(res.shape[2:]) == [m*2 for m in size[:dim]])
+        x = torch.randn(2, 3, *size[:dim])
+        res = block(x)
+        assert res.shape[1] == 4 # Check out channels
+        assert(list(res.shape[2:]) == [m*2 for m in size[:dim]])
 

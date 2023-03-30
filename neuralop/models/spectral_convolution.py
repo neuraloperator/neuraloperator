@@ -314,14 +314,10 @@ class FactorizedSpectralConv(nn.Module):
         """
         batchsize, channels, *mode_sizes = x.shape
 
-        if self.res_scaling is not None:
-            mode_sizes = tuple([int(round(s*r)) for (s, r) in zip(mode_sizes, self.res_scaling)])
-            #print(mode_sizes)
-
         fft_size = list(mode_sizes)
         fft_size[-1] = fft_size[-1]//2 + 1 # Redundant last coefficient
         
-        #Compute Fourier coeffcients 
+        #Compute Fourier coeffcients
         fft_dims = list(range(-self.order, 0))
         x = torch.fft.rfftn(x.float(), norm=self.fft_norm, dim=fft_dims)
 
@@ -337,6 +333,9 @@ class FactorizedSpectralConv(nn.Module):
 
             # For 2D: [:, :, :height, :width] and [:, :, -height:, width]
             out_fft[idx_tuple] = self._contract(x[idx_tuple], self._get_weight(self.n_weights_per_layer*indices + i), separable=self.separable)
+
+        if self.res_scaling is not None:
+            mode_sizes = tuple([int(round(s*r)) for (s, r) in zip(mode_sizes, self.res_scaling)])
 
         x = torch.fft.irfftn(out_fft, s=(mode_sizes), norm=self.fft_norm)
 
