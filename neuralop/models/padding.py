@@ -55,7 +55,10 @@ class DomainPadding(nn.Module):
             print(f'Padding inputs of {resolution=} with {padding=}, {self.padding_mode}')
 
             out_put_pad = padding
+
             for scale_factor in self.output_scale_factor:
+                if isinstance(scale_factor, (float, int)):
+                    scale_factor = [scale_factor]*len(resolution)
                 out_put_pad = [int(round(i*j)) for (i,j) in zip(scale_factor,out_put_pad)]
 
             if self.padding_mode == 'symmetric':
@@ -76,11 +79,12 @@ class DomainPadding(nn.Module):
 
             out_put_shape = padded.shape[2:]
             for scale_factor in self.output_scale_factor:
+                if isinstance(scale_factor, (float, int)):
+                    scale_factor = [scale_factor]*len(resolution)
                 out_put_shape = [int(round(i*j)) for (i,j) in zip(scale_factor,out_put_shape)]
             
             self._unpad_indices[f'{[i for i in out_put_shape]}'] = unpad_indices
-            print("Paded shape", padded.shape)
-            print(self._unpad_indices)
+
             return padded
 
     def unpad(self, x):
