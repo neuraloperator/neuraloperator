@@ -65,9 +65,6 @@ class Trainer:
                 print(f'Training on regular inputs (no multi-grid patching).')
                 sys.stdout.flush()
         
-        if self.incremental_grad and self.incremental_loss_gap:
-            raise ValueError("Incremental and incremental loss gap cannot be used together")
-        
         if self.incremental:
             self.incremental_scheduler = Incremental(model, incremental = self.incremental_grad, incremental_loss_gap = self.incremental_loss_gap, incremental_resolution = self.incremental_resolution)
         
@@ -104,7 +101,7 @@ class Trainer:
         else:
             is_logger = True 
         
-        if self.incremental_loss_gap or self.incremental:
+        if self.incremental_loss_gap or self.incremental_grad:
             print("Model is initially using {} number of modes".format(model.incremental_n_modes))
 
         for epoch in range(self.n_epochs):
@@ -120,6 +117,9 @@ class Trainer:
                 x = x.to(self.device)
                 y = y.to(self.device)
 
+                if self.incremental_resolution:
+                    x, y = self.incremental_scheduler.regularize_input_res(x,y)
+                                
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
                     regularizer.reset()
@@ -142,7 +142,7 @@ class Trainer:
                             
                 # update frequency modes loss based method
                 if self.incremental:
-                    self.incremental_scheduler.step(loss.item())
+                    self.incremental_scheduler.step(loss.item(), epoch)
                 
                 optimizer.step()
                 train_err += loss.item()
@@ -189,7 +189,7 @@ class Trainer:
                     print(msg)
                     sys.stdout.flush()
                     
-                if self.incremental_loss_gap or self.incremental:
+                if self.incremental_loss_gap or self.incremental_grad:
                     print("Model is currently using {} number of modes".format(model.convs.incremental_n_modes))
 
                 # Wandb loging
@@ -238,6 +238,9 @@ class Trainer:
                 x, y = self.patcher.patch(x, y)
                 y = y.to(self.device)
                 x = x.to(self.device)
+                
+                if self.incremental_resolution:
+                    x,y = self.incremental_scheduler.regularize_input_res(x,y)
                 
                 out = model(x)
         

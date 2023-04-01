@@ -4,6 +4,7 @@ from pathlib import Path
 from ..utils import UnitGaussianNormalizer
 from .tensor_dataset import TensorDataset
 from .transforms import PositionalEmbedding
+import scipy.io
 
 
 def load_darcy_flow_small(n_train, n_tests,
@@ -71,19 +72,19 @@ def load_darcy_pt(data_path,
                 channel_dim=1):
     """Load the Navier-Stokes dataset
     """
-    data = torch.load(Path(data_path).joinpath(f'darcy_train_{train_resolution}.pt').as_posix())
-    x_train = data['x'][0:n_train, :, :].unsqueeze(channel_dim).type(torch.float32).clone()
-    y_train = data['y'][0:n_train, :, :].unsqueeze(channel_dim).clone()
-    del data
+    data = scipy.io.loadmat(data_path)
+    #data = torch.load(Path(data_path).joinpath(f'darcy_train_{train_resolution}.pt').as_posix())
+    x_train = torch.tensor(data['coeff'], dtype=torch.float)[0:n_train, :, :].unsqueeze(channel_dim).type(torch.float32).clone()
+    y_train = torch.tensor(data['coeff'], dtype=torch.float)[0:n_train, :, :].unsqueeze(channel_dim).clone()
 
     idx = test_resolutions.index(train_resolution)
     test_resolutions.pop(idx)
     n_test = n_tests.pop(idx)
     test_batch_size = test_batch_sizes.pop(idx)
 
-    data = torch.load(Path(data_path).joinpath(f'darcy_test_{train_resolution}.pt').as_posix())
-    x_test = data['x'][:n_test, :, :].unsqueeze(channel_dim).type(torch.float32).clone()
-    y_test = data['y'][:n_test, :, :].unsqueeze(channel_dim).clone()
+    # data = torch.load(Path(data_path).joinpath(f'darcy_test_{train_resolution}.pt').as_posix())
+    x_test = torch.tensor(data['coeff'], dtype=torch.float)[:n_test, :, :].unsqueeze(channel_dim).type(torch.float32).clone()
+    y_test = torch.tensor(data['coeff'], dtype=torch.float)[:n_test, :, :].unsqueeze(channel_dim).clone()
     del data
     
     if encode_input:
