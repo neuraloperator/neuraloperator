@@ -113,7 +113,6 @@ class UNO(nn.Module):
                  decomposition_kwargs=dict(),
                  domain_padding=None,
                  domain_padding_mode='one-sided',
-                 output_scale_factor = 1,
                  fft_norm='forward',
                  **kwargs):
         super().__init__()
@@ -144,7 +143,8 @@ class UNO(nn.Module):
         
 
         if domain_padding is not None and domain_padding > 0:
-            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scale_factor = output_scale_factor)
+            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode\
+            , output_scale_factor = [i['res_scaling'] for i in layer_configs])
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
@@ -200,7 +200,7 @@ class UNO(nn.Module):
         for layer_idx in range(self.n_layers):
 
             if layer_idx in  self.horizontal_skips_map.keys():
-                print("using skip", layer_idx)
+                #print("using skip", layer_idx)
                 skip_val = skip_outputs[self.horizontal_skips_map[layer_idx]]
                 res_scalings = [m/n for (m,n) in zip(x.shape,skip_val.shape)]
                 res_scalings = res_scalings[-1*self.n_dim:]
@@ -210,7 +210,7 @@ class UNO(nn.Module):
             x = self.fno_blocks[layer_idx](x)
 
             if layer_idx in self.horizontal_skips_map.values():
-                print("saving skip", layer_idx)
+                #print("saving skip", layer_idx)
                 skip_outputs[layer_idx] = self.horizontal_skips[str(layer_idx)](x)
 
         if self.domain_padding is not None:

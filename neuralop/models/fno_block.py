@@ -85,7 +85,7 @@ class FNOBlocks(nn.Module):
             raise ValueError(f'Got {norm=} but expected None or one of [instance_norm, group_norm, layer_norm]')
 
     def forward(self, x, index=0):
-    
+        
         if self.preactivation:
             x = self.non_linearity(x)
 
@@ -93,7 +93,7 @@ class FNOBlocks(nn.Module):
                 x = self.norm[index](x)
     
         x_skip = self.fno_skips[index](x)
-
+        
         x_fno = self.convs(x, index)
 
         if not self.preactivation and self.norm is not None:
@@ -119,7 +119,6 @@ class FNOBlocks(nn.Module):
             if not self.preactivation:
                 if index < (self.n_layers - 1):
                     x = self.non_linearity(x)
-
         return x
 
     @property
