@@ -1,5 +1,5 @@
 import torch
-from neuralop.models.fno_block import FNOBlocks
+from ..fno_block import FNOBlocks
 
 def test_FactorizedSpectralConv_res_scaling():
     """Test FactorizedSpectralConv with upsampled or downsampled outputs
