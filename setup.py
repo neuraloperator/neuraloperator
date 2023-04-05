@@ -60,6 +60,8 @@ config = {
     'install_requires': ['numpy', 'configmypy', 'pytest'],
     'license': 'Modified BSD',
     'scripts': [],
+    'include_package_data': True,
+    'package_data': {'': ['datasets/data/*.pt']},
     'classifiers': [
         'Topic :: Scientific/Engineering',
         'License :: OSI Approved :: BSD License',
