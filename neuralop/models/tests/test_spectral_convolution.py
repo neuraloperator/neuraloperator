@@ -1,7 +1,7 @@
 import pytest
 import torch
 from tltorch import FactorizedTensor
-from neuralop.models.spectral_convolution import (FactorizedSpectralConv3d, FactorizedSpectralConv2d,
+from ..spectral_convolution import (FactorizedSpectralConv3d, FactorizedSpectralConv2d,
                                        FactorizedSpectralConv1d, FactorizedSpectralConv)
 
 

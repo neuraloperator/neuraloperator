@@ -1,5 +1,5 @@
 import time
-from neuralop.models.uno import UNO
+from ..uno import UNO
 import torch
 
 def test_UNO():
@@ -10,16 +10,21 @@ def test_UNO():
                     {"out_channels":10, "n_modes" : [5,5], "res_scaling" :[2,2] },\
                             ]
     horizontal_skips_map ={4:0,3:1}
-    model = UNO(3,3,5,layer_configs = layer_configs, horizontal_skips_map = horizontal_skips_map, n_layers = 5, domain_padding = 0.2, output_scale_factor = 2)
+    model = UNO(3,3,5,layer_configs = layer_configs, horizontal_skips_map = horizontal_skips_map, n_layers = 5, domain_padding = 0.2)
 
     t1 = time.time()
-    in_data = torch.randn(10,3,20,20)
+    in_data = torch.randn(32,3,64,64)
+    out = model(in_data)
+    out = model(in_data)
     out = model(in_data)
     t = time.time() - t1
     print(f'Output of size {out.shape} in {t}.')
 
     loss = out.sum()
+    t1 = time.time()
     loss.backward()
+    t = time.time() - t1
+    print(f'Gradient Calculated in {t}.')
     n_unused_params = 0
 
     for name,param in model.named_parameters():

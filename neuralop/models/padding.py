@@ -16,11 +16,15 @@ class DomainPadding(nn.Module):
     This class works for any input resolution, as long as it is in the form
     `(batch-size, channels, d1, ...., dN)`
     """
-    def __init__(self, domain_padding, padding_mode='one-sided', output_scale_factor = 1):
+    def __init__(self, domain_padding, padding_mode='one-sided', output_scale_factor = None):
         super().__init__()
         self.domain_padding = domain_padding
         self.padding_mode = padding_mode.lower()
         self.output_scale_factor = output_scale_factor
+        if self.output_scale_factor is None:
+            self.output_scale_factor = [1]
+        if isinstance(self.domain_padding, (float, int)):
+            self.domain_padding = [float(self.domain_padding)]
         
         # dict(f'{resolution}'=padding) such that padded = F.pad(x, indices)
         self._padding = dict()
@@ -42,8 +46,8 @@ class DomainPadding(nn.Module):
         if isinstance(self.domain_padding, (float, int)):
             self.domain_padding = [float(self.domain_padding)]*len(resolution)
         
-        if isinstance(self.output_scale_factor, (float, int)):
-            self.output_scale_factor = [float(self.output_scale_factor)]*len(resolution)
+        #if isinstance(self.output_scale_factor, (float, int)):
+        #    self.output_scale_factor = [float(self.output_scale_factor)]*len(resolution)
 
         try:
             padding = self._padding[f'{resolution}']
@@ -54,14 +58,21 @@ class DomainPadding(nn.Module):
             
             print(f'Padding inputs of {resolution=} with {padding=}, {self.padding_mode}')
 
+            output_pad = padding
+
+            for scale_factor in self.output_scale_factor:
+                if isinstance(scale_factor, (float, int)):
+                    scale_factor = [scale_factor]*len(resolution)
+                output_pad = [int(round(i*j)) for (i,j) in zip(scale_factor,output_pad)]
+
             if self.padding_mode == 'symmetric':
                 # Pad both sides
-                unpad_indices = (Ellipsis, ) + tuple([slice(int(p*s), -int(p*s), None) for (p,s) in zip(padding,self.output_scale_factor)])
+                unpad_indices = (Ellipsis, ) + tuple([slice(p, -p, None) for p in output_pad ])
                 padding = [i for p in padding for i in (p, p)]
 
             elif self.padding_mode == 'one-sided':
                 # One-side padding
-                unpad_indices = (Ellipsis, ) + tuple([slice(None, -int(s*p), None) for (p,s) in zip(padding,self.output_scale_factor)])
+                unpad_indices = (Ellipsis, ) + tuple([slice(None, -p, None) for p in output_pad])
                 padding = [i for p in padding for i in (0, p)]
             else:
                 raise ValueError(f'Got {self.padding_mode=}')
@@ -69,8 +80,15 @@ class DomainPadding(nn.Module):
             self._padding[f'{resolution}'] = padding
 
             padded = F.pad(x, padding, mode='constant')
+
+            out_put_shape = padded.shape[2:]
+            for scale_factor in self.output_scale_factor:
+                if isinstance(scale_factor, (float, int)):
+                    scale_factor = [scale_factor]*len(resolution)
+                out_put_shape = [int(round(i*j)) for (i,j) in zip(scale_factor,out_put_shape)]
             
-            self._unpad_indices[f'{[int(s*p) for (s,p) in zip(padded.shape[2:], self.output_scale_factor)]}'] = unpad_indices
+            self._unpad_indices[f'{[i for i in out_put_shape]}'] = unpad_indices
+
             return padded
 
     def unpad(self, x):

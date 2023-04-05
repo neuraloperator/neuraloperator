@@ -22,7 +22,7 @@ def test_FactorizedSpectralConv_res_scaling():
         # Downsample outputs
         block = FNOBlocks(
             3, 4, modes[:dim], n_layers=1, res_scaling=0.5)
-    
+
         x = torch.randn(2, 3, *size[:dim])
         res = block(x)
         assert(list(res.shape[2:]) == [m//2 for m in size[:dim]])
@@ -30,7 +30,7 @@ def test_FactorizedSpectralConv_res_scaling():
         # Upsample outputs
         block = FNOBlocks(
             3, 4, modes[:dim], n_layers=1, res_scaling=2)
-    
+
         x = torch.randn(2, 3, *size[:dim])
         res = block(x)
         assert res.shape[1] == 4 # Check out channels
