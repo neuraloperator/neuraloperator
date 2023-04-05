@@ -103,7 +103,7 @@ We create a tensorized FNO model
  .. code-block:: none
 
 
-    Our model has 389697 parameters.
+    Our model has 393665 parameters.
 
 
 
@@ -177,13 +177,15 @@ Creating the losses
 
     ### MODEL ###
      TFNO(
-      (convs): FactorizedSpectralConv(
-        (weight): ModuleList(
-          (0-7): 8 x ComplexTuckerTensor(shape=(32, 32, 8, 8), rank=(25, 25, 6, 6))
+      (fno_blocks): FNOBlocks(
+        (convs): FactorizedSpectralConv(
+          (weight): ModuleList(
+            (0-7): 8 x ComplexTuckerTensor(shape=(32, 32, 8, 8), rank=(25, 25, 6, 6))
+          )
         )
-      )
-      (fno_skips): ModuleList(
-        (0-3): 4 x SoftGating()
+        (fno_skips): ModuleList(
+          (0-3): 4 x Conv2d(32, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        )
       )
       (lifting): Lifting(
         (fc): Conv2d(3, 32, kernel_size=(1, 1), stride=(1, 1))
@@ -211,13 +213,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f80203013a0>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f32bc1c1fd0>
 
     ### LOSSES ###
 
-     * Train: <neuralop.training.losses.H1Loss object at 0x7f80234817f0>
+     * Train: <neuralop.training.losses.H1Loss object at 0x7f32bc5dc1c0>
 
-     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7f80234817f0>, 'l2': <neuralop.training.losses.LpLoss object at 0x7f8022757340>}
+     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7f32bc5dc1c0>, 'l2': <neuralop.training.losses.LpLoss object at 0x7f32bc183520>}
 
 
 
@@ -281,13 +283,13 @@ Actually train the model on our small Darcy-Flow dataset
 
     Training on 1000 samples
     Testing on [50, 50] samples         on resolutions [16, 32].
-    [0] time=2.35, avg_loss=24.8340, train_err=0.4967, 16_h1=0.4114, 16_l2=0.3268, 32_h1=0.4911, 32_l2=0.3382
-    [3] time=2.29, avg_loss=11.2689, train_err=0.2254, 16_h1=0.3170, 16_l2=0.2455, 32_h1=0.4340, 32_l2=0.2623
-    [6] time=2.30, avg_loss=9.8836, train_err=0.1977, 16_h1=0.1969, 16_l2=0.1511, 32_h1=0.3304, 32_l2=0.1761
-    [9] time=2.32, avg_loss=8.7287, train_err=0.1746, 16_h1=0.1810, 16_l2=0.1301, 32_h1=0.3077, 32_l2=0.1511
-    [12] time=2.24, avg_loss=8.5700, train_err=0.1714, 16_h1=0.1649, 16_l2=0.1220, 32_h1=0.2875, 32_l2=0.1419
-    [15] time=2.22, avg_loss=7.3337, train_err=0.1467, 16_h1=0.1595, 16_l2=0.1199, 32_h1=0.2747, 32_l2=0.1432
-    [18] time=2.25, avg_loss=6.9824, train_err=0.1396, 16_h1=0.1391, 16_l2=0.0949, 32_h1=0.2666, 32_l2=0.1274
+    [0] time=2.01, avg_loss=27.4255, train_err=0.5485, 16_h1=0.3844, 16_l2=0.2865, 32_h1=0.4652, 32_l2=0.2969
+    [3] time=1.96, avg_loss=11.4188, train_err=0.2284, 16_h1=0.2028, 16_l2=0.1509, 32_h1=0.3125, 32_l2=0.1692
+    [6] time=1.99, avg_loss=9.5767, train_err=0.1915, 16_h1=0.2085, 16_l2=0.1662, 32_h1=0.3383, 32_l2=0.1975
+    [9] time=1.97, avg_loss=8.6705, train_err=0.1734, 16_h1=0.1868, 16_l2=0.1469, 32_h1=0.3175, 32_l2=0.1758
+    [12] time=1.99, avg_loss=7.8578, train_err=0.1572, 16_h1=0.1786, 16_l2=0.1463, 32_h1=0.2845, 32_l2=0.1642
+    [15] time=1.95, avg_loss=7.2882, train_err=0.1458, 16_h1=0.1543, 16_l2=0.1107, 32_h1=0.2720, 32_l2=0.1398
+    [18] time=1.97, avg_loss=7.0995, train_err=0.1420, 16_h1=0.1421, 16_l2=0.0993, 32_h1=0.2615, 32_l2=0.1187
 
 
 
@@ -361,7 +363,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  46.787 seconds)
+   **Total running time of the script:** ( 0 minutes  41.020 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_FNO_darcy.py:
