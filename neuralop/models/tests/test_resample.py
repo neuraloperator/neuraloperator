@@ -1,4 +1,4 @@
-from neuralop.models.resample import resample
+from ..resample import resample
 import torch
 
 def test_resample():

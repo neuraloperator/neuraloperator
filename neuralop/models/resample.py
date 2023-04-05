@@ -4,7 +4,7 @@ import itertools
 import torch
 import torch.nn.functional as F
 
-def resample(x, res_scale, axis=None):
+def resample(x, res_scale, axis):
     """
     A module for generic n-dimentional interpolation (Fourier resampling).
 
@@ -83,7 +83,7 @@ def iterative_resample(x, res_scale, axis):
             x = resample(x, rs, a)
         return x
 
-    Nx = x.shape[axis]
+    old_res = x.shape[axis]
     X = torch.fft.rfft(x, dim=axis, norm = 'forward')    
     newshape = list(x.shape)
     new_res = int(round(res_scale*newshape[axis]))
@@ -91,9 +91,9 @@ def iterative_resample(x, res_scale, axis):
 
     Y = torch.zeros(newshape, dtype=X.dtype, device=x.device)
 
-    N = min(new_res, Nx)
+    modes = min(new_res, old_res)
     sl = [slice(None)] * x.ndim
-    sl[axis] = slice(0, N // 2 + 1)
+    sl[axis] = slice(0, modes // 2 + 1)
     Y[tuple(sl)] = X[tuple(sl)]
     y = torch.fft.irfft(Y, n = new_res, dim=axis,norm = 'forward')
     return y

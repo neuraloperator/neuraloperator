@@ -1,5 +1,5 @@
 import torch
-from neuralop.models.padding import DomainPadding
+from ..padding import DomainPadding
 import pytest
 
 @pytest.mark.parametrize('mode', ['one-sided', 'symmetric'])
