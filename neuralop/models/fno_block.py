@@ -92,29 +92,33 @@ class FNOBlocks(nn.Module):
             if self.norm is not None:
                 x = self.norm[index](x)
     
-        x_skip = self.fno_skips[index](x)
-        
+        x_skip_fno = self.fno_skips[index](x)
+        if self.convs.res_scaling is not None:
+            x_skip_fno = resample(x_skip_fno, self.convs.res_scaling, list(range(-len(self.convs.res_scaling), 0)))
+
+        if self.mlp is not None:
+            x_skip_mlp = self.mlp_skips[index](x)
+            if self.convs.res_scaling is not None:
+                x_skip_mlp = resample(x_skip_mlp, self.convs.res_scaling, list(range(-len(self.convs.res_scaling), 0)))
+
         x_fno = self.convs(x, index)
 
         if not self.preactivation and self.norm is not None:
             x_fno = self.norm[index](x_fno)
     
-        if self.convs.res_scaling is not None:
-            x_skip = resample(x_skip, self.convs.res_scaling, list(range(-len(self.convs.res_scaling), 0)))
-
-        x = x_fno + x_skip
+        x = x_fno + x_skip_fno
 
         if not self.preactivation and index < (self.n_layers - index):
             x = self.non_linearity(x)
 
         if self.mlp is not None:
-            x_skip = self.mlp_skips[index](x)
+            # x_skip = self.mlp_skips[index](x)
 
             if self.preactivation:
                 if index < (self.n_layers - 1):
                     x = self.non_linearity(x)
 
-            x = self.mlp[index](x) + x_skip
+            x = self.mlp[index](x) + x_skip_mlp
 
             if not self.preactivation:
                 if index < (self.n_layers - 1):
