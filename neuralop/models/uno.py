@@ -30,13 +30,13 @@ class UNO(nn.Module):
     n_layers : int, optional
         Number of Fourier Layers, by default 4
     layer_configs : list of maps describing configuaration of each of the layers. Each map contains 3
-                    keys "out_channels", "n_modes", "res_scaling".
+                    keys "out_channels", "n_modes", "output_scaling_factor".
                     example: For a 5 layer UNO architecture, the layer configurartions can be 
-                    layer_configs = [{"out_channels":20, "n_modes" : [5,5], "res_scaling" :[0.5,0.5] },\
-                                    {"out_channels":20, "n_modes" : [5,5], "res_scaling" :[1,1] },\
-                                    {"out_channels":20, "n_modes" : [5,5], "res_scaling" :[1,1] },\
-                                    {"out_channels":20, "n_modes" : [5,5], "res_scaling" :[1,1] },\
-                                    {"out_channels":10, "n_modes" : [5,5], "res_scaling" :[2,2] },\
+                    layer_configs = [{"out_channels":20, "n_modes" : [5,5], "output_scaling_factor" :[0.5,0.5] },\
+                                    {"out_channels":20, "n_modes" : [5,5], "output_scaling_factor" :[1,1] },\
+                                    {"out_channels":20, "n_modes" : [5,5], "output_scaling_factor" :[1,1] },\
+                                    {"out_channels":20, "n_modes" : [5,5], "output_scaling_factor" :[1,1] },\
+                                    {"out_channels":10, "n_modes" : [5,5], "output_scaling_factor" :[2,2] },\
                                 ]
     horizontal_skips_map: a map {...., b: a, ....}denoting horizontal skip connection from a-th layer to
                     b-th layer
@@ -144,7 +144,7 @@ class UNO(nn.Module):
 
         if domain_padding is not None and domain_padding > 0:
             self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode\
-            , output_scale_factor = [i['res_scaling'] for i in layer_configs])
+            , output_scale_factor = [i['output_scaling_factor'] for i in layer_configs])
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
@@ -165,7 +165,7 @@ class UNO(nn.Module):
                                             out_channels= self.layer_configs[i]['out_channels'], 
                                             n_modes=self.layer_configs[i]['n_modes'],
                                             use_mlp=use_mlp, mlp=mlp,
-                                            res_scaling = self.layer_configs[i]['res_scaling'],
+                                            output_scaling_factor = self.layer_configs[i]['output_scaling_factor'],
                                             non_linearity=non_linearity,
                                             norm=norm, preactivation=preactivation,
                                             fno_skip=fno_skip,
@@ -202,9 +202,9 @@ class UNO(nn.Module):
             if layer_idx in  self.horizontal_skips_map.keys():
                 #print("using skip", layer_idx)
                 skip_val = skip_outputs[self.horizontal_skips_map[layer_idx]]
-                res_scalings = [m/n for (m,n) in zip(x.shape,skip_val.shape)]
-                res_scalings = res_scalings[-1*self.n_dim:]
-                t = resample(skip_val,res_scalings, list(range(-self.n_dim, 0)))
+                output_scaling_factors = [m/n for (m,n) in zip(x.shape,skip_val.shape)]
+                output_scaling_factors = output_scaling_factors[-1*self.n_dim:]
+                t = resample(skip_val,output_scaling_factors, list(range(-self.n_dim, 0)))
                 x = torch.cat([x,t], dim = 1)
 
             x = self.fno_blocks[layer_idx](x)

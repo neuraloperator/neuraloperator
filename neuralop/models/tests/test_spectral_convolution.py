@@ -46,7 +46,7 @@ def test_FactorizedSpectralConv(factorization, implementation):
 
         # Downsample outputs
         block = FactorizedSpectralConv(
-            3, 4, modes[:dim], n_layers=1, res_scaling=0.5)
+            3, 4, modes[:dim], n_layers=1, output_scaling_factor=0.5)
     
         x = torch.randn(2, 3, *(12, )*dim)
         res = block(x)
@@ -54,7 +54,7 @@ def test_FactorizedSpectralConv(factorization, implementation):
         
         # Upsample outputs
         block = FactorizedSpectralConv(
-            3, 4, modes[:dim], n_layers=1, res_scaling=2)
+            3, 4, modes[:dim], n_layers=1, output_scaling_factor=2)
     
         x = torch.randn(2, 3, *(12, )*dim)
         res = block(x)
@@ -63,7 +63,7 @@ def test_FactorizedSpectralConv(factorization, implementation):
 
 
 
-def test_FactorizedSpectralConv_res_scaling():
+def test_FactorizedSpectralConv_output_scaling_factor():
     """Test FactorizedSpectralConv with upsampled or downsampled outputs
     """
     modes = (4, 4, 4, 4)
@@ -71,7 +71,7 @@ def test_FactorizedSpectralConv_res_scaling():
     for dim in [1, 2, 3, 4]:
         # Downsample outputs
         conv = FactorizedSpectralConv(
-            3, 3, modes[:dim], n_layers=1, res_scaling=0.5)
+            3, 3, modes[:dim], n_layers=1, output_scaling_factor=0.5)
     
         x = torch.randn(2, 3, *size[:dim])
         res = conv(x)
@@ -79,7 +79,7 @@ def test_FactorizedSpectralConv_res_scaling():
         
         # Upsample outputs
         conv = FactorizedSpectralConv(
-            3, 3, modes[:dim], n_layers=1, res_scaling=2)
+            3, 3, modes[:dim], n_layers=1, output_scaling_factor=2)
     
         x = torch.randn(2, 3, *size[:dim])
         res = conv(x)

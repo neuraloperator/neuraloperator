@@ -8,7 +8,7 @@ from .mlp import MLP
 
 class FNOBlocks(nn.Module):
     def __init__(self, in_channels, out_channels, n_modes,
-                 res_scaling=None,
+                 output_scaling_factor=None,
                  n_layers=1,
                  incremental_n_modes=None,
                  use_mlp=False, mlp=None,
@@ -27,8 +27,15 @@ class FNOBlocks(nn.Module):
                  fft_norm='forward',
                  **kwargs):
         super().__init__()
-        self.n_dim = len(n_modes)
+        if isinstance(n_modes, int):
+            n_modes = [n_modes]
         self.n_modes = n_modes
+        self.n_dim = len(n_modes)
+
+        if output_scaling_factor is not None:
+            if isinstance(output_scaling_factor, (float, int)):
+                output_scaling_factor = [float(output_scaling_factor)]*len(self.n_modes)
+
         self._incremental_n_modes = incremental_n_modes
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -48,7 +55,7 @@ class FNOBlocks(nn.Module):
 
         self.convs = SpectralConv(
                 self.in_channels, self.out_channels, self.n_modes, 
-                res_scaling=res_scaling,
+                output_scaling_factor=output_scaling_factor,
                 incremental_n_modes=incremental_n_modes,
                 rank=rank,
                 fft_norm=fft_norm,
@@ -93,13 +100,13 @@ class FNOBlocks(nn.Module):
                 x = self.norm[index](x)
     
         x_skip_fno = self.fno_skips[index](x)
-        if self.convs.res_scaling is not None:
-            x_skip_fno = resample(x_skip_fno, self.convs.res_scaling, list(range(-len(self.convs.res_scaling), 0)))
+        if self.convs.output_scaling_factor is not None:
+            x_skip_fno = resample(x_skip_fno, self.convs.output_scaling_factor, list(range(-len(self.convs.output_scaling_factor), 0)))
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
-            if self.convs.res_scaling is not None:
-                x_skip_mlp = resample(x_skip_mlp, self.convs.res_scaling, list(range(-len(self.convs.res_scaling), 0)))
+            if self.convs.output_scaling_factor is not None:
+                x_skip_mlp = resample(x_skip_mlp, self.convs.output_scaling_factor, list(range(-len(self.convs.output_scaling_factor), 0)))
 
         x_fno = self.convs(x, index)
 

@@ -1,7 +1,7 @@
 import torch
 from ..fno_block import FNOBlocks
 
-def test_FactorizedSpectralConv_res_scaling():
+def test_FactorizedSpectralConv_output_scaling_factor():
     """Test FactorizedSpectralConv with upsampled or downsampled outputs
     """
     modes = (8, 8, 8)
@@ -21,7 +21,7 @@ def test_FactorizedSpectralConv_res_scaling():
 
         # Downsample outputs
         block = FNOBlocks(
-            3, 4, modes[:dim], n_layers=1, res_scaling=0.5)
+            3, 4, modes[:dim], n_layers=1, output_scaling_factor=0.5)
 
         x = torch.randn(2, 3, *size[:dim])
         res = block(x)
@@ -29,7 +29,7 @@ def test_FactorizedSpectralConv_res_scaling():
         
         # Upsample outputs
         block = FNOBlocks(
-            3, 4, modes[:dim], n_layers=1, res_scaling=2)
+            3, 4, modes[:dim], n_layers=1, output_scaling_factor=2)
 
         x = torch.randn(2, 3, *size[:dim])
         res = block(x)
