@@ -32,7 +32,6 @@ def _contract_dense(x, weight, separable=False):
 
     if not torch.is_tensor(weight):
         weight = weight.to_tensor()
-
     return tl.einsum(eq, x, weight)
 
 def _contract_dense_separable(x, weight, separable=True):

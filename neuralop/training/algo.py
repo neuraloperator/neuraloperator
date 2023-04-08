@@ -6,12 +6,14 @@ import torch.nn.functional as F
 from torch import linalg as LA
 
 class Incremental:
-    def __init__(self, model, incremental, incremental_loss_gap, incremental_resolution) -> None:
+    def __init__(self, model, n_epochs, incremental, incremental_loss_gap, incremental_resolution, dataset_name) -> None:
         self.model = model
         self.ndim = len(model.n_modes)
         self.incremental_grad = incremental
         self.incremental_resolution = incremental_resolution
         self.incremental_loss_gap = incremental_loss_gap
+        self.dataset_name = dataset_name
+        self.epochs = n_epochs
         
         if self.incremental_grad and self.incremental_loss_gap:
             raise ValueError("Incremental and incremental loss gap cannot be used together")
@@ -29,10 +31,19 @@ class Incremental:
             self.loss_list = []
             
         if self.incremental_resolution:
-            self.dataset_name = 'Darcy'
-            self.epoch_gap = 50
-            self.sub_list = [10,9,8,7,6,5,4,3,2,1]
-            self.subsammpling_rate = 1
+            self.epoch_gap = self.epochs//5
+            if self.dataset_name == 'SmallDarcy':
+                self.sub_list = [16, 8, 4, 2, 1]
+            if self.dataset_name == 'Darcy':
+                self.sub_list = [10,8,4,2,1]
+            elif self.dataset_name == "Burgers":
+                self.sub_list = [256,64,16,8,1]
+            elif self.dataset_name == "NavierStokes":
+                self.sub_list = [32,16,8,4,1]
+            elif self.dataset_name == "Vorticity":
+                self.sub_list = [128,64,32,16,1]
+        
+            self.subsammpling_rate = 1   
             self.current_index = 0
             self.current_logged_epoch = 0
             self.current_sub = self.index_to_sub_from_table(self.current_index)
@@ -98,6 +109,8 @@ class Incremental:
             self.epoch_wise_res_increase(epoch)
             
     def sub_to_res(self, sub):
+        if self.dataset_name == 'SmallDarcy':
+            return self.small_darcy_sub_to_res(sub)
         if self.dataset_name == 'Burgers':
             return self.burger_sub_to_res(sub)
         elif self.dataset_name == 'Darcy':
@@ -137,7 +150,10 @@ class Incremental:
             y = y[:, ::self.current_sub]
         elif self.dataset_name == 'Darcy':
             x = x[:, :, ::self.current_sub, ::self.current_sub]
-            y = y[:, :,::self.current_sub, ::self.current_sub]
+            y = y[:, :, ::self.current_sub, ::self.current_sub]
+        elif  self.dataset_name == 'SmallDarcy':
+            x = x[::self.current_sub, :, :, :]
+            y = y[::self.current_sub, :, :, :]
         elif self.dataset_name == 'NavierStokes':
             T_in = self._datamodule.T_in
             T = self._datamodule.T
@@ -153,6 +169,9 @@ class Incremental:
     def burger_sub_to_res(self, sub):
         return int(2**13 / sub)
 
+    def small_darcy_sub_to_res(self, sub):
+        return int(16 / sub)
+    
     def darcy_sub_to_res(self, sub):
         return int(((241 - 1)/sub) + 1)
 

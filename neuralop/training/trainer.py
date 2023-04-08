@@ -13,7 +13,7 @@ from .algo import Incremental
 class Trainer:
     def __init__(self, model, n_epochs, wandb_log=True, device=None,
                  mg_patching_levels=0, mg_patching_padding=0, mg_patching_stitching=True,
-                 log_test_interval=1, log_output=False, use_distributed=False, verbose=True, incremental = False, incremental_loss_gap = False, incremental_resolution = False):
+                 log_test_interval=1, log_output=False, use_distributed=False, verbose=True, incremental = False, incremental_loss_gap = False, incremental_resolution = False, dataset_name = None):
         """
         A general Trainer class to train neural-operators on given datasets
 
@@ -52,6 +52,7 @@ class Trainer:
         self.incremental_grad = incremental
         self.incremental_resolution = incremental_resolution
         self.incremental = self.incremental_loss_gap or self.incremental_grad or self.incremental_resolution
+        self.dataset_name = dataset_name
 
         if mg_patching_levels > 0:
             self.mg_n_patches = 2**mg_patching_levels
@@ -66,7 +67,7 @@ class Trainer:
                 sys.stdout.flush()
         
         if self.incremental:
-            self.incremental_scheduler = Incremental(model, incremental = self.incremental_grad, incremental_loss_gap = self.incremental_loss_gap, incremental_resolution = self.incremental_resolution)
+            self.incremental_scheduler = Incremental(model, n_epochs, incremental = self.incremental_grad, incremental_loss_gap = self.incremental_loss_gap, incremental_resolution = self.incremental_resolution, dataset_name = self.dataset_name)
         
         self.mg_patching_padding = mg_patching_padding
         self.patcher = MultigridPatching2D(model, levels=mg_patching_levels, padding_fraction=mg_patching_padding,
@@ -113,7 +114,7 @@ class Trainer:
             for sample in train_loader:
                 x, y = sample['x'], sample['y']
                 
-                x, y = self.patcher.patch(x, y)
+                x, y = self.patcher.patch(x, y)               
                 x = x.to(self.device)
                 y = y.to(self.device)
 
