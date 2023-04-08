@@ -48,7 +48,7 @@ def get_model(config):
     except KeyError:
         patching_levels = 0
     if patching_levels:
-        data_channels *= 2**patching_levels
+        data_channels *= (patching_levels + 1)
     config_arch['in_channels'] = data_channels
 
     # Dispatch model creation
