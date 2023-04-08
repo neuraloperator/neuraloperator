@@ -7,7 +7,6 @@ In this example, we demonstrate how to use the small Darcy-Flow example we ship 
 # %%
 # 
 
-
 import torch
 import matplotlib.pyplot as plt
 import sys
@@ -34,7 +33,7 @@ train_loader, test_loaders, output_encoder = load_darcy_flow_small(
 model = FNO(n_modes=(16, 16), hidden_channels=32, projection_channels=64)
 model = model.to(device)
 n_params = count_params(model)
-print(f'\nOur model has {n_params} parameters.')
+print(f'\nBaseline model has {n_params} parameters.')
 sys.stdout.flush()
 #Create the optimizer
 optimizer = torch.optim.Adam(model.parameters(), 
@@ -46,7 +45,7 @@ l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
 train_loss = h1loss
 eval_losses={'h1': h1loss, 'l2': l2loss}
-print('\n### BASIC MODEL ###\n', model)
+print('\n### BASELINE MODEL ###\n', model)
 print('\n### OPTIMIZER ###\n', optimizer)
 print('\n### SCHEDULER ###\n', scheduler)
 print('\n### LOSSES ###')
@@ -60,7 +59,7 @@ trainer = Trainer(model, n_epochs=20,
                   wandb_log=False,
                   log_test_interval=3,
                   use_distributed=False,
-                  verbose=True, incremental_loss_gap = False, incremental=False)
+                  verbose=True, incremental_loss_gap = False, incremental=False, incremental_resolution = False)
 
 # Actually train the model on our small Darcy-Flow dataset
 trainer.train(train_loader, test_loaders,
@@ -166,7 +165,7 @@ trainer.train(train_loader, test_loaders,
 model = FNO(n_modes=(16, 16), hidden_channels=32, projection_channels=64, incremental_n_modes=(2,2))
 model = model.to(device)
 n_params = count_params(model)
-print(f'\nIncremental model has {n_params} parameters.')
+print(f'\nIncremental Resolution model has {n_params} parameters.')
 sys.stdout.flush()
 #Create the optimizer
 optimizer = torch.optim.Adam(model.parameters(), 
@@ -178,7 +177,7 @@ l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
 train_loss = h1loss
 eval_losses={'h1': h1loss, 'l2': l2loss}
-print('\n### INCREMENTAL MODEL ###\n', model)
+print('\n### INCREMENTAL RESOLUTION MODEL ###\n', model)
 print('\n### OPTIMIZER ###\n', optimizer)
 print('\n### SCHEDULER ###\n', scheduler)
 print('\n### LOSSES ###')
