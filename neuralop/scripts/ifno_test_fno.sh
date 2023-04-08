@@ -19,7 +19,7 @@ do
             --commandline "bash -c '\
                 sh /ngc_workspace/jiawei/set_wandb.sh; \
                 cd /workspace; \
-                git clone ; \
+                git clone https://github.com/Robertboy18/neuraloperator.git; \
                 cd /workspace/neuraloperator/neuralop/models/tests; \
                 git checkout robert-test-incremental; \
                 cp -r /ngc_workspace/jiawei/projects/ifno/data /workspace/fly-incremental/data; \
