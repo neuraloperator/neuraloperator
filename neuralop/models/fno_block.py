@@ -82,6 +82,8 @@ class FNOBlocks(nn.Module):
 
         if norm is None:
             self.norm = None
+        elif callable(norm):
+            self.norm = nn.ModuleList([norm(self.out_channels) for _ in range(n_layers)])
         elif norm == 'instance_norm':
             self.norm = nn.ModuleList([getattr(nn, f'InstanceNorm{self.n_dim}d')(num_features=self.out_channels) for _ in range(n_layers)])
         elif norm == 'group_norm':
@@ -89,7 +91,7 @@ class FNOBlocks(nn.Module):
         elif norm == 'layer_norm':
             self.norm = nn.ModuleList([nn.LayerNorm() for _ in range(n_layers)])
         else:
-            raise ValueError(f'Got {norm=} but expected None or one of [instance_norm, group_norm, layer_norm]')
+            raise ValueError(f'Got {norm=} but expected None, a callable, or one of [instance_norm, group_norm, layer_norm]')
 
     def forward(self, x, index=0):
         
@@ -112,6 +114,9 @@ class FNOBlocks(nn.Module):
 
         if not self.preactivation and self.norm is not None:
             x_fno = self.norm[index](x_fno)
+
+        if self.convs.output_scaling_factor is not None:
+            x_fno = resample(x_fno, self.convs.output_scaling_factor, list(range(-len(self.convs.output_scaling_factor), 0)))
     
         x = x_fno + x_skip_fno
 
