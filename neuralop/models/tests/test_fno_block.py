@@ -7,6 +7,8 @@ def test_FactorizedSpectralConv_output_scaling_factor():
     modes = (8, 8, 8)
     incremental_modes = (4, 4, 4)
     size = [10]*3
+    mlp = dict(dropout=0, expansion=0.5)
+    mlp_skip='linear'
     for dim in [1, 2, 3]:
         block = FNOBlocks(
             3, 4, modes[:dim], n_layers=1)
@@ -21,7 +23,7 @@ def test_FactorizedSpectralConv_output_scaling_factor():
 
         # Downsample outputs
         block = FNOBlocks(
-            3, 4, modes[:dim], n_layers=1, output_scaling_factor=0.5)
+            3, 4, modes[:dim], n_layers=1, output_scaling_factor=0.5, use_mlp=True, mlp=mlp, mlp_skip=mlp_skip)
 
         x = torch.randn(2, 3, *size[:dim])
         res = block(x)
@@ -29,7 +31,7 @@ def test_FactorizedSpectralConv_output_scaling_factor():
         
         # Upsample outputs
         block = FNOBlocks(
-            3, 4, modes[:dim], n_layers=1, output_scaling_factor=2)
+            3, 4, modes[:dim], n_layers=1, output_scaling_factor=2, use_mlp=True, mlp=mlp, mlp_skip=mlp_skip)
 
         x = torch.randn(2, 3, *size[:dim])
         res = block(x)

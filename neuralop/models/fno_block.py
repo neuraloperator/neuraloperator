@@ -76,7 +76,7 @@ class FNOBlocks(nn.Module):
                      hidden_channels=int(round(self.out_channels*mlp['expansion'])),
                      dropout=mlp['dropout'], n_dim=self.n_dim) for _ in range(n_layers)]
             )
-            self.mlp_skips = nn.ModuleList([skip_connection(self.out_channels, self.out_channels, type=mlp_skip, n_dim=self.n_dim) for _ in range(n_layers)])
+            self.mlp_skips = nn.ModuleList([skip_connection(self.in_channels, self.out_channels, type=mlp_skip, n_dim=self.n_dim) for _ in range(n_layers)])
         else:
             self.mlp = None
 
