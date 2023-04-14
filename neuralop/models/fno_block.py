@@ -35,6 +35,7 @@ class FNOBlocks(nn.Module):
         if output_scaling_factor is not None:
             if isinstance(output_scaling_factor, (float, int)):
                 output_scaling_factor = [float(output_scaling_factor)]*len(self.n_modes)
+        self.output_scaling_factor = output_scaling_factor
 
         self._incremental_n_modes = incremental_n_modes
         self.in_channels = in_channels

@@ -384,6 +384,9 @@ class FactorizedSpectralConv1d(FactorizedSpectralConv):
 
         out_fft = torch.zeros([batchsize, self.out_channels,  width//2 + 1], device=x.device, dtype=torch.cfloat)
         out_fft[:, :, :self.half_n_modes[0]] = self._contract(x[:, :, :self.half_n_modes[0]], self._get_weight(indices), separable=self.separable)
+        
+        if self.output_scaling_factor is not None:
+            width = int(round(width*self.output_scaling_factor[0]))
 
         x = torch.fft.irfft(out_fft, n=width, norm=self.fft_norm)
 
@@ -408,6 +411,10 @@ class FactorizedSpectralConv2d(FactorizedSpectralConv):
         # Lower block
         out_fft[:, :, -self.half_n_modes[0]:, :self.half_n_modes[1]] = self._contract(x[:, :, -self.half_n_modes[0]:, :self.half_n_modes[1]],
                                                                               self._get_weight(2*indices + 1), separable=self.separable)
+        
+        if self.output_scaling_factor is not None:
+            width = int(round(width*self.output_scaling_factor[0]))
+            height = int(round(height*self.output_scaling_factor[1]))
 
         x = torch.fft.irfft2(out_fft, s=(height, width), dim=(-2, -1), norm=self.fft_norm)
 
@@ -433,6 +440,11 @@ class FactorizedSpectralConv3d(FactorizedSpectralConv):
             x[:, :, -self.half_n_modes[0]:, :self.half_n_modes[1], :self.half_n_modes[2]], self._get_weight(4*indices + 2), separable=self.separable)
         out_fft[:, :, -self.half_n_modes[0]:, -self.half_n_modes[1]:, :self.half_n_modes[2]] = self._contract(
             x[:, :, -self.half_n_modes[0]:, -self.half_n_modes[1]:, :self.half_n_modes[2]], self._get_weight(4*indices + 3), separable=self.separable)
+        
+        if self.output_scaling_factor is not None:
+            width = int(round(width*self.output_scaling_factor[0]))
+            height = int(round(height*self.output_scaling_factor[1]))
+            depth = int(round(depth*self.output_scaling_factor[2]))
 
         x = torch.fft.irfftn(out_fft, s=(height, width, depth), norm=self.fft_norm)
 
