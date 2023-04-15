@@ -29,7 +29,7 @@ class UNO(nn.Module):
         number of hidden channels of the projection block of the FNO, by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
-    layer_configs : list of maps describing configuaration of each of the layers. Each map contains 3
+    uno_layers : list of maps describing configuaration of each of the layers. Each map contains 3
                     keys "out_channels", "n_modes", "res_scaling".
                     example: For a 5 layer UNO architecture, the layer configurartions can be 
                     layer_configs = [{"out_channels":20, "n_modes" : [5,5], "res_scaling" :[0.5,0.5] },\
@@ -38,8 +38,12 @@ class UNO(nn.Module):
                                     {"out_channels":20, "n_modes" : [5,5], "res_scaling" :[1,1] },\
                                     {"out_channels":10, "n_modes" : [5,5], "res_scaling" :[2,2] },\
                                 ]
-    horizontal_skips_map: a map {...., b: a, ....}denoting horizontal skip connection from a-th layer to
-                    b-th layer
+                    uno_layers = {"out_channels":[20,20,20,20,10],\
+                                "n_modes" : [[5,5],[5,5],[5,5],[5,5],[5,5]],\
+                                "res_scaling" : [[0.5,0.5],[1,1],[1,1],[1,1],[2,2]]\
+                                }
+    horizontal_skips_map: a map {...., b: a, ....} denoting horizontal skip connection from a-th layer to
+                    b-th layer. If None default skip connection is applied.
                     Example: For a 5 layer UNO architecture, the skip connections can be 
                     horizontal_skips_map ={4:0,3:1}
 
@@ -95,7 +99,7 @@ class UNO(nn.Module):
                  lifting_channels=256,
                  projection_channels=256,
                  n_layers=4,
-                 layer_configs = None,
+                 uno_layers = None,
                  horizontal_skips_map = None,
                  incremental_n_modes=None,
                  use_mlp=False, mlp=None,
@@ -116,14 +120,19 @@ class UNO(nn.Module):
                  fft_norm='forward',
                  **kwargs):
         super().__init__()
-        self.n_dim = len(layer_configs[0]['n_modes'])
+        self.n_layers = n_layers
+        assert uno_layers is not None
+
+        assert len(uno_layers['out_channels']) == n_layers, "Output channels for all layers are not given"
+        assert len(uno_layers['n_modes']) == n_layers, "number of modes for all layers are not given"
+        assert len(uno_layers['res_scaling']) == n_layers, "Scaling factor for all layers are not given"
+
+        self.n_dim = len(uno_layers['n_modes'][0])
         self.hidden_channels = hidden_channels
         self.lifting_channels = lifting_channels
         self.projection_channels = projection_channels
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.n_layers = n_layers
-        self.layer_configs = layer_configs
         self.horizontal_skips_map = horizontal_skips_map
         self.joint_factorization = joint_factorization
         self.non_linearity = non_linearity
@@ -139,12 +148,25 @@ class UNO(nn.Module):
         self.preactivation = preactivation
         self._incremental_n_modes = incremental_n_modes
 
-        assert len(self.layer_configs) == n_layers
+        
+
+        self.layer_configs = []
+        for l in range(n_layers):
+            l_config = {}
+            l_config['out_channels'] = uno_layers['out_channels'][l]
+            l_config['n_modes'] = uno_layers['n_modes'][l]
+            l_config['res_scaling'] = uno_layers['res_scaling'][l]
+            self.layer_configs.append(l_config)
+        
+        if self.horizontal_skips_map is None:
+            self.horizontal_skips_map = {}
+            for i in range(n_layers//2,0,):
+                self.horizontal_skips_map[n_layers - i -1] = i
         
 
         if domain_padding is not None and domain_padding > 0:
             self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode\
-            , output_scale_factor = [i['res_scaling'] for i in layer_configs])
+            , output_scale_factor = [i['res_scaling'] for i in self.layer_configs])
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
