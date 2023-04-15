@@ -29,15 +29,12 @@ class UNO(nn.Module):
         number of hidden channels of the projection block of the FNO, by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
-    uno_layers : list of maps describing configuaration of each of the layers. Each map contains 3
-                    keys "out_channels", "n_modes", "res_scaling".
+    uno_layers : A map of properties for each layers of UNO. The properties are #output_channel,
+                number of modes to be used in the integral opetaor and scaling factor.
+                Each of the properties are given as a list.
+                keys "out_channels", "n_modes", "res_scaling".
                     example: For a 5 layer UNO architecture, the layer configurartions can be 
-                    layer_configs = [{"out_channels":20, "n_modes" : [5,5], "res_scaling" :[0.5,0.5] },\
-                                    {"out_channels":20, "n_modes" : [5,5], "res_scaling" :[1,1] },\
-                                    {"out_channels":20, "n_modes" : [5,5], "res_scaling" :[1,1] },\
-                                    {"out_channels":20, "n_modes" : [5,5], "res_scaling" :[1,1] },\
-                                    {"out_channels":10, "n_modes" : [5,5], "res_scaling" :[2,2] },\
-                                ]
+
                     uno_layers = {"out_channels":[20,20,20,20,10],\
                                 "n_modes" : [[5,5],[5,5],[5,5],[5,5],[5,5]],\
                                 "res_scaling" : [[0.5,0.5],[1,1],[1,1],[1,1],[2,2]]\
