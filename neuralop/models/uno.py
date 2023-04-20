@@ -29,17 +29,17 @@ class UNO(nn.Module):
         number of hidden channels of the projection block of the FNO, by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
-    uno_layers : A map of properties for each layers of UNO. The properties are #output_channel,
-                number of modes to be used in the integral opetaor and scaling factor.
-                Each of the properties are given as a list.
-                keys "out_channels", "n_modes", "res_scaling".
-                    example: For a 5 layer UNO architecture, the layer configurartions can be 
-
-                    uno_layers = {"out_channels":[20,20,20,20,10],\
-                                "n_modes" : [[5,5],[5,5],[5,5],[5,5],[5,5]],\
-                                "res_scaling" : [[0.5,0.5],[1,1],[1,1],[1,1],[2,2]]\
-                                }
-    horizontal_skips_map: a map {...., b: a, ....} denoting horizontal skip connection from a-th layer to
+    uno_out_channels: list
+        Number of output channel of each Fourier Layers.
+        Eaxmple: For a Five layer UNO uno_out_channels can be [32,64,64,64,32]
+    uno_n_modes: list
+        Number of Fourier Modes to use in integral operation of each Fourier Layers (along each dimension).
+        Example: For a five layer UNO with 2D input the uno_n_modes can be: [[5,5],[5,5],[5,5],[5,5],[5,5]]
+    uno_scalings: list
+        Scaling Factors for each Fourier Layers
+        Example: For a five layer UNO with 2D input, the uno_scalings can be : [[1.0,1.0],[0.5,0.5],[1,1],[1,1],[2,2]]
+    horizontal_skips_map: Dict, optional
+                    a map {...., b: a, ....} denoting horizontal skip connection from a-th layer to
                     b-th layer. If None default skip connection is applied.
                     Example: For a 5 layer UNO architecture, the skip connections can be 
                     horizontal_skips_map ={4:0,3:1}
@@ -96,7 +96,9 @@ class UNO(nn.Module):
                  lifting_channels=256,
                  projection_channels=256,
                  n_layers=4,
-                 uno_layers = None,
+                 uno_out_channels = None,
+                 uno_n_modes = None,
+                 uno_scalings = None,
                  horizontal_skips_map = None,
                  incremental_n_modes=None,
                  use_mlp=False, mlp=None,
@@ -118,13 +120,12 @@ class UNO(nn.Module):
                  **kwargs):
         super().__init__()
         self.n_layers = n_layers
-        assert uno_layers is not None
+        print(uno_out_channels)
+        assert len(uno_out_channels) == n_layers, "Output channels for all layers are not given"
+        assert len(uno_n_modes) == n_layers, "number of modes for all layers are not given"
+        assert len(uno_scalings) == n_layers, "Scaling factor for all layers are not given"
 
-        assert len(uno_layers['out_channels']) == n_layers, "Output channels for all layers are not given"
-        assert len(uno_layers['n_modes']) == n_layers, "number of modes for all layers are not given"
-        assert len(uno_layers['res_scaling']) == n_layers, "Scaling factor for all layers are not given"
-
-        self.n_dim = len(uno_layers['n_modes'][0])
+        self.n_dim = len(uno_n_modes[0])
         self.hidden_channels = hidden_channels
         self.lifting_channels = lifting_channels
         self.projection_channels = projection_channels
@@ -150,9 +151,9 @@ class UNO(nn.Module):
         self.layer_configs = []
         for l in range(n_layers):
             l_config = {}
-            l_config['out_channels'] = uno_layers['out_channels'][l]
-            l_config['n_modes'] = uno_layers['n_modes'][l]
-            l_config['res_scaling'] = uno_layers['res_scaling'][l]
+            l_config['out_channels'] = uno_out_channels[l]
+            l_config['n_modes'] = uno_n_modes[l]
+            l_config['res_scaling'] = uno_scalings[l]
             self.layer_configs.append(l_config)
         
         if self.horizontal_skips_map is None:
