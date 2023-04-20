@@ -189,6 +189,7 @@ class FactorizedSpectralConv(nn.Module):
 
         self.in_channels = in_channels
         self.out_channels = out_channels
+        self.joint_factorization = joint_factorization
 
         # We index quadrands only
         # n_modes is the total number of modes kept along each dimension
