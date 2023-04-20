@@ -81,14 +81,16 @@ class FNOBlocks(nn.Module):
         else:
             self.mlp = None
 
+        # Each block will have 2 norms if we also use an MLP
+        self.n_norms = 1 if self.mlp is None else 2
         if norm is None:
             self.norm = None
         elif norm == 'instance_norm':
-            self.norm = nn.ModuleList([getattr(nn, f'InstanceNorm{self.n_dim}d')(num_features=self.out_channels) for _ in range(n_layers)])
+            self.norm = nn.ModuleList([getattr(nn, f'InstanceNorm{self.n_dim}d')(num_features=self.out_channels) for _ in range(n_layers*self.n_norms)])
         elif norm == 'group_norm':
-            self.norm = nn.ModuleList([nn.GroupNorm(num_groups=1, num_channels=self.out_channels) for _ in range(n_layers)])
+            self.norm = nn.ModuleList([nn.GroupNorm(num_groups=1, num_channels=self.out_channels) for _ in range(n_layers*self.n_norms)])
         elif norm == 'layer_norm':
-            self.norm = nn.ModuleList([nn.LayerNorm() for _ in range(n_layers)])
+            self.norm = nn.ModuleList([nn.LayerNorm(elementwise_affine=False) for _ in range(n_layers*self.n_norms)])
         else:
             raise ValueError(f'Got {norm=} but expected None or one of [instance_norm, group_norm, layer_norm]')
 
@@ -98,7 +100,7 @@ class FNOBlocks(nn.Module):
             x = self.non_linearity(x)
 
             if self.norm is not None:
-                x = self.norm[index](x)
+                x = self.norm[self.n_norms*index](x)
     
         x_skip_fno = self.fno_skips[index](x)
         if self.convs.output_scaling_factor is not None:
@@ -112,11 +114,11 @@ class FNOBlocks(nn.Module):
         x_fno = self.convs(x, index)
 
         if not self.preactivation and self.norm is not None:
-            x_fno = self.norm[index](x_fno)
+            x_fno = self.norm[self.n_norms*index](x_fno)
     
         x = x_fno + x_skip_fno
 
-        if not self.preactivation and index < (self.n_layers - index):
+        if not self.preactivation and (self.mlp is not None) or (index < (self.n_layers - index)):
             x = self.non_linearity(x)
 
         if self.mlp is not None:
@@ -126,7 +128,13 @@ class FNOBlocks(nn.Module):
                 if index < (self.n_layers - 1):
                     x = self.non_linearity(x)
 
+                if self.norm is not None:
+                    x = self.norm[self.n_norms*index+1](x)
+
             x = self.mlp[index](x) + x_skip_mlp
+
+            if not self.preactivation and self.norm is not None:
+                x = self.norm[self.n_norms*index+1](x)
 
             if not self.preactivation:
                 if index < (self.n_layers - 1):
