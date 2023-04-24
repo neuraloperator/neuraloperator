@@ -181,7 +181,7 @@ class FactorizedSpectralConv(nn.Module):
         Optionaly additional parameters to pass to the tensor decomposition
     """
     def __init__(self, in_channels, out_channels, n_modes, incremental_n_modes=None, bias=True,
-                 n_layers=1, separable=False, res_scaling=None,
+                 n_layers=1, separable=False, output_scaling_factor=None,
                  rank=0.5, factorization='cp', implementation='reconstructed', 
                  fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict(),
                  init_std='auto', fft_norm='backward'):
@@ -189,9 +189,7 @@ class FactorizedSpectralConv(nn.Module):
 
         self.in_channels = in_channels
         self.out_channels = out_channels
-        if isinstance(n_modes, int):
-            n_modes = [n_modes]
-        self.order = len(n_modes)
+        self.joint_factorization = joint_factorization
 
         # We index quadrands only
         # n_modes is the total number of modes kept along each dimension
@@ -199,6 +197,8 @@ class FactorizedSpectralConv(nn.Module):
         if isinstance(n_modes, int):
             n_modes = [n_modes]
         self.n_modes = n_modes
+        self.order = len(n_modes)
+
         half_total_n_modes = [m//2 for m in n_modes]
         self.half_total_n_modes = half_total_n_modes
 
@@ -213,10 +213,10 @@ class FactorizedSpectralConv(nn.Module):
         self.n_layers = n_layers
         self.implementation = implementation
 
-        if res_scaling is not None:
-            if isinstance(res_scaling, (float, int)):
-                res_scaling = [float(res_scaling)]*len(self.n_modes)
-        self.res_scaling = res_scaling
+        if output_scaling_factor is not None:
+            if isinstance(output_scaling_factor, (float, int)):
+                output_scaling_factor = [float(output_scaling_factor)]*len(self.n_modes)
+        self.output_scaling_factor = output_scaling_factor
 
         if init_std == 'auto':
             init_std = (1 / (in_channels * out_channels))
@@ -334,8 +334,8 @@ class FactorizedSpectralConv(nn.Module):
             # For 2D: [:, :, :height, :width] and [:, :, -height:, width]
             out_fft[idx_tuple] = self._contract(x[idx_tuple], self._get_weight(self.n_weights_per_layer*indices + i), separable=self.separable)
 
-        if self.res_scaling is not None:
-            mode_sizes = tuple([int(round(s*r)) for (s, r) in zip(mode_sizes, self.res_scaling)])
+        if self.output_scaling_factor is not None:
+            mode_sizes = tuple([int(round(s*r)) for (s, r) in zip(mode_sizes, self.output_scaling_factor)])
 
         x = torch.fft.irfftn(out_fft, s=(mode_sizes), norm=self.fft_norm)
 
@@ -385,6 +385,9 @@ class FactorizedSpectralConv1d(FactorizedSpectralConv):
 
         out_fft = torch.zeros([batchsize, self.out_channels,  width//2 + 1], device=x.device, dtype=torch.cfloat)
         out_fft[:, :, :self.half_n_modes[0]] = self._contract(x[:, :, :self.half_n_modes[0]], self._get_weight(indices), separable=self.separable)
+        
+        if self.output_scaling_factor is not None:
+            width = int(round(width*self.output_scaling_factor[0]))
 
         x = torch.fft.irfft(out_fft, n=width, norm=self.fft_norm)
 
@@ -409,6 +412,10 @@ class FactorizedSpectralConv2d(FactorizedSpectralConv):
         # Lower block
         out_fft[:, :, -self.half_n_modes[0]:, :self.half_n_modes[1]] = self._contract(x[:, :, -self.half_n_modes[0]:, :self.half_n_modes[1]],
                                                                               self._get_weight(2*indices + 1), separable=self.separable)
+        
+        if self.output_scaling_factor is not None:
+            width = int(round(width*self.output_scaling_factor[0]))
+            height = int(round(height*self.output_scaling_factor[1]))
 
         x = torch.fft.irfft2(out_fft, s=(height, width), dim=(-2, -1), norm=self.fft_norm)
 
@@ -434,6 +441,11 @@ class FactorizedSpectralConv3d(FactorizedSpectralConv):
             x[:, :, -self.half_n_modes[0]:, :self.half_n_modes[1], :self.half_n_modes[2]], self._get_weight(4*indices + 2), separable=self.separable)
         out_fft[:, :, -self.half_n_modes[0]:, -self.half_n_modes[1]:, :self.half_n_modes[2]] = self._contract(
             x[:, :, -self.half_n_modes[0]:, -self.half_n_modes[1]:, :self.half_n_modes[2]], self._get_weight(4*indices + 3), separable=self.separable)
+        
+        if self.output_scaling_factor is not None:
+            width = int(round(width*self.output_scaling_factor[0]))
+            height = int(round(height*self.output_scaling_factor[1]))
+            depth = int(round(depth*self.output_scaling_factor[2]))
 
         x = torch.fft.irfftn(out_fft, s=(height, width, depth), norm=self.fft_norm)
 

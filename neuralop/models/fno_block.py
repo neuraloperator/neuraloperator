@@ -8,7 +8,7 @@ from .mlp import MLP
 
 class FNOBlocks(nn.Module):
     def __init__(self, in_channels, out_channels, n_modes,
-                 res_scaling=None,
+                 output_scaling_factor=None,
                  n_layers=1,
                  incremental_n_modes=None,
                  use_mlp=False, mlp=None,
@@ -27,8 +27,16 @@ class FNOBlocks(nn.Module):
                  fft_norm='forward',
                  **kwargs):
         super().__init__()
-        self.n_dim = len(n_modes)
+        if isinstance(n_modes, int):
+            n_modes = [n_modes]
         self.n_modes = n_modes
+        self.n_dim = len(n_modes)
+
+        if output_scaling_factor is not None:
+            if isinstance(output_scaling_factor, (float, int)):
+                output_scaling_factor = [float(output_scaling_factor)]*len(self.n_modes)
+        self.output_scaling_factor = output_scaling_factor
+
         self._incremental_n_modes = incremental_n_modes
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -48,7 +56,7 @@ class FNOBlocks(nn.Module):
 
         self.convs = SpectralConv(
                 self.in_channels, self.out_channels, self.n_modes, 
-                res_scaling=res_scaling,
+                output_scaling_factor=output_scaling_factor,
                 incremental_n_modes=incremental_n_modes,
                 rank=rank,
                 fft_norm=fft_norm,
@@ -69,18 +77,20 @@ class FNOBlocks(nn.Module):
                      hidden_channels=int(round(self.out_channels*mlp['expansion'])),
                      dropout=mlp['dropout'], n_dim=self.n_dim) for _ in range(n_layers)]
             )
-            self.mlp_skips = nn.ModuleList([skip_connection(self.out_channels, self.out_channels, type=mlp_skip, n_dim=self.n_dim) for _ in range(n_layers)])
+            self.mlp_skips = nn.ModuleList([skip_connection(self.in_channels, self.out_channels, type=mlp_skip, n_dim=self.n_dim) for _ in range(n_layers)])
         else:
             self.mlp = None
 
+        # Each block will have 2 norms if we also use an MLP
+        self.n_norms = 1 if self.mlp is None else 2
         if norm is None:
             self.norm = None
         elif norm == 'instance_norm':
-            self.norm = nn.ModuleList([getattr(nn, f'InstanceNorm{self.n_dim}d')(num_features=self.out_channels) for _ in range(n_layers)])
+            self.norm = nn.ModuleList([getattr(nn, f'InstanceNorm{self.n_dim}d')(num_features=self.out_channels) for _ in range(n_layers*self.n_norms)])
         elif norm == 'group_norm':
-            self.norm = nn.ModuleList([nn.GroupNorm(num_groups=1, num_channels=self.out_channels) for _ in range(n_layers)])
+            self.norm = nn.ModuleList([nn.GroupNorm(num_groups=1, num_channels=self.out_channels) for _ in range(n_layers*self.n_norms)])
         elif norm == 'layer_norm':
-            self.norm = nn.ModuleList([nn.LayerNorm() for _ in range(n_layers)])
+            self.norm = nn.ModuleList([nn.LayerNorm(elementwise_affine=False) for _ in range(n_layers*self.n_norms)])
         else:
             raise ValueError(f'Got {norm=} but expected None or one of [instance_norm, group_norm, layer_norm]')
 
@@ -90,31 +100,41 @@ class FNOBlocks(nn.Module):
             x = self.non_linearity(x)
 
             if self.norm is not None:
-                x = self.norm[index](x)
+                x = self.norm[self.n_norms*index](x)
     
-        x_skip = self.fno_skips[index](x)
-        
+        x_skip_fno = self.fno_skips[index](x)
+        if self.convs.output_scaling_factor is not None:
+            x_skip_fno = resample(x_skip_fno, self.convs.output_scaling_factor, list(range(-len(self.convs.output_scaling_factor), 0)))
+
+        if self.mlp is not None:
+            x_skip_mlp = self.mlp_skips[index](x)
+            if self.convs.output_scaling_factor is not None:
+                x_skip_mlp = resample(x_skip_mlp, self.convs.output_scaling_factor, list(range(-len(self.convs.output_scaling_factor), 0)))
+
         x_fno = self.convs(x, index)
 
         if not self.preactivation and self.norm is not None:
-            x_fno = self.norm[index](x_fno)
+            x_fno = self.norm[self.n_norms*index](x_fno)
     
-        if self.convs.res_scaling is not None:
-            x_skip = resample(x_skip, self.convs.res_scaling, list(range(-len(self.convs.res_scaling), 0)))
+        x = x_fno + x_skip_fno
 
-        x = x_fno + x_skip
-
-        if not self.preactivation and index < (self.n_layers - index):
+        if not self.preactivation and (self.mlp is not None) or (index < (self.n_layers - index)):
             x = self.non_linearity(x)
 
         if self.mlp is not None:
-            x_skip = self.mlp_skips[index](x)
+            # x_skip = self.mlp_skips[index](x)
 
             if self.preactivation:
                 if index < (self.n_layers - 1):
                     x = self.non_linearity(x)
 
-            x = self.mlp[index](x) + x_skip
+                if self.norm is not None:
+                    x = self.norm[self.n_norms*index+1](x)
+
+            x = self.mlp[index](x) + x_skip_mlp
+
+            if not self.preactivation and self.norm is not None:
+                x = self.norm[self.n_norms*index+1](x)
 
             if not self.preactivation:
                 if index < (self.n_layers - 1):

@@ -99,10 +99,18 @@ class Trainer:
             model.train()
             t1 = default_timer()
             train_err = 0.0
-            for sample in train_loader:
+
+            for idx, sample in enumerate(train_loader):
                 x, y = sample['x'], sample['y']
                 
+                if epoch == 0 and idx == 0 and self.verbose and is_logger:
+                    print(f'Training on raw inputs of size {x.shape=}, {y.shape=}')
+
                 x, y = self.patcher.patch(x, y)
+
+                if epoch == 0 and idx == 0 and self.verbose and is_logger:
+                    print(f'.. patched inputs of size {x.shape=}, {y.shape=}')
+
                 x = x.to(self.device)
                 y = y.to(self.device)
 
@@ -111,14 +119,17 @@ class Trainer:
                     regularizer.reset()
 
                 out = model(x)
-                
-                out, y = self.patcher.unpatch(out, y)
+                if epoch == 0 and idx == 0 and self.verbose and is_logger:
+                    print(f'Raw outputs of size {out.shape=}')
 
+                out, y = self.patcher.unpatch(out, y)
                 #Output encoding only works if output is stiched
                 if output_encoder is not None and self.mg_patching_stitching:
                     out = output_encoder.decode(out)
                     y = output_encoder.decode(y)
-                    
+                if epoch == 0 and idx == 0 and self.verbose and is_logger:
+                    print(f'.. Processed (unpatched) outputs of size {out.shape=}')
+
                 loss = training_loss(out.float(), y)
 
                 if regularizer:

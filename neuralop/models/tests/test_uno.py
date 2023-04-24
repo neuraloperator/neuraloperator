@@ -3,10 +3,19 @@ from ..uno import UNO
 import torch
 
 def test_UNO():
+<<<<<<< HEAD
     uno_layers = {"out_channels":[32,64,64,64,32],\
                 "n_modes" : [[5,5],[5,5],[5,5],[5,5],[5,5]],\
                 "res_scaling" : [[1.0,1.0],[0.5,0.5],[1,1],[1,1],[2,2]]\
                         }
+=======
+    layer_configs = [{"out_channels":20, "n_modes" : [5,5], "output_scaling_factor" :[0.5,0.5] },\
+                    {"out_channels":20, "n_modes" : [5,5], "output_scaling_factor" :[1,1] },\
+                    {"out_channels":20, "n_modes" : [5,5], "output_scaling_factor" :[1,1] },\
+                    {"out_channels":20, "n_modes" : [5,5], "output_scaling_factor" :[2,2] },\
+                    {"out_channels":10, "n_modes" : [5,5], "output_scaling_factor" :[2,2] },\
+                            ]
+>>>>>>> main
     horizontal_skips_map ={4:0,3:1}
     model = UNO(3,3,5,uno_out_channels = [32,64,64,64,32], uno_n_modes= [[5,5],[5,5],[5,5],[5,5],[5,5]], uno_scalings=  [[1.0,1.0],[0.5,0.5],[1,1],[1,1],[2,2]],\
                  horizontal_skips_map = horizontal_skips_map, n_layers = 5, domain_padding = 0.2)
