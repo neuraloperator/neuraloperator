@@ -240,6 +240,4 @@ class UNO(nn.Module):
 
         return x
 
-
-
 UNO =  partialclass('UNO', UNO, factorization='Tucker')
