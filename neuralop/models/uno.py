@@ -126,6 +126,9 @@ class UNO(nn.Module):
         assert len(uno_scalings) == n_layers, "Scaling factor for all layers are not given"
 
         self.n_dim = len(uno_n_modes[0])
+        self.uno_out_channels = uno_out_channels
+        self.uno_n_modes = uno_n_modes
+        self.uno_scalings = uno_scalings
         self.hidden_channels = hidden_channels
         self.lifting_channels = lifting_channels
         self.projection_channels = projection_channels
@@ -145,16 +148,6 @@ class UNO(nn.Module):
         self.separable = separable
         self.preactivation = preactivation
         self._incremental_n_modes = incremental_n_modes
-
-        
-
-        self.layer_configs = []
-        for l in range(n_layers):
-            l_config = {}
-            l_config['out_channels'] = uno_out_channels[l]
-            l_config['n_modes'] = uno_n_modes[l]
-            l_config['res_scaling'] = uno_scalings[l]
-            self.layer_configs.append(l_config)
         
         if self.horizontal_skips_map is None:
             self.horizontal_skips_map = {}
@@ -164,7 +157,7 @@ class UNO(nn.Module):
 
         if domain_padding is not None and domain_padding > 0:
             self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode\
-            , output_scale_factor = [i['res_scaling'] for i in self.layer_configs])
+            , output_scale_factor = self.uno_scalings)
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
@@ -178,14 +171,14 @@ class UNO(nn.Module):
         for i in range(self.n_layers):
 
             if i in self.horizontal_skips_map.keys():
-                prev_out = prev_out + self.layer_configs[self.horizontal_skips_map[i]]['out_channels']
+                prev_out = prev_out + self.uno_out_channels[self.horizontal_skips_map[i]]
 
             self.fno_blocks.append(FNOBlocks(
                                             in_channels=prev_out,
-                                            out_channels= self.layer_configs[i]['out_channels'], 
-                                            n_modes=self.layer_configs[i]['n_modes'],
+                                            out_channels= self.uno_out_channels[i], 
+                                            n_modes=self.uno_n_modes[i],
                                             use_mlp=use_mlp, mlp=mlp,
-                                            output_scaling_factor = self.layer_configs[i]['output_scaling_factor'],
+                                            output_scaling_factor = self.uno_scalings[i],
                                             non_linearity=non_linearity,
                                             norm=norm, preactivation=preactivation,
                                             fno_skip=fno_skip,
@@ -202,10 +195,10 @@ class UNO(nn.Module):
                                             n_layers=1))
             
             if i in self.horizontal_skips_map.values():
-                self.horizontal_skips[str(i)] = skip_connection( self.layer_configs[i]['out_channels'],  \
-                self.layer_configs[i]['out_channels'], type=horizontal_skip, n_dim=self.n_dim)
+                self.horizontal_skips[str(i)] = skip_connection( self.uno_out_channels[i],  \
+                self.uno_out_channels[i], type=horizontal_skip, n_dim=self.n_dim)
 
-            prev_out = self.layer_configs[i]['out_channels']
+            prev_out = self.uno_out_channels[i]
 
         self.projection = Projection(in_channels=prev_out, out_channels=out_channels, hidden_channels=projection_channels,
                                         non_linearity=non_linearity, n_dim=self.n_dim)
