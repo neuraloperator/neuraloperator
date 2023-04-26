@@ -13,6 +13,7 @@ import sys
 from neuralop.models import TFNO, FNO
 from neuralop import Trainer
 from neuralop.datasets import load_darcy_flow_small
+from neuralop.datasets.burgers import load_burgers_mat
 from neuralop.utils import count_params
 from neuralop import LpLoss, H1Loss
 
@@ -31,11 +32,10 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     """        
     # DATASET
     # Loading the Darcy flow dataset
-    train_loader, test_loaders, output_encoder = load_darcy_flow_small(
-            n_train=1000, batch_size=16, 
-            test_resolutions=[16, 32], n_tests=[100, 50],
-            test_batch_sizes=[32, 32],
-            )
+    
+    train_path = "/home/robert/data/burgers_data_R10.mat"
+    train_loader, test_loaders = load_burgers_mat(train_path, n_train = 1000, n_test = 200, batch_train=32, batch_test=100, 
+                 time=1, grid=[0,1])
     
     # Choose device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -83,34 +83,12 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental_loss_gap = incremental_loss_gap, incremental = incremental, incremental_resolution = incremental_resolution, dataset_name="SmallDarcy")
 
     # Train the model
+    output_encoder = None
     trainer.train(train_loader, test_loaders, output_encoder, model, optimizer, scheduler, regularizer=False, training_loss=train_loss, eval_losses=eval_losses)
 
     if incremental_mode:
         # Check that the number of modes has dynamically increased (Atleast for these settings on this dataset it should increase)
         assert model.convs.incremental_n_modes > starting_modes
-
-        # Test for Conv1D to Conv4D
-        conv = FactorizedSpectralConv(
-            3, 3, modes[:dim], n_layers=1, scale='auto', bias=False, implementation=implementation, factorization=factorization)
-
-        conv_dense = FactorizedSpectralConv(
-            3, 3, modes[:dim], n_layers=1, scale='auto', bias=False, implementation='reconstructed', factorization=None)
-
-        for i in range(2**(dim-1)):
-            conv_dense.weight[i] = FactorizedTensor.from_tensor(conv.weight[i].to_tensor(), rank=None, factorization='ComplexDense')
-
-        x = torch.randn(2, 3, *(12, )*dim)
-
-        res_dense = conv_dense(x)
-        res = conv(x)
-        res_shape = res.shape
-
-        torch.testing.assert_close(res_dense, res)
-
-        # Dynamically reduce the number of modes in Fourier space
-        conv.incremental_n_modes = incremental_modes[:dim]
-        res = conv(x)
-        assert res_shape == res.shape
     
     if incremental_resolution or not baseline:
         # Check that the number of modes has not dynamically increased (Atleast for these settings on this dataset it should increase)
@@ -124,7 +102,7 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
 # add all the datasets as loaders
 
 # Test Baseline Model first
-#test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False)
+test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False)
 
 # Test Incremental Loss Gap
 #test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=False)
@@ -133,6 +111,6 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
 #test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=False)
 
 # Test Incremental Resolution
-test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=True)
+#test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=True)
 
 

@@ -51,7 +51,7 @@ class Trainer:
         self.incremental_loss_gap = incremental_loss_gap
         self.incremental_grad = incremental
         self.incremental_resolution = incremental_resolution
-        self.incremental = self.incremental_loss_gap or self.incremental_grad or self.incremental_resolution
+        self.incremental = self.incremental_loss_gap or self.incremental_grad
         self.dataset_name = dataset_name
 
         if mg_patching_levels > 0:
@@ -66,8 +66,8 @@ class Trainer:
                 print(f'Training on regular inputs (no multi-grid patching).')
                 sys.stdout.flush()
         
-        if self.incremental:
-            self.incremental_scheduler = Incremental(model, n_epochs, incremental = self.incremental_grad, incremental_loss_gap = self.incremental_loss_gap, incremental_resolution = self.incremental_resolution, dataset_name = self.dataset_name)
+        if self.incremental or self.incremental_resolution:
+            self.incremental_scheduler = Incremental(model, incremental = self.incremental_grad, incremental_loss_gap = self.incremental_loss_gap, incremental_resolution = self.incremental_resolution, dataset_name = self.dataset_name)
         
         self.mg_patching_padding = mg_patching_padding
         self.patcher = MultigridPatching2D(model, levels=mg_patching_levels, padding_fraction=mg_patching_padding,
@@ -113,13 +113,12 @@ class Trainer:
             train_err = 0.0
             for sample in train_loader:
                 x, y = sample['x'], sample['y']
-                
                 x, y = self.patcher.patch(x, y)               
                 x = x.to(self.device)
                 y = y.to(self.device)
 
                 if self.incremental_resolution:
-                    x, y = self.incremental_scheduler.regularize_input_res(x,y)
+                    x, y = self.incremental_scheduler.step(x = x, y = y)
                                 
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
@@ -190,7 +189,7 @@ class Trainer:
                     print(msg)
                     sys.stdout.flush()
                     
-                if self.incremental_loss_gap or self.incremental_grad:
+                if self.incremental:
                     print("Model is currently using {} number of modes".format(model.convs.incremental_n_modes))
 
                 # Wandb loging
