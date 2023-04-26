@@ -35,8 +35,7 @@
  
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Training a neural operator on Darcy-Flow" href="plot_UNO_darcy.html" />
-    <link rel="prev" title="A simple Darcy-Flow dataset" href="plot_darcy_flow.html" />
+    <link rel="prev" title="Training a neural operator on Darcy-Flow" href="plot_FNO_darcy.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -134,8 +133,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../modules/api.html">API reference</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Gallery of examples</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a neural operator on Darcy-Flow</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Training a neural operator on Darcy-Flow</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plot_UNO_darcy.html">Training a neural operator on Darcy-Flow</a></li>
 </ul>
 </li>
 </ul>
@@ -164,16 +163,16 @@
         
   <div class="sphx-glr-download-link-note admonition note">
 <p class="admonition-title">Note</p>
-<p><a class="reference internal" href="#sphx-glr-download-auto-examples-plot-fno-darcy-py"><span class="std std-ref">Go to the end</span></a>
+<p><a class="reference internal" href="#sphx-glr-download-auto-examples-plot-uno-darcy-py"><span class="std std-ref">Go to the end</span></a>
 to download the full example code</p>
 </div>
 <section class="sphx-glr-example-title" id="training-a-neural-operator-on-darcy-flow">
-<span id="sphx-glr-auto-examples-plot-fno-darcy-py"></span><h1>Training a neural operator on Darcy-Flow<a class="headerlink" href="#training-a-neural-operator-on-darcy-flow" title="Permalink to this heading"></a></h1>
+<span id="sphx-glr-auto-examples-plot-uno-darcy-py"></span><h1>Training a neural operator on Darcy-Flow<a class="headerlink" href="#training-a-neural-operator-on-darcy-flow" title="Permalink to this heading"></a></h1>
 <p>In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">TFNO</span>
+<span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">TFNO</span><span class="p">,</span> <span class="n">UNO</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">Trainer</span>
 <span class="kn">from</span> <span class="nn">neuralop.datasets</span> <span class="kn">import</span> <span class="n">load_darcy_flow_small</span>
 <span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">count_params</span>
@@ -182,21 +181,17 @@ to download the full example code</p>
 <span class="n">device</span> <span class="o">=</span> <span class="s1">&#39;cpu&#39;</span>
 </pre></div>
 </div>
-<p>Loading the Navier-Stokes dataset in 128x128 resolution</p>
+<p>Loading the Darcy Flow dataset</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">output_encoder</span> <span class="o">=</span> <span class="n">load_darcy_flow_small</span><span class="p">(</span>
         <span class="n">n_train</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
         <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span> <span class="n">n_tests</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
         <span class="n">test_batch_sizes</span><span class="o">=</span><span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span>
 <span class="p">)</span>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>UnitGaussianNormalizer init on 1000, reducing over [0, 1, 2, 3], samples of shape [1, 16, 16].
-   Mean and std of shape torch.Size([1, 1, 1]), eps=1e-05
-Loading test db at resolution 32 with 50 samples and batch-size=32
-</pre></div>
-</div>
-<p>We create a tensorized FNO model</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">TFNO</span><span class="p">(</span><span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">projection_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;tucker&#39;</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="mf">0.42</span><span class="p">)</span>
+
+
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">UNO</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">projection_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span><span class="n">uno_out_channels</span> <span class="o">=</span> <span class="p">[</span><span class="mi">32</span><span class="p">,</span><span class="mi">64</span><span class="p">,</span><span class="mi">64</span><span class="p">,</span><span class="mi">64</span><span class="p">,</span><span class="mi">32</span><span class="p">],</span> <span class="n">uno_n_modes</span><span class="o">=</span> <span class="p">[[</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">],[</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">],[</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">],[</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">],[</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">]],</span> <span class="n">uno_scalings</span><span class="o">=</span>  <span class="p">[[</span><span class="mf">1.0</span><span class="p">,</span><span class="mf">1.0</span><span class="p">],[</span><span class="mf">0.5</span><span class="p">,</span><span class="mf">0.5</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]],</span>\
+                 <span class="n">horizontal_skips_map</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">n_layers</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">domain_padding</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 
 <span class="n">n_params</span> <span class="o">=</span> <span class="n">count_params</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
@@ -204,7 +199,12 @@ Loading test db at resolution 32 with 50 samples and batch-size=32
 <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Our model has 393665 parameters.
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>UnitGaussianNormalizer init on 1000, reducing over [0, 1, 2, 3], samples of shape [1, 16, 16].
+   Mean and std of shape torch.Size([1, 1, 1]), eps=1e-05
+Loading test db at resolution 32 with 50 samples and batch-size=32
+[32, 64, 64, 64, 32]
+
+Our model has 1787201 parameters.
 </pre></div>
 </div>
 <p>Create the optimizer</p>
@@ -232,20 +232,54 @@ Loading test db at resolution 32 with 50 samples and batch-size=32
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>### MODEL ###
- TFNO(
-  (fno_blocks): FNOBlocks(
-    (convs): FactorizedSpectralConv(
-      (weight): ModuleList(
-        (0-7): 8 x ComplexTuckerTensor(shape=(32, 32, 8, 8), rank=(25, 25, 6, 6))
+ UNO(
+  (domain_padding): DomainPadding()
+  (lifting): Lifting(
+    (fc): Conv2d(3, 64, kernel_size=(1, 1), stride=(1, 1))
+  )
+  (fno_blocks): ModuleList(
+    (0): FNOBlocks(
+      (convs): FactorizedSpectralConv(
+        (weight): ModuleList(
+          (0-1): 2 x ComplexTuckerTensor(shape=(64, 32, 8, 8), rank=(63, 32, 8, 8))
+        )
+      )
+      (fno_skips): ModuleList(
+        (0): Conv2d(64, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
       )
     )
-    (fno_skips): ModuleList(
-      (0-3): 4 x Conv2d(32, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+    (1): FNOBlocks(
+      (convs): FactorizedSpectralConv(
+        (weight): ModuleList(
+          (0-1): 2 x ComplexTuckerTensor(shape=(32, 64, 4, 4), rank=(31, 61, 4, 4))
+        )
+      )
+      (fno_skips): ModuleList(
+        (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      )
+    )
+    (2-3): 2 x FNOBlocks(
+      (convs): FactorizedSpectralConv(
+        (weight): ModuleList(
+          (0-1): 2 x ComplexTuckerTensor(shape=(64, 64, 4, 4), rank=(62, 62, 4, 4))
+        )
+      )
+      (fno_skips): ModuleList(
+        (0): Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      )
+    )
+    (4): FNOBlocks(
+      (convs): FactorizedSpectralConv(
+        (weight): ModuleList(
+          (0-1): 2 x ComplexTuckerTensor(shape=(64, 32, 8, 8), rank=(63, 32, 8, 8))
+        )
+      )
+      (fno_skips): ModuleList(
+        (0): Conv2d(64, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      )
     )
   )
-  (lifting): Lifting(
-    (fc): Conv2d(3, 32, kernel_size=(1, 1), stride=(1, 1))
-  )
+  (horizontal_skips): ModuleDict()
   (projection): Projection(
     (fc1): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1))
     (fc2): Conv2d(64, 1, kernel_size=(1, 1), stride=(1, 1))
@@ -269,13 +303,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f42a43a9580&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f429d1aa220&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.training.losses.H1Loss object at 0x7f42a43a96d0&gt;
+ * Train: &lt;neuralop.training.losses.H1Loss object at 0x7f429d210550&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7f42a43a96d0&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f42a43a9430&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7f429d210550&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f429d1aa370&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -306,15 +340,17 @@ Parameter Group 0
 Testing on [50, 50] samples         on resolutions [16, 32].
 Training on raw inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torch.Size([32, 1, 16, 16])
 .. patched inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torch.Size([32, 1, 16, 16])
+Padding inputs of resolution=torch.Size([16, 16]) with padding=[3], one-sided
 Raw outputs of size out.shape=torch.Size([32, 1, 16, 16])
 .. Processed (unpatched) outputs of size out.shape=torch.Size([32, 1, 16, 16])
-[0] time=3.48, avg_loss=27.8688, train_err=0.5574, 16_h1=0.4042, 16_l2=0.3085, 32_h1=0.4857, 32_l2=0.3122
-[3] time=3.38, avg_loss=10.7305, train_err=0.2146, 16_h1=0.2127, 16_l2=0.1669, 32_h1=0.3487, 32_l2=0.2076
-[6] time=3.24, avg_loss=9.3064, train_err=0.1861, 16_h1=0.2229, 16_l2=0.1691, 32_h1=0.3259, 32_l2=0.1914
-[9] time=3.42, avg_loss=7.9313, train_err=0.1586, 16_h1=0.1632, 16_l2=0.1219, 32_h1=0.3080, 32_l2=0.1602
-[12] time=3.26, avg_loss=7.3287, train_err=0.1466, 16_h1=0.1464, 16_l2=0.1021, 32_h1=0.2865, 32_l2=0.1465
-[15] time=3.35, avg_loss=6.9437, train_err=0.1389, 16_h1=0.1382, 16_l2=0.0935, 32_h1=0.2672, 32_l2=0.1354
-[18] time=3.31, avg_loss=6.5936, train_err=0.1319, 16_h1=0.1428, 16_l2=0.1029, 32_h1=0.2581, 32_l2=0.1277
+Padding inputs of resolution=torch.Size([32, 32]) with padding=[6], one-sided
+[0] time=6.66, avg_loss=28.9498, train_err=0.5790, 16_h1=0.3994, 16_l2=0.3032, 32_h1=0.7292, 32_l2=0.3479
+[3] time=6.43, avg_loss=12.1916, train_err=0.2438, 16_h1=0.2398, 16_l2=0.1774, 32_h1=0.6117, 32_l2=0.2619
+[6] time=6.53, avg_loss=10.1477, train_err=0.2030, 16_h1=0.1847, 16_l2=0.1327, 32_h1=0.5323, 32_l2=0.2243
+[9] time=6.80, avg_loss=8.9046, train_err=0.1781, 16_h1=0.2129, 16_l2=0.1629, 32_h1=0.5527, 32_l2=0.2652
+[12] time=7.21, avg_loss=7.8623, train_err=0.1572, 16_h1=0.1579, 16_l2=0.1111, 32_h1=0.4337, 32_l2=0.1844
+[15] time=6.27, avg_loss=7.0154, train_err=0.1403, 16_h1=0.1483, 16_l2=0.0998, 32_h1=0.4228, 32_l2=0.1733
+[18] time=6.60, avg_loss=6.5928, train_err=0.1319, 16_h1=0.1362, 16_l2=0.0884, 32_h1=0.4342, 32_l2=0.1797
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -363,13 +399,13 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  8.045 seconds)</p>
-<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-fno-darcy-py">
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 2 minutes  16.464 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
-<p><a class="reference download internal" download="" href="../_downloads/1a3050d57a180b92b424ce128dfe1d36/plot_FNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_FNO_darcy.py</span></code></a></p>
+<p><a class="reference download internal" download="" href="../_downloads/f9c1e50d48828a746410d5400feb61f7/plot_UNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_UNO_darcy.py</span></code></a></p>
 </div>
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
-<p><a class="reference download internal" download="" href="../_downloads/e81e8f640b2a3cda84c542bbc8f36a54/plot_FNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_FNO_darcy.ipynb</span></code></a></p>
+<p><a class="reference download internal" download="" href="../_downloads/ecc34f03fb30bee651bda959149422c4/plot_UNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_UNO_darcy.ipynb</span></code></a></p>
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
@@ -381,20 +417,13 @@ ii) can be trained quickly on CPU</p>
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="plot_darcy_flow.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="plot_FNO_darcy.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span>A simple Darcy-Flow dataset</span>
+        <span>Training a neural operator on Darcy-Flow</span>
     </a>
     
-    
-    <a class="button pagination-next" href="plot_UNO_darcy.html" title="next page" accesskey="n">
-        <span>Training a neural operator on Darcy-Flow </span>
-        <span class="icon">
-            <i class="fa fa-arrow-circle-right"></i>
-        </span>
-    </a>
     
 </nav>
 
