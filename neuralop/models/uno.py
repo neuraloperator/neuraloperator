@@ -29,17 +29,18 @@ class UNO(nn.Module):
         number of hidden channels of the projection block of the FNO, by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
-    layer_configs : list of maps describing configuaration of each of the layers. Each map contains 3
-                    keys "out_channels", "n_modes", "output_scaling_factor".
-                    example: For a 5 layer UNO architecture, the layer configurartions can be 
-                    layer_configs = [{"out_channels":20, "n_modes" : [5,5], "output_scaling_factor" :[0.5,0.5] },\
-                                    {"out_channels":20, "n_modes" : [5,5], "output_scaling_factor" :[1,1] },\
-                                    {"out_channels":20, "n_modes" : [5,5], "output_scaling_factor" :[1,1] },\
-                                    {"out_channels":20, "n_modes" : [5,5], "output_scaling_factor" :[1,1] },\
-                                    {"out_channels":10, "n_modes" : [5,5], "output_scaling_factor" :[2,2] },\
-                                ]
-    horizontal_skips_map: a map {...., b: a, ....}denoting horizontal skip connection from a-th layer to
-                    b-th layer
+    uno_out_channels: list
+        Number of output channel of each Fourier Layers.
+        Eaxmple: For a Five layer UNO uno_out_channels can be [32,64,64,64,32]
+    uno_n_modes: list
+        Number of Fourier Modes to use in integral operation of each Fourier Layers (along each dimension).
+        Example: For a five layer UNO with 2D input the uno_n_modes can be: [[5,5],[5,5],[5,5],[5,5],[5,5]]
+    uno_scalings: list
+        Scaling Factors for each Fourier Layers
+        Example: For a five layer UNO with 2D input, the uno_scalings can be : [[1.0,1.0],[0.5,0.5],[1,1],[1,1],[2,2]]
+    horizontal_skips_map: Dict, optional
+                    a map {...., b: a, ....} denoting horizontal skip connection from a-th layer to
+                    b-th layer. If None default skip connection is applied.
                     Example: For a 5 layer UNO architecture, the skip connections can be 
                     horizontal_skips_map ={4:0,3:1}
 
@@ -95,7 +96,9 @@ class UNO(nn.Module):
                  lifting_channels=256,
                  projection_channels=256,
                  n_layers=4,
-                 layer_configs = None,
+                 uno_out_channels = None,
+                 uno_n_modes = None,
+                 uno_scalings = None,
                  horizontal_skips_map = None,
                  incremental_n_modes=None,
                  use_mlp=False, mlp=None,
@@ -116,14 +119,21 @@ class UNO(nn.Module):
                  fft_norm='forward',
                  **kwargs):
         super().__init__()
-        self.n_dim = len(layer_configs[0]['n_modes'])
+        self.n_layers = n_layers
+        print(uno_out_channels)
+        assert len(uno_out_channels) == n_layers, "Output channels for all layers are not given"
+        assert len(uno_n_modes) == n_layers, "number of modes for all layers are not given"
+        assert len(uno_scalings) == n_layers, "Scaling factor for all layers are not given"
+
+        self.n_dim = len(uno_n_modes[0])
+        self.uno_out_channels = uno_out_channels
+        self.uno_n_modes = uno_n_modes
+        self.uno_scalings = uno_scalings
         self.hidden_channels = hidden_channels
         self.lifting_channels = lifting_channels
         self.projection_channels = projection_channels
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.n_layers = n_layers
-        self.layer_configs = layer_configs
         self.horizontal_skips_map = horizontal_skips_map
         self.joint_factorization = joint_factorization
         self.non_linearity = non_linearity
@@ -138,13 +148,16 @@ class UNO(nn.Module):
         self.separable = separable
         self.preactivation = preactivation
         self._incremental_n_modes = incremental_n_modes
-
-        assert len(self.layer_configs) == n_layers
+        
+        if self.horizontal_skips_map is None:
+            self.horizontal_skips_map = {}
+            for i in range(n_layers//2,0,):
+                self.horizontal_skips_map[n_layers - i -1] = i
         
 
         if domain_padding is not None and domain_padding > 0:
             self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode\
-            , output_scale_factor = [i['output_scaling_factor'] for i in layer_configs])
+            , output_scale_factor = self.uno_scalings)
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
@@ -158,14 +171,14 @@ class UNO(nn.Module):
         for i in range(self.n_layers):
 
             if i in self.horizontal_skips_map.keys():
-                prev_out = prev_out + self.layer_configs[self.horizontal_skips_map[i]]['out_channels']
+                prev_out = prev_out + self.uno_out_channels[self.horizontal_skips_map[i]]
 
             self.fno_blocks.append(FNOBlocks(
                                             in_channels=prev_out,
-                                            out_channels= self.layer_configs[i]['out_channels'], 
-                                            n_modes=self.layer_configs[i]['n_modes'],
+                                            out_channels= self.uno_out_channels[i], 
+                                            n_modes=self.uno_n_modes[i],
                                             use_mlp=use_mlp, mlp=mlp,
-                                            output_scaling_factor = self.layer_configs[i]['output_scaling_factor'],
+                                            output_scaling_factor = self.uno_scalings[i],
                                             non_linearity=non_linearity,
                                             norm=norm, preactivation=preactivation,
                                             fno_skip=fno_skip,
@@ -182,10 +195,10 @@ class UNO(nn.Module):
                                             n_layers=1))
             
             if i in self.horizontal_skips_map.values():
-                self.horizontal_skips[str(i)] = skip_connection( self.layer_configs[i]['out_channels'],  \
-                self.layer_configs[i]['out_channels'], type=horizontal_skip, n_dim=self.n_dim)
+                self.horizontal_skips[str(i)] = skip_connection( self.uno_out_channels[i],  \
+                self.uno_out_channels[i], type=horizontal_skip, n_dim=self.n_dim)
 
-            prev_out = self.layer_configs[i]['out_channels']
+            prev_out = self.uno_out_channels[i]
 
         self.projection = Projection(in_channels=prev_out, out_channels=out_channels, hidden_channels=projection_channels,
                                         non_linearity=non_linearity, n_dim=self.n_dim)
@@ -220,5 +233,4 @@ class UNO(nn.Module):
 
         return x
 
-
-# UNO =  partialclass('UNO', UNO, factorization='Tucker')
+UNO =  partialclass('UNO', UNO, factorization='Tucker')
