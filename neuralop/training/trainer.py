@@ -118,7 +118,7 @@ class Trainer:
                 y = y.to(self.device)
 
                 if self.incremental_resolution:
-                    x, y = self.incremental_scheduler.step(x = x, y = y)
+                    x, y = self.incremental_scheduler.step(epoch = epoch, x = x, y = y)
                                 
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:

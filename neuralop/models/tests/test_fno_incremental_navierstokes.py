@@ -13,7 +13,7 @@ import sys
 from neuralop.models import TFNO, FNO
 from neuralop import Trainer
 from neuralop.datasets import load_darcy_flow_small
-from neuralop.datasets.darcy import load_darcy_241
+from neuralop.datasets.navier_stokes import load_navier_stokes_pt
 from neuralop.utils import count_params
 from neuralop import LpLoss, H1Loss
 
@@ -33,12 +33,11 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     # DATASET
     # Loading the Darcy flow dataset
     
-    train_path = "/home/robert/data/piececonst_r421_N1024_smooth1.mat"
-    test_path = "/home/robert/data/piececonst_r421_N1024_smooth2.mat"
-    train_loader, test_loaders, output_encoder = load_darcy_241(
-            train_path, test_path,
+    train_path = "/home/robert/data/nsforcing_128/"
+    train_loader, test_loaders, output_encoder = load_navier_stokes_pt(
+            train_path, train_resolution=128,
             n_train=1000, batch_size=32, 
-            test_resolutions=[241], n_tests=[200],
+            test_resolutions=[128], n_tests=[200],
             test_batch_sizes=[32],
             )
     
@@ -85,7 +84,7 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     sys.stdout.flush()
     
     # Set up the trainer
-    trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental_loss_gap = incremental_loss_gap, incremental = incremental, incremental_resolution = incremental_resolution, dataset_name="SmallDarcy")
+    trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental_loss_gap = incremental_loss_gap, incremental = incremental, incremental_resolution = incremental_resolution, dataset_name="NavierStokes")
 
     # Train the model
     trainer.train(train_loader, test_loaders, output_encoder, model, optimizer, scheduler, regularizer=False, training_loss=train_loss, eval_losses=eval_losses)
@@ -106,7 +105,7 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
 # add all the datasets as loaders
 
 # Test Baseline Model first
-test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False)
+#test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False)
 
 # Test Incremental Loss Gap
 #test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=False)
@@ -115,6 +114,6 @@ test_incremental_model_training(incremental_loss_gap=False, incremental=False, i
 #test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=False)
 
 # Test Incremental Resolution
-#test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=True)
+test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=True)
 
 

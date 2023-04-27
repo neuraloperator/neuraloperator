@@ -13,7 +13,7 @@ import sys
 from neuralop.models import TFNO, FNO
 from neuralop import Trainer
 from neuralop.datasets import load_darcy_flow_small
-from neuralop.datasets.darcy import load_darcy_241
+from neuralop.datasets.darcy import load_darcy_241, load_darcy_pt
 from neuralop.utils import count_params
 from neuralop import LpLoss, H1Loss
 
@@ -33,13 +33,12 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     # DATASET
     # Loading the Darcy flow dataset
     
-    train_path = "/home/robert/data/piececonst_r421_N1024_smooth1.mat"
-    test_path = "/home/robert/data/piececonst_r421_N1024_smooth2.mat"
-    train_loader, test_loaders, output_encoder = load_darcy_241(
-            train_path, test_path,
+    train_path = "/home/robert/data/darcy_new/"
+    train_loader, test_loaders, output_encoder = load_darcy_pt(
+            train_path,
             n_train=1000, batch_size=32, 
-            test_resolutions=[241], n_tests=[200],
-            test_batch_sizes=[32],
+            test_resolutions=[32, 64], n_tests=[200],
+            test_batch_sizes=[32]
             )
     
     # Choose device
@@ -109,12 +108,12 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
 test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False)
 
 # Test Incremental Loss Gap
-#test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=False)
+test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=False)
 
 # Test Incremental
-#test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=False)
+test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=False)
 
 # Test Incremental Resolution
-#test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=True)
+test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=True)
 
 

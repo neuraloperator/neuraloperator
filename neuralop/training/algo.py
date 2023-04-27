@@ -73,6 +73,7 @@ class Incremental(Paramaters):
         if self.incremental_grad:
             self.grad_explained()
         if self.incremental_resolution:
+            self.epoch_wise_res_increase(epoch)
             return self.incremental_resolution_regularize(x, y)
 
     

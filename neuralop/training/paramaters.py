@@ -23,11 +23,11 @@ class Paramaters:
 
         if self.incremental_loss_gap:
             # loss gap
-            self.eps = 1e-2
+            self.eps = 1
             self.loss_list = []
         
         if self.incremental_resolution:
-            self.epoch_gap = 100
+            self.epoch_gap = 4
             if self.dataset_name == 'SmallDarcy':
                 self.sub_list = [16, 8, 4, 2, 1]
             if self.dataset_name == 'Darcy':
@@ -77,12 +77,12 @@ class Paramaters:
         return 256 // sub
 
     def epoch_wise_res_increase(self, epoch):
-        if epoch % self.epoch_gap == 0 and epoch != 0 and (self.current_logged_epoch < epoch):
+        if epoch % self.epoch_gap == 0 and epoch != 0 and (self.current_logged_epoch != epoch):
             self.current_index += 1
             self.current_sub = self.index_to_sub_from_table(self.current_index)
             self.current_res = self.sub_to_res(self.current_sub)
             self.current_logged_epoch = epoch
-
+            
             print(f'Incre Res Update: change index to {self.current_index}')
             print(f'Incre Res Update: change sub to {self.current_sub}')
             print(f'Incre Res Update: change res to {self.current_res}')
@@ -122,13 +122,9 @@ class Paramaters:
             x = x[::self.current_sub, :, :, :]
             y = y[::self.current_sub, :, :, :]
         elif self.dataset_name == 'NavierStokes':
-            T_in = self._datamodule.T_in
-            T = self._datamodule.T
-            x = x[:, ::self.current_sub, ::self.current_sub, :]
-            y = y[:, ::self.current_sub, ::self.current_sub, :]
+            x = x[::self.current_sub, :, :, :]
+            y = y[::self.current_sub, :, :, :]
         elif self.dataset_name == 'NavierStokesHighFrequency':
-            T_in = self._datamodule.T_in
-            T = self._datamodule.T
             x = x[:, ::self.current_sub, ::self.current_sub]
             y = y[:, ::self.current_sub, ::self.current_sub]
         return x,y

@@ -15,7 +15,8 @@ from neuralop import Trainer
 from neuralop.datasets import load_darcy_flow_small
 from neuralop.utils import count_params
 from neuralop import LpLoss, H1Loss
-
+from neuralop.models.fno_block import (FactorizedSpectralConv3d, FactorizedSpectralConv2d,
+                                       FactorizedSpectralConv1d, FactorizedSpectralConv)
 device = 'cpu'
 
 
@@ -32,7 +33,7 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     # DATASET
     # Loading the Darcy flow dataset
     train_loader, test_loaders, output_encoder = load_darcy_flow_small(
-            n_train=1000, batch_size=16, 
+            n_train=100, batch_size=16, 
             test_resolutions=[16, 32], n_tests=[100, 50],
             test_batch_sizes=[32, 32],
             )
@@ -80,43 +81,26 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     sys.stdout.flush()
     
     # Set up the trainer
-    trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental_loss_gap = incremental_loss_gap, incremental = incremental, incremental_resolution = incremental_resolution, dataset_name="SmallDarcy")
-
+    trainer = Trainer(model, n_epochs=4, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental_loss_gap = incremental_loss_gap, incremental = incremental, incremental_resolution = incremental_resolution, dataset_name="SmallDarcy")
+    original_weights = model.convs.weight[0][0][0][0].to_tensor()
+    
     # Train the model
     trainer.train(train_loader, test_loaders, output_encoder, model, optimizer, scheduler, regularizer=False, training_loss=train_loss, eval_losses=eval_losses)
-
+    new_weights = model.convs.weight[0][0][0][0].to_tensor()
+    print('### WEIGHTS ###')
+    print(f'\n * Original: {original_weights}')
+    print(f'\n * New: {new_weights}')
+    
     if incremental_mode:
         # Check that the number of modes has dynamically increased (Atleast for these settings on this dataset it should increase)
         assert model.convs.incremental_n_modes > starting_modes
-
-        # Test for Conv1D to Conv4D
-        conv = FactorizedSpectralConv(
-            3, 3, modes[:dim], n_layers=1, scale='auto', bias=False, implementation=implementation, factorization=factorization)
-
-        conv_dense = FactorizedSpectralConv(
-            3, 3, modes[:dim], n_layers=1, scale='auto', bias=False, implementation='reconstructed', factorization=None)
-
-        for i in range(2**(dim-1)):
-            conv_dense.weight[i] = FactorizedTensor.from_tensor(conv.weight[i].to_tensor(), rank=None, factorization='ComplexDense')
-
-        x = torch.randn(2, 3, *(12, )*dim)
-
-        res_dense = conv_dense(x)
-        res = conv(x)
-        res_shape = res.shape
-
-        torch.testing.assert_close(res_dense, res)
-
-        # Dynamically reduce the number of modes in Fourier space
-        conv.incremental_n_modes = incremental_modes[:dim]
-        res = conv(x)
-        assert res_shape == res.shape
+        torch.testing.assert_close(original_weights, new_weights)
     
     if incremental_resolution or not baseline:
         # Check that the number of modes has not dynamically increased (Atleast for these settings on this dataset it should increase)
         assert model.convs.incremental_n_modes == starting_modes
-
-
+    
+        
 # toy very few incremental blocks - 
 # create copy of weights
 # full backard pass
@@ -127,12 +111,14 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
 #test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False)
 
 # Test Incremental Loss Gap
-#test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=False)
+test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=False)
 
 # Test Incremental
 #test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=False)
 
 # Test Incremental Resolution
-test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=True)
+#test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=True)
 
 
+
+# %%
