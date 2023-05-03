@@ -21,10 +21,6 @@ class DomainPadding(nn.Module):
         self.domain_padding = domain_padding
         self.padding_mode = padding_mode.lower()
         self.output_scale_factor = output_scale_factor
-        if self.output_scale_factor is None:
-            self.output_scale_factor = [1]
-        if isinstance(self.domain_padding, (float, int)):
-            self.domain_padding = [float(self.domain_padding)]
         
         # dict(f'{resolution}'=padding) such that padded = F.pad(x, indices)
         self._padding = dict()
@@ -45,9 +41,10 @@ class DomainPadding(nn.Module):
 
         if isinstance(self.domain_padding, (float, int)):
             self.domain_padding = [float(self.domain_padding)]*len(resolution)
-        
-        #if isinstance(self.output_scale_factor, (float, int)):
-        #    self.output_scale_factor = [float(self.output_scale_factor)]*len(resolution)
+        if self.output_scale_factor is None:
+            self.output_scale_factor = [1]*len(resolution)
+        elif isinstance(self.output_scale_factor, (float, int)):
+            self.output_scale_factor = [float(self.output_scale_factor)]*len(resolution)
 
         try:
             padding = self._padding[f'{resolution}']
