@@ -1,0 +1,397 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>neuralop.models.uno &#8212; neuraloperator 0.1.3 documentation</title> 
+<link rel="stylesheet" href="../../../_static/tensorly_style.css">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../_static/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../_static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../../_static/favicon/favicon-16x16.png">
+<link rel="manifest" href="../../../_static/favicon/site.webmanifest">
+<link rel="mask-icon" href="../../../_static/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="../../../_static/favicon/favicon.ico">
+<meta name="theme-color" content="#ffffff">
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/tensorly_style.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css" />
+
+  
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+ <script src="../../../_static/navbar_burger.js"></script>
+ <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+ 
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  </head>
+<body  class="has-navbar-fixed-top">
+
+  <header>
+    <navbar>
+      <nav class="navbar top-navbar is-fixed-top has-shadow is-flex-wrap-wrap" role="navigation" aria-label="main top navigation">
+        <div class="navbar-brand">
+        
+
+          <a class="navbar-item" href="../../../index.html">
+            <img src="../../../_static/neuraloperator_logo.png" height="28">
+          </a>
+          <a class="navbar-item is-hidden-desktop" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon"><i class="fab fa-github"></i></span>
+          </a>
+
+          <a role="button" class="navbar-burger" data-target="top-nav-menu" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+
+        </div>
+        
+        <div class="navbar-menu" id="top-nav-menu">
+        
+
+          <div class="navbar-start">
+            
+              <a class="navbar-item" href="../../../install.html">
+              Install
+            </a>
+              <a class="navbar-item" href="../../../user_guide/index.html">
+              User Guide
+            </a>
+              <a class="navbar-item" href="../../../modules/api.html">
+              API
+            </a>
+              <a class="navbar-item" href="../../../auto_examples/index.html">
+              Examples
+            </a>
+          </div>
+        
+          <div class="navbar-end">
+            <div class="navbar-item">
+            
+            <a class="button is-hidden-touch is-dark" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon-text">
+                <span class="icon is-large">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>Github</span>
+              </span>
+            </a>
+
+            </div> 
+          </div> 
+        </div> 
+
+      </nav>
+      
+    </navbar>
+  </header>
+
+
+  <div id="column-container">
+  <div class="columns is-mobile is-centered">
+	
+  
+
+  <div class="column main-column">
+
+    
+    <div class="main-section">
+
+      
+      
+
+      <div class="container content main-content">
+        
+  <h1>Source code for neuralop.models.uno</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">.tfno</span> <span class="kn">import</span> <span class="n">Lifting</span><span class="p">,</span> <span class="n">Projection</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partialmethod</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">.mlp</span> <span class="kn">import</span> <span class="n">MLP</span>
+<span class="kn">from</span> <span class="nn">.spectral_convolution</span> <span class="kn">import</span> <span class="n">FactorizedSpectralConv3d</span><span class="p">,</span> <span class="n">FactorizedSpectralConv2d</span><span class="p">,</span> <span class="n">FactorizedSpectralConv1d</span>
+<span class="kn">from</span> <span class="nn">.spectral_convolution</span> <span class="kn">import</span> <span class="n">FactorizedSpectralConv</span>
+<span class="kn">from</span> <span class="nn">.skip_connections</span> <span class="kn">import</span> <span class="n">skip_connection</span>
+<span class="kn">from</span> <span class="nn">.padding</span> <span class="kn">import</span> <span class="n">DomainPadding</span>
+<span class="kn">from</span> <span class="nn">.fno_block</span> <span class="kn">import</span> <span class="n">FNOBlocks</span><span class="p">,</span> <span class="n">resample</span>
+<span class="kn">from</span> <span class="nn">.tfno</span> <span class="kn">import</span> <span class="n">partialclass</span>
+
+
+<span class="k">class</span> <span class="nc">UNO</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;N-Dimensional U-shaped Fourier Neural Operator</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    in_channels : int, optional</span>
+<span class="sd">        Number of input channels, by default 3</span>
+<span class="sd">    out_channels : int, optional</span>
+<span class="sd">        Number of output channels, by default 1</span>
+<span class="sd">    hidden_channels : int</span>
+<span class="sd">        width of the FNO (i.e. number of channels)</span>
+<span class="sd">    lifting_channels : int, optional</span>
+<span class="sd">        number of hidden channels of the lifting block of the FNO, by default 256</span>
+<span class="sd">    projection_channels : int, optional</span>
+<span class="sd">        number of hidden channels of the projection block of the FNO, by default 256</span>
+<span class="sd">    n_layers : int, optional</span>
+<span class="sd">        Number of Fourier Layers, by default 4</span>
+<span class="sd">    uno_out_channels: list</span>
+<span class="sd">        Number of output channel of each Fourier Layers.</span>
+<span class="sd">        Eaxmple: For a Five layer UNO uno_out_channels can be [32,64,64,64,32]</span>
+<span class="sd">    uno_n_modes: list</span>
+<span class="sd">        Number of Fourier Modes to use in integral operation of each Fourier Layers (along each dimension).</span>
+<span class="sd">        Example: For a five layer UNO with 2D input the uno_n_modes can be: [[5,5],[5,5],[5,5],[5,5],[5,5]]</span>
+<span class="sd">    uno_scalings: list</span>
+<span class="sd">        Scaling Factors for each Fourier Layers</span>
+<span class="sd">        Example: For a five layer UNO with 2D input, the uno_scalings can be : [[1.0,1.0],[0.5,0.5],[1,1],[1,1],[2,2]]</span>
+<span class="sd">    horizontal_skips_map: Dict, optional</span>
+<span class="sd">                    a map {...., b: a, ....} denoting horizontal skip connection from a-th layer to</span>
+<span class="sd">                    b-th layer. If None default skip connection is applied.</span>
+<span class="sd">                    Example: For a 5 layer UNO architecture, the skip connections can be </span>
+<span class="sd">                    horizontal_skips_map ={4:0,3:1}</span>
+
+<span class="sd">    incremental_n_modes : None or int tuple, default is None</span>
+<span class="sd">        * If not None, this allows to incrementally increase the number of modes in Fourier domain </span>
+<span class="sd">          during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, n_modes).</span>
+<span class="sd">        </span>
+<span class="sd">        * If None, all the n_modes are used.</span>
+
+<span class="sd">        This can be updated dynamically during training.</span>
+<span class="sd">    use_mlp : bool, optional</span>
+<span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
+<span class="sd">    mlp : dict, optional</span>
+<span class="sd">        Parameters of the MLP, by default None</span>
+<span class="sd">        {&#39;expansion&#39;: float, &#39;dropout&#39;: float}</span>
+<span class="sd">    non_linearity : nn.Module, optional</span>
+<span class="sd">        Non-Linearity module to use, by default F.gelu</span>
+<span class="sd">    norm : F.module, optional</span>
+<span class="sd">        Normalization layer to use, by default None</span>
+<span class="sd">    preactivation : bool, default is False</span>
+<span class="sd">        if True, use resnet-style preactivation</span>
+<span class="sd">    skip : {&#39;linear&#39;, &#39;identity&#39;, &#39;soft-gating&#39;}, optional</span>
+<span class="sd">        Type of skip connection to use, by default &#39;soft-gating&#39;</span>
+<span class="sd">    separable : bool, default is False</span>
+<span class="sd">        if True, use a depthwise separable spectral convolution</span>
+<span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}</span>
+<span class="sd">        Tensor factorization of the parameters weight to use, by default None.</span>
+<span class="sd">        * If None, a dense tensor parametrizes the Spectral convolutions</span>
+<span class="sd">        * Otherwise, the specified tensor factorization is used.</span>
+<span class="sd">    joint_factorization : bool, optional</span>
+<span class="sd">        Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False</span>
+<span class="sd">    rank : float or rank, optional</span>
+<span class="sd">        Rank of the tensor factorization of the Fourier weights, by default 1.0</span>
+<span class="sd">    fixed_rank_modes : bool, optional</span>
+<span class="sd">        Modes to not factorize, by default False</span>
+<span class="sd">    implementation : {&#39;factorized&#39;, &#39;reconstructed&#39;}, optional, default is &#39;factorized&#39;</span>
+<span class="sd">        If factorization is not None, forward mode to use::</span>
+<span class="sd">        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass</span>
+<span class="sd">        * `factorized` : the input is directly contracted with the factors of the decomposition</span>
+<span class="sd">    decomposition_kwargs : dict, optional, default is {}</span>
+<span class="sd">        Optionaly additional parameters to pass to the tensor decomposition</span>
+<span class="sd">    domain_padding : None or float, optional</span>
+<span class="sd">        If not None, percentage of padding to use, by default None</span>
+<span class="sd">    domain_padding_mode : {&#39;symmetric&#39;, &#39;one-sided&#39;}, optional</span>
+<span class="sd">        How to perform domain padding, by default &#39;one-sided&#39;</span>
+<span class="sd">    fft_norm : str, optional</span>
+<span class="sd">        by default &#39;forward&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">in_channels</span><span class="p">,</span> 
+                 <span class="n">out_channels</span><span class="p">,</span>
+                 <span class="n">hidden_channels</span><span class="p">,</span>
+                 <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+                 <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+                 <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                 <span class="n">uno_out_channels</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">uno_n_modes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">uno_scalings</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">horizontal_skips_map</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
+                 <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">preactivation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">fno_skip</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span>
+                 <span class="n">horizontal_skip</span> <span class="o">=</span> <span class="s1">&#39;linear&#39;</span><span class="p">,</span>
+                 <span class="n">mlp_skip</span><span class="o">=</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span>
+                 <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">rank</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                 <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                 <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">implementation</span><span class="o">=</span><span class="s1">&#39;factorized&#39;</span><span class="p">,</span>
+                 <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+                 <span class="n">domain_padding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s1">&#39;one-sided&#39;</span><span class="p">,</span>
+                 <span class="n">fft_norm</span><span class="o">=</span><span class="s1">&#39;forward&#39;</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span> <span class="o">=</span> <span class="n">n_layers</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">uno_out_channels</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">uno_out_channels</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_layers</span><span class="p">,</span> <span class="s2">&quot;Output channels for all layers are not given&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">uno_n_modes</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_layers</span><span class="p">,</span> <span class="s2">&quot;number of modes for all layers are not given&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">uno_scalings</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_layers</span><span class="p">,</span> <span class="s2">&quot;Scaling factor for all layers are not given&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">uno_n_modes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uno_out_channels</span> <span class="o">=</span> <span class="n">uno_out_channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uno_n_modes</span> <span class="o">=</span> <span class="n">uno_n_modes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uno_scalings</span> <span class="o">=</span> <span class="n">uno_scalings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span> <span class="o">=</span> <span class="n">hidden_channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lifting_channels</span> <span class="o">=</span> <span class="n">lifting_channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">projection_channels</span> <span class="o">=</span> <span class="n">projection_channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">in_channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span> <span class="o">=</span> <span class="n">out_channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span> <span class="o">=</span> <span class="n">horizontal_skips_map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">joint_factorization</span> <span class="o">=</span> <span class="n">joint_factorization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">non_linearity</span> <span class="o">=</span> <span class="n">non_linearity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rank</span> <span class="o">=</span> <span class="n">rank</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">factorization</span> <span class="o">=</span> <span class="n">factorization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fixed_rank_modes</span> <span class="o">=</span> <span class="n">fixed_rank_modes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decomposition_kwargs</span> <span class="o">=</span> <span class="n">decomposition_kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fno_skip</span> <span class="o">=</span> <span class="n">fno_skip</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mlp_skip</span> <span class="o">=</span> <span class="n">mlp_skip</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_norm</span> <span class="o">=</span> <span class="n">fft_norm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">implementation</span> <span class="o">=</span> <span class="n">implementation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separable</span> <span class="o">=</span> <span class="n">separable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">preactivation</span> <span class="o">=</span> <span class="n">preactivation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_incremental_n_modes</span> <span class="o">=</span> <span class="n">incremental_n_modes</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_layers</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">,):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span><span class="p">[</span><span class="n">n_layers</span> <span class="o">-</span> <span class="n">i</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+        
+
+        <span class="k">if</span> <span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">domain_padding</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="o">=</span> <span class="n">DomainPadding</span><span class="p">(</span><span class="n">domain_padding</span><span class="o">=</span><span class="n">domain_padding</span><span class="p">,</span> <span class="n">padding_mode</span><span class="o">=</span><span class="n">domain_padding_mode</span>\
+            <span class="p">,</span> <span class="n">output_scale_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uno_scalings</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding_mode</span> <span class="o">=</span> <span class="n">domain_padding_mode</span>
+
+        
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span> <span class="o">=</span> <span class="n">Lifting</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fno_blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleDict</span><span class="p">({})</span>
+        <span class="n">prev_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">):</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">prev_out</span> <span class="o">=</span> <span class="n">prev_out</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">uno_out_channels</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FNOBlocks</span><span class="p">(</span>
+                                            <span class="n">in_channels</span><span class="o">=</span><span class="n">prev_out</span><span class="p">,</span>
+                                            <span class="n">out_channels</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uno_out_channels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> 
+                                            <span class="n">n_modes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uno_n_modes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                            <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp</span><span class="o">=</span><span class="n">mlp</span><span class="p">,</span>
+                                            <span class="n">output_scaling_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uno_scalings</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
+                                            <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span> <span class="n">preactivation</span><span class="o">=</span><span class="n">preactivation</span><span class="p">,</span>
+                                            <span class="n">fno_skip</span><span class="o">=</span><span class="n">fno_skip</span><span class="p">,</span>
+                                            <span class="n">mlp_skip</span><span class="o">=</span><span class="n">mlp_skip</span><span class="p">,</span>
+                                            <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
+                                            <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+                                            <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
+                                            <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span> 
+                                            <span class="n">implementation</span><span class="o">=</span><span class="n">implementation</span><span class="p">,</span>
+                                            <span class="n">separable</span><span class="o">=</span><span class="n">separable</span><span class="p">,</span>
+                                            <span class="n">factorization</span><span class="o">=</span><span class="n">factorization</span><span class="p">,</span>
+                                            <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="n">decomposition_kwargs</span><span class="p">,</span>
+                                            <span class="n">joint_factorization</span><span class="o">=</span><span class="n">joint_factorization</span><span class="p">,</span>
+                                            <span class="n">n_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+            
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="n">skip_connection</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">uno_out_channels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>  \
+                <span class="bp">self</span><span class="o">.</span><span class="n">uno_out_channels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">type</span><span class="o">=</span><span class="n">horizontal_skip</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">)</span>
+
+            <span class="n">prev_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uno_out_channels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">Projection</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">prev_out</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
+                                        <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">)</span>
+     
+<div class="viewcode-block" id="UNO.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.UNO.html#neuralop.models.UNO.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">skip_outputs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">layer_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">):</span>
+
+            <span class="k">if</span> <span class="n">layer_idx</span> <span class="ow">in</span>  <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="c1">#print(&quot;using skip&quot;, layer_idx)</span>
+                <span class="n">skip_val</span> <span class="o">=</span> <span class="n">skip_outputs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span><span class="p">[</span><span class="n">layer_idx</span><span class="p">]]</span>
+                <span class="n">output_scaling_factors</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">/</span><span class="n">n</span> <span class="k">for</span> <span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">n</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span><span class="n">skip_val</span><span class="o">.</span><span class="n">shape</span><span class="p">)]</span>
+                <span class="n">output_scaling_factors</span> <span class="o">=</span> <span class="n">output_scaling_factors</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">:]</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="n">resample</span><span class="p">(</span><span class="n">skip_val</span><span class="p">,</span><span class="n">output_scaling_factors</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">x</span><span class="p">,</span><span class="n">t</span><span class="p">],</span> <span class="n">dim</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fno_blocks</span><span class="p">[</span><span class="n">layer_idx</span><span class="p">](</span><span class="n">x</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">layer_idx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="c1">#print(&quot;saving skip&quot;, layer_idx)</span>
+                <span class="n">skip_outputs</span><span class="p">[</span><span class="n">layer_idx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">layer_idx</span><span class="p">)](</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span><span class="o">.</span><span class="n">unpad</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">x</span></div>
+
+<span class="n">UNO</span> <span class="o">=</span>  <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;UNO&#39;</span><span class="p">,</span> <span class="n">UNO</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;Tucker&#39;</span><span class="p">)</span>
+</pre></div>
+
+      </div>
+
+      
+
+        <footer class="footer">
+    <div class="content has-text-centered">
+        <div class="block">
+          &copy; Copyright 2023, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+        </div>
+    </div>
+  </footer>
+
+    </div>
+
+  </div>  
+
+	
+
+  </div>  
+  </div> 
+
+  
+  <script>
+    function toggle_sidebar() {
+        var element = document.getElementById("sidebar");
+        var container = document.getElementById("column-container");
+        var localtoccolumn = document.getElementById("localtoc-column");
+        element.classList.toggle("hide-tablet");
+        element.classList.toggle("is-hidden-mobile");
+        container.classList.toggle("sidemenu-hidden");
+        localtoccolumn.classList.toggle("is-one-fifth-widescreen");
+        localtoccolumn.classList.toggle("is-2-desktop");
+        localtoccolumn.classList.toggle("is-3-desktop");
+    }
+  </script> 
+
+
+
+  </body>
+</html>

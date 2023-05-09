@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>neuralop.models.TFNO3d &#8212; neuraloperator 0.1.3 documentation</title> 
+    <title>neuralop.models.UNO &#8212; neuraloperator 0.1.3 documentation</title> 
 <link rel="stylesheet" href="../../_static/tensorly_style.css">
 <link rel="apple-touch-icon" sizes="180x180" href="../../_static/favicon/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon/favicon-32x32.png">
@@ -35,8 +35,8 @@
  
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="neuralop.models.UNO" href="neuralop.models.UNO.html" />
-    <link rel="prev" title="neuralop.models.TFNO2d" href="neuralop.models.TFNO2d.html" />
+    <link rel="next" title="neuralop.models.fno_block.FactorizedSpectralConv" href="neuralop.models.fno_block.FactorizedSpectralConv.html" />
+    <link rel="prev" title="neuralop.models.TFNO3d" href="neuralop.models.TFNO3d.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -163,32 +163,40 @@
 
       <div class="container content main-content">
         
-  <section id="neuralop-models-tfno3d">
-<h1><a class="reference internal" href="../api.html#module-neuralop.models" title="neuralop.models"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code></a>.TFNO3d<a class="headerlink" href="#neuralop-models-tfno3d" title="Permalink to this heading"></a></h1>
+  <section id="neuralop-models-uno">
+<h1><a class="reference internal" href="../api.html#module-neuralop.models" title="neuralop.models"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code></a>.UNO<a class="headerlink" href="#neuralop-models-uno" title="Permalink to this heading"></a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="neuralop.models.TFNO3d">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.models.</span></span><span class="sig-name descname"><span class="pre">TFNO3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_modes_height</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_modes_width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_modes_depth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_channels=3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_channels=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lifting_channels=256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">projection_channels=256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_layers=4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">incremental_n_modes=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_linearity=&lt;built-in</span> <span class="pre">function</span> <span class="pre">gelu&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_mlp=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip='soft-gating'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separable=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preactivation=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factorization='Tucker'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">joint_factorization=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_rank_modes=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implementation='factorized'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomposition_kwargs={}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_padding=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_padding_mode='one-sided'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_norm='forward'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#neuralop.models.TFNO3d" title="Permalink to this definition"></a></dt>
-<dd><p>3D Fourier Neural Operator</p>
+<dt class="sig sig-object py" id="neuralop.models.UNO">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.models.</span></span><span class="sig-name descname"><span class="pre">UNO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lifting_channels=256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">projection_channels=256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_layers=4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uno_out_channels=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uno_n_modes=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uno_scalings=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizontal_skips_map=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">incremental_n_modes=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_mlp=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_linearity=&lt;built-in</span> <span class="pre">function</span> <span class="pre">gelu&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preactivation=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fno_skip='linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizontal_skip='linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_skip='soft-gating'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separable=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factorization='Tucker'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">joint_factorization=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_rank_modes=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implementation='factorized'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomposition_kwargs={}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_padding=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_padding_mode='one-sided'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_norm='forward'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#neuralop.models.UNO" title="Permalink to this definition"></a></dt>
+<dd><p>N-Dimensional U-shaped Fourier Neural Operator</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
-<dt><strong>modes_width</strong><span class="classifier">int</span></dt><dd><p>number of modes to keep in Fourier Layer, along the width</p>
-</dd>
-<dt><strong>modes_height</strong><span class="classifier">int</span></dt><dd><p>number of Fourier modes to keep along the height</p>
-</dd>
-<dt><strong>modes_depth</strong><span class="classifier">int</span></dt><dd><p>number of Fourier modes to keep along the depth</p>
-</dd>
-<dt><strong>hidden_channels</strong><span class="classifier">int</span></dt><dd><p>width of the FNO (i.e. number of channels)</p>
-</dd>
 <dt><strong>in_channels</strong><span class="classifier">int, optional</span></dt><dd><p>Number of input channels, by default 3</p>
 </dd>
 <dt><strong>out_channels</strong><span class="classifier">int, optional</span></dt><dd><p>Number of output channels, by default 1</p>
+</dd>
+<dt><strong>hidden_channels</strong><span class="classifier">int</span></dt><dd><p>width of the FNO (i.e. number of channels)</p>
 </dd>
 <dt><strong>lifting_channels</strong><span class="classifier">int, optional</span></dt><dd><p>number of hidden channels of the lifting block of the FNO, by default 256</p>
 </dd>
 <dt><strong>projection_channels</strong><span class="classifier">int, optional</span></dt><dd><p>number of hidden channels of the projection block of the FNO, by default 256</p>
 </dd>
 <dt><strong>n_layers</strong><span class="classifier">int, optional</span></dt><dd><p>Number of Fourier Layers, by default 4</p>
+</dd>
+<dt><strong>uno_out_channels: list</strong></dt><dd><p>Number of output channel of each Fourier Layers.
+Eaxmple: For a Five layer UNO uno_out_channels can be [32,64,64,64,32]</p>
+</dd>
+<dt><strong>uno_n_modes: list</strong></dt><dd><p>Number of Fourier Modes to use in integral operation of each Fourier Layers (along each dimension).
+Example: For a five layer UNO with 2D input the uno_n_modes can be: [[5,5],[5,5],[5,5],[5,5],[5,5]]</p>
+</dd>
+<dt><strong>uno_scalings: list</strong></dt><dd><p>Scaling Factors for each Fourier Layers
+Example: For a five layer UNO with 2D input, the uno_scalings can be : [[1.0,1.0],[0.5,0.5],[1,1],[1,1],[2,2]]</p>
+</dd>
+<dt><strong>horizontal_skips_map: Dict, optional</strong></dt><dd><p>a map {…., b: a, ….} denoting horizontal skip connection from a-th layer to
+b-th layer. If None default skip connection is applied.
+Example: For a 5 layer UNO architecture, the skip connections can be 
+horizontal_skips_map ={4:0,3:1}</p>
 </dd>
 <dt><strong>incremental_n_modes</strong><span class="classifier">None or int tuple, default is None</span></dt><dd><ul class="simple">
 <li><p>If not None, this allows to incrementally increase the number of modes in Fourier domain 
@@ -240,15 +248,23 @@ during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, 
 <p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.models.TFNO3d.forward" title="neuralop.models.TFNO3d.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x)</p></td>
-<td><p>TFNO's forward pass</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.models.UNO.forward" title="neuralop.models.UNO.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x)</p></td>
+<td><p>Defines the computation performed at every call.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="neuralop.models.TFNO3d.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#neuralop.models.TFNO3d.forward" title="Permalink to this definition"></a></dt>
-<dd><p>TFNO’s forward pass</p>
+<dt class="sig sig-object py" id="neuralop.models.UNO.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/uno.html#UNO.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.UNO.forward" title="Permalink to this definition"></a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
 </dd></dl>
 
 </dd></dl>
@@ -261,16 +277,16 @@ during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, 
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="neuralop.models.TFNO2d.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="neuralop.models.TFNO3d.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code>.TFNO2d</span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code>.TFNO3d</span>
     </a>
     
     
-    <a class="button pagination-next" href="neuralop.models.UNO.html" title="next page" accesskey="n">
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code>.UNO </span>
+    <a class="button pagination-next" href="neuralop.models.fno_block.FactorizedSpectralConv.html" title="next page" accesskey="n">
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.fno_block</span></code>.FactorizedSpectralConv </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>
@@ -306,9 +322,9 @@ during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, 
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code>.TFNO3d</a><ul>
-<li><a class="reference internal" href="#neuralop.models.TFNO3d"><code class="docutils literal notranslate"><span class="pre">TFNO3d</span></code></a><ul>
-<li><a class="reference internal" href="#neuralop.models.TFNO3d.forward"><code class="docutils literal notranslate"><span class="pre">TFNO3d.forward()</span></code></a></li>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code>.UNO</a><ul>
+<li><a class="reference internal" href="#neuralop.models.UNO"><code class="docutils literal notranslate"><span class="pre">UNO</span></code></a><ul>
+<li><a class="reference internal" href="#neuralop.models.UNO.forward"><code class="docutils literal notranslate"><span class="pre">UNO.forward()</span></code></a></li>
 </ul>
 </li>
 </ul>

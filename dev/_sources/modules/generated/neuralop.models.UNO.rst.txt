@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.models`.UNO
+=================================
+
+.. currentmodule:: neuralop.models
+
+.. autoclass:: UNO
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>
