@@ -34,7 +34,7 @@ Gallery of examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Training a neural operator on Darcy-Flow">
+    <div class="sphx-glr-thumbcontainer" tooltip="In this example, we demonstrate how to use the small Darcy-Flow example we ship with the packag...">
 
 .. only:: html
 
@@ -45,13 +45,13 @@ Gallery of examples
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Training a neural operator on Darcy-Flow</div>
+      <div class="sphx-glr-thumbnail-title">Training a TFNO on Darcy-Flow</div>
     </div>
 
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Training a neural operator on Darcy-Flow">
+    <div class="sphx-glr-thumbcontainer" tooltip="In this example, we demonstrate how to train a U-shaped Neural Operator on  the small Darcy-Flo...">
 
 .. only:: html
 
@@ -62,7 +62,7 @@ Gallery of examples
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Training a neural operator on Darcy-Flow</div>
+      <div class="sphx-glr-thumbnail-title">U-NO on Darcy-Flow</div>
     </div>
 
 

@@ -18,11 +18,13 @@
 .. _sphx_glr_auto_examples_plot_UNO_darcy.py:
 
 
-Training a neural operator on Darcy-Flow
-========================================
-In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
+U-NO on Darcy-Flow
+==================
 
-.. GENERATED FROM PYTHON SOURCE LINES 9-23
+In this example, we demonstrate how to train a U-shaped Neural Operator on 
+the small Darcy-Flow example we ship with the package
+
+.. GENERATED FROM PYTHON SOURCE LINES 11-25
 
 .. code-block:: default
 
@@ -47,11 +49,11 @@ In this example, we demonstrate how to use the small Darcy-Flow example we ship 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 24-25
+.. GENERATED FROM PYTHON SOURCE LINES 26-27
 
 Loading the Darcy Flow dataset
 
-.. GENERATED FROM PYTHON SOURCE LINES 25-42
+.. GENERATED FROM PYTHON SOURCE LINES 27-44
 
 .. code-block:: default
 
@@ -90,11 +92,11 @@ Loading the Darcy Flow dataset
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 43-44
+.. GENERATED FROM PYTHON SOURCE LINES 45-46
 
 Create the optimizer
 
-.. GENERATED FROM PYTHON SOURCE LINES 44-50
+.. GENERATED FROM PYTHON SOURCE LINES 46-52
 
 .. code-block:: default
 
@@ -111,11 +113,11 @@ Create the optimizer
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 51-52
+.. GENERATED FROM PYTHON SOURCE LINES 53-54
 
 Creating the losses
 
-.. GENERATED FROM PYTHON SOURCE LINES 52-59
+.. GENERATED FROM PYTHON SOURCE LINES 54-61
 
 .. code-block:: default
 
@@ -133,7 +135,7 @@ Creating the losses
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 60-71
+.. GENERATED FROM PYTHON SOURCE LINES 62-73
 
 .. code-block:: default
 
@@ -229,22 +231,22 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f46b455d850>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f3c8b2c07f0>
 
     ### LOSSES ###
 
-     * Train: <neuralop.training.losses.H1Loss object at 0x7f46b455de20>
+     * Train: <neuralop.training.losses.H1Loss object at 0x7f3c8b2c0fd0>
 
-     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7f46b455de20>, 'l2': <neuralop.training.losses.LpLoss object at 0x7f46b455d2b0>}
-
-
+     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7f3c8b2c0fd0>, 'l2': <neuralop.training.losses.LpLoss object at 0x7f3c8b2c0250>}
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 72-73
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 74-75
 
 Create the trainer
 
-.. GENERATED FROM PYTHON SOURCE LINES 73-82
+.. GENERATED FROM PYTHON SOURCE LINES 75-84
 
 .. code-block:: default
 
@@ -270,11 +272,11 @@ Create the trainer
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 83-84
+.. GENERATED FROM PYTHON SOURCE LINES 85-86
 
 Actually train the model on our small Darcy-Flow dataset
 
-.. GENERATED FROM PYTHON SOURCE LINES 84-95
+.. GENERATED FROM PYTHON SOURCE LINES 86-97
 
 .. code-block:: default
 
@@ -305,18 +307,18 @@ Actually train the model on our small Darcy-Flow dataset
     Raw outputs of size out.shape=torch.Size([32, 1, 16, 16])
     .. Processed (unpatched) outputs of size out.shape=torch.Size([32, 1, 16, 16])
     Padding inputs of resolution=torch.Size([32, 32]) with padding=[6, 6], one-sided
-    [0] time=8.67, avg_loss=25.4610, train_err=0.5092, 16_h1=0.4130, 16_l2=0.3331, 32_h1=0.6515, 32_l2=0.3813
-    [3] time=8.58, avg_loss=11.7128, train_err=0.2343, 16_h1=0.2632, 16_l2=0.1929, 32_h1=0.5394, 32_l2=0.2604
-    [6] time=8.52, avg_loss=9.9207, train_err=0.1984, 16_h1=0.1974, 16_l2=0.1387, 32_h1=0.3877, 32_l2=0.1956
-    [9] time=9.05, avg_loss=8.2097, train_err=0.1642, 16_h1=0.2170, 16_l2=0.1922, 32_h1=0.4056, 32_l2=0.2523
-    [12] time=9.83, avg_loss=7.8693, train_err=0.1574, 16_h1=0.1573, 16_l2=0.1068, 32_h1=0.4186, 32_l2=0.2001
-    [15] time=8.33, avg_loss=7.2698, train_err=0.1454, 16_h1=0.1396, 16_l2=0.0921, 32_h1=0.3750, 32_l2=0.1774
-    [18] time=8.22, avg_loss=6.7592, train_err=0.1352, 16_h1=0.1459, 16_l2=0.0990, 32_h1=0.3725, 32_l2=0.1841
+    [0] time=5.67, avg_loss=29.1848, train_err=0.5837, 16_h1=0.4107, 16_l2=0.3110, 32_h1=0.6441, 32_l2=0.3473
+    [3] time=5.40, avg_loss=11.3276, train_err=0.2266, 16_h1=0.3084, 16_l2=0.2710, 32_h1=0.4984, 32_l2=0.2904
+    [6] time=5.75, avg_loss=9.8098, train_err=0.1962, 16_h1=0.2323, 16_l2=0.1784, 32_h1=0.4387, 32_l2=0.2474
+    [9] time=5.78, avg_loss=8.1155, train_err=0.1623, 16_h1=0.2166, 16_l2=0.1639, 32_h1=0.5080, 32_l2=0.2508
+    [12] time=5.94, avg_loss=7.6258, train_err=0.1525, 16_h1=0.1523, 16_l2=0.1067, 32_h1=0.4183, 32_l2=0.1910
+    [15] time=5.57, avg_loss=7.0616, train_err=0.1412, 16_h1=0.1499, 16_l2=0.1066, 32_h1=0.3975, 32_l2=0.1915
+    [18] time=5.58, avg_loss=6.4118, train_err=0.1282, 16_h1=0.1341, 16_l2=0.0901, 32_h1=0.4103, 32_l2=0.1857
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 96-106
+.. GENERATED FROM PYTHON SOURCE LINES 98-108
 
 Plot the prediction, and compare with the ground-truth 
 Note that we trained on a very small resolution for
@@ -329,7 +331,7 @@ ii) can be trained quickly on CPU
 
 In practice we would train a Neural Operator on one or multiple GPUs
 
-.. GENERATED FROM PYTHON SOURCE LINES 106-143
+.. GENERATED FROM PYTHON SOURCE LINES 108-145
 
 .. code-block:: default
 
@@ -385,7 +387,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 2 minutes  56.915 seconds)
+   **Total running time of the script:** ( 1 minutes  56.016 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_UNO_darcy.py:

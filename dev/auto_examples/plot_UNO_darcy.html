@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Training a neural operator on Darcy-Flow &#8212; neuraloperator 0.1.3 documentation</title> 
+    <title>U-NO on Darcy-Flow &#8212; neuraloperator 0.1.3 documentation</title> 
 <link rel="stylesheet" href="../_static/tensorly_style.css">
 <link rel="apple-touch-icon" sizes="180x180" href="../_static/favicon/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../_static/favicon/favicon-32x32.png">
@@ -35,7 +35,7 @@
  
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="Training a neural operator on Darcy-Flow" href="plot_FNO_darcy.html" />
+    <link rel="prev" title="Training a TFNO on Darcy-Flow" href="plot_FNO_darcy.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -133,8 +133,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../modules/api.html">API reference</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Gallery of examples</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a neural operator on Darcy-Flow</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Training a neural operator on Darcy-Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">U-NO on Darcy-Flow</a></li>
 </ul>
 </li>
 </ul>
@@ -166,9 +166,10 @@
 <p><a class="reference internal" href="#sphx-glr-download-auto-examples-plot-uno-darcy-py"><span class="std std-ref">Go to the end</span></a>
 to download the full example code</p>
 </div>
-<section class="sphx-glr-example-title" id="training-a-neural-operator-on-darcy-flow">
-<span id="sphx-glr-auto-examples-plot-uno-darcy-py"></span><h1>Training a neural operator on Darcy-Flow<a class="headerlink" href="#training-a-neural-operator-on-darcy-flow" title="Permalink to this heading"></a></h1>
-<p>In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package</p>
+<section class="sphx-glr-example-title" id="u-no-on-darcy-flow">
+<span id="sphx-glr-auto-examples-plot-uno-darcy-py"></span><h1>U-NO on Darcy-Flow<a class="headerlink" href="#u-no-on-darcy-flow" title="Permalink to this heading"></a></h1>
+<p>In this example, we demonstrate how to train a U-shaped Neural Operator on
+the small Darcy-Flow example we ship with the package</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">sys</span>
@@ -303,13 +304,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f46b455d850&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f3c8b2c07f0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.training.losses.H1Loss object at 0x7f46b455de20&gt;
+ * Train: &lt;neuralop.training.losses.H1Loss object at 0x7f3c8b2c0fd0&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7f46b455de20&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f46b455d2b0&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7f3c8b2c0fd0&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f3c8b2c0250&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -344,13 +345,13 @@ Padding inputs of resolution=torch.Size([16, 16]) with padding=[3, 3], one-sided
 Raw outputs of size out.shape=torch.Size([32, 1, 16, 16])
 .. Processed (unpatched) outputs of size out.shape=torch.Size([32, 1, 16, 16])
 Padding inputs of resolution=torch.Size([32, 32]) with padding=[6, 6], one-sided
-[0] time=8.67, avg_loss=25.4610, train_err=0.5092, 16_h1=0.4130, 16_l2=0.3331, 32_h1=0.6515, 32_l2=0.3813
-[3] time=8.58, avg_loss=11.7128, train_err=0.2343, 16_h1=0.2632, 16_l2=0.1929, 32_h1=0.5394, 32_l2=0.2604
-[6] time=8.52, avg_loss=9.9207, train_err=0.1984, 16_h1=0.1974, 16_l2=0.1387, 32_h1=0.3877, 32_l2=0.1956
-[9] time=9.05, avg_loss=8.2097, train_err=0.1642, 16_h1=0.2170, 16_l2=0.1922, 32_h1=0.4056, 32_l2=0.2523
-[12] time=9.83, avg_loss=7.8693, train_err=0.1574, 16_h1=0.1573, 16_l2=0.1068, 32_h1=0.4186, 32_l2=0.2001
-[15] time=8.33, avg_loss=7.2698, train_err=0.1454, 16_h1=0.1396, 16_l2=0.0921, 32_h1=0.3750, 32_l2=0.1774
-[18] time=8.22, avg_loss=6.7592, train_err=0.1352, 16_h1=0.1459, 16_l2=0.0990, 32_h1=0.3725, 32_l2=0.1841
+[0] time=5.67, avg_loss=29.1848, train_err=0.5837, 16_h1=0.4107, 16_l2=0.3110, 32_h1=0.6441, 32_l2=0.3473
+[3] time=5.40, avg_loss=11.3276, train_err=0.2266, 16_h1=0.3084, 16_l2=0.2710, 32_h1=0.4984, 32_l2=0.2904
+[6] time=5.75, avg_loss=9.8098, train_err=0.1962, 16_h1=0.2323, 16_l2=0.1784, 32_h1=0.4387, 32_l2=0.2474
+[9] time=5.78, avg_loss=8.1155, train_err=0.1623, 16_h1=0.2166, 16_l2=0.1639, 32_h1=0.5080, 32_l2=0.2508
+[12] time=5.94, avg_loss=7.6258, train_err=0.1525, 16_h1=0.1523, 16_l2=0.1067, 32_h1=0.4183, 32_l2=0.1910
+[15] time=5.57, avg_loss=7.0616, train_err=0.1412, 16_h1=0.1499, 16_l2=0.1066, 32_h1=0.3975, 32_l2=0.1915
+[18] time=5.58, avg_loss=6.4118, train_err=0.1282, 16_h1=0.1341, 16_l2=0.0901, 32_h1=0.4103, 32_l2=0.1857
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -399,7 +400,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 2 minutes  56.915 seconds)</p>
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  56.016 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/f9c1e50d48828a746410d5400feb61f7/plot_UNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_UNO_darcy.py</span></code></a></p>
@@ -421,7 +422,7 @@ ii) can be trained quickly on CPU</p>
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span>Training a neural operator on Darcy-Flow</span>
+        <span>Training a TFNO on Darcy-Flow</span>
     </a>
     
     
