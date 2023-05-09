@@ -1,7 +1,9 @@
 """
-Training a neural operator on Darcy-Flow
-========================================
+Training a TFNO on Darcy-Flow
+=============================
+
 In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
+to train a Tensorized Fourier-Neural Operator
 """
 
 # %%
