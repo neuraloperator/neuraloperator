@@ -58,6 +58,14 @@ Dimension-specific classes:
     TFNO2d
     TFNO3d
 
+U-shaped Neural Operators (U-NO)
+--------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    UNO
 
 Layers
 ======
@@ -121,6 +129,7 @@ It has the advantage of doing some checks on the parameters it receives.
     :template: function.rst
 
     get_model
+    available_models
 
 Datasets
 ========
