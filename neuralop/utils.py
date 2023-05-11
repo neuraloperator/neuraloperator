@@ -69,8 +69,7 @@ def count_params(model):
 
 
 def wandb_login(api_key_file='../config/wandb_api_key.txt'):
-    with open(api_key_file, 'r') as f:
-        key = f.read()
+    key = get_wandb_api_key(api_key_file)
     wandb.login(key=key)
 
 def set_wandb_api_key(api_key_file='../config/wandb_api_key.txt'):
