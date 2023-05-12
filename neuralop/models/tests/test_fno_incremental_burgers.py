@@ -31,7 +31,7 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
             incremental_resolution (bool, optional): Increase the resolution dynamically. Defaults to False.
     """        
     # DATASET
-    # Loading the Darcy flow dataset
+    # Loading the Burgers flow dataset
     
     train_path = "/home/robert/data/burgers_data_R10.mat"
     train_loader, test_loaders = load_burgers_mat(train_path, n_train = 1000, n_test = 200, batch_train=32, batch_test=100, 
@@ -80,7 +80,7 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     sys.stdout.flush()
     
     # Set up the trainer
-    trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental_loss_gap = incremental_loss_gap, incremental = incremental, incremental_resolution = incremental_resolution, dataset_name="SmallDarcy")
+    trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental_loss_gap = incremental_loss_gap, incremental = incremental, incremental_resolution = incremental_resolution, dataset_name="Burgers")
 
     # Train the model
     output_encoder = None
@@ -105,12 +105,12 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
 test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False)
 
 # Test Incremental Loss Gap
-#test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=False)
+test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=False)
 
 # Test Incremental
-#test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=False)
+test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=False)
 
 # Test Incremental Resolution
-#test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=True)
+test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=True)
 
 
