@@ -29,13 +29,13 @@ class Paramaters:
         if self.incremental_resolution:
             self.epoch_gap = 4
             if self.dataset_name == 'SmallDarcy':
-                self.sub_list = [16, 8, 4, 2, 1]
-            if self.dataset_name == 'Darcy':
-                self.sub_list = [10,8,4,2,1]
+                self.sub_list = [1] # cant do incremental resolution
+            elif self.dataset_name == 'Darcy':
+                self.sub_list = [8, 6, 4, 2, 1]
             elif self.dataset_name == "Burgers":
-                self.sub_list = [256,64,16,8,1]
+                self.sub_list = [256, 64, 16, 8, 1]
             elif self.dataset_name == "NavierStokes":
-                self.sub_list = [32,16,8,4,1]
+                self.sub_list = [8, 6, 4, 2, 1]
             elif self.dataset_name == "Vorticity":
                 self.sub_list = [128,64,32,16,1]
                 
@@ -113,17 +113,17 @@ class Paramaters:
 
     def regularize_input_res(self, x, y):
         if self.dataset_name == 'Burgers':
-            x = x[:, ::self.current_sub]
+            x = x[:, :, ::self.current_sub]
             y = y[:, ::self.current_sub]
+        elif self.dataset_name == 'SmallDarcy':
+            x = x[:, :, ::self.current_sub, ::self.current_sub]
+            y = y[:, ::self.current_sub, ::self.current_sub]
         elif self.dataset_name == 'Darcy':
+            x = x[:, :, :, ::self.current_sub]
+            y = y[:, :, :, ::self.current_sub]
+        elif self.dataset_name == 'NavierStokes':
             x = x[:, :, ::self.current_sub, ::self.current_sub]
             y = y[:, :, ::self.current_sub, ::self.current_sub]
-        elif self.dataset_name == 'SmallDarcy':
-            x = x[::self.current_sub, :, :, :]
-            y = y[::self.current_sub, :, :, :]
-        elif self.dataset_name == 'NavierStokes':
-            x = x[::self.current_sub, :, :, :]
-            y = y[::self.current_sub, :, :, :]
         elif self.dataset_name == 'NavierStokesHighFrequency':
             x = x[:, ::self.current_sub, ::self.current_sub]
             y = y[:, ::self.current_sub, ::self.current_sub]

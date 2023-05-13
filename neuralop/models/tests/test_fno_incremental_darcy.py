@@ -84,7 +84,7 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     sys.stdout.flush()
     
     # Set up the trainer
-    trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental_loss_gap = incremental_loss_gap, incremental = incremental, incremental_resolution = incremental_resolution, dataset_name="SmallDarcy")
+    trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental_loss_gap = incremental_loss_gap, incremental = incremental, incremental_resolution = incremental_resolution, dataset_name="Darcy")
 
     # Train the model
     trainer.train(train_loader, test_loaders, output_encoder, model, optimizer, scheduler, regularizer=False, training_loss=train_loss, eval_losses=eval_losses)

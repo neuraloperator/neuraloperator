@@ -112,7 +112,10 @@ class Trainer:
             t1 = default_timer()
             train_err = 0.0
             for sample in train_loader:
-                x, y = sample['x'], sample['y']
+                if self.dataset_name == 'Burgers':
+                    x, y = sample[0], sample[1]
+                else:
+                    x, y = sample['x'], sample['y']
                 x, y = self.patcher.patch(x, y)               
                 x = x.to(self.device)
                 y = y.to(self.device)
