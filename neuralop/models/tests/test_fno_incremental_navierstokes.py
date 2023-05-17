@@ -62,7 +62,7 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
         starting_modes = (16, 16)
 
     # set up model
-    model = FNO(n_modes=(16, 16), hidden_channels=32, projection_channels=64, incremental_n_modes=starting_modes)
+    model = FNO(n_modes=(32, 32), hidden_channels=32, projection_channels=64, incremental_n_modes=starting_modes)
     model = model.to(device)
     n_params = count_params(model)
 
@@ -84,16 +84,16 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     sys.stdout.flush()
     
     # Set up the trainer
-    trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental_loss_gap = incremental_loss_gap, incremental = incremental, incremental_resolution = incremental_resolution, dataset_name="NavierStokes")
+    trainer = Trainer(model, n_epochs=500, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental_loss_gap = incremental_loss_gap, incremental = incremental, incremental_resolution = incremental_resolution, dataset_name="NavierStokes")
 
     # Train the model
     trainer.train(train_loader, test_loaders, output_encoder, model, optimizer, scheduler, regularizer=False, training_loss=train_loss, eval_losses=eval_losses)
-
+    
     if incremental_mode:
         # Check that the number of modes has dynamically increased (Atleast for these settings on this dataset it should increase)
         assert model.convs.incremental_n_modes > starting_modes
     
-    if incremental_resolution or not baseline:
+    if baseline:
         # Check that the number of modes has not dynamically increased (Atleast for these settings on this dataset it should increase)
         assert model.convs.incremental_n_modes == starting_modes
 
@@ -108,12 +108,12 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
 #test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False)
 
 # Test Incremental Loss Gap
-#test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=False)
+test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=False)
 
 # Test Incremental
-#test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=False)
+test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=False)
 
 # Test Incremental Resolution
-test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=True)
+#test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=True)
 
 

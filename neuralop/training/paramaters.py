@@ -17,17 +17,17 @@ class Paramaters:
         if self.incremental_grad:
             # incremental
             self.buffer = 5
-            self.grad_explained_ratio_threshold = 0.99
+            self.grad_explained_ratio_threshold = 0.9
             self.max_iter = 1
             self.grad_max_iter = 10
 
         if self.incremental_loss_gap:
             # loss gap
-            self.eps = 1
+            self.eps = 0.001
             self.loss_list = []
         
         if self.incremental_resolution:
-            self.epoch_gap = 4
+            self.epoch_gap = 100
             if self.dataset_name == 'SmallDarcy':
                 self.sub_list = [1] # cant do incremental resolution
             elif self.dataset_name == 'Darcy':
@@ -35,7 +35,7 @@ class Paramaters:
             elif self.dataset_name == "Burgers":
                 self.sub_list = [256, 64, 16, 8, 1]
             elif self.dataset_name == "NavierStokes":
-                self.sub_list = [8, 6, 4, 2, 1]
+                self.sub_list = [8, 4, 2, 1]
             elif self.dataset_name == "Vorticity":
                 self.sub_list = [128,64,32,16,1]
                 

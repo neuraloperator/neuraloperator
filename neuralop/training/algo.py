@@ -13,7 +13,7 @@ class Incremental(Paramaters):
 
         if self.incremental_grad and self.incremental_loss_gap:
             raise ValueError("Incremental and incremental loss gap cannot be used together")
-    
+
     # Algorithm 1: Incremental        
     def loss_gap(self, loss):
         self.loss_list.append(loss)
@@ -68,12 +68,11 @@ class Incremental(Paramaters):
         return self.regularize_input_res(x, y)
     
     def step(self, loss = None, epoch = None, x = None, y = None):
-        if self.incremental_loss_gap:
+        if self.incremental_resolution and x != None and y != None:
+            self.epoch_wise_res_increase(epoch)
+            return self.incremental_resolution_regularize(x, y)
+        if self.incremental_loss_gap and loss != None:
             self.loss_gap(loss)
         if self.incremental_grad:
             self.grad_explained()
-        if self.incremental_resolution:
-            self.epoch_wise_res_increase(epoch)
-            return self.incremental_resolution_regularize(x, y)
-
     
