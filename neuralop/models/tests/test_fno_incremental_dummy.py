@@ -55,7 +55,7 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
         starting_modes = (16, 16)
 
     # set up model
-    modes = (8, 8, 6, 6)
+    modes = (6, 6, 6, 6)
     incremental_modes = (2, 2, 4, 4)
 
     for dim in [1]:
@@ -67,8 +67,8 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
         #for name, param in conv.named_parameters():
         #    print(name, param.data)
             
-        x = torch.randn(2, 2, *(8, )*dim)
-        y = torch.randn(2, 2, *(8, )*dim)
+        x = torch.randn(2, 2, *(6, )*dim)
+        y = torch.randn(2, 2, *(6, )*dim)
 
         res = conv(x)
         loss = res.sum()

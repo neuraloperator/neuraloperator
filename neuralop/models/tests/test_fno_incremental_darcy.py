@@ -37,7 +37,7 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     train_loader, test_loaders, output_encoder = load_darcy_pt(
             train_path,
             n_train=1000, batch_size=32, 
-            test_resolutions=[32, 64], n_tests=[200],
+            test_resolutions=[64], n_tests=[200],
             test_batch_sizes=[32]
             )
     
@@ -105,15 +105,15 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
 # add all the datasets as loaders
 
 # Test Baseline Model first
-#test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False)
+test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False)
 
 # Test Incremental Loss Gap
-test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=False)
+#test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=True)
 
 # Test Incremental
-test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=False)
+#test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=True)
 
 # Test Incremental Resolution
-#test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=True)
+test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=True)
 
 
