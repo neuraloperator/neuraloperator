@@ -35,7 +35,7 @@ class Paramaters:
             elif self.dataset_name == "Burgers":
                 self.sub_list = [256, 64, 16, 8, 1]
             elif self.dataset_name == "NavierStokes":
-                self.sub_list = [8, 4, 2, 1]
+                self.sub_list = [8, 6, 4, 2, 1]
             elif self.dataset_name == "Vorticity":
                 self.sub_list = [128,64,32,16,1]
                 
@@ -71,7 +71,7 @@ class Paramaters:
         return int(((241 - 1)/sub) + 1)
 
     def navier_sub_to_res(self, sub):
-        return 64 // sub
+        return 128 // sub
 
     def navier_high_sub_to_res(self, sub):
         return 256 // sub

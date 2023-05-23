@@ -49,7 +49,7 @@ class Incremental(Paramaters):
                 incremental_modes = self.model.convs.incremental_n_modes[i]
                 weight = self.accumulated_grad
                 strength_vector = []
-                for mode_index in range(incremental_modes):
+                for mode_index in range(min(weight.shape[1], incremental_modes)):
                     strength = torch.norm(weight[:,mode_index,:], p='fro').cpu()
                     strength_vector.append(strength)
                 expained_ratio = self.compute_explained_variance(incremental_modes - self.buffer, torch.Tensor(strength_vector))
