@@ -164,7 +164,7 @@ def load_navier_stokes_pt(data_path, train_resolution,
 
     train_resolution_str = str(train_resolution)
 
-    data = torch.load(Path(data_path).joinpath('nsforcing_' + train_resolution_str + '_train.pt').as_posix())
+    data = torch.load(Path(data_path).joinpath('nsforcing_' + train_resolution_str + '_train1.pt').as_posix())
     x_train = data['x'][0:n_train, :, :].unsqueeze(channel_dim).clone()
     y_train = data['y'][0:n_train, :, :].unsqueeze(channel_dim).clone()
     del data
@@ -174,7 +174,7 @@ def load_navier_stokes_pt(data_path, train_resolution,
     n_test = n_tests.pop(idx)
     test_batch_size = test_batch_sizes.pop(idx)
 
-    data = torch.load(Path(data_path).joinpath('nsforcing_' + train_resolution_str + '_test.pt').as_posix())
+    data = torch.load(Path(data_path).joinpath('nsforcing_' + train_resolution_str + '_test1.pt').as_posix())
     x_test = data['x'][:n_test, :, :].unsqueeze(channel_dim).clone()
     y_test = data['y'][:n_test, :, :].unsqueeze(channel_dim).clone()
     del data
