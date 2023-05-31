@@ -11,7 +11,7 @@ class FNOBlocks(nn.Module):
                  output_scaling_factor=None,
                  n_layers=1,
                  incremental_n_modes=None,
-                 use_mlp=False, mlp=None,
+                 use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
                  non_linearity=F.gelu,
                  norm=None, preactivation=False,
                  fno_skip='linear',
@@ -47,8 +47,11 @@ class FNOBlocks(nn.Module):
         self.factorization = factorization
         self.fixed_rank_modes = fixed_rank_modes
         self.decomposition_kwargs = decomposition_kwargs
-        self.fno_skip = fno_skip,
-        self.mlp_skip = mlp_skip,
+        self.fno_skip = fno_skip
+        self.mlp_skip = mlp_skip
+        self.use_mlp = use_mlp
+        self.mlp_expansion = mlp_expansion
+        self.mlp_dropout = mlp_dropout
         self.fft_norm = fft_norm
         self.implementation = implementation
         self.separable = separable
@@ -74,8 +77,8 @@ class FNOBlocks(nn.Module):
         if use_mlp:
             self.mlp = nn.ModuleList(
                 [MLP(in_channels=self.out_channels, 
-                     hidden_channels=int(round(self.out_channels*mlp['expansion'])),
-                     dropout=mlp['dropout'], n_dim=self.n_dim) for _ in range(n_layers)]
+                     hidden_channels=int(round(self.out_channels*mlp_expansion)),
+                     dropout=mlp_dropout, n_dim=self.n_dim) for _ in range(n_layers)]
             )
             self.mlp_skips = nn.ModuleList([skip_connection(self.in_channels, self.out_channels, type=mlp_skip, n_dim=self.n_dim) for _ in range(n_layers)])
         else:
