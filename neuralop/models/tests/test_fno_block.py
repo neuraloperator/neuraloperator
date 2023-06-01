@@ -61,8 +61,7 @@ def test_FNOBlock_norm(norm):
 
     if norm == 'ada_in':
         embedding = torch.randn(ada_in_features)
-        for norm in block.norm:
-            norm.update_embeddding(embedding)
+        block.set_ada_in_embeddings(embedding)
 
     x = torch.randn(2, 3, *size[:dim])
     res = block(x)

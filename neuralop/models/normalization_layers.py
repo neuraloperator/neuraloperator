@@ -19,7 +19,7 @@ class AdaIN(nn.Module):
 
         self.embedding = None
     
-    def update_embeddding(self, x):
+    def set_embedding(self, x):
         self.embedding = x.reshape(self.embed_dim,)
 
     def forward(self, x):

@@ -104,7 +104,7 @@ class FNOBlocks(nn.Module):
         else:
             raise ValueError(f'Got {norm=} but expected None or one of [instance_norm, group_norm, layer_norm]')
 
-    def set_ada_in_embedding(self, *embeddings):
+    def set_ada_in_embeddings(self, *embeddings):
         """Sets the embeddings of each Ada-IN norm layers
 
         Parameters
@@ -115,10 +115,10 @@ class FNOBlocks(nn.Module):
         """
         if len(embeddings) == 1:
             for norm in self.norm:
-                norm.update_embeddding(embeddings[0])
+                norm.set_embedding(embeddings[0])
         else:
             for norm, embedding in zip(self.norm, embeddings):
-                norm.update_embeddding(embedding)
+                norm.set_embedding(embedding)
         
     def forward(self, x, index=0):
         
