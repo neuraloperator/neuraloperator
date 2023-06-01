@@ -104,6 +104,22 @@ class FNOBlocks(nn.Module):
         else:
             raise ValueError(f'Got {norm=} but expected None or one of [instance_norm, group_norm, layer_norm]')
 
+    def set_ada_in_embedding(self, *embeddings):
+        """Sets the embeddings of each Ada-IN norm layers
+
+        Parameters
+        ----------
+        embeddings : tensor or list of tensor
+            if a single embedding is given, it will be used for each norm layer
+            otherwise, each embedding will be used for the corresponding norm layer
+        """
+        if len(embeddings) == 1:
+            for norm in self.norm:
+                norm.update_embeddding(embeddings[0])
+        else:
+            for norm, embedding in zip(self.norm, embeddings):
+                norm.update_embeddding(embedding)
+        
     def forward(self, x, index=0):
         
         if self.preactivation:
