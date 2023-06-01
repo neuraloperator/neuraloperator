@@ -202,7 +202,7 @@ class FactorizedSpectralConv(nn.Module):
         half_total_n_modes = [m//2 for m in n_modes]
         self.half_total_n_modes = half_total_n_modes
 
-        # WE use half_total_n_modes to build the full weights
+        # We use half_total_n_modes to build the full weights
         # During training we can adjust incremental_n_modes which will also
         # update half_n_modes 
         # So that we can train on a smaller part of the Fourier modes and total weights
@@ -215,7 +215,9 @@ class FactorizedSpectralConv(nn.Module):
 
         if output_scaling_factor is not None:
             if isinstance(output_scaling_factor, (float, int)):
-                output_scaling_factor = [float(output_scaling_factor)]*len(self.n_modes)
+                output_scaling_factor = [[float(output_scaling_factor)]*len(self.n_modes)]*n_layers
+            elif isinstance(output_scaling_factor[0], (float, int)):
+                output_scaling_factor = [[s]*len(self.n_modes) for s in output_scaling_factor]
         self.output_scaling_factor = output_scaling_factor
 
         if init_std == 'auto':
@@ -335,7 +337,7 @@ class FactorizedSpectralConv(nn.Module):
             out_fft[idx_tuple] = self._contract(x[idx_tuple], self._get_weight(self.n_weights_per_layer*indices + i), separable=self.separable)
 
         if self.output_scaling_factor is not None:
-            mode_sizes = tuple([int(round(s*r)) for (s, r) in zip(mode_sizes, self.output_scaling_factor)])
+            mode_sizes = tuple([int(round(s*r)) for (s, r) in zip(mode_sizes, self.output_scaling_factor[indices])])
 
         x = torch.fft.irfftn(out_fft, s=(mode_sizes), norm=self.fft_norm)
 

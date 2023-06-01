@@ -109,6 +109,7 @@ class FNO(nn.Module):
                  lifting_channels=256,
                  projection_channels=256,
                  n_layers=4,
+                 output_scaling_factor=None,
                  incremental_n_modes=None,
                  use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
                  non_linearity=F.gelu,
@@ -159,10 +160,16 @@ class FNO(nn.Module):
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
 
+        if output_scaling_factor is not None and not joint_factorization:
+            if isinstance(output_scaling_factor, (float, int)):
+                output_scaling_factor = [output_scaling_factor]*self.n_layers
+        self.output_scaling_factor = output_scaling_factor
+
         self.fno_blocks = FNOBlocks(
             in_channels=hidden_channels,
             out_channels=hidden_channels, 
             n_modes=self.n_modes,
+            output_scaling_factor=output_scaling_factor,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             non_linearity=non_linearity,
             norm=norm, preactivation=preactivation,

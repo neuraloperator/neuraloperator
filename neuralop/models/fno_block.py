@@ -34,7 +34,9 @@ class FNOBlocks(nn.Module):
 
         if output_scaling_factor is not None:
             if isinstance(output_scaling_factor, (float, int)):
-                output_scaling_factor = [float(output_scaling_factor)]*len(self.n_modes)
+                output_scaling_factor = [[float(output_scaling_factor)]*len(self.n_modes)]*n_layers
+            elif isinstance(output_scaling_factor[0], (float, int)):
+                output_scaling_factor = [[s]*len(self.n_modes) for s in output_scaling_factor]
         self.output_scaling_factor = output_scaling_factor
 
         self._incremental_n_modes = incremental_n_modes
@@ -107,12 +109,14 @@ class FNOBlocks(nn.Module):
     
         x_skip_fno = self.fno_skips[index](x)
         if self.convs.output_scaling_factor is not None:
-            x_skip_fno = resample(x_skip_fno, self.convs.output_scaling_factor, list(range(-len(self.convs.output_scaling_factor), 0)))
+            # x_skip_fno = resample(x_skip_fno, self.convs.output_scaling_factor[index], list(range(-len(self.convs.output_scaling_factor[index]), 0)))
+            x_skip_fno = resample(x_skip_fno, self.output_scaling_factor[index], list(range(-len(self.output_scaling_factor[index]), 0)))
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
             if self.convs.output_scaling_factor is not None:
-                x_skip_mlp = resample(x_skip_mlp, self.convs.output_scaling_factor, list(range(-len(self.convs.output_scaling_factor), 0)))
+                # x_skip_mlp = resample(x_skip_mlp, self.convs.output_scaling_factor[index], list(range(-len(self.convs.output_scaling_factor[index]), 0)))
+                x_skip_mlp = resample(x_skip_mlp, self.output_scaling_factor[index], list(range(-len(self.output_scaling_factor[index]), 0)))
 
         x_fno = self.convs(x, index)
 
