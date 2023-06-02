@@ -5,6 +5,7 @@ from .spectral_convolution import FactorizedSpectralConv
 from .skip_connections import skip_connection
 from .resample import resample
 from .mlp import MLP
+from .normalization_layers import AdaIN
 
 class FNOBlocks(nn.Module):
     def __init__(self, in_channels, out_channels, n_modes,
@@ -13,7 +14,8 @@ class FNOBlocks(nn.Module):
                  incremental_n_modes=None,
                  use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
                  non_linearity=F.gelu,
-                 norm=None, preactivation=False,
+                 norm=None, ada_in_features=None,
+                 preactivation=False,
                  fno_skip='linear',
                  mlp_skip='soft-gating',
                  separable=False,
@@ -58,6 +60,7 @@ class FNOBlocks(nn.Module):
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation
+        self.ada_in_features = ada_in_features
 
         self.convs = SpectralConv(
                 self.in_channels, self.out_channels, self.n_modes, 
@@ -94,11 +97,29 @@ class FNOBlocks(nn.Module):
             self.norm = nn.ModuleList([getattr(nn, f'InstanceNorm{self.n_dim}d')(num_features=self.out_channels) for _ in range(n_layers*self.n_norms)])
         elif norm == 'group_norm':
             self.norm = nn.ModuleList([nn.GroupNorm(num_groups=1, num_channels=self.out_channels) for _ in range(n_layers*self.n_norms)])
-        elif norm == 'layer_norm':
-            self.norm = nn.ModuleList([nn.LayerNorm(elementwise_affine=False) for _ in range(n_layers*self.n_norms)])
+        # elif norm == 'layer_norm':
+        #     self.norm = nn.ModuleList([nn.LayerNorm(elementwise_affine=False) for _ in range(n_layers*self.n_norms)])
+        elif norm == 'ada_in':
+            self.norm = nn.ModuleList([AdaIN(ada_in_features, out_channels) for _ in range(n_layers*self.n_norms)])
         else:
             raise ValueError(f'Got {norm=} but expected None or one of [instance_norm, group_norm, layer_norm]')
 
+    def set_ada_in_embeddings(self, *embeddings):
+        """Sets the embeddings of each Ada-IN norm layers
+
+        Parameters
+        ----------
+        embeddings : tensor or list of tensor
+            if a single embedding is given, it will be used for each norm layer
+            otherwise, each embedding will be used for the corresponding norm layer
+        """
+        if len(embeddings) == 1:
+            for norm in self.norm:
+                norm.set_embedding(embeddings[0])
+        else:
+            for norm, embedding in zip(self.norm, embeddings):
+                norm.set_embedding(embedding)
+        
     def forward(self, x, index=0):
         
         if self.preactivation:
