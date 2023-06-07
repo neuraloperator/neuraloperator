@@ -227,8 +227,6 @@ class UNO(nn.Module):
             x = self.domain_padding.pad(x)
         output_shape = [int(round(i*j)) for (i,j) in zip(x.shape[-self.n_dim:], self.output_scaling_factor)]
         
-
-
         skip_outputs = {}
         cur_output = None
         for layer_idx in range(self.n_layers):
