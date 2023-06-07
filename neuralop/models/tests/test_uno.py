@@ -5,7 +5,7 @@ import torch
 def test_UNO():
     horizontal_skips_map ={4:0,3:1}
     model = UNO(3,3,5,uno_out_channels = [32,64,64,64,32], uno_n_modes= [[5,5],[5,5],[5,5],[5,5],[5,5]], uno_scalings=  [[1.0,1.0],[0.5,0.5],[1,1],[1,1],[2,2]],\
-                 horizontal_skips_map = horizontal_skips_map, n_layers = 5, domain_padding = 0.2)
+                 horizontal_skips_map = horizontal_skips_map, n_layers = 5, domain_padding = 0.2, output_scaling_factor = 1)
 
     t1 = time.time()
     in_data = torch.randn(32,3,64,64)
@@ -28,7 +28,7 @@ def test_UNO():
 
 
     model = UNO(3,3,5,uno_out_channels = [32,64,64,64,32], uno_n_modes= [[5,5],[5,5],[5,5],[5,5],[5,5]], uno_scalings=  [[1.0,1.0],[0.5,0.5],[1,1],[1,1],[2,2]],\
-                 horizontal_skips_map = None, n_layers = 5, domain_padding = 0.2)
+                 horizontal_skips_map = None, n_layers = 5, domain_padding = 0.2, output_scaling_factor = 1)
 
     t1 = time.time()
     in_data = torch.randn(32,3,64,64)

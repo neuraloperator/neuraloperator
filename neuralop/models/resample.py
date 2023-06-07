@@ -4,7 +4,7 @@ import itertools
 import torch
 import torch.nn.functional as F
 
-def resample(x, res_scale, axis):
+def resample(x, res_scale, axis, output_shape = None):
     """
     A module for generic n-dimentional interpolation (Fourier resampling).
 
@@ -29,7 +29,6 @@ def resample(x, res_scale, axis):
             scaling is performed
     axis: axis or dimensions along which interpolation will be performed. 
     """
-
     if isinstance(res_scale, (float, int)):
         if axis is None:
             axis = list(range(2, x.ndim))
@@ -43,7 +42,10 @@ def resample(x, res_scale, axis):
         assert len(res_scale) == len(axis), "leght of res_scale and axis are not same"
 
     old_size = x.shape[-len(axis):]
-    new_size = tuple([int(round(s*r)) for (s, r) in zip(old_size, res_scale)])
+    if output_shape is None:
+        new_size = tuple([int(round(s*r)) for (s, r) in zip(old_size, res_scale)])
+    else:
+        new_size = output_shape
 
     if len(axis) == 1:
         return F.interpolate(x, size = new_size[0], mode = 'linear', align_corners = True)

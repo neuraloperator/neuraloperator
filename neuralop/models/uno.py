@@ -1,4 +1,4 @@
-from .tfno import Lifting, Projection
+from neuralop.models.tfno import Lifting, Projection
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partialmethod
@@ -8,13 +8,14 @@ from .spectral_convolution import FactorizedSpectralConv3d, FactorizedSpectralCo
 from .spectral_convolution import FactorizedSpectralConv
 from .skip_connections import skip_connection
 from .padding import DomainPadding
-from .fno_block import FNOBlocks, resample
+from .fno_block import FNOBlocks,resample
 from .tfno import partialclass
-
+from .attention import TnoBlock2d
+from .spectral_convolution import SpectralConvKernel2d
+#this will be merged with the neural operator UNO
 
 class UNO(nn.Module):
-    """N-Dimensional U-shaped Fourier Neural Operator
-
+    """
     Parameters
     ----------
     in_channels : int, optional
@@ -22,7 +23,7 @@ class UNO(nn.Module):
     out_channels : int, optional
         Number of output channels, by default 1
     hidden_channels : int
-        width of the FNO (i.e. number of channels)
+        initial width of the UNO (i.e. number of channels)
     lifting_channels : int, optional
         number of hidden channels of the lifting block of the FNO, by default 256
     projection_channels : int, optional
@@ -112,11 +113,15 @@ class UNO(nn.Module):
                  rank=1.0,
                  joint_factorization=False, 
                  fixed_rank_modes=False,
+                 integral_operator = FactorizedSpectralConv,
+                 operator_block = FNOBlocks,
                  implementation='factorized',
                  decomposition_kwargs=dict(),
                  domain_padding=None,
                  domain_padding_mode='one-sided',
                  fft_norm='forward',
+                 output_scaling_factor = 1,
+                 normalizer = None,  #only have efect on the transformer block. Nevertheless it might be a bad idea to include normalization as part of layer
                  **kwargs):
         super().__init__()
         self.n_layers = n_layers
@@ -148,36 +153,48 @@ class UNO(nn.Module):
         self.separable = separable
         self.preactivation = preactivation
         self._incremental_n_modes = incremental_n_modes
+        self.output_scaling_factor = output_scaling_factor
+        self.operator_block = operator_block
+        self.integral_operator = integral_operator
         
         if self.horizontal_skips_map is None:
             self.horizontal_skips_map = {}
             for i in range(n_layers//2,0,):
                 self.horizontal_skips_map[n_layers - i -1] = i
+                
+        if isinstance(self.output_scaling_factor, (float, int)):
+            self.output_scaling_factor = [self.output_scaling_factor]*self.n_dim
         
 
         if domain_padding is not None and domain_padding > 0:
             self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode\
-            , output_scale_factor = self.uno_scalings)
+            , output_scale_factor = self.output_scaling_factor)
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
 
+
+
         
 
-        self.lifting = Lifting(in_channels=in_channels, out_channels=self.hidden_channels, n_dim=self.n_dim)
+        self.lifting = Projection(in_channels=in_channels, out_channels=self.hidden_channels, hidden_channels=self.lifting_channels, n_dim=self.n_dim)
         self.fno_blocks = nn.ModuleList([])
         self.horizontal_skips = torch.nn.ModuleDict({})
         prev_out = self.hidden_channels
+
         for i in range(self.n_layers):
 
             if i in self.horizontal_skips_map.keys():
                 prev_out = prev_out + self.uno_out_channels[self.horizontal_skips_map[i]]
+            print([self.uno_scalings[i]])
 
-            self.fno_blocks.append(FNOBlocks(
+            self.fno_blocks.append(self.operator_block(
                                             in_channels=prev_out,
                                             out_channels= self.uno_out_channels[i], 
                                             n_modes=self.uno_n_modes[i],
-                                            use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
+                                            use_mlp=use_mlp, 
+                                            mlp_dropout=mlp_dropout, 
+                                            mlp_expansion=mlp_expansion,
                                             output_scaling_factor = self.uno_scalings[i],
                                             non_linearity=non_linearity,
                                             norm=norm, preactivation=preactivation,
@@ -185,14 +202,14 @@ class UNO(nn.Module):
                                             mlp_skip=mlp_skip,
                                             incremental_n_modes=incremental_n_modes,
                                             rank=rank,
+                                            SpectralConv = self.integral_operator,
                                             fft_norm=fft_norm,
                                             fixed_rank_modes=fixed_rank_modes, 
                                             implementation=implementation,
                                             separable=separable,
                                             factorization=factorization,
                                             decomposition_kwargs=decomposition_kwargs,
-                                            joint_factorization=joint_factorization,
-                                            n_layers=1))
+                                            joint_factorization=joint_factorization, normalizer = normalizer))
             
             if i in self.horizontal_skips_map.values():
                 self.horizontal_skips[str(i)] = skip_connection( self.uno_out_channels[i],  \
@@ -208,19 +225,24 @@ class UNO(nn.Module):
 
         if self.domain_padding is not None:
             x = self.domain_padding.pad(x)
+        output_shape = [int(round(i*j)) for (i,j) in zip(x.shape[-self.n_dim:], self.output_scaling_factor)]
+        
+
 
         skip_outputs = {}
+        cur_output = None
         for layer_idx in range(self.n_layers):
 
             if layer_idx in  self.horizontal_skips_map.keys():
-                #print("using skip", layer_idx)
                 skip_val = skip_outputs[self.horizontal_skips_map[layer_idx]]
                 output_scaling_factors = [m/n for (m,n) in zip(x.shape,skip_val.shape)]
                 output_scaling_factors = output_scaling_factors[-1*self.n_dim:]
                 t = resample(skip_val,output_scaling_factors, list(range(-self.n_dim, 0)))
                 x = torch.cat([x,t], dim = 1)
-
-            x = self.fno_blocks[layer_idx](x)
+                
+            if layer_idx == self.n_layers -1:
+                cur_output = output_shape
+            x = self.fno_blocks[layer_idx](x, output_shape = cur_output)
 
             if layer_idx in self.horizontal_skips_map.values():
                 #print("saving skip", layer_idx)
@@ -230,7 +252,4 @@ class UNO(nn.Module):
             x = self.domain_padding.unpad(x)
 
         x = self.projection(x)
-
         return x
-
-UNO =  partialclass('UNO', UNO, factorization='Tucker')

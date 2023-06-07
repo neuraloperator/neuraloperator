@@ -120,7 +120,7 @@ class FNOBlocks(nn.Module):
             for norm, embedding in zip(self.norm, embeddings):
                 norm.set_embedding(embedding)
         
-    def forward(self, x, index=0):
+    def forward(self, x, index=0, output_shape = None):
         
         if self.preactivation:
             x = self.non_linearity(x)
@@ -131,15 +131,17 @@ class FNOBlocks(nn.Module):
         x_skip_fno = self.fno_skips[index](x)
         if self.convs.output_scaling_factor is not None:
             # x_skip_fno = resample(x_skip_fno, self.convs.output_scaling_factor[index], list(range(-len(self.convs.output_scaling_factor[index]), 0)))
-            x_skip_fno = resample(x_skip_fno, self.output_scaling_factor[index], list(range(-len(self.output_scaling_factor[index]), 0)))
+            x_skip_fno = resample(x_skip_fno, self.output_scaling_factor[index]\
+                                  , list(range(-len(self.output_scaling_factor[index]), 0)), output_shape = output_shape )
+
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
             if self.convs.output_scaling_factor is not None:
-                # x_skip_mlp = resample(x_skip_mlp, self.convs.output_scaling_factor[index], list(range(-len(self.convs.output_scaling_factor[index]), 0)))
-                x_skip_mlp = resample(x_skip_mlp, self.output_scaling_factor[index], list(range(-len(self.output_scaling_factor[index]), 0)))
+                x_skip_mlp = resample(x_skip_mlp, self.output_scaling_factor[index]\
+                                      , list(range(-len(self.output_scaling_factor[index]), 0)), output_shape = output_shape )
 
-        x_fno = self.convs(x, index)
+        x_fno = self.convs(x, index, output_shape = output_shape)
 
         if not self.preactivation and self.norm is not None:
             x_fno = self.norm[self.n_norms*index](x_fno)
@@ -207,4 +209,3 @@ class SubModule(nn.Module):
     
     def forward(self, x):
         return self.main_module.forward(x, self.indices)
-
