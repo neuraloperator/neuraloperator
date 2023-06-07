@@ -79,3 +79,5 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+setup_git.sh
