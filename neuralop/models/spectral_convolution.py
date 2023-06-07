@@ -300,7 +300,7 @@ class FactorizedSpectralConv(nn.Module):
             self.weight_slices = [slice(None)]*2 + [slice(None, n//2) for n in self._incremental_n_modes]
             self.half_n_modes = [m//2 for m in self._incremental_n_modes]
 
-    def forward(self, x, indices=0):
+    def forward(self, x, indices=0, output_shape = None):
         """Generic forward pass for the Factorized Spectral Conv
 
         Parameters
@@ -336,8 +336,12 @@ class FactorizedSpectralConv(nn.Module):
             # For 2D: [:, :, :height, :width] and [:, :, -height:, width]
             out_fft[idx_tuple] = self._contract(x[idx_tuple], self._get_weight(self.n_weights_per_layer*indices + i), separable=self.separable)
 
-        if self.output_scaling_factor is not None:
+        if self.output_scaling_factor is not None and output_shape is None:
             mode_sizes = tuple([int(round(s*r)) for (s, r) in zip(mode_sizes, self.output_scaling_factor[indices])])
+        
+        if output_shape is not None:
+            mode_sizes = output_shape
+        
 
         x = torch.fft.irfftn(out_fft, s=(mode_sizes), norm=self.fft_norm)
 
@@ -416,8 +420,8 @@ class FactorizedSpectralConv2d(FactorizedSpectralConv):
                                                                               self._get_weight(2*indices + 1), separable=self.separable)
         
         if self.output_scaling_factor is not None:
-            width = int(round(width*self.output_scaling_factor[0]))
-            height = int(round(height*self.output_scaling_factor[1]))
+            width = int(round(width*self.output_scaling_factor[indices][0]))
+            height = int(round(height*self.output_scaling_factor[indices][1]))
 
         x = torch.fft.irfft2(out_fft, s=(height, width), dim=(-2, -1), norm=self.fft_norm)
 
