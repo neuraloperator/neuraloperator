@@ -13,7 +13,7 @@ to train a Spherical Fourier-Neural Operator
 import torch
 import matplotlib.pyplot as plt
 import sys
-from neuralop.models import TFNO
+from neuralop.models import SFNO
 from neuralop import Trainer
 from neuralop.datasets import load_spherical_swe
 from neuralop.utils import count_params
@@ -30,7 +30,7 @@ train_loader, test_loaders = load_spherical_swe(n_train=128, batch_size=4, test_
 # %%
 # We create a tensorized FNO model
 
-model = TFNO(n_modes=(64, 64), hidden_channels=32, projection_channels=64, factorization='tucker', rank=0.42)
+model = SFNO(n_modes=(64, 128), in_channels=3, out_channels=3, hidden_channels=32, projection_channels=64, factorization='dense')
 model = model.to(device)
 
 n_params = count_params(model)
@@ -41,8 +41,8 @@ sys.stdout.flush()
 # %%
 #Create the optimizer
 optimizer = torch.optim.Adam(model.parameters(), 
-                                lr=8e-3, 
-                                weight_decay=1e-4)
+                                lr=8e-4, 
+                                weight_decay=0.0)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 
