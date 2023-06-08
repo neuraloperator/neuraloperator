@@ -1,20 +1,20 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
+from .mlp import MLPLinear
 
 class AdaIN(nn.Module):
     def __init__(self, embed_dim, in_channels, mlp=None, eps=1e-5):
         super().__init__()
+
         self.in_channels = in_channels
         self.embed_dim = embed_dim
         self.eps = eps
 
         if mlp is None:
-            mlp = nn.Sequential(
-                nn.Linear(embed_dim, 512),
-                nn.GELU(),
-                nn.Linear(512, 2*in_channels)
-            )
+            mlp = MLPLinear([embed_dim, 512, 2*in_channels], F.gelu)
+
         self.mlp = mlp
 
         self.embedding = None
