@@ -24,13 +24,14 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # %%
 # Loading the Navier-Stokes dataset in 128x128 resolution
-train_loader, test_loaders = load_spherical_swe(n_train=128, batch_size=4, test_resolutions=[(128, 256), (256, 512)], n_tests=[10, 10], test_batch_sizes=[4, 4],)
+train_loader, test_loaders = load_spherical_swe(n_train=500, batch_size=4, train_resolution=(32, 64),
+                                                test_resolutions=[(32, 64), (64, 128)], n_tests=[50, 50], test_batch_sizes=[10, 10],)
 
 
 # %%
 # We create a tensorized FNO model
 
-model = SFNO(n_modes=(64, 128), in_channels=3, out_channels=3, hidden_channels=32, projection_channels=64, factorization='dense')
+model = SFNO(n_modes=(32, 32), in_channels=3, out_channels=3, hidden_channels=32, projection_channels=64, factorization='dense')
 model = model.to(device)
 
 n_params = count_params(model)
@@ -49,10 +50,10 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 # %%
 # Creating the losses
 l2loss = LpLoss(d=2, p=2, reduce_dims=(0,1))
-h1loss = H1Loss(d=2, reduce_dims=(0,1))
+# h1loss = H1Loss(d=2, reduce_dims=(0,1))
 
-train_loss = h1loss
-eval_losses={'h1': h1loss, 'l2': l2loss}
+train_loss = l2loss
+eval_losses={'l2': l2loss} #'h1': h1loss, 
 
 
 # %%
@@ -103,7 +104,7 @@ trainer.train(train_loader, test_loaders,
 #
 # In practice we would train a Neural Operator on one or multiple GPUs
 
-test_samples = test_loaders[32].dataset
+test_samples = test_loaders.dataset[32]
 
 fig = plt.figure(figsize=(7, 7))
 for index in range(3):
