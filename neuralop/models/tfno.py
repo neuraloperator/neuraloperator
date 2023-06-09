@@ -615,4 +615,4 @@ TFNO1d = partialclass('TFNO1d', FNO1d, factorization='Tucker')
 TFNO2d = partialclass('TFNO2d', FNO2d, factorization='Tucker')
 TFNO3d = partialclass('TFNO3d', FNO3d, factorization='Tucker')
 
-SFNO   = partialclass('SFNO', FNO, factorization='dense', SpectralConv=FactorizedSpectralConv)
+SFNO   = partialclass('SFNO', FNO, factorization='dense', SpectralConv=FactorizedSphericalConv)
