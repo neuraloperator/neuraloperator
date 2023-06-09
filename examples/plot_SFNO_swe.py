@@ -24,7 +24,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # %%
 # Loading the Navier-Stokes dataset in 128x128 resolution
-train_loader, test_loaders = load_spherical_swe(n_train=500, batch_size=4, train_resolution=(32, 64),
+train_loader, test_loaders = load_spherical_swe(n_train=200, batch_size=4, train_resolution=(32, 64),
                                                 test_resolutions=[(32, 64), (64, 128)], n_tests=[50, 50], test_batch_sizes=[10, 10],)
 
 
@@ -104,36 +104,33 @@ trainer.train(train_loader, test_loaders,
 #
 # In practice we would train a Neural Operator on one or multiple GPUs
 
-test_samples = test_loaders.dataset[32]
-
 fig = plt.figure(figsize=(7, 7))
-for index in range(3):
-    data = test_samples[index]
+for index, resolution in enumerate([(32, 64), (64, 128)]):
+    test_samples = test_loaders[resolution].dataset
+    data = test_samples[0]
     # Input x
     x = data['x']
     # Ground-truth
-    y = data['y']
+    y = data['y'][0, ...].numpy()
     # Model prediction
-    out = model(x.unsqueeze(0))
+    out = model(x.unsqueeze(0)).squeeze()[0, ...].detach().numpy()
+    x = x[0, ...].detach().numpy()
 
-    ax = fig.add_subplot(3, 3, index*3 + 1)
-    ax.imshow(x[0], cmap='gray')
-    if index == 0: 
-        ax.set_title('Input x')
+    ax = fig.add_subplot(2, 3, index*3 + 1)
+    ax.imshow(x)
+    ax.set_title(f'Input x {resolution}')
     plt.xticks([], [])
     plt.yticks([], [])
 
-    ax = fig.add_subplot(3, 3, index*3 + 2)
-    ax.imshow(y.squeeze())
-    if index == 0: 
-        ax.set_title('Ground-truth y')
+    ax = fig.add_subplot(2, 3, index*3 + 2)
+    ax.imshow(y)
+    ax.set_title('Ground-truth y')
     plt.xticks([], [])
     plt.yticks([], [])
 
-    ax = fig.add_subplot(3, 3, index*3 + 3)
-    ax.imshow(out.squeeze().detach().numpy())
-    if index == 0: 
-        ax.set_title('Model prediction')
+    ax = fig.add_subplot(2, 3, index*3 + 3)
+    ax.imshow(out)
+    ax.set_title('Model prediction')
     plt.xticks([], [])
     plt.yticks([], [])
 

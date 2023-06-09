@@ -21,7 +21,7 @@ def load_spherical_swe(n_train, n_tests, batch_size, test_batch_sizes,
         test_loader = DataLoader(test_dataset, batch_size=test_batch_size, shuffle=True, num_workers=0, persistent_workers=False)
         test_loaders[res] = test_loader
 
-    return train_loader, test_loader
+    return train_loader, test_loaders
 
 
 class SphericalSWEDataset(torch.utils.data.Dataset):
