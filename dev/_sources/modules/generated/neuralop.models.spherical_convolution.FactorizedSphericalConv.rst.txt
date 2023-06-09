@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.models.spherical_convolution`.FactorizedSphericalConv
+===========================================================================
+
+.. currentmodule:: neuralop.models.spherical_convolution
+
+.. autoclass:: FactorizedSphericalConv
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

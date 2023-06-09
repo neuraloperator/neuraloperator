@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.models.spectral_convolution`.FactorizedSpectralConv
+=========================================================================
+
+.. currentmodule:: neuralop.models.spectral_convolution
+
+.. autoclass:: FactorizedSpectralConv
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>
