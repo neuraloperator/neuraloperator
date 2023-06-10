@@ -19,6 +19,10 @@ jobs:
         python-version: 3.9
     - name: Install TensorLy and TensorLy-Torch dev
       run: |
+        CWD=`pwd`
+        echo 'Cloning repos in ${CWD}'
+        mkdir git_repos
+        cd git_repos
         git clone https://github.com/tensorly/tensorly
         cd tensorly
         python -m pip install -e .
@@ -26,7 +30,7 @@ jobs:
         git clone https://github.com/tensorly/torch
         cd torch
         python -m pip install -e .
-        cd ..
+        cd ../..
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
