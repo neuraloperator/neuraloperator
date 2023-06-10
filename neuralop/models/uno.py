@@ -120,6 +120,7 @@ class UNO(nn.Module):
                  domain_padding_mode='one-sided',
                  fft_norm='forward',
                  normalizer = None,  #only have efect on the transformer block. Nevertheless it might be a bad idea to include normalization as part of layer
+                 verbose = False,
                  **kwargs):
         super().__init__()
         self.n_layers = n_layers
@@ -168,8 +169,8 @@ class UNO(nn.Module):
 
         if isinstance(self.output_scaling_factor, (float, int)):
             self.output_scaling_factor = [self.output_scaling_factor]*self.n_dim
-        
-        print("calculated out factor", self.output_scaling_factor)
+        if verbose:
+            print("calculated out factor", self.output_scaling_factor)
         if domain_padding is not None and domain_padding > 0:
             self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode\
             , output_scale_factor = self.output_scaling_factor)
@@ -190,7 +191,6 @@ class UNO(nn.Module):
 
             if i in self.horizontal_skips_map.keys():
                 prev_out = prev_out + self.uno_out_channels[self.horizontal_skips_map[i]]
-            print(self.uno_scalings[i])
 
             self.fno_blocks.append(self.operator_block(
                                             in_channels=prev_out,
@@ -229,7 +229,7 @@ class UNO(nn.Module):
 
         if self.domain_padding is not None:
             x = self.domain_padding.pad(x)
-        print(x.shape)
+            
         output_shape = [int(round(i*j)) for (i,j) in zip(x.shape[-self.n_dim:], self.output_scaling_factor)]
         
         skip_outputs = {}
