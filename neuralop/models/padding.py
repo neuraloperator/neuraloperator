@@ -54,36 +54,31 @@ class DomainPadding(nn.Module):
             padding = [int(round(p*r)) for (p, r) in zip(self.domain_padding, resolution)]
             
             print(f'Padding inputs of {resolution=} with {padding=}, {self.padding_mode}')
-
+            
+            
             output_pad = padding
-
-#             for scale_factor in self.output_scale_factor:
-#                 if isinstance(scale_factor, (float, int)):
-#                     scale_factor = [scale_factor]*len(resolution)
             output_pad = [int(round(i*j)) for (i,j) in zip(self.output_scale_factor,output_pad)]
 
             if self.padding_mode == 'symmetric':
                 # Pad both sides
-                unpad_indices = (Ellipsis, ) + tuple([slice(p, -p, None) for p in output_pad ])
+                unpad_indices = (Ellipsis, ) + tuple([slice(p, -p, None) for p in output_pad[::-1] ])
                 padding = [i for p in padding for i in (p, p)]
 
             elif self.padding_mode == 'one-sided':
                 # One-side padding
-                unpad_indices = (Ellipsis, ) + tuple([slice(None, -p, None) for p in output_pad])
+                unpad_indices = (Ellipsis, ) + tuple([slice(None, -p, None) for p in output_pad[::-1]])
                 padding = [i for p in padding for i in (0, p)]
             else:
                 raise ValueError(f'Got {self.padding_mode=}')
             
             self._padding[f'{resolution}'] = padding
+            
+
 
             padded = F.pad(x, padding, mode='constant')
 
             out_put_shape = padded.shape[2:]
-#             for scale_factor in self.output_scale_factor:
-#                 if isinstance(scale_factor, (float, int)):
-#                     scale_factor = [scale_factor]*len(resolution)
             out_put_shape = [int(round(i*j)) for (i,j) in zip(self.output_scale_factor,out_put_shape)]
-            
             self._unpad_indices[f'{[i for i in out_put_shape]}'] = unpad_indices
 
             return padded
@@ -93,3 +88,4 @@ class DomainPadding(nn.Module):
         """
         unpad_indices = self._unpad_indices[f'{list(x.shape[2:])}']
         return x[unpad_indices]
+    

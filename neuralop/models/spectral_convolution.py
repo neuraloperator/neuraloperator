@@ -480,8 +480,8 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
         
         hm1, hm2 = self.half_n_modes[0], self.half_n_modes[1]
         if self.factorization is None:
-            self.W1 = nn.Parameter(torch.empty(self.in_channels, hm1, hm2, hm1, hm2, dtype = torch.cfloat))
-            self.W2 = nn.Parameter(torch.empty(self.in_channels, hm1, hm2, hm1, hm2, dtype = torch.cfloat))
+            self.W1 = nn.Parameter(torch.empty(hm1, hm2, hm1, hm2, dtype = torch.cfloat))
+            self.W2 = nn.Parameter(torch.empty(hm1, hm2, hm1, hm2, dtype = torch.cfloat))
             self.reset_parameter()
         self.sht_grid = sht_grid
         self.sht_norm = sht_norm
@@ -509,7 +509,7 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
         torch.nn.init.normal_(self.W2, mean=0.0, std=scaling_factor)
     
     def mode_mixer(self, input, weights):
-        return torch.einsum("bimn,imnop->biop", input, weights)
+        return torch.einsum("bimn,mnop->biop", input, weights)
     
     def forward(self, x, indices=0, output_shape = None):
         batchsize, channels, height, width = x.shape
