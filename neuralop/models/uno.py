@@ -1,4 +1,4 @@
-from neuralop.models.tfno import Lifting, Projection
+from .tfno import Lifting, Projection
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partialmethod
