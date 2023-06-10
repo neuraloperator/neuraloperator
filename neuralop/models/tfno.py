@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from functools import partialmethod
 import torch
 from .spectral_convolution import FactorizedSpectralConv
+from .spherical_convolution import FactorizedSphericalConv
 from .padding import DomainPadding
 from .fno_block import FNOBlocks, resample
 
@@ -613,3 +614,5 @@ TFNO   = partialclass('TFNO', FNO, factorization='Tucker')
 TFNO1d = partialclass('TFNO1d', FNO1d, factorization='Tucker')
 TFNO2d = partialclass('TFNO2d', FNO2d, factorization='Tucker')
 TFNO3d = partialclass('TFNO3d', FNO3d, factorization='Tucker')
+
+SFNO   = partialclass('SFNO', FNO, factorization='dense', SpectralConv=FactorizedSphericalConv)
