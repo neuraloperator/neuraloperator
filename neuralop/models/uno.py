@@ -231,7 +231,6 @@ class UNO(nn.Module):
 
         if self.domain_padding is not None:
             x = self.domain_padding.pad(x)
-        print(x.shape)
         output_shape = [int(round(i*j)) for (i,j) in zip(x.shape[-self.n_dim:], self.output_scaling_factor)]
         
         skip_outputs = {}
@@ -249,7 +248,6 @@ class UNO(nn.Module):
                 cur_output = output_shape
             x = self.fno_blocks[layer_idx](x, output_shape = cur_output)
             
-            print(x.shape)
 
             if layer_idx in self.horizontal_skips_map.values():
                 #print("saving skip", layer_idx)
