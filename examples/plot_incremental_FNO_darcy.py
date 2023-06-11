@@ -68,6 +68,7 @@ sys.stdout.flush()
 # other options include setting incremental_loss_gap = True
 # If one wants to use incremental resolution set it to True
 # In this example we only update the modes and not the resolution
+# When using the incremental resolution one should keep in mind that the numnber of modes initially set should be strictly less than the resolution
 trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental = incremental, dataset_name="SmallDarcy")
 
 # %% 

@@ -1,9 +1,4 @@
-import numpy as np
-
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch import linalg as LA
 from .paramaters import Paramaters
 
 class Incremental(Paramaters):
@@ -40,9 +35,6 @@ class Incremental(Paramaters):
             self.grad_iter += 1
             self.accumulated_grad += self.model.convs.weight[0]
         else:
-            # weights, grad_explained_ratio_threshold, max_modes, incremental_modes, buffer
-            # loop over all frequency dimensions
-            # create a list of eventual modes
             incremental_final = []
             for i in range(self.ndim):
                 max_modes = self.model.convs.n_modes[i]
@@ -67,6 +59,7 @@ class Incremental(Paramaters):
     def incremental_resolution_regularize(self, x, y):
         return self.regularize_input_res(x, y)
     
+    # Main step function: which algorithm to run
     def step(self, loss = None, epoch = None, x = None, y = None):
         if self.incremental_resolution and x != None and y != None:
             self.epoch_wise_res_increase(epoch)

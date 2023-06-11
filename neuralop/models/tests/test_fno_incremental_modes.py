@@ -1,13 +1,8 @@
 """
-Training a neural operator on Darcy-Flow - Author Robert Joseph
-========================================
-In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
+Training just one spectral layer to see if the Incremental Algorithm works - Author Robert Joseph
 """
-
-
 import torch
 import torch.nn as nn
-import numpy as np
 from neuralop.models.fno_block import FactorizedSpectralConv
 
 device = 'cpu'
@@ -79,9 +74,9 @@ def check_grad_incremental():
         new_weights = conv.weight[0].to_tensor().clone()
         
         # same shape (no increase in dimensions)
-        assert new_weights.shape == original_weights.shape        
+        assert new_weights.shape == original_weights.shape      
+        
+        print("Passed test for dimension: ", dim, "\n")  
             
 # Test method
 check_grad_incremental()
-
-# %%

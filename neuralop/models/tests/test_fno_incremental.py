@@ -4,9 +4,6 @@ Training a neural operator on Darcy-Flow - Author Robert Joseph
 In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
 """
 
-# %%
-# 
-
 import torch
 import matplotlib.pyplot as plt
 import sys
@@ -15,12 +12,8 @@ from neuralop import Trainer
 from neuralop.datasets import load_darcy_flow_small
 from neuralop.utils import count_params
 from neuralop import LpLoss, H1Loss
-from neuralop.models.fno_block import (FactorizedSpectralConv3d, FactorizedSpectralConv2d,
-                                       FactorizedSpectralConv1d, FactorizedSpectralConv)
+
 device = 'cpu'
-
-
-# %%
 
 def test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False):
     """_summary_
@@ -41,15 +34,15 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     # Choose device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     incremental_mode = incremental_loss_gap or incremental
-    baseline = incremental_mode or incremental_resolution
-
+    baseline = incremental_mode
+    
     if incremental_loss_gap:
         print('### INCREMENTAL LOSS GAP ###')
     if incremental:
         print('### INCREMENTAL ###')
     if incremental_resolution:
         print('### INCREMENTAL RESOLUTION ###')
-    if not baseline:
+    if not baseline and not incremental_resolution:
         print('### BASELINE ###')
                     
     # Set up the incremental FNO model
@@ -90,7 +83,7 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
         # Check that the number of modes has dynamically increased (Atleast for these settings on this dataset it should increase)
         assert model.convs.incremental_n_modes > starting_modes
     
-    if incremental_resolution or not baseline:
+    if not baseline:
         # Check that the number of modes has not dynamically increased (Atleast for these settings on this dataset it should increase)
         assert model.convs.incremental_n_modes == starting_modes
     
