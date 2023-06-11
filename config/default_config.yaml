@@ -20,6 +20,8 @@ default: &DEFAULT
     n_modes_height: 24
     n_modes_width: 24
     hidden_channels: 64
+    modes_height: 32
+    modes_width: 32
     projection_channels: 256
     n_layers: 4
     domain_padding: 0.078125
@@ -59,13 +61,13 @@ default: &DEFAULT
   # Dataset related
   data:
     # folder: '/home/nikola/HDD/NavierStokes/2D'
-    folder: /data/navier_stokes/
+    folder: /home/user/project/neuraloperator/navierstokes_new/
     # folder: '/data'
     batch_size: 16
     n_train: 10000
-    train_resolution: 128
+    train_resolution: 1024
     n_tests: [2000, 1000, 1000] #, 1000]
-    test_resolutions: [128, 256, 512] #, 1024] 
+    test_resolutions: [1024] #, 1024] 
     test_batch_sizes: [16, 8, 4] #, 1]
     positional_encoding: True
 
@@ -85,9 +87,8 @@ default: &DEFAULT
   wandb:
     log: True
     name: None # If None, config will be used but you can override it here
-    group: 'super-resolution' 
-    project: "Refactored-TFNO"
-    entity: "nvr-ai-algo" # put your username here
+    project: "tfno"
+    entity: "research-pino_ifno" # put your username here
     sweep: False
     log_output: True
     log_test_interval: 1
@@ -122,6 +123,26 @@ original_fno:
     name: None # If None, config will be used but you can override it here
     group: 'comparisons'
     
+  incremental:
+    incremental_grad:
+      init_modes: 6
+      buffer_modes: 5
+      max_modes: 32
+      modes: 32
+      grad_explained_ratio_threshold: 0.9
+      max_iter: 1
+      grad_max_iter: 10
+    
+    incremental_loss_gap:
+      init_modes: 1
+      max_modes: 30
+      eps: 0.001
+
+    incremental_resolution:
+      epoch_gap: 50
+      sub_list: [256,128,64,32,16,8,4,2,1]
+
+  
 original_fno_GN:
   arch: 'tfno2d'
 

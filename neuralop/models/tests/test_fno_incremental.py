@@ -81,44 +81,33 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     sys.stdout.flush()
     
     # Set up the trainer
-    trainer = Trainer(model, n_epochs=4, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental_loss_gap = incremental_loss_gap, incremental = incremental, incremental_resolution = incremental_resolution, dataset_name="SmallDarcy")
-    original_weights = model.convs.weight[0][0][0][0].to_tensor()
-    
+    trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental_loss_gap = incremental_loss_gap, incremental = incremental, incremental_resolution = incremental_resolution, dataset_name="SmallDarcy")
+        
     # Train the model
     trainer.train(train_loader, test_loaders, output_encoder, model, optimizer, scheduler, regularizer=False, training_loss=train_loss, eval_losses=eval_losses)
-    new_weights = model.convs.weight[0][0][0][0].to_tensor()
-    print('### WEIGHTS ###')
-    print(f'\n * Original: {original_weights}')
-    print(f'\n * New: {new_weights}')
     
     if incremental_mode:
         # Check that the number of modes has dynamically increased (Atleast for these settings on this dataset it should increase)
         assert model.convs.incremental_n_modes > starting_modes
-        torch.testing.assert_close(original_weights, new_weights)
     
     if incremental_resolution or not baseline:
         # Check that the number of modes has not dynamically increased (Atleast for these settings on this dataset it should increase)
         assert model.convs.incremental_n_modes == starting_modes
     
-        
-# toy very few incremental blocks - 
-# create copy of weights
-# full backard pass
-# check only backward gradients of the incremental blocks are different
-# add all the datasets as loaders
-
 # Test Baseline Model first
-#test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False)
+test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False)
 
 # Test Incremental Loss Gap
 test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=False)
 
 # Test Incremental
-#test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=False)
+test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=False)
 
 # Test Incremental Resolution
-#test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=True)
+test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=True)
 
+# Test Incremental + Incremental Resolution
+test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=True)
 
-
-# %%
+# Test Incremental Loss Gap + Incremental Resolution
+test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=True)

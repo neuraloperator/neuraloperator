@@ -32,9 +32,9 @@ if config.wandb.log and is_logger:
     else:
         wandb_name = '_'.join(
             f'{var}' for var in [config_name, config.tfno2d.n_layers, config.tfno2d.modes_width, config.tfno2d.modes_height,
-                                 config.tfno2d.width, config.tfno2d.factorization, config.tfno2d.rank, 
+                                 config.tfno2d.hidden_channels, config.tfno2d.factorization, config.tfno2d.rank, 
                                  config.patching.levels, config.patching.padding])
-    wandb.init(config=config, name=wandb_name, group=config.wandb.group,
+    wandb.init(config=config, name=wandb_name,
                project=config.wandb.project, entity=config.wandb.entity)
     if config.wandb.sweep:
         for key in wandb.config.keys():
@@ -131,7 +131,7 @@ trainer = Trainer(model, n_epochs=config.opt.n_epochs,
                   log_test_interval=config.wandb.log_test_interval,
                   log_output=config.wandb.log_output,
                   use_distributed=config.distributed.use_distributed,
-                  verbose=config.verbose)
+                  verbose=config.verbose, incremental = True)
 
 
 trainer.train(train_loader, test_loaders,

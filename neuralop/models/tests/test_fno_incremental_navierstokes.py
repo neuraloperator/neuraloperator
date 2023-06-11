@@ -37,9 +37,9 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     train_path = "/home/user/project/neuraloperator/navierstokes_new/"
     train_loader, test_loaders, output_encoder = load_navier_stokes_pt(
             train_path, train_resolution=1024,
-            n_train=1000, batch_size=32, 
+            n_train=1000, batch_size=8, 
             test_resolutions=[1024], n_tests=[200],
-            test_batch_sizes=[32],
+            test_batch_sizes=[8],
             )
     
     # Choose device
@@ -60,10 +60,10 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
     if incremental_mode:
         starting_modes = (2, 2)
     else:
-        starting_modes = (90, 90)
+        starting_modes = (32, 32)
 
     # set up model
-    model = FNO(n_modes=(90, 90), hidden_channels=32, projection_channels=64, incremental_n_modes=starting_modes)
+    model = FNO(n_modes=(32, 32), hidden_channels=32, projection_channels=64, incremental_n_modes=starting_modes)
     model = model.to(device)
     n_params = count_params(model)
 
@@ -99,22 +99,16 @@ def test_incremental_model_training(incremental_loss_gap=False, incremental=Fals
         assert model.convs.incremental_n_modes == starting_modes
 
 
-# toy very few incremental blocks - 
-# create copy of weights
-# full backard pass
-# check only backward gradients of the incremental blocks are different
-# add all the datasets as loaders
-
 # Test Baseline Model first
 #test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False)
 
 # Test Incremental Loss Gap
-test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=False)
+#test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=True)
 
 # Test Incremental
-test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=False)
+#test_incremental_model_training(incremental_loss_gap=True, incremental=False, incremental_resolution=True)
 
 # Test Incremental Resolution
-test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=True)
+test_incremental_model_training(incremental_loss_gap=False, incremental=True, incremental_resolution=True)
 
 

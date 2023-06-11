@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import linalg as LA
+from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 
 class Paramaters:
     def __init__(self, model, incremental, incremental_loss_gap, incremental_resolution, dataset_name) -> None:
@@ -14,20 +15,28 @@ class Paramaters:
         self.incremental_loss_gap = incremental_loss_gap
         self.dataset_name = dataset_name
         
+        pipe = ConfigPipeline([YamlConfig('/home/user/project/neuraloperator/config/incremental.yaml', config_name='default'),
+                            ArgparseConfig(infer_types=True, config_name=None, config_file=None)])
+        config = pipe.read_conf()
+        paramaters = config.incremental
+                
         if self.incremental_grad:
             # incremental
-            self.buffer = 5
-            self.grad_explained_ratio_threshold = 0.9
-            self.max_iter = 1
-            self.grad_max_iter = 10
+            paramaters1 = paramaters.incremental_grad
+            self.buffer = paramaters1.buffer_modes
+            self.grad_explained_ratio_threshold = paramaters1.grad_explained_ratio_threshold
+            self.max_iter = paramaters1.max_iter
+            self.grad_max_iter = paramaters1.grad_max_iter
 
         if self.incremental_loss_gap:
             # loss gap
-            self.eps = 0.001
+            paramaters1 = paramaters.incremental_loss_gap
+            self.eps = paramaters1.eps
             self.loss_list = []
         
         if self.incremental_resolution:
-            self.epoch_gap = 100
+            paramaters_resolution = paramaters.incremental_resolution
+            self.epoch_gap = paramaters_resolution.epoch_gap
             if self.dataset_name == 'SmallDarcy':
                 self.sub_list = [1] # cant do incremental resolution
             elif self.dataset_name == 'Darcy':
@@ -35,9 +44,9 @@ class Paramaters:
             elif self.dataset_name == "Burgers":
                 self.sub_list = [256, 64, 16, 8, 1]
             elif self.dataset_name == "NavierStokes":
-                self.sub_list = [8, 6, 4, 2, 1]
+                self.sub_list = [16, 8, 4, 2, 1]
             elif self.dataset_name == "Vorticity":
-                self.sub_list = [128,64,32,16,1]
+                self.sub_list = [128, 64, 32, 16, 1]
                 
             self.subsammpling_rate = 1   
             self.current_index = 0
@@ -71,7 +80,7 @@ class Paramaters:
         return int(((241 - 1)/sub) + 1)
 
     def navier_sub_to_res(self, sub):
-        return 128 // sub
+        return 1024 // sub
 
     def navier_high_sub_to_res(self, sub):
         return 256 // sub
