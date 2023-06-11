@@ -120,6 +120,7 @@ class Trainer:
                 x = x.to(self.device)
                 y = y.to(self.device)
 
+                # update the resolution
                 if self.incremental_resolution:
                     x, y = self.incremental_scheduler.step(epoch = epoch, x = x, y = y)
                                 
@@ -143,7 +144,7 @@ class Trainer:
 
                 loss.backward()
                             
-                # update frequency modes loss based method
+                # update frequency modes based on the algorithm used
                 if self.incremental:
                     self.incremental_scheduler.step(loss.item(), epoch)
                 
