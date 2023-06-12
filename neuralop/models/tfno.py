@@ -156,7 +156,7 @@ class FNO(nn.Module):
         self._incremental_n_modes = incremental_n_modes
 
         if domain_padding is not None and domain_padding > 0:
-            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode)
+            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scaling_factor=output_scaling_factor)
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
