@@ -275,7 +275,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_incremental_n_modes</span> <span class="o">=</span> <span class="n">incremental_n_modes</span>
 
         <span class="k">if</span> <span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">domain_padding</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="o">=</span> <span class="n">DomainPadding</span><span class="p">(</span><span class="n">domain_padding</span><span class="o">=</span><span class="n">domain_padding</span><span class="p">,</span> <span class="n">padding_mode</span><span class="o">=</span><span class="n">domain_padding_mode</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="o">=</span> <span class="n">DomainPadding</span><span class="p">(</span><span class="n">domain_padding</span><span class="o">=</span><span class="n">domain_padding</span><span class="p">,</span> <span class="n">padding_mode</span><span class="o">=</span><span class="n">domain_padding_mode</span><span class="p">,</span> <span class="n">output_scaling_factor</span><span class="o">=</span><span class="n">output_scaling_factor</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding_mode</span> <span class="o">=</span> <span class="n">domain_padding_mode</span>
@@ -412,6 +412,7 @@
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
         <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
         <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -436,6 +437,7 @@
             <span class="n">lifting_channels</span><span class="o">=</span><span class="n">lifting_channels</span><span class="p">,</span>
             <span class="n">projection_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
+            <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
             <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
             <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
@@ -532,6 +534,7 @@
         <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
         <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
@@ -557,6 +560,7 @@
             <span class="n">lifting_channels</span><span class="o">=</span><span class="n">lifting_channels</span><span class="p">,</span>
             <span class="n">projection_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
+            <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
             <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
             <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
@@ -657,6 +661,7 @@
         <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
         <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
@@ -682,6 +687,7 @@
             <span class="n">lifting_channels</span><span class="o">=</span><span class="n">lifting_channels</span><span class="p">,</span>
             <span class="n">projection_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
+            <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
             <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
             <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
