@@ -114,7 +114,7 @@ class LpLoss(object):
                                               p=self.p, dim=-1, keepdim=False)
 
         if self.reduce_dims is not None:
-            diff = self.reduce_all(diff).squeeze()
+            diff = self.reduce_all(diff).squeeze().sum()
             
         return diff
 
@@ -127,7 +127,7 @@ class LpLoss(object):
         diff = diff/ynorm
 
         if self.reduce_dims is not None:
-            diff = self.reduce_all(diff).squeeze()
+            diff = self.reduce_all(diff).squeeze().sum()
             
         return diff
 
@@ -244,7 +244,7 @@ class H1Loss(object):
         diff = diff**0.5
 
         if self.reduce_dims is not None:
-            diff = self.reduce_all(diff).squeeze()
+            diff = self.reduce_all(diff).squeeze().sum()
             
         return diff
         
@@ -268,7 +268,7 @@ class H1Loss(object):
         diff = (diff**0.5)/(ynorm**0.5)
 
         if self.reduce_dims is not None:
-            diff = self.reduce_all(diff).squeeze()
+            diff = self.reduce_all(diff).squeeze().sum()
             
         return diff
 
