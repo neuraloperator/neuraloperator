@@ -156,7 +156,7 @@ class FNO(nn.Module):
         self._incremental_n_modes = incremental_n_modes
 
         if domain_padding is not None and domain_padding > 0:
-            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode)
+            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scaling_factor=output_scaling_factor)
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
@@ -293,6 +293,7 @@ class FNO1d(FNO):
         projection_channels=256,
         incremental_n_modes=None,
         n_layers=4,
+        output_scaling_factor=None,
         non_linearity=F.gelu,
         use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
         norm=None,
@@ -317,6 +318,7 @@ class FNO1d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
+            output_scaling_factor=None,
             non_linearity=non_linearity,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             incremental_n_modes=incremental_n_modes,
@@ -413,6 +415,7 @@ class FNO2d(FNO):
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
+        output_scaling_factor=None,
         incremental_n_modes=None,
         non_linearity=F.gelu,
         use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
@@ -438,6 +441,7 @@ class FNO2d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
+            output_scaling_factor=None,
             non_linearity=non_linearity,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             incremental_n_modes=incremental_n_modes,
@@ -538,6 +542,7 @@ class FNO3d(FNO):
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
+        output_scaling_factor=None,
         incremental_n_modes=None,
         non_linearity=F.gelu,
         use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
@@ -563,6 +568,7 @@ class FNO3d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
+            output_scaling_factor=None,
             non_linearity=non_linearity,
             incremental_n_modes=incremental_n_modes,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
