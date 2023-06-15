@@ -58,7 +58,7 @@ class DomainPadding(nn.Module):
             
             output_pad = padding
 
-            output_pad = [int(round(i*j)) for (i,j) in zip(self.output_scale_factor,output_pad)]
+            output_pad = [int(round(i*j)) for (i,j) in zip(self.output_scaling_factor,output_pad)]
 
             if self.padding_mode == 'symmetric':
                 # Pad both sides
@@ -81,7 +81,7 @@ class DomainPadding(nn.Module):
 
             out_put_shape = padded.shape[2:]
 
-            out_put_shape = [int(round(i*j)) for (i,j) in zip(self.output_scale_factor,out_put_shape)]
+            out_put_shape = [int(round(i*j)) for (i,j) in zip(self.output_scaling_factor,out_put_shape)]
 
             self._unpad_indices[f'{[i for i in out_put_shape]}'] = unpad_indices
 
