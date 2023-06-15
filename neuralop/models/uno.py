@@ -173,7 +173,7 @@ class UNO(nn.Module):
             print("calculated out factor", self.output_scaling_factor)
         if domain_padding is not None and domain_padding > 0:
             self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode\
-            , output_scale_factor = self.output_scaling_factor)
+            , output_scaling_factor = self.output_scaling_factor)
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
