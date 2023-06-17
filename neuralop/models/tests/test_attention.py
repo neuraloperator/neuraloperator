@@ -8,7 +8,7 @@ import pytest
 def test_attention(input_shape):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    model = TnoBlock2d(4, 4, [20,20], token_codim = 2).to(device)
+    model = TnoBlock2d(4, 1, [20,20], token_codim = 2).to(device)
     t1 = time.time()
     in_data = torch.randn(input_shape).to(device)
     out = model(in_data)
@@ -18,7 +18,8 @@ def test_attention(input_shape):
         assert in_data.shape[i] == out.shape[i]
     loss = out.sum()
     t1 = time.time()
-    loss.backward()
+    with torch.autograd.set_detect_anomaly(True):
+        loss.backward()
     t = time.time() - t1
     print(f'Gradient Calculated in {t}.')
     n_unused_params = 0
@@ -29,20 +30,18 @@ def test_attention(input_shape):
 
     assert n_unused_params == 0, f'{n_unused_params} parameters were unused!'
     
-    model = TnoBlock2d(4, 3*4, [20,20], token_codim = 2).to(device)
+    model = TnoBlock2d(4, 3, [20,20], token_codim = 2).to(device)
     t1 = time.time()
     in_data = torch.randn(input_shape).to(device)
     out = model(in_data)
     t = time.time() - t1
     print(f'Output of size {out.shape} in {t}.')
     for i in range(len(out.shape)):
-        if i !=1:
-            assert in_data.shape[i] == out.shape[i]
-        else:
-            assert 3*in_data.shape[i] == out.shape[i]
+        assert in_data.shape[i] == out.shape[i]
     loss = out.sum()
     t1 = time.time()
-    loss.backward()
+    with torch.autograd.set_detect_anomaly(True):
+        loss.backward()
     t = time.time() - t1
     print(f'Gradient Calculated in {t}.')
     n_unused_params = 0
