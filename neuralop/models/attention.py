@@ -5,12 +5,13 @@ import torch.nn.functional as F
 import torch
 
 class TnoBlock2d(nn.Module):
-    def __init__(self,in_channels, n_head, n_modes,
+    def __init__(self,in_channels, n_modes,
+                 n_head = 1,
                  output_scaling_factor=None,
                  incremental_n_modes=None,
                  use_mlp=False, mlp=None, mlp_dropout=0, mlp_expansion=0.5,
                  non_linearity=F.gelu,
-                 token_codim = 4,
+                 token_codim = 1,
                  norm=None, preactivation=False,
                  fno_skip='linear',
                  mlp_skip='soft-gating',
