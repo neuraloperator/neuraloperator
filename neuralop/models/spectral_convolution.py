@@ -461,6 +461,11 @@ class FactorizedSpectralConv3d(FactorizedSpectralConv):
         return x
     
 
+    
+    
+###
+# Can not be pushed directly in the NeuralOperator 
+###
 class SpectralConvKernel2d(FactorizedSpectralConv):
     '''
     fft_type = {'sph', 'norm'}, if 'sph' it uses the speherical Fourier Transform 
@@ -498,9 +503,7 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
         if fft_type == 'sht':
             self.forward_fft = th.RealSHT(sht_nlat, sht_nlon, grid = self.sht_grid, norm= self.sht_norm)
             self.inverse_fft = th.InverseRealSHT(out_nlat, out_nlon, grid = self.sht_grid, norm= self.sht_norm)
-        
-
-
+            
 
     def reset_parameter(self):
         # Initial model parameters.

@@ -26,7 +26,10 @@ class TnoBlock2d(nn.Module):
         super().__init__()
         self.token_codim = token_codim
         self.n_head = int(out_channels/in_channels)
-        self.K = FNOBlocks(in_channels= self.token_codim, out_channels= self.token_codim, n_modes= n_modes,\
+        
+        print("num head", self.n_head)
+        
+        self.K = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= n_modes,\
                                             use_mlp=use_mlp, mlp=mlp, output_scaling_factor = output_scaling_factor,non_linearity=non_linearity,\
                                             norm=norm, preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip,mlp_dropout=0, mlp_expansion=0.5,\
                                             incremental_n_modes=incremental_n_modes, rank=rank, fft_norm=fft_norm,\
@@ -34,7 +37,7 @@ class TnoBlock2d(nn.Module):
                                             factorization=factorization,decomposition_kwargs=decomposition_kwargs,joint_factorization=joint_factorization,\
                                             SpectralConv= SpectralConv,n_layers=1)
 
-        self.Q = FNOBlocks(in_channels= self.token_codim, out_channels= self.token_codim, n_modes= n_modes,\
+        self.Q = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= n_modes,\
                                             use_mlp=use_mlp, mlp=mlp, output_scaling_factor = output_scaling_factor,non_linearity=non_linearity,\
                                             norm=norm, preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip, mlp_dropout=0, mlp_expansion=0.5,\
                                             incremental_n_modes=incremental_n_modes, rank=rank, fft_norm=fft_norm,\
@@ -42,7 +45,7 @@ class TnoBlock2d(nn.Module):
                                             factorization=factorization,decomposition_kwargs=decomposition_kwargs,joint_factorization=joint_factorization,\
                                             SpectralConv= SpectralConv, n_layers=1)
 
-        self.V = FNOBlocks(in_channels= self.token_codim, out_channels= self.token_codim, n_modes= n_modes,\
+        self.V = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= n_modes,\
                                             use_mlp=use_mlp, mlp=mlp, output_scaling_factor = output_scaling_factor,non_linearity=non_linearity,\
                                             norm=norm, preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip, mlp_dropout=0, mlp_expansion=0.5,\
                                             incremental_n_modes=incremental_n_modes, rank=rank, fft_norm=fft_norm,\
@@ -51,7 +54,7 @@ class TnoBlock2d(nn.Module):
                                             SpectralConv= SpectralConv,n_layers=1)
         self.nomalizer = normalizer
         
-        self.end_block = FNOBlocks(in_channels= in_channels, out_channels= out_channels, n_modes= n_modes,\
+        self.end_block = FNOBlocks(in_channels= out_channels, out_channels= out_channels, n_modes= n_modes,\
                                             use_mlp=use_mlp, mlp=mlp, output_scaling_factor = None ,non_linearity=non_linearity,\
                                             norm=norm, preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip, mlp_dropout=0, mlp_expansion=0.5,\
                                             incremental_n_modes=incremental_n_modes, rank=rank, fft_norm=fft_norm,\
@@ -119,9 +122,10 @@ class TnoBlock2d(nn.Module):
         if self.nomalizer is not None:
             output = self.non_lin(self.normalize_layer(output))
 
+        print(output.size())
+        print(batch, -1,value_res_x, value_res_y)
         
-        
-        output =  self.end_block(output.view(batch, -1,value_res_x, value_res_y), output_shape = output_shape)
+        output =  self.end_block(output.reshape(batch, -1,value_res_x, value_res_y), output_shape = output_shape)
         
         #print(output.shape)
         
