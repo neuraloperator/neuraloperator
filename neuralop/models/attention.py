@@ -1,6 +1,6 @@
 from .fno_block import FNOBlocks
 import torch.nn as nn
-from .spectral_convolution import FactorizedSpectralConv2d, SpectralConvKernel2d
+from .spectral_convolution import FactorizedSpectralConv, SpectralConvKernel2d
 import torch.nn.functional as F
 import torch
 
@@ -22,14 +22,12 @@ class TnoBlock2d(nn.Module):
                  fixed_rank_modes=False,
                  implementation='factorized',
                  decomposition_kwargs=dict(),
-                 fft_norm='forward', output_shape = None, normalizer = None):
+                 fft_norm='forward', output_shape = None, normalizer = None, **kwarg):
         
         super().__init__()
         self.token_codim = token_codim
         self.n_head = n_head
         
-        
-        print("num head", self.n_head)
         
         self.K = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= n_modes,\
                                             use_mlp=use_mlp, mlp=mlp, output_scaling_factor = 1/n_head,non_linearity=non_linearity,\
@@ -129,7 +127,7 @@ class TnoBlock2d(nn.Module):
         
         output = self.mixer(output, output_shape = (in_res_x, in_res_y))
         
-        print(output.size())
+
         
         output = output.view(batch, n_token, self.token_codim, in_res_x, in_res_y).view(batch, -1, in_res_x, in_res_y)
         
@@ -137,12 +135,9 @@ class TnoBlock2d(nn.Module):
         if self.nomalizer is not None:
             output = self.non_lin(self.normalize_layer(output))
 
-        print(output.size())
 
         
         output =  self.end_block(output, output_shape = output_shape)
-        
-        #print(output.shape)
         
         return output
 

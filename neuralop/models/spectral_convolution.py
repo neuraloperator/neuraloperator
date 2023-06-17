@@ -529,8 +529,8 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
     
 
         if self.factorization is None:
-            x[:,:, :self.half_n_modes[0], :self.half_n_modes[1]] = self.mode_mixer(x[:,:, :self.half_n_modes[0], :self.half_n_modes[1]], self.W1)
-            x[:,:, -self.half_n_modes[0]:, :self.half_n_modes[1]] = self.mode_mixer(x[:,:, -self.half_n_modes[0]:, :self.half_n_modes[1]], self.W2)
+            x[:,:, :self.half_n_modes[0], :self.half_n_modes[1]] = self.mode_mixer(x[:,:, :self.half_n_modes[0], :self.half_n_modes[1]].clone(), self.W1)
+            x[:,:, -self.half_n_modes[0]:, :self.half_n_modes[1]] = self.mode_mixer(x[:,:, -self.half_n_modes[0]:, :self.half_n_modes[1]].clone(), self.W2)
         
 
         #spectral conv / channel mixer
