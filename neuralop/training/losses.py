@@ -277,4 +277,48 @@ class H1Loss(object):
         return self.rel(x, y, h=h)
 
 
+class DissipativeLoss(object):
+    def __init__(self, model, data_loss, diss_y_rule, loss_weight: float, diss_radii: tuple, out_dim: int, domain_shape: tuple):
+        self.model = model
+        self.data_loss = data_loss
+        self.reduce_dims = data_loss.reduce_dims
+        self.reductions = data_loss.reductions
 
+        self.y_rule = diss_y_rule # callable, maps x on spherical shell to deisred dissipative y values
+        self.loss_weight = loss_weight
+        self.radii = diss_radii
+        self.out_dim = out_dim
+        self.dissloss = LpLoss(d=out_dim, reduce_dims=self.reduce_dims, reductions=self.reductions)
+
+        if domain_shape is not None:
+            self.domain_shape = torch.tensor(domain_shape) # for PDE problems, this is a tuple of the domain size (dim1, ..., dimk)
+            self.domain_ndims = torch.prod(self.domain_shape)
+        else:
+            self.domain_shape = None
+    
+    def sample_uniform_spherical_shell(self, shape: tuple): # shape is (batch_size, dim1, ..., dimk, out_dim)
+        npoints = shape[0]
+        shape = shape[1:]
+
+        ndim = torch.prod(torch.tensor(shape))
+        inner_radius, outer_radius = self.radii
+        
+        samp_radii = torch.zeros(npoints, 1).uniform_(inner_radius, outer_radius)
+        vec = torch.randn(npoints, ndim) # ref: https://mathworld.wolfram.com/SpherePointPicking.html
+        vec = torch.nn.functional.normalize(vec, p=2.0, dim=1)
+        samp_radii = torch.broadcast_to(samp_radii, vec.shape)
+
+        return (samp_radii * vec).reshape((npoints, *shape))
+
+    def __call__(self, x, y, **kwargs):
+        data_loss = self.data_loss(x,y)
+        
+        x_diss = sample_uniform_spherical_shell(x.shape)
+        y_diss = diss_y_rule(x_diss)
+        out_diss = model(x_diss).reshape(y_diss.shape)
+        diss_loss = dissloss(out_diss.reshape(-1, self.out_dim), y_diss.reshape(-1, self.out_dim))
+
+        if self.domain_shape is not None:
+            diss_loss *= (1 / self.domain_ndims) # discretization normalization
+
+        return data_loss + self.loss_weight * diss_loss
