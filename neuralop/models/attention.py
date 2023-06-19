@@ -7,11 +7,11 @@ import torch
 class TnoBlock2d(nn.Module):
     def __init__(self,in_channels, n_modes,
                  n_head = 1,
+                 token_codim = 1,
                  output_scaling_factor=None,
                  incremental_n_modes=None,
                  use_mlp=False, mlp=None, mlp_dropout=0, mlp_expansion=0.5,
                  non_linearity=F.gelu,
-                 token_codim = 1,
                  norm=None, preactivation=False,
                  fno_skip='linear',
                  mlp_skip='soft-gating',
@@ -23,11 +23,12 @@ class TnoBlock2d(nn.Module):
                  fixed_rank_modes=False,
                  implementation='factorized',
                  decomposition_kwargs=dict(),
-                 fft_norm='forward', output_shape = None, normalizer = None, **kwarg):
+                 fft_norm='forward', normalizer = None, **kwarg):
         
         super().__init__()
         self.token_codim = token_codim
         self.n_head = n_head
+        self.output_scaling_factor = output_scaling_factor
         
         
         self.K = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= n_modes,\
@@ -64,7 +65,7 @@ class TnoBlock2d(nn.Module):
                                             SpectralConv= SpectralConv,n_layers=1) 
         
         self.end_block = FNOBlocks(in_channels= in_channels, out_channels= in_channels, n_modes= n_modes,\
-                                            use_mlp=use_mlp, mlp=mlp, output_scaling_factor = None ,non_linearity=non_linearity,\
+                                            use_mlp=use_mlp, mlp=mlp, output_scaling_factor = self.output_scaling_factor,non_linearity=non_linearity,\
                                             norm=norm, preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip, mlp_dropout=0, mlp_expansion=0.5,\
                                             incremental_n_modes=incremental_n_modes, rank=rank, fft_norm=fft_norm,\
                                             fixed_rank_modes=fixed_rank_modes, implementation=implementation, separable=separable,\
@@ -72,7 +73,7 @@ class TnoBlock2d(nn.Module):
                                             SpectralConv= SpectralConv,n_layers=1)
         if normalizer is not None:
             self.non_lin = non_linearity
-            self.normalize_layer = torch.nn.InstanceNorm2d(int(out_channels),affine=False)
+            self.normalize_layer = torch.nn.InstanceNorm2d(int(in_channels),affine=False)
 
         
     def forward(self, x, output_shape = None):
