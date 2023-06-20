@@ -1,7 +1,7 @@
 from torch import nn
 import torch
 import itertools
-
+import torch_harmonics as th
 import tensorly as tl
 from tensorly.plugins import use_opt_einsum
 tl.set_backend('pytorch')
@@ -474,7 +474,7 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
                  n_layers=1, separable=False, output_scaling_factor=None,
                  rank=0.5, factorization='cp', implementation='reconstructed', 
                  fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict(),
-                 init_std='auto', fft_norm='forward', fft_type = 'fft',  sht_nlat = 180, sht_nlon = 360, sht_grid="legendre-gauss", sht_norm="ortho"):
+                 init_std='auto', fft_norm='forward', fft_type = 'sht',  sht_nlat = 180, sht_nlon = 360, sht_grid="legendre-gauss", sht_norm="ortho"):
         super().__init__(in_channels, out_channels, n_modes, incremental_n_modes, bias,
                  n_layers, separable, output_scaling_factor,
                  rank, factorization, implementation, 
