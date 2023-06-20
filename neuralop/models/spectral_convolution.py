@@ -458,6 +458,7 @@ class FactorizedSpectralConv3d(FactorizedSpectralConv):
         if self.bias is not None:
             x = x + self.bias[indices, ...]
 
+<<<<<<< HEAD
         return x
     
 
@@ -561,3 +562,6 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
             x = x + self.bias[indices, ...]
 
         return x
+=======
+        return x
+>>>>>>> 73b9f9211479c613efe186e39e9718db66838c9d

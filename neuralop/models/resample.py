@@ -17,18 +17,7 @@ def resample(x, res_scale, axis, output_shape = None):
             scaling is performed
     axis: axis or dimensions along which interpolation will be performed. 
     """
-    """
-    A module for generic n-dimentional interpolation (Fourier resampling).
 
-    Parameters
-    ----------
-    x : torch.Tensor
-            input activation of size (batch_size, channels, d1, ..., dN)
-    res_scale: int or tuple
-            Scaling factor along each of the dimensions in 'axis' parameter. If res_scale is scaler, then isotropic 
-            scaling is performed
-    axis: axis or dimensions along which interpolation will be performed. 
-    """
     if isinstance(res_scale, (float, int)):
         if axis is None:
             axis = list(range(2, x.ndim))
@@ -47,10 +36,10 @@ def resample(x, res_scale, axis, output_shape = None):
     else:
         new_size = output_shape
 
-    if len(axis) == 1:
-        return F.interpolate(x, size = new_size[0], mode = 'linear', align_corners = True)
-    if len(axis) == 2:
-        return F.interpolate(x, size = new_size, mode = 'bicubic', align_corners = True, antialias = True)
+#     if len(axis) == 1:
+#         return F.interpolate(x, size = new_size[0], mode = 'linear', align_corners = True)
+#     if len(axis) == 2:
+#         return F.interpolate(x, size = new_size, mode = 'bicubic', align_corners = True, antialias = True)
 
     X = torch.fft.rfftn(x.float(), norm='forward', dim=axis)
     

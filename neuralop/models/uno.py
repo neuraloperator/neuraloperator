@@ -1,4 +1,4 @@
-from neuralop.models.tfno import Lifting, Projection
+from .tfno import Lifting, Projection
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partialmethod
@@ -10,8 +10,7 @@ from .skip_connections import skip_connection
 from .padding import DomainPadding
 from .fno_block import FNOBlocks,resample
 from .tfno import partialclass
-from .attention import TnoBlock2d
-from .spectral_convolution import SpectralConvKernel2d
+import numpy as np
 #this will be merged with the neural operator UNO
 
 class UNO(nn.Module):
@@ -120,8 +119,8 @@ class UNO(nn.Module):
                  domain_padding=None,
                  domain_padding_mode='one-sided',
                  fft_norm='forward',
-                 output_scaling_factor = 1,
                  normalizer = None,  #only have efect on the transformer block. Nevertheless it might be a bad idea to include normalization as part of layer
+                 verbose = False,
                  **kwargs):
         super().__init__()
         self.n_layers = n_layers
@@ -153,7 +152,6 @@ class UNO(nn.Module):
         self.separable = separable
         self.preactivation = preactivation
         self._incremental_n_modes = incremental_n_modes
-        self.output_scaling_factor = output_scaling_factor
         self.operator_block = operator_block
         self.integral_operator = integral_operator
         
@@ -161,14 +159,21 @@ class UNO(nn.Module):
             self.horizontal_skips_map = {}
             for i in range(n_layers//2,0,):
                 self.horizontal_skips_map[n_layers - i -1] = i
-                
+
+        self.output_scaling_factor = np.ones_like(self.uno_scalings[0])
+        for k in self.uno_scalings:
+            self.output_scaling_factor = np.multiply(self.output_scaling_factor, k)
+        self.output_scaling_factor = self.output_scaling_factor.tolist()
+        if len(self.output_scaling_factor) == 1:
+            self.output_scaling_factor = self.output_scaling_factor[0]
+
         if isinstance(self.output_scaling_factor, (float, int)):
             self.output_scaling_factor = [self.output_scaling_factor]*self.n_dim
-        
-
+        if verbose:
+            print("calculated out factor", self.output_scaling_factor)
         if domain_padding is not None and domain_padding > 0:
             self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode\
-            , output_scale_factor = self.output_scaling_factor)
+            , output_scaling_factor = self.output_scaling_factor)
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
@@ -186,7 +191,6 @@ class UNO(nn.Module):
 
             if i in self.horizontal_skips_map.keys():
                 prev_out = prev_out + self.uno_out_channels[self.horizontal_skips_map[i]]
-            print([self.uno_scalings[i]])
 
             self.fno_blocks.append(self.operator_block(
                                             in_channels=prev_out,
@@ -195,7 +199,7 @@ class UNO(nn.Module):
                                             use_mlp=use_mlp, 
                                             mlp_dropout=mlp_dropout, 
                                             mlp_expansion=mlp_expansion,
-                                            output_scaling_factor = self.uno_scalings[i],
+                                            output_scaling_factor = [self.uno_scalings[i]],
                                             non_linearity=non_linearity,
                                             norm=norm, preactivation=preactivation,
                                             fno_skip=fno_skip,
@@ -225,6 +229,7 @@ class UNO(nn.Module):
 
         if self.domain_padding is not None:
             x = self.domain_padding.pad(x)
+            
         output_shape = [int(round(i*j)) for (i,j) in zip(x.shape[-self.n_dim:], self.output_scaling_factor)]
         
         skip_outputs = {}
@@ -241,6 +246,8 @@ class UNO(nn.Module):
             if layer_idx == self.n_layers -1:
                 cur_output = output_shape
             x = self.fno_blocks[layer_idx](x, output_shape = cur_output)
+            
+            print(x.shape)
 
             if layer_idx in self.horizontal_skips_map.values():
                 #print("saving skip", layer_idx)
