@@ -30,8 +30,8 @@ class TnoBlock2d(nn.Module):
         self.n_head = n_head
         self.output_scaling_factor = output_scaling_factor
         
-        
-        self.K = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= n_modes,\
+        KQV_n_modes = [i//self.n_head for i in n_modes]
+        self.K = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= KQV_n_modes,\
                                             use_mlp=use_mlp, mlp=mlp, output_scaling_factor = 1/n_head,non_linearity=non_linearity,\
                                             norm=norm, preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip,mlp_dropout=0, mlp_expansion=0.5,\
                                             incremental_n_modes=incremental_n_modes, rank=rank, fft_norm=fft_norm,\
@@ -39,7 +39,7 @@ class TnoBlock2d(nn.Module):
                                             factorization=factorization,decomposition_kwargs=decomposition_kwargs,joint_factorization=joint_factorization,\
                                             SpectralConv= SpectralConv,n_layers=1)
 
-        self.Q = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= n_modes,\
+        self.Q = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= KQV_n_modes,\
                                             use_mlp=use_mlp, mlp=mlp, output_scaling_factor = 1/n_head,non_linearity=non_linearity,\
                                             norm=norm, preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip, mlp_dropout=0, mlp_expansion=0.5,\
                                             incremental_n_modes=incremental_n_modes, rank=rank, fft_norm=fft_norm,\
@@ -47,7 +47,7 @@ class TnoBlock2d(nn.Module):
                                             factorization=factorization,decomposition_kwargs=decomposition_kwargs,joint_factorization=joint_factorization,\
                                             SpectralConv= SpectralConv, n_layers=1)
 
-        self.V = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= n_modes,\
+        self.V = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= KQV_n_modes,\
                                             use_mlp=use_mlp, mlp=mlp, output_scaling_factor = 1/n_head,non_linearity=non_linearity,\
                                             norm=norm, preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip, mlp_dropout=0, mlp_expansion=0.5,\
                                             incremental_n_modes=incremental_n_modes, rank=rank, fft_norm=fft_norm,\
@@ -56,7 +56,7 @@ class TnoBlock2d(nn.Module):
                                             SpectralConv= SpectralConv,n_layers=1)
         self.nomalizer = normalizer
         
-        self.mixer = FNOBlocks(in_channels= self.n_head * self.token_codim, out_channels= self.token_codim, n_modes= n_modes,\
+        self.mixer = FNOBlocks(in_channels= self.n_head * self.token_codim, out_channels= self.token_codim, n_modes= KQV_n_modes,\
                                             use_mlp=use_mlp, mlp=mlp, output_scaling_factor = n_head,non_linearity=non_linearity,\
                                             norm=norm, preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip, mlp_dropout=0, mlp_expansion=0.5,\
                                             incremental_n_modes=incremental_n_modes, rank=rank, fft_norm=fft_norm,\
