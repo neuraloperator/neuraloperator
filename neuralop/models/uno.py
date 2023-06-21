@@ -159,11 +159,21 @@ class UNO(nn.Module):
             self.horizontal_skips_map = {}
             for i in range(n_layers//2,0,):
                 self.horizontal_skips_map[n_layers - i -1] = i
+        
+        # self.uno_scalings may be a 1d list specifying uniform scaling factor at each layer
+        # or a 2d list, where each row specifies scaling factors along each dimention.
+        
+        # To get the final (end to end) scaling factors we need to multiply 
+        # the scaling factors (a list) of all layer.
 
         self.output_scaling_factor = np.ones_like(self.uno_scalings[0])
+        # multiplying scaling factors
         for k in self.uno_scalings:
             self.output_scaling_factor = np.multiply(self.output_scaling_factor, k)
+        # making it a list 
         self.output_scaling_factor = self.output_scaling_factor.tolist()
+        
+        # list with a single element is replaced by the scaler.
         if len(self.output_scaling_factor) == 1:
             self.output_scaling_factor = self.output_scaling_factor[0]
 

@@ -59,6 +59,11 @@ class DomainPadding(nn.Module):
             output_pad = padding
 
             output_pad = [int(round(i*j)) for (i,j) in zip(self.output_scaling_factor,output_pad)]
+            
+            
+            # the F.pad(x, padding) funtion pads the tensor 'x' in reverse order of the "padding" list i.e. the last axis of tensor 'x' will be
+            # padded by the amount mention at the first position of the 'padding' vector.
+            # The details about F.pad can be found here : https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html
 
             if self.padding_mode == 'symmetric':
                 # Pad both sides
@@ -74,9 +79,7 @@ class DomainPadding(nn.Module):
             
             self._padding[f'{resolution}'] = padding
             
-            # the F.pad funtion pads the tensor 'x' in reverse order i.e. the last axis of tensor 'x' will be
-            # padded by the amount mention at the first position of the 'padding' vector.
-            # The details about F.pad can be found here : https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html
+
             padded = F.pad(x, padding, mode='constant')
 
             out_put_shape = padded.shape[2:]

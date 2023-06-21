@@ -36,10 +36,10 @@ def resample(x, res_scale, axis, output_shape = None):
     else:
         new_size = output_shape
 
-#     if len(axis) == 1:
-#         return F.interpolate(x, size = new_size[0], mode = 'linear', align_corners = True)
-#     if len(axis) == 2:
-#         return F.interpolate(x, size = new_size, mode = 'bicubic', align_corners = True, antialias = True)
+    if len(axis) == 1:
+        return F.interpolate(x, size = new_size[0], mode = 'linear', align_corners = True)
+    if len(axis) == 2:
+        return F.interpolate(x, size = new_size, mode = 'bicubic', align_corners = True, antialias = True)
 
     X = torch.fft.rfftn(x.float(), norm='forward', dim=axis)
     
