@@ -11,7 +11,7 @@ from .padding import DomainPadding
 from .fno_block import FNOBlocks,resample
 from .tfno import partialclass
 from .attention import TnoBlock2d
-from .spectral_convolution import SpectralConvKernel2d
+from .fino import SpectralConvKernel2d
 import numpy as np
 #this will be merged with the neural operator UNO
 
