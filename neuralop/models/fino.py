@@ -1,6 +1,12 @@
 ###
 # Can not be pushed directly in the NeuralOperator 
 ###
+from torch import nn
+import torch
+import itertools
+import torch_harmonics as th
+import tensorly as tl
+from tensorly.plugins import use_opt_einsum
 from .spectral_convolution import FactorizedSpectralConv
 
 class SpectralConvKernel2d(FactorizedSpectralConv):
