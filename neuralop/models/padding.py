@@ -16,12 +16,12 @@ class DomainPadding(nn.Module):
     This class works for any input resolution, as long as it is in the form
     `(batch-size, channels, d1, ...., dN)`
     """
-    def __init__(self, domain_padding, padding_mode='one-sided', output_scale_factor = None):
+    def __init__(self, domain_padding, padding_mode='one-sided', output_scaling_factor = None):
         super().__init__()
         self.domain_padding = domain_padding
         self.padding_mode = padding_mode.lower()
-        self.output_scale_factor = output_scale_factor
-        
+        self.output_scaling_factor = output_scaling_factor
+
         # dict(f'{resolution}'=padding) such that padded = F.pad(x, indices)
         self._padding = dict()
         
@@ -41,10 +41,10 @@ class DomainPadding(nn.Module):
 
         if isinstance(self.domain_padding, (float, int)):
             self.domain_padding = [float(self.domain_padding)]*len(resolution)
-        if self.output_scale_factor is None:
-            self.output_scale_factor = [1]*len(resolution)
-        elif isinstance(self.output_scale_factor, (float, int)):
-            self.output_scale_factor = [float(self.output_scale_factor)]*len(resolution)
+        if self.output_scaling_factor is None:
+            self.output_scaling_factor = [1]*len(resolution)
+        elif isinstance(self.output_scaling_factor, (float, int)):
+            self.output_scaling_factor = [float(self.output_scaling_factor)]*len(resolution)
 
         try:
             padding = self._padding[f'{resolution}']
@@ -57,7 +57,13 @@ class DomainPadding(nn.Module):
             
             
             output_pad = padding
-            output_pad = [int(round(i*j)) for (i,j) in zip(self.output_scale_factor,output_pad)]
+
+            output_pad = [int(round(i*j)) for (i,j) in zip(self.output_scaling_factor,output_pad)]
+            
+            
+            # the F.pad(x, padding) funtion pads the tensor 'x' in reverse order of the "padding" list i.e. the last axis of tensor 'x' will be
+            # padded by the amount mention at the first position of the 'padding' vector.
+            # The details about F.pad can be found here : https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html
 
             if self.padding_mode == 'symmetric':
                 # Pad both sides
@@ -74,11 +80,12 @@ class DomainPadding(nn.Module):
             self._padding[f'{resolution}'] = padding
             
 
-
             padded = F.pad(x, padding, mode='constant')
 
             out_put_shape = padded.shape[2:]
-            out_put_shape = [int(round(i*j)) for (i,j) in zip(self.output_scale_factor,out_put_shape)]
+
+            out_put_shape = [int(round(i*j)) for (i,j) in zip(self.output_scaling_factor,out_put_shape)]
+
             self._unpad_indices[f'{[i for i in out_put_shape]}'] = unpad_indices
 
             return padded
