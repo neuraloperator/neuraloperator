@@ -143,5 +143,4 @@ class TnoBlock2d(nn.Module):
         
         output =  self.end_block(output, output_shape = output_shape)
         
-        return output       
         return output

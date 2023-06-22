@@ -239,10 +239,6 @@ class UNO(nn.Module):
 
         if self.domain_padding is not None:
             x = self.domain_padding.pad(x)
-<<<<<<< HEAD
-=======
-            
->>>>>>> 5fb752836aeadf5c7ff43a727a49fc1b136a4286
         output_shape = [int(round(i*j)) for (i,j) in zip(x.shape[-self.n_dim:], self.output_scaling_factor)]
         
         skip_outputs = {}
