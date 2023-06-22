@@ -1,4 +1,4 @@
-from neuralop.models.tfno import Lifting, Projection
+from .tfno import Lifting, Projection
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partialmethod
@@ -122,6 +122,7 @@ class UNO(nn.Module):
                  domain_padding_mode='one-sided',
                  fft_norm='forward',
                  normalizer = None,  #only have efect on the transformer block. Nevertheless it might be a bad idea to include normalization as part of layer
+                 verbose = False,
                  **kwargs):
         super().__init__()
         self.n_layers = n_layers
@@ -160,21 +161,31 @@ class UNO(nn.Module):
             self.horizontal_skips_map = {}
             for i in range(n_layers//2,0,):
                 self.horizontal_skips_map[n_layers - i -1] = i
+        
+        # self.uno_scalings may be a 1d list specifying uniform scaling factor at each layer
+        # or a 2d list, where each row specifies scaling factors along each dimention.
+        
+        # To get the final (end to end) scaling factors we need to multiply 
+        # the scaling factors (a list) of all layer.
 
         self.output_scaling_factor = np.ones_like(self.uno_scalings[0])
+        # multiplying scaling factors
         for k in self.uno_scalings:
             self.output_scaling_factor = np.multiply(self.output_scaling_factor, k)
+        # making it a list 
         self.output_scaling_factor = self.output_scaling_factor.tolist()
+        
+        # list with a single element is replaced by the scaler.
         if len(self.output_scaling_factor) == 1:
             self.output_scaling_factor = self.output_scaling_factor[0]
 
         if isinstance(self.output_scaling_factor, (float, int)):
             self.output_scaling_factor = [self.output_scaling_factor]*self.n_dim
-        
-        print("calculated out factor", self.output_scaling_factor)
+        if verbose:
+            print("calculated out factor", self.output_scaling_factor)
         if domain_padding is not None and domain_padding > 0:
             self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode\
-            , output_scale_factor = self.output_scaling_factor)
+            , output_scaling_factor = self.output_scaling_factor)
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
@@ -192,7 +203,6 @@ class UNO(nn.Module):
 
             if i in self.horizontal_skips_map.keys():
                 prev_out = prev_out + self.uno_out_channels[self.horizontal_skips_map[i]]
-            print(self.uno_scalings[i])
 
             self.fno_blocks.append(self.operator_block(
                                             in_channels=prev_out,
