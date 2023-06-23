@@ -22,7 +22,8 @@ class Paramaters:
         pipe = ConfigPipeline(
             [
                 YamlConfig(
-                    '/home/user/project/neuraloperator/config/incremental.yaml',
+                    # Add the config path to the incremental config file
+                    '/home/user/neuraloperator/config/incremental.yaml',
                     config_name='default'),
                 ArgparseConfig(
                     infer_types=True,
