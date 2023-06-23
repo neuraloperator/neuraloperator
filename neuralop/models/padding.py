@@ -16,7 +16,7 @@ class DomainPadding(nn.Module):
     This class works for any input resolution, as long as it is in the form
     `(batch-size, channels, d1, ...., dN)`
     """
-    def __init__(self, domain_padding, padding_mode='one-sided', output_scaling_factor = None):
+    def __init__(self, domain_padding, padding_mode='one-sided', output_scaling_factor=None):
         super().__init__()
         self.domain_padding = domain_padding
         self.padding_mode = padding_mode.lower()
