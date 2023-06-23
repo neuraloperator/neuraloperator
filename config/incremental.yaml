@@ -71,3 +71,10 @@ default: &DEFAULT
 
     incremental_resolution:
       epoch_gap: 100
+    
+    dataset:
+      SmallDarcy: [1]
+      Darcy: [8, 4, 2, 1]
+      Burgers: [256, 64, 16, 8, 1]
+      NavierStokes: [16, 8, 4, 2, 1]
+      Vorticity: [128, 64, 32, 16, 1]

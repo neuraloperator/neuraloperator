@@ -22,14 +22,15 @@ class Optimizer(torch.optim.SGD):
             for p in group['params']:
                 if p.grad is None:
                     continue
-                
-                # return the last gradient as this corresponds to the frequency layer
+
+                # return the last gradient as this corresponds to the frequency
+                # layer
                 d_p = p.grad.data
 
                 p.data.add_(d_p, alpha=-group['lr'])
 
         return loss, d_p
-    
+
 # %%
 def check_grad_incremental():
     """_summary_
@@ -42,20 +43,21 @@ def check_grad_incremental():
     incremental_modes = (2, 2, 2, 2)
     index = list(incremental_modes)
     for dim in [1, 2, 3, 4]:
-        
+
         print("Dimension of spectral conv: ", dim)
-        conv = FactorizedSpectralConv(2, 2, modes[:dim], n_layers=1, scale='auto', bias=False)
+        conv = FactorizedSpectralConv(
+            2, 2, modes[:dim], n_layers=1, scale='auto', bias=False)
 
         original_weights = conv.weight[0].to_tensor().clone()
-            
-        x = torch.randn(2, 2, *(6, )*dim, requires_grad=True)
-        y = torch.randn(2, 2, *(6, )*dim, requires_grad=True)
-        
+
+        x = torch.randn(2, 2, *(6, ) * dim, requires_grad=True)
+        y = torch.randn(2, 2, *(6, ) * dim, requires_grad=True)
+
         # define a loss function and optimizer
         criterion = nn.MSELoss()
-        optimizer = Optimizer(conv.parameters(), lr = 0.01)
+        optimizer = Optimizer(conv.parameters(), lr=0.01)
         # run the input data through the model and update the weights
-        
+
         # Dynamically reduce the number of modes in Fourier space
         conv.incremental_n_modes = incremental_modes[:dim]
         for i in range(5):
@@ -65,18 +67,20 @@ def check_grad_incremental():
             loss.backward()
             loss, grad = optimizer.step()
 
-        # check the gradients of the non used incremental modes are zero    
-        assert torch.allclose(grad[:, :, index[dim-1]:], torch.zeros_like(grad[:, :, index[dim-1]:]))
-        
+        # check the gradients of the non used incremental modes are zero
+        assert torch.allclose(
+            grad[:, :, index[dim - 1]:], torch.zeros_like(grad[:, :, index[dim - 1]:]))
+
         # check the gradients of the used incremental modes are non zero
-        assert not torch.allclose(grad[:, :, :index[dim-1]], torch.zeros_like(grad[:, :, :index[dim-1]]))
-            
+        assert not torch.allclose(
+            grad[:, :, :index[dim - 1]], torch.zeros_like(grad[:, :, :index[dim - 1]]))
+
         new_weights = conv.weight[0].to_tensor().clone()
-        
+
         # same shape (no increase in dimensions)
-        assert new_weights.shape == original_weights.shape      
-        
-        print("Passed test for dimension: ", dim, "\n")  
-            
+        assert new_weights.shape == original_weights.shape
+
+        print("Passed test for dimension: ", dim, "\n")
+
 # Test method
 check_grad_incremental()
