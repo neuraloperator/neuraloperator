@@ -96,35 +96,34 @@ class UNO(nn.Module):
                  lifting_channels=256,
                  projection_channels=256,
                  n_layers=4,
-                 uno_out_channels = None,
-                 uno_n_modes = None,
-                 uno_scalings = None,
-                 horizontal_skips_map = None,
+                 uno_out_channels=None,
+                 uno_n_modes=None,
+                 uno_scalings=None,
+                 horizontal_skips_map=None,
                  incremental_n_modes=None,
                  use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
                  non_linearity=F.gelu,
                  norm=None, preactivation=False,
                  fno_skip='linear',
-                 horizontal_skip = 'linear',
+                 horizontal_skip='linear',
                  mlp_skip='soft-gating',
                  separable=False,
                  factorization=None,
                  rank=1.0,
                  joint_factorization=False, 
                  fixed_rank_modes=False,
-                 integral_operator = FactorizedSpectralConv,
-                 operator_block = FNOBlocks,
+                 integral_operator=FactorizedSpectralConv,
+                 operator_block=FNOBlocks,
                  implementation='factorized',
                  decomposition_kwargs=dict(),
                  domain_padding=None,
                  domain_padding_mode='one-sided',
                  fft_norm='forward',
-                 normalizer = None,  #only have efect on the transformer block. Nevertheless it might be a bad idea to include normalization as part of layer
-                 verbose = False,
+                 normalizer=None,
+                 verbose=False,
                  **kwargs):
         super().__init__()
         self.n_layers = n_layers
-        print(uno_out_channels)
         assert len(uno_out_channels) == n_layers, "Output channels for all layers are not given"
         assert len(uno_n_modes) == n_layers, "number of modes for all layers are not given"
         assert len(uno_scalings) == n_layers, "Scaling factor for all layers are not given"
@@ -155,6 +154,7 @@ class UNO(nn.Module):
         self.operator_block = operator_block
         self.integral_operator = integral_operator
         
+        #constructing default skip maps
         if self.horizontal_skips_map is None:
             self.horizontal_skips_map = {}
             for i in range(n_layers//2,0,):
@@ -162,7 +162,6 @@ class UNO(nn.Module):
         
         # self.uno_scalings may be a 1d list specifying uniform scaling factor at each layer
         # or a 2d list, where each row specifies scaling factors along each dimention.
-        
         # To get the final (end to end) scaling factors we need to multiply 
         # the scaling factors (a list) of all layer.
 
@@ -209,24 +208,24 @@ class UNO(nn.Module):
                                             use_mlp=use_mlp, 
                                             mlp_dropout=mlp_dropout, 
                                             mlp_expansion=mlp_expansion,
-                                            output_scaling_factor = [self.uno_scalings[i]],
+                                            output_scaling_factor=[self.uno_scalings[i]],
                                             non_linearity=non_linearity,
                                             norm=norm, preactivation=preactivation,
                                             fno_skip=fno_skip,
                                             mlp_skip=mlp_skip,
                                             incremental_n_modes=incremental_n_modes,
                                             rank=rank,
-                                            SpectralConv = self.integral_operator,
+                                            SpectralConv=self.integral_operator,
                                             fft_norm=fft_norm,
                                             fixed_rank_modes=fixed_rank_modes, 
                                             implementation=implementation,
                                             separable=separable,
                                             factorization=factorization,
                                             decomposition_kwargs=decomposition_kwargs,
-                                            joint_factorization=joint_factorization, normalizer = normalizer))
+                                            joint_factorization=joint_factorization, normalizer=normalizer))
             
             if i in self.horizontal_skips_map.values():
-                self.horizontal_skips[str(i)] = skip_connection( self.uno_out_channels[i],  \
+                self.horizontal_skips[str(i)]=skip_connection( self.uno_out_channels[i],  \
                 self.uno_out_channels[i], type=horizontal_skip, n_dim=self.n_dim)
 
             prev_out = self.uno_out_channels[i]
@@ -251,11 +250,11 @@ class UNO(nn.Module):
                 output_scaling_factors = [m/n for (m,n) in zip(x.shape,skip_val.shape)]
                 output_scaling_factors = output_scaling_factors[-1*self.n_dim:]
                 t = resample(skip_val,output_scaling_factors, list(range(-self.n_dim, 0)))
-                x = torch.cat([x,t], dim = 1)
+                x = torch.cat([x,t], dim=1)
                 
             if layer_idx == self.n_layers -1:
                 cur_output = output_shape
-            x = self.fno_blocks[layer_idx](x, output_shape = cur_output)
+            x = self.fno_blocks[layer_idx](x, output_shape=cur_output)
             
             print(x.shape)
 
