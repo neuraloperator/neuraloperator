@@ -17,7 +17,7 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
                  n_layers=1, separable=False, output_scaling_factor=None,
                  rank=0.5, factorization='cp', implementation='reconstructed', 
                  fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict(),
-                 init_std='auto', fft_norm='forward', fft_type = 'sht',  sht_nlat = 180, sht_nlon = 360, sht_grid="legendre-gauss", sht_norm="ortho"):
+                 init_std='auto', fft_norm='forward', fft_type = 'sht',  sht_nlat = 180, sht_nlon = 360, sht_grid="equiangular", sht_norm="backward", frequency_mixer = False):
         super().__init__(in_channels, out_channels, n_modes, incremental_n_modes, bias,
                  n_layers, separable, output_scaling_factor,
                  rank, factorization, implementation, 
@@ -27,13 +27,14 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
         #self.shared = shared
         
         hm1, hm2 = self.half_n_modes[0], self.half_n_modes[1]
-        if self.factorization is None:
+        if self.factorization is None or not frequency_mixer:
             self.W1 = nn.Parameter(torch.empty(hm1, hm2, hm1, hm2, dtype = torch.cfloat))
             self.W2 = nn.Parameter(torch.empty(hm1, hm2, hm1, hm2, dtype = torch.cfloat))
             self.reset_parameter()
         self.sht_grid = sht_grid
         self.sht_norm = sht_norm
         self.fft_type = fft_type
+        self.frequency_mixer = frequency_mixer
         
         ####
         # This following line might have a version dependent nature
@@ -71,7 +72,7 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
         #uses separate MLP to mix mode along each co-dim/channels
     
 
-        if self.factorization is None:
+        if self.factorization is None or not self.frequency_mixer:
             x[:,:, :self.half_n_modes[0], :self.half_n_modes[1]] = self.mode_mixer(x[:,:, :self.half_n_modes[0], :self.half_n_modes[1]].clone(), self.W1)
             x[:,:, -self.half_n_modes[0]:, :self.half_n_modes[1]] = self.mode_mixer(x[:,:, -self.half_n_modes[0]:, :self.half_n_modes[1]].clone(), self.W2)
         

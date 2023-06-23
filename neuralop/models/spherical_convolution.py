@@ -173,7 +173,7 @@ class FactorizedSphericalConv(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.joint_factorization = joint_factorization
-
+        
         # We index quadrands only
         # n_modes is the total number of modes kept along each dimension
         # half_n_modes is half of that except in the last mode, correponding to the number of modes to keep in *each* quadrant for each dim
@@ -312,7 +312,7 @@ class FactorizedSphericalConv(nn.Module):
             self.weight_slices = [slice(None)]*2 + [slice(None, n//2) for n in self._incremental_n_modes]
             self.half_n_modes = [m//2 for m in self._incremental_n_modes]
 
-    def forward(self, x, indices=0):
+    def forward(self, x, indices=0, output_shape = None):
         """Generic forward pass for the Factorized Spectral Conv
 
         Parameters
@@ -328,9 +328,12 @@ class FactorizedSphericalConv(nn.Module):
         """
         batchsize, channels, height, width = x.shape
 
-        if self.output_scaling_factor is not None:
-            width = int(round(width*self.output_scaling_factor[0]))
-            height = int(round(height*self.output_scaling_factor[1]))
+        if self.output_scaling_factor is not None and output_shape is None:
+            width = int(round(width*self.output_scaling_factor[indices][1]))
+            height = int(round(height*self.output_scaling_factor[indices][0]))
+        elif output_shape is not None:
+            height, width = output_shape[0], output_shape[1]
+            
 
         sht, isht = self._get_sht(height, width)
         
