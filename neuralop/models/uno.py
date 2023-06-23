@@ -165,12 +165,10 @@ class UNO(nn.Module):
         # To get the final (end to end) scaling factors we need to multiply 
         # the scaling factors (a list) of all layer.
 
-        self.output_scaling_factor = np.ones_like(self.uno_scalings[0])
+        self.output_scaling_factor = [1]*len(self.uno_scalings[0])
         # multiplying scaling factors
         for k in self.uno_scalings:
-            self.output_scaling_factor = np.multiply(self.output_scaling_factor, k)
-        # making it a list 
-        self.output_scaling_factor = self.output_scaling_factor.tolist()
+            self.output_scaling_factor = [i*j for (i,j) in zip(self.output_scaling_factor, k)]
         
         # list with a single element is replaced by the scaler.
         if len(self.output_scaling_factor) == 1:
@@ -238,7 +236,6 @@ class UNO(nn.Module):
 
         if self.domain_padding is not None:
             x = self.domain_padding.pad(x)
-            
         output_shape = [int(round(i*j)) for (i,j) in zip(x.shape[-self.n_dim:], self.output_scaling_factor)]
         
         skip_outputs = {}
@@ -256,7 +253,6 @@ class UNO(nn.Module):
                 cur_output = output_shape
             x = self.fno_blocks[layer_idx](x, output_shape=cur_output)
             
-            print(x.shape)
 
             if layer_idx in self.horizontal_skips_map.values():
                 #print("saving skip", layer_idx)
