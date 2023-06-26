@@ -2,6 +2,8 @@ from .fno_block import FNOBlocks
 import torch.nn as nn
 from .spectral_convolution import FactorizedSpectralConv
 import torch.nn.functional as F
+from einops import rearrange
+from einops.layers.torch import Rearrange
 from .fino import SpectralConvKernel2d
 import torch
 
@@ -24,7 +26,7 @@ class TnoBlock2d(nn.Module):
                  fixed_rank_modes=False,
                  implementation='factorized',
                  decomposition_kwargs=dict(),
-                 fft_norm='forward', normalizer = None, **kwarg):
+                 fft_norm='forward', normalizer = 'layer_norm', **kwarg):
         
         super().__init__()
         self.token_codim = token_codim
@@ -84,57 +86,35 @@ class TnoBlock2d(nn.Module):
         
         assert x.shape[1]%self.token_codim == 0
         
-        x = x.view(-1, self.token_codim, in_res_x, in_res_y)
+        x = rearrange(x, 'b (t d) h w -> b t d h w', d=self.token_codim)
+        x = rearrange(x, 'b t d h w -> (b t) d h w')
         #print(x.shape)
         k = self.K(x)
         q = self.Q(x)
         v = self.V(x)
         
-        #print("vales and keys 0", v.shape, k.shape)
-        
         res_x, res_y = k.shape[-2], k.shape[-1]
         value_res_x, value_res_y = v.shape[-2], v.shape[-1]
         
-        k = k.view(batch, n_token, self.token_codim * self.n_head, res_x, res_y)
-        q = q.view(batch, n_token, self.token_codim * self.n_head, res_x, res_y)
-        v = v.view(batch, n_token, self.token_codim * self.n_head, value_res_x, value_res_y)
-        
-        #print("vales and keys 1", v.shape, k.shape)
-        
-        
-        k = k.view(batch, n_token, self.n_head, self.token_codim, res_x, res_y).permute(0, 2,1,3,4,5)
-        q = q.view(batch, n_token, self.n_head, self.token_codim, res_x, res_y).permute(0, 2,1,3,4,5)
-        v = v.view(batch, n_token, self.n_head, self.token_codim, value_res_x, value_res_y).permute(0, 2,1,3,4,5)
-        
-        #print("vales and keys 2", v.shape, k.shape)
-        
-        
-        k = k.view(batch, self.n_head, n_token, -1).transpose(-1,-2)
-        q = q.view(batch,  self.n_head, n_token, -1)
-        
-        
+        k = rearrange(k, '(b t) (a d) h w -> b a t (d h w)', b=batch, a=self.n_head )
+        q = rearrange(q, '(b t) (a d) h w -> b a t (d h w)', b=batch, a=self.n_head )
+        v = rearrange(v, '(b t) (a d) h w -> b a t (d h w)', b=batch, a=self.n_head )
 
-        # normalize dot product implemented for 2D data(latitute and longitude) 
 
-        dprod =  torch.matmul(q, k)/k.shape[-1]
+        dprod = torch.matmul(q, k.transpose(-1, -2))/k.shape[-1]
 
         dprod = F.softmax(dprod, dim = -1)
                 
-        
-        v = v.view(batch, self.n_head, n_token, -1)
-
         output =  torch.matmul(dprod, v)
         
-        output = output.view(batch,self.n_head,  n_token, self.token_codim, value_res_x, value_res_y).permute(0,2,1,3,4,5)
-        
-        output = output.reshape(-1, self.n_head,  self.token_codim,  value_res_x, value_res_y).reshape(-1, self.n_head*self.token_codim, value_res_x, value_res_y)
+        output = rearrange(output, 'b a t (d h w) -> b t a d h w', d=self.token_codim, h=value_res_x, w=value_res_y)
         
         if self.n_head != 1:
+            output = rearrange(output, 'b t a d h w -> (b t) (a d) h w')
             output = self.mixer(output, output_shape = (in_res_x, in_res_y))
-        
-
-        
-        output = output.view(batch, n_token, self.token_codim, in_res_x, in_res_y).view(batch, -1, in_res_x, in_res_y)
+            output = rearrange(output, '(b t) d h w -> b (t d) h w', b=batch)
+        else:
+            output = output = rearrange(output, 'b t a d h w -> b (t a d) h w')
         
         
         if self.nomalizer is not None:
