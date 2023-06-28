@@ -31,8 +31,8 @@ if config.wandb.log and is_logger:
         wandb_name = config.wandb.name
     else:
         wandb_name = '_'.join(
-            f'{var}' for var in [config_name, config.tfno2d.n_layers, config.tfno2d.n_modes_width, config.tfno2d.n_modes_height,
-                                 config.tfno2d.hidden_channels, config.tfno2d.factorization, config.tfno2d.rank, 
+            f'{var}' for var in [config_name, config.tfno2d.n_layers, config.tfno2d.modes_width, config.tfno2d.modes_height,
+                                 config.tfno2d.width, config.tfno2d.factorization, config.tfno2d.rank, 
                                  config.patching.levels, config.patching.padding])
     wandb.init(config=config, name=wandb_name, group=config.wandb.group,
                project=config.wandb.project, entity=config.wandb.entity)
