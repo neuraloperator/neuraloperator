@@ -124,6 +124,7 @@ if config.verbose:
 
 trainer = Trainer(model, n_epochs=config.opt.n_epochs,
                   device=device,
+                  amp_autocast=False,
                   mg_patching_levels=config.patching.levels,
                   mg_patching_padding=config.patching.padding,
                   mg_patching_stitching=config.patching.stitching,
