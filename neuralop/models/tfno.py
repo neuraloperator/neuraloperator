@@ -66,6 +66,10 @@ class FNO(nn.Module):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
+    fno_block_precision : str {'full', 'half', 'mixed'}
+        if 'full', the FNO Block runs in full precision
+        if 'half', the FFT, contraction, and inverse FFT run in half precision
+        if 'mixed', the contraction and inverse FFT run in half precision
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -112,6 +116,7 @@ class FNO(nn.Module):
                  n_layers=4,
                  output_scaling_factor=None,
                  incremental_n_modes=None,
+                 fno_block_precision='full',
                  use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
                  non_linearity=F.gelu,
                  norm=None, preactivation=False,
@@ -150,6 +155,7 @@ class FNO(nn.Module):
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation
+        self.fno_block_precision = fno_block_precision
 
         # See the class' property for underlying mechanism
         # When updated, change should be reflected in fno blocks
@@ -177,6 +183,7 @@ class FNO(nn.Module):
             fno_skip=fno_skip,
             mlp_skip=mlp_skip,
             incremental_n_modes=incremental_n_modes,
+            fno_block_precision=fno_block_precision,
             rank=rank,
             fft_norm=fft_norm,
             fixed_rank_modes=fixed_rank_modes, 
@@ -245,6 +252,10 @@ class FNO1d(FNO):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
+    fno_block_precision : str {'full', 'half', 'mixed'}
+        if 'full', the FNO Block runs in full precision
+        if 'half', the FFT, contraction, and inverse FFT run in half precision
+        if 'mixed', the contraction and inverse FFT run in half precision
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -292,6 +303,7 @@ class FNO1d(FNO):
         lifting_channels=256,
         projection_channels=256,
         incremental_n_modes=None,
+        fno_block_precision='full',
         n_layers=4,
         output_scaling_factor=None,
         non_linearity=F.gelu,
@@ -322,6 +334,7 @@ class FNO1d(FNO):
             non_linearity=non_linearity,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             incremental_n_modes=incremental_n_modes,
+            fno_block_precision=fno_block_precision,
             norm=norm,
             skip=skip,
             separable=separable,
@@ -367,6 +380,10 @@ class FNO2d(FNO):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
+    fno_block_precision : str {'full', 'half', 'mixed'}
+        if 'full', the FNO Block runs in full precision
+        if 'half', the FFT, contraction, and inverse FFT run in half precision
+        if 'mixed', the contraction and inverse FFT run in half precision
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -417,6 +434,7 @@ class FNO2d(FNO):
         n_layers=4,
         output_scaling_factor=None,
         incremental_n_modes=None,
+        fno_block_precision='full',
         non_linearity=F.gelu,
         use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
         norm=None,
@@ -445,6 +463,7 @@ class FNO2d(FNO):
             non_linearity=non_linearity,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             incremental_n_modes=incremental_n_modes,
+            fno_block_precision=fno_block_precision,
             norm=norm,
             skip=skip,
             separable=separable,
@@ -494,6 +513,10 @@ class FNO3d(FNO):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
+    fno_block_precision : str {'full', 'half', 'mixed'}
+        if 'full', the FNO Block runs in full precision
+        if 'half', the FFT, contraction, and inverse FFT run in half precision
+        if 'mixed', the contraction and inverse FFT run in half precision
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -544,6 +567,7 @@ class FNO3d(FNO):
         n_layers=4,
         output_scaling_factor=None,
         incremental_n_modes=None,
+        fno_block_precision='full',
         non_linearity=F.gelu,
         use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
         norm=None,
@@ -571,6 +595,7 @@ class FNO3d(FNO):
             output_scaling_factor=None,
             non_linearity=non_linearity,
             incremental_n_modes=incremental_n_modes,
+            fno_block_precision=fno_block_precision,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             norm=norm,
             skip=skip,

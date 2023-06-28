@@ -12,6 +12,7 @@ class FNOBlocks(nn.Module):
                  output_scaling_factor=None,
                  n_layers=1,
                  incremental_n_modes=None,
+                 fno_block_precision='full',
                  use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
                  non_linearity=F.gelu,
                  norm=None, ada_in_features=None,
@@ -42,6 +43,7 @@ class FNOBlocks(nn.Module):
         self.output_scaling_factor = output_scaling_factor
 
         self._incremental_n_modes = incremental_n_modes
+        self.fno_block_preicison = fno_block_precision
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.n_layers = n_layers
@@ -66,6 +68,7 @@ class FNOBlocks(nn.Module):
                 self.in_channels, self.out_channels, self.n_modes, 
                 output_scaling_factor=output_scaling_factor,
                 incremental_n_modes=incremental_n_modes,
+                fno_block_precision=fno_block_precision,
                 rank=rank,
                 fft_norm=fft_norm,
                 fixed_rank_modes=fixed_rank_modes, 
