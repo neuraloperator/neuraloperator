@@ -151,7 +151,7 @@ class FactorizedSpectralConv(nn.Module):
         Number of output channels
     n_modes : int tuple
         total number of modes to keep in Fourier Layer, along each dim
-    separable : bool, default is True
+    separable : bool, default is False
     init_std : float or 'auto', default is 'auto'
         std to use for the init
     n_layers : int, optional
@@ -242,7 +242,7 @@ class FactorizedSpectralConv(nn.Module):
         if separable:
             if in_channels != out_channels:
                 raise ValueError('To use separable Fourier Conv, in_channels must be equal to out_channels, ',
-                                 f'but got {in_channels=} and {out_channels=}')
+                                 f'but got in_channels={in_channels} and out_channels={out_channels}.')
             weight_shape = (in_channels, *half_total_n_modes)
         else:
             weight_shape = (in_channels, out_channels, *half_total_n_modes)

@@ -1,5 +1,5 @@
 """
-Author: Miguel Liu-Schiaffini (mliuschi@caltech.edu)
+Author: Miguel Liu-Schiaffini (mliuschi@caltech.edu) and Zelin Zhao (sjtuytc@gmail.com)
     `FourierLayer2d` by Zongyi Li 
 
 This file implements a recurrent neural operator (RNO) based on the gated recurrent unit (GRU)
@@ -18,32 +18,213 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-import operator
-from functools import reduce
-import scipy.io
-import sys
-sys.path.append('ks')
-from libs.models.spectral_conv import SpectralConv2d
-from libs.models.transformer_models import SpectralRegressor, SimpleTransformerEncoderLayer
-from libs.utilities3 import *
-from libs.models.attention_layers import PositionalEncoding, NeRFPosEmbedding
-
-torch.manual_seed(0)
-np.random.seed(0)
+from torch.nn.parameter import Parameter
+from functools import partial
+from torch.nn.init import xavier_normal_
+from .spectral_convolution import FactorizedSpectralConv2d
 
 
+def default(value, d):
+    '''
+    helper taken from https://github.com/lucidrains/linear-attention-transformer
+    '''
+    return d if value is None else value
+
+    
+class SpectralConv2d(nn.Module):
+    def __init__(self, in_channels, out_channels, modes1, modes2, norm='ortho'):
+        super(SpectralConv2d, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.modes1 = modes1
+        self.modes2 = modes2
+        
+        scale = 1 / (in_channels * out_channels)
+        self.fourier_weight = nn.ParameterList([
+            nn.Parameter(torch.FloatTensor(in_channels, out_channels, modes1, modes2, 2))
+            for _ in range(2)
+        ])
+        for param in self.fourier_weight:
+            nn.init.xavier_normal_(param, gain=scale * np.sqrt(in_channels + out_channels))
+        self.norm = norm
+
+    @staticmethod
+    def complex_matmul_2d(a, b):
+        # (batch, in_channel, x, y), (in_channel, out_channel, x, y) -> (batch, out_channel, x, y)
+        op = partial(torch.einsum, "bixy,ioxy->boxy")
+        return torch.stack([
+            op(a[..., 0], b[..., 0]) - op(a[..., 1], b[..., 1]),
+            op(a[..., 1], b[..., 0]) + op(a[..., 0], b[..., 1])
+        ], dim=-1)
+
+    def forward(self, x):
+        '''
+        Input: (-1, n_grid**2, in_features) or (-1, n_grid, n_grid, in_features)
+        Output: (-1, n_grid**2, out_features) or (-1, n_grid, n_grid, out_features)
+        '''
+        batchsize = x.shape[0]
+        n = x.shape[-1]
+        x_ft = torch.fft.rfft2(x, s=(n, n), norm=self.norm)
+        x_ft = torch.stack([x_ft.real, x_ft.imag], dim=-1)
+
+        out_ft = torch.zeros(x.size(0), self.out_channels, n, n // 2 + 1, 2, device=x.device)
+        out_ft[:, :, :self.modes1, :self.modes2] = self.complex_matmul_2d(
+            x_ft[:, :, :self.modes1, :self.modes2], self.fourier_weight[0])
+        out_ft[:, :, -self.modes1:, :self.modes2] = self.complex_matmul_2d(
+            x_ft[:, :, -self.modes1:, :self.modes2], self.fourier_weight[1])
+        out_ft = torch.complex(out_ft[..., 0], out_ft[..., 1])
+        x = torch.fft.irfft2(out_ft, s=(n, n), norm=self.norm)
+        return x
+
+
+class SpectralConvWithFC(nn.Module):
+    def __init__(self, in_channels, out_channels, modes1, modes2, n_grid=None, dropout=0.1, norm='ortho',
+                 activation='silu', return_freq=False, debug=False):
+        super(SpectralConvWithFC, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.spec_conv = SpectralConv2d(in_channels, out_channels, modes1, modes2, norm)
+        self.linear = nn.Linear(in_channels, out_channels)
+        self.activation = nn.SiLU() if activation == 'silu' else nn.ReLU()
+        self.dropout = nn.Dropout(dropout)
+        self.return_freq = return_freq
+
+    def forward(self, x):
+        '''
+        Input: (-1, n_grid, n_grid, in_features)
+        Output: (-1, n_grid, n_grid, out_features)
+        '''
+        res = self.linear(x)
+        x = self.dropout(x)
+        x = x.permute(0, 3, 1, 2)
+        x = self.spec_conv(x)
+        x = x.permute(0, 2, 3, 1)
+        x = self.activation(x + res)
+        if self.return_freq:
+            raise RuntimeError("Not supported return freq")
+        else:
+            return x
+        
+    
+class SpectralRegressor(nn.Module):
+    def __init__(self, in_dim,
+                 n_hidden,
+                 freq_dim,
+                 out_dim,
+                 modes: int,
+                 num_spectral_layers: int = 2,
+                 n_grid=None,
+                 dim_feedforward=None,
+                 spacial_fc=False,
+                 spacial_dim=2,
+                 return_freq=False,
+                 return_latent=False,
+                 normalizer=None,
+                 activation='silu',
+                 last_activation=True,
+                 dropout=0.1,
+                 debug=False):
+        super(SpectralRegressor, self).__init__()
+        '''
+        A wrapper for both SpectralConv1d and SpectralConv2d
+        Ref: Li et 2020 FNO paper
+        https://github.com/zongyi-li/fourier_neural_operator/blob/master/fourier_2d.py
+        A new implementation incoporating all spacial-based FNO
+        in_dim: input dimension, (either n_hidden or spacial dim)
+        n_hidden: number of hidden features out from attention to the fourier conv
+        '''
+        if spacial_dim == 2:  # 2d, function + (x,y)
+            spectral_conv = SpectralConvWithFC
+        elif spacial_dim == 1:  # 1d, function + x
+            raise NotImplementedError("3D not implemented.")
+        activation = default(activation, 'silu')
+        self.activation = nn.SiLU() if activation == 'silu' else nn.ReLU()
+        dropout = default(dropout, 0.1)
+        self.spacial_fc = spacial_fc  # False in Transformer
+        if self.spacial_fc:
+            self.fc = nn.Linear(in_dim + spacial_dim, n_hidden)
+        self.spectral_conv = nn.ModuleList([spectral_conv(in_channels=n_hidden,
+                                                          out_channels=freq_dim,
+                                                          modes1=modes,
+                                                          modes2=modes,
+                                                          n_grid=n_grid,
+                                                          dropout=dropout,
+                                                          activation=activation,
+                                                          return_freq=return_freq,
+                                                          debug=debug)])
+        for _ in range(num_spectral_layers - 1):
+            self.spectral_conv.append(spectral_conv(in_channels=freq_dim,
+                                                    out_channels=freq_dim,
+                                                    modes1=modes,
+                                                    modes2=modes,
+                                                    n_grid=n_grid,
+                                                    dropout=dropout,
+                                                    activation=activation,
+                                                    return_freq=return_freq,
+                                                    debug=debug))
+        if not last_activation:
+            self.spectral_conv[-1].activation = Identity()
+
+        self.n_grid = n_grid  # dummy for debug
+        self.dim_feedforward = default(dim_feedforward, 2*spacial_dim*freq_dim)
+        self.regressor = nn.Sequential(
+            nn.Linear(freq_dim, self.dim_feedforward),
+            self.activation,
+            nn.Linear(self.dim_feedforward, out_dim),
+        )
+        self.normalizer = normalizer
+        self.return_freq = return_freq
+        self.return_latent = return_latent
+        self.debug = debug
+
+    def forward(self, x, edge=None, pos=None, grid=None):
+        '''
+        2D:
+            Input: (-1, n, n, in_features)
+            Output: (-1, n, n, n_targets)
+        1D:
+            Input: (-1, n, in_features)
+            Output: (-1, n, n_targets)
+        '''
+        x_latent = []
+        x_fts = []
+
+        if self.spacial_fc:
+            x = torch.cat([x, grid], dim=-1)
+            x = self.fc(x)
+        for layer in self.spectral_conv:
+            if self.return_freq:
+                x, x_ft = layer(x)
+                x_fts.append(x_ft.contiguous())
+            else:
+                x = layer(x)
+
+            if self.return_latent:
+                x_latent.append(x.contiguous())
+
+        x = self.regressor(x)
+
+        if self.normalizer:
+            x = self.normalizer.inverse_transform(x)
+        if self.return_freq or self.return_latent:
+            return x, dict(preds_freq=x_fts, preds_latent=x_latent)
+        else:
+            return x
+
+    
 class FourierLayer2d(nn.Module):
     def __init__(self, modes1, modes2, width):
         super(FourierLayer2d, self).__init__()
         self.modes1 = modes1
         self.modes2 = modes2
         self.width = width
-        self.spec_conv = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
+        self.spec_conv = SpectralConv2d(self.width, self.width, self.modes1, self.modes2, norm='ortho')
         self.norm_conv1d = nn.Conv1d(self.width, self.width, 1)
 
     def forward(self, x):
         batch_size, dim, dom_size1, dom_size2 = x.shape
-        x1 = self.spec_conv(x)
+        # x1 = self.spec_conv(x.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)  # use v2
+        x1 = self.spec_conv(x)  # use v1
         x2 = self.norm_conv1d(x.reshape((batch_size, dim, dom_size1 * dom_size2))).view(batch_size, self.width, dom_size1, dom_size2)
         return x1 + x2
 
@@ -110,14 +291,14 @@ class RNO_layer(nn.Module):
             return h
 
 
-class RNO2dObserverOld(nn.Module):
+class RNO2d(nn.Module):
     def __init__(self, modes1, modes2, width, recurrent_index, layer_num=3, pad_amount=None, pad_dim='1'):
         """
             `pad_dim` can be '1', '2', or 'both', and this decides which of the two space dimensions to pad
             `pad_amount` is a tuple that determines how much to pad each dimension by, if `pad_dim`
             specifies that dimension should be padded.
         """
-        super(RNO2dObserverOld, self).__init__()
+        super(RNO2d, self).__init__()
         self.modes1 = modes1
         self.modes1 = modes2
         self.width = width
