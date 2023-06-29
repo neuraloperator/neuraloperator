@@ -15,6 +15,7 @@ class FNOBlocks(nn.Module):
                  fno_block_precision='full',
                  use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
                  non_linearity=F.gelu,
+                 stabilizer=None,
                  norm=None, ada_in_features=None,
                  preactivation=False,
                  fno_skip='linear',
@@ -49,6 +50,7 @@ class FNOBlocks(nn.Module):
         self.n_layers = n_layers
         self.joint_factorization = joint_factorization
         self.non_linearity = non_linearity
+        self.stabilizer = stabilizer
         self.rank = rank
         self.factorization = factorization
         self.fixed_rank_modes = fixed_rank_modes
@@ -143,6 +145,9 @@ class FNOBlocks(nn.Module):
             if self.convs.output_scaling_factor is not None:
                 x_skip_mlp = resample(x_skip_mlp, self.output_scaling_factor[index]\
                                       , list(range(-len(self.output_scaling_factor[index]), 0)), output_shape = output_shape )
+
+        if self.stabilizer == 'tanh':
+            x = torch.tanh(x)
 
         x_fno = self.convs(x, index, output_shape = output_shape)
 

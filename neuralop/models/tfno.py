@@ -70,6 +70,8 @@ class FNO(nn.Module):
         if 'full', the FNO Block runs in full precision
         if 'half', the FFT, contraction, and inverse FFT run in half precision
         if 'mixed', the contraction and inverse FFT run in half precision
+    stabilizer : str {'tanh'} or None, optional
+        By default None, otherwise tanh is used before FFT in the FNO block 
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -119,6 +121,7 @@ class FNO(nn.Module):
                  fno_block_precision='full',
                  use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
                  non_linearity=F.gelu,
+                 stabilizer=None, 
                  norm=None, preactivation=False,
                  fno_skip='linear',
                  mlp_skip='soft-gating',
@@ -178,7 +181,8 @@ class FNO(nn.Module):
             n_modes=self.n_modes,
             output_scaling_factor=output_scaling_factor,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
-            non_linearity=non_linearity,
+            non_linearity=non_linearity, 
+            stabilizer=stabilizer,
             norm=norm, preactivation=preactivation,
             fno_skip=fno_skip,
             mlp_skip=mlp_skip,
@@ -256,6 +260,8 @@ class FNO1d(FNO):
         if 'full', the FNO Block runs in full precision
         if 'half', the FFT, contraction, and inverse FFT run in half precision
         if 'mixed', the contraction and inverse FFT run in half precision
+    stabilizer : str {'tanh'} or None, optional
+        By default None, otherwise tanh is used before FFT in the FNO block 
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -307,6 +313,7 @@ class FNO1d(FNO):
         n_layers=4,
         output_scaling_factor=None,
         non_linearity=F.gelu,
+        stabilizer=None,
         use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
         norm=None,
         skip='soft-gating',
@@ -331,7 +338,8 @@ class FNO1d(FNO):
             projection_channels=projection_channels,
             n_layers=n_layers,
             output_scaling_factor=None,
-            non_linearity=non_linearity,
+            non_linearity=non_linearity, 
+            stabilizer=stabilizer,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             incremental_n_modes=incremental_n_modes,
             fno_block_precision=fno_block_precision,
@@ -384,6 +392,8 @@ class FNO2d(FNO):
         if 'full', the FNO Block runs in full precision
         if 'half', the FFT, contraction, and inverse FFT run in half precision
         if 'mixed', the contraction and inverse FFT run in half precision
+    stabilizer : str {'tanh'} or None, optional
+        By default None, otherwise tanh is used before FFT in the FNO block 
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -436,6 +446,7 @@ class FNO2d(FNO):
         incremental_n_modes=None,
         fno_block_precision='full',
         non_linearity=F.gelu,
+        stabilizer=None,
         use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
         norm=None,
         skip='soft-gating',
@@ -460,7 +471,8 @@ class FNO2d(FNO):
             projection_channels=projection_channels,
             n_layers=n_layers,
             output_scaling_factor=None,
-            non_linearity=non_linearity,
+            non_linearity=non_linearity, 
+            stabilizer=stabilizer,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             incremental_n_modes=incremental_n_modes,
             fno_block_precision=fno_block_precision,
@@ -517,6 +529,8 @@ class FNO3d(FNO):
         if 'full', the FNO Block runs in full precision
         if 'half', the FFT, contraction, and inverse FFT run in half precision
         if 'mixed', the contraction and inverse FFT run in half precision
+    stabilizer : str {'tanh'} or None, optional
+        By default None, otherwise tanh is used before FFT in the FNO block 
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -569,6 +583,7 @@ class FNO3d(FNO):
         incremental_n_modes=None,
         fno_block_precision='full',
         non_linearity=F.gelu,
+        stabilizer=None,
         use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
         norm=None,
         skip='soft-gating',
@@ -594,6 +609,7 @@ class FNO3d(FNO):
             n_layers=n_layers,
             output_scaling_factor=None,
             non_linearity=non_linearity,
+            stabilizer=stabilizer,
             incremental_n_modes=incremental_n_modes,
             fno_block_precision=fno_block_precision,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,

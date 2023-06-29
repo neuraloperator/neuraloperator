@@ -41,6 +41,7 @@ default: &DEFAULT
     tensor_lasso_penalty: 0.0
     joint_factorization: False
     fno_block_precision: 'full'
+    stabilizer: None
 
   # Optimizer
   opt:
