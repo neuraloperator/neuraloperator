@@ -144,7 +144,7 @@ class FNOBlocks(nn.Module):
         if output_shape is None:
             x_fno = self.convs(x, index)
         else:
-            x_fno = self.convs(x, index, output_shape = output_shape)
+            x_fno = self.convs(x, index, output_shape=output_shape)
 
         
 
