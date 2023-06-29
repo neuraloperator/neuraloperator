@@ -141,10 +141,8 @@ class FNOBlocks(nn.Module):
                 x_skip_mlp = resample(x_skip_mlp, self.output_scaling_factor[index]\
                                       , list(range(-len(self.output_scaling_factor[index]), 0)), output_shape = output_shape )
         
-        if output_shape is None:
-            x_fno = self.convs(x, index)
-        else:
-            x_fno = self.convs(x, index, output_shape=output_shape)
+
+        x_fno = self.convs(x, index, output_shape=output_shape)
 
         
 
