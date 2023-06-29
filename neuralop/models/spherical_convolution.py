@@ -268,8 +268,8 @@ class FactorizedSphericalConv(nn.Module):
             projection_sht = 'legendre-gauss'
             projection_isht = 'equiangular'
         else:
-            projection_sht = 'equiangular'
-            projection_isht = 'equiangular'
+            projection_sht = 'legendre-gauss'
+            projection_isht = 'legendre-gauss'
 
         key_sht = f'{height}_{width}_{projection_sht}'
         key_isht = f'{height}_{width}_{projection_isht}'
