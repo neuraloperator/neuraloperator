@@ -85,7 +85,10 @@ def _contract_tucker(x, tucker_weight, separable=False):
     
     eq = x_syms + ',' + core_syms + ',' + ','.join(factor_syms) + '->' + ''.join(out_syms)
 
-    return tl.einsum(eq, x, tucker_weight.core, *tucker_weight.factors)
+    if x.dtype == torch.complex32:
+        return einsum_complexhalf(eq, x, tucker_weight.core, *tucker_weight.factors)
+    else:
+        return tl.einsum(eq, x, tucker_weight.core, *tucker_weight.factors)
 
 
 def _contract_tt(x, tt_weight, separable=False):
@@ -105,7 +108,10 @@ def _contract_tt(x, tt_weight, separable=False):
         tt_syms.append([rank_syms[i], s, rank_syms[i+1]])
     eq = ''.join(x_syms) + ',' + ','.join(''.join(f) for f in tt_syms) + '->' + ''.join(out_syms)
 
-    return tl.einsum(eq, x, *tt_weight.factors)
+    if x.dtype == torch.complex32:
+        return einsum_complexhalf(eq, x, *tt_weight.factors)
+    else:
+        return tl.einsum(eq, x, *tt_weight.factors)
 
 
 def get_contract_fun(weight, implementation='reconstructed', separable=False):
