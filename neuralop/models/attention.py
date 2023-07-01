@@ -70,7 +70,7 @@ class TnoBlock2d(nn.Module):
         
         self.end_block = FNOBlocks(in_channels= in_channels, out_channels= in_channels, n_modes= n_modes,\
                                             use_mlp=use_mlp, mlp=mlp, output_scaling_factor = self.output_scaling_factor,non_linearity=non_linearity,\
-                                            norm=norm, preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip, mlp_dropout=0, mlp_expansion=0.5,\
+                                            norm='instance_norm', preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip, mlp_dropout=0, mlp_expansion=0.5,\
                                             incremental_n_modes=incremental_n_modes, rank=rank, fft_norm=fft_norm,\
                                             fixed_rank_modes=fixed_rank_modes, implementation=implementation, separable=separable,\
                                             factorization=factorization,decomposition_kwargs=decomposition_kwargs,joint_factorization=joint_factorization,\

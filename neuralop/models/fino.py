@@ -17,7 +17,8 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
                  n_layers=1, separable=False, output_scaling_factor=None,
                  rank=0.5, factorization='cp', implementation='reconstructed', 
                  fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict(),
-                 init_std='auto', fft_norm='forward', fft_type = 'sht',  sht_nlat = 180, sht_nlon = 360, sht_grid="equiangular", sht_norm="backward", frequency_mixer = False):
+                 init_std='auto', fft_norm='forward', fft_type = 'sht',  sht_nlat = 180, sht_nlon = 360,\
+                 sht_grid="legendre-gauss", isht_grid="legendre-gauss", sht_norm="backward", frequency_mixer = False):
         super().__init__(in_channels, out_channels, n_modes, incremental_n_modes, bias,
                  n_layers, separable, output_scaling_factor,
                  rank, factorization, implementation, 
@@ -32,6 +33,7 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
             self.W2 = nn.Parameter(torch.empty(hm1, hm2, hm1, hm2, dtype = torch.cfloat))
             self.reset_parameter()
         self.sht_grid = sht_grid
+        self.isht_grid = isht_grid
         self.sht_norm = sht_norm
         self.fft_type = fft_type
         self.frequency_mixer = frequency_mixer
@@ -46,7 +48,7 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
 
         if fft_type == 'sht':
             self.forward_fft = th.RealSHT(sht_nlat, sht_nlon, grid = self.sht_grid, norm= self.sht_norm)
-            self.inverse_fft = th.InverseRealSHT(out_nlat, out_nlon, grid = self.sht_grid, norm= self.sht_norm)
+            self.inverse_fft = th.InverseRealSHT(out_nlat, out_nlon, grid = self.isht_grid, norm= self.sht_norm)
             
 
     def reset_parameter(self):

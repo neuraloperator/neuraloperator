@@ -94,7 +94,7 @@ class FNOBlocks(nn.Module):
         if norm is None:
             self.norm = None
         elif norm == 'instance_norm':
-            self.norm = nn.ModuleList([getattr(nn, f'InstanceNorm{self.n_dim}d')(num_features=self.out_channels) for _ in range(n_layers*self.n_norms)])
+            self.norm = nn.ModuleList([getattr(nn, f'InstanceNorm{self.n_dim}d')(num_features=self.out_channels, affine = True) for _ in range(n_layers*self.n_norms)])
         elif norm == 'group_norm':
             self.norm = nn.ModuleList([nn.GroupNorm(num_groups=1, num_channels=self.out_channels) for _ in range(n_layers*self.n_norms)])
         # elif norm == 'layer_norm':
