@@ -20,7 +20,7 @@ example = data_mod.train_data[0]
 
 #####TEST COMPUTING DRAG#################
 
-#Quantities needed to compute drag
+# Quantities needed to compute drag
 tri_areas = example['triangle_areas']
 inward_normals = -example['triangle_normals']
 flow_normals = torch.zeros((tri_areas.shape[0], 3))
@@ -65,6 +65,10 @@ radius = 0.016 #smaller than before since query points on [0,1]^3 not [-1,1]^3
 gno = IntegralTransform(mlp_layers=[in_channels,512,256,out_channels],
                         transform_type=2)
 
+# x = x_in : (n_in, 3)
+# y = x_out : (n_x, n_y, n_z, 3)
+# fy = df : (1, n_x, n_y, n_z)
+
 #SDF query points
 y = example['query_points']
 #Surface triangle centroids
@@ -96,3 +100,6 @@ stress_error = loss(pred_stress, stress, tri_areas)
 
 print(f'Relative pressure error: {pressure_error}')
 print(f'Relative stress error: {stress_error}')
+
+
+# python ahmed_test.py

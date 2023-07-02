@@ -99,8 +99,7 @@ class FNOGNO(nn.Module):
         kernel_in_dim = 6 * coord_embed_dim
         kernel_in_dim += 0 if self.linear_kernel else fno_hidden_channels
 
-        #self.mlp = MLP([kernel_in_dim, 512, 256, fno_hidden_channels], nn.GELU)
-        self.mlp = MLP([kernel_in_dim, 32, 32, fno_hidden_channels], nn.GELU)
+        self.mlp = MLP([kernel_in_dim, 512, 256, fno_hidden_channels], nn.GELU)
         
         self.gno = IntegralTransform(self.mlp).cuda()
 
@@ -192,7 +191,7 @@ class FNOGNO(nn.Module):
     
     @torch.no_grad()
     def eval_dict(self, data_dict, loss_fn=None, decode_fn=None, **kwargs):
-        x_in, x_out, df = self.example_to_input(data_dict)
+        x_in, x_out, df = self.data_dict_to_input(data_dict)
 
         if self.max_in_points is not None:
             r = min(self.max_in_points, x_in.shape[0])

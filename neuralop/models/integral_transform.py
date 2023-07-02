@@ -7,6 +7,14 @@ from torch import nn
 from torch_scatter import segment_csr
 from .mlp import MLPLinear
 
+class NeighborSearchLayer(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.nsearch = ml3d.layers.FixedRadiusSearch()
+
+    def forward(self, inp_positions, out_positions, radius):
+        neighbors = self.nsearch(inp_positions, out_positions, radius)
+        return neighbors
 
 class NeighborSearch(nn.Module):
     def __init__(self):
@@ -66,7 +74,8 @@ class IntegralTransform(nn.Module):
 
         rs = neighbors.neighbors_row_splits
         num_reps = rs[1:] - rs[:-1]
-        self_features = torch.repeat_interleave(x, num_reps, dim=0)
+
+        self_features = torch.repeat_interleave(x, num_reps.cuda(), dim=0)
 
         agg_features = torch.cat([rep_features, self_features], dim=1)
         if f_y is not None and (self.transform_type == 1 or self.transform_type == 2):
@@ -83,7 +92,5 @@ class IntegralTransform(nn.Module):
         else:
             reduction = 'mean'
 
-        out_features = segment_csr(rep_features, 
-                                   neighbors.neighbors_row_splits, 
-                                   reduce=reduction)
+        out_features = segment_csr(rep_features, neighbors.neighbors_row_splits.cuda(), reduce=reduction)
         return out_features
