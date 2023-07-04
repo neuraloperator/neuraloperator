@@ -17,5 +17,5 @@ example = data_mod.train_data[0]
 
 model = FNOGNO()
 loss_fn = LpLoss()
-model_out = model.eval_dict(example, loss_fn=loss_fn)
+model_out = model.test_dict(example, loss_fn=loss_fn)
 print('FNOGNOAhmed loss2:{}'.format(model_out['l2']))

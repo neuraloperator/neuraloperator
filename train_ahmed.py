@@ -167,9 +167,7 @@ def eval(model, data_mod, config, loss_fn=None):
     eval_meter = AverageMeterDict()
     visualize_data_dicts = []
     for i, data_dict in enumerate(test_loader):
-        out_dict = model.eval_dict(
-            data_dict, loss_fn=loss_fn, decode_fn=data_mod.normalizers['pressure'].decode
-        )
+        out_dict = model.eval_dict(data_dict, loss_fn=loss_fn, decode_fn=data_mod.normalizers['pressure'].decode)
         eval_meter.update(out_dict)
         if i % config.test_plot_interval == 0:
             visualize_data_dicts.append(data_dict)
@@ -202,7 +200,7 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
     # Initialize the optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=config.lr, weight_decay=1e-4)
     scheduler = instantiate_scheduler(optimizer, config)
-    loss = LpLoss() #IregularLpqLoss()
+    loss_fn = LpLoss() #IregularLpqLoss()
     
     # this code current only support single GPU
     # #Use distributed data parallel 
@@ -218,8 +216,7 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
         # train_reg = 0
         for data_dict in train_loader:
             optimizer.zero_grad()
-            loss_dict = model.loss_dict(data_dict, loss_fn=loss)
-            import pdb; pdb.set_trace()
+            loss_dict = model.loss_dict(data_dict, loss_fn=loss_fn)
             loss = 0
             for k, v in loss_dict.items():
                 loss = loss + v.mean()
@@ -241,7 +238,7 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
         loggers.log_scalar("train/train_epoch_duration", t2 - t1, ep)
 
         if ep % config.eval_interval == 0 or ep == config.num_epochs - 1:
-            eval_dict, eval_images = eval(model, data_mod, config, loss)
+            eval_dict, eval_images = eval(model, data_mod, config, loss_fn)
             for k, v in eval_dict.items():
                 print(f"Epoch: {ep} {k}: {v:.4f}")
                 loggers.log_scalar(f"eval/{k}", v, ep)

@@ -1,6 +1,6 @@
 # Define learning rate yaml
 lr: 0.001
-num_epochs: 100
+num_epochs: 100 #100
 batch_size: 1
 
 # Logger
