@@ -161,27 +161,20 @@ def instantiate_scheduler(optimizer, config):
 
 
 @torch.no_grad()
-def eval(model, data_mod, config, loss_fn=None):
+def eval(model, datamodule, config, loss_fn):
     model.eval()
-    test_loader = data_mod.test_dataloader(batch_size=config.batch_size, shuffle=False, num_workers=0)
+    test_loader = datamodule.test_dataloader(
+        batch_size=config.batch_size, shuffle=False, num_workers=0
+    )
     eval_meter = AverageMeterDict()
-    visualize_data_dicts = []
-    for i, data_dict in enumerate(test_loader):
-        out_dict = model.eval_dict(data_dict, loss_fn=loss_fn, decode_fn=data_mod.normalizers['pressure'].decode)
+    for j, data_dict in enumerate(test_loader):
+        out_dict = model.eval_dict(
+            data_dict, loss_fn=loss_fn, decode_fn=datamodule.decode, ind=j+1
+        )
         eval_meter.update(out_dict)
-        if i % config.test_plot_interval == 0:
-            visualize_data_dicts.append(data_dict)
-
-    # Merge all dictionaries
-    merged_image_dict = {}
-    if hasattr(model, "image_dict"):
-        for i, data_dict in enumerate(visualize_data_dicts):
-            image_dict = model.image_dict(data_dict)
-            for k, v in image_dict.items():
-                merged_image_dict[f"{k}_{i}"] = v
 
     model.train()
-    return eval_meter.avg, merged_image_dict
+    return eval_meter.avg
 
 
 def train(config, device: Union[torch.device, str] = "cuda:0"):

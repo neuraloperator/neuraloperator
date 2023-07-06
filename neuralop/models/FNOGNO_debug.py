@@ -121,7 +121,6 @@ class FNOGNO(nn.Module):
         # x_out = x_out.cuda()
         # df = df.cuda()
         # print(x_out.shape)
-        import pdb; pdb.set_trace()
         out_to_in_nb = self.nb_search_out(x_out.view(-1, 3), x_in, radius)
         n_out = x_out.view(-1, 3).shape[0]
         x_out_embed = self.pos_embed(x_out.reshape(-1, )).reshape((n_out, -1))
@@ -206,7 +205,7 @@ class FNOGNO(nn.Module):
     @torch.no_grad()
     def eval_dict(self, data_dict, loss_fn=None, decode_fn=None, **kwargs):
         x_in, x_out, df = self.data_dict_to_input(data_dict)
-
+        
         if self.max_in_points is not None:
             r = min(self.max_in_points, x_in.shape[0])
             pred_chunks = []
@@ -221,12 +220,15 @@ class FNOGNO(nn.Module):
 
         if loss_fn is None:
             loss_fn = self.loss
-        truth = data_dict["pressure"].to(self.device).reshape(1, -1)
+        truth = data_dict["pressure"][0].to(self.device).reshape(1, -1)
         out_dict = {"l2": loss_fn(pred, truth)}
+
         if decode_fn is not None:
-            pred = decode_fn(pred.cpu()).cuda()
-            truth = decode_fn(truth.cpu()).cuda()
+            pred = decode_fn(pred)
+            truth = decode_fn(truth)
             out_dict["l2_decoded"] = loss_fn(pred, truth)
+
+            torch.save(pred.view(-1,).cpu().detach(), 'pred_ahmed_' + str(kwargs['ind']).zfill(3) + '.pt')
         return out_dict
     
     @torch.no_grad()
@@ -269,7 +271,7 @@ class FNOGNO(nn.Module):
 
         if loss_fn is None:
             loss_fn = self.loss
-        import pdb; pdb.set_trace()
+
         if self.max_in_points is not None:
             truth = data_dict["pressure"][0][indices].view(1, -1).to(self.device)
         else:
