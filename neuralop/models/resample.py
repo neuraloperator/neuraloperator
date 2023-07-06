@@ -4,19 +4,7 @@ import itertools
 import torch
 import torch.nn.functional as F
 
-def resample(x, res_scale, axis):
-    """
-    A module for generic n-dimentional interpolation (Fourier resampling).
-
-    Parameters
-    ----------
-    x : torch.Tensor
-            input activation of size (batch_size, channels, d1, ..., dN)
-    res_scale: int or tuple
-            Scaling factor along each of the dimensions in 'axis' parameter. If res_scale is scaler, then isotropic 
-            scaling is performed
-    axis: axis or dimensions along which interpolation will be performed. 
-    """
+def resample(x, res_scale, axis, output_shape=None):
     """
     A module for generic n-dimentional interpolation (Fourier resampling).
 
@@ -43,12 +31,15 @@ def resample(x, res_scale, axis):
         assert len(res_scale) == len(axis), "leght of res_scale and axis are not same"
 
     old_size = x.shape[-len(axis):]
-    new_size = tuple([int(round(s*r)) for (s, r) in zip(old_size, res_scale)])
+    if output_shape is None:
+        new_size = tuple([int(round(s*r)) for (s, r) in zip(old_size, res_scale)])
+    else:
+        new_size = output_shape
 
     if len(axis) == 1:
-        return F.interpolate(x, size = new_size[0], mode = 'linear', align_corners = True)
+        return F.interpolate(x, size=new_size[0], mode='linear', align_corners=True)
     if len(axis) == 2:
-        return F.interpolate(x, size = new_size, mode = 'bicubic', align_corners = True, antialias = True)
+        return F.interpolate(x, size=new_size, mode='bicubic', align_corners=True)
 
     X = torch.fft.rfftn(x.float(), norm='forward', dim=axis)
     
@@ -63,7 +54,7 @@ def resample(x, res_scale, axis):
         idx_tuple = [slice(None), slice(None)] + [slice(*b) for b in boundaries]
 
         out_fft[idx_tuple] = X[idx_tuple]
-    y = torch.fft.irfftn(out_fft, s =  new_size ,norm='forward', dim = axis)
+    y = torch.fft.irfftn(out_fft, s= new_size ,norm='forward', dim=axis)
 
     return y
 
@@ -84,7 +75,7 @@ def iterative_resample(x, res_scale, axis):
         return x
 
     old_res = x.shape[axis]
-    X = torch.fft.rfft(x, dim=axis, norm = 'forward')    
+    X = torch.fft.rfft(x, dim=axis, norm='forward')    
     newshape = list(x.shape)
     new_res = int(round(res_scale*newshape[axis]))
     newshape[axis] = new_res // 2 + 1
@@ -95,6 +86,6 @@ def iterative_resample(x, res_scale, axis):
     sl = [slice(None)] * x.ndim
     sl[axis] = slice(0, modes // 2 + 1)
     Y[tuple(sl)] = X[tuple(sl)]
-    y = torch.fft.irfft(Y, n = new_res, dim=axis,norm = 'forward')
+    y = torch.fft.irfft(Y, n=new_res, dim=axis,norm='forward')
     return y
 

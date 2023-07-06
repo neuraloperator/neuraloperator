@@ -98,4 +98,5 @@ def test_fno_superresolution(output_scaling_factor):
 
     # Check output size
     factor = prod(output_scaling_factor)
+    
     assert list(out.shape) == [batch_size, 1] + [int(round(factor*s)) for s in size]
