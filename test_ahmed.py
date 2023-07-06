@@ -3,7 +3,7 @@ import torch
 from neuralop.datasets.mesh_datamodule import MeshDataModule
 from neuralop.training.losses import total_drag, IregularLpqLoss
 from neuralop.models.integral_transform import IntegralTransform, NeighborSearch
-from neuralop.models.FNOGNO import FNOGNO
+from neuralop.models.FNOGNO1 import FNOGNO
 from neuralop.training.losses import total_drag, IregularLpqLoss, LpLoss
 
 

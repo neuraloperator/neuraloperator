@@ -189,11 +189,16 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
     model = FNOGNO()
     model = model.to(device)
     #Load ahmed body
+    # data_mod = MeshDataModule('~/projects/neuraloperator_run/data/new_ahmed', 'case', 
+    #             query_points=[64,64,64], 
+    #             n_train=None, 
+    #             n_test=None, 
+    #             attributes=['pressure', 'wall_shear_stress', 'inlet_velocity', 'info', 'drag_history'])
     data_mod = MeshDataModule('~/projects/neuraloperator_run/data/new_ahmed', 'case', 
-                query_points=[64,64,64], 
-                n_train=None, 
-                n_test=None, 
-                attributes=['pressure', 'wall_shear_stress', 'inlet_velocity', 'info', 'drag_history'])
+                          query_points=[64,64,64], 
+                          n_train=10, 
+                          n_test=5, 
+                          attributes=['pressure', 'wall_shear_stress', 'inlet_velocity', 'info', 'drag_history'])
     train_loader = data_mod.train_dataloader(batch_size=config.batch_size, shuffle=True)
     
     loggers = init_logger(config)
@@ -220,10 +225,9 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
             loss = 0
             for k, v in loss_dict.items():
                 loss = loss + v.mean()
+
             loss.backward()
-
             optimizer.step()
-
             train_l2_meter.update(loss.item())
 
             loggers.log_scalar("train/lr", scheduler.get_lr()[0], ep)

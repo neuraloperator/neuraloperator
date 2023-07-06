@@ -111,8 +111,6 @@ class FNOGNO(nn.Module):
             non_linearity=nn.functional.gelu,
             n_dim=1,
         ).cuda()
-
-        self.fno_hidden_channels = fno_hidden_channels
         
     
     # x_in : (n_in, 3)
@@ -157,6 +155,10 @@ class FNOGNO(nn.Module):
     
 
     def data_dict_to_input(self, data_dict):
+        #dict_keys(['vertices', 'vertex_normals', 'triangle_normals', 'centroids', 'triangle_areas', \
+        # 'distance', 'closest_points', 'normalized_triangle_areas', 'pressure', 'wall_shear_stress', \
+        # 'inlet_velocity', 'info', 'drag_history', 'query_points'])
+        # import pdb; pdb.set_trace()
         x_in = data_dict["centroids"][0]  # (n_in, 3)
         x_out = data_dict["query_points"][0] # (n_x, n_y, n_z, 3)
         df = data_dict["distance"]  # (1, n_x, n_y, n_z)
@@ -208,7 +210,7 @@ class FNOGNO(nn.Module):
 
         if loss_fn is None:
             loss_fn = self.loss
-        truth = data_dict["pressure"][0].to(self.device).reshape(1, -1)
+        truth = data_dict["pressure"].to(self.device).reshape(1, -1)
         out_dict = {"l2": loss_fn(pred, truth)}
         if decode_fn is not None:
             pred = decode_fn(pred.cpu()).cuda()
@@ -256,11 +258,14 @@ class FNOGNO(nn.Module):
 
         if loss_fn is None:
             loss_fn = self.loss
-
+ 
         if self.max_in_points is not None:
             truth = data_dict["pressure"][0][indices].view(1, -1).to(self.device)
         else:
             truth = data_dict["pressure"][0].view(1, -1).to(self.device)
+
+        # set out_channels = 2
+        # truth_drag = data_dict["wall_shear_stress"][indices].view(1, -1).to(self.device)
 
         # truth = data_dict["pressure"][0][indices].view(1, -1).to(self.device)
         return {
@@ -268,8 +273,6 @@ class FNOGNO(nn.Module):
                 pred.view(1, -1), truth
             )
         }
-
-
     
     @property
     def incremental_n_modes(self):
