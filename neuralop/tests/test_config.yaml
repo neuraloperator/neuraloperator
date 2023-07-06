@@ -42,7 +42,7 @@ default: &DEFAULT
     learning_rate: 1e-3
     training_loss: 'h1'
     weight_decay: 1e-4
-    amp_autocast: False
+    amp_autocast: True
 
     scheduler_T_max: 500 # For cosine only, typically take n_epochs
     scheduler_patience: 5 # For ReduceLROnPlateau only
