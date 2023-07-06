@@ -338,7 +338,7 @@ class FactorizedSpectralConv(nn.Module):
 
         if self.output_scaling_factor is not None and output_shape is None:
             mode_sizes = tuple([int(round(s*r)) for (s, r) in zip(mode_sizes, self.output_scaling_factor[indices])])
-            
+
         if output_shape is not None:
             mode_sizes = output_shape
         
@@ -457,5 +457,4 @@ class FactorizedSpectralConv3d(FactorizedSpectralConv):
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
-
         return x

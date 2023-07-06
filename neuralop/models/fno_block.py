@@ -140,8 +140,8 @@ class FNOBlocks(nn.Module):
             if self.convs.output_scaling_factor is not None:
                 x_skip_mlp = resample(x_skip_mlp, self.output_scaling_factor[index]\
                                       , list(range(-len(self.output_scaling_factor[index]), 0)), output_shape = output_shape )
-
-        x_fno = self.convs(x, index, output_shape = output_shape)
+                
+        x_fno = self.convs(x, index, output_shape=output_shape)
 
         if not self.preactivation and self.norm is not None:
             x_fno = self.norm[self.n_norms*index](x_fno)

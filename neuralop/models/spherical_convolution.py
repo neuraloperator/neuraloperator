@@ -268,8 +268,8 @@ class FactorizedSphericalConv(nn.Module):
             projection_sht = 'legendre-gauss'
             projection_isht = 'equiangular'
         else:
-            projection_sht = 'equiangular'
-            projection_isht = 'equiangular'
+            projection_sht = 'legendre-gauss'
+            projection_isht = 'legendre-gauss'
 
         key_sht = f'{height}_{width}_{projection_sht}'
         key_isht = f'{height}_{width}_{projection_isht}'
@@ -312,7 +312,7 @@ class FactorizedSphericalConv(nn.Module):
             self.weight_slices = [slice(None)]*2 + [slice(None, n//2) for n in self._incremental_n_modes]
             self.half_n_modes = [m//2 for m in self._incremental_n_modes]
 
-    def forward(self, x, indices=0, output_shape = None):
+    def forward(self, x, indices=0, output_shape=None):
         """Generic forward pass for the Factorized Spectral Conv
 
         Parameters
@@ -329,21 +329,15 @@ class FactorizedSphericalConv(nn.Module):
         batchsize, channels, height, width = x.shape
 
         if self.output_scaling_factor is not None and output_shape is None:
-            width = int(round(width*self.output_scaling_factor[indices][1]))
-            height = int(round(height*self.output_scaling_factor[indices][0]))
+            height = int(round(height*self.output_scaling_factor[0]))
+            width = int(round(width*self.output_scaling_factor[1]))
         elif output_shape is not None:
             height, width = output_shape[0], output_shape[1]
-            
 
         sht, isht = self._get_sht(height, width)
         
         out_fft = sht(x)
     
-        # xp = torch.zeros_like(x)
-        # xp[..., :self.modes_lat_local, :self.modes_lon_local] = self._contract(x[..., :self.modes_lat_local, :self.modes_lon_local],
-        #                                                                        self.weight, separable=self.separable, operator_type=self.operator_type)
-
-        # upper block (truncate high freq)
         out_fft = self._contract(out_fft[:, :, :self.half_total_n_modes[0], :self.half_total_n_modes[1]], 
                                  self._get_weight(indices), separable=self.separable, dhconv=True)
         
