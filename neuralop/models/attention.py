@@ -35,7 +35,7 @@ class TnoBlock2d(nn.Module):
         
         mixer_modes = [i//self.n_head for i in n_modes]
         self.K = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= mixer_modes,\
-                                            use_mlp=use_mlp, mlp=mlp, output_scaling_factor = 1/n_head,non_linearity= non_linearity,\
+                                            use_mlp=use_mlp, mlp=mlp, output_scaling_factor = 1/n_head,non_linearity= lambda x: x,\
                                             norm=norm, preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip,mlp_dropout=0, mlp_expansion=0.5,\
                                             incremental_n_modes=incremental_n_modes, rank=rank, fft_norm=fft_norm,\
                                             fixed_rank_modes=fixed_rank_modes, implementation=implementation, separable=separable,\
@@ -43,7 +43,7 @@ class TnoBlock2d(nn.Module):
                                             SpectralConv= SpectralConv,n_layers=1)
 
         self.Q = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= mixer_modes,\
-                                            use_mlp=use_mlp, mlp=mlp, output_scaling_factor = 1/n_head,non_linearity=non_linearity,\
+                                            use_mlp=use_mlp, mlp=mlp, output_scaling_factor = 1/n_head,non_linearity=lambda x: x,\
                                             norm=norm, preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip, mlp_dropout=0, mlp_expansion=0.5,\
                                             incremental_n_modes=incremental_n_modes, rank=rank, fft_norm=fft_norm,\
                                             fixed_rank_modes=fixed_rank_modes, implementation=implementation, separable=separable,\
@@ -51,7 +51,7 @@ class TnoBlock2d(nn.Module):
                                             SpectralConv= SpectralConv, n_layers=1)
 
         self.V = FNOBlocks(in_channels= self.token_codim, out_channels= self.n_head * self.token_codim, n_modes= mixer_modes,\
-                                            use_mlp=use_mlp, mlp=mlp, output_scaling_factor = 1/n_head,non_linearity= non_linearity,\
+                                            use_mlp=use_mlp, mlp=mlp, output_scaling_factor = 1/n_head,non_linearity= lambda x: x,\
                                             norm=norm, preactivation=preactivation, fno_skip=fno_skip,mlp_skip=mlp_skip, mlp_dropout=0, mlp_expansion=0.5,\
                                             incremental_n_modes=incremental_n_modes, rank=rank, fft_norm=fft_norm,\
                                             fixed_rank_modes=fixed_rank_modes, implementation=implementation, separable=separable,\
