@@ -7,7 +7,7 @@ $WANDB_API_KEY nvr-ai-algo/ahmed-body/fj41u3er
 
 python train_ahmed.py --config config/FNOGNOAhmed.yaml 
 
-ngc batch run --instance dgx1v.32g.2.norm --name 'ml-model.8gpu0' --image "nvidian/nvr-aialgo/geo-neuraloperator:latest" \
+ngc batch run --instance dgx1v.32g.8.norm --name 'ml-model.8gpu0' --image "nvidian/nvr-aialgo/geo-neuraloperator:latest" \
 --workspace boyil:/workspace  --result /result --commandline "apt update; apt install tmux -y; pip install jupyter; sleep 167h" \
 --datasetid 1606785:/datasets/ahmed-body --datasetid 4805448:/datasets/new_ahmed \
 -p 8080
@@ -40,3 +40,4 @@ ngc dataset convert --from-result 4805448 --desc 'new_ahmed' new_ahmed
 # ngc dataset convert --from-result 3668847 dataset_name
 
 nohup python train_ahmed.py --config config/FNOGNOAhmed.yaml --logger_type wandb > log.txt 2>&1 &
+nohup python train_ahmed_debug.py --config config/FNOGNOAhmed_debug.yaml --logger_type wandb > log_debug.txt 2>&1 &

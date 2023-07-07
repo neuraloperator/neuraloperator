@@ -14,12 +14,10 @@ import sys
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from neuralop.training.loggers import init_logger
 from neuralop.utils import get_wandb_api_key, count_params
-from neuralop.datasets_old.cfd_datamodule import AhmedBodyDataModule
+from neuralop.datasets.mesh_datamodule import MeshDataModule
 from neuralop.training.losses import total_drag, IregularLpqLoss, LpLoss
 from neuralop.models.FNOGNO_debug import FNOGNO
 from neuralop.training.average_meter import AverageMeter, AverageMeterDict
-from torch.nn.parallel import DistributedDataParallel as DDP
-import copy
 
 def set_seed(seed: int = 0):
     torch.manual_seed(seed)
@@ -68,6 +66,20 @@ def flatten_dict(d, parent_key="", sep="_", no_sep_keys=["base"]):
             items.append((new_key, v))
     return dict(items)
 
+def instantiate_scheduler(optimizer, config):
+    if config.opt_scheduler == "CosineAnnealingLR":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=config.opt_scheduler_T_max
+        )
+    elif config.opt_scheduler == "StepLR":
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=config.opt_step_size, gamma=config.opt_gamma
+        )
+    else:
+        raise ValueError(f"Got {config.opt.scheduler=}")
+    return scheduler
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -115,9 +127,9 @@ def parse_args():
         default=None,
         help="SDF spatial resolution. Use comma to separate the values e.g. 32,32,32.",
     )
+
     args = parser.parse_args()
     return args
-
 
 def load_config(config_path):
     def include_constructor(loader, node):
@@ -145,62 +157,56 @@ def load_config(config_path):
     config_flat = DotDict(config_flat)
     return config_flat
 
-
-def instantiate_scheduler(optimizer, config):
-    if config.opt_scheduler == "CosineAnnealingLR":
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, T_max=config.opt_scheduler_T_max
-        )
-    elif config.opt_scheduler == "StepLR":
-        scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=config.opt_step_size, gamma=config.opt_gamma
-        )
-    else:
-        raise ValueError(f"Got {config.opt.scheduler=}")
-    return scheduler
-
-
 @torch.no_grad()
-def eval(model, datamodule, config, loss_fn):
+def eval(model, datamodule, config, loss_fn=None):
     model.eval()
     test_loader = datamodule.test_dataloader(
         batch_size=config.batch_size, shuffle=False, num_workers=0
     )
     eval_meter = AverageMeterDict()
-    for j, data_dict in enumerate(test_loader):
+    visualize_data_dicts = []
+    for i, data_dict in enumerate(test_loader):
         out_dict = model.eval_dict(
-            data_dict, loss_fn=loss_fn, decode_fn=datamodule.decode, ind=j+1
+            data_dict, loss_fn=loss_fn, decode_fn=datamodule.normalizers['pressure'].decode
         )
         eval_meter.update(out_dict)
+        if i % config.test_plot_interval == 0:
+            visualize_data_dicts.append(data_dict)
+
+    # Merge all dictionaries
+    merged_image_dict = {}
+    if hasattr(model, "image_dict"):
+        for i, data_dict in enumerate(visualize_data_dicts):
+            image_dict = model.image_dict(data_dict)
+            for k, v in image_dict.items():
+                merged_image_dict[f"{k}_{i}"] = v
 
     model.train()
-    return eval_meter.avg
+
+    return eval_meter.avg, merged_image_dict
 
 
 def train(config, device: Union[torch.device, str] = "cuda:0"):
     device = torch.device(device)
-    model = FNOGNO()
-    model = model.to(device)
+    model = FNOGNO().to(device)
     #Load ahmed body
-    data_mod = AhmedBodyDataModule('~/projects/neuraloperator_run/data/ahmed', 
+    datamodule = MeshDataModule('~/projects/neuraloperator_run/data/new_ahmed', 'case', 
+                          query_points=[64,64,64], 
                           n_train=10, 
                           n_test=5, 
-                          spatial_resolution=[64, 64, 64],)
-    train_loader = data_mod.train_dataloader(batch_size=config.batch_size, shuffle=True)
+                          attributes=['pressure', 'wall_shear_stress', 'inlet_velocity', 'info', 'drag_history'])
+    train_loader = datamodule.train_dataloader(batch_size=config.batch_size, shuffle=True)
     
     loggers = init_logger(config)
+
     # Initialize the optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=config.lr, weight_decay=1e-4)
     scheduler = instantiate_scheduler(optimizer, config)
-    loss_fn = LpLoss() #IregularLpqLoss()
-    
-    # this code current only support single GPU
-    # #Use distributed data parallel 
-    # if config.distributed.use_distributed:
-    #     model = DDP(model,
-    #                 device_ids=[device.index],
-    #                 output_device=device.index,
-    #                 static_graph=True)
+
+    # Initialize the loss function
+    loss_fn = LpLoss()
+
+    # N_sample = 1000
     for ep in range(config.num_epochs):
         model.train()
         t1 = default_timer()
@@ -212,9 +218,10 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
             loss = 0
             for k, v in loss_dict.items():
                 loss = loss + v.mean()
-
             loss.backward()
+
             optimizer.step()
+
             train_l2_meter.update(loss.item())
 
             loggers.log_scalar("train/lr", scheduler.get_lr()[0], ep)
@@ -229,13 +236,12 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
         loggers.log_scalar("train/train_epoch_duration", t2 - t1, ep)
 
         if ep % config.eval_interval == 0 or ep == config.num_epochs - 1:
-            eval_dict, eval_images = eval(model, data_mod, config, loss_fn)
+            eval_dict, eval_images = eval(model, datamodule, config, loss_fn)
             for k, v in eval_dict.items():
                 print(f"Epoch: {ep} {k}: {v:.4f}")
                 loggers.log_scalar(f"eval/{k}", v, ep)
             for k, v in eval_images.items():
                 loggers.log_image(f"eval/{k}", v, ep)
-
 
 
 if __name__ == "__main__":

@@ -1,0 +1,33 @@
+# Define learning rate yaml
+lr: 0.001
+num_epochs: 100 #100
+batch_size: 1
+
+# Logger
+logger_types: ["tensorboard"] # ["tensorboard", "wandb"]
+log_dir: "logs/"
+eval_interval: 5 # epoch
+run_name: 'FNOGNO-linear-drag'
+project_name: 'ahmed-body'
+entity: 'nvr-ai-algo'
+# dataset
+data_path: "ahmed-body-dataset"
+data_module: "AhmedBodyDataModule"
+sdf_spatial_resolution: [64, 64, 64]
+
+# TODO: update
+train_ratio: 0.8
+val_ratio: 0.1
+test_ratio: 0.1
+
+# default model
+model: "FNOGNO"
+
+# optimizer
+opt:
+  scheduler: "StepLR"
+  step_size: 50
+  gamma: 0.5
+
+# Plot
+test_plot_interval: 20  # save image for every N'th test data

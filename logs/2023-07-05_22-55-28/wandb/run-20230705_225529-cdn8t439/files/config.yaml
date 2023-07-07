@@ -1,0 +1,107 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    python_version: 3.8.16
+    cli_version: 0.15.1
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1688622929.788937
+    t:
+      1:
+      - 1
+      - 5
+      - 41
+      - 53
+      - 55
+      2:
+      - 1
+      - 5
+      - 41
+      - 53
+      - 55
+      3:
+      - 13
+      - 23
+      4: 3.8.16
+      5: 0.15.1
+      8:
+      - 5
+lr:
+  desc: null
+  value: 0.001
+num_epochs:
+  desc: null
+  value: 100
+batch_size:
+  desc: null
+  value: 1
+logger_types:
+  desc: null
+  value:
+  - wandb
+log_dir:
+  desc: null
+  value: logs/
+eval_interval:
+  desc: null
+  value: 5
+run_name:
+  desc: null
+  value: FNOGNO-linear
+project_name:
+  desc: null
+  value: ahmed-body
+entity:
+  desc: null
+  value: nvr-ai-algo
+data_path:
+  desc: null
+  value: ahmed-body-dataset
+data_module:
+  desc: null
+  value: AhmedBodyDataModule
+sdf_spatial_resolution:
+  desc: null
+  value:
+  - 64
+  - 64
+  - 64
+train_ratio:
+  desc: null
+  value: 0.8
+val_ratio:
+  desc: null
+  value: 0.1
+test_ratio:
+  desc: null
+  value: 0.1
+model:
+  desc: null
+  value: FNOGNO
+opt_scheduler:
+  desc: null
+  value: StepLR
+opt_step_size:
+  desc: null
+  value: 50
+opt_gamma:
+  desc: null
+  value: 0.5
+test_plot_interval:
+  desc: null
+  value: 20
+device:
+  desc: null
+  value: cuda
+output:
+  desc: null
+  value: output
+log:
+  desc: null
+  value: log
+seed:
+  desc: null
+  value: 0

@@ -100,6 +100,7 @@ class FNOGNO(nn.Module):
         kernel_in_dim += 0 if self.linear_kernel else fno_hidden_channels
 
         self.mlp = MLP([kernel_in_dim, 512, 256, fno_hidden_channels], nn.GELU)
+
         
         self.gno = IntegralTransform(self.mlp).cuda()
 
@@ -110,8 +111,6 @@ class FNOGNO(nn.Module):
             non_linearity=nn.functional.gelu,
             n_dim=1,
         ).cuda()
-
-        self.fno_hidden_channels = fno_hidden_channels
         
     
     # x_in : (n_in, 3)
@@ -121,10 +120,12 @@ class FNOGNO(nn.Module):
         # x_in = x_in.cuda()
         # x_out = x_out.cuda()
         # df = df.cuda()
+        # print(x_out.shape)
         out_to_in_nb = self.nb_search_out(x_out.view(-1, 3), x_in, radius)
         n_out = x_out.view(-1, 3).shape[0]
         x_out_embed = self.pos_embed(x_out.reshape(-1, )).reshape((n_out, -1))
         # Latent space and distance
+        
         x_out = torch.cat((df, x_out.permute(3, 0, 1, 2)), dim=0).unsqueeze(0)  # (1, 12, n_x, n_y, n_z)
         
         x_out = x_out.cuda()
@@ -154,15 +155,17 @@ class FNOGNO(nn.Module):
     
 
     def data_dict_to_input(self, data_dict):
+        #dict_keys(['vertices', 'vertex_normals', 'triangle_normals', 'centroids', 'triangle_areas', \
+        # 'distance', 'closest_points', 'normalized_triangle_areas', 'pressure', 'wall_shear_stress', \
+        # 'inlet_velocity', 'info', 'drag_history', 'query_points'])
+        # import pdb; pdb.set_trace()
         x_in = data_dict["centroids"][0]  # (n_in, 3)
         x_out = data_dict["query_points"][0] # (n_x, n_y, n_z, 3)
-        df = data_dict["distance"].unsqueeze(0)  # (1, n_x, n_y, n_z)
+        df = data_dict["distance"]  # (1, n_x, n_y, n_z)
 
         info_fields = data_dict['inlet_velocity'] * torch.ones_like(df)
 
-        df = torch.cat((
-            df, info_fields
-        ), dim=0)
+        df = torch.cat((df, info_fields), dim=0)
 
         if self.use_adain:
             vel = torch.tensor([data_dict['inlet_velocity']]).view(-1, ).cuda()
@@ -207,15 +210,40 @@ class FNOGNO(nn.Module):
 
         if loss_fn is None:
             loss_fn = self.loss
+        truth = data_dict["pressure"].to(self.device).reshape(1, -1)
+        out_dict = {"l2": loss_fn(pred, truth)}
+        if decode_fn is not None:
+            pred = decode_fn(pred.cpu()).cuda()
+            truth = decode_fn(truth.cpu()).cuda()
+            out_dict["l2_decoded"] = loss_fn(pred, truth)
+        return out_dict
+    
+    @torch.no_grad()
+    def test_dict(self, data_dict, loss_fn=None, decode_fn=None, **kwargs):
+        x_in, x_out, df = self.example_to_input(data_dict)
+
+        if self.max_in_points is not None:
+            r = min(self.max_in_points, x_in.shape[0])
+            pred_chunks = []
+            x_in_chunks = torch.split(x_in, r, dim=0)
+            for j in range(len(x_in_chunks)):
+                pred_chunks.append(self(x_in_chunks[j], x_out, df))
+            pred = torch.cat(tuple(pred_chunks), dim=0)
+        else:
+            pred = self(x_in, x_out, df)
+
+        pred = pred.reshape(1, -1)
+
+        if loss_fn is None:
+            loss_fn = self.loss
         truth = data_dict["pressure"][0].to(self.device).reshape(1, -1)
         out_dict = {"l2": loss_fn(pred, truth)}
 
         if decode_fn is not None:
-            pred = decode_fn(pred)
-            truth = decode_fn(truth)
+            pred = decode_fn(pred.cpu()).cuda()
+            truth = decode_fn(truth.cpu()).cuda()
             out_dict["l2_decoded"] = loss_fn(pred, truth)
 
-            torch.save(pred.view(-1, ).cpu().detach(), 'pred_ahmed_' + str(kwargs['ind']).zfill(3) + '.pt')
         return out_dict
 
     def loss_dict(self, data_dict, loss_fn=None):
@@ -230,11 +258,14 @@ class FNOGNO(nn.Module):
 
         if loss_fn is None:
             loss_fn = self.loss
-
+ 
         if self.max_in_points is not None:
             truth = data_dict["pressure"][0][indices].view(1, -1).to(self.device)
         else:
             truth = data_dict["pressure"][0].view(1, -1).to(self.device)
+
+        # set out_channels = 2
+        # truth_drag = data_dict["wall_shear_stress"][indices].view(1, -1).to(self.device)
 
         # truth = data_dict["pressure"][0][indices].view(1, -1).to(self.device)
         return {
@@ -242,8 +273,6 @@ class FNOGNO(nn.Module):
                 pred.view(1, -1), truth
             )
         }
-
-
     
     @property
     def incremental_n_modes(self):

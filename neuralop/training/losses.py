@@ -60,7 +60,7 @@ def central_diff_3d(x, h, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
 
 #loss function with rel/abs Lp loss
 class LpLoss(object):
-    def __init__(self, d=1, p=2, L=2*math.pi, reduce_dims=0, reductions='sum'):
+    def __init__(self, d=1, p=2, L=2*math.pi, reduce_dims=0, reductions='mean'):
         super().__init__()
 
         self.d = d
@@ -119,9 +119,7 @@ class LpLoss(object):
         return diff
 
     def rel(self, x, y):
-
-        diff = torch.norm(torch.flatten(x, start_dim=-self.d) - torch.flatten(y, start_dim=-self.d), \
-                          p=self.p, dim=-1, keepdim=False)
+        diff = torch.norm(torch.flatten(x, start_dim=-self.d) - torch.flatten(y, start_dim=-self.d), p=self.p, dim=-1, keepdim=False)
         ynorm = torch.norm(torch.flatten(y, start_dim=-self.d), p=self.p, dim=-1, keepdim=False)
 
         diff = diff/ynorm
