@@ -1,1 +1,0 @@
-{"train/lr": 0.0005, "_timestamp": 1688463948.0410073, "train/loss": 0.5935862064361572, "train/train_l2": 0.9446899780068181, "train/train_epoch_duration": 140.14043286815286, "eval/l2": 0.9245617985725403, "eval/l2_decoded": 0.9052108526229858, "_runtime": 22721.65801024437, "_step": 99, "_wandb": {"runtime": 22720}}
