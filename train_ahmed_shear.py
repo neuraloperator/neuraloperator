@@ -16,7 +16,7 @@ from neuralop.training.loggers import init_logger
 from neuralop.utils import get_wandb_api_key, count_params
 from neuralop.datasets.mesh_datamodule import MeshDataModule
 from neuralop.training.losses import total_drag, IregularLpqLoss, LpLoss
-from neuralop.models.FNOGNO_debug import FNOGNO
+from neuralop.models.FNOGNO_shear import FNOGNO
 from neuralop.training.average_meter import AverageMeter, AverageMeterDict
 
 def set_seed(seed: int = 0):

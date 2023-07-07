@@ -7,7 +7,7 @@ batch_size: 1
 logger_types: ["tensorboard"] # ["tensorboard", "wandb"]
 log_dir: "logs/"
 eval_interval: 5 # epoch
-run_name: 'FNOGNO-linear-drag'
+run_name: 'FNOGNO-linear-shear'
 project_name: 'ahmed-body'
 entity: 'nvr-ai-algo'
 # dataset

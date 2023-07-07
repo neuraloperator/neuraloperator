@@ -108,20 +108,13 @@ class FNOGNO(nn.Module):
         # x_out: (n_x*n_y*n_z, fno_hidden_channels)
         n_in = x_in.shape[0]
         x_in_embed = self.pos_embed(x_in.reshape(-1, )).reshape((n_in, -1))
-
-        self.gno = self.gno.cpu()
-        x_out = self.gno(x_out_embed, out_to_in_nb, x_out.cpu(), x_in_embed.cpu())
+        x_out = self.gno(x_out_embed.cuda(), out_to_in_nb, x_out.cuda(), x_in_embed.cuda())
         x_out = x_out.unsqueeze(0).permute(0, 2, 1)
         # Project pointwise to out channels
         x_out = self.projection(x_out.cuda()).squeeze(0).permute(1, 0)  # (n_in, out_channels)
-        # import pdb; pdb.set_trace()
         return x_out
 
     def data_dict_to_input(self, data_dict):
-        #dict_keys(['vertices', 'vertex_normals', 'triangle_normals', 'centroids', 'triangle_areas', \
-        # 'distance', 'closest_points', 'normalized_triangle_areas', 'pressure', 'wall_shear_stress', \
-        # 'inlet_velocity', 'info', 'drag_history', 'query_points'])
-        # import pdb; pdb.set_trace()
         x_in = data_dict["centroids"][0]  # (n_in, 3)
         x_out = data_dict["query_points"][0] # (n_x, n_y, n_z, 3)
         df = data_dict["distance"]  # (1, n_x, n_y, n_z)
