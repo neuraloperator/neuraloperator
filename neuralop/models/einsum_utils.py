@@ -1,5 +1,9 @@
 import torch
 import opt_einsum
+import tensorly as tl
+from tensorly.plugins import use_opt_einsum
+tl.set_backend('pytorch')
+use_opt_einsum('optimal')
 
 
 def einsum_complexhalf_two_input(eq, a, b):
@@ -24,7 +28,7 @@ def einsum_complexhalf_two_input(eq, a, b):
     new_eqn = new_inputs[0] + ',' + new_inputs[1] + '->' + new_output
 
     # convert back to complex form
-    tmp = torch.einsum(new_eqn, a, b)
+    tmp = tl.einsum(new_eqn, a, b)
     res = torch.stack([tmp[0, 0, ...] - tmp[1, 1, ...], tmp[1, 0, ...] + tmp[0, 1, ...]], dim=-1)
     return torch.view_as_complex(res)
 
@@ -68,7 +72,7 @@ def einsum_complexhalf(eq, *args):
         new_eqn = new_inputs[0] + ',' + new_inputs[1] + '->' + new_output
 
         # perform the einsum, and convert to "view as real" form
-        tmp = torch.einsum(new_eqn, *in_tensors)
+        tmp = tl.einsum(new_eqn, *in_tensors)
         result = torch.stack([tmp[0, 0, ...] - tmp[1, 1, ...], tmp[1, 0, ...] + tmp[0, 1, ...]], dim=-1)
         tensors[out_label] = result
 
