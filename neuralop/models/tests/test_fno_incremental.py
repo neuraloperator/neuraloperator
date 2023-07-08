@@ -97,8 +97,7 @@ def test_incremental_model_training(
         verbose=True,
         incremental_loss_gap=incremental_loss_gap,
         incremental=incremental,
-        incremental_resolution=incremental_resolution,
-        dataset_name="SmallDarcy")
+        incremental_resolution=incremental_resolution)
 
     # Train the model
     trainer.train(

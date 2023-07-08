@@ -9,14 +9,12 @@ class Incremental(Paramaters):
             model,
             incremental,
             incremental_loss_gap,
-            incremental_resolution,
-            dataset_name) -> None:
+            incremental_resolution) -> None:
         super().__init__(
             model,
             incremental,
             incremental_loss_gap,
-            incremental_resolution,
-            dataset_name)
+            incremental_resolution)
 
         if self.incremental_grad and self.incremental_loss_gap:
             raise ValueError(

@@ -8,14 +8,12 @@ class Paramaters:
             model,
             incremental,
             incremental_loss_gap,
-            incremental_resolution,
-            dataset_name) -> None:
+            incremental_resolution) -> None:
         self.model = model
         self.ndim = len(model.n_modes)
         self.incremental_grad = incremental
         self.incremental_resolution = incremental_resolution
         self.incremental_loss_gap = incremental_loss_gap
-        self.dataset_name = dataset_name
 
         # Initialize ConfigPipeline to read configurations from YAML and
         # command line arguments
@@ -31,6 +29,7 @@ class Paramaters:
                     config_file=None)])
         config = pipe.read_conf()
         paramaters = config.incremental
+        self.dataset_name = paramaters.dataset_name
 
         if self.incremental_grad:
             # incremental gradient

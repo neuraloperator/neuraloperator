@@ -26,8 +26,7 @@ class Trainer:
             verbose=True,
             incremental=False,
             incremental_loss_gap=False,
-            incremental_resolution=False,
-            dataset_name=None):
+            incremental_resolution=False):
         """
         A general Trainer class to train neural-operators on given datasets
 
@@ -66,7 +65,6 @@ class Trainer:
         self.incremental_grad = incremental
         self.incremental_resolution = incremental_resolution
         self.incremental = self.incremental_loss_gap or self.incremental_grad
-        self.dataset_name = dataset_name
 
         if mg_patching_levels > 0:
             self.mg_n_patches = 2**mg_patching_levels
@@ -86,8 +84,7 @@ class Trainer:
                 model,
                 incremental=self.incremental_grad,
                 incremental_loss_gap=self.incremental_loss_gap,
-                incremental_resolution=self.incremental_resolution,
-                dataset_name=self.dataset_name)
+                incremental_resolution=self.incremental_resolution)
 
         self.mg_patching_padding = mg_patching_padding
         self.patcher = MultigridPatching2D(
@@ -139,10 +136,7 @@ class Trainer:
             t1 = default_timer()
             train_err = 0.0
             for sample in train_loader:
-                if self.dataset_name == 'Burgers':
-                    x, y = sample[0], sample[1]
-                else:
-                    x, y = sample['x'], sample['y']
+                x, y = sample['x'], sample['y']
                 x, y = self.patcher.patch(x, y)
                 x = x.to(self.device)
                 y = y.to(self.device)

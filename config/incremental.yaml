@@ -71,7 +71,8 @@ default: &DEFAULT
 
     incremental_resolution:
       epoch_gap: 100
-    
+
+    dataset_name: 'SmallDarcy'
     dataset:
       SmallDarcy: [1]
       Darcy: [8, 4, 2, 1]
