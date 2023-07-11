@@ -1,7 +1,7 @@
 import torch
 from timeit import default_timer
 import wandb
-import sys
+import sys 
 
 import neuralop.mpu.comm as comm
 
@@ -11,22 +11,10 @@ from .algo import Incremental
 
 
 class Trainer:
-    def __init__(
-            self,
-            model,
-            n_epochs,
-            wandb_log=True,
-            device=None,
-            mg_patching_levels=0,
-            mg_patching_padding=0,
-            mg_patching_stitching=True,
-            log_test_interval=1,
-            log_output=False,
-            use_distributed=False,
-            verbose=True,
-            incremental=False,
-            incremental_loss_gap=False,
-            incremental_resolution=False):
+    def __init__(self, model, n_epochs, wandb_log=True, device=None,
+                 mg_patching_levels=0, mg_patching_padding=0, mg_patching_stitching=True,
+                 log_test_interval=1, log_output=False, use_distributed=False, verbose=True, incremental=False, 
+                 incremental_loss_gap=False, incremental_resolution=False):
         """
         A general Trainer class to train neural-operators on given datasets
 
@@ -51,6 +39,12 @@ class Trainer:
         use_distributed : bool, default is False
             whether to use DDP
         verbose : bool, default is True
+        incremental : bool, default is False
+            if True, use the base incremental algorithm which is based on gradient variance
+        incremental_loss_gap : bool, default is False
+            if True, use the incremental algorithm based on loss gap
+        incremental_resolution : bool, default is False
+            if True, increase the resolution of the input incrementally
         """
         self.n_epochs = n_epochs
         self.wandb_log = wandb_log
@@ -69,8 +63,7 @@ class Trainer:
         if mg_patching_levels > 0:
             self.mg_n_patches = 2**mg_patching_levels
             if verbose:
-                print(
-                    f'Training on {self.mg_n_patches**2} multi-grid patches.')
+                print(f'Training on {self.mg_n_patches**2} multi-grid patches.')
                 sys.stdout.flush()
         else:
             self.mg_n_patches = 1
@@ -80,22 +73,16 @@ class Trainer:
                 sys.stdout.flush()
 
         if self.incremental or self.incremental_resolution:
-            self.incremental_scheduler = Incremental(
-                model,
-                incremental=self.incremental_grad,
-                incremental_loss_gap=self.incremental_loss_gap,
-                incremental_resolution=self.incremental_resolution)
+            self.incremental_scheduler = Incremental(model, incremental=self.incremental_grad,
+                                                     incremental_loss_gap=self.incremental_loss_gap,
+                                                     incremental_resolution=self.incremental_resolution)
 
         self.mg_patching_padding = mg_patching_padding
-        self.patcher = MultigridPatching2D(
-            model,
-            levels=mg_patching_levels,
-            padding_fraction=mg_patching_padding,
-            use_distributed=use_distributed,
-            stitching=mg_patching_stitching)
+        self.patcher = MultigridPatching2D(model, levels=mg_patching_levels, padding_fraction=mg_patching_padding,
+                                           use_distributed=use_distributed, stitching=mg_patching_stitching)
 
     def train(self, train_loader, test_loaders, output_encoder,
-              model, optimizer, scheduler, regularizer,
+              model, optimizer, scheduler, regularizer, 
               training_loss=None, eval_losses=None):
         """Trains the given model on the given datasets"""
         n_train = len(train_loader.dataset)
@@ -105,29 +92,26 @@ class Trainer:
 
         if self.verbose:
             print(f'Training on {n_train} samples')
-            print(
-                f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
-                f'         on resolutions {[name for name in test_loaders]}.')
+            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
+                  f'         on resolutions {[name for name in test_loaders]}.')
             sys.stdout.flush()
 
         if training_loss is None:
             training_loss = LpLoss(d=2)
 
-        if eval_losses is None:  # By default just evaluate on the training loss
+        if eval_losses is None: # By default just evaluate on the training loss
             eval_losses = dict(l2=training_loss)
 
         if output_encoder is not None:
             output_encoder.to(self.device)
-
+        
         if self.use_distributed:
             is_logger = (comm.get_world_rank() == 0)
         else:
-            is_logger = True
+            is_logger = True 
 
         if self.incremental_loss_gap or self.incremental_grad:
-            print(
-                "Model is initially using {} number of modes".format(
-                    model.incremental_n_modes))
+            print("Model is initially using {} number of modes".format(model.incremental_n_modes))
 
         for epoch in range(self.n_epochs):
             avg_loss = 0
@@ -137,50 +121,48 @@ class Trainer:
             train_err = 0.0
             for sample in train_loader:
                 x, y = sample['x'], sample['y']
+                
                 x, y = self.patcher.patch(x, y)
                 x = x.to(self.device)
                 y = y.to(self.device)
 
                 # update the resolution
                 if self.incremental_resolution:
-                    x, y = self.incremental_scheduler.step(
-                        epoch=epoch, x=x, y=y)
+                    x, y = self.incremental_scheduler.step(epoch=epoch, x=x, y=y)
 
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
                     regularizer.reset()
 
                 out = model(x)
-
+                
                 out, y = self.patcher.unpatch(out, y)
 
-                # Output encoding only works if output is stiched
+                #Output encoding only works if output is stiched
                 if output_encoder is not None and self.mg_patching_stitching:
                     out = output_encoder.decode(out)
                     y = output_encoder.decode(y)
-
+                    
                 loss = training_loss(out.float(), y)
 
                 if regularizer:
                     loss += regularizer.loss
 
                 loss.backward()
-
+                
                 # update frequency modes based on the algorithm used
                 if self.incremental:
                     self.incremental_scheduler.step(loss.item(), epoch)
-
+                    
                 optimizer.step()
                 train_err += loss.item()
-
+        
                 with torch.no_grad():
                     avg_loss += loss.item()
                     if regularizer:
                         avg_lasso_loss += regularizer.loss
 
-            if isinstance(
-                    scheduler,
-                    torch.optim.lr_scheduler.ReduceLROnPlateau):
+            if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler.step(train_err)
             else:
                 scheduler.step()
@@ -188,17 +170,14 @@ class Trainer:
             epoch_train_time = default_timer() - t1
             del x, y
 
-            train_err /= n_train
+            train_err/= n_train
             avg_loss /= self.n_epochs
-
-            if epoch % self.log_test_interval == 0:
-
+            
+            if epoch % self.log_test_interval == 0: 
+                
                 msg = f'[{epoch}] time={epoch_train_time:.2f}, avg_loss={avg_loss:.4f}, train_err={train_err:.4f}'
 
-                values_to_log = dict(
-                    train_err=train_err,
-                    time=epoch_train_time,
-                    avg_loss=avg_loss)
+                values_to_log = dict(train_err=train_err, time=epoch_train_time, avg_loss=avg_loss)
 
                 for loader_name, loader in test_loaders.items():
                     if epoch == self.n_epochs - 1 and self.log_output:
@@ -206,12 +185,7 @@ class Trainer:
                     else:
                         to_log_output = False
 
-                    errors = self.evaluate(
-                        model,
-                        eval_losses,
-                        loader,
-                        output_encoder,
-                        log_prefix=loader_name)
+                    errors = self.evaluate(model, eval_losses, loader, output_encoder, log_prefix=loader_name)
 
                     for loss_name, loss_value in errors.items():
                         msg += f', {loss_name}={loss_value:.4f}'
@@ -226,9 +200,7 @@ class Trainer:
                     sys.stdout.flush()
 
                 if self.incremental:
-                    print(
-                        "Model is currently using {} number of modes".format(
-                            model.convs.incremental_n_modes))
+                    print("Model is currently using {} number of modes".format(model.convs.incremental_n_modes))
 
                 # Wandb loging
                 if self.wandb_log and is_logger:
@@ -240,11 +212,11 @@ class Trainer:
     def evaluate(self, model, loss_dict, data_loader, output_encoder=None,
                  log_prefix=''):
         """Evaluates the model on a dictionary of losses
-
+        
         Parameters
         ----------
         model : model to evaluate
-        loss_dict : dict of functions
+        loss_dict : dict of functions 
           each function takes as input a tuple (prediction, ground_truth)
           and returns the corresponding loss
         data_loader : data_loader to evaluate on
@@ -262,10 +234,9 @@ class Trainer:
         if self.use_distributed:
             is_logger = (comm.get_world_rank() == 0)
         else:
-            is_logger = True
+            is_logger = True 
 
-        errors = {
-            f'{log_prefix}_{loss_name}': 0 for loss_name in loss_dict.keys()}
+        errors = {f'{log_prefix}_{loss_name}':0 for loss_name in loss_dict.keys()}
 
         n_samples = 0
         with torch.no_grad():
@@ -273,17 +244,16 @@ class Trainer:
                 x, y = sample['x'], sample['y']
 
                 n_samples += x.size(0)
-
+                
                 x, y = self.patcher.patch(x, y)
                 y = y.to(self.device)
                 x = x.to(self.device)
 
                 if self.incremental_resolution:
-                    x, y = self.incremental_scheduler.regularize_input_res(
-                        x, y)
+                    x, y = self.incremental_scheduler.regularize_input_res(x, y)
 
                 out = model(x)
-
+        
                 out, y = self.patcher.unpatch(out, y, evaluation=True)
 
                 if output_encoder is not None:
@@ -294,9 +264,8 @@ class Trainer:
                         img = out
                     else:
                         img = out.squeeze()[0]
-                    wandb.log({f'image_{log_prefix}': wandb.Image(
-                        img.unsqueeze(-1).cpu().numpy())}, commit=False)
-
+                    wandb.log({f'image_{log_prefix}': wandb.Image(img.unsqueeze(-1).cpu().numpy())}, commit=False)
+                
                 for loss_name, loss in loss_dict.items():
                     errors[f'{log_prefix}_{loss_name}'] += loss(out, y).item()
 
@@ -306,3 +275,4 @@ class Trainer:
             errors[key] /= n_samples
 
         return errors
+
