@@ -339,8 +339,6 @@ class FactorizedSpectralConv(nn.Module):
 
         if self.fno_block_precision == 'half':
             x = x.half()
-        else:
-            x = x.float()
 
         x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
 
