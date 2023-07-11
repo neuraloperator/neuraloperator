@@ -114,12 +114,12 @@ def test_incremental_model_training(
     if incremental_mode:
         # Check that the number of modes has dynamically increased (Atleast for
         # these settings on this dataset it should increase)
-        assert model.convs.incremental_n_modes > starting_modes
+        assert model.fno_blocks.convs.incremental_n_modes > starting_modes
 
     if not baseline:
         # Check that the number of modes has not dynamically increased (Atleast
         # for these settings on this dataset it should increase)
-        assert model.convs.incremental_n_modes == starting_modes
+        assert model.fno_blocks.convs.incremental_n_modes == starting_modes
 
 
 # Test Baseline Model first

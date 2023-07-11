@@ -24,33 +24,33 @@ class Incremental(Paramaters):
     def loss_gap(self, loss):
         self.loss_list.append(loss)
         # method 1: loss_gap
-        incremental_modes = self.model.convs.incremental_n_modes[0]
-        max_modes = self.model.convs.n_modes[0]
+        incremental_modes = self.model.fno_blocks.convs.incremental_n_modes[0]
+        max_modes = self.model.fno_blocks.convs.n_modes[0]
         if len(self.loss_list) > 1:
             if abs(self.loss_list[-1] - self.loss_list[-2]) <= self.eps:
                 if incremental_modes < max_modes:
                     incremental_modes += 1
 
         modes_list = tuple([incremental_modes] * self.ndim)
-        self.model.incremental_n_modes = modes_list
+        self.model.fno_blocks.convs.incremental_n_modes = modes_list
 
     # Algorithm 2: Gradient based explained ratio
     def grad_explained(self):
         # for mode 1
         if not hasattr(self, 'accumulated_grad'):
             self.accumulated_grad = torch.zeros_like(
-                self.model.convs.weight[0])
+                self.model.fno_blocks.convs.weight[0])
         if not hasattr(self, 'grad_iter'):
             self.grad_iter = 1
 
         if self.grad_iter <= self.grad_max_iter:
             self.grad_iter += 1
-            self.accumulated_grad += self.model.convs.weight[0]
+            self.accumulated_grad += self.model.fno_blocks.convs.weight[0]
         else:
             incremental_final = []
             for i in range(self.ndim):
-                max_modes = self.model.convs.n_modes[i]
-                incremental_modes = self.model.convs.incremental_n_modes[i]
+                max_modes = self.model.fno_blocks.convs.n_modes[i]
+                incremental_modes = self.model.fno_blocks.convs.incremental_n_modes[i]
                 weight = self.accumulated_grad
                 strength_vector = []
                 for mode_index in range(
@@ -68,8 +68,8 @@ class Incremental(Paramaters):
             # update the modes and frequency dimensions
             self.grad_iter = 1
             self.accumulated_grad = torch.zeros_like(
-                self.model.convs.weight[0])
-            self.model.incremental_n_modes = tuple(incremental_final)
+                self.model.fno_blocks.convs.weight[0])
+            self.model.fno_blocks.incremental_n_modes = tuple(incremental_final)
 
     # Algorithm 3: Regularize input resolution
     def incremental_resolution_regularize(self, x, y):

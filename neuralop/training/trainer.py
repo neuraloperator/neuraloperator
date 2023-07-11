@@ -111,7 +111,7 @@ class Trainer:
             is_logger = True 
 
         if self.incremental_loss_gap or self.incremental_grad:
-            print("Model is initially using {} number of modes".format(model.incremental_n_modes))
+            print("Model is initially using {} number of modes".format(model.fno_blocks.incremental_n_modes))
 
         for epoch in range(self.n_epochs):
             avg_loss = 0
@@ -211,7 +211,7 @@ class Trainer:
                     sys.stdout.flush()
 
                 if self.incremental:
-                    print("Model is currently using {} number of modes".format(model.convs.incremental_n_modes))
+                    print("Model is currently using {} number of modes".format(model.fno_blocks.convs.incremental_n_modes))
 
                 # Wandb loging
                 if self.wandb_log and is_logger:
