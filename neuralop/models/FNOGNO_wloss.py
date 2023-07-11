@@ -104,7 +104,6 @@ class FNOGNO(nn.Module):
             x_out = self.fno.domain_padding.unpad(x_out)
 
         x_out = x_out.squeeze(0).permute(1, 2, 3, 0).reshape(-1, self.fno.hidden_channels)
-        # x_out: (n_x*n_y*n_z, fno_hidden_channels)
         n_in = x_in.shape[0]
         x_in_embed = self.pos_embed(x_in.reshape(-1, )).reshape((n_in, -1))
         x_out = self.gno(x_out_embed, out_to_in_nb, x_out, x_in_embed)
@@ -155,11 +154,11 @@ class FNOGNO(nn.Module):
         if loss_fn is None:
             loss_fn = self.loss
         truth = data_dict["pressure"].to(self.device).reshape(1, -1)
-        out_dict = {"l2": loss_fn(pred, truth)}
+        out_dict = {"l2": loss_fn(pred, truth, data_dict["triangle_areas"].cuda())}
         if decode_fn is not None:
             pred = decode_fn(pred.cpu()).cuda()
             truth = decode_fn(truth.cpu()).cuda()
-            out_dict["l2_decoded"] = loss_fn(pred, truth)
+            out_dict["l2_decoded"] = loss_fn(pred, truth, data_dict["triangle_areas"].cuda())
         return out_dict
 
     def loss_dict(self, data_dict, loss_fn=None):
@@ -182,7 +181,7 @@ class FNOGNO(nn.Module):
 
         return {
             "loss": loss_fn(
-                pred.view(1, -1), truth
+                pred.view(1, -1), truth, data_dict["triangle_areas"].cuda()
             )
         }
     

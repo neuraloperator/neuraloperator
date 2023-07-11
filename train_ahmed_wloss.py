@@ -16,7 +16,7 @@ from neuralop.training.loggers import init_logger
 from neuralop.utils import get_wandb_api_key, count_params
 from neuralop.datasets.mesh_datamodule import MeshDataModule
 from neuralop.training.losses import total_drag, IregularLpqLoss, LpLoss
-from neuralop.models.FNOGNO import FNOGNO
+from neuralop.models.FNOGNO_wloss import FNOGNO
 from neuralop.training.average_meter import AverageMeter, AverageMeterDict
 
 def set_seed(seed: int = 0):
@@ -204,7 +204,7 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
     scheduler = instantiate_scheduler(optimizer, config)
 
     # Initialize the loss function
-    loss_fn = LpLoss()
+    loss_fn = IregularLpqLoss()
 
     for ep in range(config.num_epochs):
         model.train()

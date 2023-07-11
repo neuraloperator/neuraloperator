@@ -14,6 +14,7 @@ entity: 'nvr-ai-algo'
 data_path: "ahmed-body-dataset"
 data_module: "AhmedBodyDataModule"
 sdf_spatial_resolution: [64, 64, 64]
+model_path: "checkpoints/FNOGNOAhmed_shear.pth"
 
 # TODO: update
 train_ratio: 0.8

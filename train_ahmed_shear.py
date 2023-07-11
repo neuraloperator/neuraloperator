@@ -190,10 +190,10 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
     device = torch.device(device)
     model = FNOGNO().to(device)
     #Load ahmed body
-    datamodule = MeshDataModule('~/projects/neuraloperator_run/data/new_ahmed', 'case', 
+    datamodule = MeshDataModule('data/new_ahmed/new_ahmed', 'case', 
                           query_points=[64,64,64], 
-                          n_train=10, 
-                          n_test=5, 
+                          n_train=None, 
+                          n_test=None, 
                           attributes=['pressure', 'wall_shear_stress', 'inlet_velocity', 'info', 'drag_history'])
     train_loader = datamodule.train_dataloader(batch_size=config.batch_size, shuffle=True)
     
@@ -206,7 +206,6 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
     # Initialize the loss function
     loss_fn = LpLoss()
 
-    # N_sample = 1000
     for ep in range(config.num_epochs):
         model.train()
         t1 = default_timer()
@@ -243,6 +242,7 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
             for k, v in eval_images.items():
                 loggers.log_image(f"eval/{k}", v, ep)
 
+        torch.save(model.state_dict(), config.model_path)
 
 if __name__ == "__main__":
     args = parse_args()

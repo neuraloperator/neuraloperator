@@ -68,11 +68,11 @@ class FNOGNO(nn.Module):
 
         self.mlp = MLP([kernel_in_dim, 512, 256, fno_hidden_channels], nn.GELU)
 
-        self.gno = NeighborMLPConvLayerLinear(mlp=self.mlp)
+        self.gno = NeighborMLPConvLayerLinear(mlp=self.mlp).cuda()
 
         self.projection = Projection(
             in_channels=fno_hidden_channels,
-            out_channels=out_channels * 4,
+            out_channels=out_channels * 3,
             hidden_channels=256,
             non_linearity=nn.functional.gelu,
             n_dim=1,
@@ -108,11 +108,14 @@ class FNOGNO(nn.Module):
         # x_out: (n_x*n_y*n_z, fno_hidden_channels)
         n_in = x_in.shape[0]
         x_in_embed = self.pos_embed(x_in.reshape(-1, )).reshape((n_in, -1))
-        x_out = self.gno(x_out_embed.cuda(), out_to_in_nb, x_out.cuda(), x_in_embed.cuda())
+
+        x_out = self.gno(x_out_embed, out_to_in_nb, x_out, x_in_embed)
         x_out = x_out.unsqueeze(0).permute(0, 2, 1)
         # Project pointwise to out channels
         x_out = self.projection(x_out.cuda()).squeeze(0).permute(1, 0)  # (n_in, out_channels)
+        # import pdb; pdb.set_trace()
         return x_out
+
 
     def data_dict_to_input(self, data_dict):
         x_in = data_dict["centroids"][0]  # (n_in, 3)
@@ -128,6 +131,12 @@ class FNOGNO(nn.Module):
             vel_embed = self.adain_pos_embed(vel)
             for norm in self.fno.fno_blocks.norm:
                 norm.update_embeddding(vel_embed)
+
+        x_in, x_out, df = (
+            x_in.to(self.device),
+            x_out.to(self.device),
+            df.to(self.device),
+        )
 
         return x_in, x_out, df
     
@@ -149,9 +158,7 @@ class FNOGNO(nn.Module):
 
         if loss_fn is None:
             loss_fn = self.loss
-        truth = data_dict["pressure"].to(self.device).reshape(1, -1)
-        truth2 = data_dict["wall_shear_stress"].to(self.device).reshape(1, -1)
-        truth = torch.cat([truth, truth2], dim=1)
+        truth = data_dict["wall_shear_stress"].to(self.device).reshape(1, -1)
         out_dict = {"l2": loss_fn(pred, truth)}
         if decode_fn is not None:
             pred = decode_fn(pred.cpu()).cuda()
@@ -173,17 +180,10 @@ class FNOGNO(nn.Module):
             loss_fn = self.loss
  
         if self.max_in_points is not None:
-            truth = data_dict["pressure"][0][indices].view(1, -1).to(self.device)
-            truth2 = data_dict["wall_shear_stress"][0][indices].view(1, -1).to(self.device)
+            truth = data_dict["wall_shear_stress"][0][indices].view(1, -1).to(self.device)
         else:
-            truth = data_dict["pressure"][0].view(1, -1).to(self.device)
-            truth2 = data_dict["wall_shear_stress"][0].view(1, -1).to(self.device)
-
-        truth = torch.cat([truth, truth2], dim=1)
-        # set out_channels = 2
-        # truth_drag = data_dict["wall_shear_stress"][indices].view(1, -1).to(self.device)
-
-        # truth = data_dict["pressure"][0][indices].view(1, -1).to(self.device)
+            truth = data_dict["wall_shear_stress"][0].view(1, -1).to(self.device)
+            
         return {
             "loss": loss_fn(pred.reshape(1, -1), truth) 
         }
