@@ -1,12 +1,11 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partialmethod
-
-from .mlp import MLP
-from .fno_block import FactorizedSpectralConv3d, FactorizedSpectralConv2d, FactorizedSpectralConv1d
-from .fno_block import FactorizedSpectralConv
-from .skip_connections import skip_connection
+import torch
+from .spectral_convolution import FactorizedSpectralConv
+from .spherical_convolution import FactorizedSphericalConv
 from .padding import DomainPadding
+from .fno_block import FNOBlocks, resample
 
 
 class Lifting(nn.Module):
@@ -37,6 +36,7 @@ class Projection(nn.Module):
         x = self.non_linearity(x)
         x = self.fc2(x)
         return x
+
 
 
 class FNO(nn.Module):
@@ -110,11 +110,13 @@ class FNO(nn.Module):
                  lifting_channels=256,
                  projection_channels=256,
                  n_layers=4,
+                 output_scaling_factor=None,
                  incremental_n_modes=None,
-                 use_mlp=False, mlp=None,
+                 use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
                  non_linearity=F.gelu,
                  norm=None, preactivation=False,
-                 skip='soft-gating',
+                 fno_skip='linear',
+                 mlp_skip='soft-gating',
                  separable=False,
                  factorization=None,
                  rank=1.0,
@@ -125,11 +127,11 @@ class FNO(nn.Module):
                  domain_padding=None,
                  domain_padding_mode='one-sided',
                  fft_norm='forward',
+                 SpectralConv=FactorizedSpectralConv,
                  **kwargs):
         super().__init__()
         self.n_dim = len(n_modes)
         self.n_modes = n_modes
-        self._incremental_n_modes = incremental_n_modes
         self.hidden_channels = hidden_channels
         self.lifting_channels = lifting_channels
         self.projection_channels = projection_channels
@@ -142,20 +144,38 @@ class FNO(nn.Module):
         self.factorization = factorization
         self.fixed_rank_modes = fixed_rank_modes
         self.decomposition_kwargs = decomposition_kwargs
-        self.skip = skip,
+        self.fno_skip = fno_skip,
+        self.mlp_skip = mlp_skip,
         self.fft_norm = fft_norm
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation
 
+        # See the class' property for underlying mechanism
+        # When updated, change should be reflected in fno blocks
+        self._incremental_n_modes = incremental_n_modes
+
         if domain_padding is not None and domain_padding > 0:
-            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode)
+            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scaling_factor=output_scaling_factor)
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
 
-        self.convs = FactorizedSpectralConv(
-            self.hidden_channels, self.hidden_channels, self.n_modes, 
+        if output_scaling_factor is not None and not joint_factorization:
+            if isinstance(output_scaling_factor, (float, int)):
+                output_scaling_factor = [output_scaling_factor]*self.n_layers
+        self.output_scaling_factor = output_scaling_factor
+
+        self.fno_blocks = FNOBlocks(
+            in_channels=hidden_channels,
+            out_channels=hidden_channels, 
+            n_modes=self.n_modes,
+            output_scaling_factor=output_scaling_factor,
+            use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
+            non_linearity=non_linearity,
+            norm=norm, preactivation=preactivation,
+            fno_skip=fno_skip,
+            mlp_skip=mlp_skip,
             incremental_n_modes=incremental_n_modes,
             rank=rank,
             fft_norm=fft_norm,
@@ -165,30 +185,8 @@ class FNO(nn.Module):
             factorization=factorization,
             decomposition_kwargs=decomposition_kwargs,
             joint_factorization=joint_factorization,
-            n_layers=n_layers,
-        )
-
-        self.fno_skips = nn.ModuleList([skip_connection(self.hidden_channels, self.hidden_channels, type=skip, n_dim=self.n_dim) for _ in range(n_layers)])
-
-        if use_mlp:
-            self.mlp = nn.ModuleList(
-                [MLP(in_channels=self.hidden_channels, hidden_channels=int(round(self.hidden_channels*mlp['expansion'])),
-                     dropout=mlp['dropout'], n_dim=self.n_dim) for _ in range(n_layers)]
-            )
-            self.mlp_skips = nn.ModuleList([skip_connection(self.hidden_channels, self.hidden_channels, type=skip, n_dim=self.n_dim) for _ in range(n_layers)])
-        else:
-            self.mlp = None
-
-        if norm is None:
-            self.norm = None
-        elif norm == 'instance_norm':
-            self.norm = nn.ModuleList([getattr(nn, f'InstanceNorm{self.n_dim}d')(num_features=self.hidden_channels) for _ in range(n_layers)])
-        elif norm == 'group_norm':
-            self.norm = nn.ModuleList([nn.GroupNorm(num_groups=1, num_channels=self.hidden_channels) for _ in range(n_layers)])
-        elif norm == 'layer_norm':
-            self.norm = nn.ModuleList([nn.LayerNorm() for _ in range(n_layers)])
-        else:
-            raise ValueError(f'Got {norm=} but expected None or one of [instance_norm, group_norm, layer_norm]')
+            SpectralConv=SpectralConv,
+            n_layers=n_layers)
 
         self.lifting = Lifting(in_channels=in_channels, out_channels=self.hidden_channels, n_dim=self.n_dim)
         self.projection = Projection(in_channels=self.hidden_channels, out_channels=out_channels, hidden_channels=projection_channels,
@@ -202,43 +200,14 @@ class FNO(nn.Module):
         if self.domain_padding is not None:
             x = self.domain_padding.pad(x)
 
-        for i in range(self.n_layers):
-
-            if self.preactivation:
-                x = self.non_linearity(x)
-
-                if self.norm is not None:
-                    x = self.norm[i](x)
-
-            x_fno = self.convs[i](x)
-
-            if not self.preactivation and self.norm is not None:
-                x_fno = self.norm[i](x_fno)
-
-            x_skip = self.fno_skips[i](x)
-            x = x_fno + x_skip
-
-            if not self.preactivation and i < (self.n_layers - 1):
-                x = self.non_linearity(x)
-
-            if self.mlp is not None:
-                x_skip = self.mlp_skips[i](x)
-
-                if self.preactivation:
-                    if i < (self.n_layers - 1):
-                        x = self.non_linearity(x)
-
-                x = self.mlp[i](x) + x_skip
-
-                if not self.preactivation:
-                    if i < (self.n_layers - 1):
-                        x = self.non_linearity(x)
-
+        for layer_idx in range(self.n_layers):
+            x = self.fno_blocks(x, layer_idx)
 
         if self.domain_padding is not None:
             x = self.domain_padding.unpad(x)
 
         x = self.projection(x)
+
         return x
 
     @property
@@ -247,7 +216,8 @@ class FNO(nn.Module):
 
     @incremental_n_modes.setter
     def incremental_n_modes(self, incremental_n_modes):
-        self.convs.incremental_n_modes = incremental_n_modes
+        self.fno_blocks.incremental_n_modes = incremental_n_modes
+
 
 class FNO1d(FNO):
     """1D Fourier Neural Operator
@@ -323,8 +293,9 @@ class FNO1d(FNO):
         projection_channels=256,
         incremental_n_modes=None,
         n_layers=4,
+        output_scaling_factor=None,
         non_linearity=F.gelu,
-        use_mlp=False, mlp=None,
+        use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
         norm=None,
         skip='soft-gating',
         separable=False,
@@ -347,8 +318,9 @@ class FNO1d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
+            output_scaling_factor=None,
             non_linearity=non_linearity,
-            use_mlp=use_mlp, mlp=mlp,
+            use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             incremental_n_modes=incremental_n_modes,
             norm=norm,
             skip=skip,
@@ -365,20 +337,6 @@ class FNO1d(FNO):
             fft_norm=fft_norm
             )
         self.n_modes_height = n_modes_height
-
-        self.convs = FactorizedSpectralConv1d(
-            self.hidden_channels, self.hidden_channels, n_modes=(self.n_modes_height, ),
-            incremental_n_modes=incremental_n_modes,
-            rank=rank,
-            fft_norm=fft_norm,
-            fixed_rank_modes=fixed_rank_modes, 
-            implementation=implementation,
-            separable=separable,
-            factorization=factorization,
-            decomposition_kwargs=decomposition_kwargs,
-            joint_factorization=joint_factorization,
-            n_layers=n_layers,
-        )
 
 
 class FNO2d(FNO):
@@ -457,9 +415,10 @@ class FNO2d(FNO):
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
+        output_scaling_factor=None,
         incremental_n_modes=None,
         non_linearity=F.gelu,
-        use_mlp=False, mlp=None,
+        use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
         norm=None,
         skip='soft-gating',
         separable=False,
@@ -482,8 +441,9 @@ class FNO2d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
+            output_scaling_factor=None,
             non_linearity=non_linearity,
-            use_mlp=use_mlp, mlp=mlp,
+            use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             incremental_n_modes=incremental_n_modes,
             norm=norm,
             skip=skip,
@@ -502,20 +462,6 @@ class FNO2d(FNO):
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
 
-        self.convs = FactorizedSpectralConv2d(
-            self.hidden_channels, self.hidden_channels,
-            n_modes=(self.n_modes_height, self.n_modes_width), 
-            incremental_n_modes=incremental_n_modes,
-            rank=rank,
-            fft_norm=fft_norm,
-            fixed_rank_modes=fixed_rank_modes, 
-            implementation=implementation,
-            separable=separable,
-            factorization=factorization,
-            decomposition_kwargs=decomposition_kwargs,
-            joint_factorization=joint_factorization,
-            n_layers=n_layers,
-        )
 
 
 class FNO3d(FNO):
@@ -596,9 +542,10 @@ class FNO3d(FNO):
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
+        output_scaling_factor=None,
         incremental_n_modes=None,
         non_linearity=F.gelu,
-        use_mlp=False, mlp=None,
+        use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
         norm=None,
         skip='soft-gating',
         separable=False,
@@ -621,9 +568,10 @@ class FNO3d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
+            output_scaling_factor=None,
             non_linearity=non_linearity,
             incremental_n_modes=incremental_n_modes,
-            use_mlp=use_mlp, mlp=mlp,
+            use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             norm=norm,
             skip=skip,
             separable=separable,
@@ -641,22 +589,6 @@ class FNO3d(FNO):
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
         self.n_modes_height = n_modes_height
-
-        self.convs = FactorizedSpectralConv3d(
-            self.hidden_channels, self.hidden_channels, 
-            n_modes=(self.n_modes_height, self.n_modes_width, self.n_modes_height),
-            incremental_n_modes=incremental_n_modes,
-            rank=rank,
-            fft_norm=fft_norm,
-            fixed_rank_modes=fixed_rank_modes, 
-            implementation=implementation,
-            separable=separable,
-            factorization=factorization,
-            decomposition_kwargs=decomposition_kwargs,
-            joint_factorization=joint_factorization,
-            n_layers=n_layers,
-        )
-
 
 
 def partialclass(new_name, cls, *args, **kwargs):
@@ -688,3 +620,5 @@ TFNO   = partialclass('TFNO', FNO, factorization='Tucker')
 TFNO1d = partialclass('TFNO1d', FNO1d, factorization='Tucker')
 TFNO2d = partialclass('TFNO2d', FNO2d, factorization='Tucker')
 TFNO3d = partialclass('TFNO3d', FNO3d, factorization='Tucker')
+
+SFNO   = partialclass('SFNO', FNO, factorization='dense', SpectralConv=FactorizedSphericalConv)

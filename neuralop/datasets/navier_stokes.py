@@ -45,7 +45,7 @@ def load_navier_stokes_zarr(data_path, n_train, batch_size,
     training_db.transform_y = transform_y
     
     train_loader = torch.utils.data.DataLoader(training_db,
-                                               batch_size=batch_size, 
+                                               batch_size=batch_size, drop_last=True,
                                                shuffle=True,
                                                num_workers=num_workers,
                                                pin_memory=pin_memory,
@@ -204,7 +204,7 @@ def load_navier_stokes_pt(data_path, train_resolution,
 
     train_db = TensorDataset(x_train, y_train, transform_x=PositionalEmbedding(grid_boundaries, 0) if positional_encoding else None)
     train_loader = torch.utils.data.DataLoader(train_db,
-                                               batch_size=batch_size, shuffle=True,
+                                               batch_size=batch_size, shuffle=True, drop_last=True,
                                                num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
 
     test_db = TensorDataset(x_test, y_test,transform_x=PositionalEmbedding(grid_boundaries, 0) if positional_encoding else None)
