@@ -1,3 +1,4 @@
+from .einsum_utils import einsum_complexhalf
 from torch import nn
 import torch
 import itertools
@@ -32,9 +33,15 @@ def _contract_dense(x, weight, separable=False):
 
     if not torch.is_tensor(weight):
         weight = weight.to_tensor()
+        
     if x.shape[-1] < weight.shape[-1]: 
         weight = weight[..., :x.shape[-1]]
-    return tl.einsum(eq, x, weight)
+
+    if x.dtype == torch.complex32:
+        # if x is half precision, run a specialized einsum
+        return einsum_complexhalf(eq, x, weight)
+    else:
+        return tl.einsum(eq, x, weight)
 
 def _contract_dense_separable(x, weight, separable=True):
     if separable == False:
@@ -56,7 +63,10 @@ def _contract_cp(x, cp_weight, separable=False):
     factor_syms += [xs+rank_sym for xs in x_syms[2:]] #x, y, ...
     eq = x_syms + ',' + rank_sym + ',' + ','.join(factor_syms) + '->' + ''.join(out_syms)
 
-    return tl.einsum(eq, x, cp_weight.weights, *cp_weight.factors)
+    if x.dtype == torch.complex32:
+        return einsum_complexhalf(eq, x, cp_weight.weights, *cp_weight.factors)
+    else:
+        return tl.einsum(eq, x, cp_weight.weights, *cp_weight.factors)
  
 
 def _contract_tucker(x, tucker_weight, separable=False):
@@ -78,7 +88,10 @@ def _contract_tucker(x, tucker_weight, separable=False):
     
     eq = x_syms + ',' + core_syms + ',' + ','.join(factor_syms) + '->' + ''.join(out_syms)
 
-    return tl.einsum(eq, x, tucker_weight.core, *tucker_weight.factors)
+    if x.dtype == torch.complex32:
+        return einsum_complexhalf(eq, x, tucker_weight.core, *tucker_weight.factors)
+    else:
+        return tl.einsum(eq, x, tucker_weight.core, *tucker_weight.factors)
 
 
 def _contract_tt(x, tt_weight, separable=False):
@@ -98,7 +111,10 @@ def _contract_tt(x, tt_weight, separable=False):
         tt_syms.append([rank_syms[i], s, rank_syms[i+1]])
     eq = ''.join(x_syms) + ',' + ','.join(''.join(f) for f in tt_syms) + '->' + ''.join(out_syms)
 
-    return tl.einsum(eq, x, *tt_weight.factors)
+    if x.dtype == torch.complex32:
+        return einsum_complexhalf(eq, x, *tt_weight.factors)
+    else:
+        return tl.einsum(eq, x, *tt_weight.factors)
 
 
 def get_contract_fun(weight, implementation='reconstructed', separable=False):
@@ -182,7 +198,7 @@ class FactorizedSpectralConv(nn.Module):
         Optionaly additional parameters to pass to the tensor decomposition
     """
     def __init__(self, in_channels, out_channels, n_modes, incremental_n_modes=None, bias=True,
-                 n_layers=1, separable=False, output_scaling_factor=None,
+                 n_layers=1, separable=False, output_scaling_factor=None, fno_block_precision='full',
                  rank=0.5, factorization='cp', implementation='reconstructed', 
                  fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict(),
                  init_std='auto', fft_norm='backward'):
@@ -209,6 +225,7 @@ class FactorizedSpectralConv(nn.Module):
         # So that we can train on a smaller part of the Fourier modes and total weights
         self.incremental_n_modes = incremental_n_modes
 
+        self.fno_block_precision = fno_block_precision
         self.rank = rank
         self.factorization = factorization
         self.n_layers = n_layers
@@ -322,9 +339,20 @@ class FactorizedSpectralConv(nn.Module):
         
         #Compute Fourier coeffcients
         fft_dims = list(range(-self.order, 0))
-        x = torch.fft.rfftn(x.float(), norm=self.fft_norm, dim=fft_dims)
 
-        out_fft = torch.zeros([batchsize, self.out_channels, *fft_size], device=x.device, dtype=torch.cfloat)
+        if self.fno_block_precision == 'half':
+            x = x.half()
+
+        x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
+
+        if self.fno_block_precision == 'mixed':
+            # if 'mixed', the above fft runs in full precision, but the following operations run at half precision
+            x = x.chalf()
+
+        if self.fno_block_precision in ['half', 'mixed']:
+            out_fft = torch.zeros([batchsize, self.out_channels, *fft_size], device=x.device, dtype=torch.chalf)
+        else:
+            out_fft = torch.zeros([batchsize, self.out_channels, *fft_size], device=x.device, dtype=torch.cfloat)
         
         # We contract all corners of the Fourier coefs
         # Except for the last mode: there, we take all coefs as redundant modes were already removed
