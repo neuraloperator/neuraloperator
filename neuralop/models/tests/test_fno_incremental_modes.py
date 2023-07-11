@@ -3,7 +3,7 @@ Training just one spectral layer to see if the Incremental Algorithm works - Aut
 """
 import torch
 import torch.nn as nn
-from neuralop.models.fno_block import FactorizedSpectralConv
+from neuralop.models.spectral_convolution import FactorizedSpectralConv
 
 device = 'cpu'
 
@@ -46,7 +46,7 @@ def check_grad_incremental():
 
         print("Dimension of spectral conv: ", dim)
         conv = FactorizedSpectralConv(
-            2, 2, modes[:dim], n_layers=1, scale='auto', bias=False)
+            2, 2, modes[:dim], n_layers=1, bias=False)
 
         original_weights = conv.weight[0].to_tensor().clone()
 
