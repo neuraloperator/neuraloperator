@@ -68,9 +68,10 @@ def count_params(model):
     return sum([p.numel()*2 if p.is_complex() else p.numel() for p in model.parameters()])
 
 
-def wandb_login(api_key_file='../config/wandb_api_key.txt'):
-    with open(api_key_file, 'r') as f:
-        key = f.read()
+def wandb_login(api_key_file='../config/wandb_api_key.txt', key=None):
+    if key is None:
+        key = get_wandb_api_key(api_key_file)
+
     wandb.login(key=key)
 
 def set_wandb_api_key(api_key_file='../config/wandb_api_key.txt'):

@@ -1,8 +1,10 @@
 
 import torch
 from neuralop import TFNO3d, TFNO2d, TFNO1d, TFNO
+from neuralop.models import FNO
 import pytest
 from tensorly import tenalg
+from math import prod
 from configmypy import Bunch
 tenalg.set_backend('einsum')
 
@@ -35,16 +37,16 @@ def test_tfno(factorization, implementation, n_dim):
 
     rank = 0.2
     size = (s, )*n_dim
-    m_modes = (modes,)*n_dim
-    model = TFNO(hidden_channels=width, n_modes=m_modes, 
-                            factorization=factorization,
-                            implementation=implementation,
-                            rank=rank,
-                            fixed_rank_modes=False,
-                            joint_factorization=False,
-                            n_layers=n_layers,
-                            use_mlp=use_mlp, mlp=mlp,
-                            fc_channels=fc_channels).to(device)
+    n_modes = (modes,)*n_dim
+    model = TFNO(hidden_channels=width, n_modes=n_modes,
+                 factorization=factorization,
+                 implementation=implementation,
+                 rank=rank,
+                 fixed_rank_modes=False,
+                 joint_factorization=False,
+                 n_layers=n_layers,
+                 use_mlp=use_mlp, mlp=mlp,
+                 fc_channels=fc_channels).to(device)
     in_data = torch.randn(batch_size, 3, *size).to(device)
 
     # Test forward pass
@@ -56,3 +58,45 @@ def test_tfno(factorization, implementation, n_dim):
     # Check backward pass
     loss = out.sum()
     loss.backward()
+
+    n_unused_params = 0
+    for param in model.parameters():
+        if param.grad is None:
+            n_unused_params += 1
+    assert n_unused_params == 0, f'{n_unused_params} parameters were unused!'
+
+@pytest.mark.parametrize('output_scaling_factor', 
+                         [[2, 1, 1], [1, 2, 1], [1, 1, 2], [1, 2, 2], [1, 0.5, 1]])
+def test_fno_superresolution(output_scaling_factor):
+    device = 'cpu'
+    s = 16
+    modes = 5
+    hidden_channels = 15
+    fc_channels = 32
+    batch_size = 3
+    n_layers = 3
+    use_mlp = True
+    n_dim = 2
+    rank = 0.2
+    size = (s, )*n_dim
+    n_modes = (modes,)*n_dim
+
+    model = FNO(n_modes, hidden_channels,
+                in_channels=3, 
+                out_channels=1,
+                factorization='cp',
+                implementation='reconstructed',
+                rank=rank,
+                output_scaling_factor=output_scaling_factor,
+                n_layers=n_layers,
+                use_mlp=use_mlp,
+                fc_channels=fc_channels).to(device)
+
+    in_data = torch.randn(batch_size, 3, *size).to(device)
+    # Test forward pass
+    out = model(in_data)
+
+    # Check output size
+    factor = prod(output_scaling_factor)
+    
+    assert list(out.shape) == [batch_size, 1] + [int(round(factor*s)) for s in size]

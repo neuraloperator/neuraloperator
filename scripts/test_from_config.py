@@ -39,3 +39,8 @@ print(f'Output of size {out.shape} in {t}.')
 
 loss = out.sum()
 loss.backward()
+
+# Check for unused params
+for name, param in model.named_parameters():
+    if param.grad is None:
+        print(f'Usused parameter {name}!')

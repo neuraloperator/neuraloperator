@@ -1,5 +1,6 @@
 from .tfno import TFNO, TFNO1d, TFNO2d, TFNO3d
 from .tfno import FNO, FNO1d, FNO2d, FNO3d
+from .uno import UNO
 import inspect
 
 
@@ -12,10 +13,13 @@ MODEL_ZOO = {
     'fno1d'  : FNO1d,
     'fno2d'  : FNO2d,
     'fno3d'  : FNO3d,
+    'uno'    : UNO,
 }
 
 
 def available_models():
+    """List the available neural operators
+    """
     return list(MODEL_ZOO.keys())
 
 
@@ -48,7 +52,7 @@ def get_model(config):
     except KeyError:
         patching_levels = 0
     if patching_levels:
-        data_channels *= 2**patching_levels
+        data_channels *= (patching_levels + 1)
     config_arch['in_channels'] = data_channels
 
     # Dispatch model creation

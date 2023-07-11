@@ -58,13 +58,25 @@ Dimension-specific classes:
     TFNO2d
     TFNO3d
 
+U-shaped Neural Operators (U-NO)
+--------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    UNO
 
 Layers
 ======
 
 In addition to the full architectures, we also provide building blocks:
 
-.. automodule:: neuralop.models.fno_block
+Neural operator Layers
+++++++++++++++++++++++
+
+**Spectral convolutions** (in Fourier domain): 
+.. automodule:: neuralop.models.spectral_convolution
     :no-members:
     :no-inherited-members:
 
@@ -77,6 +89,23 @@ In addition to the full architectures, we also provide building blocks:
     FactorizedSpectralConv1d
     FactorizedSpectralConv2d
     FactorizedSpectralConv3d
+
+
+**Spherical convolutions**: 
+
+.. automodule:: neuralop.models.spherical_convolution
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    FactorizedSphericalConv
+
+
+Other resolution invariant operations
++++++++++++++++++++++++++++++++++++++
 
 Automatically apply resolution dependent domain padding: 
 
@@ -121,6 +150,7 @@ It has the advantage of doing some checks on the parameters it receives.
     :template: function.rst
 
     get_model
+    available_models
 
 Datasets
 ========
