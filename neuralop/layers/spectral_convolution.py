@@ -1,4 +1,9 @@
 import itertools
+from typing import List, Optional, Tuple, Union
+try:
+    from typing import  Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import torch
 from torch import nn
@@ -148,6 +153,9 @@ def get_contract_fun(weight, implementation="reconstructed", separable=False):
     implementation : {'reconstructed', 'factorized'}, default is 'reconstructed'
         whether to reconstruct the weight and do a forward pass (reconstructed)
         or contract directly the factors of the factorized weight with the input (factorized)
+    separable : bool
+        whether to use the separable implementation of contraction. This arg is
+        only checked when `implementation=reconstructed`.
 
     Returns
     -------
@@ -251,7 +259,7 @@ class SpectralConv(nn.Module):
         implementation="reconstructed",
         fixed_rank_modes=False,
         joint_factorization=False,
-        decomposition_kwargs=dict(),
+        decomposition_kwargs: Optional[dict] = None,
         init_std="auto",
         fft_norm="backward",
     ):
@@ -330,13 +338,14 @@ class SpectralConv(nn.Module):
         self.separable = separable
 
         self.n_weights_per_layer = 2 ** (self.order - 1)
+        tensor_kwargs = decomposition_kwargs if decomposition_kwargs is not None else {}
         if joint_factorization:
             self.weight = FactorizedTensor.new(
                 (self.n_weights_per_layer * n_layers, *weight_shape),
                 rank=self.rank,
                 factorization=factorization,
                 fixed_rank_modes=fixed_rank_modes,
-                **decomposition_kwargs,
+                **tensor_kwargs,
             )
             self.weight.normal_(0, init_std)
         else:
@@ -347,7 +356,7 @@ class SpectralConv(nn.Module):
                         rank=self.rank,
                         factorization=factorization,
                         fixed_rank_modes=fixed_rank_modes,
-                        **decomposition_kwargs,
+                        **tensor_kwargs,
                     )
                     for _ in range(self.n_weights_per_layer * n_layers)
                 ]
@@ -398,7 +407,7 @@ class SpectralConv(nn.Module):
             ]
             self.half_n_modes = [m // 2 for m in self._incremental_n_modes]
 
-    def forward(self, x, indices=0, output_shape=None):
+    def forward(self, x: torch.Tensor, indices=0, output_shape: Optional[Tuple[int]] = None):
         """Generic forward pass for the Factorized Spectral Conv
 
         Parameters
@@ -472,7 +481,7 @@ class SpectralConv(nn.Module):
         if output_shape is not None:
             mode_sizes = output_shape
 
-        x = torch.fft.irfftn(out_fft, s=(mode_sizes), norm=self.fft_norm)
+        x = torch.fft.irfftn(out_fft, s=mode_sizes, norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
@@ -527,16 +536,18 @@ class SpectralConv1d(SpectralConv):
 
         x = torch.fft.rfft(x, norm=self.fft_norm)
 
-        out_fft = torch.zeros(
-            [batchsize, self.out_channels, width // 2 + 1],
-            device=x.device,
-            dtype=torch.cfloat,
-        )
-        out_fft[:, :, : self.half_n_modes[0]] = self._contract(
-            x[:, :, : self.half_n_modes[0]],
+        out_fft = torch.zeros([batchsize,
+                               self.out_channels,
+                               width // 2 + 1],
+                              device=x.device,
+                              dtype=torch.cfloat)
+        slices = (slice(None),  # Equivalent to: [:,
+                  slice(None),  # ............... :,
+                  slice(self.half_n_modes[0]))  # :half_n_modes[0]]
+        out_fft[slices] = self._contract(
+            x[slices],
             self._get_weight(indices),
-            separable=self.separable,
-        )
+            separable=self.separable)
 
         if self.output_scaling_factor is not None:
             width = int(round(width * self.output_scaling_factor[0]))
@@ -569,18 +580,23 @@ class SpectralConv2d(SpectralConv):
             device=x.device,
         )
 
-        # upper block (truncate high freq)
-        out_fft[:, :, : self.half_n_modes[0], : self.half_n_modes[1]] = self._contract(
-            x[:, :, : self.half_n_modes[0], : self.half_n_modes[1]],
-            self._get_weight(2 * indices),
-            separable=self.separable,
-        )
-        # Lower block
-        out_fft[:, :, -self.half_n_modes[0] :, : self.half_n_modes[1]] = self._contract(
-            x[:, :, -self.half_n_modes[0] :, : self.half_n_modes[1]],
-            self._get_weight(2 * indices + 1),
-            separable=self.separable,
-        )
+        slices0 = (slice(None),  # Equivalent to: [:,
+                   slice(None),  # ............... :,
+                   slice(self.half_n_modes[0]),  # :half_n_modes[0],
+                   slice(self.half_n_modes[1]))  # :half_n_modes[1]]
+        """Upper block (truncate high frequencies)."""
+        out_fft[slices0] = self._contract(
+            x[slices0], self._get_weight(
+                2 * indices), separable=self.separable)
+
+        slices1 = (slice(None),  # Equivalent to:        [:,
+                   slice(None),  # ...................... :,
+                   slice(-self.half_n_modes[0], None),  # -half_n_modes[0]:,
+                   slice(self.half_n_modes[1]))  # ...... :half_n_modes[1]]
+        """Lower block"""
+        out_fft[slices1] = self._contract(
+            x[slices1], self._get_weight(
+                2 * indices + 1), separable=self.separable)
 
         if self.output_scaling_factor is not None:
             width = int(round(width * self.output_scaling_factor[indices][0]))
@@ -614,70 +630,46 @@ class SpectralConv3d(SpectralConv):
             dtype=torch.cfloat,
         )
 
-        out_fft[
-            :, :, : self.half_n_modes[0], : self.half_n_modes[1], : self.half_n_modes[2]
-        ] = self._contract(
-            x[
-                :,
-                :,
-                : self.half_n_modes[0],
-                : self.half_n_modes[1],
-                : self.half_n_modes[2],
-            ],
-            self._get_weight(4 * indices + 0),
-            separable=self.separable,
-        )
-        out_fft[
-            :,
-            :,
-            : self.half_n_modes[0],
-            -self.half_n_modes[1] :,
-            : self.half_n_modes[2],
-        ] = self._contract(
-            x[
-                :,
-                :,
-                : self.half_n_modes[0],
-                -self.half_n_modes[1] :,
-                : self.half_n_modes[2],
-            ],
-            self._get_weight(4 * indices + 1),
-            separable=self.separable,
-        )
-        out_fft[
-            :,
-            :,
-            -self.half_n_modes[0] :,
-            : self.half_n_modes[1],
-            : self.half_n_modes[2],
-        ] = self._contract(
-            x[
-                :,
-                :,
-                -self.half_n_modes[0] :,
-                : self.half_n_modes[1],
-                : self.half_n_modes[2],
-            ],
-            self._get_weight(4 * indices + 2),
-            separable=self.separable,
-        )
-        out_fft[
-            :,
-            :,
-            -self.half_n_modes[0] :,
-            -self.half_n_modes[1] :,
-            : self.half_n_modes[2],
-        ] = self._contract(
-            x[
-                :,
-                :,
-                -self.half_n_modes[0] :,
-                -self.half_n_modes[1] :,
-                : self.half_n_modes[2],
-            ],
-            self._get_weight(4 * indices + 3),
-            separable=self.separable,
-        )
+        slices0 = (slice(None),  # Equivalent to: [:,
+                   slice(None),  # ............... :,
+                   slice(self.half_n_modes[0]),  # :half_n_modes[0],
+                   slice(self.half_n_modes[1]),  # :half_n_modes[1],
+                   slice(self.half_n_modes[2]))  # :half_n_modes[2]]
+        """Upper block -- truncate high frequencies."""
+        out_fft[slices0] = self._contract(
+            x[slices0], self._get_weight(
+                4 * indices + 0), separable=self.separable)
+
+        slices1 = (slice(None),  # Equivalent to:        [:,
+                   slice(None),  # ...................... :,
+                   slice(self.half_n_modes[0]),  # ...... :half_n_modes[0],
+                   slice(-self.half_n_modes[1], None),  # -half_n_modes[1]:,
+                   slice(self.half_n_modes[2]))  # ...... :half_n_modes[0]]
+        """Low-pass filter for indices 2 & 4, and high-pass filter for index 3."""
+        out_fft[slices1] = self._contract(
+            x[slices1], self._get_weight(
+                4 * indices + 1), separable=self.separable)
+
+        slices2 = (slice(None),  # Equivalent to:        [:,
+                   slice(None),  # ...................... :,
+                   slice(-self.half_n_modes[0], None),  # -half_n_modes[0]:,
+                   slice(self.half_n_modes[1]),  # ...... :half_n_modes[1],
+                   slice(self.half_n_modes[2]))  # ...... :half_n_modes[2]]
+        """Low-pass filter for indices 3 & 4, and high-pass filter for index 2."""
+        out_fft[slices2] = self._contract(
+            x[slices2], self._get_weight(
+                4 * indices + 2), separable=self.separable)
+
+        slices3 = (slice(None),  # Equivalent to:        [:,
+                   slice(None),  # ...................... :,
+                   slice(-self.half_n_modes[0], None),  # -half_n_modes[0],
+                   slice(-self.half_n_modes[1], None),  # -half_n_modes[1],
+                   slice(self.half_n_modes[2]))  # ...... :half_n_modes[2]]
+        """Lower block -- low-cut filter in indices 2 & 3
+        and high-cut filter in index 4."""
+        out_fft[slices3] = self._contract(
+            x[slices3], self._get_weight(
+                4 * indices + 3), separable=self.separable)
 
         if self.output_scaling_factor is not None:
             width = int(round(width * self.output_scaling_factor[0]))
