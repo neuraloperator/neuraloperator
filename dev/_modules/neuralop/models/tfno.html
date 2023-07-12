@@ -185,6 +185,12 @@
 <span class="sd">        * If None, all the n_modes are used.</span>
 
 <span class="sd">        This can be updated dynamically during training.</span>
+<span class="sd">    fno_block_precision : str {&#39;full&#39;, &#39;half&#39;, &#39;mixed&#39;}</span>
+<span class="sd">        if &#39;full&#39;, the FNO Block runs in full precision</span>
+<span class="sd">        if &#39;half&#39;, the FFT, contraction, and inverse FFT run in half precision</span>
+<span class="sd">        if &#39;mixed&#39;, the contraction and inverse FFT run in half precision</span>
+<span class="sd">    stabilizer : str {&#39;tanh&#39;} or None, optional</span>
+<span class="sd">        By default None, otherwise tanh is used before FFT in the FNO block </span>
 <span class="sd">    use_mlp : bool, optional</span>
 <span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
 <span class="sd">    mlp : dict, optional</span>
@@ -231,8 +237,10 @@
                  <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
                  <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">fno_block_precision</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">,</span>
                  <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
                  <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
+                 <span class="n">stabilizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
                  <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">preactivation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                  <span class="n">fno_skip</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span>
                  <span class="n">mlp_skip</span><span class="o">=</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span>
@@ -269,6 +277,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">implementation</span> <span class="o">=</span> <span class="n">implementation</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">separable</span> <span class="o">=</span> <span class="n">separable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">preactivation</span> <span class="o">=</span> <span class="n">preactivation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fno_block_precision</span> <span class="o">=</span> <span class="n">fno_block_precision</span>
 
         <span class="c1"># See the class&#39; property for underlying mechanism</span>
         <span class="c1"># When updated, change should be reflected in fno blocks</span>
@@ -291,11 +300,13 @@
             <span class="n">n_modes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span><span class="p">,</span>
             <span class="n">output_scaling_factor</span><span class="o">=</span><span class="n">output_scaling_factor</span><span class="p">,</span>
             <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
-            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
+            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span> 
+            <span class="n">stabilizer</span><span class="o">=</span><span class="n">stabilizer</span><span class="p">,</span>
             <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span> <span class="n">preactivation</span><span class="o">=</span><span class="n">preactivation</span><span class="p">,</span>
             <span class="n">fno_skip</span><span class="o">=</span><span class="n">fno_skip</span><span class="p">,</span>
             <span class="n">mlp_skip</span><span class="o">=</span><span class="n">mlp_skip</span><span class="p">,</span>
             <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
+            <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
             <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
             <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
             <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span> 
@@ -364,6 +375,12 @@
 <span class="sd">        * If None, all the n_modes are used.</span>
 
 <span class="sd">        This can be updated dynamically during training.</span>
+<span class="sd">    fno_block_precision : str {&#39;full&#39;, &#39;half&#39;, &#39;mixed&#39;}</span>
+<span class="sd">        if &#39;full&#39;, the FNO Block runs in full precision</span>
+<span class="sd">        if &#39;half&#39;, the FFT, contraction, and inverse FFT run in half precision</span>
+<span class="sd">        if &#39;mixed&#39;, the contraction and inverse FFT run in half precision</span>
+<span class="sd">    stabilizer : str {&#39;tanh&#39;} or None, optional</span>
+<span class="sd">        By default None, otherwise tanh is used before FFT in the FNO block </span>
 <span class="sd">    use_mlp : bool, optional</span>
 <span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
 <span class="sd">    mlp : dict, optional</span>
@@ -411,9 +428,11 @@
         <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">fno_block_precision</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
         <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
+        <span class="n">stabilizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
         <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">skip</span><span class="o">=</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span>
@@ -438,9 +457,11 @@
             <span class="n">projection_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
             <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
+            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span> 
+            <span class="n">stabilizer</span><span class="o">=</span><span class="n">stabilizer</span><span class="p">,</span>
             <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
             <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
+            <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
             <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
             <span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">,</span>
             <span class="n">separable</span><span class="o">=</span><span class="n">separable</span><span class="p">,</span>
@@ -486,6 +507,12 @@
 <span class="sd">        * If None, all the n_modes are used.</span>
 
 <span class="sd">        This can be updated dynamically during training.</span>
+<span class="sd">    fno_block_precision : str {&#39;full&#39;, &#39;half&#39;, &#39;mixed&#39;}</span>
+<span class="sd">        if &#39;full&#39;, the FNO Block runs in full precision</span>
+<span class="sd">        if &#39;half&#39;, the FFT, contraction, and inverse FFT run in half precision</span>
+<span class="sd">        if &#39;mixed&#39;, the contraction and inverse FFT run in half precision</span>
+<span class="sd">    stabilizer : str {&#39;tanh&#39;} or None, optional</span>
+<span class="sd">        By default None, otherwise tanh is used before FFT in the FNO block </span>
 <span class="sd">    use_mlp : bool, optional</span>
 <span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
 <span class="sd">    mlp : dict, optional</span>
@@ -536,7 +563,9 @@
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
         <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">fno_block_precision</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
+        <span class="n">stabilizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
         <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">skip</span><span class="o">=</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span>
@@ -561,9 +590,11 @@
             <span class="n">projection_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
             <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
+            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span> 
+            <span class="n">stabilizer</span><span class="o">=</span><span class="n">stabilizer</span><span class="p">,</span>
             <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
             <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
+            <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
             <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
             <span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">,</span>
             <span class="n">separable</span><span class="o">=</span><span class="n">separable</span><span class="p">,</span>
@@ -613,6 +644,12 @@
 <span class="sd">        * If None, all the n_modes are used.</span>
 
 <span class="sd">        This can be updated dynamically during training.</span>
+<span class="sd">    fno_block_precision : str {&#39;full&#39;, &#39;half&#39;, &#39;mixed&#39;}</span>
+<span class="sd">        if &#39;full&#39;, the FNO Block runs in full precision</span>
+<span class="sd">        if &#39;half&#39;, the FFT, contraction, and inverse FFT run in half precision</span>
+<span class="sd">        if &#39;mixed&#39;, the contraction and inverse FFT run in half precision</span>
+<span class="sd">    stabilizer : str {&#39;tanh&#39;} or None, optional</span>
+<span class="sd">        By default None, otherwise tanh is used before FFT in the FNO block </span>
 <span class="sd">    use_mlp : bool, optional</span>
 <span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
 <span class="sd">    mlp : dict, optional</span>
@@ -663,7 +700,9 @@
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
         <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">fno_block_precision</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
+        <span class="n">stabilizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
         <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">skip</span><span class="o">=</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span>
@@ -689,7 +728,9 @@
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
             <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
+            <span class="n">stabilizer</span><span class="o">=</span><span class="n">stabilizer</span><span class="p">,</span>
             <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
+            <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
             <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
             <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
             <span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">,</span>
