@@ -64,7 +64,6 @@ class IntegralTransform(nn.Module):
     def forward(self, y, neighbors,
                 x=None, f_y=None, 
                 weights=None):
-        
         if x is None:
             x = y
 
@@ -83,7 +82,7 @@ class IntegralTransform(nn.Module):
 
         rep_features = self.mlp(agg_features)
 
-        if f_y is not None and self.transform_type == 2:
+        if f_y is not None:
             rep_features = rep_features*in_features 
 
         if weights is not None:

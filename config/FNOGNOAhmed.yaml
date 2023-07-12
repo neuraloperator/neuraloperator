@@ -14,6 +14,7 @@ entity: 'nvr-ai-algo'
 data_path: "ahmed-body-dataset"
 data_module: "AhmedBodyDataModule"
 sdf_spatial_resolution: [64, 64, 64]
+max_in_points: 5000
 model_path: "checkpoints/FNOGNOAhmed.pth"
 
 # TODO: update
