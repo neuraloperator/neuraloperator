@@ -29,8 +29,8 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
         
         hm1, hm2 = self.half_n_modes[0], self.half_n_modes[1]
         if self.factorization is None or not frequency_mixer:
-            self.W1 = nn.Parameter(torch.empty(hm1, hm2, hm1, hm2, dtype = torch.cfloat))
-            self.W2 = nn.Parameter(torch.empty(hm1, hm2, hm1, hm2, dtype = torch.cfloat))
+            self.W1 = nn.Parameter(torch.empty(hm1, hm2, hm1, hm2, dtype=torch.cfloat))
+            self.W2 = nn.Parameter(torch.empty(hm1, hm2, hm1, hm2, dtype=torch.cfloat))
             self.reset_parameter()
         self.sht_grid = sht_grid
         self.isht_grid = isht_grid
@@ -47,8 +47,8 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
         
 
         if fft_type == 'sht':
-            self.forward_fft = th.RealSHT(sht_nlat, sht_nlon, grid = self.sht_grid, norm= self.sht_norm)
-            self.inverse_fft = th.InverseRealSHT(out_nlat, out_nlon, grid = self.isht_grid, norm= self.sht_norm)
+            self.forward_fft = th.RealSHT(sht_nlat, sht_nlon, grid=self.sht_grid, norm=self.sht_norm)
+            self.inverse_fft = th.InverseRealSHT(out_nlat, out_nlon, grid=self.isht_grid, norm=self.sht_norm)
             
 
     def reset_parameter(self):
@@ -65,8 +65,8 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
 
         if self.fft_type == 'sht':
             if self.forward_fft.nlat != x.shape[-2] or self.forward_fft.nlon != x.shape[-1]:
-                self.forward_fft = th.RealSHT(x.shape[-2], x.shape[-1], grid = self.sht_grid, norm= self.sht_norm).to(x.device)
-            x = self.forward_fft(x.double()).to(dtype = torch.cfloat)
+                self.forward_fft = th.RealSHT(x.shape[-2], x.shape[-1], grid=self.sht_grid, norm=self.sht_norm).to(x.device)
+            x = self.forward_fft(x.double()).to(dtype=torch.cfloat)
         else:
             x = torch.fft.rfft2(x.float(), norm=self.fft_norm)
 
@@ -75,8 +75,8 @@ class SpectralConvKernel2d(FactorizedSpectralConv):
     
 
         if self.factorization is None or not self.frequency_mixer:
-            x[:,:, :self.half_n_modes[0], :self.half_n_modes[1]] = self.mode_mixer(x[:,:, :self.half_n_modes[0], :self.half_n_modes[1]].clone(), self.W1)
-            x[:,:, -self.half_n_modes[0]:, :self.half_n_modes[1]] = self.mode_mixer(x[:,:, -self.half_n_modes[0]:, :self.half_n_modes[1]].clone(), self.W2)
+            x[:,:, :self.half_n_modes[0], :self.half_n_modes[1]]=self.mode_mixer(x[:,:, :self.half_n_modes[0], :self.half_n_modes[1]].clone(), self.W1)
+            x[:,:, -self.half_n_modes[0]:, :self.half_n_modes[1]]=self.mode_mixer(x[:,:, -self.half_n_modes[0]:, :self.half_n_modes[1]].clone(), self.W2)
         
 
         #spectral conv / channel mixer
