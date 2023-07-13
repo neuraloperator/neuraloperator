@@ -257,8 +257,8 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
     #Load ahmed body
     datamodule = MeshDataModule('data/new_ahmed/new_ahmed', 'case', 
                           query_points=[64,64,64], 
-                          n_train=5, 
-                          n_test=5, 
+                          n_train=None, 
+                          n_test=None, 
                           attributes=['pressure', 'wall_shear_stress', 'inlet_velocity', 'info', 'drag_history'])
     train_loader = datamodule.train_dataloader(batch_size=config.batch_size, shuffle=True)
     

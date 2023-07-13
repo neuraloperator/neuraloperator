@@ -16,7 +16,7 @@ from neuralop.training.loggers import init_logger
 from neuralop.utils import get_wandb_api_key, count_params
 from neuralop.datasets.mesh_datamodule import MeshDataModule
 from neuralop.training.losses import total_drag, IregularLpqLoss, LpLoss
-from neuralop.models.FNOGNO_shear import FNOGNO
+from neuralop.models.FNOGNO import FNOGNO
 from neuralop.training.average_meter import AverageMeter, AverageMeterDict
 
 def set_seed(seed: int = 0):
@@ -157,8 +157,73 @@ def load_config(config_path):
     config_flat = DotDict(config_flat)
     return config_flat
 
+def data_dict_to_input(model, data_dict, device="cuda:0"):
+    x_in = data_dict["centroids"][0]  # (n_in, 3)
+    x_out = data_dict["query_points"][0] # (n_x, n_y, n_z, 3)
+    df = data_dict["distance"]  # (1, n_x, n_y, n_z)
+
+    info_fields = data_dict['inlet_velocity'] * torch.ones_like(df)
+
+    df = torch.cat((df, info_fields), dim=0)
+
+    if model.use_adain:
+        vel = torch.tensor([data_dict['inlet_velocity']]).view(-1, ).cuda()
+        vel_embed = model.adain_pos_embed(vel)
+        for norm in model.fno.fno_blocks.norm:
+            norm.update_embeddding(vel_embed)
+
+    x_in, x_out, df = (
+        x_in.to(device),
+        x_out.to(device),
+        df.to(device),
+    )
+
+    return x_in, x_out, df
+
+def cal_loss_dict(model, data_dict, loss_fn, max_in_points=None, device="cuda:0"):
+    x_in, x_out, df = data_dict_to_input(model, data_dict)
+
+    if max_in_points is not None:
+        r = min(max_in_points, x_in.shape[0])
+        indices = torch.randperm(x_in.shape[0])[:r]
+        x_in = x_in[indices, ...]
+
+    pred = model(x_in, x_out, df)
+
+    if max_in_points is not None:
+        truth = data_dict["wall_shear_stress"][0][indices].view(1, -1).to(device)
+    else:
+        truth = data_dict["wall_shear_stress"][0].view(1, -1).to(device)
+
+    return {"loss": loss_fn(pred.reshape(1, -1), truth)}
+
+
 @torch.no_grad()
-def eval(model, datamodule, config, loss_fn=None):
+def eval_dict(model, data_dict, loss_fn, decode_fn=None, max_in_points=None, device="cuda:0"):
+    x_in, x_out, df = data_dict_to_input(model, data_dict)
+
+    if max_in_points is not None:
+        r = min(max_in_points, x_in.shape[0])
+        pred_chunks = []
+        x_in_chunks = torch.split(x_in, r, dim=0)
+        for j in range(len(x_in_chunks)):
+            pred_chunks.append(model(x_in_chunks[j], x_out, df))
+        pred = torch.cat(tuple(pred_chunks), dim=0)
+    else:
+        pred = model(x_in, x_out, df)
+
+    pred = pred.reshape(1, -1)
+    truth = data_dict["wall_shear_stress"].to(device).reshape(1, -1)
+    out_dict = {"l2": loss_fn(pred, truth)}
+    if decode_fn is not None:
+        pred = decode_fn(pred.cpu()).cuda()
+        truth = decode_fn(truth.cpu()).cuda()
+        out_dict["l2_decoded"] = loss_fn(pred, truth)
+    return out_dict
+
+
+@torch.no_grad()
+def eval(model, datamodule, config, loss_fn):
     model.eval()
     test_loader = datamodule.test_dataloader(
         batch_size=config.batch_size, shuffle=False, num_workers=0
@@ -166,8 +231,8 @@ def eval(model, datamodule, config, loss_fn=None):
     eval_meter = AverageMeterDict()
     visualize_data_dicts = []
     for i, data_dict in enumerate(test_loader):
-        out_dict = model.eval_dict(
-            data_dict, loss_fn=loss_fn, decode_fn=datamodule.normalizers['pressure'].decode
+        out_dict = eval_dict(
+            model, data_dict, loss_fn=loss_fn, decode_fn=datamodule.normalizers['pressure'].decode, max_in_points=config.max_in_points
         )
         eval_meter.update(out_dict)
         if i % config.test_plot_interval == 0:
@@ -188,12 +253,12 @@ def eval(model, datamodule, config, loss_fn=None):
 
 def train(config, device: Union[torch.device, str] = "cuda:0"):
     device = torch.device(device)
-    model = FNOGNO().to(device)
+    model = FNOGNO(out_channels=3).to(device)
     #Load ahmed body
     datamodule = MeshDataModule('data/new_ahmed/new_ahmed', 'case', 
                           query_points=[64,64,64], 
-                          n_train=None, 
-                          n_test=None, 
+                          n_train=5, 
+                          n_test=5, 
                           attributes=['pressure', 'wall_shear_stress', 'inlet_velocity', 'info', 'drag_history'])
     train_loader = datamodule.train_dataloader(batch_size=config.batch_size, shuffle=True)
     
@@ -205,7 +270,6 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
 
     # Initialize the loss function
     loss_fn = LpLoss()
-
     for ep in range(config.num_epochs):
         model.train()
         t1 = default_timer()
@@ -213,7 +277,7 @@ def train(config, device: Union[torch.device, str] = "cuda:0"):
         # train_reg = 0
         for data_dict in train_loader:
             optimizer.zero_grad()
-            loss_dict = model.loss_dict(data_dict, loss_fn=loss_fn)
+            loss_dict = cal_loss_dict(model, data_dict, loss_fn=loss_fn, max_in_points=config.max_in_points)
             loss = 0
             for k, v in loss_dict.items():
                 loss = loss + v.mean()
