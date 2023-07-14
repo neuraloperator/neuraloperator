@@ -24,29 +24,28 @@ class Lifting(nn.Module):
 
 
 class Projection(nn.Module):
-    def __init__(self, in_channels, out_channels, hidden_channels=None, n_dim=2, non_linearity=F.gelu, permutation_invariant = False, input_group = 1):
+    def __init__(self, in_channels, out_channels, hidden_channels=None, n_dim=2, non_linearity=F.gelu, permutation_invariant = False):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.hidden_channels = in_channels if hidden_channels is None else hidden_channels 
         self.non_linearity = non_linearity
         Conv = getattr(nn, f'Conv{n_dim}d')
-        if permutation_invariant:
-            assert in_channels%input_group == 0
-            assert out_channels%input_group == 0
+            
         self.permutation_invariant = permutation_invariant
-        self.input_group = input_group
-        self.fc1 = Conv(input_group, hidden_channels//input_group, 1)
-        self.fc2 = Conv(hidden_channels//input_group, out_channels//input_group, 1)
+
+        self.fc1 = Conv(in_channels, hidden_channels, 1)
+        self.fc2 = Conv(hidden_channels, out_channels, 1)
 
     def forward(self, x):
         if self.permutation_invariant:
-            x  = rearrange(x, 'b (g c) h w -> (b g) c h w', g = slef.input_group)
+            assert x.shape[1]%in_channels == 0; "Total Number of Channels is not divisible by number of tokens"
+            x  = rearrange(x, 'b (g c) h w -> (b g) c h w', c = self.in_channels)
         x = self.fc1(x)
         x = self.non_linearity(x)
         x = self.fc2(x)
         if self.permutation_invariant:
-            x  = rearrange(x, '(b g) c h w -> b (g c) h w', g = slef.input_group)
+            x  = rearrange(x, '(b g) c h w -> b (g c) h w', c = self.out_channels)
         return x
 
 
