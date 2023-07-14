@@ -38,14 +38,15 @@ class Projection(nn.Module):
         self.fc2 = Conv(hidden_channels, out_channels, 1)
 
     def forward(self, x):
+        batch = x.shape[0]
         if self.permutation_invariant:
-            assert x.shape[1]%in_channels == 0; "Total Number of Channels is not divisible by number of tokens"
+            assert x.shape[1]%self.in_channels == 0; "Total Number of Channels is not divisible by number of tokens"
             x  = rearrange(x, 'b (g c) h w -> (b g) c h w', c = self.in_channels)
         x = self.fc1(x)
         x = self.non_linearity(x)
         x = self.fc2(x)
         if self.permutation_invariant:
-            x  = rearrange(x, '(b g) c h w -> b (g c) h w', c = self.out_channels)
+            x  = rearrange(x, '(b g) c h w -> b (g c) h w', b = batch)
         return x
 
 
