@@ -8,3 +8,8 @@ matplotlib
 opt-einsum
 h5py
 zarr
+open3d
+torch-cluster
+torch-scatter
+torch-sparse
+torch-spline-conv
