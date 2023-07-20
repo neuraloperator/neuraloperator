@@ -1,3 +1,4 @@
+from .einsum_utils import einsum_complexhalf
 from torch import nn
 import torch
 import itertools
@@ -33,7 +34,11 @@ def _contract_dense(x, weight, separable=False):
     if not torch.is_tensor(weight):
         weight = weight.to_tensor()
 
-    return tl.einsum(eq, x, weight)
+    if x.dtype == torch.complex32:
+        # if x is half precision, run a specialized einsum
+        return einsum_complexhalf(eq, x, weight)
+    else:
+        return tl.einsum(eq, x, weight)
 
 def _contract_dense_separable(x, weight, separable=True):
     if separable == False:
@@ -55,7 +60,10 @@ def _contract_cp(x, cp_weight, separable=False):
     factor_syms += [xs+rank_sym for xs in x_syms[2:]] #x, y, ...
     eq = x_syms + ',' + rank_sym + ',' + ','.join(factor_syms) + '->' + ''.join(out_syms)
 
-    return tl.einsum(eq, x, cp_weight.weights, *cp_weight.factors)
+    if x.dtype == torch.complex32:
+        return einsum_complexhalf(eq, x, cp_weight.weights, *cp_weight.factors)
+    else:
+        return tl.einsum(eq, x, cp_weight.weights, *cp_weight.factors)
  
 
 def _contract_tucker(x, tucker_weight, separable=False):
@@ -77,7 +85,10 @@ def _contract_tucker(x, tucker_weight, separable=False):
     
     eq = x_syms + ',' + core_syms + ',' + ','.join(factor_syms) + '->' + ''.join(out_syms)
 
-    return tl.einsum(eq, x, tucker_weight.core, *tucker_weight.factors)
+    if x.dtype == torch.complex32:
+        return einsum_complexhalf(eq, x, tucker_weight.core, *tucker_weight.factors)
+    else:
+        return tl.einsum(eq, x, tucker_weight.core, *tucker_weight.factors)
 
 
 def _contract_tt(x, tt_weight, separable=False):
@@ -97,7 +108,10 @@ def _contract_tt(x, tt_weight, separable=False):
         tt_syms.append([rank_syms[i], s, rank_syms[i+1]])
     eq = ''.join(x_syms) + ',' + ','.join(''.join(f) for f in tt_syms) + '->' + ''.join(out_syms)
 
-    return tl.einsum(eq, x, *tt_weight.factors)
+    if x.dtype == torch.complex32:
+        return einsum_complexhalf(eq, x, *tt_weight.factors)
+    else:
+        return tl.einsum(eq, x, *tt_weight.factors)
 
 
 def get_contract_fun(weight, implementation='reconstructed', separable=False):
@@ -163,26 +177,33 @@ class FactorizedSpectralConv(nn.Module):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
+    factorization : str or None, {'tucker', 'cp', 'tt'}, default is None
+        If None, a single dense weight is learned for the FNO. 
+        Otherwise, that weight, used for the contraction in the Fourier domain is learned in factorized form.
+        In that case, `factorization` is the tensor factorization of the parameters weight used.
     joint_factorization : bool, optional
         Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False
+        Ignored if ``factorization is None``
     rank : float or rank, optional
         Rank of the tensor factorization of the Fourier weights, by default 1.0
-    factorization : str, {'tucker', 'cp', 'tt'}, optional
-        Tensor factorization of the parameters weight to use, by default 'tucker'
+        Ignored if ``factorization is None``
     fixed_rank_modes : bool, optional
         Modes to not factorize, by default False
+        Ignored if ``factorization is None``
     fft_norm : str, optional
         by default 'forward'
     implementation : {'factorized', 'reconstructed'}, optional, default is 'factorized'
         If factorization is not None, forward mode to use::
         * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass
         * `factorized` : the input is directly contracted with the factors of the decomposition
+        Ignored if ``factorization is None``
     decomposition_kwargs : dict, optional, default is {}
         Optionaly additional parameters to pass to the tensor decomposition
+        Ignored if ``factorization is None``
     """
     def __init__(self, in_channels, out_channels, n_modes, incremental_n_modes=None, bias=True,
-                 n_layers=1, separable=False, output_scaling_factor=None,
-                 rank=0.5, factorization='cp', implementation='reconstructed', 
+                 n_layers=1, separable=False, output_scaling_factor=None, fno_block_precision='full',
+                 rank=0.5, factorization=None, implementation='reconstructed', 
                  fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict(),
                  init_std='auto', fft_norm='backward'):
         super().__init__()
@@ -208,6 +229,7 @@ class FactorizedSpectralConv(nn.Module):
         # So that we can train on a smaller part of the Fourier modes and total weights
         self.incremental_n_modes = incremental_n_modes
 
+        self.fno_block_precision = fno_block_precision
         self.rank = rank
         self.factorization = factorization
         self.n_layers = n_layers
@@ -321,9 +343,20 @@ class FactorizedSpectralConv(nn.Module):
         
         #Compute Fourier coeffcients
         fft_dims = list(range(-self.order, 0))
-        x = torch.fft.rfftn(x.float(), norm=self.fft_norm, dim=fft_dims)
 
-        out_fft = torch.zeros([batchsize, self.out_channels, *fft_size], device=x.device, dtype=torch.cfloat)
+        if self.fno_block_precision == 'half':
+            x = x.half()
+
+        x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
+
+        if self.fno_block_precision == 'mixed':
+            # if 'mixed', the above fft runs in full precision, but the following operations run at half precision
+            x = x.chalf()
+
+        if self.fno_block_precision in ['half', 'mixed']:
+            out_fft = torch.zeros([batchsize, self.out_channels, *fft_size], device=x.device, dtype=torch.chalf)
+        else:
+            out_fft = torch.zeros([batchsize, self.out_channels, *fft_size], device=x.device, dtype=torch.cfloat)
         
         # We contract all corners of the Fourier coefs
         # Except for the last mode: there, we take all coefs as redundant modes were already removed

@@ -1,4 +1,5 @@
 import torch
+from torch.cuda import amp
 from timeit import default_timer
 import wandb
 import sys 
@@ -10,7 +11,7 @@ from .losses import LpLoss
 
 
 class Trainer:
-    def __init__(self, model, n_epochs, wandb_log=True, device=None,
+    def __init__(self, model, n_epochs, wandb_log=True, device=None, amp_autocast=False,
                  mg_patching_levels=0, mg_patching_padding=0, mg_patching_stitching=True,
                  log_test_interval=1, log_output=False, use_distributed=False, verbose=True):
         """
@@ -22,6 +23,7 @@ class Trainer:
         n_epochs : int
         wandb_log : bool, default is True
         device : torch.device
+        amp_autocast : bool, default is False
         mg_patching_levels : int, default is 0
             if 0, no multi-grid domain decomposition is used
             if > 0, indicates the number of levels to use
@@ -47,6 +49,7 @@ class Trainer:
         self.mg_patching_stitching = mg_patching_stitching
         self.use_distributed = use_distributed
         self.device = device
+        self.amp_autocast = amp_autocast
 
         if mg_patching_levels > 0:
             self.mg_n_patches = 2**mg_patching_levels
@@ -118,7 +121,11 @@ class Trainer:
                 if regularizer:
                     regularizer.reset()
 
-                out = model(x)
+                if self.amp_autocast:
+                    with amp.autocast(enabled=True):
+                        out = model(x)
+                else:
+                    out = model(x)
                 if epoch == 0 and idx == 0 and self.verbose and is_logger:
                     print(f'Raw outputs of size {out.shape=}')
 
@@ -130,7 +137,11 @@ class Trainer:
                 if epoch == 0 and idx == 0 and self.verbose and is_logger:
                     print(f'.. Processed (unpatched) outputs of size {out.shape=}')
 
-                loss = training_loss(out.float(), y)
+                if self.amp_autocast:
+                    with amp.autocast(enabled=True):
+                        loss = training_loss(out.float(), y)
+                else:
+                    loss = training_loss(out.float(), y)
 
                 if regularizer:
                     loss += regularizer.loss
