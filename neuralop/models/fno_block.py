@@ -105,6 +105,9 @@ class FNOBlocks(nn.Module):
         # elif norm == 'layer_norm':
         #     self.norm = nn.ModuleList([nn.LayerNorm(elementwise_affine=False) for _ in range(n_layers*self.n_norms)])
         elif norm == 'ada_in':
+            if ada_in_features is None:
+                raise ValueError('Expected ada_in_features to be an integer but got None')
+            
             self.norm = nn.ModuleList([AdaIN(ada_in_features, out_channels) for _ in range(n_layers*self.n_norms)])
         else:
             raise ValueError(f'Got {norm=} but expected None or one of [instance_norm, group_norm, layer_norm]')
