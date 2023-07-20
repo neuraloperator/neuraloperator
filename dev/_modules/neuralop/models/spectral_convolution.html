@@ -296,26 +296,33 @@
 <span class="sd">        * If None, all the n_modes are used.</span>
 
 <span class="sd">        This can be updated dynamically during training.</span>
+<span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}, default is None</span>
+<span class="sd">        If None, a single dense weight is learned for the FNO. </span>
+<span class="sd">        Otherwise, that weight, used for the contraction in the Fourier domain is learned in factorized form.</span>
+<span class="sd">        In that case, `factorization` is the tensor factorization of the parameters weight used.</span>
 <span class="sd">    joint_factorization : bool, optional</span>
 <span class="sd">        Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False</span>
+<span class="sd">        Ignored if ``factorization is None``</span>
 <span class="sd">    rank : float or rank, optional</span>
 <span class="sd">        Rank of the tensor factorization of the Fourier weights, by default 1.0</span>
-<span class="sd">    factorization : str, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}, optional</span>
-<span class="sd">        Tensor factorization of the parameters weight to use, by default &#39;tucker&#39;</span>
+<span class="sd">        Ignored if ``factorization is None``</span>
 <span class="sd">    fixed_rank_modes : bool, optional</span>
 <span class="sd">        Modes to not factorize, by default False</span>
+<span class="sd">        Ignored if ``factorization is None``</span>
 <span class="sd">    fft_norm : str, optional</span>
 <span class="sd">        by default &#39;forward&#39;</span>
 <span class="sd">    implementation : {&#39;factorized&#39;, &#39;reconstructed&#39;}, optional, default is &#39;factorized&#39;</span>
 <span class="sd">        If factorization is not None, forward mode to use::</span>
 <span class="sd">        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass</span>
 <span class="sd">        * `factorized` : the input is directly contracted with the factors of the decomposition</span>
+<span class="sd">        Ignored if ``factorization is None``</span>
 <span class="sd">    decomposition_kwargs : dict, optional, default is {}</span>
 <span class="sd">        Optionaly additional parameters to pass to the tensor decomposition</span>
+<span class="sd">        Ignored if ``factorization is None``</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">n_modes</span><span class="p">,</span> <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                  <span class="n">n_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fno_block_precision</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">,</span>
-                 <span class="n">rank</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;cp&#39;</span><span class="p">,</span> <span class="n">implementation</span><span class="o">=</span><span class="s1">&#39;reconstructed&#39;</span><span class="p">,</span> 
+                 <span class="n">rank</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">implementation</span><span class="o">=</span><span class="s1">&#39;reconstructed&#39;</span><span class="p">,</span> 
                  <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
                  <span class="n">init_std</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">fft_norm</span><span class="o">=</span><span class="s1">&#39;backward&#39;</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
