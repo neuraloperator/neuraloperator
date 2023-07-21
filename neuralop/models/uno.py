@@ -1,4 +1,3 @@
-from .tfno import Lifting, Projection
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partialmethod
@@ -194,8 +193,7 @@ class UNO(nn.Module):
 
 
         
-
-        self.lifting = Projection(in_channels=in_channels, out_channels=self.hidden_channels, hidden_channels=self.lifting_channels, n_dim=self.n_dim)
+        self.lifting = MLP(in_channels=in_channels, out_channels=self.hidden_channels, hidden_channels=self.lifting_channels, n_layers=2, n_dim=self.n_dim) 
         self.fno_blocks = nn.ModuleList([])
         self.horizontal_skips = torch.nn.ModuleDict({})
         prev_out = self.hidden_channels
@@ -234,8 +232,7 @@ class UNO(nn.Module):
 
             prev_out = self.uno_out_channels[i]
 
-        self.projection = Projection(in_channels=prev_out, out_channels=out_channels, hidden_channels=projection_channels,
-                                        non_linearity=non_linearity, n_dim=self.n_dim)
+        self.projection = MLP(in_channels=prev_out, out_channels=out_channels, hidden_channels=self.projection_channels, n_layers=2, n_dim=self.n_dim, non_linearity=non_linearity) 
      
     def forward(self, x):
         x = self.lifting(x)
