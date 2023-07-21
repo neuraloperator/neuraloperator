@@ -182,7 +182,7 @@ class FactorizedSpectralConv(nn.Module):
     """
     def __init__(self, in_channels, out_channels, n_modes, incremental_n_modes=None, bias=True,
                  n_layers=1, separable=False, output_scaling_factor=None,
-                 rank=0.5, factorization='cp', implementation='reconstructed', 
+                 rank=0.5, factorization='cp', implementation='reconstructed', fno_block_precision='full',
                  fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict(),
                  init_std='auto', fft_norm='backward'):
         super().__init__()
