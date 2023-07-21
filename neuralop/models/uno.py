@@ -2,11 +2,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from functools import partialmethod
 import torch
-from ..layers.mlp import MLP
-from ..layers.spectral_convolution import SpectralConv
-from ..layers.skip_connections import skip_connection
-from ..layers.padding import DomainPadding
-from ..layers.fno_block import FNOBlocks,resample
+from .mlp import MLP
+from .spectral_convolution import SpectralConv3d, SpectralConv2d, SpectralConv1d
+from .spectral_convolution import SpectralConv
+from .skip_connections import skip_connection
+from .padding import DomainPadding
+from .fno_block import FNOBlocks,resample
+from .tfno import partialclass
+import numpy as np
+#this will be merged with the neural operator UNO
 
 class UNO(nn.Module):
     """U-Shaped Neural Operator

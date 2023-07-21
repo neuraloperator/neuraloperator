@@ -417,11 +417,6 @@ class SubConv(nn.Module):
 
 
 class SpectralConv1d(SpectralConv):
-    """1D Spectral Conv
-    
-    This is provided for reference only, 
-    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation
-    """
     def forward(self, x, indices=0):
         batchsize, channels, width = x.shape
 
@@ -442,11 +437,6 @@ class SpectralConv1d(SpectralConv):
 
 
 class SpectralConv2d(SpectralConv):
-    """2D Spectral Conv, see :class:`neuralop.layers.SpectraConv` for the general case
-        
-    This is provided for reference only, 
-    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation
-    """
     def forward(self, x, indices=0):
         batchsize, channels, height, width = x.shape
 
@@ -475,11 +465,6 @@ class SpectralConv2d(SpectralConv):
 
 
 class SpectralConv3d(SpectralConv):
-    """3D Spectral Conv, see :class:`neuralop.layers.SpectraConv` for the general case
-    
-    This is provided for reference only, 
-    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation
-    """
     def forward(self, x, indices=0):
         batchsize, channels, height, width, depth = x.shape
 
