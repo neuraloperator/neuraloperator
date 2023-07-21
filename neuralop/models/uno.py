@@ -10,8 +10,6 @@ from .skip_connections import skip_connection
 from .padding import DomainPadding
 from .fno_block import FNOBlocks,resample
 from .tfno import partialclass
-from .attention import TnoBlock2d
-from .fino import SpectralConvKernel2d
 import numpy as np
 
 class UNO(nn.Module):
@@ -241,13 +239,9 @@ class UNO(nn.Module):
 
         if self.domain_padding is not None:
             x = self.domain_padding.pad(x)
-<<<<<<< HEAD
-        output_shape = [int(round(i*j)) for (i,j) in zip(x.shape[-self.n_dim:], self.output_scaling_factor)]
-=======
 
         output_shape = [int(round(i*j)) for (i,j) in zip(x.shape[-self.n_dim:], self.end_to_end_scaling_factor)]
 
->>>>>>> 1ea96afd429a01e9b67da7ad9fdefcb187ef6a1d
         
         skip_outputs = {}
         cur_output = None
@@ -268,6 +262,15 @@ class UNO(nn.Module):
 
         if self.domain_padding is not None:
             x = self.domain_padding.unpad(x)
+
+        x = self.projection(x)
+        return xself.horizontal_skips[str(layer_idx)](x)
+
+        if self.domain_padding is not None:
+            x = self.domain_padding.unpad(x)
+
+        x = self.projection(x)
+        return x.domain_padding.unpad(x)
 
         x = self.projection(x)
         return x

@@ -334,7 +334,7 @@ class FactorizedSphericalConv(nn.Module):
         elif output_shape is not None:
             height, width = output_shape[0], output_shape[1]
 
-        sht, isht = self._get_sht(height, width)
+        sht, isht = self._get_sht(height, width, layer=indices)
         
         out_fft = sht(x)
     
