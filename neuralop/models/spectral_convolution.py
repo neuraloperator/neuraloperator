@@ -154,7 +154,7 @@ def get_contract_fun(weight, implementation='reconstructed', separable=False):
         raise ValueError(f'Got {implementation=}, expected "reconstructed" or "factorized"')
 
 
-class FactorizedSpectralConv(nn.Module):
+class SpectralConv(nn.Module):
     """Generic N-Dimensional Fourier Neural Operator
 
     Parameters
@@ -416,7 +416,7 @@ class SubConv(nn.Module):
         return self.main_conv.forward(x, self.indices)
 
 
-class FactorizedSpectralConv1d(FactorizedSpectralConv):
+class SpectralConv1d(SpectralConv):
     def forward(self, x, indices=0):
         batchsize, channels, width = x.shape
 
@@ -436,7 +436,7 @@ class FactorizedSpectralConv1d(FactorizedSpectralConv):
         return x
 
 
-class FactorizedSpectralConv2d(FactorizedSpectralConv):
+class SpectralConv2d(SpectralConv):
     def forward(self, x, indices=0):
         batchsize, channels, height, width = x.shape
 
@@ -464,7 +464,7 @@ class FactorizedSpectralConv2d(FactorizedSpectralConv):
         return x
 
 
-class FactorizedSpectralConv3d(FactorizedSpectralConv):
+class SpectralConv3d(SpectralConv):
     def forward(self, x, indices=0):
         batchsize, channels, height, width, depth = x.shape
 

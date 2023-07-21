@@ -1,7 +1,7 @@
 from torch import nn
 import torch.nn.functional as F
 import torch
-from .spectral_convolution import FactorizedSpectralConv
+from .spectral_convolution import SpectralConv
 from .skip_connections import skip_connection
 from .resample import resample
 from .mlp import MLP
@@ -23,7 +23,7 @@ class FNOBlocks(nn.Module):
                  separable=False,
                  factorization=None,
                  rank=1.0,
-                 SpectralConv=FactorizedSpectralConv,
+                 SpectralConv=SpectralConv,
                  joint_factorization=False, 
                  fixed_rank_modes=False,
                  implementation='factorized',
