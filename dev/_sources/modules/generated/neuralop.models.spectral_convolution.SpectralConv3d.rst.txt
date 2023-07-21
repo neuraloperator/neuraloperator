@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.models.spectral_convolution`.SpectralConv3d
+=================================================================
+
+.. currentmodule:: neuralop.models.spectral_convolution
+
+.. autoclass:: SpectralConv3d
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

@@ -236,7 +236,7 @@ Loading test db at resolution 32 with 50 samples and batch-size=32
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>### MODEL ###
  TFNO(
   (fno_blocks): FNOBlocks(
-    (convs): FactorizedSpectralConv(
+    (convs): SpectralConv(
       (weight): ModuleList(
         (0-7): 8 x ComplexTuckerTensor(shape=(32, 32, 8, 8), rank=(25, 25, 6, 6))
       )
@@ -271,13 +271,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fa96ca0d580&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fd148e1d550&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.training.losses.H1Loss object at 0x7fa96ca010d0&gt;
+ * Train: &lt;neuralop.training.losses.H1Loss object at 0x7fd148e0a4f0&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7fa96ca010d0&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7fa96ca01a00&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7fd148e0a4f0&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7fd148e0a040&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -310,13 +310,13 @@ Training on raw inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torc
 .. patched inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torch.Size([32, 1, 16, 16])
 Raw outputs of size out.shape=torch.Size([32, 1, 16, 16])
 .. Processed (unpatched) outputs of size out.shape=torch.Size([32, 1, 16, 16])
-[0] time=2.20, avg_loss=27.8646, train_err=0.5573, 16_h1=0.4233, 16_l2=0.3269, 32_h1=0.5003, 32_l2=0.3280
-[3] time=2.09, avg_loss=11.5380, train_err=0.2308, 16_h1=0.2269, 16_l2=0.1749, 32_h1=0.3284, 32_l2=0.1909
-[6] time=2.11, avg_loss=10.8728, train_err=0.2175, 16_h1=0.2249, 16_l2=0.1717, 32_h1=0.3216, 32_l2=0.1822
-[9] time=2.12, avg_loss=9.4832, train_err=0.1897, 16_h1=0.1831, 16_l2=0.1352, 32_h1=0.3196, 32_l2=0.1840
-[12] time=2.07, avg_loss=8.0383, train_err=0.1608, 16_h1=0.1612, 16_l2=0.1171, 32_h1=0.2776, 32_l2=0.1463
-[15] time=2.07, avg_loss=7.5585, train_err=0.1512, 16_h1=0.1496, 16_l2=0.1034, 32_h1=0.2659, 32_l2=0.1346
-[18] time=2.07, avg_loss=6.9474, train_err=0.1389, 16_h1=0.1420, 16_l2=0.0978, 32_h1=0.2378, 32_l2=0.1102
+[0] time=2.89, avg_loss=27.0297, train_err=0.5406, 16_h1=0.4218, 16_l2=0.3274, 32_h1=0.4845, 32_l2=0.3340
+[3] time=2.59, avg_loss=11.9287, train_err=0.2386, 16_h1=0.2263, 16_l2=0.1756, 32_h1=0.3615, 32_l2=0.2093
+[6] time=2.58, avg_loss=9.4684, train_err=0.1894, 16_h1=0.1782, 16_l2=0.1289, 32_h1=0.2991, 32_l2=0.1496
+[9] time=2.54, avg_loss=8.7037, train_err=0.1741, 16_h1=0.2465, 16_l2=0.2085, 32_h1=0.3477, 32_l2=0.2289
+[12] time=2.61, avg_loss=7.5580, train_err=0.1512, 16_h1=0.1527, 16_l2=0.1055, 32_h1=0.3260, 32_l2=0.1527
+[15] time=2.49, avg_loss=7.2956, train_err=0.1459, 16_h1=0.1435, 16_l2=0.1006, 32_h1=0.2962, 32_l2=0.1334
+[18] time=2.40, avg_loss=6.7387, train_err=0.1348, 16_h1=0.1394, 16_l2=0.0967, 32_h1=0.2888, 32_l2=0.1241
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -365,7 +365,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 0 minutes  43.211 seconds)</p>
+<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 0 minutes  52.893 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-fno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/1a3050d57a180b92b424ce128dfe1d36/plot_FNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_FNO_darcy.py</span></code></a></p>

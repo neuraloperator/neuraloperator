@@ -84,11 +84,11 @@ Neural operator Layers
     :toctree: generated
     :template: class.rst
 
-    FactorizedSpectralConv
+    SpectralConv
 
-    FactorizedSpectralConv1d
-    FactorizedSpectralConv2d
-    FactorizedSpectralConv3d
+    SpectralConv1d
+    SpectralConv2d
+    SpectralConv3d
 
 
 **Spherical convolutions**: 

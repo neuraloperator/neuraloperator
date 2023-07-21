@@ -123,8 +123,8 @@
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partialmethod</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">.mlp</span> <span class="kn">import</span> <span class="n">MLP</span>
-<span class="kn">from</span> <span class="nn">.spectral_convolution</span> <span class="kn">import</span> <span class="n">FactorizedSpectralConv3d</span><span class="p">,</span> <span class="n">FactorizedSpectralConv2d</span><span class="p">,</span> <span class="n">FactorizedSpectralConv1d</span>
-<span class="kn">from</span> <span class="nn">.spectral_convolution</span> <span class="kn">import</span> <span class="n">FactorizedSpectralConv</span>
+<span class="kn">from</span> <span class="nn">.spectral_convolution</span> <span class="kn">import</span> <span class="n">SpectralConv3d</span><span class="p">,</span> <span class="n">SpectralConv2d</span><span class="p">,</span> <span class="n">SpectralConv1d</span>
+<span class="kn">from</span> <span class="nn">.spectral_convolution</span> <span class="kn">import</span> <span class="n">SpectralConv</span>
 <span class="kn">from</span> <span class="nn">.skip_connections</span> <span class="kn">import</span> <span class="n">skip_connection</span>
 <span class="kn">from</span> <span class="nn">.padding</span> <span class="kn">import</span> <span class="n">DomainPadding</span>
 <span class="kn">from</span> <span class="nn">.fno_block</span> <span class="kn">import</span> <span class="n">FNOBlocks</span><span class="p">,</span><span class="n">resample</span>
@@ -231,7 +231,7 @@
                  <span class="n">rank</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
                  <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
                  <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                 <span class="n">integral_operator</span><span class="o">=</span><span class="n">FactorizedSpectralConv</span><span class="p">,</span>
+                 <span class="n">integral_operator</span><span class="o">=</span><span class="n">SpectralConv</span><span class="p">,</span>
                  <span class="n">operator_block</span><span class="o">=</span><span class="n">FNOBlocks</span><span class="p">,</span>
                  <span class="n">implementation</span><span class="o">=</span><span class="s1">&#39;factorized&#39;</span><span class="p">,</span>
                  <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
