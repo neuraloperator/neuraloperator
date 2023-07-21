@@ -12,7 +12,9 @@ tenalg.set_backend('einsum')
 @pytest.mark.parametrize('factorization', ['ComplexDense', 'ComplexTucker', 'ComplexCP', 'ComplexTT'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
 @pytest.mark.parametrize('n_dim', [1, 2, 3])
-def test_tfno(factorization, implementation, n_dim):
+@pytest.mark.parametrize('fno_block_precision', ['full', 'half', 'mixed'])
+@pytest.mark.parametrize('stabilizer', [None, 'tanh'])
+def test_tfno(factorization, implementation, n_dim, fno_block_precision, stabilizer):
     if torch.has_cuda:
         device = 'cuda'
         s = 128
@@ -25,6 +27,7 @@ def test_tfno(factorization, implementation, n_dim):
         mlp = Bunch(dict(expansion=0.5, dropout=0))
     else:
         device = 'cpu'
+        fno_block_precision = 'full'
         s = 16
         modes = 5
         width = 15
@@ -45,7 +48,9 @@ def test_tfno(factorization, implementation, n_dim):
                  fixed_rank_modes=False,
                  joint_factorization=False,
                  n_layers=n_layers,
+                 fno_block_precision=fno_block_precision,
                  use_mlp=use_mlp, mlp=mlp,
+                 stabilizer=stabilizer,
                  fc_channels=fc_channels).to(device)
     in_data = torch.randn(batch_size, 3, *size).to(device)
 

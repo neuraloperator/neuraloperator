@@ -53,7 +53,7 @@ if config.verbose and is_logger:
     pipe.log()
     sys.stdout.flush()
 
-# Loading the Navier-Stokes dataset in 128x128 resolution
+# Loading the Darcy flow dataset
 train_loader, test_loaders, output_encoder = load_darcy_flow_small(
         n_train=config.data.n_train, batch_size=config.data.batch_size, 
         positional_encoding=config.data.positional_encoding,
@@ -129,6 +129,7 @@ if config.verbose and is_logger:
 
 trainer = Trainer(model, n_epochs=config.opt.n_epochs,
                   device=device,
+                  amp_autocast=config.opt.amp_autocast,
                   mg_patching_levels=config.patching.levels,
                   mg_patching_padding=config.patching.padding,
                   mg_patching_stitching=config.patching.stitching,

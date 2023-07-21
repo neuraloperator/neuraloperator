@@ -164,7 +164,7 @@ def get_contract_fun(weight, implementation='reconstructed', separable=False):
 
 class FactorizedSphericalConv(nn.Module):
     def __init__(self, in_channels, out_channels, n_modes, incremental_n_modes=None, bias=True,
-                 n_layers=1, separable=False, output_scaling_factor=None,
+                 n_layers=1, separable=False, output_scaling_factor=None, fno_block_precision='full',
                  rank=0.5, factorization='cp', implementation='reconstructed', 
                  fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict(),
                  init_std='auto', fft_norm='backward'):
