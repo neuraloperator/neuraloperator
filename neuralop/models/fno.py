@@ -7,42 +7,7 @@ from .spectral_convolution import SpectralConv
 from .spherical_convolution import FactorizedSphericalConv
 from .padding import DomainPadding
 from .fno_block import FNOBlocks, resample
-
-
-class Lifting(nn.Module):
-    def __init__(self, in_channels, out_channels, n_dim=2):
-        super().__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        Conv = getattr(nn, f'Conv{n_dim}d')
-        self.fc = Conv(in_channels, out_channels, 1)
-
-    def forward(self, x):
-        return self.fc(x)
-
-
-class Projection(nn.Module):
-    def __init__(self, in_channels, out_channels, hidden_channels=None, n_dim=2, non_linearity=F.gelu):
-        super().__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.hidden_channels = in_channels if hidden_channels is None else hidden_channels 
-        self.non_linearity = non_linearity
-        Conv = getattr(nn, f'Conv{n_dim}d')
-        self.fc1 = Conv(in_channels, hidden_channels, 1)
-        self.fc2 = Conv(hidden_channels, out_channels, 1)
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.non_linearity(x)
-        x = self.fc2(x)
-        return x
-
-from ..layers.spectral_convolution import SpectralConv
-from ..layers.spherical_convolution import SphericalConv
-from ..layers.padding import DomainPadding
-from ..layers.fno_block import FNOBlocks, resample
-from ..layers.mlp import MLP
+from .mlp import MLP
 
 
 class FNO(nn.Module):
@@ -210,7 +175,8 @@ class FNO(nn.Module):
             n_layers=n_layers,
             **kwargs)
 
-        self.lifting = MLP(in_channels=in_channels, out_channels=self.hidden_channels, hidden_channels=self.hidden_channels, n_layers=1, n_dim=self.n_dim)
+        self.lifting = MLP(in_channels=in_channels, out_channels=self.hidden_channels, hidden_channels=self.lifting_channels, 
+                 n_layers=1, n_dim=self.n_dim)
         self.projection = MLP(in_channels=self.hidden_channels, out_channels=out_channels, hidden_channels=self.projection_channels, n_layers=2, n_dim=self.n_dim, non_linearity=non_linearity) 
 
     def forward(self, x):
