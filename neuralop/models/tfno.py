@@ -2,11 +2,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 from functools import partialmethod
 import torch
+from einops import rearrange
+from einops.layers.torch import Rearrange
 from .spectral_convolution import FactorizedSpectralConv
 from .spherical_convolution import FactorizedSphericalConv
 from .padding import DomainPadding
 from .fno_block import FNOBlocks, resample
-
+from einops import rearrange
+from einops.layers.torch import Rearrange
 
 class Lifting(nn.Module):
     def __init__(self, in_channels, out_channels, n_dim=2):
@@ -21,20 +24,29 @@ class Lifting(nn.Module):
 
 
 class Projection(nn.Module):
-    def __init__(self, in_channels, out_channels, hidden_channels=None, n_dim=2, non_linearity=F.gelu):
+    def __init__(self, in_channels, out_channels, hidden_channels=None, n_dim=2, non_linearity=F.gelu, permutation_invariant = False):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.hidden_channels = in_channels if hidden_channels is None else hidden_channels 
         self.non_linearity = non_linearity
         Conv = getattr(nn, f'Conv{n_dim}d')
+            
+        self.permutation_invariant = permutation_invariant
+
         self.fc1 = Conv(in_channels, hidden_channels, 1)
         self.fc2 = Conv(hidden_channels, out_channels, 1)
 
     def forward(self, x):
+        batch = x.shape[0]
+        if self.permutation_invariant:
+            assert x.shape[1]%self.in_channels == 0; "Total Number of Channels is not divisible by number of tokens"
+            x  = rearrange(x, 'b (g c) h w -> (b g) c h w', c = self.in_channels)
         x = self.fc1(x)
         x = self.non_linearity(x)
         x = self.fc2(x)
+        if self.permutation_invariant:
+            x  = rearrange(x, '(b g) c h w -> b (g c) h w', b = batch)
         return x
 
 

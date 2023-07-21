@@ -8,7 +8,7 @@ import pytest
 def test_attention(input_shape):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    model = TnoBlock2d(4, [20,20], n_head = 1, token_codim = 2).to(device)
+    model = TnoBlock2d(4, [20,20], n_head = 1, token_codim = 2, output_scaling_factor = [1.0, 1.0]).to(device)
     t1 = time.time()
     in_data = torch.randn(input_shape).to(device)
     #with torch.autograd.set_detect_anomaly(True):
@@ -31,7 +31,7 @@ def test_attention(input_shape):
 
     assert n_unused_params == 0, f'{n_unused_params} parameters were unused!'
     
-    model = TnoBlock2d(4, [20,20], n_head =1, token_codim = 2).to(device)
+    model = TnoBlock2d(4, [20,20], n_head =1, token_codim = 2, output_scaling_factor = [1.0, 1.0]).to(device)
     t1 = time.time()
     in_data = torch.randn(input_shape).to(device)
     #with torch.autograd.set_detect_anomaly(True):

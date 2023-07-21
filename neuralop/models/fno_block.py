@@ -94,7 +94,7 @@ class FNOBlocks(nn.Module):
         if norm is None:
             self.norm = None
         elif norm == 'instance_norm':
-            self.norm = nn.ModuleList([getattr(nn, f'InstanceNorm{self.n_dim}d')(num_features=self.out_channels) for _ in range(n_layers*self.n_norms)])
+            self.norm = nn.ModuleList([getattr(nn, f'InstanceNorm{self.n_dim}d')(num_features=self.out_channels, affine = True) for _ in range(n_layers*self.n_norms)])
         elif norm == 'group_norm':
             self.norm = nn.ModuleList([nn.GroupNorm(num_groups=1, num_channels=self.out_channels) for _ in range(n_layers*self.n_norms)])
         # elif norm == 'layer_norm':
@@ -140,8 +140,8 @@ class FNOBlocks(nn.Module):
             if self.convs.output_scaling_factor is not None:
                 x_skip_mlp = resample(x_skip_mlp, self.output_scaling_factor[index]\
                                       , list(range(-len(self.output_scaling_factor[index]), 0)), output_shape = output_shape )
-
-        x_fno = self.convs(x, index, output_shape = output_shape)
+                
+        x_fno = self.convs(x, index, output_shape=output_shape)
 
         if not self.preactivation and self.norm is not None:
             x_fno = self.norm[self.n_norms*index](x_fno)
