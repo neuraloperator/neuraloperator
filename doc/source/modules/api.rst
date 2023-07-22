@@ -13,10 +13,13 @@ API reference
 Models
 ======
 
-In `neuralop`, we provide a general Fourier Neural Operator (TFNO) that supports most usecases.
+In :module:`neuralop.models`, we all neural operator models you can directly use on your applications.
+
 
 FNO
 ---
+
+We provide a general Fourier Neural Operator (TFNO) that supports most usecases.
 
 We have a generic interface that works for any dimension, which is inferred based on `n_modes`
 (a tuple with the number of modes to keep in the Fourier domain for each dimension.)
@@ -58,6 +61,16 @@ Dimension-specific classes:
     TFNO2d
     TFNO3d
 
+Spherical Fourier Neural Operators (SFNO)
+-----------------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    SFNO
+
+
 U-shaped Neural Operators (U-NO)
 --------------------------------
 
@@ -70,7 +83,8 @@ U-shaped Neural Operators (U-NO)
 Layers
 ======
 
-In addition to the full architectures, we also provide building blocks:
+In addition to the full architectures, we also provide building blocks
+in the form of PyTorch layers you can use to build your own models:
 
 Neural operator Layers
 ++++++++++++++++++++++
@@ -110,7 +124,7 @@ Other resolution invariant operations
 
 Automatically apply resolution dependent domain padding: 
 
-.. automodule:: neuralop.alyers.padding
+.. automodule:: neuralop.layers.padding
     :no-members:
     :no-inherited-members:
 
