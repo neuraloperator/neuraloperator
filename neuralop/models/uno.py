@@ -9,7 +9,8 @@ from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks,resample
 
 class UNO(nn.Module):
-    """
+    """U-Shaped Neural Operator
+
     Parameters
     ----------
     in_channels : int, optional
