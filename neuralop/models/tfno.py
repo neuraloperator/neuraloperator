@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from functools import partialmethod
 import torch
-from .spectral_convolution import FactorizedSpectralConv
+from .spectral_convolution import SpectralConv
 from .spherical_convolution import FactorizedSphericalConv
 from .padding import DomainPadding
 from .fno_block import FNOBlocks, resample
@@ -105,7 +105,7 @@ class FNO(nn.Module):
                  domain_padding=None,
                  domain_padding_mode='one-sided',
                  fft_norm='forward',
-                 SpectralConv=FactorizedSpectralConv,
+                 SpectralConv=SpectralConv,
                  **kwargs):
         super().__init__()
         self.n_dim = len(n_modes)

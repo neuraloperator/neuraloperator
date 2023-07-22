@@ -3,8 +3,8 @@ import torch.nn.functional as F
 from functools import partialmethod
 import torch
 from .mlp import MLP
-from .spectral_convolution import FactorizedSpectralConv3d, FactorizedSpectralConv2d, FactorizedSpectralConv1d
-from .spectral_convolution import FactorizedSpectralConv
+from .spectral_convolution import SpectralConv3d, SpectralConv2d, SpectralConv1d
+from .spectral_convolution import SpectralConv
 from .skip_connections import skip_connection
 from .padding import DomainPadding
 from .fno_block import FNOBlocks,resample
@@ -111,7 +111,7 @@ class UNO(nn.Module):
                  rank=1.0,
                  joint_factorization=False, 
                  fixed_rank_modes=False,
-                 integral_operator=FactorizedSpectralConv,
+                 integral_operator=SpectralConv,
                  operator_block=FNOBlocks,
                  implementation='factorized',
                  decomposition_kwargs=dict(),

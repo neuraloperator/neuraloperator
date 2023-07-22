@@ -46,7 +46,7 @@ def test_FNOBlock_output_scaling_factor():
 @pytest.mark.parametrize('norm', 
                          ['instance_norm', 'ada_in', 'group_norm'])
 def test_FNOBlock_norm(norm):
-    """Test FactorizedSpectralConv with upsampled or downsampled outputs
+    """Test SpectralConv with upsampled or downsampled outputs
     """
     modes = (8, 8, 8)
     size = [10]*3
