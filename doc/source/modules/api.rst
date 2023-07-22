@@ -132,7 +132,7 @@ Other resolution invariant operations
 
 Automatically apply resolution dependent domain padding: 
 
-.. automodule:: neuralop.layers.padding
+.. automodule:: neuralop.alyers.padding
     :no-members:
     :no-inherited-members:
 
