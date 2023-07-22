@@ -8,7 +8,7 @@ from .spectral_convolution import SpectralConv
 from .skip_connections import skip_connection
 from .padding import DomainPadding
 from .fno_block import FNOBlocks,resample
-from .tfno import partialclass
+from .fno import partialclass
 import numpy as np
 #this will be merged with the neural operator UNO
 
