@@ -1,24 +1,9 @@
 import torch
+from torch import nn
 import torch.nn.functional as F
 
-import open3d.ml.torch as ml3d
-
-from torch import nn
 from torch_scatter import segment_csr
 from .mlp import MLPLinear
-
-
-class NeighborSearch(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.nsearch = ml3d.layers.FixedRadiusSearch()
-
-    def forward(self, y, radius, x=None):
-        if x is None:
-            x = y
-        
-        return self.nsearch(y, x, radius)
-
 
 class IntegralTransform(nn.Module):
     def __init__(self, mlp=None,
@@ -46,7 +31,7 @@ class IntegralTransform(nn.Module):
     \int_y k(x, y) * f(y) [linear transform, type: 0]
     \int_y k(x, y, f(y)) [non-linear transform, type: 1]
     \int_y k(x, y, f(y)) * f(y) [non-linear transform, type: 2]
-    
+
     Assumes x=y if not specified
     Integral is taken w.r.t. the neighbors
     If no weights are given, a Monte-Carlo approximation is made
@@ -60,12 +45,11 @@ class IntegralTransform(nn.Module):
         if x is None:
             x = y
 
-        rep_features = y[neighbors.neighbors_index.long()]
+        rep_features = y[neighbors['neighbors_index']]
         if f_y is not None:
-            in_features = f_y[neighbors.neighbors_index.long()]
+            in_features = f_y[neighbors['neighbors_index']]
 
-        rs = neighbors.neighbors_row_splits
-        num_reps = rs[1:] - rs[:-1]
+        num_reps = neighbors['neighbors_row_splits'][1:] - neighbors['neighbors_row_splits'][:-1]
         self_features = torch.repeat_interleave(x, num_reps, dim=0)
 
         agg_features = torch.cat([rep_features, self_features], dim=1)
@@ -78,7 +62,7 @@ class IntegralTransform(nn.Module):
             rep_features = rep_features*in_features 
 
         if weights is not None:
-            rep_features = weights[neighbors.neighbors_index.long()]*rep_features
+            rep_features = weights[neighbors['neighbors_index']]*rep_features
             reduction = 'sum'
         else:
             reduction = 'mean'

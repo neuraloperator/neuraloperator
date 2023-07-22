@@ -3,7 +3,8 @@ import torch.nn.functional as F
 import torch
 from .embeddings import PositionalEmbedding
 from .spectral_convolution import FactorizedSpectralConv
-from .integral_transform import IntegralTransform, NeighborSearch
+from .integral_transform import IntegralTransform
+from .neighbor_search import NeighborSearch
 from .tfno import FNO
 from .tfno import Projection
 

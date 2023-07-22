@@ -53,7 +53,7 @@ config = {
     'long_description_content_type' : 'text/x-rst',
     'authors': [
         {'name': "Jean Kossaifi", 'email': "jean.kossaifi@gmail.com"},
-        {'name': "Nikola Kovachki", 'email': "nkovachki@caltech.edu"},
+        {'name': "Nikola Kovachki", 'email': "nkovachki@nvidia.com"},
         {'name': "Zongyi Li", 'email': "zongyili@caltech.edu"}
         ],
     'version': VERSION,
