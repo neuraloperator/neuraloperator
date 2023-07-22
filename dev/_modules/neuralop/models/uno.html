@@ -117,8 +117,7 @@
       <div class="container content main-content">
         
   <h1>Source code for neuralop.models.uno</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">.tfno</span> <span class="kn">import</span> <span class="n">Lifting</span><span class="p">,</span> <span class="n">Projection</span>
-<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span></span><span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 <span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partialmethod</span>
 <span class="kn">import</span> <span class="nn">torch</span>
@@ -313,8 +312,7 @@
 
 
         
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span> <span class="o">=</span> <span class="n">Projection</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lifting_channels</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lifting_channels</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">)</span> 
         <span class="bp">self</span><span class="o">.</span><span class="n">fno_blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleDict</span><span class="p">({})</span>
         <span class="n">prev_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span>
@@ -353,8 +351,7 @@
 
             <span class="n">prev_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uno_out_channels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">Projection</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">prev_out</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
-                                        <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">prev_out</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">projection_channels</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">,</span> <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">)</span> 
      
 <div class="viewcode-block" id="UNO.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.UNO.html#neuralop.models.UNO.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
