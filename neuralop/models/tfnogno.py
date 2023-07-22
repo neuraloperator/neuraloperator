@@ -135,12 +135,12 @@ class FNOGNO(nn.Module):
     #returns: (fno_hidden_channels, n_1, n_2, ...)
     def latent_embedding(self, in_p, f, ada_in=None):
         #Input shape
-        n_comb_channels = in_p.shape[-1] + f.shape[-1] 
-        in_p_shape = tuple(in_p.shape[0:-1])
+        #n_comb_channels = in_p.shape[-1] + f.shape[-1] 
+        #in_p_shape = tuple(in_p.shape[0:-1])
         
         #(1, gno_coord_dim + in_channels, n_1, n_2, ...)
-        in_p = torch.cat((f, in_p), dim=-1).view(-1, n_comb_channels).t()
-        in_p = in_p.view(n_comb_channels, *in_p_shape).unsqueeze(0) 
+        in_p = torch.cat((f, in_p), dim=-1).permute(3, 0, 1, 2).unsqueeze(0)  #.view(-1, n_comb_channels).t()
+        #in_p = in_p.view(n_comb_channels, *in_p_shape).unsqueeze(0) 
 
         #Update Ada IN embedding
         if ada_in is not None:
@@ -166,7 +166,7 @@ class FNOGNO(nn.Module):
     
     def integrate_latent(self, in_p, out_p, latent_embed):
         #Compute integration region for each output point
-        in_to_out_nb = self.nb_search_out(in_p.view(-1, in_p.shape[-1]), self.gno_radius, out_p)
+        in_to_out_nb = self.nb_search_out(in_p.view(-1, in_p.shape[-1]), out_p, self.gno_radius)
 
         #Embed input points
         n_in = in_p.view(-1, in_p.shape[-1]).shape[0]
@@ -176,14 +176,15 @@ class FNOGNO(nn.Module):
             in_p_embed = in_p.reshape((n_in, -1))
         
         #Embed output points
-        n_out = out_p.view(-1, out_p.shape[-1]).shape[0]
+        n_out = out_p.shape[0]
         if self.pos_embed is not None:
             out_p_embed = self.pos_embed(out_p.reshape(-1, )).reshape((n_out, -1))
         else:
-            out_p_embed = out_p.reshape((n_out, -1))
+            out_p_embed = out_p #.reshape((n_out, -1))
         
         #(n_1*n_2*..., fno_hidden_channels)
-        latent_embed = latent_embed.reshape(self.fno.hidden_channels, -1).t()
+        #latent_embed = latent_embed.reshape(self.fno.hidden_channels, -1).t()
+        latent_embed = latent_embed.permute(1, 2, 3, 0).reshape(-1, self.fno.hidden_channels)
 
         #(n_out, fno_hidden_channels)
         out = self.gno(y=in_p_embed, 

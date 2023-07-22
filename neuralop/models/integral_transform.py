@@ -68,6 +68,6 @@ class IntegralTransform(nn.Module):
             reduction = 'mean'
 
         out_features = segment_csr(rep_features, 
-                                   neighbors.neighbors_row_splits, 
+                                   neighbors['neighbors_row_splits'], 
                                    reduce=reduction)
         return out_features
