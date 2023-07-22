@@ -13,7 +13,7 @@ API reference
 Models
 ======
 
-In :module:`neuralop.models`, we all neural operator models you can directly use on your applications.
+In :mod:`neuralop.models`, we all neural operator models you can directly use on your applications.
 
 
 FNO
@@ -83,8 +83,9 @@ U-shaped Neural Operators (U-NO)
 Layers
 ======
 
-In addition to the full architectures, we also provide building blocks
-in the form of PyTorch layers you can use to build your own models:
+In addition to the full architectures, we also provide 
+in :mod:`neuralop.layers` building blocks,
+in the form of PyTorch layers, that you can use to build your own models:
 
 Neural operator Layers
 ++++++++++++++++++++++
