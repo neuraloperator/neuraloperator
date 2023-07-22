@@ -1,7 +1,7 @@
 from torch import nn
 import torch.nn.functional as F
 import torch
-from .spectral_convolution import FactorizedSpectralConv
+from .spectral_convolution import SpectralConv
 from .skip_connections import skip_connection
 from .resample import resample
 from .mlp import MLP
@@ -12,8 +12,10 @@ class FNOBlocks(nn.Module):
                  output_scaling_factor=None,
                  n_layers=1,
                  incremental_n_modes=None,
+                 fno_block_precision='full',
                  use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
                  non_linearity=F.gelu,
+                 stabilizer=None,
                  norm=None, ada_in_features=None,
                  preactivation=False,
                  fno_skip='linear',
@@ -21,7 +23,7 @@ class FNOBlocks(nn.Module):
                  separable=False,
                  factorization=None,
                  rank=1.0,
-                 SpectralConv=FactorizedSpectralConv,
+                 SpectralConv=SpectralConv,
                  joint_factorization=False, 
                  fixed_rank_modes=False,
                  implementation='factorized',
@@ -42,11 +44,13 @@ class FNOBlocks(nn.Module):
         self.output_scaling_factor = output_scaling_factor
 
         self._incremental_n_modes = incremental_n_modes
+        self.fno_block_preicison = fno_block_precision
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.n_layers = n_layers
         self.joint_factorization = joint_factorization
         self.non_linearity = non_linearity
+        self.stabilizer = stabilizer
         self.rank = rank
         self.factorization = factorization
         self.fixed_rank_modes = fixed_rank_modes
@@ -66,6 +70,7 @@ class FNOBlocks(nn.Module):
                 self.in_channels, self.out_channels, self.n_modes, 
                 output_scaling_factor=output_scaling_factor,
                 incremental_n_modes=incremental_n_modes,
+                fno_block_precision=fno_block_precision,
                 rank=rank,
                 fft_norm=fft_norm,
                 fixed_rank_modes=fixed_rank_modes, 
@@ -120,7 +125,7 @@ class FNOBlocks(nn.Module):
             for norm, embedding in zip(self.norm, embeddings):
                 norm.set_embedding(embedding)
         
-    def forward(self, x, index=0):
+    def forward(self, x, index=0, output_shape = None):
         
         if self.preactivation:
             x = self.non_linearity(x)
@@ -131,15 +136,20 @@ class FNOBlocks(nn.Module):
         x_skip_fno = self.fno_skips[index](x)
         if self.convs.output_scaling_factor is not None:
             # x_skip_fno = resample(x_skip_fno, self.convs.output_scaling_factor[index], list(range(-len(self.convs.output_scaling_factor[index]), 0)))
-            x_skip_fno = resample(x_skip_fno, self.output_scaling_factor[index], list(range(-len(self.output_scaling_factor[index]), 0)))
+            x_skip_fno = resample(x_skip_fno, self.output_scaling_factor[index]\
+                                  , list(range(-len(self.output_scaling_factor[index]), 0)), output_shape = output_shape )
+
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
             if self.convs.output_scaling_factor is not None:
-                # x_skip_mlp = resample(x_skip_mlp, self.convs.output_scaling_factor[index], list(range(-len(self.convs.output_scaling_factor[index]), 0)))
-                x_skip_mlp = resample(x_skip_mlp, self.output_scaling_factor[index], list(range(-len(self.output_scaling_factor[index]), 0)))
+                x_skip_mlp = resample(x_skip_mlp, self.output_scaling_factor[index]\
+                                      , list(range(-len(self.output_scaling_factor[index]), 0)), output_shape = output_shape )
+        
+        if self.stabilizer == 'tanh':
+            x = torch.tanh(x)
 
-        x_fno = self.convs(x, index)
+        x_fno = self.convs(x, index, output_shape=output_shape)
 
         if not self.preactivation and self.norm is not None:
             x_fno = self.norm[self.n_norms*index](x_fno)
@@ -207,4 +217,3 @@ class SubModule(nn.Module):
     
     def forward(self, x):
         return self.main_module.forward(x, self.indices)
-

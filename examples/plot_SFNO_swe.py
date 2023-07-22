@@ -113,7 +113,8 @@ for index, resolution in enumerate([(32, 64), (64, 128)]):
     # Ground-truth
     y = data['y'][0, ...].numpy()
     # Model prediction
-    out = model(x.unsqueeze(0)).squeeze()[0, ...].detach().numpy()
+    x_in = x.unsqueeze(0).to(device)
+    out = model(x_in).squeeze()[0, ...].detach().cpu().numpy()
     x = x[0, ...].detach().numpy()
 
     ax = fig.add_subplot(2, 3, index*3 + 1)

@@ -1,42 +1,12 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partialmethod
-import torch
-from .spectral_convolution import FactorizedSpectralConv
-from .spherical_convolution import FactorizedSphericalConv
-from .padding import DomainPadding
-from .fno_block import FNOBlocks, resample
 
-
-class Lifting(nn.Module):
-    def __init__(self, in_channels, out_channels, n_dim=2):
-        super().__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        Conv = getattr(nn, f'Conv{n_dim}d')
-        self.fc = Conv(in_channels, out_channels, 1)
-
-    def forward(self, x):
-        return self.fc(x)
-
-
-class Projection(nn.Module):
-    def __init__(self, in_channels, out_channels, hidden_channels=None, n_dim=2, non_linearity=F.gelu):
-        super().__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.hidden_channels = in_channels if hidden_channels is None else hidden_channels 
-        self.non_linearity = non_linearity
-        Conv = getattr(nn, f'Conv{n_dim}d')
-        self.fc1 = Conv(in_channels, hidden_channels, 1)
-        self.fc2 = Conv(hidden_channels, out_channels, 1)
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.non_linearity(x)
-        x = self.fc2(x)
-        return x
-
+from ..layers.spectral_convolution import SpectralConv
+from ..layers.spherical_convolution import SphericalConv
+from ..layers.padding import DomainPadding
+from ..layers.fno_block import FNOBlocks, resample
+from ..layers.mlp import MLP
 
 
 class FNO(nn.Module):
@@ -66,6 +36,12 @@ class FNO(nn.Module):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
+    fno_block_precision : str {'full', 'half', 'mixed'}
+        if 'full', the FNO Block runs in full precision
+        if 'half', the FFT, contraction, and inverse FFT run in half precision
+        if 'mixed', the contraction and inverse FFT run in half precision
+    stabilizer : str {'tanh'} or None, optional
+        By default None, otherwise tanh is used before FFT in the FNO block 
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -112,8 +88,10 @@ class FNO(nn.Module):
                  n_layers=4,
                  output_scaling_factor=None,
                  incremental_n_modes=None,
+                 fno_block_precision='full',
                  use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
                  non_linearity=F.gelu,
+                 stabilizer=None, 
                  norm=None, preactivation=False,
                  fno_skip='linear',
                  mlp_skip='soft-gating',
@@ -127,7 +105,7 @@ class FNO(nn.Module):
                  domain_padding=None,
                  domain_padding_mode='one-sided',
                  fft_norm='forward',
-                 SpectralConv=FactorizedSpectralConv,
+                 SpectralConv=SpectralConv,
                  **kwargs):
         super().__init__()
         self.n_dim = len(n_modes)
@@ -150,6 +128,7 @@ class FNO(nn.Module):
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation
+        self.fno_block_precision = fno_block_precision
 
         # See the class' property for underlying mechanism
         # When updated, change should be reflected in fno blocks
@@ -172,11 +151,13 @@ class FNO(nn.Module):
             n_modes=self.n_modes,
             output_scaling_factor=output_scaling_factor,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
-            non_linearity=non_linearity,
+            non_linearity=non_linearity, 
+            stabilizer=stabilizer,
             norm=norm, preactivation=preactivation,
             fno_skip=fno_skip,
             mlp_skip=mlp_skip,
             incremental_n_modes=incremental_n_modes,
+            fno_block_precision=fno_block_precision,
             rank=rank,
             fft_norm=fft_norm,
             fixed_rank_modes=fixed_rank_modes, 
@@ -188,9 +169,8 @@ class FNO(nn.Module):
             SpectralConv=SpectralConv,
             n_layers=n_layers)
 
-        self.lifting = Lifting(in_channels=in_channels, out_channels=self.hidden_channels, n_dim=self.n_dim)
-        self.projection = Projection(in_channels=self.hidden_channels, out_channels=out_channels, hidden_channels=projection_channels,
-                                     non_linearity=non_linearity, n_dim=self.n_dim)
+        self.lifting = MLP(in_channels=in_channels, out_channels=self.hidden_channels, hidden_channels=self.hidden_channels, n_layers=1, n_dim=self.n_dim)
+        self.projection = MLP(in_channels=self.hidden_channels, out_channels=out_channels, hidden_channels=self.projection_channels, n_layers=2, n_dim=self.n_dim, non_linearity=non_linearity) 
 
     def forward(self, x):
         """TFNO's forward pass
@@ -245,6 +225,12 @@ class FNO1d(FNO):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
+    fno_block_precision : str {'full', 'half', 'mixed'}
+        if 'full', the FNO Block runs in full precision
+        if 'half', the FFT, contraction, and inverse FFT run in half precision
+        if 'mixed', the contraction and inverse FFT run in half precision
+    stabilizer : str {'tanh'} or None, optional
+        By default None, otherwise tanh is used before FFT in the FNO block 
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -292,9 +278,11 @@ class FNO1d(FNO):
         lifting_channels=256,
         projection_channels=256,
         incremental_n_modes=None,
+        fno_block_precision='full',
         n_layers=4,
         output_scaling_factor=None,
         non_linearity=F.gelu,
+        stabilizer=None,
         use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
         norm=None,
         skip='soft-gating',
@@ -319,9 +307,11 @@ class FNO1d(FNO):
             projection_channels=projection_channels,
             n_layers=n_layers,
             output_scaling_factor=None,
-            non_linearity=non_linearity,
+            non_linearity=non_linearity, 
+            stabilizer=stabilizer,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             incremental_n_modes=incremental_n_modes,
+            fno_block_precision=fno_block_precision,
             norm=norm,
             skip=skip,
             separable=separable,
@@ -367,6 +357,12 @@ class FNO2d(FNO):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
+    fno_block_precision : str {'full', 'half', 'mixed'}
+        if 'full', the FNO Block runs in full precision
+        if 'half', the FFT, contraction, and inverse FFT run in half precision
+        if 'mixed', the contraction and inverse FFT run in half precision
+    stabilizer : str {'tanh'} or None, optional
+        By default None, otherwise tanh is used before FFT in the FNO block 
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -417,7 +413,9 @@ class FNO2d(FNO):
         n_layers=4,
         output_scaling_factor=None,
         incremental_n_modes=None,
+        fno_block_precision='full',
         non_linearity=F.gelu,
+        stabilizer=None,
         use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
         norm=None,
         skip='soft-gating',
@@ -442,9 +440,11 @@ class FNO2d(FNO):
             projection_channels=projection_channels,
             n_layers=n_layers,
             output_scaling_factor=None,
-            non_linearity=non_linearity,
+            non_linearity=non_linearity, 
+            stabilizer=stabilizer,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             incremental_n_modes=incremental_n_modes,
+            fno_block_precision=fno_block_precision,
             norm=norm,
             skip=skip,
             separable=separable,
@@ -494,6 +494,12 @@ class FNO3d(FNO):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
+    fno_block_precision : str {'full', 'half', 'mixed'}
+        if 'full', the FNO Block runs in full precision
+        if 'half', the FFT, contraction, and inverse FFT run in half precision
+        if 'mixed', the contraction and inverse FFT run in half precision
+    stabilizer : str {'tanh'} or None, optional
+        By default None, otherwise tanh is used before FFT in the FNO block 
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp : dict, optional
@@ -544,7 +550,9 @@ class FNO3d(FNO):
         n_layers=4,
         output_scaling_factor=None,
         incremental_n_modes=None,
+        fno_block_precision='full',
         non_linearity=F.gelu,
+        stabilizer=None,
         use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
         norm=None,
         skip='soft-gating',
@@ -570,7 +578,9 @@ class FNO3d(FNO):
             n_layers=n_layers,
             output_scaling_factor=None,
             non_linearity=non_linearity,
+            stabilizer=stabilizer,
             incremental_n_modes=incremental_n_modes,
+            fno_block_precision=fno_block_precision,
             use_mlp=use_mlp, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion,
             norm=norm,
             skip=skip,
@@ -621,4 +631,7 @@ TFNO1d = partialclass('TFNO1d', FNO1d, factorization='Tucker')
 TFNO2d = partialclass('TFNO2d', FNO2d, factorization='Tucker')
 TFNO3d = partialclass('TFNO3d', FNO3d, factorization='Tucker')
 
-SFNO   = partialclass('SFNO', FNO, factorization='dense', SpectralConv=FactorizedSphericalConv)
+SFNO   = partialclass('SFNO', FNO, factorization='dense', SpectralConv=SphericalConv)
+SFNO.__doc__ = SFNO.__doc__.replace('Fourier', 'Spherical Fourier', 1)
+SFNO.__doc__ = SFNO.__doc__.replace('FNO', 'SFNO')
+SFNO.__doc__ = SFNO.__doc__.replace('fno', 'sfno')
