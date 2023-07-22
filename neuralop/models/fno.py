@@ -638,3 +638,6 @@ TFNO2d = partialclass('TFNO2d', FNO2d, factorization='Tucker')
 TFNO3d = partialclass('TFNO3d', FNO3d, factorization='Tucker')
 
 SFNO   = partialclass('SFNO', FNO, factorization='dense', SpectralConv=SphericalConv)
+SFNO.__doc__ = SFNO.__doc__.replace('Fourier', 'Spherical Fourier', 1)
+SFNO.__doc__ = SFNO.__doc__.replace('FNO', 'SFNO')
+SFNO.__doc__ = SFNO.__doc__.replace('fno', 'sfno')
