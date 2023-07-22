@@ -36,7 +36,9 @@ class MLP(nn.Module):
         Conv = getattr(nn, f'Conv{n_dim}d')
         self.fcs = nn.ModuleList()
         for i in range(n_layers):
-            if i == 0:
+            if i == 0 and i == (n_layers - 1):
+                self.fcs.append(Conv(self.in_channels, self.out_channels, 1))
+            elif i == 0:
                 self.fcs.append(Conv(self.in_channels, self.hidden_channels, 1))
             elif i == (n_layers - 1):
                 self.fcs.append(Conv(self.hidden_channels, self.out_channels, 1))
