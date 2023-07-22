@@ -162,7 +162,7 @@ def get_contract_fun(weight, implementation='reconstructed', separable=False):
         raise ValueError(f'Got {implementation=}, expected "reconstructed" or "factorized"')
 
 
-class FactorizedSphericalConv(nn.Module):
+class SphericalConv(nn.Module):
     def __init__(self, in_channels, out_channels, n_modes, incremental_n_modes=None, bias=True,
                  n_layers=1, separable=False, output_scaling_factor=None, fno_block_precision='full',
                  rank=0.5, factorization='cp', implementation='reconstructed', 
