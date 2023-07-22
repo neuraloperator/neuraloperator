@@ -490,10 +490,4 @@ class FactorizedSpectralConv3d(FactorizedSpectralConv):
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
-        return xth*self.output_scaling_factor[2]))
-
-        x = torch.fft.irfftn(out_fft, s=(height, width, depth), norm=self.fft_norm)
-
-        if self.bias is not None:
-            x = x + self.bias[indices, ...]
         return x

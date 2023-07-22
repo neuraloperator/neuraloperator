@@ -216,4 +216,4 @@ class SubModule(nn.Module):
         self.indices = indices
     
     def forward(self, x):
-        return self.main_module.forward(x, self.indices)   return self.main_module.forward(x, self.indices)
+        return self.main_module.forward(x, self.indices)
