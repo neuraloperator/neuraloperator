@@ -264,13 +264,4 @@ class UNO(nn.Module):
             x = self.domain_padding.unpad(x)
 
         x = self.projection(x)
-        return xself.horizontal_skips[str(layer_idx)](x)
-
-        if self.domain_padding is not None:
-            x = self.domain_padding.unpad(x)
-
-        x = self.projection(x)
-        return x.domain_padding.unpad(x)
-
-        x = self.projection(x)
         return x
