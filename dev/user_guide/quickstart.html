@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Computation times &#8212; neuraloperator 0.2.1 documentation</title> 
+    <title>Quick-Start &#8212; neuraloperator 0.2.1 documentation</title> 
 <link rel="stylesheet" href="../_static/tensorly_style.css">
 <link rel="apple-touch-icon" sizes="180x180" href="../_static/favicon/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../_static/favicon/favicon-32x32.png">
@@ -35,6 +35,8 @@
  
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Neural Operators: an Introduction" href="neural_operators.html" />
+    <link rel="prev" title="User guide" href="index.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -69,13 +71,13 @@
               <a class="navbar-item" href="../install.html">
               Install
             </a>
-              <a class="navbar-item" href="../user_guide/index.html">
+              <a class="navbar-item" href="index.html">
               User Guide
             </a>
               <a class="navbar-item" href="../modules/api.html">
               API
             </a>
-              <a class="navbar-item" href="index.html">
+              <a class="navbar-item" href="../auto_examples/index.html">
               Examples
             </a>
           </div>
@@ -126,11 +128,16 @@
 </div>
       
       <div class="sidebar-menu-toc">
-      <ul>
+      <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installing NeuralOperator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../user_guide/index.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">User guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Quick-Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="neural_operators.html">Neural Operators: an Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fno.html">Fourier Neural Operators</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../modules/api.html">API reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="index.html">Gallery of examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../auto_examples/index.html">Gallery of examples</a></li>
 </ul>
  
       </div>
@@ -155,26 +162,33 @@
 
       <div class="container content main-content">
         
-  <section id="computation-times">
-<span id="sphx-glr-auto-examples-sg-execution-times"></span><h1>Computation times<a class="headerlink" href="#computation-times" title="Permalink to this heading"></a></h1>
-<p><strong>04:13.873</strong> total execution time for <strong>auto_examples</strong> files:</p>
+  <section id="quick-start">
+<h1>Quick-Start<a class="headerlink" href="#quick-start" title="Permalink to this heading"></a></h1>
+<p>The neuralop library aims at providing you all the tools
+to easily use, build and train neural operators for your own applications
+and learn mapping between function spaces, in PyTorch.</p>
+<p>Here are the main components of the library:</p>
 <table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="plot_UNO_darcy.html#sphx-glr-auto-examples-plot-uno-darcy-py"><span class="std std-ref">U-NO on Darcy-Flow</span></a> (<code class="docutils literal notranslate"><span class="pre">plot_UNO_darcy.py</span></code>)</p></td>
-<td><p>02:02.317</p></td>
-<td><p>0.0 MB</p></td>
+<tr class="row-even"><td><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop</span></code></p></td>
+<td><p>Main library</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="plot_SFNO_swe.html#sphx-glr-auto-examples-plot-sfno-swe-py"><span class="std std-ref">Training a SFNO on the spherical Shallow Water equations</span></a> (<code class="docutils literal notranslate"><span class="pre">plot_SFNO_swe.py</span></code>)</p></td>
-<td><p>01:25.098</p></td>
-<td><p>0.0 MB</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../modules/api.html#module-0" title="neuralop.models"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code></a></p></td>
+<td><p>Full ready-to-use neural operators</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="plot_FNO_darcy.html#sphx-glr-auto-examples-plot-fno-darcy-py"><span class="std std-ref">Training a TFNO on Darcy-Flow</span></a> (<code class="docutils literal notranslate"><span class="pre">plot_FNO_darcy.py</span></code>)</p></td>
-<td><p>00:45.941</p></td>
-<td><p>0.0 MB</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../modules/api.html#module-neuralop.layers" title="neuralop.layers"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers</span></code></a></p></td>
+<td><p>Individual layers to build neural operators</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="plot_darcy_flow.html#sphx-glr-auto-examples-plot-darcy-flow-py"><span class="std std-ref">A simple Darcy-Flow dataset</span></a> (<code class="docutils literal notranslate"><span class="pre">plot_darcy_flow.py</span></code>)</p></td>
-<td><p>00:00.517</p></td>
-<td><p>0.0 MB</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../modules/api.html#module-neuralop.datasets" title="neuralop.datasets"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.datasets</span></code></a></p></td>
+<td><p>Convenience PyTorch data loaders for PDE datasets</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training</span></code></p></td>
+<td><p>Utilities to train neural operators end-to-end</p></td>
 </tr>
 </tbody>
 </table>
@@ -186,6 +200,20 @@
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
+    <a class="button pagination-previous" href="index.html" title="previous page" accesskey="p">
+        <span class="icon">
+            <i class="fa fa-arrow-circle-left"></i>
+        </span>
+        <span>User guide</span>
+    </a>
+    
+    
+    <a class="button pagination-next" href="neural_operators.html" title="next page" accesskey="n">
+        <span>Neural Operators: an Introduction </span>
+        <span class="icon">
+            <i class="fa fa-arrow-circle-right"></i>
+        </span>
+    </a>
     
 </nav>
 
