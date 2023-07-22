@@ -75,8 +75,9 @@ In addition to the full architectures, we also provide building blocks:
 Neural operator Layers
 ++++++++++++++++++++++
 
-**Spectral convolutions** (in Fourier domain): 
-.. automodule:: neuralop.models.spectral_convolution
+**Spectral convolutions** (in Fourier domain):
+
+.. automodule:: neuralop.layers.spectral_convolution
     :no-members:
     :no-inherited-members:
 
@@ -91,9 +92,9 @@ Neural operator Layers
     SpectralConv3d
 
 
-**Spherical convolutions**: 
+**Spherical convolutions**: (using Spherical Harmonics)
 
-.. automodule:: neuralop.models.spherical_convolution
+.. automodule:: neuralop.layers.spherical_convolution
     :no-members:
     :no-inherited-members:
 
@@ -101,7 +102,7 @@ Neural operator Layers
     :toctree: generated
     :template: class.rst
 
-    FactorizedSphericalConv
+    SphericalConv
 
 
 Other resolution invariant operations
@@ -109,7 +110,7 @@ Other resolution invariant operations
 
 Automatically apply resolution dependent domain padding: 
 
-.. automodule:: neuralop.models.padding
+.. automodule:: neuralop.alyers.padding
     :no-members:
     :no-inherited-members:
 
@@ -119,7 +120,7 @@ Automatically apply resolution dependent domain padding:
 
     DomainPadding
 
-.. automodule:: neuralop.models.skip_connections
+.. automodule:: neuralop.layers.skip_connections
     :no-members:
     :no-inherited-members:
 
