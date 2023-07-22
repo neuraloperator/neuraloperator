@@ -120,12 +120,12 @@
 <span></span><span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 <span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partialmethod</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">.spectral_convolution</span> <span class="kn">import</span> <span class="n">SpectralConv</span>
-<span class="kn">from</span> <span class="nn">.spherical_convolution</span> <span class="kn">import</span> <span class="n">FactorizedSphericalConv</span>
-<span class="kn">from</span> <span class="nn">.padding</span> <span class="kn">import</span> <span class="n">DomainPadding</span>
-<span class="kn">from</span> <span class="nn">.fno_block</span> <span class="kn">import</span> <span class="n">FNOBlocks</span><span class="p">,</span> <span class="n">resample</span>
-<span class="kn">from</span> <span class="nn">.mlp</span> <span class="kn">import</span> <span class="n">MLP</span>
+
+<span class="kn">from</span> <span class="nn">..layers.spectral_convolution</span> <span class="kn">import</span> <span class="n">SpectralConv</span>
+<span class="kn">from</span> <span class="nn">..layers.spherical_convolution</span> <span class="kn">import</span> <span class="n">SphericalConv</span>
+<span class="kn">from</span> <span class="nn">..layers.padding</span> <span class="kn">import</span> <span class="n">DomainPadding</span>
+<span class="kn">from</span> <span class="nn">..layers.fno_block</span> <span class="kn">import</span> <span class="n">FNOBlocks</span><span class="p">,</span> <span class="n">resample</span>
+<span class="kn">from</span> <span class="nn">..layers.mlp</span> <span class="kn">import</span> <span class="n">MLP</span>
 
 
 <div class="viewcode-block" id="FNO"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO.html#neuralop.models.FNO">[docs]</a><span class="k">class</span> <span class="nc">FNO</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
@@ -750,7 +750,7 @@
 <span class="n">TFNO2d</span> <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;TFNO2d&#39;</span><span class="p">,</span> <span class="n">FNO2d</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;Tucker&#39;</span><span class="p">)</span>
 <span class="n">TFNO3d</span> <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;TFNO3d&#39;</span><span class="p">,</span> <span class="n">FNO3d</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;Tucker&#39;</span><span class="p">)</span>
 
-<span class="n">SFNO</span>   <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;SFNO&#39;</span><span class="p">,</span> <span class="n">FNO</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;dense&#39;</span><span class="p">,</span> <span class="n">SpectralConv</span><span class="o">=</span><span class="n">FactorizedSphericalConv</span><span class="p">)</span>
+<span class="n">SFNO</span>   <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;SFNO&#39;</span><span class="p">,</span> <span class="n">FNO</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;dense&#39;</span><span class="p">,</span> <span class="n">SpectralConv</span><span class="o">=</span><span class="n">SphericalConv</span><span class="p">)</span>
 </pre></div>
 
       </div>

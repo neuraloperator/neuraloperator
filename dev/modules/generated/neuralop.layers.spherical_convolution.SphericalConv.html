@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>neuralop.models.spherical_convolution.FactorizedSphericalConv &#8212; neuraloperator 0.2.1 documentation</title> 
+    <title>neuralop.layers.spherical_convolution.SphericalConv &#8212; neuraloperator 0.2.1 documentation</title> 
 <link rel="stylesheet" href="../../_static/tensorly_style.css">
 <link rel="apple-touch-icon" sizes="180x180" href="../../_static/favicon/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon/favicon-32x32.png">
@@ -35,8 +35,8 @@
  
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="neuralop.models.padding.DomainPadding" href="neuralop.models.padding.DomainPadding.html" />
-    <link rel="prev" title="neuralop.models.UNO" href="neuralop.models.UNO.html" />
+    <link rel="next" title="neuralop.layers.padding.DomainPadding" href="neuralop.layers.padding.DomainPadding.html" />
+    <link rel="prev" title="neuralop.layers.spectral_convolution.SpectralConv3d" href="neuralop.layers.spectral_convolution.SpectralConv3d.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -163,11 +163,11 @@
 
       <div class="container content main-content">
         
-  <section id="neuralop-models-spherical-convolution-factorizedsphericalconv">
-<h1><a class="reference internal" href="../api.html#module-neuralop.models.spherical_convolution" title="neuralop.models.spherical_convolution"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.spherical_convolution</span></code></a>.FactorizedSphericalConv<a class="headerlink" href="#neuralop-models-spherical-convolution-factorizedsphericalconv" title="Permalink to this heading"></a></h1>
+  <section id="neuralop-layers-spherical-convolution-sphericalconv">
+<h1><a class="reference internal" href="../api.html#module-neuralop.layers.spherical_convolution" title="neuralop.layers.spherical_convolution"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.spherical_convolution</span></code></a>.SphericalConv<a class="headerlink" href="#neuralop-layers-spherical-convolution-sphericalconv" title="Permalink to this heading"></a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="neuralop.models.spherical_convolution.FactorizedSphericalConv">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.models.spherical_convolution.</span></span><span class="sig-name descname"><span class="pre">FactorizedSphericalConv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_modes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">incremental_n_modes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_scaling_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fno_block_precision</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'full'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factorization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implementation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'reconstructed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_rank_modes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">joint_factorization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomposition_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'backward'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/spherical_convolution.html#FactorizedSphericalConv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.spherical_convolution.FactorizedSphericalConv" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="neuralop.layers.spherical_convolution.SphericalConv">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.layers.spherical_convolution.</span></span><span class="sig-name descname"><span class="pre">SphericalConv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_modes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">incremental_n_modes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_scaling_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fno_block_precision</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'full'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factorization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implementation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'reconstructed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_rank_modes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">joint_factorization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomposition_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'backward'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/spherical_convolution.html#SphericalConv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.spherical_convolution.SphericalConv" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Attributes<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
@@ -178,17 +178,17 @@
 <p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.models.spherical_convolution.FactorizedSphericalConv.forward" title="neuralop.models.spherical_convolution.FactorizedSphericalConv.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x[, indices, output_shape])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.layers.spherical_convolution.SphericalConv.forward" title="neuralop.layers.spherical_convolution.SphericalConv.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x[, indices, output_shape])</p></td>
 <td><p>Generic forward pass for the Factorized Spectral Conv</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#neuralop.models.spherical_convolution.FactorizedSphericalConv.get_conv" title="neuralop.models.spherical_convolution.FactorizedSphericalConv.get_conv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_conv</span></code></a>(indices)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#neuralop.layers.spherical_convolution.SphericalConv.get_conv" title="neuralop.layers.spherical_convolution.SphericalConv.get_conv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_conv</span></code></a>(indices)</p></td>
 <td><p>Returns a sub-convolutional layer from the joint parametrize main-convolution</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="neuralop.models.spherical_convolution.FactorizedSphericalConv.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/spherical_convolution.html#FactorizedSphericalConv.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.spherical_convolution.FactorizedSphericalConv.forward" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="neuralop.layers.spherical_convolution.SphericalConv.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/spherical_convolution.html#SphericalConv.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.spherical_convolution.SphericalConv.forward" title="Permalink to this definition"></a></dt>
 <dd><p>Generic forward pass for the Factorized Spectral Conv</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -208,8 +208,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="neuralop.models.spherical_convolution.FactorizedSphericalConv.get_conv">
-<span class="sig-name descname"><span class="pre">get_conv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indices</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/spherical_convolution.html#FactorizedSphericalConv.get_conv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.spherical_convolution.FactorizedSphericalConv.get_conv" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="neuralop.layers.spherical_convolution.SphericalConv.get_conv">
+<span class="sig-name descname"><span class="pre">get_conv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indices</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/spherical_convolution.html#SphericalConv.get_conv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.spherical_convolution.SphericalConv.get_conv" title="Permalink to this definition"></a></dt>
 <dd><p>Returns a sub-convolutional layer from the joint parametrize main-convolution</p>
 <p>The parametrization of sub-convolutional layers is shared with the main one.</p>
 </dd></dl>
@@ -224,16 +224,16 @@
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="neuralop.models.UNO.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="neuralop.layers.spectral_convolution.SpectralConv3d.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code>.UNO</span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.spectral_convolution</span></code>.SpectralConv3d</span>
     </a>
     
     
-    <a class="button pagination-next" href="neuralop.models.padding.DomainPadding.html" title="next page" accesskey="n">
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.padding</span></code>.DomainPadding </span>
+    <a class="button pagination-next" href="neuralop.layers.padding.DomainPadding.html" title="next page" accesskey="n">
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.padding</span></code>.DomainPadding </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>
@@ -269,10 +269,10 @@
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.spherical_convolution</span></code>.FactorizedSphericalConv</a><ul>
-<li><a class="reference internal" href="#neuralop.models.spherical_convolution.FactorizedSphericalConv"><code class="docutils literal notranslate"><span class="pre">FactorizedSphericalConv</span></code></a><ul>
-<li><a class="reference internal" href="#neuralop.models.spherical_convolution.FactorizedSphericalConv.forward"><code class="docutils literal notranslate"><span class="pre">FactorizedSphericalConv.forward()</span></code></a></li>
-<li><a class="reference internal" href="#neuralop.models.spherical_convolution.FactorizedSphericalConv.get_conv"><code class="docutils literal notranslate"><span class="pre">FactorizedSphericalConv.get_conv()</span></code></a></li>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.spherical_convolution</span></code>.SphericalConv</a><ul>
+<li><a class="reference internal" href="#neuralop.layers.spherical_convolution.SphericalConv"><code class="docutils literal notranslate"><span class="pre">SphericalConv</span></code></a><ul>
+<li><a class="reference internal" href="#neuralop.layers.spherical_convolution.SphericalConv.forward"><code class="docutils literal notranslate"><span class="pre">SphericalConv.forward()</span></code></a></li>
+<li><a class="reference internal" href="#neuralop.layers.spherical_convolution.SphericalConv.get_conv"><code class="docutils literal notranslate"><span class="pre">SphericalConv.get_conv()</span></code></a></li>
 </ul>
 </li>
 </ul>

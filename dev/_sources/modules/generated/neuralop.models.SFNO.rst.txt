@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.models`.SFNO
+==================================
+
+.. currentmodule:: neuralop.models
+
+.. autoclass:: SFNO
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

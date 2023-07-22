@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>neuralop.models.spectral_convolution.SpectralConv2d &#8212; neuraloperator 0.2.1 documentation</title> 
+    <title>neuralop.layers.skip_connections.SoftGating &#8212; neuraloperator 0.2.1 documentation</title> 
 <link rel="stylesheet" href="../../_static/tensorly_style.css">
 <link rel="apple-touch-icon" sizes="180x180" href="../../_static/favicon/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon/favicon-32x32.png">
@@ -35,6 +35,8 @@
  
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="neuralop.layers.skip_connections.skip_connection" href="neuralop.layers.skip_connections.skip_connection.html" />
+    <link rel="prev" title="neuralop.layers.padding.DomainPadding" href="neuralop.layers.padding.DomainPadding.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -126,10 +128,16 @@
 </div>
       
       <div class="sidebar-menu-toc">
-      <ul>
+      <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../install.html">Installing NeuralOperator</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user_guide/index.html">User guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../api.html">API reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../api.html#models">Models</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#layers">Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#model-dispatching">Model Dispatching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#datasets">Datasets</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../../auto_examples/index.html">Gallery of examples</a></li>
 </ul>
  
@@ -155,38 +163,40 @@
 
       <div class="container content main-content">
         
-  <section id="neuralop-models-spectral-convolution-spectralconv2d">
-<h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.spectral_convolution</span></code>.SpectralConv2d<a class="headerlink" href="#neuralop-models-spectral-convolution-spectralconv2d" title="Permalink to this heading"></a></h1>
+  <section id="neuralop-layers-skip-connections-softgating">
+<h1><a class="reference internal" href="../api.html#module-neuralop.layers.skip_connections" title="neuralop.layers.skip_connections"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.skip_connections</span></code></a>.SoftGating<a class="headerlink" href="#neuralop-layers-skip-connections-softgating" title="Permalink to this heading"></a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="neuralop.models.spectral_convolution.SpectralConv2d">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.models.spectral_convolution.</span></span><span class="sig-name descname"><span class="pre">SpectralConv2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_modes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">incremental_n_modes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_scaling_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fno_block_precision</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'full'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factorization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implementation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'reconstructed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_rank_modes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">joint_factorization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomposition_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'backward'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/spectral_convolution.html#SpectralConv2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.spectral_convolution.SpectralConv2d" title="Permalink to this definition"></a></dt>
-<dd><p class="rubric">Methods</p>
+<dt class="sig sig-object py" id="neuralop.layers.skip_connections.SoftGating">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.layers.skip_connections.</span></span><span class="sig-name descname"><span class="pre">SoftGating</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/skip_connections.html#SoftGating"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.skip_connections.SoftGating" title="Permalink to this definition"></a></dt>
+<dd><p>Applies soft-gating by weighting the channels of the given input</p>
+<p>Given an input x of size <cite>(batch-size, channels, height, width)</cite>,
+this returns <cite>x * w `
+where w is of shape `(1, channels, 1, 1)</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>in_features</strong><span class="classifier">int</span></dt><dd></dd>
+<dt><strong>out_features</strong><span class="classifier">None</span></dt><dd><p>this is provided for API compatibility with nn.Linear only</p>
+</dd>
+<dt><strong>n_dim</strong><span class="classifier">int, default is 2</span></dt><dd><p>Dimensionality of the input (excluding batch-size and channels).
+<code class="docutils literal notranslate"><span class="pre">n_dim=2</span></code> corresponds to having Module2D.</p>
+</dd>
+<dt><strong>bias</strong><span class="classifier">bool, default is False</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.models.spectral_convolution.SpectralConv2d.forward" title="neuralop.models.spectral_convolution.SpectralConv2d.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x[, indices])</p></td>
-<td><p>Generic forward pass for the Factorized Spectral Conv</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.layers.skip_connections.SoftGating.forward" title="neuralop.layers.skip_connections.SoftGating.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x)</p></td>
+<td><p>Applies soft-gating to a batch of activations</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="neuralop.models.spectral_convolution.SpectralConv2d.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/spectral_convolution.html#SpectralConv2d.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.spectral_convolution.SpectralConv2d.forward" title="Permalink to this definition"></a></dt>
-<dd><p>Generic forward pass for the Factorized Spectral Conv</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>x</strong><span class="classifier">torch.Tensor</span></dt><dd><p>input activation of size (batch_size, channels, d1, …, dN)</p>
-</dd>
-<dt><strong>indices</strong><span class="classifier">int, default is 0</span></dt><dd><p>if joint_factorization, index of the layers for n_layers &gt; 1</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><dl class="simple">
-<dt>tensorized_spectral_conv(x)</dt><dd></dd>
-</dl>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="neuralop.layers.skip_connections.SoftGating.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/skip_connections.html#SoftGating.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.skip_connections.SoftGating.forward" title="Permalink to this definition"></a></dt>
+<dd><p>Applies soft-gating to a batch of activations</p>
 </dd></dl>
 
 </dd></dl>
@@ -199,6 +209,20 @@
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
+    <a class="button pagination-previous" href="neuralop.layers.padding.DomainPadding.html" title="previous page" accesskey="p">
+        <span class="icon">
+            <i class="fa fa-arrow-circle-left"></i>
+        </span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.padding</span></code>.DomainPadding</span>
+    </a>
+    
+    
+    <a class="button pagination-next" href="neuralop.layers.skip_connections.skip_connection.html" title="next page" accesskey="n">
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.skip_connections</span></code>.skip_connection </span>
+        <span class="icon">
+            <i class="fa fa-arrow-circle-right"></i>
+        </span>
+    </a>
     
 </nav>
 
@@ -230,9 +254,9 @@
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.spectral_convolution</span></code>.SpectralConv2d</a><ul>
-<li><a class="reference internal" href="#neuralop.models.spectral_convolution.SpectralConv2d"><code class="docutils literal notranslate"><span class="pre">SpectralConv2d</span></code></a><ul>
-<li><a class="reference internal" href="#neuralop.models.spectral_convolution.SpectralConv2d.forward"><code class="docutils literal notranslate"><span class="pre">SpectralConv2d.forward()</span></code></a></li>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.skip_connections</span></code>.SoftGating</a><ul>
+<li><a class="reference internal" href="#neuralop.layers.skip_connections.SoftGating"><code class="docutils literal notranslate"><span class="pre">SoftGating</span></code></a><ul>
+<li><a class="reference internal" href="#neuralop.layers.skip_connections.SoftGating.forward"><code class="docutils literal notranslate"><span class="pre">SoftGating.forward()</span></code></a></li>
 </ul>
 </li>
 </ul>

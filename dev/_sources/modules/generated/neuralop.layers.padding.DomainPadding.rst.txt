@@ -1,7 +1,7 @@
-﻿:mod:`neuralop.models.padding`.DomainPadding
+﻿:mod:`neuralop.layers.padding`.DomainPadding
 ===================================================
 
-.. currentmodule:: neuralop.models.padding
+.. currentmodule:: neuralop.layers.padding
 
 .. autoclass:: DomainPadding
    :members:

@@ -1,7 +1,7 @@
-﻿:mod:`neuralop.models.skip_connections`.SoftGating
+﻿:mod:`neuralop.layers.skip_connections`.SoftGating
 =========================================================
 
-.. currentmodule:: neuralop.models.skip_connections
+.. currentmodule:: neuralop.layers.skip_connections
 
 .. autoclass:: SoftGating
    :members:

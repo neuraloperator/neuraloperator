@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>neuralop.models.skip_connections &#8212; neuraloperator 0.2.1 documentation</title> 
+    <title>neuralop.layers.skip_connections &#8212; neuraloperator 0.2.1 documentation</title> 
 <link rel="stylesheet" href="../../../_static/tensorly_style.css">
 <link rel="apple-touch-icon" sizes="180x180" href="../../../_static/favicon/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../../../_static/favicon/favicon-32x32.png">
@@ -116,12 +116,12 @@
 
       <div class="container content main-content">
         
-  <h1>Source code for neuralop.models.skip_connections</h1><div class="highlight"><pre>
+  <h1>Source code for neuralop.layers.skip_connections</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
 
 
-<div class="viewcode-block" id="skip_connection"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.skip_connections.skip_connection.html#neuralop.models.skip_connections.skip_connection">[docs]</a><span class="k">def</span> <span class="nf">skip_connection</span><span class="p">(</span><span class="n">in_features</span><span class="p">,</span> <span class="n">out_features</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;soft-gating&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="skip_connection"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.skip_connections.skip_connection.html#neuralop.layers.skip_connections.skip_connection">[docs]</a><span class="k">def</span> <span class="nf">skip_connection</span><span class="p">(</span><span class="n">in_features</span><span class="p">,</span> <span class="n">out_features</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;soft-gating&quot;</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A wrapper for several types of skip connections.</span>
 <span class="sd">    Returns an nn.Module skip connections, one of  {&#39;identity&#39;, &#39;linear&#39;, soft-gating&#39;}</span>
 
@@ -154,7 +154,7 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Got skip-connection </span><span class="si">{</span><span class="nb">type</span><span class="si">=}</span><span class="s2">, expected one of </span><span class="si">{</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;linear&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="SoftGating"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.skip_connections.SoftGating.html#neuralop.models.skip_connections.SoftGating">[docs]</a><span class="k">class</span> <span class="nc">SoftGating</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<div class="viewcode-block" id="SoftGating"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.skip_connections.SoftGating.html#neuralop.layers.skip_connections.SoftGating">[docs]</a><span class="k">class</span> <span class="nc">SoftGating</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Applies soft-gating by weighting the channels of the given input</span>
 
 <span class="sd">    Given an input x of size `(batch-size, channels, height, width)`,</span>
@@ -184,7 +184,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="SoftGating.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.skip_connections.SoftGating.html#neuralop.models.skip_connections.SoftGating.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<div class="viewcode-block" id="SoftGating.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.skip_connections.SoftGating.html#neuralop.layers.skip_connections.SoftGating.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Applies soft-gating to a batch of activations</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>

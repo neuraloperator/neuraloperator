@@ -168,9 +168,10 @@
 <p><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop</span></code>: Neural Operators in Python</p>
 <span class="target" id="module-neuralop.models"></span><section id="models">
 <span id="neuralop-models-ref"></span><h2>Models<a class="headerlink" href="#models" title="Permalink to this heading"></a></h2>
-<p>In <cite>neuralop</cite>, we provide a general Fourier Neural Operator (TFNO) that supports most usecases.</p>
+<p>In <a href="#id1"><span class="problematic" id="id2">:module:`neuralop.models`</span></a>, we all neural operator models you can directly use on your applications.</p>
 <section id="fno">
 <h3>FNO<a class="headerlink" href="#fno" title="Permalink to this heading"></a></h3>
+<p>We provide a general Fourier Neural Operator (TFNO) that supports most usecases.</p>
 <p>We have a generic interface that works for any dimension, which is inferred based on <cite>n_modes</cite>
 (a tuple with the number of modes to keep in the Fourier domain for each dimension.)</p>
 <table class="autosummary longtable docutils align-default">
@@ -220,6 +221,16 @@
 </tbody>
 </table>
 </section>
+<section id="spherical-fourier-neural-operators-sfno">
+<h3>Spherical Fourier Neural Operators (SFNO)<a class="headerlink" href="#spherical-fourier-neural-operators-sfno" title="Permalink to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.SFNO.html#neuralop.models.SFNO" title="neuralop.models.SFNO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SFNO</span></code></a>(n_modes, hidden_channels[, ...])</p></td>
+<td><p>N-Dimensional Fourier Neural Operator</p></td>
+</tr>
+</tbody>
+</table>
+</section>
 <section id="u-shaped-neural-operators-u-no">
 <h3>U-shaped Neural Operators (U-NO)<a class="headerlink" href="#u-shaped-neural-operators-u-no" title="Permalink to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
@@ -237,25 +248,32 @@
 </section>
 <section id="layers">
 <h2>Layers<a class="headerlink" href="#layers" title="Permalink to this heading"></a></h2>
-<p>In addition to the full architectures, we also provide building blocks:</p>
-<p><strong>Spectral convolutions</strong> (in Fourier domain):
-.. automodule:: neuralop.models.spectral_convolution</p>
-<blockquote>
-<div><dl class="field-list simple">
-<dt class="field-odd">no-members<span class="colon">:</span></dt>
-<dd class="field-odd"><p></p></dd>
-<dt class="field-even">no-inherited-members<span class="colon">:</span></dt>
-<dd class="field-even"><p></p></dd>
-</dl>
-</div></blockquote>
-<table class="autosummary longtable docutils align-default">
+<p>In addition to the full architectures, we also provide building blocks
+in the form of PyTorch layers you can use to build your own models:</p>
+<p><strong>Spectral convolutions</strong> (in Fourier domain):</p>
+<span class="target" id="module-neuralop.layers.spectral_convolution"></span><table class="autosummary longtable docutils align-default">
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv.html#neuralop.layers.spectral_convolution.SpectralConv" title="neuralop.layers.spectral_convolution.SpectralConv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv</span></code></a>(in_channels, out_channels, n_modes)</p></td>
+<td><p>Generic N-Dimensional Fourier Neural Operator</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv1d.html#neuralop.layers.spectral_convolution.SpectralConv1d" title="neuralop.layers.spectral_convolution.SpectralConv1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv1d</span></code></a>(in_channels, out_channels, ...)</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv2d.html#neuralop.layers.spectral_convolution.SpectralConv2d" title="neuralop.layers.spectral_convolution.SpectralConv2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv2d</span></code></a>(in_channels, out_channels, ...)</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv3d.html#neuralop.layers.spectral_convolution.SpectralConv3d" title="neuralop.layers.spectral_convolution.SpectralConv3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv3d</span></code></a>(in_channels, out_channels, ...)</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
 </tbody>
 </table>
-<p><strong>Spherical convolutions</strong>:</p>
-<span class="target" id="module-neuralop.models.spherical_convolution"></span><table class="autosummary longtable docutils align-default">
+<p><strong>Spherical convolutions</strong>: (using Spherical Harmonics)</p>
+<span class="target" id="module-neuralop.layers.spherical_convolution"></span><table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.spherical_convolution.FactorizedSphericalConv.html#neuralop.models.spherical_convolution.FactorizedSphericalConv" title="neuralop.models.spherical_convolution.FactorizedSphericalConv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FactorizedSphericalConv</span></code></a>(in_channels, ...[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv" title="neuralop.layers.spherical_convolution.SphericalConv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SphericalConv</span></code></a>(in_channels, out_channels, n_modes)</p></td>
 <td><p><dl class="field-list simple">
 <dt class="field-odd">Attributes<span class="colon">:</span></dt>
 <dd class="field-odd"><p></p></dd>
@@ -265,23 +283,23 @@
 </tbody>
 </table>
 <p>Automatically apply resolution dependent domain padding:</p>
-<span class="target" id="module-neuralop.models.padding"></span><table class="autosummary longtable docutils align-default">
+<span class="target" id="module-neuralop.layers.padding"></span><table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.padding.DomainPadding.html#neuralop.models.padding.DomainPadding" title="neuralop.models.padding.DomainPadding"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DomainPadding</span></code></a>(domain_padding[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.padding.DomainPadding.html#neuralop.layers.padding.DomainPadding" title="neuralop.layers.padding.DomainPadding"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DomainPadding</span></code></a>(domain_padding[, ...])</p></td>
 <td><p>Applies domain padding scaled automatically to the input's resolution</p></td>
 </tr>
 </tbody>
 </table>
-<span class="target" id="module-neuralop.models.skip_connections"></span><table class="autosummary longtable docutils align-default">
+<span class="target" id="module-neuralop.layers.skip_connections"></span><table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.skip_connections.SoftGating.html#neuralop.models.skip_connections.SoftGating" title="neuralop.models.skip_connections.SoftGating"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SoftGating</span></code></a>(in_features[, out_features, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.skip_connections.SoftGating.html#neuralop.layers.skip_connections.SoftGating" title="neuralop.layers.skip_connections.SoftGating"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SoftGating</span></code></a>(in_features[, out_features, ...])</p></td>
 <td><p>Applies soft-gating by weighting the channels of the given input</p></td>
 </tr>
 </tbody>
 </table>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.skip_connections.skip_connection.html#neuralop.models.skip_connections.skip_connection" title="neuralop.models.skip_connections.skip_connection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skip_connection</span></code></a>(in_features, out_features[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.skip_connections.skip_connection.html#neuralop.layers.skip_connections.skip_connection" title="neuralop.layers.skip_connections.skip_connection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skip_connection</span></code></a>(in_features, out_features[, ...])</p></td>
 <td><p>A wrapper for several types of skip connections.</p></td>
 </tr>
 </tbody>
@@ -374,6 +392,7 @@ It has the advantage of doing some checks on the parameters it receives.</p>
 <li><a class="reference internal" href="#tensorized-fno-tfno">Tensorized FNO (TFNO)</a><ul>
 </ul>
 </li>
+<li><a class="reference internal" href="#spherical-fourier-neural-operators-sfno">Spherical Fourier Neural Operators (SFNO)</a></li>
 <li><a class="reference internal" href="#u-shaped-neural-operators-u-no">U-shaped Neural Operators (U-NO)</a></li>
 </ul>
 </li>

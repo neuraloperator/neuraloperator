@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.layers.spherical_convolution`.SphericalConv
+=================================================================
+
+.. currentmodule:: neuralop.layers.spherical_convolution
+
+.. autoclass:: SphericalConv
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

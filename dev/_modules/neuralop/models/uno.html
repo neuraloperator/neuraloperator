@@ -121,15 +121,11 @@
 <span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partialmethod</span>
 <span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">.mlp</span> <span class="kn">import</span> <span class="n">MLP</span>
-<span class="kn">from</span> <span class="nn">.spectral_convolution</span> <span class="kn">import</span> <span class="n">SpectralConv3d</span><span class="p">,</span> <span class="n">SpectralConv2d</span><span class="p">,</span> <span class="n">SpectralConv1d</span>
-<span class="kn">from</span> <span class="nn">.spectral_convolution</span> <span class="kn">import</span> <span class="n">SpectralConv</span>
-<span class="kn">from</span> <span class="nn">.skip_connections</span> <span class="kn">import</span> <span class="n">skip_connection</span>
-<span class="kn">from</span> <span class="nn">.padding</span> <span class="kn">import</span> <span class="n">DomainPadding</span>
-<span class="kn">from</span> <span class="nn">.fno_block</span> <span class="kn">import</span> <span class="n">FNOBlocks</span><span class="p">,</span><span class="n">resample</span>
-<span class="kn">from</span> <span class="nn">.fno</span> <span class="kn">import</span> <span class="n">partialclass</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="c1">#this will be merged with the neural operator UNO</span>
+<span class="kn">from</span> <span class="nn">..layers.mlp</span> <span class="kn">import</span> <span class="n">MLP</span>
+<span class="kn">from</span> <span class="nn">..layers.spectral_convolution</span> <span class="kn">import</span> <span class="n">SpectralConv</span>
+<span class="kn">from</span> <span class="nn">..layers.skip_connections</span> <span class="kn">import</span> <span class="n">skip_connection</span>
+<span class="kn">from</span> <span class="nn">..layers.padding</span> <span class="kn">import</span> <span class="n">DomainPadding</span>
+<span class="kn">from</span> <span class="nn">..layers.fno_block</span> <span class="kn">import</span> <span class="n">FNOBlocks</span><span class="p">,</span><span class="n">resample</span>
 
 <div class="viewcode-block" id="UNO"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.UNO.html#neuralop.models.UNO">[docs]</a><span class="k">class</span> <span class="nc">UNO</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>

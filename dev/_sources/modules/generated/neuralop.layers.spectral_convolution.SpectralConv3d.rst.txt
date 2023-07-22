@@ -1,7 +1,7 @@
-﻿:mod:`neuralop.models.spectral_convolution`.SpectralConv3d
+﻿:mod:`neuralop.layers.spectral_convolution`.SpectralConv3d
 =================================================================
 
-.. currentmodule:: neuralop.models.spectral_convolution
+.. currentmodule:: neuralop.layers.spectral_convolution
 
 .. autoclass:: SpectralConv3d
    :members:

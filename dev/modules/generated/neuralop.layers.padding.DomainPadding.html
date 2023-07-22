@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>neuralop.models.skip_connections.SoftGating &#8212; neuraloperator 0.2.1 documentation</title> 
+    <title>neuralop.layers.padding.DomainPadding &#8212; neuraloperator 0.2.1 documentation</title> 
 <link rel="stylesheet" href="../../_static/tensorly_style.css">
 <link rel="apple-touch-icon" sizes="180x180" href="../../_static/favicon/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon/favicon-32x32.png">
@@ -35,8 +35,8 @@
  
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="neuralop.models.skip_connections.skip_connection" href="neuralop.models.skip_connections.skip_connection.html" />
-    <link rel="prev" title="neuralop.models.padding.DomainPadding" href="neuralop.models.padding.DomainPadding.html" />
+    <link rel="next" title="neuralop.layers.skip_connections.SoftGating" href="neuralop.layers.skip_connections.SoftGating.html" />
+    <link rel="prev" title="neuralop.layers.spherical_convolution.SphericalConv" href="neuralop.layers.spherical_convolution.SphericalConv.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -163,40 +163,56 @@
 
       <div class="container content main-content">
         
-  <section id="neuralop-models-skip-connections-softgating">
-<h1><a class="reference internal" href="../api.html#module-neuralop.models.skip_connections" title="neuralop.models.skip_connections"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.skip_connections</span></code></a>.SoftGating<a class="headerlink" href="#neuralop-models-skip-connections-softgating" title="Permalink to this heading"></a></h1>
+  <section id="neuralop-layers-padding-domainpadding">
+<h1><a class="reference internal" href="../api.html#module-neuralop.layers.padding" title="neuralop.layers.padding"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.padding</span></code></a>.DomainPadding<a class="headerlink" href="#neuralop-layers-padding-domainpadding" title="Permalink to this heading"></a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="neuralop.models.skip_connections.SoftGating">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.models.skip_connections.</span></span><span class="sig-name descname"><span class="pre">SoftGating</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/skip_connections.html#SoftGating"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.skip_connections.SoftGating" title="Permalink to this definition"></a></dt>
-<dd><p>Applies soft-gating by weighting the channels of the given input</p>
-<p>Given an input x of size <cite>(batch-size, channels, height, width)</cite>,
-this returns <cite>x * w `
-where w is of shape `(1, channels, 1, 1)</cite></p>
+<dt class="sig sig-object py" id="neuralop.layers.padding.DomainPadding">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.layers.padding.</span></span><span class="sig-name descname"><span class="pre">DomainPadding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain_padding</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'one-sided'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_scaling_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/padding.html#DomainPadding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.padding.DomainPadding" title="Permalink to this definition"></a></dt>
+<dd><p>Applies domain padding scaled automatically to the input’s resolution</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>in_features</strong><span class="classifier">int</span></dt><dd></dd>
-<dt><strong>out_features</strong><span class="classifier">None</span></dt><dd><p>this is provided for API compatibility with nn.Linear only</p>
+<dt><strong>domain_padding</strong><span class="classifier">float</span></dt><dd><p>typically, between zero and one, percentage of padding to use</p>
 </dd>
-<dt><strong>n_dim</strong><span class="classifier">int, default is 2</span></dt><dd><p>Dimensionality of the input (excluding batch-size and channels).
-<code class="docutils literal notranslate"><span class="pre">n_dim=2</span></code> corresponds to having Module2D.</p>
+<dt><strong>padding_mode</strong><span class="classifier">{‘symmetric’, ‘one-sided’}, optional</span></dt><dd><p>whether to pad on both sides, by default ‘one-sided’</p>
 </dd>
-<dt><strong>bias</strong><span class="classifier">bool, default is False</span></dt><dd></dd>
 </dl>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>This class works for any input resolution, as long as it is in the form
+<cite>(batch-size, channels, d1, …., dN)</cite></p>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.models.skip_connections.SoftGating.forward" title="neuralop.models.skip_connections.SoftGating.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x)</p></td>
-<td><p>Applies soft-gating to a batch of activations</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.layers.padding.DomainPadding.forward" title="neuralop.layers.padding.DomainPadding.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x)</p></td>
+<td><p>forward pass: pad the input</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#neuralop.layers.padding.DomainPadding.pad" title="neuralop.layers.padding.DomainPadding.pad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pad</span></code></a>(x)</p></td>
+<td><p>Take an input and pad it by the desired fraction</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.layers.padding.DomainPadding.unpad" title="neuralop.layers.padding.DomainPadding.unpad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unpad</span></code></a>(x)</p></td>
+<td><p>Remove the padding from padding inputs</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="neuralop.models.skip_connections.SoftGating.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/skip_connections.html#SoftGating.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.skip_connections.SoftGating.forward" title="Permalink to this definition"></a></dt>
-<dd><p>Applies soft-gating to a batch of activations</p>
+<dt class="sig sig-object py" id="neuralop.layers.padding.DomainPadding.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/padding.html#DomainPadding.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.padding.DomainPadding.forward" title="Permalink to this definition"></a></dt>
+<dd><p>forward pass: pad the input</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="neuralop.layers.padding.DomainPadding.pad">
+<span class="sig-name descname"><span class="pre">pad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/padding.html#DomainPadding.pad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.padding.DomainPadding.pad" title="Permalink to this definition"></a></dt>
+<dd><p>Take an input and pad it by the desired fraction</p>
+<p>The amount of padding will be automatically scaled with the resolution</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="neuralop.layers.padding.DomainPadding.unpad">
+<span class="sig-name descname"><span class="pre">unpad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/padding.html#DomainPadding.unpad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.padding.DomainPadding.unpad" title="Permalink to this definition"></a></dt>
+<dd><p>Remove the padding from padding inputs</p>
 </dd></dl>
 
 </dd></dl>
@@ -209,16 +225,16 @@ where w is of shape `(1, channels, 1, 1)</cite></p>
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="neuralop.models.padding.DomainPadding.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="neuralop.layers.spherical_convolution.SphericalConv.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.padding</span></code>.DomainPadding</span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.spherical_convolution</span></code>.SphericalConv</span>
     </a>
     
     
-    <a class="button pagination-next" href="neuralop.models.skip_connections.skip_connection.html" title="next page" accesskey="n">
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.skip_connections</span></code>.skip_connection </span>
+    <a class="button pagination-next" href="neuralop.layers.skip_connections.SoftGating.html" title="next page" accesskey="n">
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.skip_connections</span></code>.SoftGating </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>
@@ -254,9 +270,11 @@ where w is of shape `(1, channels, 1, 1)</cite></p>
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models.skip_connections</span></code>.SoftGating</a><ul>
-<li><a class="reference internal" href="#neuralop.models.skip_connections.SoftGating"><code class="docutils literal notranslate"><span class="pre">SoftGating</span></code></a><ul>
-<li><a class="reference internal" href="#neuralop.models.skip_connections.SoftGating.forward"><code class="docutils literal notranslate"><span class="pre">SoftGating.forward()</span></code></a></li>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.padding</span></code>.DomainPadding</a><ul>
+<li><a class="reference internal" href="#neuralop.layers.padding.DomainPadding"><code class="docutils literal notranslate"><span class="pre">DomainPadding</span></code></a><ul>
+<li><a class="reference internal" href="#neuralop.layers.padding.DomainPadding.forward"><code class="docutils literal notranslate"><span class="pre">DomainPadding.forward()</span></code></a></li>
+<li><a class="reference internal" href="#neuralop.layers.padding.DomainPadding.pad"><code class="docutils literal notranslate"><span class="pre">DomainPadding.pad()</span></code></a></li>
+<li><a class="reference internal" href="#neuralop.layers.padding.DomainPadding.unpad"><code class="docutils literal notranslate"><span class="pre">DomainPadding.unpad()</span></code></a></li>
 </ul>
 </li>
 </ul>
