@@ -536,6 +536,11 @@
 
 
 <div class="viewcode-block" id="SpectralConv1d"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spectral_convolution.SpectralConv1d.html#neuralop.layers.spectral_convolution.SpectralConv1d">[docs]</a><span class="k">class</span> <span class="nc">SpectralConv1d</span><span class="p">(</span><span class="n">SpectralConv</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;1D Spectral Conv</span>
+<span class="sd">    </span>
+<span class="sd">    This is provided for reference only, </span>
+<span class="sd">    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="SpectralConv1d.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spectral_convolution.SpectralConv1d.html#neuralop.layers.spectral_convolution.SpectralConv1d.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">indices</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="n">batchsize</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
 
@@ -556,6 +561,11 @@
 
 
 <div class="viewcode-block" id="SpectralConv2d"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spectral_convolution.SpectralConv2d.html#neuralop.layers.spectral_convolution.SpectralConv2d">[docs]</a><span class="k">class</span> <span class="nc">SpectralConv2d</span><span class="p">(</span><span class="n">SpectralConv</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;2D Spectral Conv, see :class:`neuralop.layers.SpectraConv` for the general case</span>
+<span class="sd">        </span>
+<span class="sd">    This is provided for reference only, </span>
+<span class="sd">    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="SpectralConv2d.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spectral_convolution.SpectralConv2d.html#neuralop.layers.spectral_convolution.SpectralConv2d.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">indices</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="n">batchsize</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
 
@@ -584,6 +594,11 @@
 
 
 <div class="viewcode-block" id="SpectralConv3d"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spectral_convolution.SpectralConv3d.html#neuralop.layers.spectral_convolution.SpectralConv3d">[docs]</a><span class="k">class</span> <span class="nc">SpectralConv3d</span><span class="p">(</span><span class="n">SpectralConv</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;3D Spectral Conv, see :class:`neuralop.layers.SpectraConv` for the general case</span>
+<span class="sd">    </span>
+<span class="sd">    This is provided for reference only, </span>
+<span class="sd">    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="SpectralConv3d.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spectral_convolution.SpectralConv3d.html#neuralop.layers.spectral_convolution.SpectralConv3d.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">indices</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="n">batchsize</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">depth</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
 

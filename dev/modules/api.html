@@ -226,7 +226,7 @@
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.SFNO.html#neuralop.models.SFNO" title="neuralop.models.SFNO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SFNO</span></code></a>(n_modes, hidden_channels[, ...])</p></td>
-<td><p>N-Dimensional Fourier Neural Operator</p></td>
+<td><p>N-Dimensional Spherical Fourier Neural Operator</p></td>
 </tr>
 </tbody>
 </table>
@@ -236,11 +236,7 @@
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.UNO.html#neuralop.models.UNO" title="neuralop.models.UNO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UNO</span></code></a>(in_channels, out_channels, hidden_channels)</p></td>
-<td><p><dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-</p></td>
+<td><p>U-Shaped Neural Operator</p></td>
 </tr>
 </tbody>
 </table>
@@ -258,16 +254,13 @@ in the form of PyTorch layers, that you can use to build your own models:</p>
 <td><p>Generic N-Dimensional Fourier Neural Operator</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv1d.html#neuralop.layers.spectral_convolution.SpectralConv1d" title="neuralop.layers.spectral_convolution.SpectralConv1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv1d</span></code></a>(in_channels, out_channels, ...)</p></td>
-<td><p><p class="rubric">Methods</p>
-</p></td>
+<td><p>1D Spectral Conv</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv2d.html#neuralop.layers.spectral_convolution.SpectralConv2d" title="neuralop.layers.spectral_convolution.SpectralConv2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv2d</span></code></a>(in_channels, out_channels, ...)</p></td>
-<td><p><p class="rubric">Methods</p>
-</p></td>
+<td><p>2D Spectral Conv, see <code class="xref py py-class docutils literal notranslate"><span class="pre">neuralop.layers.SpectraConv</span></code> for the general case</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv3d.html#neuralop.layers.spectral_convolution.SpectralConv3d" title="neuralop.layers.spectral_convolution.SpectralConv3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv3d</span></code></a>(in_channels, out_channels, ...)</p></td>
-<td><p><p class="rubric">Methods</p>
-</p></td>
+<td><p>3D Spectral Conv, see <code class="xref py py-class docutils literal notranslate"><span class="pre">neuralop.layers.SpectraConv</span></code> for the general case</p></td>
 </tr>
 </tbody>
 </table>
