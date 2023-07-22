@@ -6,14 +6,14 @@
 
 Computation times
 =================
-**04:13.873** total execution time for **auto_examples** files:
+**04:46.986** total execution time for **auto_examples** files:
 
 +---------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_plot_UNO_darcy.py` (``plot_UNO_darcy.py``)   | 02:02.317 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_plot_UNO_darcy.py` (``plot_UNO_darcy.py``)   | 02:15.316 | 0.0 MB |
 +---------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_plot_SFNO_swe.py` (``plot_SFNO_swe.py``)     | 01:25.098 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_plot_SFNO_swe.py` (``plot_SFNO_swe.py``)     | 01:38.464 | 0.0 MB |
 +---------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_plot_FNO_darcy.py` (``plot_FNO_darcy.py``)   | 00:45.941 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_plot_FNO_darcy.py` (``plot_FNO_darcy.py``)   | 00:52.712 | 0.0 MB |
 +---------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_plot_darcy_flow.py` (``plot_darcy_flow.py``) | 00:00.517 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_plot_darcy_flow.py` (``plot_darcy_flow.py``) | 00:00.494 | 0.0 MB |
 +---------------------------------------------------------------------------+-----------+--------+

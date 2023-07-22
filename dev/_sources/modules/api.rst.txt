@@ -13,11 +13,6 @@ API reference
 Models
 ======
 
-.. automodule:: neuralop.models
-    :no-members:
-    :no-inherited-members:
-
-
 In :mod:`neuralop.models`, we provide neural operator models you can directly use on your applications.
 
 
@@ -91,6 +86,8 @@ Layers
 .. automodule:: neuralop.layers
     :no-members:
     :no-inherited-members:
+
+.. _neuralop_layers_ref:
 
 
 In addition to the full architectures, we also provide 
