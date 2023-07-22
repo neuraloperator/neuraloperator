@@ -132,8 +132,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installing NeuralOperator</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../user_guide/index.html">User guide</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#models">Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#layers">Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-0">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-neuralop.layers">Layers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#model-dispatching">Model Dispatching</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#datasets">Datasets</a></li>
 </ul>
@@ -166,9 +166,9 @@
   <section id="api-reference">
 <h1>API reference<a class="headerlink" href="#api-reference" title="Permalink to this heading"></a></h1>
 <p><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop</span></code>: Neural Operators in Python</p>
-<span class="target" id="module-neuralop.models"></span><section id="models">
-<span id="neuralop-models-ref"></span><h2>Models<a class="headerlink" href="#models" title="Permalink to this heading"></a></h2>
-<p>In <a class="reference internal" href="#module-neuralop.models" title="neuralop.models"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code></a>, we all neural operator models you can directly use on your applications.</p>
+<span class="target" id="module-neuralop.models"></span><section id="module-0">
+<span id="models"></span><span id="neuralop-models-ref"></span><h2>Models<a class="headerlink" href="#module-0" title="Permalink to this heading"></a></h2>
+<p>In <a class="reference internal" href="#module-0" title="neuralop.models"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code></a>, we provide neural operator models you can directly use on your applications.</p>
 <section id="fno">
 <h3>FNO<a class="headerlink" href="#fno" title="Permalink to this heading"></a></h3>
 <p>We provide a general Fourier Neural Operator (TFNO) that supports most usecases.</p>
@@ -246,10 +246,10 @@
 </table>
 </section>
 </section>
-<section id="layers">
-<h2>Layers<a class="headerlink" href="#layers" title="Permalink to this heading"></a></h2>
+<section id="module-neuralop.layers">
+<span id="layers"></span><h2>Layers<a class="headerlink" href="#module-neuralop.layers" title="Permalink to this heading"></a></h2>
 <p>In addition to the full architectures, we also provide
-in <code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers</span></code> building blocks,
+in <a class="reference internal" href="#module-neuralop.layers" title="neuralop.layers"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers</span></code></a> building blocks,
 in the form of PyTorch layers, that you can use to build your own models:</p>
 <p><strong>Spectral convolutions</strong> (in Fourier domain):</p>
 <span class="target" id="module-neuralop.layers.spectral_convolution"></span><table class="autosummary longtable docutils align-default">
@@ -386,7 +386,7 @@ It has the advantage of doing some checks on the parameters it receives.</p>
         <div class="menu menu-list localtoc-list">
         <ul>
 <li><a class="reference internal" href="#">API reference</a><ul>
-<li><a class="reference internal" href="#models">Models</a><ul>
+<li><a class="reference internal" href="#module-0">Models</a><ul>
 <li><a class="reference internal" href="#fno">FNO</a><ul>
 </ul>
 </li>
@@ -397,7 +397,7 @@ It has the advantage of doing some checks on the parameters it receives.</p>
 <li><a class="reference internal" href="#u-shaped-neural-operators-u-no">U-shaped Neural Operators (U-NO)</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#layers">Layers</a><ul>
+<li><a class="reference internal" href="#module-neuralop.layers">Layers</a><ul>
 </ul>
 </li>
 <li><a class="reference internal" href="#model-dispatching">Model Dispatching</a></li>
