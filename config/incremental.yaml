@@ -73,6 +73,10 @@ default: &DEFAULT
       epoch_gap: 100
 
     dataset_name: 'SmallDarcy'
+    dataset_indices: [2, 3]
+    dataset_resolution: 16
+    dataset_sub_list: [1]
+
     dataset:
       SmallDarcy: [1]
       Darcy: [8, 4, 2, 1]

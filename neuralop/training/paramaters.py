@@ -1,6 +1,6 @@
 import torch
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
-
+import os
 
 class Paramaters:
     def __init__(
@@ -14,14 +14,19 @@ class Paramaters:
         self.incremental_grad = incremental
         self.incremental_resolution = incremental_resolution
         self.incremental_loss_gap = incremental_loss_gap
+        # Get the user's home directory path
+        home_dir = os.path.expanduser("~")
 
+        # Construct the full path by joining the home directory path with the relative path
+        config_path = os.path.join(home_dir, "neuraloperator", "config", "incremental.yaml")
+        
         # Initialize ConfigPipeline to read configurations from YAML and
         # command line arguments
         pipe = ConfigPipeline(
             [
                 YamlConfig(
                     # Add the config path to the incremental config file
-                    '/home/user/neuraloperator/config/incremental.yaml',
+                    config_file=config_path,
                     config_name='default'),
                 ArgparseConfig(
                     infer_types=True,
@@ -49,21 +54,10 @@ class Paramaters:
             # incremental resolution
             paramaters_resolution = paramaters.incremental_resolution
             self.epoch_gap = paramaters_resolution.epoch_gap
-
-            # Determine the sub_list based on the dataset_name
-            # Best to do powers of two as FFT is faster and FFTW++ library
-            # optimizes for powers of two
-            if self.dataset_name == 'SmallDarcy':
-                self.sub_list = paramaters.dataset.SmallDarcy  # cannot do incremental resolution
-            elif self.dataset_name == 'Darcy':
-                self.sub_list = paramaters.dataset.Darcy
-            elif self.dataset_name == "Burgers":
-                self.sub_list = paramaters.dataset.Burgers
-            elif self.dataset_name == "NavierStokes":
-                self.sub_list = paramaters.dataset.NavierStokes
-            elif self.dataset_name == "Vorticity":
-                self.sub_list = paramaters.dataset.Voriticity
-
+            self.indices = paramaters.dataset_indices
+            self.resolution = paramaters.dataset_resolution
+            self.sub_list = paramaters.dataset_sub_list
+            
             self.subsammpling_rate = 1
             self.current_index = 0
             self.current_logged_epoch = 0
@@ -75,39 +69,8 @@ class Paramaters:
             print(f'Incre Res Update: change res to {self.current_res}')
 
     def sub_to_res(self, sub):
-        # Convert sub to resolution based on the dataset_name
-        if self.dataset_name == 'SmallDarcy':
-            return self.small_darcy_sub_to_res(sub)
-        if self.dataset_name == 'Burgers':
-            return self.burger_sub_to_res(sub)
-        elif self.dataset_name == 'Darcy':
-            return self.darcy_sub_to_res(sub)
-        elif self.dataset_name == 'NavierStokes':
-            return self.navier_sub_to_res(sub)
-        elif self.dataset_name == 'NavierStokesHighFrequency':
-            return self.navier_high_sub_to_res(sub)
-
-    def burger_sub_to_res(self, sub):
-        # Calculate resolution based on sub for the Burgers dataset
-        return int(2**13 / sub)
-
-    def small_darcy_sub_to_res(self, sub):
-        # Calculate resolution based on sub for the SmallDarcy dataset
-        return int(16 / sub)
-
-    def darcy_sub_to_res(self, sub):
-        # Calculate resolution based on sub for the Darcy dataset
-        return int(((241 - 1) / sub) + 1)
-
-    def navier_sub_to_res(self, sub, resolution=1024):
-        # Calculate resolution based on sub for the NavierStokes dataset
-        # Assumes one is using the default high resolution dataset
-        return resolution // sub
-
-    def navier_high_sub_to_res(self, sub):
-        # Calculate resolution based on sub for the NavierStokesHighFrequency
-        # dataset
-        return 256 // sub
+        # Convert sub to resolution based
+        return int(self.resolution / sub)
 
     def epoch_wise_res_increase(self, epoch):
         # Update the current_sub and current_res values based on the epoch
@@ -152,19 +115,7 @@ class Paramaters:
 
     def regularize_input_res(self, x, y):
         # Regularize the input data based on the current_sub and dataset_name
-        if self.dataset_name == 'Burgers':
-            x = x[:, :, ::self.current_sub]
-            y = y[:, ::self.current_sub]
-        elif self.dataset_name == 'SmallDarcy':
-            x = x[:, :, ::self.current_sub, ::self.current_sub]
-            y = y[:, ::self.current_sub, ::self.current_sub]
-        elif self.dataset_name == 'Darcy':
-            x = x[:, :, :, ::self.current_sub]
-            y = y[:, :, :, ::self.current_sub]
-        elif self.dataset_name == 'NavierStokes':
-            x = x[:, :, ::self.current_sub, ::self.current_sub]
-            y = y[:, :, ::self.current_sub, ::self.current_sub]
-        elif self.dataset_name == 'NavierStokesHighFrequency':
-            x = x[:, ::self.current_sub, ::self.current_sub]
-            y = y[:, ::self.current_sub, ::self.current_sub]
+        indices = torch.tensor(self.indices, device=x.device)
+        x = torch.index_select(x, 0, index=indices)
+        y = torch.index_select(y, 0, index=indices)
         return x, y
