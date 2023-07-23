@@ -16,11 +16,12 @@ class DomainPadding(nn.Module):
     This class works for any input resolution, as long as it is in the form
     `(batch-size, channels, d1, ...., dN)`
     """
-    def __init__(self, domain_padding, padding_mode='one-sided', output_scaling_factor=None):
+    def __init__(self, domain_padding, padding_mode='one-sided', output_scaling_factor=None, pad_only_last_dim=False):
         super().__init__()
         self.domain_padding = domain_padding
         self.padding_mode = padding_mode.lower()
         self.output_scaling_factor = output_scaling_factor
+        self.pad_only_last_dim = pad_only_last_dim
 
         # dict(f'{resolution}'=padding) such that padded = F.pad(x, indices)
         self._padding = dict()
@@ -39,6 +40,8 @@ class DomainPadding(nn.Module):
         """
         resolution = x.shape[2:]
 
+
+
         if isinstance(self.domain_padding, (float, int)):
             self.domain_padding = [float(self.domain_padding)]*len(resolution)
         if self.output_scaling_factor is None:
@@ -52,7 +55,10 @@ class DomainPadding(nn.Module):
 
         except KeyError:
             padding = [int(round(p*r)) for (p, r) in zip(self.domain_padding, resolution)]
-            
+
+            if self.pad_only_last_dim:
+                padding = padding[-1:]
+
             print(f'Padding inputs of {resolution=} with {padding=}, {self.padding_mode}')
             
             
@@ -76,9 +82,8 @@ class DomainPadding(nn.Module):
                 padding = [i for p in padding for i in (0, p)]
             else:
                 raise ValueError(f'Got {self.padding_mode=}')
-            
+  
             self._padding[f'{resolution}'] = padding
-            
 
             padded = F.pad(x, padding, mode='constant')
 
