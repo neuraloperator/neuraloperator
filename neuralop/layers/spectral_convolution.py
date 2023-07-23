@@ -33,7 +33,10 @@ def _contract_dense(x, weight, separable=False):
 
     if not torch.is_tensor(weight):
         weight = weight.to_tensor()
-
+        
+    if x.shape[-1] < weight.shape[-1]: 
+        weight = weight[..., :x.shape[-1]]
+        
     if x.dtype == torch.complex32:
         # if x is half precision, run a specialized einsum
         return einsum_complexhalf(eq, x, weight)

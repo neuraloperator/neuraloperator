@@ -8,12 +8,14 @@ import neuralop.mpu.comm as comm
 
 from .patching import MultigridPatching2D
 from .losses import LpLoss
+from .algo import Incremental
 
 
 class Trainer:
     def __init__(self, model, n_epochs, wandb_log=True, device=None, amp_autocast=False,
                  mg_patching_levels=0, mg_patching_padding=0, mg_patching_stitching=True,
-                 log_test_interval=1, log_output=False, use_distributed=False, verbose=True):
+                 log_test_interval=1, log_output=False, use_distributed=False, verbose=True, incremental=False, 
+                 incremental_loss_gap=False, incremental_resolution=False):
         """
         A general Trainer class to train neural-operators on given datasets
 
@@ -39,6 +41,12 @@ class Trainer:
         use_distributed : bool, default is False
             whether to use DDP
         verbose : bool, default is True
+        incremental : bool, default is False
+            if True, use the base incremental algorithm which is based on gradient variance
+        incremental_loss_gap : bool, default is False
+            if True, use the incremental algorithm based on loss gap
+        incremental_resolution : bool, default is False
+            if True, increase the resolution of the input incrementally
         """
         self.n_epochs = n_epochs
         self.wandb_log = wandb_log
@@ -49,6 +57,10 @@ class Trainer:
         self.mg_patching_stitching = mg_patching_stitching
         self.use_distributed = use_distributed
         self.device = device
+        self.incremental_loss_gap = incremental_loss_gap
+        self.incremental_grad = incremental
+        self.incremental_resolution = incremental_resolution
+        self.incremental = self.incremental_loss_gap or self.incremental_grad
         self.amp_autocast = amp_autocast
 
         if mg_patching_levels > 0:
@@ -62,6 +74,11 @@ class Trainer:
             if verbose:
                 print(f'Training on regular inputs (no multi-grid patching).')
                 sys.stdout.flush()
+
+        if self.incremental or self.incremental_resolution:
+            self.incremental_scheduler = Incremental(model, incremental=self.incremental_grad,
+                                                     incremental_loss_gap=self.incremental_loss_gap,
+                                                     incremental_resolution=self.incremental_resolution)
 
         self.mg_patching_padding = mg_patching_padding
         self.patcher = MultigridPatching2D(model, levels=mg_patching_levels, padding_fraction=mg_patching_padding,
@@ -95,7 +112,10 @@ class Trainer:
             is_logger = (comm.get_world_rank() == 0)
         else:
             is_logger = True 
-        
+
+        if self.incremental_loss_gap or self.incremental_grad:
+            print("Model is initially using {} number of modes".format(model.fno_blocks.incremental_n_modes))
+
         for epoch in range(self.n_epochs):
             avg_loss = 0
             avg_lasso_loss = 0
@@ -116,6 +136,10 @@ class Trainer:
 
                 x = x.to(self.device)
                 y = y.to(self.device)
+
+                # update the resolution
+                if self.incremental_resolution:
+                    x, y = self.incremental_scheduler.step(epoch=epoch, x=x, y=y)
 
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
@@ -148,6 +172,10 @@ class Trainer:
 
                 loss.backward()
                 
+                # update frequency modes based on the algorithm used
+                if self.incremental:
+                    self.incremental_scheduler.step(loss.item(), epoch)
+                    
                 optimizer.step()
                 train_err += loss.item()
         
@@ -192,6 +220,9 @@ class Trainer:
                 if self.verbose and is_logger:
                     print(msg)
                     sys.stdout.flush()
+
+                if self.incremental:
+                    print("Model is currently using {} number of modes".format(model.fno_blocks.convs.incremental_n_modes))
 
                 # Wandb loging
                 if self.wandb_log and is_logger:
@@ -239,7 +270,10 @@ class Trainer:
                 x, y = self.patcher.patch(x, y)
                 y = y.to(self.device)
                 x = x.to(self.device)
-                
+
+                if self.incremental_resolution:
+                    x, y = self.incremental_scheduler.regularize_input_res(x, y)
+
                 out = model(x)
         
                 out, y = self.patcher.unpatch(out, y, evaluation=True)
@@ -263,5 +297,4 @@ class Trainer:
             errors[key] /= n_samples
 
         return errors
-
 
