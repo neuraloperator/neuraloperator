@@ -33,7 +33,7 @@ def _contract_dense(x, weight, separable=False):
 
     if not torch.is_tensor(weight):
         weight = weight.to_tensor()
-
+        
     if x.shape[-1] < weight.shape[-1]: 
         weight = weight[..., :x.shape[-1]]
         
@@ -157,7 +157,7 @@ def get_contract_fun(weight, implementation='reconstructed', separable=False):
         raise ValueError(f'Got {implementation=}, expected "reconstructed" or "factorized"')
 
 
-class SpectralConv(nn.Module):
+class FactorizedSpectralConv(nn.Module):
     """Generic N-Dimensional Fourier Neural Operator
 
     Parameters
@@ -180,33 +180,26 @@ class SpectralConv(nn.Module):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
-    factorization : str or None, {'tucker', 'cp', 'tt'}, default is None
-        If None, a single dense weight is learned for the FNO. 
-        Otherwise, that weight, used for the contraction in the Fourier domain is learned in factorized form.
-        In that case, `factorization` is the tensor factorization of the parameters weight used.
     joint_factorization : bool, optional
         Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False
-        Ignored if ``factorization is None``
     rank : float or rank, optional
         Rank of the tensor factorization of the Fourier weights, by default 1.0
-        Ignored if ``factorization is None``
+    factorization : str, {'tucker', 'cp', 'tt'}, optional
+        Tensor factorization of the parameters weight to use, by default 'tucker'
     fixed_rank_modes : bool, optional
         Modes to not factorize, by default False
-        Ignored if ``factorization is None``
     fft_norm : str, optional
         by default 'forward'
     implementation : {'factorized', 'reconstructed'}, optional, default is 'factorized'
         If factorization is not None, forward mode to use::
         * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass
         * `factorized` : the input is directly contracted with the factors of the decomposition
-        Ignored if ``factorization is None``
     decomposition_kwargs : dict, optional, default is {}
         Optionaly additional parameters to pass to the tensor decomposition
-        Ignored if ``factorization is None``
     """
     def __init__(self, in_channels, out_channels, n_modes, incremental_n_modes=None, bias=True,
                  n_layers=1, separable=False, output_scaling_factor=None, fno_block_precision='full',
-                 rank=0.5, factorization=None, implementation='reconstructed', 
+                 rank=0.5, factorization='cp', implementation='reconstructed', 
                  fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict(),
                  init_std='auto', fft_norm='backward'):
         super().__init__()
@@ -419,12 +412,7 @@ class SubConv(nn.Module):
         return self.main_conv.forward(x, self.indices)
 
 
-class SpectralConv1d(SpectralConv):
-    """1D Spectral Conv
-    
-    This is provided for reference only, 
-    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation
-    """
+class FactorizedSpectralConv1d(FactorizedSpectralConv):
     def forward(self, x, indices=0):
         batchsize, channels, width = x.shape
 
@@ -444,12 +432,7 @@ class SpectralConv1d(SpectralConv):
         return x
 
 
-class SpectralConv2d(SpectralConv):
-    """2D Spectral Conv, see :class:`neuralop.layers.SpectraConv` for the general case
-        
-    This is provided for reference only, 
-    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation
-    """
+class FactorizedSpectralConv2d(FactorizedSpectralConv):
     def forward(self, x, indices=0):
         batchsize, channels, height, width = x.shape
 
@@ -477,12 +460,7 @@ class SpectralConv2d(SpectralConv):
         return x
 
 
-class SpectralConv3d(SpectralConv):
-    """3D Spectral Conv, see :class:`neuralop.layers.SpectraConv` for the general case
-    
-    This is provided for reference only, 
-    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation
-    """
+class FactorizedSpectralConv3d(FactorizedSpectralConv):
     def forward(self, x, indices=0):
         batchsize, channels, height, width, depth = x.shape
 
