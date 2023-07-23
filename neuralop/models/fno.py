@@ -1,12 +1,12 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partialmethod
-import torch
-from .spectral_convolution import SpectralConv
-from .spherical_convolution import FactorizedSphericalConv
-from .padding import DomainPadding
-from .fno_block import FNOBlocks, resample
-from .mlp import MLP
+
+from ..layers.spectral_convolution import SpectralConv
+from ..layers.spherical_convolution import SphericalConv
+from ..layers.padding import DomainPadding
+from ..layers.fno_block import FNOBlocks, resample
+from ..layers.mlp import MLP
 
 
 class FNO(nn.Module):
@@ -631,4 +631,7 @@ TFNO1d = partialclass('TFNO1d', FNO1d, factorization='Tucker')
 TFNO2d = partialclass('TFNO2d', FNO2d, factorization='Tucker')
 TFNO3d = partialclass('TFNO3d', FNO3d, factorization='Tucker')
 
-SFNO   = partialclass('SFNO', FNO, factorization='dense', SpectralConv=FactorizedSphericalConv)
+SFNO   = partialclass('SFNO', FNO, factorization='dense', SpectralConv=SphericalConv)
+SFNO.__doc__ = SFNO.__doc__.replace('Fourier', 'Spherical Fourier', 1)
+SFNO.__doc__ = SFNO.__doc__.replace('FNO', 'SFNO')
+SFNO.__doc__ = SFNO.__doc__.replace('fno', 'sfno')
