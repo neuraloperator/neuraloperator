@@ -69,7 +69,7 @@ sys.stdout.flush()
 # If one wants to use incremental resolution set it to True
 # In this example we only update the modes and not the resolution
 # When using the incremental resolution one should keep in mind that the numnber of modes initially set should be strictly less than the resolution
-trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental = incremental, dataset_name="SmallDarcy")
+trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental = incremental)
 
 # %% 
 # Train the model
@@ -77,7 +77,7 @@ trainer.train(train_loader, test_loaders, output_encoder, model, optimizer, sche
 
 # %%
 # Check that the number of modes has dynamically increased (Atleast for these settings on this dataset it should increase)
-assert model.convs.incremental_n_modes > starting_modes
+assert model.fno_blocks.convs.incremental_n_modes > starting_modes
 
 # %%
 # Plot the prediction, and compare with the ground-truth 
