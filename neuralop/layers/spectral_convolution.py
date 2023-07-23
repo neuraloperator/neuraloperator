@@ -8,11 +8,9 @@ import itertools
 
 import tensorly as tl
 from tensorly.plugins import use_opt_einsum
+
 tl.set_backend('pytorch')
-
 use_opt_einsum('optimal')
-
-
 einsum_symbols = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
@@ -178,13 +176,13 @@ def get_contract_fun(weight, implementation='reconstructed', separable=False):
             f'Got {implementation=}, expected "reconstructed" or "factorized"')
 
 
-class SpectralConv(nn.Module):
 IntBoundary = Tuple[Optional[int], Optional[int]]
 """(start, stop)
 
 Can be fed into ``slice()`` (after destructuring).
 """
 
+PrecisionEnum = Literal['full', 'half', 'mixed', 'double']
 
 class SpectralConv(nn.Module):
     """Generic N-Dimensional Fourier Neural Operator
@@ -210,6 +208,8 @@ class SpectralConv(nn.Module):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
+    bias: bool, optional
+        whether to include bias terms is this model. Defaults to ``True``
     factorization : str or None, {'tucker', 'cp', 'tt'}, default is None
         If None, a single dense weight is learned for the FNO.
         Otherwise, that weight, used for the contraction in the Fourier domain is learned in factorized form.
@@ -217,6 +217,13 @@ class SpectralConv(nn.Module):
     joint_factorization : bool, optional
         Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False
         Ignored if ``factorization is None``
+    fno_block_precision : Literal['full', 'half', 'mixed', 'double'], optional
+        * ``"full"`` - use float32 (64-bit Complex; **default**).
+        * ``"half"`` - run FFT, contraction, and inverse FFT at half precision
+                       using float16 (32-bit Complex).
+        * ``"mixed"`` - use 32-bit on FFT and 16-bit on contraction
+                        and inverse FFT.
+        * ``"double"`` - use float64 (128-bit Complex).
     rank : float or rank, optional
         Rank of the tensor factorization of the Fourier weights, by default 1.0
         Ignored if ``factorization is None``
@@ -235,19 +242,22 @@ class SpectralConv(nn.Module):
     decomposition_kwargs : dict, optional, default is {}
         Optionally additional parameters to pass to the tensor decomposition
         Ignored if ``factorization is None``
+    kwargs :  Dict[str, Any], optional
+        Args to pass to connections (ex. ``Conv`` in case of "linear", etc).
+        Args include ``"device"``, ``"dtype"``.
     """
 
     def __init__(
             self,
-            in_channels,
-            out_channels,
-            n_modes,
+            in_channels: int,
+            out_channels: int,
+            n_modes: int,
             incremental_n_modes=None,
             bias=True,
             n_layers=1,
             separable=False,
             output_scaling_factor=None,
-            fno_block_precision='full',
+            fno_block_precision: PrecisionEnum = 'full',
             rank=0.5,
             factorization=None,
             implementation='reconstructed',
@@ -255,7 +265,9 @@ class SpectralConv(nn.Module):
             joint_factorization=False,
             decomposition_kwargs: Optional[dict] = None,
             init_std: Union[float, Literal['auto']] = 'auto',
-            fft_norm='backward'):
+            fft_norm='backward',
+            **kwargs,
+    ):
         super().__init__()
 
         self.in_channels = in_channels
@@ -321,13 +333,20 @@ class SpectralConv(nn.Module):
                 raise ValueError(
                     'To use separable Fourier Conv, in_channels must be equal to out_channels, ',
                     f'but got {in_channels=} and {out_channels=}')
-            weight_shape = (in_channels, *half_total_n_modes)
+            weight_shape: Tuple[int, ...] = (in_channels, *half_total_n_modes)
         else:
-            weight_shape = (in_channels, out_channels, *half_total_n_modes)
+            weight_shape: Tuple[int, ...] = (
+                in_channels,
+                out_channels,
+                *half_total_n_modes
+            )
         self.separable = separable
 
         self.n_weights_per_layer = 2**(self.order - 1)
         tensor_kwargs = decomposition_kwargs if decomposition_kwargs is not None else {}
+        weights_dtype = (torch.cdouble
+                         if self.fno_block_precision == 'double'
+                         else torch.cfloat)
         if joint_factorization:
             self.weight = FactorizedTensor.new(
                 (self.n_weights_per_layer * n_layers,
@@ -335,14 +354,23 @@ class SpectralConv(nn.Module):
                 rank=self.rank,
                 factorization=factorization,
                 fixed_rank_modes=fixed_rank_modes,
+                # FIXME I don't trust that mutable dicts aren't passed
+                # to ``decomposition_kwargs`` somewhere, so I can't add
+                # key "dtype" to ``kwargs`` below.
+                dtype=weights_dtype,
                 **tensor_kwargs)
             self.weight.normal_(0, init_std)
         else:
             self.weight = nn.ModuleList([
                 FactorizedTensor.new(
                     weight_shape,
-                    rank=self.rank, factorization=factorization,
+                    rank=self.rank,
+                    factorization=factorization,
                     fixed_rank_modes=fixed_rank_modes,
+                    # FIXME I don't trust that mutable dicts aren't passed
+                    # to ``decomposition_kwargs`` somewhere, so I can't add
+                    # key "dtype" to ``kwargs`` below.
+                    dtype=weights_dtype,
                     **tensor_kwargs
                 ) for _ in range(self.n_weights_per_layer * n_layers)]
             )
@@ -432,10 +460,22 @@ class SpectralConv(nn.Module):
 
         if self.fno_block_precision in ['half', 'mixed']:
             out_fft = torch.zeros(
-                [batchsize, self.out_channels, *fft_size], device=x.device, dtype=torch.chalf)
-        else:
+                [batchsize, self.out_channels, *fft_size],
+                device=x.device,
+                dtype=torch.chalf
+            )
+        elif self.fno_block_precision == 'double':
             out_fft = torch.zeros(
-                [batchsize, self.out_channels, *fft_size], device=x.device, dtype=torch.cfloat)
+                [batchsize, self.out_channels, *fft_size],
+                device=x.device,
+                dtype=torch.cdouble
+            )
+        else:  # self.fno_block_precision == 'full'
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, *fft_size],
+                device=x.device,
+                dtype=torch.cfloat
+            )
 
         # We contract all corners of the Fourier coefs
         # Except for the last mode: there, we take all coefs
@@ -450,8 +490,11 @@ class SpectralConv(nn.Module):
                                                       for b in boundaries]
 
             # For 2D: [:, :, :height, :width] and [:, :, -height:, width]
-            out_fft[idx_tuple] = self._contract(x[idx_tuple], self._get_weight(
-                self.n_weights_per_layer * indices + i), separable=self.separable)
+            out_fft[idx_tuple] = self._contract(
+                x[idx_tuple],
+                self._get_weight(self.n_weights_per_layer * indices + i),
+                separable=self.separable
+            )
 
         if self.output_scaling_factor is not None and output_shape is None:
             mode_sizes = tuple([int(round(s * r))

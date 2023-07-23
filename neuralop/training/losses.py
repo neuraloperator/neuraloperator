@@ -1,5 +1,7 @@
-import torch
 import math
+from typing import List, Literal, Union
+
+import torch
 
 
 #Set fix{x,y,z}_bnd if function is non-periodic in {x,y,z} direction
@@ -57,10 +59,24 @@ def central_diff_3d(x, h, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
         
     return dx, dy, dz
 
+ReductionEnum = Union[Literal['sum'], Literal['mean']]
 
 #loss function with rel/abs Lp loss
 class LpLoss(object):
-    def __init__(self, d=1, p=2, L=2*math.pi, reduce_dims=0, reductions='sum'):
+    """
+    Parameters
+    ----------
+    reduce_dims: List[int]
+    reductions: List[Union[Literal['sum'], Literal['mean']]]
+    """
+    def __init__(
+        self,
+        d=1,
+        p=2,
+        L=math.tau,  # 2pi
+        reduce_dims: Union[int, List[int]] = 0,
+        reductions: Union[ReductionEnum, List[ReductionEnum]] = 'sum',
+    ):
         super().__init__()
 
         self.d = d

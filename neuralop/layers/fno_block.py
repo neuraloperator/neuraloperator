@@ -1,7 +1,7 @@
 from torch import nn
 import torch.nn.functional as F
 import torch
-from .spectral_convolution import SpectralConv
+from .spectral_convolution import SpectralConv, PrecisionEnum
 from .skip_connections import skip_connection
 from .resample import resample
 from .mlp import MLP
@@ -17,7 +17,7 @@ class FNOBlocks(nn.Module):
         output_scaling_factor=None,
         n_layers=1,
         incremental_n_modes=None,
-        fno_block_precision='full',
+        fno_block_precision: PrecisionEnum = 'full',
         use_mlp=False,
         mlp_dropout=0,
         mlp_expansion=0.5,
@@ -56,7 +56,7 @@ class FNOBlocks(nn.Module):
         self.output_scaling_factor = output_scaling_factor
 
         self._incremental_n_modes = incremental_n_modes
-        self.fno_block_preicison = fno_block_precision
+        self.fno_block_precision = fno_block_precision
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.n_layers = n_layers
@@ -94,30 +94,35 @@ class FNOBlocks(nn.Module):
             decomposition_kwargs=decomposition_kwargs,
             joint_factorization=joint_factorization,
             n_layers=n_layers,
+            **kwargs,
         )
 
-        self.fno_skips = nn.ModuleList(
-            [
-                skip_connection(
-                    self.in_channels,
-                    self.out_channels,
-                    type=fno_skip,
-                    n_dim=self.n_dim) for _ in range(n_layers)])
+        self.fno_skips = nn.ModuleList([
+            skip_connection(
+                self.in_channels,
+                self.out_channels,
+                skip_type=fno_skip,
+                n_dim=self.n_dim,
+                **kwargs,
+            ) for _ in range(n_layers)
+        ])
 
         if use_mlp:
             self.mlp = nn.ModuleList(
                 [MLP(in_channels=self.out_channels,
-                     hidden_channels=round(self.out_channels * mlp_expansion),
-                     dropout=mlp_dropout,
-                     n_dim=self.n_dim) for _ in range(n_layers)]
+                     hidden_channels=round(self.out_channels*self.mlp_expansion),
+                     dropout=self.mlp_dropout,
+                     n_dim=self.n_dim,
+                     **kwargs)
+                 for _ in range(n_layers)]
             )
             self.mlp_skips = nn.ModuleList(
-                [
-                    skip_connection(
-                        self.in_channels,
-                        self.out_channels,
-                        type=mlp_skip,
-                        n_dim=self.n_dim) for _ in range(n_layers)])
+                [skip_connection(self.in_channels,
+                                 self.out_channels,
+                                 skip_type=mlp_skip,
+                                 n_dim=self.n_dim)
+                 for _ in range(n_layers)]
+            )
         else:
             self.mlp = None
 
@@ -126,8 +131,11 @@ class FNOBlocks(nn.Module):
         if norm is None:
             self.norm = None
         elif norm == 'instance_norm':
-            self.norm = nn.ModuleList([getattr(nn, f'InstanceNorm{self.n_dim}d')(
-                num_features=self.out_channels) for _ in range(n_layers * self.n_norms)])
+            Norm = getattr(nn, f'InstanceNorm{self.n_dim}d')
+            self.norm = nn.ModuleList(
+                [Norm(num_features=self.out_channels)
+                 for _ in range(n_layers * self.n_norms)]
+            )
         elif norm == 'group_norm':
             self.norm = nn.ModuleList(
                 [
@@ -138,10 +146,15 @@ class FNOBlocks(nn.Module):
                 ]
             )
         # elif norm == 'layer_norm':
-        #     self.norm = nn.ModuleList([nn.LayerNorm(elementwise_affine=False) for _ in range(n_layers*self.n_norms)])
+        #     self.norm = nn.ModuleList(
+        #         [nn.LayerNorm(elementwise_affine=False)
+        #          for _ in range(n_layers*self.n_norms)]
+        #     )
         elif norm == 'ada_in':
             self.norm = nn.ModuleList(
-                [AdaIN(ada_in_features, out_channels) for _ in range(n_layers * self.n_norms)])
+                [AdaIN(ada_in_features, out_channels)
+                 for _ in range(n_layers * self.n_norms)]
+            )
         else:
             raise ValueError(
                 f'Got {norm=} but expected None or one of [instance_norm, group_norm, layer_norm]')
@@ -153,7 +166,8 @@ class FNOBlocks(nn.Module):
         ----------
         embeddings : tensor or list of tensor
             if a single embedding is given, it will be used for each norm layer
-            otherwise, each embedding will be used for the corresponding norm layer
+            otherwise, each embedding will be used for the corresponding norm
+            layer
         """
         if len(embeddings) == 1:
             for norm in self.norm:
@@ -172,9 +186,17 @@ class FNOBlocks(nn.Module):
 
         x_skip_fno = self.fno_skips[index](x)
         if self.convs.output_scaling_factor is not None:
-            # x_skip_fno = resample(x_skip_fno, self.convs.output_scaling_factor[index], list(range(-len(self.convs.output_scaling_factor[index]), 0)))
-            x_skip_fno = resample(x_skip_fno, self.output_scaling_factor[index], list(
-                range(-len(self.output_scaling_factor[index]), 0)), output_shape=output_shape)
+            # x_skip_fno = resample(
+            #     x_skip_fno,
+            #     self.convs.output_scaling_factor[index],
+            #     list(range(-len(self.convs.output_scaling_factor[index]), 0))
+            # )
+            x_skip_fno = resample(
+                x_skip_fno,
+                self.output_scaling_factor[index],
+                list(range(-len(self.output_scaling_factor[index]), 0)),
+                output_shape=output_shape
+            )
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
@@ -194,9 +216,7 @@ class FNOBlocks(nn.Module):
 
         if not self.preactivation and (
                 self.mlp is not None) or (
-                index < (
-                self.n_layers -
-                index)):
+                index < (self.n_layers - index)):
             x = self.non_linearity(x)
 
         if self.mlp is not None:
@@ -228,7 +248,7 @@ class FNOBlocks(nn.Module):
         self.convs.incremental_n_modes = incremental_n_modes
 
     def get_block(self, indices):
-        """Returns a sub-FNO Block layer from the jointly parametrized main block
+        """Returns sub-FNO Block layer from the jointly parametrized main block.
 
         The parametrization of an FNOBlock layer is shared with the main one.
         """

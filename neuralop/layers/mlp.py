@@ -17,6 +17,9 @@ class MLP(nn.Module):
     non_linearity : default is F.gelu
     dropout : float, default is 0
         if > 0, dropout probability
+    kwargs :  Dict[str, Any], optional
+        Args to pass to convolution layers.
+        Args include ``"device"``, ``"dtype"``.
     """
 
     def __init__(
@@ -37,43 +40,46 @@ class MLP(nn.Module):
         self.hidden_channels = in_channels if hidden_channels is None else hidden_channels
         self.non_linearity = non_linearity
         self.dropout = nn.ModuleList(
-            [nn.Dropout(dropout) for _ in range(n_layers)]) if dropout > 0. else None
+            [nn.Dropout(dropout) for _ in range(n_layers)]
+        ) if dropout > 0. else None
 
         Conv = getattr(nn, f'Conv{n_dim}d')
         self.fcs = nn.ModuleList()
         for i in range(n_layers):
+            _dtype = kwargs.get('dtype', None)
+            _device = kwargs.get('device', None)
             if i == 0 and i == (n_layers - 1):
-                self.fcs.append(
-                    Conv(
-                        self.in_channels,
-                        self.out_channels,
-                        1,  # kernel_size
-                    )
-                )
+                self.fcs.append(Conv(
+                    self.in_channels,
+                    self.out_channels,
+                    1,  # kernel_size
+                    dtype=_dtype,
+                    device=_device,
+                ))
             elif i == 0:
-                self.fcs.append(
-                    Conv(
-                        self.in_channels,
-                        self.hidden_channels,
-                        1,  # kernel_size
-                    )
-                )
+                self.fcs.append(Conv(
+                    self.in_channels,
+                    self.hidden_channels,
+                    1,  # kernel_size
+                    dtype=_dtype,
+                    device=_device,
+                ))
             elif i == (n_layers - 1):
-                self.fcs.append(
-                    Conv(
-                        self.hidden_channels,
-                        self.out_channels,
-                        1,  # kernel_size
-                    )
-                )
+                self.fcs.append(Conv(
+                    self.hidden_channels,
+                    self.out_channels,
+                    1,  # kernel_size
+                    dtype=_dtype,
+                    device=_device,
+                ))
             else:
-                self.fcs.append(
-                    Conv(
-                        self.hidden_channels,
-                        self.hidden_channels,
-                        1,  # kernel_size
-                    )
-                )
+                self.fcs.append(Conv(
+                    self.hidden_channels,
+                    self.hidden_channels,
+                    1,  # kernel_size
+                    dtype=_dtype,
+                    device=_device,
+                ))
 
     def forward(self, x):
         for i, fc in enumerate(self.fcs):

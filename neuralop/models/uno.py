@@ -250,7 +250,11 @@ class UNO(nn.Module):
 
             if i in self.horizontal_skips_map.values():
                 self.horizontal_skips[str(i)] = skip_connection(
-                    self.uno_out_channels[i], self.uno_out_channels[i], type=horizontal_skip, n_dim=self.n_dim)
+                    self.uno_out_channels[i],
+                    self.uno_out_channels[i],
+                    type=horizontal_skip,
+                    n_dim=self.n_dim
+                )
 
             prev_out = self.uno_out_channels[i]
 

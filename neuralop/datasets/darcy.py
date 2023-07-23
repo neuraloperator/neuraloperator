@@ -45,7 +45,8 @@ def load_darcy_flow_small(
     training_dataloader, testing_dataloaders
 
     training_dataloader : torch DataLoader
-    testing_dataloaders : dict (key: DataLoader)
+    testing_dataloaders : Dict[int, DataLoader]
+      Keys are the resolution scales (i.e. same as the
     """
     for res in test_resolutions:
         if res not in [16, 32]:

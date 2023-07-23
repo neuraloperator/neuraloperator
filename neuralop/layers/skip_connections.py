@@ -3,11 +3,12 @@ from torch import nn
 
 
 def skip_connection(
-        in_features,
-        out_features,
-        n_dim=2,
-        bias=False,
-        type="soft-gating"
+    in_features,
+    out_features,
+    n_dim=2,
+    bias=False,
+    skip_type="soft-gating",
+    **kwargs,
 ):
     """A wrapper for several types of skip connections.
     Returns an nn.Module skip connections, one of  {'identity', 'linear', soft-gating'}
@@ -23,31 +24,35 @@ def skip_connection(
         ``n_dim=2`` corresponds to having Module2D.
     bias : bool, optional
         whether to use a bias, by default False
-    type : {'identity', 'linear', soft-gating'}
+    skip_type : {'identity', 'linear', soft-gating'}
         kind of skip connection to use, by default "soft-gating"
+    kwargs :  Dict[str, Any], optional
+        Args to pass to connections (ex. ``Conv`` in case of "linear", etc).
+        Args include ``"device"``, ``"dtype"``.
 
     Returns
     -------
     nn.Module
         module that takes in x and returns skip(x)
     """
-    if type.lower() == 'soft-gating':
+    if skip_type.lower() == 'soft-gating':
         return SoftGating(
             in_features=in_features,
             out_features=out_features,
             bias=bias,
-            n_dim=n_dim
+            n_dim=n_dim,
         )
-    elif type.lower() == 'linear':
-        return getattr(
-            nn,
-            f'Conv{n_dim}d')(
+    elif skip_type.lower() == 'linear':
+        Conv = getattr(nn, f'Conv{n_dim}d')
+        return Conv(
             in_channels=in_features,
             out_channels=out_features,
             kernel_size=1,
-            bias=bias
+            bias=bias,
+            device=kwargs.get('device'),
+            dtype=kwargs.get('dtype'),
         )
-    elif type.lower() == 'identity':
+    elif skip_type.lower() == 'identity':
         return nn.Identity()
     else:
         raise ValueError(
@@ -71,7 +76,6 @@ class SoftGating(nn.Module):
         ``n_dim=2`` corresponds to having Module2D.
     bias : bool, default is False
     """
-
     def __init__(self, in_features, out_features=None, n_dim=2, bias=False):
         super().__init__()
         if out_features is not None and in_features != out_features:
