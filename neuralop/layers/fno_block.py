@@ -49,7 +49,7 @@ class FNOBlocks(nn.Module):
             if isinstance(output_scaling_factor, (float, int)):
                 output_scaling_factor = [
                     [float(output_scaling_factor)] * len(self.n_modes)
-                                        ] * n_layers
+                ] * n_layers
             elif isinstance(output_scaling_factor[0], (float, int)):
                 output_scaling_factor = [
                     [s] * len(self.n_modes) for s in output_scaling_factor]
@@ -201,8 +201,12 @@ class FNOBlocks(nn.Module):
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
             if self.convs.output_scaling_factor is not None:
-                x_skip_mlp = resample(x_skip_mlp, self.output_scaling_factor[index], list(
-                    range(-len(self.output_scaling_factor[index]), 0)), output_shape=output_shape)
+                x_skip_mlp = resample(
+                    x_skip_mlp,
+                    self.output_scaling_factor[index],
+                    list(range(-len(self.output_scaling_factor[index]), 0)),
+                    output_shape=output_shape
+                )
 
         if self.stabilizer == 'tanh':
             x = torch.tanh(x)

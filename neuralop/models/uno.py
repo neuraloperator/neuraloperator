@@ -1,13 +1,12 @@
-from .tfno import Lifting, Projection
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch
 
 from ..layers.mlp import MLP
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.skip_connections import skip_connection
 from ..layers.padding import DomainPadding
-from ..layers.fno_block import FNOBlocks,resample
+from ..layers.fno_block import FNOBlocks, resample
 
 
 class UNO(nn.Module):
@@ -177,12 +176,10 @@ class UNO(nn.Module):
         # multiplying scaling factors
         for k in self.uno_scalings:
             self.end_to_end_scaling_factor = [
-                i *
-                j for (
-                    i,
-                    j) in zip(
-                    self.end_to_end_scaling_factor,
-                    k)]
+                i * j
+                for (i, j)
+                in zip(self.end_to_end_scaling_factor, k)
+            ]
 
         # list with a single element is replaced by the scaler.
         if len(self.end_to_end_scaling_factor) == 1:
@@ -272,9 +269,10 @@ class UNO(nn.Module):
 
         if self.domain_padding is not None:
             x = self.domain_padding.pad(x)
-        output_shape = [int(round(i * j)) for (i,
-                                               j) in zip(x.shape[-self.n_dim:],
-                                                         self.end_to_end_scaling_factor)]
+        output_shape = [round(i * j)
+                        for (i, j)
+                        in zip(x.shape[-self.n_dim:],
+                               self.end_to_end_scaling_factor)]
 
         skip_outputs = {}
         cur_output = None

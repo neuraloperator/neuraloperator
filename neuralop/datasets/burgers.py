@@ -1,9 +1,9 @@
-from typing import  Tuple
-
 from pathlib import Path
+from typing import Tuple
 
 import torch
 from torch.utils.data import DataLoader, TensorDataset
+
 
 def load_burgers(
     data_path,
@@ -13,7 +13,7 @@ def load_burgers(
     batch_train=32,
     batch_test=100,
     _time=1,
-    grid=(0,1)
+    grid=(0, 1)
 ) -> Tuple[DataLoader, DataLoader]:
     """Loads the 1D Burgers dataset from a PyTorch tensor file.
 
@@ -42,11 +42,11 @@ def load_burgers(
     x_data: torch.Tensor = data['a'][:, :, ::downsample_rate]
     y_data: torch.Tensor = data['u'][:, :, ::downsample_rate]
 
-    x_train = x_data[0:n_train,:,:]
-    x_test = x_data[n_train:(n_train + n_test),:,:]
+    x_train = x_data[0:n_train, :, :]
+    x_test = x_data[n_train:(n_train + n_test), :, :]
 
-    y_train = y_data[0:n_train,:,:]
-    y_test = y_data[n_train:(n_train + n_test),:,:]
+    y_train = y_data[0:n_train, :, :]
+    y_test = y_data[n_train:(n_train + n_test), :, :]
 
     s = x_train.size(-1)
 

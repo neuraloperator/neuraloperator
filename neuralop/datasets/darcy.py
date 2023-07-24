@@ -46,7 +46,8 @@ def load_darcy_flow_small(
 
     training_dataloader : torch DataLoader
     testing_dataloaders : Dict[int, DataLoader]
-      Keys are the resolution scales (i.e. same as the
+      Keys are the resolution scales (i.e. same as the entries in
+      ``test_resolutions``
     """
     for res in test_resolutions:
         if res not in [16, 32]:
@@ -80,8 +81,7 @@ def load_darcy_pt(data_path,
                   encode_output=True,
                   encoding='channel-wise',
                   channel_dim=1):
-    """Load the Navier-Stokes dataset
-    """
+    """Load the Navier-Stokes dataset."""
     data = torch.load(Path(data_path).joinpath(
         f'darcy_train_{train_resolution}.pt').as_posix())
     x_train = data['x'][0:n_train, :, :].unsqueeze(

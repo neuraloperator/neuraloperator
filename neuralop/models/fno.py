@@ -1,11 +1,12 @@
+from functools import partialmethod
+
 import torch.nn as nn
 import torch.nn.functional as F
-from functools import partialmethod
 
 from ..layers.spectral_convolution import SpectralConv, PrecisionEnum
 from ..layers.spherical_convolution import SphericalConv
 from ..layers.padding import DomainPadding
-from ..layers.fno_block import FNOBlocks, resample
+from ..layers.fno_block import FNOBlocks
 from ..layers.mlp import MLP
 
 class FNO(nn.Module):
@@ -214,7 +215,7 @@ class FNO(nn.Module):
         )
 
     def forward(self, x):
-        """TFNO's forward pass."""
+        """FNO's forward pass."""
         x = self.lifting(x)
 
         if self.domain_padding is not None:
@@ -532,6 +533,7 @@ class FNO2d(FNO):
             domain_padding=domain_padding,
             domain_padding_mode=domain_padding_mode,
             fft_norm=fft_norm,
+            **kwargs,
         )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
@@ -682,7 +684,8 @@ class FNO3d(FNO):
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
             domain_padding_mode=domain_padding_mode,
-            fft_norm=fft_norm
+            fft_norm=fft_norm,
+            **kwargs,
         )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
