@@ -1,12 +1,12 @@
-import torch.nn as nn
-import numpy as np
-import torch.nn.functional as F
 from functools import partialmethod
 
-from ..layers.spectral_convolution import SpectralConv
+import torch.nn as nn
+import torch.nn.functional as F
+
+from ..layers.spectral_convolution import SpectralConv, PrecisionEnum
 from ..layers.spherical_convolution import SphericalConv
 from ..layers.padding import DomainPadding
-from ..layers.fno_block import FNOBlocks, resample
+from ..layers.fno_block import FNOBlocks
 from ..layers.mlp import MLP
 
 class FNO(nn.Module):
@@ -39,10 +39,12 @@ class FNO(nn.Module):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
-    fno_block_precision : str {'full', 'half', 'mixed'}
-        if 'full', the FNO Block runs in full precision
-        if 'half', the FFT, contraction, and inverse FFT run in half precision
-        if 'mixed', the contraction and inverse FFT run in half precision
+    fno_block_precision : str {'full', 'half', 'mixed', 'double'}
+        * if 'full', the FNO Block runs in full precision (**default**).
+        * if 'half', the FFT, contraction, and inverse FFT run in half precision
+        * if 'mixed', the contraction and inverse FFT run in half precision
+        * if 'double', the FNO Block runs in double precision
+            (float64, complex128).
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
     use_mlp : bool, optional
@@ -90,34 +92,40 @@ class FNO(nn.Module):
     fft_norm : str, optional
         by default 'forward'
     """
-
-    def __init__(self, n_modes, hidden_channels,
-                 in_channels=3,
-                 out_channels=1,
-                 lifting_channels=256,
-                 projection_channels=256,
-                 n_layers=4,
-                 output_scaling_factor=None,
-                 incremental_n_modes=None,
-                 fno_block_precision='full',
-                 use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
-                 non_linearity=F.gelu,
-                 stabilizer=None,
-                 norm=None, preactivation=False,
-                 fno_skip='linear',
-                 mlp_skip='soft-gating',
-                 separable=False,
-                 factorization=None,
-                 rank=1.0,
-                 joint_factorization=False,
-                 fixed_rank_modes=False,
-                 implementation='factorized',
-                 decomposition_kwargs=dict(),
-                 domain_padding=None,
-                 domain_padding_mode='one-sided',
-                 fft_norm='forward',
-                 SpectralConv=SpectralConv,
-                 **kwargs):
+    def __init__(
+        self,
+        n_modes,
+        hidden_channels,
+        in_channels=3,
+        out_channels=1,
+        lifting_channels=256,
+        projection_channels=256,
+        n_layers=4,
+        output_scaling_factor=None,
+        incremental_n_modes=None,
+        fno_block_precision: PrecisionEnum ='full',
+        use_mlp=False,
+        mlp_dropout=0,
+        mlp_expansion=0.5,
+        non_linearity=F.gelu,
+        stabilizer=None,
+        norm=None,
+        preactivation=False,
+        fno_skip='linear',
+        mlp_skip='soft-gating',
+        separable=False,
+        factorization=None,
+        rank=1.0,
+        joint_factorization=False,
+        fixed_rank_modes=False,
+        implementation='factorized',
+        decomposition_kwargs=dict(),
+        domain_padding=None,
+        domain_padding_mode='one-sided',
+        fft_norm='forward',
+        SpectralConv=SpectralConv,
+        **kwargs
+    ):
         super().__init__()
         self.n_dim = len(n_modes)
         self.n_modes = n_modes
@@ -154,7 +162,6 @@ class FNO(nn.Module):
                 output_scaling_factor=output_scaling_factor)
         else:
             self.domain_padding = None
-
         self.domain_padding_mode = domain_padding_mode
 
         if output_scaling_factor is not None and not joint_factorization:
@@ -195,20 +202,19 @@ class FNO(nn.Module):
             out_channels=self.hidden_channels,
             hidden_channels=self.hidden_channels,
             n_layers=1,
-            n_dim=self.n_dim
-        )
+            n_dim=self.n_dim,
+            **kwargs)
         self.projection = MLP(
             in_channels=self.hidden_channels,
             out_channels=out_channels,
             hidden_channels=self.projection_channels,
             n_layers=2,
             n_dim=self.n_dim,
-            non_linearity=non_linearity
-        )
+            non_linearity=non_linearity,
+            **kwargs)
 
     def forward(self, x):
-        """TFNO's forward pass
-        """
+        """TFNO's forward pass."""
         x = self.lifting(x)
 
         if self.domain_padding is not None:
@@ -262,10 +268,12 @@ class FNO1d(FNO):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
-    fno_block_precision : str {'full', 'half', 'mixed'}
-        if 'full', the FNO Block runs in full precision
-        if 'half', the FFT, contraction, and inverse FFT run in half precision
-        if 'mixed', the contraction and inverse FFT run in half precision
+    fno_block_precision : str {'full', 'half', 'mixed', 'double'}
+        * if 'full', the FNO Block runs in full precision (**default**).
+        * if 'half', the FFT, contraction, and inverse FFT run in half precision
+        * if 'mixed', the contraction and inverse FFT run in half precision
+        * if 'double', the FNO Block runs in double precision
+            (float64, complex128).
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
     use_mlp : bool, optional
@@ -309,37 +317,41 @@ class FNO1d(FNO):
         How to perform domain padding, by default 'one-sided'
     fft_norm : str, optional
         by default 'forward'
+    kwargs :  Dict[str, Any], optional
+        Args to pass to FNO (ex. device, dtype)
     """
 
     def __init__(
-            self,
-            n_modes_height,
-            hidden_channels,
-            in_channels=3,
-            out_channels=1,
-            lifting_channels=256,
-            projection_channels=256,
-            incremental_n_modes=None,
-            fno_block_precision='full',
-            n_layers=4,
-            output_scaling_factor=None,
-            non_linearity=F.gelu,
-            stabilizer=None,
-            use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
-            norm=None,
-            skip='soft-gating',
-            separable=False,
-            preactivation=False,
-            factorization=None,
-            rank=1.0,
-            joint_factorization=False,
-            fixed_rank_modes=False,
-            implementation='factorized',
-            decomposition_kwargs=dict(),
-            domain_padding=None,
-            domain_padding_mode='one-sided',
-            fft_norm='forward',
-            **kwargs
+        self,
+        n_modes_height,
+        hidden_channels,
+        in_channels=3,
+        out_channels=1,
+        lifting_channels=256,
+        projection_channels=256,
+        incremental_n_modes=None,
+        fno_block_precision: PrecisionEnum = 'full',
+        n_layers=4,
+        output_scaling_factor=None,
+        non_linearity=F.gelu,
+        stabilizer=None,
+        use_mlp=False,
+        mlp_dropout=0,
+        mlp_expansion=0.5,
+        norm=None,
+        skip='soft-gating',
+        separable=False,
+        preactivation=False,
+        factorization=None,
+        rank=1.0,
+        joint_factorization=False,
+        fixed_rank_modes=False,
+        implementation='factorized',
+        decomposition_kwargs=dict(),
+        domain_padding=None,
+        domain_padding_mode='one-sided',
+        fft_norm='forward',
+        **kwargs
     ):
         super().__init__(
             n_modes=(n_modes_height,),
@@ -369,7 +381,9 @@ class FNO1d(FNO):
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
             domain_padding_mode=domain_padding_mode,
-            fft_norm=fft_norm)
+            fft_norm=fft_norm,
+            **kwargs,
+        )
         self.n_modes_height = n_modes_height
 
 
@@ -404,10 +418,12 @@ class FNO2d(FNO):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
-    fno_block_precision : str {'full', 'half', 'mixed'}
-        if 'full', the FNO Block runs in full precision
-        if 'half', the FFT, contraction, and inverse FFT run in half precision
-        if 'mixed', the contraction and inverse FFT run in half precision
+    fno_block_precision : str {'full', 'half', 'mixed', 'double'}
+        * if 'full', the FNO Block runs in full precision (**default**).
+        * if 'half', the FFT, contraction, and inverse FFT run in half precision
+        * if 'mixed', the contraction and inverse FFT run in half precision
+        * if 'double', the FNO Block runs in double precision
+            (float64, complex128).
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
     use_mlp : bool, optional
@@ -454,39 +470,39 @@ class FNO2d(FNO):
     """
 
     def __init__(
-            self,
-            n_modes_height,
-            n_modes_width,
-            hidden_channels,
-            in_channels=3,
-            out_channels=1,
-            lifting_channels=256,
-            projection_channels=256,
-            n_layers=4,
-            output_scaling_factor=None,
-            incremental_n_modes=None,
-            fno_block_precision='full',
-            non_linearity=F.gelu,
-            stabilizer=None,
-            use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
-            norm=None,
-            skip='soft-gating',
-            separable=False,
-            preactivation=False,
-            factorization=None,
-            rank=1.0,
-            joint_factorization=False,
-            fixed_rank_modes=False,
-            implementation='factorized',
-            decomposition_kwargs=dict(),
-            domain_padding=None,
-            domain_padding_mode='one-sided',
-            fft_norm='forward',
-            **kwargs):
+        self,
+        n_modes_height,
+        n_modes_width,
+        hidden_channels,
+        in_channels=3,
+        out_channels=1,
+        lifting_channels=256,
+        projection_channels=256,
+        n_layers=4,
+        output_scaling_factor=None,
+        incremental_n_modes=None,
+        fno_block_precision: PrecisionEnum = 'full',
+        non_linearity=F.gelu,
+        stabilizer=None,
+        use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
+        norm=None,
+        skip='soft-gating',
+        separable=False,
+        preactivation=False,
+        factorization=None,
+        rank=1.0,
+        joint_factorization=False,
+        fixed_rank_modes=False,
+        implementation='factorized',
+        decomposition_kwargs=dict(),
+        domain_padding=None,
+        domain_padding_mode='one-sided',
+        fft_norm='forward',
+        **kwargs
+    ):
         super().__init__(
-            n_modes=(
-                n_modes_height,
-                n_modes_width),
+            n_modes=(n_modes_height,
+                     n_modes_width),
             hidden_channels=hidden_channels,
             in_channels=in_channels,
             out_channels=out_channels,
@@ -513,9 +529,11 @@ class FNO2d(FNO):
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
             domain_padding_mode=domain_padding_mode,
-            fft_norm=fft_norm)
+            fft_norm=fft_norm,
+        )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
+
 
 
 class FNO3d(FNO):
@@ -551,10 +569,12 @@ class FNO3d(FNO):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
-    fno_block_precision : str {'full', 'half', 'mixed'}
-        if 'full', the FNO Block runs in full precision
-        if 'half', the FFT, contraction, and inverse FFT run in half precision
-        if 'mixed', the contraction and inverse FFT run in half precision
+    fno_block_precision : str {'full', 'half', 'mixed', 'double'}
+        * if 'full', the FNO Block runs in full precision (**default**).
+        * if 'half', the FFT, contraction, and inverse FFT run in half precision
+        * if 'mixed', the contraction and inverse FFT run in half precision
+        * if 'double', the FNO Block runs in double precision
+            (float64, complex128).
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
     use_mlp : bool, optional
@@ -612,7 +632,7 @@ class FNO3d(FNO):
                  n_layers=4,
                  output_scaling_factor=None,
                  incremental_n_modes=None,
-                 fno_block_precision='full',
+                 fno_block_precision: PrecisionEnum = 'full',
                  non_linearity=F.gelu,
                  stabilizer=None,
                  use_mlp=False, mlp_dropout=0, mlp_expansion=0.5,
@@ -631,10 +651,9 @@ class FNO3d(FNO):
                  fft_norm='forward',
                  **kwargs):
         super().__init__(
-            n_modes=(
-                n_modes_height,
-                n_modes_width,
-                n_modes_depth),
+            n_modes=(n_modes_height,
+                     n_modes_width,
+                     n_modes_depth),
             hidden_channels=hidden_channels,
             in_channels=in_channels,
             out_channels=out_channels,
@@ -661,10 +680,11 @@ class FNO3d(FNO):
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
             domain_padding_mode=domain_padding_mode,
-            fft_norm=fft_norm)
+            fft_norm=fft_norm
+        )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
-        self.n_modes_depth = n_modes_depth
+        self.n_modes_height = n_modes_height
 
 
 def partialclass(new_name, cls, *args, **kwargs):

@@ -10,7 +10,9 @@ def skip_connection(
         type="soft-gating"
 ):
     """A wrapper for several types of skip connections.
-    Returns an nn.Module skip connections, one of  {'identity', 'linear', soft-gating'}
+
+    Returns an nn.Module skip connections, one of:
+    {'identity', 'linear', soft-gating'}
 
     Parameters
     ----------
@@ -51,7 +53,7 @@ def skip_connection(
         return nn.Identity()
     else:
         raise ValueError(
-            f"Got skip-connection {type=}, expected one of {'soft-gating', 'linear', 'id'}.")
+            f"Got skip-connection {type=}, expected one of {'soft-gating', 'linear', 'identity'}.")
 
 
 class SoftGating(nn.Module):

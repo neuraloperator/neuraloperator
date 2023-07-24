@@ -1,20 +1,20 @@
-from tltorch.factorized_tensors.core import FactorizedTensor
-from typing import List, Literal, Optional, Tuple, Union
-
-from .einsum_utils import einsum_complexhalf
-from torch import nn
-import torch
 import itertools
+from typing import Callable, List, Literal, Optional, Sequence, Tuple, Union
 
+import torch
+from torch import nn
 import tensorly as tl
 from tensorly.plugins import use_opt_einsum
+from tltorch.factorized_tensors.core import FactorizedTensor
+
+from .einsum_utils import einsum_complexhalf
+
 tl.set_backend('pytorch')
-
 use_opt_einsum('optimal')
-
-
 einsum_symbols = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
+concat: Callable[[Sequence[str]], str] = lambda strs: ''.join(strs)
+"""Concatenate a sequence of strings without any separators."""
 
 def _contract_dense(x, weight, separable=False):
     order = tl.ndim(x)
@@ -32,8 +32,7 @@ def _contract_dense(x, weight, separable=False):
         out_syms = list(weight_syms)
         out_syms[0] = x_syms[0]
 
-    eq = ''.join(x_syms) + ',' + ''.join(weight_syms) + \
-        '->' + ''.join(out_syms)
+    eq = f'{concat(x_syms)},{concat(weight_syms)}->{concat(out_syms)}'
 
     if not torch.is_tensor(weight):
         weight = weight.to_tensor()
@@ -66,8 +65,7 @@ def _contract_cp(x, cp_weight, separable=False):
             einsum_symbols[1] + rank_sym,
             out_sym + rank_sym]  # in, out
     factor_syms += [xs + rank_sym for xs in x_syms[2:]]  # x, y, ...
-    eq = x_syms + ',' + rank_sym + ',' + \
-        ','.join(factor_syms) + '->' + ''.join(out_syms)
+    eq = f'{x_syms},{rank_sym},{concat(factor_syms)}->{concat(out_syms)}'
 
     if x.dtype == torch.complex32:
         return einsum_complexhalf(eq, x, cp_weight.weights, *cp_weight.factors)
@@ -98,8 +96,7 @@ def _contract_tucker(x, tucker_weight, separable=False):
         # x, y, ...
         factor_syms += [xs + rs for (xs, rs) in zip(x_syms[2:], core_syms[2:])]
 
-    eq = x_syms + ',' + core_syms + ',' + \
-        ','.join(factor_syms) + '->' + ''.join(out_syms)
+    eq = f'{x_syms},{core_syms},{concat(factor_syms)}->{concat(out_syms)}'
 
     if x.dtype == torch.complex32:
         return einsum_complexhalf(
@@ -123,8 +120,8 @@ def _contract_tt(x, tt_weight, separable=False):
     tt_syms = []
     for i, s in enumerate(weight_syms):
         tt_syms.append([rank_syms[i], s, rank_syms[i + 1]])
-    eq = ''.join(x_syms) + ',' + ','.join(''.join(f)
-                                          for f in tt_syms) + '->' + ''.join(out_syms)
+    eq = f'{concat(x_syms)},{",".join(concat(f) for f in tt_syms)}' +\
+         f'->{concat(out_syms)}'
 
     if x.dtype == torch.complex32:
         return einsum_complexhalf(eq, x, *tt_weight.factors)
@@ -140,7 +137,8 @@ def get_contract_fun(weight, implementation='reconstructed', separable=False):
     weight : tensorly-torch's FactorizedTensor
     implementation : {'reconstructed', 'factorized'}, default is 'reconstructed'
         whether to reconstruct the weight and do a forward pass (reconstructed)
-        or contract directly the factors of the factorized weight with the input (factorized)
+        or contract directly the factors of the factorized weight with the input
+        (factorized)
     separable : bool
         whether to use the separable implementation of contraction. This arg is
         only checked when `implementation=reconstructed`.
@@ -178,13 +176,13 @@ def get_contract_fun(weight, implementation='reconstructed', separable=False):
             f'Got {implementation=}, expected "reconstructed" or "factorized"')
 
 
-class SpectralConv(nn.Module):
 IntBoundary = Tuple[Optional[int], Optional[int]]
 """(start, stop)
 
 Can be fed into ``slice()`` (after destructuring).
 """
 
+PrecisionEnum = Literal['full', 'half', 'mixed', 'double']
 
 class SpectralConv(nn.Module):
     """Generic N-Dimensional Fourier Neural Operator
@@ -204,19 +202,32 @@ class SpectralConv(nn.Module):
     n_layers : int, optional
         Number of Fourier Layers, by default 4
     incremental_n_modes : None or int tuple, default is None
-        * If not None, this allows to incrementally increase the number of modes in Fourier domain
-          during training. Has to verify n <= N for (n, m) in zip(incremental_n_modes, n_modes).
+        * If not None, this allows to incrementally increase the number of modes
+         in Fourier domain during training. Has to verify n <= N for (n, m) in
+         zip(incremental_n_modes, n_modes).
 
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
+    bias: bool, optional
+        whether to include bias terms is this model. Defaults to ``True``
     factorization : str or None, {'tucker', 'cp', 'tt'}, default is None
         If None, a single dense weight is learned for the FNO.
-        Otherwise, that weight, used for the contraction in the Fourier domain is learned in factorized form.
-        In that case, `factorization` is the tensor factorization of the parameters weight used.
+        Otherwise, that weight, used for the contraction in the Fourier domain
+        is learned in factorized form.
+        In that case, `factorization` is the tensor factorization of the
+        parameters weight used.
     joint_factorization : bool, optional
-        Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False
+        Whether all the Fourier Layers should be parametrized by a single tensor
+        (vs one per layer), by default False
         Ignored if ``factorization is None``
+    fno_block_precision : Literal['full', 'half', 'mixed', 'double'], optional
+        * ``"full"`` - use float32 (64-bit Complex; **default**).
+        * ``"half"`` - run FFT, contraction, and inverse FFT at half precision
+                       using float16 (32-bit Complex).
+        * ``"mixed"`` - use 32-bit on FFT and 16-bit on contraction
+                        and inverse FFT.
+        * ``"double"`` - use float64 (128-bit Complex).
     rank : float or rank, optional
         Rank of the tensor factorization of the Fourier weights, by default 1.0
         Ignored if ``factorization is None``
@@ -227,27 +238,33 @@ class SpectralConv(nn.Module):
         Passed to `torch.fft.*` as the normalization mode. Thus, "forward" norms
         only on `fft()` and "backward" norms only on `ifft()`. Defaults to
         'backward'
-    implementation : {'factorized', 'reconstructed'}, optional, default is 'factorized'
+    implementation : {'factorized', 'reconstructed'}, optional.
+        Default is ``'factorized'``
         If factorization is not None, forward mode to use::
-        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass
-        * `factorized` : the input is directly contracted with the factors of the decomposition
+        * `reconstructed` : the full weight tensor is reconstructed from the
+          factorization and used for the forward pass
+        * `factorized` : the input is directly contracted with the factors of
+          the decomposition
         Ignored if ``factorization is None``
     decomposition_kwargs : dict, optional, default is {}
         Optionally additional parameters to pass to the tensor decomposition
         Ignored if ``factorization is None``
+    kwargs :  Dict[str, Any], optional
+        Args to pass to connections (ex. ``Conv`` in case of "linear", etc).
+        Args include ``"device"``, ``"dtype"``.
     """
 
     def __init__(
             self,
-            in_channels,
-            out_channels,
-            n_modes,
+            in_channels: int,
+            out_channels: int,
+            n_modes: int,
             incremental_n_modes=None,
             bias=True,
             n_layers=1,
             separable=False,
             output_scaling_factor=None,
-            fno_block_precision='full',
+            fno_block_precision: PrecisionEnum = 'full',
             rank=0.5,
             factorization=None,
             implementation='reconstructed',
@@ -255,7 +272,9 @@ class SpectralConv(nn.Module):
             joint_factorization=False,
             decomposition_kwargs: Optional[dict] = None,
             init_std: Union[float, Literal['auto']] = 'auto',
-            fft_norm='backward'):
+            fft_norm='backward',
+            **kwargs,
+    ):
         super().__init__()
 
         self.in_channels = in_channels
@@ -290,7 +309,8 @@ class SpectralConv(nn.Module):
         if output_scaling_factor is not None:
             if isinstance(output_scaling_factor, (float, int)):
                 output_scaling_factor = [
-                    [float(output_scaling_factor)] * len(self.n_modes)] * n_layers
+                    [float(output_scaling_factor)] * len(self.n_modes)
+                ] * n_layers
             elif isinstance(output_scaling_factor[0], (float, int)):
                 output_scaling_factor = [
                     [s] * len(self.n_modes) for s in output_scaling_factor]
@@ -321,13 +341,22 @@ class SpectralConv(nn.Module):
                 raise ValueError(
                     'To use separable Fourier Conv, in_channels must be equal to out_channels, ',
                     f'but got {in_channels=} and {out_channels=}')
-            weight_shape = (in_channels, *half_total_n_modes)
+            weight_shape: Tuple[int, ...] = (in_channels, *half_total_n_modes)
         else:
-            weight_shape = (in_channels, out_channels, *half_total_n_modes)
+            weight_shape: Tuple[int, ...] = (
+                in_channels,
+                out_channels,
+                *half_total_n_modes
+            )
         self.separable = separable
 
         self.n_weights_per_layer = 2**(self.order - 1)
-        tensor_kwargs = decomposition_kwargs if decomposition_kwargs is not None else {}
+        tensor_kwargs = (decomposition_kwargs
+                         if decomposition_kwargs is not None
+                         else {})
+        weights_dtype = (torch.cdouble
+                         if self.fno_block_precision == 'double'
+                         else torch.cfloat)
         if joint_factorization:
             self.weight = FactorizedTensor.new(
                 (self.n_weights_per_layer * n_layers,
@@ -335,14 +364,23 @@ class SpectralConv(nn.Module):
                 rank=self.rank,
                 factorization=factorization,
                 fixed_rank_modes=fixed_rank_modes,
+                # FIXME I don't trust that mutable dicts aren't passed
+                # to ``decomposition_kwargs`` somewhere, so I can't add
+                # key "dtype" to ``kwargs`` below.
+                dtype=weights_dtype,
                 **tensor_kwargs)
             self.weight.normal_(0, init_std)
         else:
             self.weight = nn.ModuleList([
                 FactorizedTensor.new(
                     weight_shape,
-                    rank=self.rank, factorization=factorization,
+                    rank=self.rank,
+                    factorization=factorization,
                     fixed_rank_modes=fixed_rank_modes,
+                    # FIXME I don't trust that mutable dicts aren't passed
+                    # to ``decomposition_kwargs`` somewhere, so I can't add
+                    # key "dtype" to ``kwargs`` below.
+                    dtype=weights_dtype,
                     **tensor_kwargs
                 ) for _ in range(self.n_weights_per_layer * n_layers)]
             )
@@ -385,9 +423,12 @@ class SpectralConv(nn.Module):
                 else:
                     raise ValueError(
                         f'Provided {incremental_n_modes} for actual n_modes={self.n_modes}.')
-            self.weight_slices = [
-                slice(None)] * 2 + [slice(None, n // 2) for n in self._incremental_n_modes]
             self.half_n_modes = [m // 2 for m in self._incremental_n_modes]
+            self.weight_slices = [
+                slice(None),
+                slice(None),
+                *(slice(None, n) for n in self.half_n_modes),
+            ]
 
     def forward(self,
                 x: torch.Tensor,
@@ -432,15 +473,27 @@ class SpectralConv(nn.Module):
 
         if self.fno_block_precision in ['half', 'mixed']:
             out_fft = torch.zeros(
-                [batchsize, self.out_channels, *fft_size], device=x.device, dtype=torch.chalf)
-        else:
+                [batchsize, self.out_channels, *fft_size],
+                device=x.device,
+                dtype=torch.chalf
+            )
+        elif self.fno_block_precision == 'double':
             out_fft = torch.zeros(
-                [batchsize, self.out_channels, *fft_size], device=x.device, dtype=torch.cfloat)
+                [batchsize, self.out_channels, *fft_size],
+                device=x.device,
+                dtype=torch.cdouble
+            )
+        else:  # self.fno_block_precision == 'full'
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, *fft_size],
+                device=x.device,
+                dtype=torch.cfloat
+            )
 
         # We contract all corners of the Fourier coefs
         # Except for the last mode: there, we take all coefs
         # as redundant modes were already removed
-        mode_indexing: List[Tuple[IntBoundary]] = [
+        mode_indexing: List[Tuple[IntBoundary, ...]] = [
             ((None, m), (-m, None)) for m in self.half_n_modes[:-1]] + [
             ((None, self.half_n_modes[-1]), )]
 
@@ -450,13 +503,17 @@ class SpectralConv(nn.Module):
                                                       for b in boundaries]
 
             # For 2D: [:, :, :height, :width] and [:, :, -height:, width]
-            out_fft[idx_tuple] = self._contract(x[idx_tuple], self._get_weight(
-                self.n_weights_per_layer * indices + i), separable=self.separable)
+            out_fft[idx_tuple] = self._contract(
+                x[idx_tuple],
+                self._get_weight(self.n_weights_per_layer * indices + i),
+                separable=self.separable
+            )
 
         if self.output_scaling_factor is not None and output_shape is None:
-            mode_sizes = tuple([int(round(s * r))
-                                for (s, r)
-                                in zip(mode_sizes, self.output_scaling_factor[indices])])
+            mode_sizes = tuple(
+                [int(round(s * r))
+                 for (s, r)
+                 in zip(mode_sizes, self.output_scaling_factor[indices])])
 
         if output_shape is not None:
             mode_sizes = output_shape
@@ -469,9 +526,11 @@ class SpectralConv(nn.Module):
         return x
 
     def get_conv(self, indices):
-        """Returns a sub-convolutional layer from the joint parametrize main-convolution
+        """Returns a sub-convolutional layer from the joint parametrize
+        main-convolution
 
-        The parametrization of sub-convolutional layers is shared with the main one.
+        The parametrization of sub-convolutional layers is shared with the main
+        one.
         """
         if self.n_layers == 1:
             raise ValueError(
@@ -484,13 +543,14 @@ class SpectralConv(nn.Module):
 
 
 class SubConv(nn.Module):
-    """Class representing one of the convolutions from the mother joint factorized convolution
+    """Class representing one of the convolutions from the mother joint
+    factorized convolution
 
     Notes
     -----
     This relies on the fact that nn.Parameters are not duplicated:
-    if the same nn.Parameter is assigned to multiple modules, they all point to the same data,
-    which is shared.
+    if the same nn.Parameter is assigned to multiple modules, they all point to
+    the same data, which is shared.
     """
 
     def __init__(self, main_conv, indices):
@@ -506,18 +566,18 @@ class SpectralConv1d(SpectralConv):
     """1D Spectral Conv
 
     This is provided for reference only,
-    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation
+    see :class:`neuralop.layers.SpectraConv` for the preferred, general
+    implementation
     """
     def forward(self, x, indices=0):
         batchsize, channels, width = x.shape
 
         x = torch.fft.rfft(x, norm=self.fft_norm)
 
-        out_fft = torch.zeros([batchsize,
-                               self.out_channels,
-                               width // 2 + 1],
-                              device=x.device,
-                              dtype=torch.cfloat)
+        out_fft = torch.zeros(
+            [batchsize, self.out_channels, width // 2 + 1],
+            device=x.device,
+            dtype=torch.cfloat)
         slices = (slice(None),  # Equivalent to: [:,
                   slice(None),  # ............... :,
                   slice(self.half_n_modes[0]))  # :half_n_modes[0]]
@@ -538,10 +598,12 @@ class SpectralConv1d(SpectralConv):
 
 
 class SpectralConv2d(SpectralConv):
-    """2D Spectral Conv, see :class:`neuralop.layers.SpectraConv` for the general case
+    """2D Spectral Conv, see :class:`neuralop.layers.SpectraConv` for the
+    general case
 
     This is provided for reference only,
-    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation
+    see :class:`neuralop.layers.SpectraConv` for the preferred, general
+    implementation
     """
     def forward(self, x, indices=0):
         batchsize, channels, height, width = x.shape
@@ -550,12 +612,10 @@ class SpectralConv2d(SpectralConv):
 
         # The output will be of size (batch_size, self.out_channels,
         # x.size(-2), x.size(-1)//2 + 1)
-        out_fft = torch.zeros([batchsize,
-                               self.out_channels,
-                               height,
-                               width // 2 + 1],
-                              dtype=x.dtype,
-                              device=x.device)
+        out_fft = torch.zeros(
+            [batchsize, self.out_channels, height, width // 2 + 1],
+            dtype=x.dtype,
+            device=x.device)
 
         slices0 = (slice(None),  # Equivalent to: [:,
                    slice(None),  # ............... :,
@@ -563,8 +623,9 @@ class SpectralConv2d(SpectralConv):
                    slice(self.half_n_modes[1]))  # :half_n_modes[1]]
         """Upper block (truncate high frequencies)."""
         out_fft[slices0] = self._contract(
-            x[slices0], self._get_weight(
-                2 * indices), separable=self.separable)
+            x[slices0],
+            self._get_weight(2 * indices),
+            separable=self.separable)
 
         slices1 = (slice(None),  # Equivalent to:        [:,
                    slice(None),  # ...................... :,
@@ -572,18 +633,18 @@ class SpectralConv2d(SpectralConv):
                    slice(self.half_n_modes[1]))  # ...... :half_n_modes[1]]
         """Lower block"""
         out_fft[slices1] = self._contract(
-            x[slices1], self._get_weight(
-                2 * indices + 1), separable=self.separable)
+            x[slices1],
+            self._get_weight(2 * indices + 1),
+            separable=self.separable)
 
         if self.output_scaling_factor is not None:
-            width = int(round(width * self.output_scaling_factor[indices][0]))
-            height = int(
-                round(
-                    height *
-                    self.output_scaling_factor[indices][1]))
+            width = round(width * self.output_scaling_factor[indices][0])
+            height = round(height * self.output_scaling_factor[indices][1])
 
-        x = torch.fft.irfft2(out_fft, s=(height, width),
-                             dim=(-2, -1), norm=self.fft_norm)
+        x = torch.fft.irfft2(out_fft,
+                             s=(height, width),
+                             dim=(-2, -1),
+                             norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
@@ -592,10 +653,12 @@ class SpectralConv2d(SpectralConv):
 
 
 class SpectralConv3d(SpectralConv):
-    """3D Spectral Conv, see :class:`neuralop.layers.SpectraConv` for the general case
+    """3D Spectral Conv, see :class:`neuralop.layers.SpectraConv` for the
+    general case
 
     This is provided for reference only,
-    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation
+    see :class:`neuralop.layers.SpectraConv` for the preferred, general
+    implementation
     """
     def forward(self, x, indices=0):
         batchsize, channels, height, width, depth = x.shape
@@ -657,8 +720,9 @@ class SpectralConv3d(SpectralConv):
             depth = int(round(depth * self.output_scaling_factor[2]))
 
         x = torch.fft.irfftn(
-            out_fft, s=(
-                height, width, depth), norm=self.fft_norm)
+            out_fft,
+            s=(height, width, depth),
+            norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
