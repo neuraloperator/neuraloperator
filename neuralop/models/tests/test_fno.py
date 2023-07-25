@@ -9,13 +9,22 @@ from configmypy import Bunch
 tenalg.set_backend('einsum')
 
 
-@pytest.mark.parametrize('factorization', ['ComplexDense', 'ComplexTucker', 'ComplexCP', 'ComplexTT'])
+@pytest.mark.parametrize('factorization', [
+  'ComplexDense',
+  'ComplexTucker',
+  'ComplexCP',
+  'ComplexTT'
+])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
 @pytest.mark.parametrize('n_dim', [1, 2, 3])
 @pytest.mark.parametrize('fno_block_precision', ['full', 'half', 'mixed'])
 @pytest.mark.parametrize('stabilizer', [None, 'tanh'])
-def test_tfno(factorization, implementation, n_dim, fno_block_precision, stabilizer):
-    if torch.has_cuda:
+def test_tfno(factorization,
+              implementation,
+              n_dim,
+              fno_block_precision,
+              stabilizer):
+    if torch.backends.cuda.is_built():
         device = 'cuda'
         s = 128
         modes = 16
@@ -71,7 +80,11 @@ def test_tfno(factorization, implementation, n_dim, fno_block_precision, stabili
     assert n_unused_params == 0, f'{n_unused_params} parameters were unused!'
 
 @pytest.mark.parametrize('output_scaling_factor', 
-                         [[2, 1, 1], [1, 2, 1], [1, 1, 2], [1, 2, 2], [1, 0.5, 1]])
+                         [[2,   1, 1],
+                          [1,   2, 1],
+                          [1,   1, 2],
+                          [1,   2, 2],
+                          [1, 0.5, 1]])
 def test_fno_superresolution(output_scaling_factor):
     device = 'cpu'
     s = 16

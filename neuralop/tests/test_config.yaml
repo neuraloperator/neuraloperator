@@ -27,7 +27,6 @@ default: &DEFAULT
     factorization: None
     rank: 1.0
     fixed_rank_modes: None
-    dropout: 0.0
     tensor_lasso_penalty: 0.0
     joint_factorization: False
   

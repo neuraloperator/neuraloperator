@@ -1,27 +1,31 @@
-
-import torch
-import time
-from tensorly import tenalg
-tenalg.set_backend('einsum')
 from pathlib import Path
+import time
 
 from configmypy import ConfigPipeline, YamlConfig
+import torch
+
+from tensorly import tenalg
 from neuralop import get_model
+tenalg.set_backend('einsum')
+
 
 def test_from_config():
     """Test forward/backward from a config file"""
     # Read the configuration
     config_name = 'default'
     config_path = Path(__file__).parent.as_posix()
-    pipe = ConfigPipeline([YamlConfig('./test_config.yaml', config_name=config_name, config_folder=config_path),
-                        ])
+    pipe = ConfigPipeline(
+        [YamlConfig(
+            './test_config.yaml',
+            config_name=config_name,
+            config_folder=config_path)])
     config = pipe.read_conf()
     config_name = pipe.steps[-1].config_name
 
     batch_size = config.data.batch_size
     size = config.data.size
 
-    if torch.has_cuda:
+    if torch.backends.cuda.is_built():
         device = 'cuda'
     else:
         device = 'cpu'

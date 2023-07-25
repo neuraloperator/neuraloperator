@@ -65,7 +65,7 @@ def _contract_cp(x, cp_weight, separable=False):
             einsum_symbols[1] + rank_sym,
             out_sym + rank_sym]  # in, out
     factor_syms += [xs + rank_sym for xs in x_syms[2:]]  # x, y, ...
-    eq = f'{x_syms},{rank_sym},{concat(factor_syms)}->{concat(out_syms)}'
+    eq = f'{x_syms},{rank_sym},{",".join(factor_syms)}->{concat(out_syms)}'
 
     if x.dtype == torch.complex32:
         return einsum_complexhalf(eq, x, cp_weight.weights, *cp_weight.factors)
@@ -96,7 +96,7 @@ def _contract_tucker(x, tucker_weight, separable=False):
         # x, y, ...
         factor_syms += [xs + rs for (xs, rs) in zip(x_syms[2:], core_syms[2:])]
 
-    eq = f'{x_syms},{core_syms},{concat(factor_syms)}->{concat(out_syms)}'
+    eq = f'{x_syms},{core_syms},{",".join(factor_syms)}->{concat(out_syms)}'
 
     if x.dtype == torch.complex32:
         return einsum_complexhalf(
