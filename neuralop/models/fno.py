@@ -44,9 +44,10 @@ class FNO(nn.Module):
         By default None, otherwise tanh is used before FFT in the FNO block 
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
-    mlp : dict, optional
-        Parameters of the MLP, by default None
-        {'expansion': float, 'dropout': float}
+    mlp_dropout : float 
+        droupout parameter of MLP layer (default is 0)
+    mlp_expansion : float
+        expansion parameter of MLP layer (default is 0.5)
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
     norm : F.module, optional
