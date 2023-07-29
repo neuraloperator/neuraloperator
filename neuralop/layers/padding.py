@@ -10,18 +10,20 @@ class DomainPadding(nn.Module):
         typically, between zero and one, percentage of padding to use
     padding_mode : {'symmetric', 'one-sided'}, optional
         whether to pad on both sides, by default 'one-sided'
+    padding_dim : bool or list
+        set True to pad all dimension, or provide a list of dimensions you want to pad, by default 'True'
 
     Notes
     -----
     This class works for any input resolution, as long as it is in the form
     `(batch-size, channels, d1, ...., dN)`
     """
-    def __init__(self, domain_padding, padding_mode='one-sided', output_scaling_factor=None, pad_only_last_dim=False):
+    def __init__(self, domain_padding, padding_mode='one-sided', output_scaling_factor=None, padding_dim=True):
         super().__init__()
         self.domain_padding = domain_padding
         self.padding_mode = padding_mode.lower()
         self.output_scaling_factor = output_scaling_factor
-        self.pad_only_last_dim = pad_only_last_dim
+        self.padding_dim = padding_dim
 
         # dict(f'{resolution}'=padding) such that padded = F.pad(x, indices)
         self._padding = dict()
@@ -56,29 +58,49 @@ class DomainPadding(nn.Module):
         except KeyError:
             padding = [int(round(p*r)) for (p, r) in zip(self.domain_padding, resolution)]
 
-            if self.pad_only_last_dim:
-                padding = padding[-1:]
+            if isinstance(self.padding_dim, list):
+                for dim in range(len(padding)):
+                    if dim not in self.padding_dim:
+                        padding[dim] = 0
 
             print(f'Padding inputs of {resolution=} with {padding=}, {self.padding_mode}')
-            
-            
+
+            # padding is being applied in reverse order (so we much reverse the padding list)
+            padding = padding[::-1]  
+
             output_pad = padding
 
             output_pad = [int(round(i*j)) for (i,j) in zip(self.output_scaling_factor,output_pad)]
-            
-            
+                        
             # the F.pad(x, padding) funtion pads the tensor 'x' in reverse order of the "padding" list i.e. the last axis of tensor 'x' will be
             # padded by the amount mention at the first position of the 'padding' vector.
             # The details about F.pad can be found here : https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html
 
             if self.padding_mode == 'symmetric':
                 # Pad both sides
-                unpad_indices = (Ellipsis, ) + tuple([slice(p, -p, None) for p in output_pad[::-1] ])
+                unpad_list = list()
+                for p in output_pad[::-1]:
+                    if p == 0:
+                        unpad_amount_pos = None
+                        unpad_amount_neg = None
+                    else:
+                        unpad_amount_pos = p
+                        unpad_amount_neg = -p
+                    unpad_list.append(slice(unpad_amount_pos, unpad_amount_neg, None))
+                unpad_indices = (Ellipsis, ) + tuple(unpad_list)
+
                 padding = [i for p in padding for i in (p, p)]
 
             elif self.padding_mode == 'one-sided':
                 # One-side padding
-                unpad_indices = (Ellipsis, ) + tuple([slice(None, -p, None) for p in output_pad[::-1]])
+                unpad_list = list()
+                for p in output_pad[::-1]:
+                    if p == 0:
+                        unpad_amount_neg = None
+                    else:
+                        unpad_amount_neg = -p
+                    unpad_list.append(slice(None, unpad_amount_neg, None))
+                unpad_indices = (Ellipsis, ) + tuple(unpad_list)
                 padding = [i for p in padding for i in (0, p)]
             else:
                 raise ValueError(f'Got {self.padding_mode=}')

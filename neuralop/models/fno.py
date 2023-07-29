@@ -105,7 +105,7 @@ class FNO(nn.Module):
                  decomposition_kwargs=dict(),
                  domain_padding=None,
                  domain_padding_mode='one-sided',
-                 domain_padding_only_last_dim=False,
+                 domain_padding_dim=True,
                  fft_norm='forward',
                  SpectralConv=SpectralConv,
                  **kwargs):
@@ -137,7 +137,7 @@ class FNO(nn.Module):
         self._incremental_n_modes = incremental_n_modes
 
         if domain_padding is not None and domain_padding > 0:
-            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scaling_factor=output_scaling_factor,pad_only_last_dim=domain_padding_only_last_dim)
+            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scaling_factor=output_scaling_factor,padding_dim=domain_padding_dim)
         else:
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
