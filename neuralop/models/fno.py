@@ -54,8 +54,10 @@ class FNO(nn.Module):
         Normalization layer to use, by default None
     preactivation : bool, default is False
         if True, use resnet-style preactivation
-    skip : {'linear', 'identity', 'soft-gating'}, optional
-        Type of skip connection to use, by default 'soft-gating'
+    fno_skip : {'linear', 'identity', 'soft-gating'}, optional
+        Type of skip connection to use in fno, by default 'linear'
+    mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
+        Type of skip connection to use in mlp, by default 'soft-gating'
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
     factorization : str or None, {'tucker', 'cp', 'tt'}
