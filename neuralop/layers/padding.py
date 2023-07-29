@@ -12,7 +12,9 @@ class DomainPadding(nn.Module):
         whether to pad on both sides, by default 'one-sided'
     padding_dim : bool or list
         set True to pad all dimension, or provide a list of dimensions you want to pad, by default 'True'
-
+        the indices of dimensions to pad start with spatial dimension (excluding batch and channel).
+        first spatial dimension is 0, second spatial dimension is 1, ...
+        
     Notes
     -----
     This class works for any input resolution, as long as it is in the form
