@@ -202,8 +202,9 @@ if ‘mixed’, the contraction and inverse FFT run in half precision</p>
 </dd>
 <dt><strong>use_mlp</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to use an MLP layer after each SFNO block, by default False</p>
 </dd>
-<dt><strong>mlp</strong><span class="classifier">dict, optional</span></dt><dd><p>Parameters of the MLP, by default None
-{‘expansion’: float, ‘dropout’: float}</p>
+<dt><strong>mlp_dropout</strong><span class="classifier">float</span></dt><dd><p>droupout parameter of MLP layer (default is 0)</p>
+</dd>
+<dt><strong>mlp_expansion</strong><span class="classifier">float</span></dt><dd><p>expansion parameter of MLP layer (default is 0.5)</p>
 </dd>
 <dt><strong>non_linearity</strong><span class="classifier">nn.Module, optional</span></dt><dd><p>Non-Linearity module to use, by default F.gelu</p>
 </dd>
