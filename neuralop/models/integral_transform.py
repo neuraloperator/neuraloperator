@@ -6,7 +6,47 @@ from torch_scatter import segment_csr
 from .mlp import MLPLinear
 
 class IntegralTransform(nn.Module):
-    def __init__(self, mlp=None,
+    """Integral Kernel Transform (GNO)
+    Computes one of the following:
+        (a) \int_{A(x)} k(x, y) dy
+        (b) \int_{A(x)} k(x, y) * f(y) dy
+        (c) \int_{A(x)} k(x, y, f(y)) dy
+        (d) \int_{A(x)} k(x, y, f(y)) * f(y) dy
+
+    x : Points for which the output is defined
+    y : Points for which the input is defined
+    A(x) : A subset of all points y (depending on 
+           each x) over which to integrate
+    k : A kernel parametrized as a MLP
+    f : Input function to integrate against given 
+        on the points y
+
+    If f is not given, a transform of type (a)
+    is computed. Otherwise transforms (b), (c),
+    or (d) are computed. The sets A(x) are specified
+    as a graph in CRS format.
+
+    Parameters
+    ----------
+    mlp : torch.nn.Module, default None
+        MLP parametrizing the kernel k. Input dimension
+        should be dim x + dim y or dim x + dim y + dim f
+    mlp_layers : list, default None
+        List of layers sizes speficing a MLP which 
+        parametrizes the kernel k. The MLP will be 
+        instansiated by the MLPLinear class  
+    mlp_non_linearity : callable, default torch.nn.functional.gelu
+        Non-linear function used to be used by the 
+        MLPLinear class. Only used if mlp_layers is 
+        given and mlp is None
+    transform_type : int, default 0
+        Which integral transform to compute. The mapping is:
+        0 -> (b), 1 -> (c), 2 -> (d). If the input f is not
+        given then (a) is computed by default independently 
+        of this parameter.
+    """
+    def __init__(self, 
+                 mlp=None,
                  mlp_layers=None,
                  mlp_non_linearity=F.gelu, 
                  transform_type=0
@@ -26,11 +66,7 @@ class IntegralTransform(nn.Module):
             self.mlp = mlp
         
     """"
-    Computes:
-    \int_y k(x, y) [indepedent of type]
-    \int_y k(x, y) * f(y) [linear transform, type: 0]
-    \int_y k(x, y, f(y)) [non-linear transform, type: 1]
-    \int_y k(x, y, f(y)) * f(y) [non-linear transform, type: 2]
+    
 
     Assumes x=y if not specified
     Integral is taken w.r.t. the neighbors
@@ -38,9 +74,48 @@ class IntegralTransform(nn.Module):
     NOTE: For transforms of type 0 or 2, out channels must be
     the same as the channels of f
     """
-    def forward(self, y, neighbors,
-                x=None, f_y=None, 
-                weights=None):
+    def forward(self, 
+                y, 
+                neighbors,
+                x=None, 
+                f_y=None, 
+                weights=None
+            ):
+        """Compute a kernel integral transform
+
+        Parameters
+        ----------
+        y : torch.Tensor of size [n, d1]
+            n points of dimension d1 specifying 
+            the space to integrate over.
+        neighbors : dict
+            The sets A(x) given in CRS format. The 
+            dict must contain the keys "neighbors_index"
+            and "neighbors_row_splits." For descriptions
+            of the two, see NeighborSearch.
+        x : torch.Tensor of size [m, d2], default None
+            m points of dimension d2 over which the 
+            output function is defined. If None,
+            x = y.
+        f_y : torch.Tensor of size [n, d3], default None
+            Function to integrate the kernel against defined
+            on the points y. The kernel is assumed diagonal
+            hence its output size must be d3 for the transforms
+            (b) or (d). If None, (a) is computed.
+        weights : torch.Tensor of size [n,], default None
+            Weights for each point y proprtional to the 
+            volume around f(y) being integrated. For example,
+            suppose d1=1 and let y_1 < y_2 < ... < y_{n+1}
+            be some points. Then, for a Riemann sum,
+            the weights are y_{j+1} - y_j. If None,
+            1/|A(x)| is used.
+        
+        Output
+        ----------
+        out_features : torch.Tensor of size [m, d4]
+            Output function given on the points x.
+            d4 is the output size of the kernel k.
+        """
         
         if x is None:
             x = y

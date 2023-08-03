@@ -15,11 +15,13 @@ class FNOGNO(nn.Module):
             in_channels,
             out_channels,
             projection_channels=256,
+            gno_coord_dim=3,
             gno_coord_embed_dim=None,
             gno_radius=0.033,
             gno_mlp_hidden_layers=[512, 256],
             gno_mlp_non_linearity=F.gelu, 
             gno_transform_type=0,
+            gno_use_open3d=True,
             fno_n_modes=(16, 16, 16), 
             fno_hidden_channels=64,
             fno_lifting_channels=256,
@@ -34,6 +36,7 @@ class FNOGNO(nn.Module):
             fno_stabilizer=None, 
             fno_norm=None,
             fno_ada_in_features=None,
+            fno_ada_in_dim=1,
             fno_preactivation=False,
             fno_skip='linear',
             fno_mlp_skip='soft-gating',
@@ -52,14 +55,32 @@ class FNOGNO(nn.Module):
         ):
         
         super().__init__()
-        #Must be 3 due to Open3D
-        #Pad 1D and 2D data with zeros
-        gno_coord_dim = 3
+
+        self.gno_coord_dim = gno_coord_dim
+        if self.gno_coord_dim != 3 and gno_use_open3d:
+            print(f'Warning: GNO expects {self.gno_coord_dim}-d data but Open3d expects 3-d data')
+
+        self.in_coord_dim = len(fno_n_modes)
+        if self.in_coord_dim != self.gno_coord_dim:
+            print(f'Warning: FNO expects {self.in_coord_dim}-d data while GNO expects {self.gno_coord_dim}-d data')
+
+        self.in_coord_dim_forward_order = list(range(self.in_coord_dim))
+        self.in_coord_dim_reverse_order = [j + 1 for j in self.in_coord_dim_forward_order]
+
+        if fno_norm == "ada_in":
+            if fno_ada_in_features is not None:
+                self.adain_pos_embed = PositionalEmbedding(fno_ada_in_features)
+                self.ada_in_dim = fno_ada_in_dim*fno_ada_in_features
+            else:
+                self.ada_in_dim = fno_ada_in_dim
+        else:
+            self.adain_pos_embed = None
+            self.ada_in_dim = None
 
         self.fno = FNO(
                 n_modes=fno_n_modes,
                 hidden_channels=fno_hidden_channels,
-                in_channels=in_channels + 3, 
+                in_channels=in_channels + self.in_coord_dim, 
                 out_channels=fno_hidden_channels,
                 lifting_channels=fno_lifting_channels,
                 projection_channels=1,
@@ -72,7 +93,7 @@ class FNOGNO(nn.Module):
                 non_linearity=fno_non_linearity,
                 stabilizer=fno_stabilizer, 
                 norm=fno_norm,
-                ada_in_features=fno_ada_in_features,
+                ada_in_features=self.ada_in_dim,
                 preactivation=fno_preactivation,
                 fno_skip=fno_skip,
                 mlp_skip=fno_mlp_skip,
@@ -91,23 +112,18 @@ class FNOGNO(nn.Module):
         )
         del self.fno.projection
 
-        if fno_norm == "ada_in":
-            self.adain_pos_embed = PositionalEmbedding(fno_ada_in_features)
-        else:
-            self.adain_pos_embed = None
-
-        self.nb_search_out = NeighborSearch()
+        self.nb_search_out = NeighborSearch(use_open3d=gno_use_open3d)
         self.gno_radius = gno_radius
 
         if gno_coord_embed_dim is not None:
             self.pos_embed = PositionalEmbedding(gno_coord_embed_dim)
-            self.gno_coord_dim = gno_coord_dim*gno_coord_embed_dim
+            self.gno_coord_dim_embed = gno_coord_dim*gno_coord_embed_dim
         else:
             self.pos_embed = None
-            self.gno_coord_dim = gno_coord_dim
+            self.gno_coord_dim_embed = gno_coord_dim
         
 
-        kernel_in_dim = 2 * self.gno_coord_dim 
+        kernel_in_dim = 2 * self.gno_coord_dim_embed 
         kernel_in_dim += fno_hidden_channels if gno_transform_type != 0 else 0
 
         gno_mlp_hidden_layers.insert(0, kernel_in_dim)
@@ -127,20 +143,15 @@ class FNOGNO(nn.Module):
             n_dim=1,
         )
 
-    # out_p : (n_out, 3)
-    # in_p : (n_1, n_2, ..., 3)
-    # f : (n_1, n_2, ...,  in_channels)
-    # ada_in : (1, )
+    # out_p : (n_out, gno_coord_dim)
+    # in_p : (n_1, n_2, ..., n_k, k)
+    # f : (n_1, n_2, ..., n_k,  in_channels)
+    # ada_in : (fno_ada_in_dim, )
 
     #returns: (fno_hidden_channels, n_1, n_2, ...)
     def latent_embedding(self, in_p, f, ada_in=None):
-        #Input shape
-        #n_comb_channels = in_p.shape[-1] + f.shape[-1] 
-        #in_p_shape = tuple(in_p.shape[0:-1])
-        
-        #(1, gno_coord_dim + in_channels, n_1, n_2, ...)
-        in_p = torch.cat((f, in_p), dim=-1).permute(3, 0, 1, 2).unsqueeze(0)  #.view(-1, n_comb_channels).t()
-        #in_p = in_p.view(n_comb_channels, *in_p_shape).unsqueeze(0) 
+        in_p = torch.cat((f, in_p), dim=-1)
+        in_p = in_p.permute(self.in_coord_dim, *self.in_coord_dim_forward_order).unsqueeze(0)
 
         #Update Ada IN embedding
         if ada_in is not None:
@@ -184,7 +195,8 @@ class FNOGNO(nn.Module):
         
         #(n_1*n_2*..., fno_hidden_channels)
         #latent_embed = latent_embed.reshape(self.fno.hidden_channels, -1).t()
-        latent_embed = latent_embed.permute(1, 2, 3, 0).reshape(-1, self.fno.hidden_channels)
+        #latent_embed = latent_embed.permute(1, 2, 3, 0).reshape(-1, self.fno.hidden_channels)
+        latent_embed = latent_embed.permute(*self.in_coord_dim_reverse_order, 0).reshape(-1, self.fno.hidden_channels)
 
         #(n_out, fno_hidden_channels)
         out = self.gno(y=in_p_embed, 
