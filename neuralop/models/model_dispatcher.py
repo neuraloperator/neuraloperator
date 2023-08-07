@@ -59,7 +59,8 @@ def get_model(config):
     try:
         return dispatch_model(MODEL_ZOO[arch], config_arch)
     except KeyError:
-        raise ValueError(f'Got config.{arch=}, expected one of {MODEL_ZOO.keys}.')
+        raise ValueError(
+            f'Got config.arch{arch}, expected one of {MODEL_ZOO.keys}.')
 
 
 def dispatch_model(ModelClass, config):
@@ -82,13 +83,17 @@ def dispatch_model(ModelClass, config):
     # Verify that given parameters are actually arguments of the model
     for key in config:
         if key not in sig.parameters:
-            print(f"Given argument {key=} that is not in {model_name}'s signature.")
-            # warnings.warn(f"Given argument {key=} that is not in {model_name}'s signature.")
+            print(f"Given argument key={key} "
+                  f"that is not in {model_name}'s signature.")
+            # warnings.warn(f"Given argument {key=}
+            # that is not in {model_name}'s signature.")
     
     # Check for model arguments not specified in the configuration
     for key, value in sig.parameters.items():
         if (value.default is not inspect._empty) and (key not in config):
-            print(f"Keyword argument {key} not specified for model {model_name}, using default={value.default}.")
-            # warnings.warn(f"Keyword argument {key} not specified for model {model_name}, using default={value.default}.")
+            print(f"Keyword argument {key} not specified "
+                  f"for model {model_name}, using default={value.default}.")
+            # warnings.warn(f"Keyword argument {key} not specified
+            # for model {model_name}, using default={value.default}.")
 
     return ModelClass(**config)

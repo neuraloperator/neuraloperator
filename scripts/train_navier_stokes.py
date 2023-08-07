@@ -90,15 +90,24 @@ optimizer = torch.optim.Adam(model.parameters(),
                                 weight_decay=config.opt.weight_decay)
 
 if config.opt.scheduler == 'ReduceLROnPlateau':
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=config.opt.gamma, patience=config.opt.scheduler_patience, mode='min')
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+      optimizer,
+      factor=config.opt.gamma,
+      patience=config.opt.scheduler_patience,
+      mode='min')
+
 elif config.opt.scheduler == 'CosineAnnealingLR':
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.opt.scheduler_T_max)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+      optimizer,
+      T_max=config.opt.scheduler_T_max)
+
 elif config.opt.scheduler == 'StepLR':
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                                 step_size=config.opt.step_size,
                                                 gamma=config.opt.gamma)
+
 else:
-    raise ValueError(f'Got {config.opt.scheduler=}')
+    raise ValueError(f'Got config.opt.scheduler={config.opt.scheduler}')
 
 
 # Creating the losses

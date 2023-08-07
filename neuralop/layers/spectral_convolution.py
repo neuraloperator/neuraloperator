@@ -1,5 +1,9 @@
 import itertools
-from typing import Callable, List, Literal, Optional, Sequence, Tuple, Union
+from typing import Callable, List, Optional, Sequence, Tuple, Union
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import torch
 from torch import nn
@@ -173,7 +177,8 @@ def get_contract_fun(weight, implementation='reconstructed', separable=False):
                 f'Got unexpected weight type of class {weight.__class__.__name__}')
     else:
         raise ValueError(
-            f'Got {implementation=}, expected "reconstructed" or "factorized"')
+            f'Got implementation={implementation}, '
+             'expected "reconstructed" or "factorized"')
 
 
 IntBoundary = Tuple[Optional[int], Optional[int]]
@@ -339,8 +344,9 @@ class SpectralConv(nn.Module):
         if separable:
             if in_channels != out_channels:
                 raise ValueError(
-                    'To use separable Fourier Conv, in_channels must be equal to out_channels, ',
-                    f'but got {in_channels=} and {out_channels=}')
+                     'To use separable Fourier Conv, in_channels must be equal '
+                    f'to out_channels, but got in_channels={in_channels} '
+                    f'and out_channels={out_channels}')
             weight_shape: Tuple[int, ...] = (in_channels, *half_total_n_modes)
         else:
             weight_shape: Tuple[int, ...] = (

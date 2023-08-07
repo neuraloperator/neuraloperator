@@ -1,5 +1,11 @@
-import torch
 import math
+from typing import List, Union
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
+import torch
 
 
 #Set fix{x,y,z}_bnd if function is non-periodic in {x,y,z} direction
@@ -57,10 +63,24 @@ def central_diff_3d(x, h, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
         
     return dx, dy, dz
 
+ReductionEnum = Literal['sum', 'mean']
 
 #loss function with rel/abs Lp loss
 class LpLoss(object):
-    def __init__(self, d=1, p=2, L=2*math.pi, reduce_dims=0, reductions='sum'):
+    """
+    Parameters
+    ----------
+    reduce_dims: List[int]
+    reductions: List[Literal['sum', 'mean']]
+    """
+    def __init__(
+        self,
+        d=1,
+        p=2,
+        L=math.tau,  # 2pi
+        reduce_dims: Union[int, List[int]] = 0,
+        reductions: Union[ReductionEnum, List[ReductionEnum]] = 'sum',
+    ):
         super().__init__()
 
         self.d = d
@@ -283,7 +303,7 @@ class IregularLpqLoss(torch.nn.Module):
 
         self.p = 2.0
         self.q = 2.0
-    
+
     #x, y are (n, c) or (n,)
     #vol_elm is (n,)
 
@@ -292,48 +312,48 @@ class IregularLpqLoss(torch.nn.Module):
             s = torch.sum(torch.abs(x)**self.q, dim=1, keepdim=False)**(self.p/self.q)
         else:
             s = torch.abs(x)**self.p
-        
+
         return torch.sum(s*vol_elm)**(1.0/self.p)
 
     def abs(self, x, y, vol_elm):
         return self.norm(x - y, vol_elm)
-    
+
     #y is assumed truth
     def rel(self, x, y, vol_elm):
         return self.abs(x, y, vol_elm)/self.norm(y, vol_elm)
-    
+
     def forward(self, x, y, vol_elm):
         return self.rel(x, y, vol_elm)
 
 
-def pressure_drag(pressure, vol_elm, inward_surface_normal, 
-                  flow_direction_normal, flow_speed, 
+def pressure_drag(pressure, vol_elm, inward_surface_normal,
+                  flow_direction_normal, flow_speed,
                   reference_area, mass_density=1.0):
-    
+
     const = 2.0/(mass_density*(flow_speed**2)*reference_area)
     direction = torch.sum(inward_surface_normal*flow_direction_normal, dim=1, keepdim=False)
-    
+
     return const*torch.sum(pressure*direction*vol_elm)
 
-def friction_drag(wall_shear_stress, vol_elm, 
-                  flow_direction_normal, flow_speed, 
+def friction_drag(wall_shear_stress, vol_elm,
+                  flow_direction_normal, flow_speed,
                   reference_area, mass_density=1.0):
-    
+
     const = 2.0/(mass_density*(flow_speed**2)*reference_area)
     direction = torch.sum(wall_shear_stress*flow_direction_normal, dim=1, keepdim=False)
 
     return const*torch.sum(direction*vol_elm)
 
-def total_drag(pressure, wall_shear_stress, vol_elm, 
-               inward_surface_normal, flow_direction_normal, 
+def total_drag(pressure, wall_shear_stress, vol_elm,
+               inward_surface_normal, flow_direction_normal,
                flow_speed, reference_area, mass_density=1.0):
-    
-    cp = pressure_drag(pressure, vol_elm, inward_surface_normal, 
-                       flow_direction_normal, flow_speed, 
+
+    cp = pressure_drag(pressure, vol_elm, inward_surface_normal,
+                       flow_direction_normal, flow_speed,
                        reference_area, mass_density)
-    
-    cf = friction_drag(wall_shear_stress, vol_elm, 
-                       flow_direction_normal, flow_speed, 
+
+    cf = friction_drag(wall_shear_stress, vol_elm,
+                       flow_direction_normal, flow_speed,
                        reference_area, mass_density)
-    
-    return cp + cf 
+
+    return cp + cf

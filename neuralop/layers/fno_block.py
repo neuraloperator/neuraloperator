@@ -144,7 +144,8 @@ class FNOBlocks(nn.Module):
                 [AdaIN(ada_in_features, out_channels) for _ in range(n_layers * self.n_norms)])
         else:
             raise ValueError(
-                f'Got {norm=} but expected None or one of [instance_norm, group_norm, layer_norm]')
+                f'Got norm={norm} but expected None or one of '
+                '[instance_norm, group_norm, layer_norm]')
 
     def set_ada_in_embeddings(self, *embeddings):
         """Sets the embeddings of each Ada-IN norm layers
