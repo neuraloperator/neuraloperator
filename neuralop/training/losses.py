@@ -1,5 +1,9 @@
 import math
-from typing import List, Literal, Union
+from typing import List, Union
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import torch
 

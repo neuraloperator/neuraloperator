@@ -5,13 +5,20 @@ from torch.utils.data import Dataset
 
 class ZarrDataset(Dataset):
     """PDE h5py dataset"""
-    def __init__(self, filename, resolution=128, transform_x=None, transform_y=None,
-                 n_samples=None):
+    def __init__(
+        self,
+        filename,
+        resolution=128,
+        transform_x=None,
+        transform_y=None,
+        n_samples=None
+    ):
         resolution_to_step = {128:8, 256:4, 512:2, 1024:1}
         try:
             subsample_step = resolution_to_step[resolution]
         except KeyError:
-            raise ValueError(f'Got {resolution=}, expected one of {resolution_to_step.keys()}')
+            raise ValueError(f'Got resolution={resolution}, '
+                             f'expected one of {resolution_to_step.keys()}')
 
         self.subsample_step = subsample_step
         self.filename = str(filename)

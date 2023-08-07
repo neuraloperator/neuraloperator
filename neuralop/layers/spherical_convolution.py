@@ -155,28 +155,48 @@ def get_contract_fun(weight, implementation='reconstructed', separable=False):
             elif weight.name.lower().endswith('cp'):
                 return _contract_cp
             else:
-                raise ValueError(f'Got unexpected factorized weight type {weight.name}')
+                raise ValueError(
+                    f'Got unexpected factorized weight type {weight.name}')
         else:
-            raise ValueError(f'Got unexpected weight type of class {weight.__class__.__name__}')
+            raise ValueError( 'Got unexpected weight type '
+                             f'of class {weight.__class__.__name__}')
     else:
-        raise ValueError(f'Got {implementation=}, expected "reconstructed" or "factorized"')
+        raise ValueError(f'Got implementation={implementation}, '
+                          'expected "reconstructed" or "factorized"')
 
 
 class SphericalConv(nn.Module):
-    def __init__(self, in_channels, out_channels, n_modes, incremental_n_modes=None, bias=True,
-                 n_layers=1, separable=False, output_scaling_factor=None, fno_block_precision='full',
-                 rank=0.5, factorization='cp', implementation='reconstructed', 
-                 fixed_rank_modes=False, joint_factorization=False, decomposition_kwargs=dict(),
-                 init_std='auto', fft_norm='backward'):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        n_modes,
+        incremental_n_modes=None,
+        bias=True,
+        n_layers=1,
+        separable=False,
+        output_scaling_factor=None,
+        fno_block_precision='full',
+        rank=0.5,
+        factorization='cp',
+        implementation='reconstructed',
+        fixed_rank_modes=False,
+        joint_factorization=False,
+        decomposition_kwargs=dict(),
+        init_std='auto',
+        fft_norm='backward'
+    ):
         super().__init__()
 
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.joint_factorization = joint_factorization
 
-        # We index quadrands only
+        # We index quadrants only
         # n_modes is the total number of modes kept along each dimension
-        # half_n_modes is half of that except in the last mode, correponding to the number of modes to keep in *each* quadrant for each dim
+        # half_n_modes is half of that except in the last mode,
+        # corresponding to the number of modes to keep
+        # in *each* quadrant for each dim
         if isinstance(n_modes, int):
             n_modes = [n_modes]
         self.n_modes = n_modes
@@ -186,10 +206,11 @@ class SphericalConv(nn.Module):
         half_total_n_modes[-1] = half_total_n_modes[-1]//2
         self.half_total_n_modes = half_total_n_modes
 
-        # WE use half_total_n_modes to build the full weights
+        # We use half_total_n_modes to build the full weights
         # During training we can adjust incremental_n_modes which will also
         # update half_n_modes 
-        # So that we can train on a smaller part of the Fourier modes and total weights
+        # So that we can train on a smaller part
+        # of the Fourier modes and total weights
         self.incremental_n_modes = incremental_n_modes
 
         self.rank = rank
@@ -199,7 +220,8 @@ class SphericalConv(nn.Module):
 
         if output_scaling_factor is not None:
             if isinstance(output_scaling_factor, (float, int)):
-                output_scaling_factor = [float(output_scaling_factor)]*len(self.n_modes)
+                output_scaling_factor = [
+                    float(output_scaling_factor)] * len(self.n_modes)
         self.output_scaling_factor = output_scaling_factor
 
         if init_std == 'auto':
@@ -222,18 +244,22 @@ class SphericalConv(nn.Module):
 
         if separable:
             if in_channels != out_channels:
-                raise ValueError('To use separable Fourier Conv, in_channels must be equal to out_channels, ',
-                                 f'but got {in_channels=} and {out_channels=}')
+                raise ValueError(
+                     'To use separable Fourier Conv, in_channels must be equal'
+                    f'to out_channels, but got in_channels={in_channels} '
+                    f'and out_channels={out_channels}')
             weight_shape = (in_channels, *half_total_n_modes[:-1])
         else:
             weight_shape = (in_channels, out_channels, *half_total_n_modes[:-1])
         self.separable = separable
 
         if joint_factorization:
-            self.weight = FactorizedTensor.new((self.n_layers, *weight_shape),
-                                                rank=self.rank, factorization=factorization, 
-                                                fixed_rank_modes=fixed_rank_modes,
-                                                **decomposition_kwargs)
+            self.weight = FactorizedTensor.new(
+                (self.n_layers, *weight_shape),
+                rank=self.rank,
+                factorization=factorization,
+                fixed_rank_modes=fixed_rank_modes,
+                **decomposition_kwargs)
             self.weight.normal_(0, init_std)
         else:
             self.weight = nn.ModuleList([
@@ -246,10 +272,14 @@ class SphericalConv(nn.Module):
                 )
             for w in self.weight:
                 w.normal_(0, init_std)
-        self._contract = get_contract_fun(self.weight[0], implementation=implementation, separable=separable)
+        self._contract = get_contract_fun(
+            self.weight[0],
+            implementation=implementation,
+            separable=separable)
 
         if bias:
-            self.bias = nn.Parameter(init_std * torch.randn(*((n_layers, self.out_channels) + (1, )*self.order)))
+            bias_shape = (n_layers, self.out_channels) + (1, ) * self.order
+            self.bias = nn.Parameter(init_std * torch.randn(*bias_shape))
         else:
             self.bias = None
 

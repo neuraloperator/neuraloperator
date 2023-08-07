@@ -103,7 +103,7 @@ elif config.opt.scheduler == 'StepLR':
                                                 step_size=config.opt.step_size,
                                                 gamma=config.opt.gamma)
 else:
-    raise ValueError(f'Got {config.opt.scheduler=}')
+    raise ValueError(f'Got config.opt.scheduler={config.opt.scheduler}')
 
 
 # Creating the losses
