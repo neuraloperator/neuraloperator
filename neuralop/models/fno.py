@@ -142,7 +142,7 @@ class FNO(nn.Module):
                 self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scaling_factor=output_scaling_factor)
         else:
             self.domain_padding = None
-        print(self.domain_padding, "lll")
+
         self.domain_padding_mode = domain_padding_mode
 
         if output_scaling_factor is not None and not joint_factorization:
