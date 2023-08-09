@@ -14,7 +14,7 @@ from neuralop import LpLoss, H1Loss
 
 device = 'cpu'
 
-def test_incremental_model_training(incremental_loss_gap, incremental, incremental_resolution,
+def test_incremental_model_training(incremental_loss_gap=False, incremental=False, incremental_resolution=False,
                                     incremental_eps = 0.999, incremental_buffer=5,
                                     incremental_max_iter=1, incremental_grad_max_iter=10, 
                                     incremental_loss_eps=0.01, incremental_res_gap=100, dataset_resolution=16, dataset_sublist=[1], dataset_indices=[0]):
