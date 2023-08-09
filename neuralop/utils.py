@@ -1,5 +1,5 @@
 import torch
-
+import numpy as np
 import wandb
 
 # normalization, pointwise gaussian
@@ -91,3 +91,47 @@ def get_wandb_api_key(api_key_file='../config/wandb_api_key.txt'):
         with open(api_key_file, 'r') as f:
             key = f.read()
         return key.strip()
+
+# Define the function to compute the spectrum
+def spectrum2(u, s):
+    """This function computes the spectrum of a 2D signal using the Fast Fourier Transform (FFT).
+
+    Paramaters
+    ----------
+    u: a tensor of shape (T * s * s) 
+        A 2D signal represented as a 1D tensor with shape (T * s * s), where T is the number of time steps and s is the spatial size of the signal. T can be any number of channels that we reshape into and s * s is the spatial resolution.
+    s: an integer
+        The spatial size of the signal.
+        
+    Returns
+    --------
+    spectrum: a numpy array 
+        A 1D numpy array of shape (s,) representing the computed spectrum.
+    """
+    T = u.shape[0]
+    u = u.reshape(T, s, s)
+    # u = torch.rfft(u, 2, normalized=False, onesided=False) - depending on your choice of normalization and such
+    u = torch.fft.fft2(u)
+
+    # 2d wavenumbers following Pytorch fft convention
+    k_max = s // 2
+    wavenumers = torch.cat((torch.arange(start=0, end=k_max, step=1), \
+                            torch.arange(start=-k_max, end=0, step=1)), 0).repeat(s, 1)
+    k_x = wavenumers.transpose(0, 1)
+    k_y = wavenumers
+    # Sum wavenumbers
+    sum_k = torch.abs(k_x) + torch.abs(k_y)
+    sum_k = sum_k.numpy()
+    # Remove symmetric components from wavenumbers
+    index = -1.0 * np.ones((s, s))
+    index[0:k_max + 1, 0:k_max + 1] = sum_k[0:k_max + 1, 0:k_max + 1]
+
+
+
+    spectrum = np.zeros((T, s))
+    for j in range(1, s + 1):
+        ind = np.where(index == j)
+        spectrum[:, j - 1] =  (u[:, ind[0], ind[1]].sum(axis=1)).abs() ** 2
+
+    spectrum = spectrum.mean(axis=0)
+    return spectrum
