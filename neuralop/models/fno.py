@@ -1,4 +1,5 @@
 import torch.nn as nn
+import numpy as np
 import torch.nn.functional as F
 from functools import partialmethod
 
@@ -107,7 +108,6 @@ class FNO(nn.Module):
                  decomposition_kwargs=dict(),
                  domain_padding=None,
                  domain_padding_mode='one-sided',
-                 domain_padding_dim=True,
                  fft_norm='forward',
                  SpectralConv=SpectralConv,
                  **kwargs):
@@ -138,10 +138,11 @@ class FNO(nn.Module):
         # When updated, change should be reflected in fno blocks
         self._incremental_n_modes = incremental_n_modes
 
-        if domain_padding is not None and domain_padding > 0:
-            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scaling_factor=output_scaling_factor,padding_dim=domain_padding_dim)
+        if domain_padding is not None and ((isinstance(domain_padding, list) and sum(domain_padding) > 0) or (isinstance(domain_padding, (float, int)) and domain_padding > 0)):
+                self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scaling_factor=output_scaling_factor)
         else:
             self.domain_padding = None
+        print(self.domain_padding, "lll")
         self.domain_padding_mode = domain_padding_mode
 
         if output_scaling_factor is not None and not joint_factorization:

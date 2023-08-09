@@ -6,26 +6,22 @@ class DomainPadding(nn.Module):
 
     Parameters
     ----------
-    domain_padding : float
+    domain_padding : float or list
         typically, between zero and one, percentage of padding to use
+        if a list, make sure if matches the dim of (d1, ..., dN)
     padding_mode : {'symmetric', 'one-sided'}, optional
         whether to pad on both sides, by default 'one-sided'
-    padding_dim : bool or list
-        set True to pad all dimension, or provide a list of dimensions you want to pad, by default 'True'
-        the indices of dimensions to pad start with spatial dimension (excluding batch and channel).
-        first spatial dimension is 0, second spatial dimension is 1, ...
         
     Notes
     -----
     This class works for any input resolution, as long as it is in the form
     `(batch-size, channels, d1, ...., dN)`
     """
-    def __init__(self, domain_padding, padding_mode='one-sided', output_scaling_factor=None, padding_dim=True):
+    def __init__(self, domain_padding, padding_mode='one-sided', output_scaling_factor=None):
         super().__init__()
         self.domain_padding = domain_padding
         self.padding_mode = padding_mode.lower()
         self.output_scaling_factor = output_scaling_factor
-        self.padding_dim = padding_dim
 
         # dict(f'{resolution}'=padding) such that padded = F.pad(x, indices)
         self._padding = dict()
@@ -44,10 +40,12 @@ class DomainPadding(nn.Module):
         """
         resolution = x.shape[2:]
 
-
-
+        # if domain_padding is list, then to pass on
         if isinstance(self.domain_padding, (float, int)):
             self.domain_padding = [float(self.domain_padding)]*len(resolution)
+
+        assert len(self.domain_padding) == len(resolution)
+
         if self.output_scaling_factor is None:
             self.output_scaling_factor = [1]*len(resolution)
         elif isinstance(self.output_scaling_factor, (float, int)):
@@ -60,14 +58,9 @@ class DomainPadding(nn.Module):
         except KeyError:
             padding = [int(round(p*r)) for (p, r) in zip(self.domain_padding, resolution)]
 
-            if isinstance(self.padding_dim, list):
-                for dim in range(len(padding)):
-                    if dim not in self.padding_dim:
-                        padding[dim] = 0
-
             print(f'Padding inputs of {resolution=} with {padding=}, {self.padding_mode}')
 
-            # padding is being applied in reverse order (so we much reverse the padding list)
+            # padding is being applied in reverse order (so we must reverse the padding list)
             padding = padding[::-1]  
 
             output_pad = padding
