@@ -1,25 +1,50 @@
 import torch
-from .paramaters import Paramaters
-
-
-class Incremental(Paramaters):
-
-    def __init__(
-            self,
-            model,
-            incremental,
-            incremental_loss_gap,
-            incremental_resolution) -> None:
-        super().__init__(
-            model,
-            incremental,
-            incremental_loss_gap,
-            incremental_resolution)
-
-        if self.incremental_grad and self.incremental_loss_gap:
+class Incremental():
+    def __init__(self, model, incremental, incremental_loss_gap,
+                incremental_resolution, incremental_eps, incremental_buffer,
+                incremental_max_iter, incremental_grad_max_iter, 
+                incremental_loss_eps, incremental_res_gap,
+                dataset_resolution, dataset_sublist, dataset_indices) -> None:
+        
+        if incremental and incremental_loss_gap:
             raise ValueError(
                 "Incremental and incremental loss gap cannot be used together")
+            
+        self.model = model
+        self.ndim = len(model.n_modes)
+        self.incremental_grad = incremental
+        self.incremental_resolution = incremental_resolution
+        self.incremental_loss_gap = incremental_loss_gap
 
+        if self.incremental_grad:
+            # incremental gradient
+            self.buffer = incremental_buffer
+            self.grad_explained_ratio_threshold = incremental_eps
+            self.max_iter = incremental_max_iter
+            self.grad_max_iter =incremental_grad_max_iter
+
+        if incremental_loss_gap:
+            # incremental loss gap
+            self.eps = incremental_loss_eps
+            self.loss_list = []
+
+        if incremental_resolution:
+            # incremental resolution
+            self.epoch_gap = incremental_res_gap
+            self.indices = dataset_indices
+            self.resolution = dataset_resolution
+            self.sub_list = dataset_sublist
+
+            self.subsammpling_rate = 1
+            self.current_index = 0
+            self.current_logged_epoch = 0
+            self.current_sub = self.index_to_sub_from_table(self.current_index)
+            self.current_res = self.sub_to_res(self.current_sub)
+
+            print(f'Incre Res Update: change index to {self.current_index}')
+            print(f'Incre Res Update: change sub to {self.current_sub}')
+            print(f'Incre Res Update: change res to {self.current_res}')
+            
     # Algorithm 1: Incremental
     def loss_gap(self, loss):
         self.loss_list.append(loss)
@@ -84,3 +109,55 @@ class Incremental(Paramaters):
             self.loss_gap(loss)
         if self.incremental_grad:
             self.grad_explained()
+            
+    def sub_to_res(self, sub):
+        # Convert sub to resolution based
+        return int(self.resolution / sub)
+
+    def epoch_wise_res_increase(self, epoch):
+        # Update the current_sub and current_res values based on the epoch
+        if epoch % self.epoch_gap == 0 and epoch != 0 and (
+                self.current_logged_epoch != epoch):
+            self.current_index += 1
+            self.current_sub = self.index_to_sub_from_table(self.current_index)
+            self.current_res = self.sub_to_res(self.current_sub)
+            self.current_logged_epoch = epoch
+
+            print(f'Incre Res Update: change index to {self.current_index}')
+            print(f'Incre Res Update: change sub to {self.current_sub}')
+            print(f'Incre Res Update: change res to {self.current_res}')
+
+    def index_to_sub_from_table(self, index):
+        # Get the sub value from the sub_list based on the index
+        if index >= len(self.sub_list):
+            return self.sub_list[-1]
+        else:
+            return self.sub_list[index]
+
+    def compute_rank(self, tensor):
+        # Compute the matrix rank of a tensor
+        rank = torch.matrix_rank(tensor).cpu()
+        return rank
+
+    def compute_stable_rank(self, tensor):
+        # Compute the stable rank of a tensor
+        tensor = tensor.detach()
+        fro_norm = torch.linalg.norm(tensor, ord='fro')**2
+        l2_norm = torch.linalg.norm(tensor, ord=2)**2
+        rank = fro_norm / l2_norm
+        rank = rank.cpu()
+        return rank
+
+    def compute_explained_variance(self, frequency_max, s):
+        # Compute the explained variance based on frequency_max and singular
+        # values (s)
+        s_current = s.clone()
+        s_current[frequency_max:] = 0
+        return 1 - torch.var(s - s_current) / torch.var(s)
+
+    def regularize_input_res(self, x, y):
+        # Regularize the input data based on the current_sub and dataset_name
+        indices = torch.tensor(self.indices, device=x.device)
+        x = torch.index_select(x, 0, index=indices)
+        y = torch.index_select(y, 0, index=indices)
+        return x, y

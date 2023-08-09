@@ -32,7 +32,7 @@ class Optimizer(torch.optim.SGD):
         return loss, d_p
 
 # %%
-def check_grad_incremental():
+def test_grad_incremental():
     """_summary_
     Check if the gradients of the non used frequency modes are zero
     Check if the gradients of the used frequency modes are non zero
@@ -83,4 +83,4 @@ def check_grad_incremental():
         print("Passed test for dimension: ", dim, "\n")
 
 # Test method
-check_grad_incremental()
+test_grad_incremental()

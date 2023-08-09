@@ -15,7 +15,9 @@ class Trainer:
     def __init__(self, model, n_epochs, wandb_log=True, device=None, amp_autocast=False,
                  mg_patching_levels=0, mg_patching_padding=0, mg_patching_stitching=True,
                  log_test_interval=1, log_output=False, use_distributed=False, verbose=True, incremental=False, 
-                 incremental_loss_gap=False, incremental_resolution=False):
+                 incremental_loss_gap=False, incremental_resolution=False, incremental_eps = 0.999, incremental_buffer=5,
+                 incremental_max_iter=1, incremental_grad_max_iter=10, incremental_loss_eps=0.01, incremental_res_gap=100, 
+                 dataset_resolution=16, dataset_sublist=[1], dataset_indices=[0]):
         """
         A general Trainer class to train neural-operators on given datasets
 
@@ -43,10 +45,19 @@ class Trainer:
         verbose : bool, default is True
         incremental : bool, default is False
             if True, use the base incremental algorithm which is based on gradient variance
+            uses the incremental_grad_eps parameter - set the threshold for gradient variance
+            uses the incremental_buffer paramater - sets the number of buffer modes to calculate the gradient variance
+            uses the incremental_max_iter parameter - sets the initial number of iterations
+            uses the incremental_grad_max_iter parameter - sets the maximum number of iterations to accumulate the gradients
         incremental_loss_gap : bool, default is False
             if True, use the incremental algorithm based on loss gap
+            uses the incremental_loss_eps parameter
         incremental_resolution : bool, default is False
             if True, increase the resolution of the input incrementally
+            uses the incremental_res_gap parameter
+            uses the dataset_sublist parameter - a list of resolutions to use
+            uses the dataset_indices parameter - a list of indices of the dataset to slice to regularize the input resolution
+            uses the dataset_resolution parameter - the resolution of the input
         """
         self.n_epochs = n_epochs
         self.wandb_log = wandb_log
@@ -62,6 +73,15 @@ class Trainer:
         self.incremental_resolution = incremental_resolution
         self.incremental = self.incremental_loss_gap or self.incremental_grad
         self.amp_autocast = amp_autocast
+        self.grad_eps = incremental_eps
+        self.loss_eps = incremental_loss_eps
+        self.res_gap = incremental_res_gap
+        self.sublist = dataset_sublist
+        self.dataset_resolution = dataset_resolution
+        self.dataset_indices = dataset_indices
+        self.buffer = incremental_buffer
+        self.max_iter = incremental_max_iter
+        self.grad_max_iter = incremental_grad_max_iter
 
         if mg_patching_levels > 0:
             self.mg_n_patches = 2**mg_patching_levels
@@ -76,9 +96,12 @@ class Trainer:
                 sys.stdout.flush()
 
         if self.incremental or self.incremental_resolution:
-            self.incremental_scheduler = Incremental(model, incremental=self.incremental_grad,
-                                                     incremental_loss_gap=self.incremental_loss_gap,
-                                                     incremental_resolution=self.incremental_resolution)
+            self.incremental_scheduler = Incremental(model, incremental=self.incremental_grad, incremental_loss_gap=self.incremental_loss_gap,
+                                                     incremental_resolution=self.incremental_resolution, incremental_eps = self.grad_eps, 
+                                                     incremental_buffer=self.buffer, incremental_max_iter=self.max_iter, 
+                                                     incremental_grad_max_iter=self.grad_max_iter, incremental_loss_eps = self.loss_eps,
+                                                     incremental_res_gap = self.res_gap, dataset_resolution=self.dataset_resolution,
+                                                     dataset_sublist=self.sublist, dataset_indices=self.dataset_indices)
 
         self.mg_patching_padding = mg_patching_padding
         self.patcher = MultigridPatching2D(model, levels=mg_patching_levels, padding_fraction=mg_patching_padding,

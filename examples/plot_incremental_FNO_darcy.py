@@ -19,9 +19,9 @@ device = 'cpu'
 
  
 # %%
-# Loading the Navier-Stokes dataset in 128x128 resolution
+# Loading the Darcy flow dataset
 train_loader, test_loaders, output_encoder = load_darcy_flow_small(
-        n_train=1000, batch_size=32, 
+        n_train=100, batch_size=16, 
         test_resolutions=[16, 32], n_tests=[100, 50],
         test_batch_sizes=[32, 32],
 )
@@ -69,7 +69,25 @@ sys.stdout.flush()
 # If one wants to use incremental resolution set it to True
 # In this example we only update the modes and not the resolution
 # When using the incremental resolution one should keep in mind that the numnber of modes initially set should be strictly less than the resolution
-trainer = Trainer(model, n_epochs=20, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True, incremental = incremental)
+# Again these are the various paramaters for the various incremental settings
+#incremental : bool, default is False
+#    if True, use the base incremental algorithm which is based on gradient variance
+#    uses the incremental_grad_eps parameter - set the threshold for gradient variance
+#    uses the incremental_buffer paramater - sets the number of buffer modes to calculate the gradient variance
+#    uses the incremental_max_iter parameter - sets the initial number of iterations
+#    uses the incremental_grad_max_iter parameter - sets the maximum number of iterations to accumulate the gradients
+#incremental_loss_gap : bool, default is False
+#    if True, use the incremental algorithm based on loss gap
+#    uses the incremental_loss_eps parameter
+#incremental_resolution : bool, default is False
+#    if True, increase the resolution of the input incrementally
+#    uses the incremental_res_gap parameter
+#    uses the dataset_sublist parameter - a list of resolutions to use
+#    uses the dataset_indices parameter - a list of indices of the dataset to slice to regularize the input resolution
+#    uses the dataset_resolution parameter - the resolution of the input
+
+trainer = Trainer(model, n_epochs=100, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3, use_distributed=False, verbose=True,
+                  incremental = incremental, incremental_eps=0.001, incremental_buffer=5, incremental_max_iter=1, incremental_grad_max_iter=10)
 
 # %% 
 # Train the model

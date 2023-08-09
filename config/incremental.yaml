@@ -59,6 +59,7 @@ default: &DEFAULT
   # incremental paramaters
   incremental:
     incremental_grad:
+      use: False
       init_modes: 6
       buffer_modes: 5
       grad_explained_ratio_threshold: 0.99
@@ -66,18 +67,20 @@ default: &DEFAULT
       grad_max_iter: 10
     
     incremental_loss_gap:
+      use: False
       init_modes: 1
       eps: 0.01
 
     incremental_resolution:
+      use: False
       epoch_gap: 100
 
-    dataset_name: 'SmallDarcy'
+    dataset_name: 'NavierStokes'
     dataset_indices: [2, 3]
-    dataset_resolution: 16
-    dataset_sub_list: [1]
+    dataset_resolution: 128
+    dataset_sub_list: [4, 2, 1]
 
-    dataset:
+    dataset: # some default classic ones
       SmallDarcy: [1]
       Darcy: [8, 4, 2, 1]
       Burgers: [256, 64, 16, 8, 1]
