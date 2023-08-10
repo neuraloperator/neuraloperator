@@ -35,7 +35,7 @@ T = 100
 dataset_name = "Darcy Flow"
 
 # %%
-HOME_PATH = '/home/user/'
+HOME_PATH = '/home/user/' # Change directory to match your system
 ############################################################################
 dataset = torch.load(HOME_PATH + 'neuraloperator/neuralop/datasets/data/darcy_test_16.pt')
 print("Original dataset keys", dataset.keys()) # This is highly depending on your dataset and its structure ['x', 'y'] (In Darcy flow)
