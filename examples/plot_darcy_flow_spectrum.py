@@ -13,7 +13,7 @@ import numpy as np
 import torch
 import matplotlib
 import matplotlib.pyplot as plt
-from neuralop.utils import spectrum2
+from neuralop.utils import spectrum_2d
 from neuralop.datasets import load_darcy_flow_small
 
 font = {'size'   : 28}
@@ -79,7 +79,7 @@ grid = torch.cat((gridx, gridy), dim=-1)
 
 # Generate the spectrum of the dataset
 # Again only the last two dimensions have to be resolution and the first dimension is the reshaped product of all the other dimensions
-truth_sp = spectrum2(dataset_pred.reshape(samples * batchsize, s, s), s)
+truth_sp = spectrum_2d(dataset_pred.reshape(samples * batchsize, s, s), s)
 
 # Generate the spectrum plot and set all the settings
 fig, ax = plt.subplots(figsize=(10,10))
