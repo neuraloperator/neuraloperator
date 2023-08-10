@@ -93,7 +93,7 @@ def get_wandb_api_key(api_key_file='../config/wandb_api_key.txt'):
         return key.strip()
 
 # Define the function to compute the spectrum
-def spectrum2(u, s):
+def spectrum2(u, s, normalize=True):
     """This function computes the spectrum of a 2D signal using the Fast Fourier Transform (FFT).
 
     Paramaters
@@ -105,33 +105,37 @@ def spectrum2(u, s):
         
     Returns
     --------
-    spectrum: a numpy array 
-        A 1D numpy array of shape (s,) representing the computed spectrum.
+    spectrum: a tensor 
+        A 1D tensor of shape (s,) representing the computed spectrum.
     """
     T = u.shape[0]
-    u = u.reshape(T, s, s)
-    # u = torch.rfft(u, 2, normalized=False, onesided=False) - depending on your choice of normalization and such
-    u = torch.fft.fft2(u)
-
-    # 2d wavenumbers following Pytorch fft convention
+    u = u.view(T, s, s)
+    
+    if normalize:
+        u = torch.fft.fft2(u)
+    else:
+        u = torch.fft.rfft2(u, s=(s, s), normalized=False)
+    
+    # 2d wavenumbers following PyTorch fft convention
     k_max = s // 2
     wavenumers = torch.cat((torch.arange(start=0, end=k_max, step=1), \
                             torch.arange(start=-k_max, end=0, step=1)), 0).repeat(s, 1)
     k_x = wavenumers.transpose(0, 1)
     k_y = wavenumers
+    
     # Sum wavenumbers
     sum_k = torch.abs(k_x) + torch.abs(k_y)
-    sum_k = sum_k.numpy()
+    sum_k = sum_k
+    
     # Remove symmetric components from wavenumbers
-    index = -1.0 * np.ones((s, s))
+    index = -1.0 * torch.ones((s, s))
     index[0:k_max + 1, 0:k_max + 1] = sum_k[0:k_max + 1, 0:k_max + 1]
-
-
-
-    spectrum = np.zeros((T, s))
+    
+    spectrum = torch.zeros((T, s))
     for j in range(1, s + 1):
-        ind = np.where(index == j)
-        spectrum[:, j - 1] =  (u[:, ind[0], ind[1]].sum(axis=1)).abs() ** 2
-
-    spectrum = spectrum.mean(axis=0)
+        ind = torch.where(index == j)
+        spectrum[:, j - 1] = (u[:, ind[0], ind[1]].sum(dim=1)).abs() ** 2
+    
+    spectrum = spectrum.mean(dim=0)
     return spectrum
+

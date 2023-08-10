@@ -18,8 +18,6 @@ from neuralop.utils import spectrum2
 font = {'size'   : 28}
 matplotlib.rc('font', **font)
 
-from timeit import default_timer
-
 torch.manual_seed(0)
 np.random.seed(0)
 
