@@ -27,13 +27,11 @@ np.random.seed(0)
 T = 500 # number of time steps
 samples = 50
 s = 16 # resolution of the dataset
-S = s
 
 # additional paramaters for the dataset
 Re = 5000
 index = 1
 T = 100
-N = 50 # number of samples to calculate
 dataset_name = "Darcy Flow"
 
 # %%
@@ -46,11 +44,11 @@ train_loader, test_loaders, output_encoder = load_darcy_flow_small(
 )
 
 # This is highly depending on your dataset and its structure ['x', 'y'] (In Darcy flow)
-print("Original dataset shape", train_loader.dataset[:N]['x'].shape) # check the shape
+print("Original dataset shape", train_loader.dataset[:samples]['x'].shape) # check the shape
 
 # It is important to note that we want the last two dimensions to represent the spatial dimensions
 # So in some cases one might have to permute the dataset after squeezing the initial dimensions as well
-dataset_pred = train_loader.dataset[:N]['x'].squeeze() # squeeze the dataset to remove the batch dimension or other dimensions
+dataset_pred = train_loader.dataset[:samples]['x'].squeeze() # squeeze the dataset to remove the batch dimension or other dimensions
 
 # Shape of the dataset
 shape = dataset_pred.shape
