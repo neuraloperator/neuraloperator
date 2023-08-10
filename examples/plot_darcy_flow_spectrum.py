@@ -14,6 +14,7 @@ import torch
 import matplotlib
 import matplotlib.pyplot as plt
 from neuralop.utils import spectrum2
+from neuralop.datasets import load_darcy_flow_small
 
 font = {'size'   : 28}
 matplotlib.rc('font', **font)
@@ -32,18 +33,24 @@ S = s
 Re = 5000
 index = 1
 T = 100
+N = 50 # number of samples to calculate
 dataset_name = "Darcy Flow"
 
 # %%
-HOME_PATH = '/home/user/' # Change directory to match your system
-############################################################################
-dataset = torch.load(HOME_PATH + 'neuraloperator/neuralop/datasets/data/darcy_test_16.pt')
-print("Original dataset keys", dataset.keys()) # This is highly depending on your dataset and its structure ['x', 'y'] (In Darcy flow)
-print("Original dataset shape", dataset['x'].shape) # check the shape
+# Loading the Navier-Stokes dataset in 128x128 resolution
+train_loader, test_loaders, output_encoder = load_darcy_flow_small(
+        n_train=50, batch_size=50, 
+        test_resolutions=[16, 32], n_tests=[50],
+        test_batch_sizes=[32], positional_encoding=False, 
+        encode_output=False
+)
+
+# This is highly depending on your dataset and its structure ['x', 'y'] (In Darcy flow)
+print("Original dataset shape", train_loader.dataset[:N]['x'].shape) # check the shape
 
 # It is important to note that we want the last two dimensions to represent the spatial dimensions
 # So in some cases one might have to permute the dataset after squeezing the initial dimensions as well
-dataset_pred = dataset['x'].squeeze() # squeeze the dataset to remove the batch dimension or other dimensions
+dataset_pred = train_loader.dataset[:N]['x'].squeeze() # squeeze the dataset to remove the batch dimension or other dimensions
 
 # Shape of the dataset
 shape = dataset_pred.shape
