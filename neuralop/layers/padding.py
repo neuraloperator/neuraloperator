@@ -44,7 +44,7 @@ class DomainPadding(nn.Module):
         if isinstance(self.domain_padding, (float, int)):
             self.domain_padding = [float(self.domain_padding)]*len(resolution)
 
-        assert len(self.domain_padding) == len(resolution)
+        assert len(self.domain_padding) == len(resolution),  "domain_padding length must match the number of spatial/time dimensions (excluding batch, ch)"
 
         if self.output_scaling_factor is None:
             self.output_scaling_factor = [1]*len(resolution)
@@ -76,12 +76,12 @@ class DomainPadding(nn.Module):
                 unpad_list = list()
                 for p in output_pad[::-1]:
                     if p == 0:
-                        unpad_amount_pos = None
-                        unpad_amount_neg = None
+                        padding_end = None
+                        padding_start = None
                     else:
-                        unpad_amount_pos = p
-                        unpad_amount_neg = -p
-                    unpad_list.append(slice(unpad_amount_pos, unpad_amount_neg, None))
+                        padding_end = p
+                        padding_start = -p
+                    unpad_list.append(slice(padding_end, padding_start, None))
                 unpad_indices = (Ellipsis, ) + tuple(unpad_list)
 
                 padding = [i for p in padding for i in (p, p)]
@@ -91,10 +91,10 @@ class DomainPadding(nn.Module):
                 unpad_list = list()
                 for p in output_pad[::-1]:
                     if p == 0:
-                        unpad_amount_neg = None
+                        padding_start = None
                     else:
-                        unpad_amount_neg = -p
-                    unpad_list.append(slice(None, unpad_amount_neg, None))
+                        padding_start = -p
+                    unpad_list.append(slice(None, padding_start, None))
                 unpad_indices = (Ellipsis, ) + tuple(unpad_list)
                 padding = [i for p in padding for i in (0, p)]
             else:
