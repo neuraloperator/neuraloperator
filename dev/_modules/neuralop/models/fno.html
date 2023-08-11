@@ -118,6 +118,7 @@
         
   <h1>Source code for neuralop.models.fno</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partialmethod</span>
 
@@ -163,18 +164,20 @@
 <span class="sd">        By default None, otherwise tanh is used before FFT in the FNO block </span>
 <span class="sd">    use_mlp : bool, optional</span>
 <span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
-<span class="sd">    mlp_dropout : float </span>
-<span class="sd">        droupout parameter of MLP layer (default is 0)</span>
-<span class="sd">    mlp_expansion : float</span>
-<span class="sd">        expansion parameter of MLP layer (default is 0.5)</span>
+<span class="sd">    mlp_dropout : float , optional</span>
+<span class="sd">        droupout parameter of MLP layer, by default 0</span>
+<span class="sd">    mlp_expansion : float, optional</span>
+<span class="sd">        expansion parameter of MLP layer, by default 0.5</span>
 <span class="sd">    non_linearity : nn.Module, optional</span>
 <span class="sd">        Non-Linearity module to use, by default F.gelu</span>
 <span class="sd">    norm : F.module, optional</span>
 <span class="sd">        Normalization layer to use, by default None</span>
 <span class="sd">    preactivation : bool, default is False</span>
 <span class="sd">        if True, use resnet-style preactivation</span>
-<span class="sd">    skip : {&#39;linear&#39;, &#39;identity&#39;, &#39;soft-gating&#39;}, optional</span>
-<span class="sd">        Type of skip connection to use, by default &#39;soft-gating&#39;</span>
+<span class="sd">    fno_skip : {&#39;linear&#39;, &#39;identity&#39;, &#39;soft-gating&#39;}, optional</span>
+<span class="sd">        Type of skip connection to use in fno, by default &#39;linear&#39;</span>
+<span class="sd">    mlp_skip : {&#39;linear&#39;, &#39;identity&#39;, &#39;soft-gating&#39;}, optional</span>
+<span class="sd">        Type of skip connection to use in mlp, by default &#39;soft-gating&#39;</span>
 <span class="sd">    separable : bool, default is False</span>
 <span class="sd">        if True, use a depthwise separable spectral convolution</span>
 <span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}</span>
@@ -254,10 +257,11 @@
         <span class="c1"># When updated, change should be reflected in fno blocks</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_incremental_n_modes</span> <span class="o">=</span> <span class="n">incremental_n_modes</span>
 
-        <span class="k">if</span> <span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">domain_padding</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="o">=</span> <span class="n">DomainPadding</span><span class="p">(</span><span class="n">domain_padding</span><span class="o">=</span><span class="n">domain_padding</span><span class="p">,</span> <span class="n">padding_mode</span><span class="o">=</span><span class="n">domain_padding_mode</span><span class="p">,</span> <span class="n">output_scaling_factor</span><span class="o">=</span><span class="n">output_scaling_factor</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">sum</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="ow">and</span> <span class="n">domain_padding</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="o">=</span> <span class="n">DomainPadding</span><span class="p">(</span><span class="n">domain_padding</span><span class="o">=</span><span class="n">domain_padding</span><span class="p">,</span> <span class="n">padding_mode</span><span class="o">=</span><span class="n">domain_padding_mode</span><span class="p">,</span> <span class="n">output_scaling_factor</span><span class="o">=</span><span class="n">output_scaling_factor</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="o">=</span> <span class="kc">None</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding_mode</span> <span class="o">=</span> <span class="n">domain_padding_mode</span>
 
         <span class="k">if</span> <span class="n">output_scaling_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">joint_factorization</span><span class="p">:</span>

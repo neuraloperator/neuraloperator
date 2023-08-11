@@ -202,9 +202,9 @@ if ‘mixed’, the contraction and inverse FFT run in half precision</p>
 </dd>
 <dt><strong>use_mlp</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to use an MLP layer after each SFNO block, by default False</p>
 </dd>
-<dt><strong>mlp_dropout</strong><span class="classifier">float</span></dt><dd><p>droupout parameter of MLP layer (default is 0)</p>
+<dt><strong>mlp_dropout</strong><span class="classifier">float , optional</span></dt><dd><p>droupout parameter of MLP layer, by default 0</p>
 </dd>
-<dt><strong>mlp_expansion</strong><span class="classifier">float</span></dt><dd><p>expansion parameter of MLP layer (default is 0.5)</p>
+<dt><strong>mlp_expansion</strong><span class="classifier">float, optional</span></dt><dd><p>expansion parameter of MLP layer, by default 0.5</p>
 </dd>
 <dt><strong>non_linearity</strong><span class="classifier">nn.Module, optional</span></dt><dd><p>Non-Linearity module to use, by default F.gelu</p>
 </dd>
@@ -212,7 +212,9 @@ if ‘mixed’, the contraction and inverse FFT run in half precision</p>
 </dd>
 <dt><strong>preactivation</strong><span class="classifier">bool, default is False</span></dt><dd><p>if True, use resnet-style preactivation</p>
 </dd>
-<dt><strong>skip</strong><span class="classifier">{‘linear’, ‘identity’, ‘soft-gating’}, optional</span></dt><dd><p>Type of skip connection to use, by default ‘soft-gating’</p>
+<dt><strong>sfno_skip</strong><span class="classifier">{‘linear’, ‘identity’, ‘soft-gating’}, optional</span></dt><dd><p>Type of skip connection to use in sfno, by default ‘linear’</p>
+</dd>
+<dt><strong>mlp_skip</strong><span class="classifier">{‘linear’, ‘identity’, ‘soft-gating’}, optional</span></dt><dd><p>Type of skip connection to use in mlp, by default ‘soft-gating’</p>
 </dd>
 <dt><strong>separable</strong><span class="classifier">bool, default is False</span></dt><dd><p>if True, use a depthwise separable spectral convolution</p>
 </dd>
