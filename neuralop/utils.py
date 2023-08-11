@@ -1,5 +1,4 @@
 import torch
-
 import wandb
 
 # normalization, pointwise gaussian
@@ -91,3 +90,52 @@ def get_wandb_api_key(api_key_file='../config/wandb_api_key.txt'):
         with open(api_key_file, 'r') as f:
             key = f.read()
         return key.strip()
+
+# Define the function to compute the spectrum
+def spectrum_2d(signal, n_observations , normalize=True):
+    """This function computes the spectrum of a 2D signal using the Fast Fourier Transform (FFT).
+
+    Paramaters
+    ----------
+    signal : a tensor of shape (T * n_observations * n_observations) 
+        A 2D discretized signal represented as a 1D tensor with shape (T * n_observations * n_observations), where T is the number of time steps and n_observations is the spatial size of the signal. 
+        T can be any number of channels that we reshape into and n_observations * n_observations is the spatial resolution.
+    n_observations: an integer
+        Number of discretized points. Basically the resolution of the signal.
+        
+    Returns
+    --------
+    spectrum: a tensor 
+        A 1D tensor of shape (s,) representing the computed spectrum.
+    """
+    T = signal.shape[0]
+    signal = signal.view(T, n_observations, n_observations)
+    
+    if normalize:
+        signal = torch.fft.fft2(signal)
+    else:
+        signal = torch.fft.rfft2(signal, s=(n_observations, n_observations), normalized=False)
+    
+    # 2d wavenumbers following PyTorch fft convention
+    k_max = n_observations // 2
+    wavenumers = torch.cat((torch.arange(start=0, end=k_max, step=1), \
+                            torch.arange(start=-k_max, end=0, step=1)), 0).repeat(n_observations, 1)
+    k_x = wavenumers.transpose(0, 1)
+    k_y = wavenumers
+    
+    # Sum wavenumbers
+    sum_k = torch.abs(k_x) + torch.abs(k_y)
+    sum_k = sum_k
+    
+    # Remove symmetric components from wavenumbers
+    index = -1.0 * torch.ones((n_observations, n_observations))
+    index[0:k_max + 1, 0:k_max + 1] = sum_k[0:k_max + 1, 0:k_max + 1]
+    
+    spectrum = torch.zeros((T, n_observations))
+    for j in range(1, n_observations + 1):
+        ind = torch.where(index == j)
+        spectrum[:, j - 1] = (signal[:, ind[0], ind[1]].sum(dim=1)).abs() ** 2
+    
+    spectrum = spectrum.mean(dim=0)
+    return spectrum
+
