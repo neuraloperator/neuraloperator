@@ -137,6 +137,8 @@
 <li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Training a SFNO on the spherical Shallow Water equations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_UNO_darcy.html">U-NO on Darcy-Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow_spectrum.html">A simple Darcy-Flow spectrum analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow_spectrum.html#short-summary">Short summary</a></li>
 </ul>
 </li>
 </ul>
@@ -276,13 +278,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fcffe970e50&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f4fb600e730&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.training.losses.LpLoss object at 0x7fcffe970cd0&gt;
+ * Train: &lt;neuralop.training.losses.LpLoss object at 0x7f4fb600e0a0&gt;
 
- * Test: {&#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7fcffe970cd0&gt;}
+ * Test: {&#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f4fb600e0a0&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -315,13 +317,13 @@ Training on raw inputs of size x.shape=torch.Size([4, 3, 32, 64]), y.shape=torch
 .. patched inputs of size x.shape=torch.Size([4, 3, 32, 64]), y.shape=torch.Size([4, 3, 32, 64])
 Raw outputs of size out.shape=torch.Size([4, 3, 32, 64])
 .. Processed (unpatched) outputs of size out.shape=torch.Size([4, 3, 32, 64])
-[0] time=4.07, avg_loss=26.1748, train_err=2.6175, (32, 64)_l2=2.4174, (64, 128)_l2=2.7655
-[3] time=3.96, avg_loss=17.2908, train_err=1.7291, (32, 64)_l2=2.2040, (64, 128)_l2=2.5575
-[6] time=4.07, avg_loss=17.1591, train_err=1.7159, (32, 64)_l2=2.1611, (64, 128)_l2=2.5185
-[9] time=4.06, avg_loss=17.0006, train_err=1.7001, (32, 64)_l2=2.1368, (64, 128)_l2=2.5262
-[12] time=4.02, avg_loss=16.8611, train_err=1.6861, (32, 64)_l2=2.1044, (64, 128)_l2=2.5259
-[15] time=4.09, avg_loss=16.7850, train_err=1.6785, (32, 64)_l2=2.0978, (64, 128)_l2=2.5318
-[18] time=4.05, avg_loss=16.7723, train_err=1.6772, (32, 64)_l2=2.1117, (64, 128)_l2=2.5400
+[0] time=6.20, avg_loss=26.9010, train_err=2.6901, (32, 64)_l2=2.4395, (64, 128)_l2=2.7516
+[3] time=6.07, avg_loss=19.4409, train_err=1.9441, (32, 64)_l2=2.2663, (64, 128)_l2=2.5136
+[6] time=6.05, avg_loss=19.0526, train_err=1.9053, (32, 64)_l2=2.2244, (64, 128)_l2=2.4945
+[9] time=5.93, avg_loss=18.9829, train_err=1.8983, (32, 64)_l2=2.2592, (64, 128)_l2=2.4819
+[12] time=5.85, avg_loss=18.8913, train_err=1.8891, (32, 64)_l2=2.2093, (64, 128)_l2=2.4815
+[15] time=6.03, avg_loss=18.8109, train_err=1.8811, (32, 64)_l2=2.1977, (64, 128)_l2=2.4743
+[18] time=6.25, avg_loss=18.8109, train_err=1.8811, (32, 64)_l2=2.1897, (64, 128)_l2=2.4788
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -368,7 +370,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  42.883 seconds)</p>
+<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 2 minutes  33.030 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-sfno-swe-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/be42c4c413e9b89016fa3a4984cb9758/plot_SFNO_swe.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_SFNO_swe.py</span></code></a></p>
