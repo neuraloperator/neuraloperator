@@ -1,4 +1,5 @@
 import torch.nn as nn
+import numpy as np
 import torch.nn.functional as F
 from functools import partialmethod
 
@@ -44,18 +45,20 @@ class FNO(nn.Module):
         By default None, otherwise tanh is used before FFT in the FNO block 
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
-    mlp_dropout : float 
-        droupout parameter of MLP layer (default is 0)
-    mlp_expansion : float
-        expansion parameter of MLP layer (default is 0.5)
+    mlp_dropout : float , optional
+        droupout parameter of MLP layer, by default 0
+    mlp_expansion : float, optional
+        expansion parameter of MLP layer, by default 0.5
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
     norm : F.module, optional
         Normalization layer to use, by default None
     preactivation : bool, default is False
         if True, use resnet-style preactivation
-    skip : {'linear', 'identity', 'soft-gating'}, optional
-        Type of skip connection to use, by default 'soft-gating'
+    fno_skip : {'linear', 'identity', 'soft-gating'}, optional
+        Type of skip connection to use in fno, by default 'linear'
+    mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
+        Type of skip connection to use in mlp, by default 'soft-gating'
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
     factorization : str or None, {'tucker', 'cp', 'tt'}
@@ -135,10 +138,11 @@ class FNO(nn.Module):
         # When updated, change should be reflected in fno blocks
         self._incremental_n_modes = incremental_n_modes
 
-        if domain_padding is not None and domain_padding > 0:
-            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scaling_factor=output_scaling_factor)
+        if domain_padding is not None and ((isinstance(domain_padding, list) and sum(domain_padding) > 0) or (isinstance(domain_padding, (float, int)) and domain_padding > 0)):
+                self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scaling_factor=output_scaling_factor)
         else:
             self.domain_padding = None
+
         self.domain_padding_mode = domain_padding_mode
 
         if output_scaling_factor is not None and not joint_factorization:

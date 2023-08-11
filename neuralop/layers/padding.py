@@ -6,11 +6,12 @@ class DomainPadding(nn.Module):
 
     Parameters
     ----------
-    domain_padding : float
+    domain_padding : float or list
         typically, between zero and one, percentage of padding to use
+        if a list, make sure if matches the dim of (d1, ..., dN)
     padding_mode : {'symmetric', 'one-sided'}, optional
         whether to pad on both sides, by default 'one-sided'
-
+        
     Notes
     -----
     This class works for any input resolution, as long as it is in the form
@@ -39,8 +40,12 @@ class DomainPadding(nn.Module):
         """
         resolution = x.shape[2:]
 
+        # if domain_padding is list, then to pass on
         if isinstance(self.domain_padding, (float, int)):
             self.domain_padding = [float(self.domain_padding)]*len(resolution)
+
+        assert len(self.domain_padding) == len(resolution),  "domain_padding length must match the number of spatial/time dimensions (excluding batch, ch)"
+
         if self.output_scaling_factor is None:
             self.output_scaling_factor = [1]*len(resolution)
         elif isinstance(self.output_scaling_factor, (float, int)):
@@ -52,33 +57,50 @@ class DomainPadding(nn.Module):
 
         except KeyError:
             padding = [int(round(p*r)) for (p, r) in zip(self.domain_padding, resolution)]
-            
+
             print(f'Padding inputs of {resolution=} with {padding=}, {self.padding_mode}')
-            
-            
+
+            # padding is being applied in reverse order (so we must reverse the padding list)
+            padding = padding[::-1]  
+
             output_pad = padding
 
             output_pad = [int(round(i*j)) for (i,j) in zip(self.output_scaling_factor,output_pad)]
-            
-            
+                        
             # the F.pad(x, padding) funtion pads the tensor 'x' in reverse order of the "padding" list i.e. the last axis of tensor 'x' will be
             # padded by the amount mention at the first position of the 'padding' vector.
             # The details about F.pad can be found here : https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html
 
             if self.padding_mode == 'symmetric':
                 # Pad both sides
-                unpad_indices = (Ellipsis, ) + tuple([slice(p, -p, None) for p in output_pad[::-1] ])
+                unpad_list = list()
+                for p in output_pad[::-1]:
+                    if p == 0:
+                        padding_end = None
+                        padding_start = None
+                    else:
+                        padding_end = p
+                        padding_start = -p
+                    unpad_list.append(slice(padding_end, padding_start, None))
+                unpad_indices = (Ellipsis, ) + tuple(unpad_list)
+
                 padding = [i for p in padding for i in (p, p)]
 
             elif self.padding_mode == 'one-sided':
                 # One-side padding
-                unpad_indices = (Ellipsis, ) + tuple([slice(None, -p, None) for p in output_pad[::-1]])
+                unpad_list = list()
+                for p in output_pad[::-1]:
+                    if p == 0:
+                        padding_start = None
+                    else:
+                        padding_start = -p
+                    unpad_list.append(slice(None, padding_start, None))
+                unpad_indices = (Ellipsis, ) + tuple(unpad_list)
                 padding = [i for p in padding for i in (0, p)]
             else:
                 raise ValueError(f'Got {self.padding_mode=}')
-            
+  
             self._padding[f'{resolution}'] = padding
-            
 
             padded = F.pad(x, padding, mode='constant')
 
