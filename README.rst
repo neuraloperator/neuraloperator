@@ -33,7 +33,8 @@ Just clone the repository and install locally (in editable mode so changes in th
   git clone https://github.com/NeuralOperator/neuraloperator
   cd neuraloperator
   pip install -e .
-  
+  pip install -r requirements.txt
+
 You can also just pip install the library:
 
 
