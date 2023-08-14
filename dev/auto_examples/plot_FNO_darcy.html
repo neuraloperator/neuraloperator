@@ -277,13 +277,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f7ed1b44310&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f7ce97614f0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.training.losses.H1Loss object at 0x7f7ed1b44370&gt;
+ * Train: &lt;neuralop.training.losses.H1Loss object at 0x7f7cebd19100&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7f7ed1b44370&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f7ed1b44760&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7f7cebd19100&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f7ce9761f40&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -316,13 +316,13 @@ Training on raw inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torc
 .. patched inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torch.Size([32, 1, 16, 16])
 Raw outputs of size out.shape=torch.Size([32, 1, 16, 16])
 .. Processed (unpatched) outputs of size out.shape=torch.Size([32, 1, 16, 16])
-[0] time=3.74, avg_loss=31.9022, train_err=0.6380, 16_h1=0.5472, 16_l2=0.4867, 32_h1=0.5872, 32_l2=0.4643
-[3] time=3.78, avg_loss=22.0938, train_err=0.4419, 16_h1=0.4308, 16_l2=0.4000, 32_h1=0.4810, 32_l2=0.3901
-[6] time=3.71, avg_loss=19.8672, train_err=0.3973, 16_h1=0.4476, 16_l2=0.3973, 32_h1=0.4876, 32_l2=0.3944
-[9] time=3.72, avg_loss=19.2273, train_err=0.3845, 16_h1=0.3765, 16_l2=0.4067, 32_h1=0.4331, 32_l2=0.3983
-[12] time=3.75, avg_loss=18.9362, train_err=0.3787, 16_h1=0.3932, 16_l2=0.3781, 32_h1=0.4389, 32_l2=0.3711
-[15] time=3.77, avg_loss=18.7694, train_err=0.3754, 16_h1=0.3680, 16_l2=0.3920, 32_h1=0.4181, 32_l2=0.3843
-[18] time=3.68, avg_loss=18.4421, train_err=0.3688, 16_h1=0.3655, 16_l2=0.3853, 32_h1=0.4151, 32_l2=0.3714
+[0] time=4.50, avg_loss=31.4535, train_err=0.6291, 16_h1=0.5231, 16_l2=0.4498, 32_h1=0.5705, 32_l2=0.4466
+[3] time=4.16, avg_loss=21.3259, train_err=0.4265, 16_h1=0.4162, 16_l2=0.4060, 32_h1=0.4927, 32_l2=0.4028
+[6] time=4.13, avg_loss=20.0956, train_err=0.4019, 16_h1=0.4131, 16_l2=0.4568, 32_h1=0.4854, 32_l2=0.4464
+[9] time=4.13, avg_loss=19.3191, train_err=0.3864, 16_h1=0.3778, 16_l2=0.3884, 32_h1=0.4376, 32_l2=0.3767
+[12] time=4.13, avg_loss=18.7686, train_err=0.3754, 16_h1=0.3676, 16_l2=0.3876, 32_h1=0.4351, 32_l2=0.3767
+[15] time=3.97, avg_loss=18.6570, train_err=0.3731, 16_h1=0.3799, 16_l2=0.4320, 32_h1=0.4417, 32_l2=0.4134
+[18] time=4.07, avg_loss=18.4179, train_err=0.3684, 16_h1=0.3626, 16_l2=0.3845, 32_h1=0.4220, 32_l2=0.3677
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -371,7 +371,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  17.080 seconds)</p>
+<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  25.066 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-fno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/1a3050d57a180b92b424ce128dfe1d36/plot_FNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_FNO_darcy.py</span></code></a></p>
