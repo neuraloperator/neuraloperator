@@ -277,4 +277,63 @@ class H1Loss(object):
         return self.rel(x, y, h=h)
 
 
+class IregularLpqLoss(torch.nn.Module):
+    def __init__(self, p=2.0, q=2.0):
+        super().__init__()
 
+        self.p = 2.0
+        self.q = 2.0
+    
+    #x, y are (n, c) or (n,)
+    #vol_elm is (n,)
+
+    def norm(self, x, vol_elm):
+        if len(x.shape) > 1:
+            s = torch.sum(torch.abs(x)**self.q, dim=1, keepdim=False)**(self.p/self.q)
+        else:
+            s = torch.abs(x)**self.p
+        
+        return torch.sum(s*vol_elm)**(1.0/self.p)
+
+    def abs(self, x, y, vol_elm):
+        return self.norm(x - y, vol_elm)
+    
+    #y is assumed truth
+    def rel(self, x, y, vol_elm):
+        return self.abs(x, y, vol_elm)/self.norm(y, vol_elm)
+    
+    def forward(self, x, y, vol_elm):
+        return self.rel(x, y, vol_elm)
+
+
+def pressure_drag(pressure, vol_elm, inward_surface_normal, 
+                  flow_direction_normal, flow_speed, 
+                  reference_area, mass_density=1.0):
+    
+    const = 2.0/(mass_density*(flow_speed**2)*reference_area)
+    direction = torch.sum(inward_surface_normal*flow_direction_normal, dim=1, keepdim=False)
+    
+    return const*torch.sum(pressure*direction*vol_elm)
+
+def friction_drag(wall_shear_stress, vol_elm, 
+                  flow_direction_normal, flow_speed, 
+                  reference_area, mass_density=1.0):
+    
+    const = 2.0/(mass_density*(flow_speed**2)*reference_area)
+    direction = torch.sum(wall_shear_stress*flow_direction_normal, dim=1, keepdim=False)
+
+    return const*torch.sum(direction*vol_elm)
+
+def total_drag(pressure, wall_shear_stress, vol_elm, 
+               inward_surface_normal, flow_direction_normal, 
+               flow_speed, reference_area, mass_density=1.0):
+    
+    cp = pressure_drag(pressure, vol_elm, inward_surface_normal, 
+                       flow_direction_normal, flow_speed, 
+                       reference_area, mass_density)
+    
+    cf = friction_drag(wall_shear_stress, vol_elm, 
+                       flow_direction_normal, flow_speed, 
+                       reference_area, mass_density)
+    
+    return cp + cf 
