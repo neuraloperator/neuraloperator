@@ -172,7 +172,8 @@ class FNO(nn.Module):
             decomposition_kwargs=decomposition_kwargs,
             joint_factorization=joint_factorization,
             SpectralConv=SpectralConv,
-            n_layers=n_layers)
+            n_layers=n_layers,
+            **kwargs)
 
         self.lifting = MLP(in_channels=in_channels, out_channels=self.hidden_channels, hidden_channels=self.hidden_channels, n_layers=1, n_dim=self.n_dim)
         self.projection = MLP(in_channels=self.hidden_channels, out_channels=out_channels, hidden_channels=self.projection_channels, n_layers=2, n_dim=self.n_dim, non_linearity=non_linearity) 
