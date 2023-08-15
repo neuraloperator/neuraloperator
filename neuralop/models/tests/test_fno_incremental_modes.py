@@ -39,8 +39,8 @@ def test_grad_incremental():
     We only check the corresponding dimensions of the gradients
     """
     # set up model
-    modes = (6, 6, 6, 6)
-    incremental_modes = (2, 2, 2, 2)
+    modes = (6, 9, 12, 14)
+    incremental_modes = (2, 3, 4, 5)
     index = list(incremental_modes)
     for dim in [1, 2, 3, 4]:
 
