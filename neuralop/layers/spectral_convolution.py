@@ -45,7 +45,7 @@ def _contract_dense(x, weight, separable=False):
         # if x is half precision, run a specialized einsum
         return einsum_complexhalf(eq, x, weight)
     else:
-        return tl.einsum(eq, x, weight)
+        return tl.backend.einsum(eq, x, weight)
 
 
 def _contract_dense_separable(x, weight, separable=True):
@@ -106,7 +106,7 @@ def _contract_tucker(x, tucker_weight, separable=False):
         return einsum_complexhalf(
             eq, x, tucker_weight.core, *tucker_weight.factors)
     else:
-        return tl.einsum(eq, x, tucker_weight.core, *tucker_weight.factors)
+        return tl.backend.einsum(eq, x, tucker_weight.core, *tucker_weight.factors)
 
 
 def _contract_tt(x, tt_weight, separable=False):
@@ -575,7 +575,10 @@ class SpectralConv1d(SpectralConv):
     see :class:`neuralop.layers.SpectraConv` for the preferred, general
     implementation
     """
-    def forward(self, x, indices=0):
+    def forward(self, 
+                x, 
+                indices=0,
+                output_shape: Optional[Tuple[int]] = None):
         batchsize, channels, width = x.shape
 
         x = torch.fft.rfft(x, norm=self.fft_norm)
