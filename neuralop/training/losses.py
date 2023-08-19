@@ -284,7 +284,7 @@ class DissipativeLoss(object):
         self.reduce_dims = data_loss.reduce_dims
         self.reductions = data_loss.reductions
 
-        self.y_rule = diss_y_rule # callable, maps x on spherical shell to deisred dissipative y values
+        self.y_rule = diss_y_rule # callable, maps x on spherical shell to desired dissipative y values
         self.loss_weight = loss_weight
         self.radii = diss_radii
         self.out_dim = out_dim
@@ -310,12 +310,11 @@ class DissipativeLoss(object):
 
         return (samp_radii * vec).reshape((npoints, *shape))
 
-    def __call__(self, x, y, **kwargs):
+    def __call__(self, x, y, x_diss, pred_diss, **kwargs):
         data_loss = self.data_loss(x,y)
         
-        x_diss = sample_uniform_spherical_shell(x.shape)
         y_diss = diss_y_rule(x_diss)
-        out_diss = model(x_diss).reshape(y_diss.shape)
+        pred_diss = pred_diss.reshape(y_diss.shape)
         diss_loss = dissloss(out_diss.reshape(-1, self.out_dim), y_diss.reshape(-1, self.out_dim))
 
         if self.domain_shape is not None:
