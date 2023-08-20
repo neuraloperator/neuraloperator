@@ -57,7 +57,7 @@ config = {
         {'name': "Zongyi Li", 'email': "zongyili@caltech.edu"}
         ],
     'version': VERSION,
-    'install_requires': ['numpy', 'configmypy', 'pytest'],
+    'install_requires': ['numpy', 'configmypy', 'pytest', 'black'],
     'license': 'Modified BSD',
     'scripts': [],
     'include_package_data': True,
