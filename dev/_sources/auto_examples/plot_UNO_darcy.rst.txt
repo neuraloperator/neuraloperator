@@ -236,13 +236,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f629c9b4520>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f44e1ae24f0>
 
     ### LOSSES ###
 
-     * Train: <neuralop.training.losses.H1Loss object at 0x7f629c71b310>
+     * Train: <neuralop.training.losses.H1Loss object at 0x7f44e1b04be0>
 
-     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7f629c71b310>, 'l2': <neuralop.training.losses.LpLoss object at 0x7f629c733760>}
+     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7f44e1b04be0>, 'l2': <neuralop.training.losses.LpLoss object at 0x7f44e1ae2f10>}
 
 
 
@@ -308,15 +308,17 @@ Actually train the model on our small Darcy-Flow dataset
     Testing on [50, 50] samples         on resolutions [16, 32].
     Training on raw inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torch.Size([32, 1, 16, 16])
     .. patched inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torch.Size([32, 1, 16, 16])
+    Padding inputs of resolution=torch.Size([16, 16]) with padding=[3, 3], one-sided
     Raw outputs of size out.shape=torch.Size([32, 1, 16, 16])
     .. Processed (unpatched) outputs of size out.shape=torch.Size([32, 1, 16, 16])
-    [0] time=6.30, avg_loss=25.3788, train_err=0.5076, 16_h1=0.3050, 16_l2=0.2344, 32_h1=0.4212, 32_l2=0.2689
-    [3] time=5.74, avg_loss=8.6359, train_err=0.1727, 16_h1=0.2303, 16_l2=0.1826, 32_h1=0.3929, 32_l2=0.2167
-    [6] time=5.73, avg_loss=6.2015, train_err=0.1240, 16_h1=0.1689, 16_l2=0.1142, 32_h1=0.3527, 32_l2=0.1995
-    [9] time=5.72, avg_loss=5.6122, train_err=0.1122, 16_h1=0.1615, 16_l2=0.1071, 32_h1=0.3446, 32_l2=0.1907
-    [12] time=5.71, avg_loss=4.2077, train_err=0.0842, 16_h1=0.1561, 16_l2=0.1034, 32_h1=0.3478, 32_l2=0.1962
-    [15] time=5.71, avg_loss=3.5783, train_err=0.0716, 16_h1=0.1608, 16_l2=0.1089, 32_h1=0.3576, 32_l2=0.2042
-    [18] time=5.85, avg_loss=2.6245, train_err=0.0525, 16_h1=0.1579, 16_l2=0.1069, 32_h1=0.3482, 32_l2=0.2012
+    Padding inputs of resolution=torch.Size([32, 32]) with padding=[6, 6], one-sided
+    [0] time=8.24, avg_loss=21.0908, train_err=0.4218, 16_h1=0.3008, 16_l2=0.2317, 32_h1=0.4513, 32_l2=0.2913
+    [3] time=7.70, avg_loss=8.6573, train_err=0.1731, 16_h1=0.2039, 16_l2=0.1497, 32_h1=0.3473, 32_l2=0.2018
+    [6] time=7.68, avg_loss=6.5033, train_err=0.1301, 16_h1=0.1798, 16_l2=0.1234, 32_h1=0.3497, 32_l2=0.2089
+    [9] time=7.74, avg_loss=5.5638, train_err=0.1113, 16_h1=0.1656, 16_l2=0.1164, 32_h1=0.3370, 32_l2=0.1817
+    [12] time=7.66, avg_loss=4.1577, train_err=0.0832, 16_h1=0.1571, 16_l2=0.1055, 32_h1=0.3521, 32_l2=0.1992
+    [15] time=7.66, avg_loss=3.5090, train_err=0.0702, 16_h1=0.1580, 16_l2=0.1076, 32_h1=0.3461, 32_l2=0.2070
+    [18] time=7.63, avg_loss=2.6875, train_err=0.0537, 16_h1=0.1541, 16_l2=0.1036, 32_h1=0.3539, 32_l2=0.2025
 
 
 
@@ -390,7 +392,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 58.986 seconds)
+   **Total running time of the script:** (2 minutes 38.589 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_UNO_darcy.py:

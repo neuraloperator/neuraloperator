@@ -121,9 +121,7 @@
 <span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
 
 
-<div class="viewcode-block" id="skip_connection"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.skip_connections.skip_connection.html#neuralop.layers.skip_connections.skip_connection">[docs]</a><span class="k">def</span> <span class="nf">skip_connection</span><span class="p">(</span>
-    <span class="n">in_features</span><span class="p">,</span> <span class="n">out_features</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">skip_type</span><span class="o">=</span><span class="s2">&quot;soft-gating&quot;</span>
-<span class="p">):</span>
+<div class="viewcode-block" id="skip_connection"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.skip_connections.skip_connection.html#neuralop.layers.skip_connections.skip_connection">[docs]</a><span class="k">def</span> <span class="nf">skip_connection</span><span class="p">(</span><span class="n">in_features</span><span class="p">,</span> <span class="n">out_features</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;soft-gating&quot;</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A wrapper for several types of skip connections.</span>
 <span class="sd">    Returns an nn.Module skip connections, one of  {&#39;identity&#39;, &#39;linear&#39;, soft-gating&#39;}</span>
 
@@ -135,10 +133,10 @@
 <span class="sd">        number of output features</span>
 <span class="sd">    n_dim : int, default is 2</span>
 <span class="sd">        Dimensionality of the input (excluding batch-size and channels).</span>
-<span class="sd">        ``n_dim=2`` corresponds to having Module2D.</span>
+<span class="sd">        ``n_dim=2`` corresponds to having Module2D. </span>
 <span class="sd">    bias : bool, optional</span>
 <span class="sd">        whether to use a bias, by default False</span>
-<span class="sd">    skip_type : {&#39;identity&#39;, &#39;linear&#39;, soft-gating&#39;}</span>
+<span class="sd">    type : {&#39;identity&#39;, &#39;linear&#39;, soft-gating&#39;}</span>
 <span class="sd">        kind of skip connection to use, by default &quot;soft-gating&quot;</span>
 
 <span class="sd">    Returns</span>
@@ -146,27 +144,14 @@
 <span class="sd">    nn.Module</span>
 <span class="sd">        module that takes in x and returns skip(x)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">skip_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;soft-gating&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">SoftGating</span><span class="p">(</span>
-            <span class="n">in_features</span><span class="o">=</span><span class="n">in_features</span><span class="p">,</span>
-            <span class="n">out_features</span><span class="o">=</span><span class="n">out_features</span><span class="p">,</span>
-            <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
-            <span class="n">n_dim</span><span class="o">=</span><span class="n">n_dim</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">elif</span> <span class="n">skip_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Conv</span><span class="si">{</span><span class="n">n_dim</span><span class="si">}</span><span class="s2">d&quot;</span><span class="p">)(</span>
-            <span class="n">in_channels</span><span class="o">=</span><span class="n">in_features</span><span class="p">,</span>
-            <span class="n">out_channels</span><span class="o">=</span><span class="n">out_features</span><span class="p">,</span>
-            <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-            <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">elif</span> <span class="n">skip_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;identity&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;soft-gating&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SoftGating</span><span class="p">(</span><span class="n">in_features</span><span class="o">=</span><span class="n">in_features</span><span class="p">,</span> <span class="n">out_features</span><span class="o">=</span><span class="n">out_features</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="n">n_dim</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;linear&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;Conv</span><span class="si">{</span><span class="n">n_dim</span><span class="si">}</span><span class="s1">d&#39;</span><span class="p">)(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_features</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_features</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;identity&#39;</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Got skip-connection type=</span><span class="si">{</span><span class="n">skip_type</span><span class="si">}</span><span class="s2">, expected one of&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;linear&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="si">}</span><span class="s2">.&quot;</span>
-        <span class="p">)</span></div>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Got skip-connection </span><span class="si">{</span><span class="nb">type</span><span class="si">=}</span><span class="s2">, expected one of </span><span class="si">{</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;linear&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="SoftGating"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.skip_connections.SoftGating.html#neuralop.layers.skip_connections.SoftGating">[docs]</a><span class="k">class</span> <span class="nc">SoftGating</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
@@ -183,31 +168,30 @@
 <span class="sd">        this is provided for API compatibility with nn.Linear only</span>
 <span class="sd">    n_dim : int, default is 2</span>
 <span class="sd">        Dimensionality of the input (excluding batch-size and channels).</span>
-<span class="sd">        ``n_dim=2`` corresponds to having Module2D.</span>
+<span class="sd">        ``n_dim=2`` corresponds to having Module2D. </span>
 <span class="sd">    bias : bool, default is False</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_features</span><span class="p">,</span> <span class="n">out_features</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">out_features</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">in_features</span> <span class="o">!=</span> <span class="n">out_features</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Got in_features=</span><span class="si">{</span><span class="n">in_features</span><span class="si">}</span><span class="s2"> and out_features=</span><span class="si">{</span><span class="n">out_features</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="s2">&quot;but these two must be the same for soft-gating&quot;</span>
-            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Got </span><span class="si">{</span><span class="n">in_features</span><span class="si">=}</span><span class="s2"> and </span><span class="si">{</span><span class="n">out_features</span><span class="si">=}</span><span class="s2">&quot;</span>
+                             <span class="s2">&quot;but these two must be the same for soft-gating&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">in_features</span> <span class="o">=</span> <span class="n">in_features</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">out_features</span> <span class="o">=</span> <span class="n">out_features</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_features</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="p">,)</span> <span class="o">*</span> <span class="n">n_dim</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_features</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="p">,)</span><span class="o">*</span><span class="n">n_dim</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">bias</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_features</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="p">,)</span> <span class="o">*</span> <span class="n">n_dim</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_features</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="p">,)</span><span class="o">*</span><span class="n">n_dim</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="SoftGating.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.skip_connections.SoftGating.html#neuralop.layers.skip_connections.SoftGating.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Applies soft-gating to a batch of activations&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Applies soft-gating to a batch of activations</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">*</span> <span class="n">x</span></div></div>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">*</span><span class="n">x</span></div></div>
+
 </pre></div>
 
       </div>
