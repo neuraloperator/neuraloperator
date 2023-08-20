@@ -313,13 +313,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f44e1ae24f0&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f473d2dc910&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.training.losses.H1Loss object at 0x7f44e1b04be0&gt;
+ * Train: &lt;neuralop.training.losses.H1Loss object at 0x7f473d2dc280&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7f44e1b04be0&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f44e1ae2f10&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7f473d2dc280&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f473d2dc0a0&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -350,17 +350,15 @@ Parameter Group 0
 Testing on [50, 50] samples         on resolutions [16, 32].
 Training on raw inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torch.Size([32, 1, 16, 16])
 .. patched inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torch.Size([32, 1, 16, 16])
-Padding inputs of resolution=torch.Size([16, 16]) with padding=[3, 3], one-sided
 Raw outputs of size out.shape=torch.Size([32, 1, 16, 16])
 .. Processed (unpatched) outputs of size out.shape=torch.Size([32, 1, 16, 16])
-Padding inputs of resolution=torch.Size([32, 32]) with padding=[6, 6], one-sided
-[0] time=8.24, avg_loss=21.0908, train_err=0.4218, 16_h1=0.3008, 16_l2=0.2317, 32_h1=0.4513, 32_l2=0.2913
-[3] time=7.70, avg_loss=8.6573, train_err=0.1731, 16_h1=0.2039, 16_l2=0.1497, 32_h1=0.3473, 32_l2=0.2018
-[6] time=7.68, avg_loss=6.5033, train_err=0.1301, 16_h1=0.1798, 16_l2=0.1234, 32_h1=0.3497, 32_l2=0.2089
-[9] time=7.74, avg_loss=5.5638, train_err=0.1113, 16_h1=0.1656, 16_l2=0.1164, 32_h1=0.3370, 32_l2=0.1817
-[12] time=7.66, avg_loss=4.1577, train_err=0.0832, 16_h1=0.1571, 16_l2=0.1055, 32_h1=0.3521, 32_l2=0.1992
-[15] time=7.66, avg_loss=3.5090, train_err=0.0702, 16_h1=0.1580, 16_l2=0.1076, 32_h1=0.3461, 32_l2=0.2070
-[18] time=7.63, avg_loss=2.6875, train_err=0.0537, 16_h1=0.1541, 16_l2=0.1036, 32_h1=0.3539, 32_l2=0.2025
+[0] time=6.20, avg_loss=25.4961, train_err=0.5099, 16_h1=0.3186, 16_l2=0.2500, 32_h1=0.4531, 32_l2=0.2964
+[3] time=5.95, avg_loss=8.9948, train_err=0.1799, 16_h1=0.2032, 16_l2=0.1458, 32_h1=0.3693, 32_l2=0.2129
+[6] time=6.03, avg_loss=6.5602, train_err=0.1312, 16_h1=0.1655, 16_l2=0.1150, 32_h1=0.3519, 32_l2=0.1968
+[9] time=5.87, avg_loss=5.7156, train_err=0.1143, 16_h1=0.1669, 16_l2=0.1154, 32_h1=0.3417, 32_l2=0.1899
+[12] time=5.83, avg_loss=4.1077, train_err=0.0822, 16_h1=0.1581, 16_l2=0.1038, 32_h1=0.3549, 32_l2=0.1931
+[15] time=5.86, avg_loss=3.5906, train_err=0.0718, 16_h1=0.1598, 16_l2=0.1103, 32_h1=0.3592, 32_l2=0.2076
+[18] time=5.88, avg_loss=2.6136, train_err=0.0523, 16_h1=0.1531, 16_l2=0.1036, 32_h1=0.3506, 32_l2=0.1989
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -409,7 +407,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 38.589 seconds)</p>
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 1.874 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/f9c1e50d48828a746410d5400feb61f7/plot_UNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_UNO_darcy.py</span></code></a></p>
