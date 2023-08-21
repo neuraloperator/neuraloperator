@@ -196,8 +196,6 @@ class FNOGNO(nn.Module):
             out_p_embed = out_p #.reshape((n_out, -1))
         
         #(n_1*n_2*..., fno_hidden_channels)
-        #latent_embed = latent_embed.reshape(self.fno.hidden_channels, -1).t()
-        #latent_embed = latent_embed.permute(1, 2, 3, 0).reshape(-1, self.fno.hidden_channels)
         latent_embed = latent_embed.permute(*self.in_coord_dim_reverse_order, 0).reshape(-1, self.fno.hidden_channels)
 
         #(n_out, fno_hidden_channels)
