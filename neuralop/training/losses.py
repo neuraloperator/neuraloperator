@@ -278,8 +278,7 @@ class H1Loss(object):
 
 
 class DissipativeLoss(object):
-    def __init__(self, model, data_loss, diss_y_rule, loss_weight: float, diss_radii: tuple, out_dim: int, domain_shape: tuple):
-        self.model = model
+    def __init__(self, data_loss, diss_y_rule, loss_weight: float, diss_radii: tuple, out_dim: int, domain_shape: tuple):
         self.data_loss = data_loss
         self.reduce_dims = data_loss.reduce_dims
         self.reductions = data_loss.reductions
