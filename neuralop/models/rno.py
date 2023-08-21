@@ -15,8 +15,8 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 
-from spectral_convolution import FactorizedSpectralConv1d, FactorizedSpectralConv2d, FactorizedSpectralConv3d
-from padding import DomainPadding
+from ..layers.spectral_convolution import SpectralConv
+from ..layers.padding import DomainPadding
 
 torch.manual_seed(0)
 np.random.seed(0)
@@ -31,23 +31,15 @@ class FourierLayer(nn.Module):
 
         self.width = width
 
-        if len(n_modes) == 1:
-            spec_conv = FactorizedSpectralConv1d
-        elif len(n_modes) == 2:
-            spec_conv = FactorizedSpectralConv2d
-        elif len(n_modes) == 3:
-            spec_conv = FactorizedSpectralConv3d
-        else:
-            raise NotImplementedError
-
-        self.conv = spec_conv(width, width, n_modes, n_layers=1, fft_norm=fft_norm, factorization=factorization, separable=separable)
+        self.conv = SpectralConv(width, width, n_modes, n_layers=1, fft_norm=fft_norm, factorization=factorization, separable=separable)
         self.w = nn.Conv1d(self.width, self.width, 1)
 
     def forward(self, x):
-        batch_size, dim, dom_size1, dom_size2 = x.shape
+        batch_size, dim = x.shape[:2]
+        dom_sizes = x.shape[2:]
         
         x1 = self.conv(x)
-        x2 = self.w(x.reshape((batch_size, dim, dom_size1 * dom_size2))).view(batch_size, self.width, dom_size1, dom_size2)
+        x2 = self.w(x.reshape((batch_size, dim, -1))).view(batch_size, self.width, *dom_sizes)
 
         return x1 + x2
 
@@ -223,7 +215,8 @@ class RNO(nn.Module):
         return torch.stack(output, dim=1)
 
     def get_grid(self, shape, device):
-        batch_size, steps = shape[:2]
+        shape = list(shape)
+        batchsize, steps = shape[:2]
         dim = shape[-1]
         dom_sizes = shape[2 : 2 + self.n_dims]
 
