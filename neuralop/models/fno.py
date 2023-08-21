@@ -1,12 +1,12 @@
-import torch.nn as nn
-import numpy as np
-import torch.nn.functional as F
 from functools import partialmethod
+
+import torch.nn as nn
+import torch.nn.functional as F
 
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.spherical_convolution import SphericalConv
 from ..layers.padding import DomainPadding
-from ..layers.fno_block import FNOBlocks, resample
+from ..layers.fno_block import FNOBlocks
 from ..layers.mlp import MLP
 
 
@@ -213,72 +213,12 @@ class FNO(nn.Module):
 class FNO1d(FNO):
     """1D Fourier Neural Operator
 
+    For the full list of parameters, see :class:`neuralop.models.FNO`.
+
     Parameters
     ----------
     modes_height : int
         number of Fourier modes to keep along the height
-    hidden_channels : int
-        width of the FNO (i.e. number of channels)
-    in_channels : int, optional
-        Number of input channels, by default 3
-    out_channels : int, optional
-        Number of output channels, by default 1
-    lifting_channels : int, optional
-        number of hidden channels of the lifting block of the FNO, by default 256
-    projection_channels : int, optional
-        number of hidden channels of the projection block of the FNO, by default 256
-    n_layers : int, optional
-        Number of Fourier Layers, by default 4
-    incremental_n_modes : None or int tuple, default is None
-        * If not None, this allows to incrementally increase the number of modes in Fourier domain 
-          during training. Has to verify n <= N for (n, m) in zip(incremental_n_modes, n_modes).
-        
-        * If None, all the n_modes are used.
-
-        This can be updated dynamically during training.
-    fno_block_precision : str {'full', 'half', 'mixed'}
-        if 'full', the FNO Block runs in full precision
-        if 'half', the FFT, contraction, and inverse FFT run in half precision
-        if 'mixed', the contraction and inverse FFT run in half precision
-    stabilizer : str {'tanh'} or None, optional
-        By default None, otherwise tanh is used before FFT in the FNO block 
-    use_mlp : bool, optional
-        Whether to use an MLP layer after each FNO block, by default False
-    mlp : dict, optional
-        Parameters of the MLP, by default None
-        {'expansion': float, 'dropout': float}
-    non_linearity : nn.Module, optional
-        Non-Linearity module to use, by default F.gelu
-    norm : F.module, optional
-        Normalization layer to use, by default None
-    preactivation : bool, default is False
-        if True, use resnet-style preactivation
-    skip : {'linear', 'identity', 'soft-gating'}, optional
-        Type of skip connection to use, by default 'soft-gating'
-    separable : bool, default is False
-        if True, use a depthwise separable spectral convolution
-    factorization : str or None, {'tucker', 'cp', 'tt'}
-        Tensor factorization of the parameters weight to use, by default None.
-        * If None, a dense tensor parametrizes the Spectral convolutions
-        * Otherwise, the specified tensor factorization is used.
-    joint_factorization : bool, optional
-        Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False
-    rank : float or rank, optional
-        Rank of the tensor factorization of the Fourier weights, by default 1.0
-    fixed_rank_modes : bool, optional
-        Modes to not factorize, by default False
-    implementation : {'factorized', 'reconstructed'}, optional, default is 'factorized'
-        If factorization is not None, forward mode to use::
-        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass
-        * `factorized` : the input is directly contracted with the factors of the decomposition
-    decomposition_kwargs : dict, optional, default is {}
-        Optionaly additional parameters to pass to the tensor decomposition
-    domain_padding : None or float, optional
-        If not None, percentage of padding to use, by default None
-    domain_padding_mode : {'symmetric', 'one-sided'}, optional
-        How to perform domain padding, by default 'one-sided'
-    fft_norm : str, optional
-        by default 'forward'
     """
     def __init__(
         self,
@@ -343,74 +283,14 @@ class FNO1d(FNO):
 class FNO2d(FNO):
     """2D Fourier Neural Operator
 
+    For the full list of parameters, see :class:`neuralop.models.FNO`.
+
     Parameters
     ----------
     n_modes_width : int
         number of modes to keep in Fourier Layer, along the width
     n_modes_height : int
         number of Fourier modes to keep along the height
-    hidden_channels : int
-        width of the FNO (i.e. number of channels)
-    in_channels : int, optional
-        Number of input channels, by default 3
-    out_channels : int, optional
-        Number of output channels, by default 1
-    lifting_channels : int, optional
-        number of hidden channels of the lifting block of the FNO, by default 256
-    projection_channels : int, optional
-        number of hidden channels of the projection block of the FNO, by default 256
-    n_layers : int, optional
-        Number of Fourier Layers, by default 4
-    incremental_n_modes : None or int tuple, default is None
-        * If not None, this allows to incrementally increase the number of modes in Fourier domain 
-          during training. Has to verify n <= N for (n, m) in zip(incremental_n_modes, n_modes).
-        
-        * If None, all the n_modes are used.
-
-        This can be updated dynamically during training.
-    fno_block_precision : str {'full', 'half', 'mixed'}
-        if 'full', the FNO Block runs in full precision
-        if 'half', the FFT, contraction, and inverse FFT run in half precision
-        if 'mixed', the contraction and inverse FFT run in half precision
-    stabilizer : str {'tanh'} or None, optional
-        By default None, otherwise tanh is used before FFT in the FNO block 
-    use_mlp : bool, optional
-        Whether to use an MLP layer after each FNO block, by default False
-    mlp : dict, optional
-        Parameters of the MLP, by default None
-        {'expansion': float, 'dropout': float}
-    non_linearity : nn.Module, optional
-        Non-Linearity module to use, by default F.gelu
-    norm : F.module, optional
-        Normalization layer to use, by default None
-    preactivation : bool, default is False
-        if True, use resnet-style preactivation
-    skip : {'linear', 'identity', 'soft-gating'}, optional
-        Type of skip connection to use, by default 'soft-gating'
-    separable : bool, default is False
-        if True, use a depthwise separable spectral convolution
-    factorization : str or None, {'tucker', 'cp', 'tt'}
-        Tensor factorization of the parameters weight to use, by default None.
-        * If None, a dense tensor parametrizes the Spectral convolutions
-        * Otherwise, the specified tensor factorization is used.
-    joint_factorization : bool, optional
-        Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False
-    rank : float or rank, optional
-        Rank of the tensor factorization of the Fourier weights, by default 1.0
-    fixed_rank_modes : bool, optional
-        Modes to not factorize, by default False
-    implementation : {'factorized', 'reconstructed'}, optional, default is 'factorized'
-        If factorization is not None, forward mode to use::
-        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass
-        * `factorized` : the input is directly contracted with the factors of the decomposition
-    decomposition_kwargs : dict, optional, default is {}
-        Optionaly additional parameters to pass to the tensor decomposition
-    domain_padding : None or float, optional
-        If not None, percentage of padding to use, by default None
-    domain_padding_mode : {'symmetric', 'one-sided'}, optional
-        How to perform domain padding, by default 'one-sided'
-    fft_norm : str, optional
-        by default 'forward'
     """
     def __init__(
         self,
@@ -478,6 +358,8 @@ class FNO2d(FNO):
 class FNO3d(FNO):
     """3D Fourier Neural Operator
 
+    For the full list of parameters, see :class:`neuralop.models.FNO`.
+
     Parameters
     ----------
     modes_width : int
@@ -486,68 +368,6 @@ class FNO3d(FNO):
         number of Fourier modes to keep along the height    
     modes_depth : int
         number of Fourier modes to keep along the depth
-    hidden_channels : int
-        width of the FNO (i.e. number of channels)
-    in_channels : int, optional
-        Number of input channels, by default 3
-    out_channels : int, optional
-        Number of output channels, by default 1
-    lifting_channels : int, optional
-        number of hidden channels of the lifting block of the FNO, by default 256
-    projection_channels : int, optional
-        number of hidden channels of the projection block of the FNO, by default 256
-    n_layers : int, optional
-        Number of Fourier Layers, by default 4
-    incremental_n_modes : None or int tuple, default is None
-        * If not None, this allows to incrementally increase the number of modes in Fourier domain 
-          during training. Has to verify n <= N for (n, m) in zip(incremental_n_modes, n_modes).
-        
-        * If None, all the n_modes are used.
-
-        This can be updated dynamically during training.
-    fno_block_precision : str {'full', 'half', 'mixed'}
-        if 'full', the FNO Block runs in full precision
-        if 'half', the FFT, contraction, and inverse FFT run in half precision
-        if 'mixed', the contraction and inverse FFT run in half precision
-    stabilizer : str {'tanh'} or None, optional
-        By default None, otherwise tanh is used before FFT in the FNO block 
-    use_mlp : bool, optional
-        Whether to use an MLP layer after each FNO block, by default False
-    mlp : dict, optional
-        Parameters of the MLP, by default None
-        {'expansion': float, 'dropout': float}
-    non_linearity : nn.Module, optional
-        Non-Linearity module to use, by default F.gelu
-    norm : F.module, optional
-        Normalization layer to use, by default None
-    preactivation : bool, default is False
-        if True, use resnet-style preactivation
-    skip : {'linear', 'identity', 'soft-gating'}, optional
-        Type of skip connection to use, by default 'soft-gating'
-    separable : bool, default is False
-        if True, use a depthwise separable spectral convolution
-    factorization : str or None, {'tucker', 'cp', 'tt'}
-        Tensor factorization of the parameters weight to use, by default None.
-        * If None, a dense tensor parametrizes the Spectral convolutions
-        * Otherwise, the specified tensor factorization is used.
-    joint_factorization : bool, optional
-        Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False
-    rank : float or rank, optional
-        Rank of the tensor factorization of the Fourier weights, by default 1.0
-    fixed_rank_modes : bool, optional
-        Modes to not factorize, by default False
-    implementation : {'factorized', 'reconstructed'}, optional, default is 'factorized'
-        If factorization is not None, forward mode to use::
-        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass
-        * `factorized` : the input is directly contracted with the factors of the decomposition
-    decomposition_kwargs : dict, optional, default is {}
-        Optionaly additional parameters to pass to the tensor decomposition
-    domain_padding : None or float, optional
-        If not None, percentage of padding to use, by default None
-    domain_padding_mode : {'symmetric', 'one-sided'}, optional
-        How to perform domain padding, by default 'one-sided'
-    fft_norm : str, optional
-        by default 'forward'
     """
     def __init__(self,                  
         n_modes_height,
