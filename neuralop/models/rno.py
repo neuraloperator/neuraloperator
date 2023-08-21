@@ -8,9 +8,6 @@ In particular, the RNO has an identical architecture to the finite-dimensional G
 with the exception that linear matrix-vector multiplications are replaced by linear 
 Fourier layers (see Li et al., 2021), and for regression problems, the output nonlinearity
 is replaced with a SELU activation.
-
-We call this model the 2D RNO, in the sense that it solves PDE trajectories and 
-takes the FFT in time only and in one space dimension.
 """
 
 import torch
@@ -23,45 +20,6 @@ from spectral_convolution import FactorizedSpectralConv2d
 torch.manual_seed(0)
 np.random.seed(0)
 
-
-def compl_mul2d(a, b):
-    # (batch, in_channel, x,y,t ), (in_channel, out_channel, x,y,t) -> (batch, out_channel, x,y,t)
-    return torch.einsum("bixy,ioxy->boxy", a, b)
-
-class SpectralConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, modes1, modes2, norm="ortho"):
-        super(SpectralConv2d, self).__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.modes1 = modes1 #Number of Fourier modes to multiply, at most floor(N/2) + 1
-        self.modes2 = modes2
-        self.norm = norm
-
-        self.scale = (1 / (in_channels * out_channels))
-        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
-        self.weights2 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
-
-    def forward(self, x):
-        size1 = x.shape[-2]
-        size2 = x.shape[-1]
-
-        batchsize = x.shape[0]
-        #Compute Fourier coeffcients up to factor of e^(- something constant)
-        x_ft = torch.fft.rfftn(x, dim=[2,3], norm=self.norm)
-
-        # Multiply relevant Fourier modes
-        out_ft = torch.zeros(batchsize, self.out_channels, size1, size2//2 + 1, device=x.device, dtype=torch.cfloat)
-        out_ft[:, :, :self.modes1, :self.modes2] = \
-            compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
-        out_ft[:, :, -self.modes1:, :self.modes2] = \
-            compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
-
-
-        #Return to physical space
-        x = torch.fft.irfftn(out_ft, s=(size1, size2), dim=[2,3], norm=self.norm)
-        return x
-
-
 class FourierLayer2d(nn.Module):
     def __init__(self, modes1, modes2, width):
         super(FourierLayer2d, self).__init__()
@@ -69,7 +27,7 @@ class FourierLayer2d(nn.Module):
         self.modes1 = modes1
         self.modes2 = modes2
         self.width = width
-        
+
         self.conv = FactorizedSpectralConv2d(self.width, self.width, (self.modes1, self.modes2), n_layers=1, fft_norm='ortho', factorization=None, separable=False)
         self.w = nn.Conv1d(self.width, self.width, 1)
 
@@ -146,11 +104,12 @@ class RNO_2D(nn.Module):
             `pad_dim` can be '1', '2', or 'both', and this decides which of the two space dimensions to pad
             `pad_amount` is a tuple that determines how much to pad each dimension by, if `pad_dim`
             specifies that dimension should be padded.
+                `pad_amount` should be given as the fraction of the input resolution
         """
         super(RNO_2D, self).__init__()
 
         self.modes1 = modes1
-        self.modes1 = modes2
+        self.modes2 = modes2
         self.num_layers = num_layers
         self.width = width
         self.pad_amount = pad_amount # pads dom_size1 dimension
@@ -174,6 +133,10 @@ class RNO_2D(nn.Module):
     def forward(self, x, init_hidden_states=None): # h must be padded if using padding
         batch_size, timesteps, dom_size1, dom_size2, dim = x.shape
 
+        if self.pad_amount:
+            dom_sizes = x.shape[2 : 2 + len(self.pad_amount)]
+            pad_size = [round(self.pad_amount[i] * dom_sizes[i]) for i in range(len(self.pad_amount))]
+
         if init_hidden_states is None:
             init_hidden_states = [None] * self.num_layers
 
@@ -187,15 +150,15 @@ class RNO_2D(nn.Module):
         if self.pad_amount: # pad the domain if input is non-periodic
             if self.pad_dim == '1':
                 x = x.permute(0, 1, 2, 4, 3) # new shape: (batch, timesteps, dim, dom_size2, dom_size1)
-                x = F.pad(x, [0,self.pad_amount[0]])
+                x = F.pad(x, [0,pad_size[0]])
                 x = x.permute(0, 1, 2, 4, 3)
             elif self.pad_dim == '2':
-                x = F.pad(x, [0,self.pad_amount[1]])
+                x = F.pad(x, [0,pad_size[1]])
             elif self.pad_dim == 'both':
                 x = x.permute(0, 1, 2, 4, 3) # new shape: (batch, timesteps, dim, dom_size2, dom_size1)
-                x = F.pad(x, [0,self.pad_amount[0]])
+                x = F.pad(x, [0,pad_size[0]])
                 x = x.permute(0, 1, 2, 4, 3)
-                x = F.pad(x, [0,self.pad_amount[1]])
+                x = F.pad(x, [0,pad_size[1]])
 
         final_hidden_states = []
         for i in range(self.num_layers):
@@ -211,12 +174,12 @@ class RNO_2D(nn.Module):
 
         if self.pad_amount: # remove padding
             if self.pad_dim == '1':
-                h = h[:, :, :-self.pad_amount[0]]
+                h = h[:, :, :-pad_size[0]]
             elif self.pad_dim == '2':
-                h = h[..., :-self.pad_amount[1]]
+                h = h[..., :-pad_size[1]]
             elif self.pad_dim == 'both':
-                h = h[:, :, :-self.pad_amount[0]]
-                h = h[..., :-self.pad_amount[1]]
+                h = h[:, :, :-pad_size[0]]
+                h = h[..., :-pad_size[1]]
 
         h = h.permute(0, 2, 3, 1)
         pred = self.projection(h)
