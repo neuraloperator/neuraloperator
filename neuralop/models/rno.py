@@ -69,12 +69,8 @@ class FourierLayer2d(nn.Module):
         self.modes1 = modes1
         self.modes2 = modes2
         self.width = width
-
-        #self.conv = SpectralConv2d(self.width, self.width, self.modes1 // 2, self.modes2 // 2)
-        #self.conv = FactorizedSpectralConv2d(self.width, self.width, (self.modes1, self.modes2), n_layers=1, fft_norm='ortho', implementation='factorized')
-        #self.conv = FactorizedSpectralConv2d(self.width, self.width, (self.modes1, self.modes2), n_layers=1, fft_norm='forward', implementation='factorized')
-        #self.conv = FactorizedSpectralConv2d(self.width, self.width, (self.modes1, self.modes2), n_layers=1, fft_norm='forward', factorization=None)
-        self.conv = FactorizedSpectralConv2d(self.width, self.width, (self.modes1, self.modes2), n_layers=1, fft_norm='forward', factorization=None, separable=False)
+        
+        self.conv = FactorizedSpectralConv2d(self.width, self.width, (self.modes1, self.modes2), n_layers=1, fft_norm='ortho', factorization=None, separable=False)
         self.w = nn.Conv1d(self.width, self.width, 1)
 
     def forward(self, x):
