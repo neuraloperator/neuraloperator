@@ -198,7 +198,7 @@ class RNO(nn.Module):
 
         h = h.unsqueeze(1) # add dim for padding compatibility
         #print(self.domain_padding._unpad_indices[f"{list(h.shape[2:])}"])
-        h = self.domain_padding.unpad(h)
+        h = self.domain_padding.unpad(h) ### ERRORS
         h = h[:,0] # remove extraneous dim
         #print(h.shape)
 
