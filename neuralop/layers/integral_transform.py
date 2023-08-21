@@ -66,7 +66,9 @@ class IntegralTransform(nn.Module):
            self.transform_type != 'nonlinear_kernelonly' and \
            self.transform_type != 'nonlinear':
             
-            raise ValueError(f'Got {transform_type=} but expected one of [linear_kernelonly, linear, nonlinear_kernelonly, nonlinear]')
+            raise ValueError(
+                f'Got transform_type={transform_type} but expected one of '
+                '[linear_kernelonly, linear, nonlinear_kernelonly, nonlinear]')
 
         if mlp is None:
             self.mlp = MLPLinear(layers=mlp_layers,

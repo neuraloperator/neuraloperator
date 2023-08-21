@@ -30,7 +30,12 @@ class MultigridPatching2D(nn.Module):
         self.stitching = stitching
         
         if levels > 0:
-            print(f'MGPatching({self.n_patches=}, {self.padding_fraction=}, {self.levels=}, {use_distributed=}, {stitching=})')
+            print('MGPatching('
+                  f'n_patches={self.n_patches}, '
+                  f'padding_fraction={self.padding_fraction}, '
+                  f'levels={self.levels}, '
+                  f'use_distributed={use_distributed}, '
+                  f'stitching={stitching})')
         
         #If distributed patches are stiched, re-scale gradients to revert DDP averaging 
         if self.use_distributed and self.stitching:

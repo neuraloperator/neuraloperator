@@ -107,12 +107,13 @@ class Trainer:
                 x, y = sample['x'], sample['y']
                 
                 if epoch == 0 and idx == 0 and self.verbose and is_logger:
-                    print(f'Training on raw inputs of size {x.shape=}, {y.shape=}')
+                    print(f'Training on raw inputs of size '
+                          f'x.shape={x.shape}, y.shape={y.shape}')
 
                 x, y = self.patcher.patch(x, y)
 
                 if epoch == 0 and idx == 0 and self.verbose and is_logger:
-                    print(f'.. patched inputs of size {x.shape=}, {y.shape=}')
+                    print(f'.. patched inputs of size x.shape={x.shape}, y.shape={y.shape}')
 
                 x = x.to(self.device)
                 y = y.to(self.device)
@@ -127,15 +128,16 @@ class Trainer:
                 else:
                     out = model(x)
                 if epoch == 0 and idx == 0 and self.verbose and is_logger:
-                    print(f'Raw outputs of size {out.shape=}')
+                    print(f'Raw outputs of size out.shape={out.shape}')
 
                 out, y = self.patcher.unpatch(out, y)
-                #Output encoding only works if output is stiched
+                # Output encoding only works if output is stitched
                 if output_encoder is not None and self.mg_patching_stitching:
                     out = output_encoder.decode(out)
                     y = output_encoder.decode(y)
                 if epoch == 0 and idx == 0 and self.verbose and is_logger:
-                    print(f'.. Processed (unpatched) outputs of size {out.shape=}')
+                    print('.. Processed (unpatched) outputs of size'
+                          f' out.shape={out.shape}')
 
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
