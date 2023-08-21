@@ -1,4 +1,4 @@
-wandb 
+wandb
 ruamel.yaml
 configmypy
 tensorly

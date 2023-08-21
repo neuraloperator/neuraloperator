@@ -33,7 +33,8 @@ Just clone the repository and install locally (in editable mode so changes in th
   git clone https://github.com/NeuralOperator/neuraloperator
   cd neuraloperator
   pip install -e .
-  
+  pip install -r requirements.txt
+
 You can also just pip install the library:
 
 
@@ -65,7 +66,7 @@ by simply using a Tucker Tensorized FNO with just a few parameters:
                    in_channels=3, 
                    out_channels=1,
                    factorization='tucker',
-                   implementation='factorized'
+                   implementation='factorized',
                    rank=0.05)
 
 This will use a Tucker factorization of the weights. The forward pass
@@ -78,10 +79,40 @@ Checkout the `documentation <https://neuraloperator.github.io/neuraloperator/dev
 Using with weights and biases
 -----------------------------
 
-Create a file in `neuraloperator/config` called `wandb_api_key.txt` and paste your Weights and Biases API key there.
+Create a file in ``neuraloperator/config`` called ``wandb_api_key.txt`` and paste your Weights and Biases API key there.
 You can configure the project you want to use and your username in the main yaml configuration files.
 
+Contributing code
+-----------------
 
+All contributions are welcome! So if you spot a bug or even a typo or mistake in
+the documentation, please report it, and even better, open a Pull-Request on 
+`GitHub <https://github.com/neuraloperator/neuraloperator>`_. Before you submit
+your changes, you should make sure your code adheres to our style-guide. The
+easiest way to do this is with ``black``:
+
+.. code::
+
+   pip install black
+   black .
+
+Running the tests
+=================
+
+Testing and documentation are an essential part of this package and all
+functions come with uni-tests and documentation. The tests are ran using the
+pytest package. First install ``pytest``:
+
+.. code::
+
+    pip install pytest
+    
+Then to run the test, simply run, in the terminal:
+
+.. code::
+
+    pytest -v neuralop
+    
 Citing
 ------
 

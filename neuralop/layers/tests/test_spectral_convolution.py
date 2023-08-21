@@ -1,14 +1,14 @@
 import pytest
 import torch
 from tltorch import FactorizedTensor
-from ..spectral_convolution import (FactorizedSpectralConv3d, FactorizedSpectralConv2d,
-                                       FactorizedSpectralConv1d, FactorizedSpectralConv)
+from ..spectral_convolution import (SpectralConv3d, SpectralConv2d,
+                                       SpectralConv1d, SpectralConv)
 
 
 @pytest.mark.parametrize('factorization', ['ComplexDense', 'ComplexCP', 'ComplexTucker', 'ComplexTT'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
-def test_FactorizedSpectralConv(factorization, implementation):
-    """Test for FactorizedSpectralConv of any order
+def test_SpectralConv(factorization, implementation):
+    """Test for SpectralConv of any order
     
     Compares Factorized and Dense convolution output
     Verifies that a dense conv and factorized conv with the same weight produce the same output
@@ -22,10 +22,10 @@ def test_FactorizedSpectralConv(factorization, implementation):
 
     # Test for Conv1D to Conv4D
     for dim in [1, 2, 3, 4]:
-        conv = FactorizedSpectralConv(
+        conv = SpectralConv(
             3, 3, modes[:dim], n_layers=1, bias=False, implementation=implementation, factorization=factorization)
 
-        conv_dense = FactorizedSpectralConv(
+        conv_dense = SpectralConv(
             3, 3, modes[:dim], n_layers=1, bias=False, implementation='reconstructed', factorization=None)
 
         for i in range(2**(dim-1)):
@@ -45,7 +45,7 @@ def test_FactorizedSpectralConv(factorization, implementation):
         assert res_shape == res.shape
 
         # Downsample outputs
-        block = FactorizedSpectralConv(
+        block = SpectralConv(
             3, 4, modes[:dim], n_layers=1, output_scaling_factor=0.5)
     
         x = torch.randn(2, 3, *(12, )*dim)
@@ -53,7 +53,7 @@ def test_FactorizedSpectralConv(factorization, implementation):
         assert(list(res.shape[2:]) == [12//2]*dim)
         
         # Upsample outputs
-        block = FactorizedSpectralConv(
+        block = SpectralConv(
             3, 4, modes[:dim], n_layers=1, output_scaling_factor=2)
     
         x = torch.randn(2, 3, *(12, )*dim)
@@ -63,14 +63,14 @@ def test_FactorizedSpectralConv(factorization, implementation):
 
 
 
-def test_FactorizedSpectralConv_output_scaling_factor():
-    """Test FactorizedSpectralConv with upsampled or downsampled outputs
+def test_SpectralConv_output_scaling_factor():
+    """Test SpectralConv with upsampled or downsampled outputs
     """
     modes = (4, 4, 4, 4)
     size = [6]*4
     for dim in [1, 2, 3, 4]:
         # Downsample outputs
-        conv = FactorizedSpectralConv(
+        conv = SpectralConv(
             3, 3, modes[:dim], n_layers=1, output_scaling_factor=0.5)
     
         x = torch.randn(2, 3, *size[:dim])
@@ -78,7 +78,7 @@ def test_FactorizedSpectralConv_output_scaling_factor():
         assert(list(res.shape[2:]) == [m//2 for m in size[:dim]])
         
         # Upsample outputs
-        conv = FactorizedSpectralConv(
+        conv = SpectralConv(
             3, 3, modes[:dim], n_layers=1, output_scaling_factor=2)
     
         x = torch.randn(2, 3, *size[:dim])
@@ -88,18 +88,18 @@ def test_FactorizedSpectralConv_output_scaling_factor():
 
 @pytest.mark.parametrize('factorization', ['ComplexCP', 'ComplexTucker'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
-def test_FactorizedSpectralConv3D(factorization, implementation):
-    """Compare generic FactorizedSPectralConv with hand written FactorizedSpectralConv2D
+def test_SpectralConv3D(factorization, implementation):
+    """Compare generic SpectralConv with hand written SpectralConv2D
     
     Verifies that a dense conv and factorized conv with the same weight produce the same output
     Note that this implies the order in which the conv is done in the manual implementation matches the automatic one, 
     take with a grain of salt
     """
-    conv = FactorizedSpectralConv(
+    conv = SpectralConv(
         3, 6, (4, 5, 2), n_layers=1, bias=False, implementation=implementation, factorization=factorization
     )
 
-    conv_dense = FactorizedSpectralConv3d(
+    conv_dense = SpectralConv3d(
         3, 6, (4, 5, 2), n_layers=1, bias=False, implementation='reconstructed', factorization=None
     )
     for i, w in enumerate(conv.weight):
@@ -116,18 +116,18 @@ def test_FactorizedSpectralConv3D(factorization, implementation):
 
 @pytest.mark.parametrize('factorization', ['ComplexCP', 'ComplexTucker'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
-def test_FactorizedSpectralConv2D(factorization, implementation):
-    """Compare generic FactorizedSPectralConv with hand written FactorizedSpectralConv2D
+def test_SpectralConv2D(factorization, implementation):
+    """Compare generic SpectralConv with hand written SpectralConv2D
     
     Verifies that a dense conv and factorized conv with the same weight produce the same output
     Note that this implies the order in which the conv is done in the manual implementation matches the automatic one, 
     take with a grain of salt
     """
-    conv = FactorizedSpectralConv(
+    conv = SpectralConv(
         10, 11, (4, 5), n_layers=1, bias=False, implementation=implementation, factorization=factorization
     )
 
-    conv_dense = FactorizedSpectralConv2d(
+    conv_dense = SpectralConv2d(
         10, 11, (4, 5), n_layers=1, bias=False, implementation='reconstructed', factorization=None
     )
     for i, w in enumerate(conv.weight):
@@ -144,16 +144,16 @@ def test_FactorizedSpectralConv2D(factorization, implementation):
 
 @pytest.mark.parametrize('factorization', ['ComplexCP', 'ComplexTucker'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
-def test_FactorizedSpectralConv1D(factorization, implementation):
-    """Test for FactorizedSpectralConv1D
+def test_SpectralConv1D(factorization, implementation):
+    """Test for SpectralConv1D
     
     Verifies that a dense conv and factorized conv with the same weight produce the same output
     """
-    conv = FactorizedSpectralConv(
+    conv = SpectralConv(
         10, 11, (5,), n_layers=1, bias=False, implementation=implementation, factorization=factorization
     )
 
-    conv_dense = FactorizedSpectralConv1d(
+    conv_dense = SpectralConv1d(
         10, 11, (5,), n_layers=1, bias=False, implementation='reconstructed', factorization=None
     )
     for i, w in enumerate(conv.weight):
