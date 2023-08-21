@@ -13,6 +13,9 @@ from neuralop.utils import UnitGaussianNormalizer
 
 
 class CFDDataset(Dataset):
+    """
+    CFD dataset from http://www.nobuyuki-umetani.com/publication/mlcfd_data.zip
+    """
     def __init__(
         self,
         data_dir,
