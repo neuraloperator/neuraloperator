@@ -172,7 +172,8 @@ class RNO(nn.Module):
 
         x = torch.movedim(x, x_size - 1, 2) # new shape: (batch, timesteps, dim, dom_size1, dom_size2, ..., dom_sizen)
 
-        x = self.domain_padding.pad(x)
+        if self.domain_padding:
+            x = self.domain_padding.pad(x)
 
         final_hidden_states = []
         for i in range(self.num_layers):
@@ -188,9 +189,10 @@ class RNO(nn.Module):
                 final_hidden_states.append(x)
         h = final_hidden_states[-1]
 
-        h = h.unsqueeze(1) # add dim for padding compatibility
-        h = self.domain_padding.unpad(h)
-        h = h[:,0] # remove extraneous dim
+        if self.domain_padding:
+            h = h.unsqueeze(1) # add dim for padding compatibility
+            h = self.domain_padding.unpad(h)
+            h = h[:,0] # remove extraneous dim
 
         h = torch.movedim(h, 1, x_size - 2)
 
@@ -219,7 +221,9 @@ class RNO(nn.Module):
         for i in range(len(dom_sizes)):
             size = dom_sizes[i]
             grid = torch.tensor(np.linspace(0, 1, size), dtype=torch.float)
-            grid = grid.reshape([1 for j in range(2 + i)] + [size] + [1 for j in range(len(shape) - 3 - i)]).repeat([batchsize, steps] + shape[2 : 2 + i] + [1] + shape[3 + i : -1] + [1])
+            grid_reshape_shape = [1 for j in range(2 + i)] + [size] + [1 for j in range(len(shape) - 3 - i)]
+            grid_repeat_shape = [batchsize, steps] + shape[2 : 2 + i] + [1] + shape[3 + i : -1] + [1]
+            grid = grid.reshape(grid_reshape_shape).repeat(grid_repeat_shape)
             grids.append(grid)
 
         return torch.cat(grids, dim=-1).to(device)
