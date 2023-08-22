@@ -189,15 +189,10 @@ class RNO(nn.Module):
         h = final_hidden_states[-1]
 
         h = h.unsqueeze(1) # add dim for padding compatibility
-        #print(self.domain_padding._unpad_indices[f"{list(h.shape[2:])}"])
-        h = self.domain_padding.unpad(h) ### ERRORS
+        h = self.domain_padding.unpad(h)
         h = h[:,0] # remove extraneous dim
-        #print(h.shape)
 
         h = torch.movedim(h, 1, x_size - 2)
-        #print(h.shape)
-
-        #assert False
 
         pred = self.projection(h)
 
