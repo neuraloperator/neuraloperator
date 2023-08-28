@@ -193,6 +193,8 @@ class SpectralConv(nn.Module):
         Number of output channels
     n_modes : int tuple
         total number of modes to keep in Fourier Layer, along each dim
+    spatial_domain : string {"real", "complex"}
+        whether data takes on real or complex values in the spatial domain, defaults to "real"
     separable : bool, default is True
     init_std : float or 'auto', default is 'auto'
         std to use for the init
@@ -239,6 +241,7 @@ class SpectralConv(nn.Module):
         in_channels,
         out_channels,
         n_modes,
+        spatial_domain="real",
         incremental_n_modes=None,
         bias=True,
         n_layers=1,
@@ -326,10 +329,21 @@ class SpectralConv(nn.Module):
             weight_shape = (in_channels, *half_total_n_modes)
         else:
             weight_shape = (in_channels, out_channels, *half_total_n_modes)
+        
         self.separable = separable
 
         self.n_weights_per_layer = 2 ** (self.order - 1)
+        
+        # If data takes on complex values in the spatial domain, 
+        #   the n-dim FFT is not skew-symmetric, meaning we can't 
+        #   throw out the last half of the FFT matrix and must 
+        #   double the number of weight tensors to cover 
+        #   the other half of the matrix. 
+        if spatial_domain == "complex":
+            self.n_weights_per_layer *= 2
+
         tensor_kwargs = decomposition_kwargs if decomposition_kwargs is not None else {}
+
         if joint_factorization:
             self.weight = FactorizedTensor.new(
                 (self.n_weights_per_layer * n_layers, *weight_shape),
@@ -409,15 +423,22 @@ class SpectralConv(nn.Module):
             input activation of size (batch_size, channels, d1, ..., dN)
         indices : int, default is 0
             if joint_factorization, index of the layers for n_layers > 1
-
         Returns
         -------
         tensorized_spectral_conv(x)
         """
+
+        cplx = x.is_complex()
+
         batchsize, channels, *mode_sizes = x.shape
 
         fft_size = list(mode_sizes)
-        fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient
+
+        # If the data is real-valued, its FFT will be skew-symmetric
+        # along one axis, so we only need to take the first half (plus one)
+        # of the last dimension of the transformed data
+        if not cplx:
+            fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient
 
         # Compute Fourier coeffcients
         fft_dims = list(range(-self.order, 0))
@@ -425,7 +446,12 @@ class SpectralConv(nn.Module):
         if self.fno_block_precision == "half":
             x = x.half()
 
-        x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
+        # If x takes complex values, compute the full N-dim FFT
+        if cplx:
+            x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
+        else:
+            # Otherwise compute the real-valued fft.
+            x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
 
         if self.fno_block_precision == "mixed":
             # if 'mixed', the above fft runs in full precision, but the
@@ -445,14 +471,20 @@ class SpectralConv(nn.Module):
                 dtype=torch.cfloat,
             )
 
-        # We contract all corners of the Fourier coefs
+        # If x is real-valued, we contract all corners of the Fourier coefs
         # Except for the last mode: there, we take all coefs as redundant modes
         # were already removed
-        mode_indexing = [((None, m), (-m, None)) for m in self.half_n_modes[:-1]] + [
-            ((None, self.half_n_modes[-1]),)
-        ]
+        # Otherwise we contract all corners of the Fourier coefs because information is not redundant.
+
+        if cplx:
+            mode_indexing = [((None, m), (-m, None)) for m in self.half_n_modes]
+        else:
+            mode_indexing = [
+                ((None, m), (-m, None)) for m in self.half_n_modes[:-1]
+            ] + [((None, self.half_n_modes[-1]),)]
 
         for i, boundaries in enumerate(itertools.product(*mode_indexing)):
+
             # Keep all modes for first 2 modes (batch-size and channels)
             idx_tuple = [slice(None), slice(None)] + [slice(*b) for b in boundaries]
 

@@ -7,6 +7,7 @@ from .normalization_layers import AdaIN
 from .resample import resample
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
+from .complex_utils import ComplexValued, CGELU, ctanh
 
 
 class FNOBlocks(nn.Module):
@@ -15,6 +16,7 @@ class FNOBlocks(nn.Module):
         in_channels,
         out_channels,
         n_modes,
+        spatial_domain="real",
         output_scaling_factor=None,
         n_layers=1,
         incremental_n_modes=None,
@@ -45,6 +47,7 @@ class FNOBlocks(nn.Module):
             n_modes = [n_modes]
         self.n_modes = n_modes
         self.n_dim = len(n_modes)
+        self.spatial_domain = spatial_domain
 
         if output_scaling_factor is not None:
             if isinstance(output_scaling_factor, (float, int)):
@@ -55,15 +58,20 @@ class FNOBlocks(nn.Module):
                 output_scaling_factor = [
                     [s] * len(self.n_modes) for s in output_scaling_factor
                 ]
-        self.output_scaling_factor = output_scaling_factor
 
+        self.output_scaling_factor = output_scaling_factor
         self._incremental_n_modes = incremental_n_modes
         self.fno_block_preicison = fno_block_precision
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.n_layers = n_layers
         self.joint_factorization = joint_factorization
-        self.non_linearity = non_linearity
+
+        # Complex-valued nonlinearity
+        if spatial_domain == "real":
+            self.non_linearity = non_linearity
+        elif spatial_domain == "complex":
+            self.non_linearity = CGELU
         self.stabilizer = stabilizer
         self.rank = rank
         self.factorization = factorization
@@ -84,6 +92,7 @@ class FNOBlocks(nn.Module):
             self.in_channels,
             self.out_channels,
             self.n_modes,
+            spatial_domain=spatial_domain,
             output_scaling_factor=output_scaling_factor,
             incremental_n_modes=incremental_n_modes,
             fno_block_precision=fno_block_precision,
@@ -98,38 +107,78 @@ class FNOBlocks(nn.Module):
             n_layers=n_layers,
         )
 
+        # real-valued FNO skip connections
         self.fno_skips = nn.ModuleList(
             [
                 skip_connection(
-                    self.in_channels, self.out_channels, skip_type=fno_skip, n_dim=self.n_dim
+                    self.in_channels,
+                    self.out_channels,
+                    skip_type=fno_skip,
+                    n_dim=self.n_dim,
                 )
                 for _ in range(n_layers)
             ]
         )
 
+        if self.spatial_domain == "complex":
+            self.fno_skips = nn.ModuleList(
+                [ComplexValued(x) for x in self.fno_skips]
+            )
+
         if use_mlp:
-            self.mlp = nn.ModuleList(
-                [
-                    MLP(
-                        in_channels=self.out_channels,
-                        hidden_channels=round(self.out_channels * mlp_expansion),
-                        dropout=mlp_dropout,
-                        n_dim=self.n_dim,
-                    )
-                    for _ in range(n_layers)
-                ]
-            )
-            self.mlp_skips = nn.ModuleList(
-                [
-                    skip_connection(
-                        self.in_channels,
-                        self.out_channels,
-                        skip_type=mlp_skip,
-                        n_dim=self.n_dim,
-                    )
-                    for _ in range(n_layers)
-                ]
-            )
+            if self.spatial_domain == "real":
+                self.mlp = nn.ModuleList(
+                    [
+                        MLP(
+                            in_channels=self.out_channels,
+                            hidden_channels=round(self.out_channels * mlp_expansion),
+                            dropout=mlp_dropout,
+                            n_dim=self.n_dim,
+                        )
+                        for _ in range(n_layers)
+                    ]
+                )
+                self.mlp_skips = nn.ModuleList(
+                    [
+                        ComplexValued(
+                            skip_connection(
+                                self.in_channels,
+                                self.out_channels,
+                                skip_type=mlp_skip,
+                                n_dim=self.n_dim,
+                            )
+                        )
+                        for _ in range(n_layers)
+                    ]
+                )
+
+            elif self.spatial_domain == "complex":
+                self.mlp = nn.ModuleList(
+                    [
+                        ComplexValued(
+                            MLP(
+                                in_channels=self.out_channels,
+                                hidden_channels=round(
+                                    self.out_channels * mlp_expansion
+                                ),
+                                dropout=mlp_dropout,
+                                n_dim=self.n_dim,
+                            )
+                        )
+                        for _ in range(n_layers)
+                    ]
+                )
+                self.mlp_skips = nn.ModuleList(
+                    [
+                        skip_connection(
+                            self.in_channels,
+                            self.out_channels,
+                            skip_type=mlp_skip,
+                            n_dim=self.n_dim,
+                        )
+                        for _ in range(n_layers)
+                    ]
+                )
         else:
             self.mlp = None
 
@@ -190,6 +239,8 @@ class FNOBlocks(nn.Module):
                 norm.set_embedding(embedding)
 
     def forward(self, x, index=0, output_shape=None):
+        # Handle case of complex-valued x
+        cplx = x.is_complex()
 
         if self.preactivation:
             x = self.non_linearity(x)
@@ -222,7 +273,10 @@ class FNOBlocks(nn.Module):
                 )
 
         if self.stabilizer == "tanh":
-            x = torch.tanh(x)
+            if cplx:
+                x = ctanh(x)
+            else:
+                x = torch.tanh(x)
 
         x_fno = self.convs(x, index, output_shape=output_shape)
 
