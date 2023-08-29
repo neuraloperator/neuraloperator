@@ -138,6 +138,7 @@ class FNOBlocks(nn.Module):
                         for _ in range(n_layers)
                     ]
                 )
+            else:
                 self.mlp_skips = nn.ModuleList(
                     [
                         ComplexValued(
