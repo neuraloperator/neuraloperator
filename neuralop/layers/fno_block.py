@@ -126,58 +126,40 @@ class FNOBlocks(nn.Module):
             )
 
         if use_mlp:
-            if self.spatial_domain == "real":
-                self.mlp = nn.ModuleList(
-                    [
-                        MLP(
-                            in_channels=self.out_channels,
-                            hidden_channels=round(self.out_channels * mlp_expansion),
-                            dropout=mlp_dropout,
-                            n_dim=self.n_dim,
-                        )
-                        for _ in range(n_layers)
-                    ]
-                )
-            else:
-                self.mlp_skips = nn.ModuleList(
-                    [
-                        ComplexValued(
-                            skip_connection(
-                                self.in_channels,
-                                self.out_channels,
-                                skip_type=mlp_skip,
-                                n_dim=self.n_dim,
-                            )
-                        )
-                        for _ in range(n_layers)
-                    ]
-                )
-
-            elif self.spatial_domain == "complex":
-                self.mlp = nn.ModuleList(
-                    [
-                        ComplexValued(
-                            MLP(
-                                in_channels=self.out_channels,
-                                hidden_channels=round(
-                                    self.out_channels * mlp_expansion
-                                ),
-                                dropout=mlp_dropout,
-                                n_dim=self.n_dim,
-                            )
-                        )
-                        for _ in range(n_layers)
-                    ]
-                )
-                self.mlp_skips = nn.ModuleList(
-                    [
+            self.mlp = nn.ModuleList(
+                [
+                    MLP(
+                        in_channels=self.out_channels,
+                        hidden_channels=round(self.out_channels * mlp_expansion),
+                        dropout=mlp_dropout,
+                        n_dim=self.n_dim,
+                    )
+                    for _ in range(n_layers)
+                ]
+            )
+            self.mlp_skips = nn.ModuleList(
+                [
                         skip_connection(
                             self.in_channels,
                             self.out_channels,
                             skip_type=mlp_skip,
                             n_dim=self.n_dim,
-                        )
-                        for _ in range(n_layers)
+                    )
+                    for _ in range(n_layers)
+                ]
+            )
+
+            if self.spatial_domain == "complex":
+                self.mlp = nn.ModuleList(
+                    [
+                        ComplexValued(x)
+                        for x in self.mlp
+                    ]
+                )
+                self.mlp_skips = nn.ModuleList(
+                    [
+                        ComplexValued(x)
+                        for x in self.mlp_skips
                     ]
                 )
         else:
