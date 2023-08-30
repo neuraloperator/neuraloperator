@@ -236,13 +236,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7ff841d8ba30>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fc47cf6cf10>
 
     ### LOSSES ###
 
-     * Train: <neuralop.training.losses.H1Loss object at 0x7ff841d8b520>
+     * Train: <neuralop.training.losses.H1Loss object at 0x7fc47cf6c520>
 
-     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7ff841d8b520>, 'l2': <neuralop.training.losses.LpLoss object at 0x7ff841d8b040>}
+     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7fc47cf6c520>, 'l2': <neuralop.training.losses.LpLoss object at 0x7fc47cf6c5b0>}
 
 
 
@@ -310,13 +310,13 @@ Actually train the model on our small Darcy-Flow dataset
     .. patched inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torch.Size([32, 1, 16, 16])
     Raw outputs of size out.shape=torch.Size([32, 1, 16, 16])
     .. Processed (unpatched) outputs of size out.shape=torch.Size([32, 1, 16, 16])
-    [0] time=6.42, avg_loss=25.8853, train_err=0.5177, 16_h1=0.3554, 16_l2=0.2767, 32_h1=0.4633, 32_l2=0.3269
-    [3] time=5.85, avg_loss=9.2681, train_err=0.1854, 16_h1=0.1952, 16_l2=0.1449, 32_h1=0.3700, 32_l2=0.2165
-    [6] time=5.95, avg_loss=6.5408, train_err=0.1308, 16_h1=0.1743, 16_l2=0.1203, 32_h1=0.3452, 32_l2=0.1927
-    [9] time=5.97, avg_loss=5.1093, train_err=0.1022, 16_h1=0.1690, 16_l2=0.1200, 32_h1=0.3434, 32_l2=0.2111
-    [12] time=5.92, avg_loss=4.1396, train_err=0.0828, 16_h1=0.1695, 16_l2=0.1206, 32_h1=0.3649, 32_l2=0.2232
-    [15] time=6.07, avg_loss=3.4336, train_err=0.0687, 16_h1=0.1555, 16_l2=0.1043, 32_h1=0.3541, 32_l2=0.2017
-    [18] time=6.13, avg_loss=2.8619, train_err=0.0572, 16_h1=0.1599, 16_l2=0.1083, 32_h1=0.3542, 32_l2=0.1946
+    [0] time=7.81, avg_loss=24.7786, train_err=0.4956, 16_h1=0.2941, 16_l2=0.2281, 32_h1=0.4574, 32_l2=0.2963
+    [3] time=7.52, avg_loss=8.5293, train_err=0.1706, 16_h1=0.1891, 16_l2=0.1382, 32_h1=0.3419, 32_l2=0.2043
+    [6] time=7.49, avg_loss=6.4771, train_err=0.1295, 16_h1=0.1806, 16_l2=0.1297, 32_h1=0.3554, 32_l2=0.1888
+    [9] time=7.42, avg_loss=5.3833, train_err=0.1077, 16_h1=0.1625, 16_l2=0.1139, 32_h1=0.3598, 32_l2=0.1920
+    [12] time=7.35, avg_loss=4.6466, train_err=0.0929, 16_h1=0.1568, 16_l2=0.1075, 32_h1=0.3264, 32_l2=0.1706
+    [15] time=7.48, avg_loss=3.3855, train_err=0.0677, 16_h1=0.1529, 16_l2=0.1049, 32_h1=0.3330, 32_l2=0.1778
+    [18] time=7.51, avg_loss=2.5598, train_err=0.0512, 16_h1=0.1544, 16_l2=0.1057, 32_h1=0.3420, 32_l2=0.1805
 
 
 
@@ -390,7 +390,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (2 minutes 3.975 seconds)
+   **Total running time of the script:** (2 minutes 33.965 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_UNO_darcy.py:

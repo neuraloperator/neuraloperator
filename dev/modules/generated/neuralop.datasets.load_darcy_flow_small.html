@@ -169,7 +169,7 @@
 <dt class="sig sig-object py" id="neuralop.datasets.load_darcy_flow_small">
 <span class="sig-prename descclassname"><span class="pre">neuralop.datasets.</span></span><span class="sig-name descname"><span class="pre">load_darcy_flow_small</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_tests</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_batch_sizes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_resolutions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[16,</span> <span class="pre">32]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_boundaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[[0,</span> <span class="pre">1],</span> <span class="pre">[0,</span> <span class="pre">1]]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positional_encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'channel-wise'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/darcy.html#load_darcy_flow_small"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.datasets.load_darcy_flow_small" title="Permalink to this definition"></a></dt>
 <dd><p>Loads a small Darcy-Flow dataset</p>
-<p>Training contains 1000 samples in resolution 16x16. 
+<p>Training contains 1000 samples in resolution 16x16.
 Testing contains 100 samples at resolution 16x16 and
 50 samples at resolution 32x32.</p>
 <dl class="field-list simple">
@@ -185,7 +185,8 @@ Testing contains 100 samples at resolution 16x16 and
 <dt><strong>encode_input</strong><span class="classifier">bool, default is False</span></dt><dd></dd>
 <dt><strong>encode_output</strong><span class="classifier">bool, default is True</span></dt><dd></dd>
 <dt><strong>encoding</strong><span class="classifier">‘channel-wise’</span></dt><dd></dd>
-<dt><strong>channel_dim</strong><span class="classifier">int, default is 1</span></dt><dd><p>where to put the channel dimension, defaults size is batch, channel, height, width</p>
+<dt><strong>channel_dim</strong><span class="classifier">int, default is 1</span></dt><dd><p>where to put the channel dimension, defaults size is 1
+i.e: batch, channel, height, width</p>
 </dd>
 </dl>
 </dd>
