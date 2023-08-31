@@ -17,15 +17,15 @@ class FNOGNO(nn.Module):
 
         Parameters
         ----------
-        in_channels : _type_
+        in_channels : int
             number of input channels
-        out_channels : _type_
+        out_channels : int
             number of output channels
         projection_channels : int, optional
              number of hidden channels in embedding block of FNO. Defaults to 256.
         gno_coord_dim : int, optional
             dimension of GNO input data. Defaults to 3.
-        gno_coord_embed_dim : _type_, optional
+        gno_coord_embed_dim : int, optional
             dimension of embeddings of GNO coordinates. Defaults to None.
         gno_radius : float, optional
             radius parameter to construct graph. Defaults to 0.033.
@@ -67,7 +67,7 @@ class FNOGNO(nn.Module):
             By default None, otherwise tanh is used before FFT in the FNO block. 
         fno_norm : nn.Module, optional
             normalization layer to use. Defaults to None.
-        fno_ada_in_features : _type_, optional
+        fno_ada_in_features : int, optional
             if an adaptive mesh is used, number of channels of its positional embedding. Defaults to None.
         fno_ada_in_dim : int, optional
             dimensions of above FNO adaptive mesh. Defaults to 1.
