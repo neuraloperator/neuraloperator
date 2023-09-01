@@ -2,6 +2,7 @@ from typing import Union, Literal, Optional
 from pathlib import Path
 import torch
 from torch.utils.data import Dataset
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -23,7 +24,11 @@ class DrivAerDataset(Dataset):
         data_path: Union[str, Path],
         phase: Literal["train", "val", "test"] = "train",
         has_spoiler: bool = False,
-        variables: Optional[list] = ["time_avg_pressure", "time_avg_wall_shear_stress"],
+        variables: Optional[list] = [
+            "time_avg_pressure",
+            # "time_avg_velocity", # Some data is missing
+            "time_avg_wall_shear_stress",
+        ],
     ):
         if isinstance(data_path, str):
             data_path = Path(data_path)
@@ -77,7 +82,7 @@ class DrivAerDataset(Dataset):
 
         coordinate_list = []
         center_coordinate_list = []
-        data_list = []
+        variable_data = defaultdict(list)
         for part_id in ids:
             part = geofile.get_part_by_id(part_id)
             element_blocks = part.element_blocks
@@ -123,7 +128,6 @@ class DrivAerDataset(Dataset):
             center_coordinate_list.append(cell_center_coordinates)
 
             # Get variables
-            out_variables = []
             for variable_name in self.variables:
                 variable = case.get_variable(variable_name)
                 blocks = []
@@ -133,20 +137,21 @@ class DrivAerDataset(Dataset):
                             mm_var, part.part_id, element_block.element_type
                         )
                         blocks.append(data)
-                    data = np.concatenate(blocks)
+                data = np.concatenate(blocks)
                 # scalar variables are transformed to N,1 arrays
                 if len(data.shape) == 1:
                     data = data[:, np.newaxis]
-                out_variables.append(data)
-            data_list.append(np.concatenate(out_variables, axis=-1))
+                variable_data[variable_name].append(data)
 
         coordinates = np.concatenate(coordinate_list)
         center_coordinates = np.concatenate(center_coordinate_list)
-        data = np.concatenate(data_list)
+        cat_variables = {}
+        for k, v in variable_data.items():
+            cat_variables[k] = np.concatenate(v)
         return {
             "mesh_nodes": coordinates,
             "cell_centers": center_coordinates,
-            "data": data,
+            **cat_variables,
         }
 
 
@@ -198,37 +203,58 @@ def compute_avg_coordinates_polyhedra(
 
 
 class DrivAerToZarr:
-    def __init__(self, dataset: DrivAerDataset, output_path: Union[str, Path]):
+    def __init__(
+        self,
+        dataset: DrivAerDataset,
+        output_path: Union[str, Path],
+        chunk_size: int = 10000,
+    ):
         self.dataset = dataset
         self.output_path = Path(output_path)
+        self.chunk_size = chunk_size
 
     def save(self):
         # Create a zarr directory store
         store = zarr.DirectoryStore(str(self.output_path))
         root = zarr.group(store=store, overwrite=True)
 
+        # Get the first data item to get the shape of the arrays
+        first_item = self.dataset[0]
+
         # Initialize arrays to hold data
         mesh_nodes_array = root.zeros(
-            "mesh_nodes", shape=(0, 3), chunks=(100, 3), dtype="float32"
+            "mesh_nodes", shape=(0, 3), chunks=(self.chunk_size, 3), dtype="float32"
         )
         cell_centers_array = root.zeros(
-            "cell_centers", shape=(0, 3), chunks=(100, 3), dtype="float32"
+            "cell_centers", shape=(0, 3), chunks=(self.chunk_size, 3), dtype="float32"
         )
-        data_array = root.zeros(
-            "data",
-            shape=(0, self.dataset.variables.shape[-1]),
-            chunks=(100, len(self.dataset.variables)),
-            dtype="float32",
-        )
+        data_array = {}
+        for variable_name in self.dataset.variables:
+            data_array[variable_name] = root.zeros(
+                variable_name,
+                shape=(0, first_item[variable_name].shape[1]),
+                chunks=(self.chunk_size, first_item[variable_name].shape[1]),
+                dtype="float32",
+            )
 
         for idx in range(len(self.dataset)):
             item = self.dataset[idx]
             mesh_nodes_array.append(item["mesh_nodes"])
             cell_centers_array.append(item["cell_centers"])
-            data_array.append(item["data"])
+            for variable_name in self.dataset.variables:
+                data_array[variable_name].append(item[variable_name])
 
-        # Optionally, you can compress the data if needed using zarr's built-in compression,
-        # but for simplicity, this has been omitted in the above example.
+        # Compress the data using zarr's built-in compression
+        mesh_nodes_array.attrs["compressor"] = zarr.Blosc(
+            cname="zstd", clevel=3, shuffle=2
+        )
+        cell_centers_array.attrs["compressor"] = zarr.Blosc(
+            cname="zstd", clevel=3, shuffle=2
+        )
+        for variable_name in self.dataset.variables:
+            data_array[variable_name].attrs["compressor"] = zarr.Blosc(
+                cname="zstd", clevel=3, shuffle=2
+            )
 
 
 if __name__ == "__main__":
@@ -238,3 +264,9 @@ if __name__ == "__main__":
     data_path = sys.argv[-1]
     dataset = DrivAerDataset(data_path, phase="train", has_spoiler=False)
     print(dataset[0])
+
+    # Save to zarr
+    output_path = Path("~/datasets/drivaer.zarr").expanduser()
+    output_path.mkdir(exist_ok=True)
+    drivAerToZarr = DrivAerToZarr(dataset, output_path)
+    drivAerToZarr.save()
