@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 
 import numpy as np
 import pandas as pd
+import zarr
 
 try:
     import ensightreader
@@ -142,7 +143,11 @@ class DrivAerDataset(Dataset):
         coordinates = np.concatenate(coordinate_list)
         center_coordinates = np.concatenate(center_coordinate_list)
         data = np.concatenate(data_list)
-        return {"mesh_nodes": coordinates, "cell_centers": center_coordinates, "data": data}
+        return {
+            "mesh_nodes": coordinates,
+            "cell_centers": center_coordinates,
+            "data": data,
+        }
 
 
 def compute_avg_coordinates(connectivity, polygon_node_counts, coordinates):
@@ -190,6 +195,40 @@ def compute_avg_coordinates_polyhedra(
         avg_coords.append(avg)
 
     return np.array(avg_coords)
+
+
+class DrivAerToZarr:
+    def __init__(self, dataset: DrivAerDataset, output_path: Union[str, Path]):
+        self.dataset = dataset
+        self.output_path = Path(output_path)
+
+    def save(self):
+        # Create a zarr directory store
+        store = zarr.DirectoryStore(str(self.output_path))
+        root = zarr.group(store=store, overwrite=True)
+
+        # Initialize arrays to hold data
+        mesh_nodes_array = root.zeros(
+            "mesh_nodes", shape=(0, 3), chunks=(100, 3), dtype="float32"
+        )
+        cell_centers_array = root.zeros(
+            "cell_centers", shape=(0, 3), chunks=(100, 3), dtype="float32"
+        )
+        data_array = root.zeros(
+            "data",
+            shape=(0, self.dataset.variables.shape[-1]),
+            chunks=(100, len(self.dataset.variables)),
+            dtype="float32",
+        )
+
+        for idx in range(len(self.dataset)):
+            item = self.dataset[idx]
+            mesh_nodes_array.append(item["mesh_nodes"])
+            cell_centers_array.append(item["cell_centers"])
+            data_array.append(item["data"])
+
+        # Optionally, you can compress the data if needed using zarr's built-in compression,
+        # but for simplicity, this has been omitted in the above example.
 
 
 if __name__ == "__main__":
