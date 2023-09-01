@@ -26,7 +26,7 @@ class DrivAerDataset(Dataset):
         has_spoiler: bool = False,
         variables: Optional[list] = [
             "time_avg_pressure",
-            # "time_avg_velocity", # Some data is missing
+            # "time_avg_velocity", # data is invalid
             "time_avg_wall_shear_stress",
         ],
     ):
@@ -38,6 +38,7 @@ class DrivAerDataset(Dataset):
         assert (
             self.data_path / "data_set_A"
         ).exists(), f"Path {self.data_path} does not contain data_set_A"
+        self.has_spoiler = has_spoiler
 
         if has_spoiler:
             self.data_path = self.data_path / "data_set_B"
@@ -77,8 +78,11 @@ class DrivAerDataset(Dataset):
         )
         geofile = case.get_geometry_model()
         ids = geofile.get_part_ids()  # list of part ids
-        # remove id 49, which is the internalMesh
-        ids.remove(49)
+        # remove id 49, which is the internalMesh for without spoiler
+        if self.has_spoiler:
+            ids.remove(50)
+        else:
+            ids.remove(49)
 
         coordinate_list = []
         center_coordinate_list = []
@@ -136,6 +140,9 @@ class DrivAerDataset(Dataset):
                         data = variable.read_element_data(
                             mm_var, part.part_id, element_block.element_type
                         )
+                        if data is None:
+                            print(f"Variable {variable_name} is None in element block {element_block}")
+
                         blocks.append(data)
                 data = np.concatenate(blocks)
                 # scalar variables are transformed to N,1 arrays
@@ -213,13 +220,16 @@ class DrivAerToZarr:
         self.output_path = Path(output_path)
         self.chunk_size = chunk_size
 
-    def save(self):
+    def save(self, compress=False, valid_indices=None):
         # Create a zarr directory store
         store = zarr.DirectoryStore(str(self.output_path))
         root = zarr.group(store=store, overwrite=True)
 
         # Get the first data item to get the shape of the arrays
-        first_item = self.dataset[0]
+        if valid_indices is None:
+            valid_indices = range(len(self.dataset))
+
+        first_item = self.dataset[valid_indices[0]]
 
         # Initialize arrays to hold data
         mesh_nodes_array = root.zeros(
@@ -237,7 +247,8 @@ class DrivAerToZarr:
                 dtype="float32",
             )
 
-        for idx in range(len(self.dataset)):
+        for idx in valid_indices:
+            print(f"Saving item {idx+1}/{len(self.dataset)}")
             item = self.dataset[idx]
             mesh_nodes_array.append(item["mesh_nodes"])
             cell_centers_array.append(item["cell_centers"])
@@ -245,16 +256,17 @@ class DrivAerToZarr:
                 data_array[variable_name].append(item[variable_name])
 
         # Compress the data using zarr's built-in compression
-        mesh_nodes_array.attrs["compressor"] = zarr.Blosc(
-            cname="zstd", clevel=3, shuffle=2
-        )
-        cell_centers_array.attrs["compressor"] = zarr.Blosc(
-            cname="zstd", clevel=3, shuffle=2
-        )
-        for variable_name in self.dataset.variables:
-            data_array[variable_name].attrs["compressor"] = zarr.Blosc(
+        if compress:
+            mesh_nodes_array.attrs["compressor"] = zarr.Blosc(
                 cname="zstd", clevel=3, shuffle=2
             )
+            cell_centers_array.attrs["compressor"] = zarr.Blosc(
+                cname="zstd", clevel=3, shuffle=2
+            )
+            for variable_name in self.dataset.variables:
+                data_array[variable_name].attrs["compressor"] = zarr.Blosc(
+                    cname="zstd", clevel=3, shuffle=2
+                )
 
 
 if __name__ == "__main__":
@@ -262,11 +274,16 @@ if __name__ == "__main__":
     import sys
 
     data_path = sys.argv[-1]
-    dataset = DrivAerDataset(data_path, phase="train", has_spoiler=False)
-    print(dataset[0])
 
     # Save to zarr
-    output_path = Path("~/datasets/drivaer.zarr").expanduser()
-    output_path.mkdir(exist_ok=True)
-    drivAerToZarr = DrivAerToZarr(dataset, output_path)
-    drivAerToZarr.save()
+    # Create separate paths for train/text, with and without spoiler
+    for spoiler in [True, False]:
+        for phase in ["train", "test"]:
+            print(f"Saving {phase} {'with' if spoiler else 'without'} spoiler")
+            dataset = DrivAerDataset(data_path, phase=phase, has_spoiler=spoiler)
+            output_path = Path(
+                f"~/datasets/drivaer_{phase}_{'spoiler' if spoiler else 'nospoiler'}.zarr"
+            ).expanduser()
+            output_path.mkdir(exist_ok=True)
+            drivAerToZarr = DrivAerToZarr(dataset, output_path)
+            drivAerToZarr.save()
