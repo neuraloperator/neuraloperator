@@ -90,7 +90,7 @@ def dispatch_model(ModelClass, config):
         if (value.default is not inspect._empty) and (key not in config):
             print(
                 f"Keyword argument {key} not specified for model {model_name}, "
-                f"using default={value.default}."
+                f"using {value.default=}."
             )
             # warnings.warn(
             #     f"Keyword argument {key} not specified for model {model_name}, "
