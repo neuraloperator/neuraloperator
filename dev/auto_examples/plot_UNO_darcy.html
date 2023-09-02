@@ -313,13 +313,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fc47cf6cf10&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7faf75aa48b0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.training.losses.H1Loss object at 0x7fc47cf6c520&gt;
+ * Train: &lt;neuralop.training.losses.H1Loss object at 0x7faf75aa4700&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7fc47cf6c520&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7fc47cf6c5b0&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7faf75aa4700&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7faf75aa4c70&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -352,13 +352,13 @@ Training on raw inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torc
 .. patched inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torch.Size([32, 1, 16, 16])
 Raw outputs of size out.shape=torch.Size([32, 1, 16, 16])
 .. Processed (unpatched) outputs of size out.shape=torch.Size([32, 1, 16, 16])
-[0] time=7.81, avg_loss=24.7786, train_err=0.4956, 16_h1=0.2941, 16_l2=0.2281, 32_h1=0.4574, 32_l2=0.2963
-[3] time=7.52, avg_loss=8.5293, train_err=0.1706, 16_h1=0.1891, 16_l2=0.1382, 32_h1=0.3419, 32_l2=0.2043
-[6] time=7.49, avg_loss=6.4771, train_err=0.1295, 16_h1=0.1806, 16_l2=0.1297, 32_h1=0.3554, 32_l2=0.1888
-[9] time=7.42, avg_loss=5.3833, train_err=0.1077, 16_h1=0.1625, 16_l2=0.1139, 32_h1=0.3598, 32_l2=0.1920
-[12] time=7.35, avg_loss=4.6466, train_err=0.0929, 16_h1=0.1568, 16_l2=0.1075, 32_h1=0.3264, 32_l2=0.1706
-[15] time=7.48, avg_loss=3.3855, train_err=0.0677, 16_h1=0.1529, 16_l2=0.1049, 32_h1=0.3330, 32_l2=0.1778
-[18] time=7.51, avg_loss=2.5598, train_err=0.0512, 16_h1=0.1544, 16_l2=0.1057, 32_h1=0.3420, 32_l2=0.1805
+[0] time=6.41, avg_loss=22.2020, train_err=0.4440, 16_h1=0.2932, 16_l2=0.2233, 32_h1=0.4632, 32_l2=0.2849
+[3] time=6.09, avg_loss=8.5984, train_err=0.1720, 16_h1=0.2436, 16_l2=0.1912, 32_h1=0.4035, 32_l2=0.2335
+[6] time=6.10, avg_loss=6.5826, train_err=0.1317, 16_h1=0.1745, 16_l2=0.1203, 32_h1=0.3404, 32_l2=0.1918
+[9] time=6.16, avg_loss=5.2813, train_err=0.1056, 16_h1=0.1643, 16_l2=0.1106, 32_h1=0.3520, 32_l2=0.1994
+[12] time=6.12, avg_loss=4.5094, train_err=0.0902, 16_h1=0.1698, 16_l2=0.1215, 32_h1=0.3491, 32_l2=0.2126
+[15] time=6.13, avg_loss=3.4113, train_err=0.0682, 16_h1=0.1576, 16_l2=0.1030, 32_h1=0.3354, 32_l2=0.1861
+[18] time=6.12, avg_loss=2.7508, train_err=0.0550, 16_h1=0.1550, 16_l2=0.1030, 32_h1=0.3383, 32_l2=0.1872
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -407,7 +407,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 33.965 seconds)</p>
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 6.492 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/f9c1e50d48828a746410d5400feb61f7/plot_UNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_UNO_darcy.py</span></code></a></p>
