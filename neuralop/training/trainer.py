@@ -101,7 +101,7 @@ class Trainer:
                                                      incremental_buffer=self.buffer, incremental_max_iter=self.max_iter, 
                                                      incremental_grad_max_iter=self.grad_max_iter, incremental_loss_eps = self.loss_eps,
                                                      incremental_res_gap = self.res_gap, dataset_resolution=self.dataset_resolution,
-                                                     dataset_sublist=self.sublist, dataset_indices=self.dataset_indices)
+                                                     dataset_sublist=self.sublist, dataset_indices=self.dataset_indices, verbose=self.verbose)
 
         self.mg_patching_padding = mg_patching_padding
         self.patcher = MultigridPatching2D(model, levels=mg_patching_levels, padding_fraction=mg_patching_padding,

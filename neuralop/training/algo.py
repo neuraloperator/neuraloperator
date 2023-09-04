@@ -4,7 +4,7 @@ class Incremental():
                 incremental_resolution, incremental_eps, incremental_buffer,
                 incremental_max_iter, incremental_grad_max_iter, 
                 incremental_loss_eps, incremental_res_gap,
-                dataset_resolution, dataset_sublist, dataset_indices) -> None:
+                dataset_resolution, dataset_sublist, dataset_indices, verbose=True) -> None:
         
         if incremental and incremental_loss_gap:
             raise ValueError(
@@ -15,6 +15,7 @@ class Incremental():
         self.incremental_grad = incremental
         self.incremental_resolution = incremental_resolution
         self.incremental_loss_gap = incremental_loss_gap
+        self.verbose = verbose
 
         if self.incremental_grad:
             # incremental gradient
@@ -40,10 +41,11 @@ class Incremental():
             self.current_logged_epoch = 0
             self.current_sub = self.index_to_sub_from_table(self.current_index)
             self.current_res = self.sub_to_res(self.current_sub)
-
-            print(f'Incre Res Update: change index to {self.current_index}')
-            print(f'Incre Res Update: change sub to {self.current_sub}')
-            print(f'Incre Res Update: change res to {self.current_res}')
+            
+            if self.verbose:
+                print(f'Incre Res Update: change index to {self.current_index}')
+                print(f'Incre Res Update: change sub to {self.current_sub}')
+                print(f'Incre Res Update: change res to {self.current_res}')
             
     # Algorithm 1: Incremental
     def loss_gap(self, loss):
@@ -123,9 +125,10 @@ class Incremental():
             self.current_res = self.sub_to_res(self.current_sub)
             self.current_logged_epoch = epoch
 
-            print(f'Incre Res Update: change index to {self.current_index}')
-            print(f'Incre Res Update: change sub to {self.current_sub}')
-            print(f'Incre Res Update: change res to {self.current_res}')
+            if self.verbose:
+                print(f'Incre Res Update: change index to {self.current_index}')
+                print(f'Incre Res Update: change sub to {self.current_sub}')
+                print(f'Incre Res Update: change res to {self.current_res}')
 
     def index_to_sub_from_table(self, index):
         # Get the sub value from the sub_list based on the index
