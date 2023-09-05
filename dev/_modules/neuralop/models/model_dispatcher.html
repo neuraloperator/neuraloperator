@@ -117,28 +117,28 @@
       <div class="container content main-content">
         
   <h1>Source code for neuralop.models.model_dispatcher</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">.fno</span> <span class="kn">import</span> <span class="n">TFNO</span><span class="p">,</span> <span class="n">TFNO1d</span><span class="p">,</span> <span class="n">TFNO2d</span><span class="p">,</span> <span class="n">TFNO3d</span>
+<span></span><span class="kn">import</span> <span class="nn">inspect</span>
+
+<span class="kn">from</span> <span class="nn">.fno</span> <span class="kn">import</span> <span class="n">TFNO</span><span class="p">,</span> <span class="n">TFNO1d</span><span class="p">,</span> <span class="n">TFNO2d</span><span class="p">,</span> <span class="n">TFNO3d</span>
 <span class="kn">from</span> <span class="nn">.fno</span> <span class="kn">import</span> <span class="n">FNO</span><span class="p">,</span> <span class="n">FNO1d</span><span class="p">,</span> <span class="n">FNO2d</span><span class="p">,</span> <span class="n">FNO3d</span>
 <span class="kn">from</span> <span class="nn">.uno</span> <span class="kn">import</span> <span class="n">UNO</span>
-<span class="kn">import</span> <span class="nn">inspect</span>
 
 
 <span class="n">MODEL_ZOO</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;tfno&#39;</span>   <span class="p">:</span> <span class="n">TFNO</span><span class="p">,</span>
-    <span class="s1">&#39;tfno1d&#39;</span> <span class="p">:</span> <span class="n">TFNO1d</span><span class="p">,</span>
-    <span class="s1">&#39;tfno2d&#39;</span> <span class="p">:</span> <span class="n">TFNO2d</span><span class="p">,</span>
-    <span class="s1">&#39;tfno3d&#39;</span> <span class="p">:</span> <span class="n">TFNO3d</span><span class="p">,</span>
-    <span class="s1">&#39;fno&#39;</span>    <span class="p">:</span> <span class="n">FNO</span><span class="p">,</span>
-    <span class="s1">&#39;fno1d&#39;</span>  <span class="p">:</span> <span class="n">FNO1d</span><span class="p">,</span>
-    <span class="s1">&#39;fno2d&#39;</span>  <span class="p">:</span> <span class="n">FNO2d</span><span class="p">,</span>
-    <span class="s1">&#39;fno3d&#39;</span>  <span class="p">:</span> <span class="n">FNO3d</span><span class="p">,</span>
-    <span class="s1">&#39;uno&#39;</span>    <span class="p">:</span> <span class="n">UNO</span><span class="p">,</span>
+    <span class="s2">&quot;tfno&quot;</span><span class="p">:</span> <span class="n">TFNO</span><span class="p">,</span>
+    <span class="s2">&quot;tfno1d&quot;</span><span class="p">:</span> <span class="n">TFNO1d</span><span class="p">,</span>
+    <span class="s2">&quot;tfno2d&quot;</span><span class="p">:</span> <span class="n">TFNO2d</span><span class="p">,</span>
+    <span class="s2">&quot;tfno3d&quot;</span><span class="p">:</span> <span class="n">TFNO3d</span><span class="p">,</span>
+    <span class="s2">&quot;fno&quot;</span><span class="p">:</span> <span class="n">FNO</span><span class="p">,</span>
+    <span class="s2">&quot;fno1d&quot;</span><span class="p">:</span> <span class="n">FNO1d</span><span class="p">,</span>
+    <span class="s2">&quot;fno2d&quot;</span><span class="p">:</span> <span class="n">FNO2d</span><span class="p">,</span>
+    <span class="s2">&quot;fno3d&quot;</span><span class="p">:</span> <span class="n">FNO3d</span><span class="p">,</span>
+    <span class="s2">&quot;uno&quot;</span><span class="p">:</span> <span class="n">UNO</span><span class="p">,</span>
 <span class="p">}</span>
 
 
 <div class="viewcode-block" id="available_models"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.model_dispatcher.available_models.html#neuralop.models.model_dispatcher.available_models">[docs]</a><span class="k">def</span> <span class="nf">available_models</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;List the available neural operators</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List the available neural operators&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">MODEL_ZOO</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
 
 
@@ -152,7 +152,7 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    config : Bunch or dict-like</span>
-<span class="sd">        configuration, must have </span>
+<span class="sd">        configuration, must have</span>
 <span class="sd">        arch = config[&#39;arch&#39;] (string)</span>
 <span class="sd">        and the corresponding config[arch] (a subdict with the kwargs of the model)</span>
 
@@ -161,30 +161,30 @@
 <span class="sd">    model : nn.Module</span>
 <span class="sd">        the instanciated module</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">arch</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;arch&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">arch</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;arch&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="n">config_arch</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arch</span><span class="p">)</span>
 
     <span class="c1"># Set the number of input channels depending on channels in data + mg patching</span>
-    <span class="n">data_channels</span> <span class="o">=</span> <span class="n">config_arch</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;data_channels&#39;</span><span class="p">)</span>
+    <span class="n">data_channels</span> <span class="o">=</span> <span class="n">config_arch</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;data_channels&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">patching_levels</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;patching&#39;</span><span class="p">][</span><span class="s1">&#39;levels&#39;</span><span class="p">]</span>
+        <span class="n">patching_levels</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;patching&quot;</span><span class="p">][</span><span class="s2">&quot;levels&quot;</span><span class="p">]</span>
     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
         <span class="n">patching_levels</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">if</span> <span class="n">patching_levels</span><span class="p">:</span>
-        <span class="n">data_channels</span> <span class="o">*=</span> <span class="p">(</span><span class="n">patching_levels</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">config_arch</span><span class="p">[</span><span class="s1">&#39;in_channels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_channels</span>
+        <span class="n">data_channels</span> <span class="o">*=</span> <span class="n">patching_levels</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">config_arch</span><span class="p">[</span><span class="s2">&quot;in_channels&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_channels</span>
 
     <span class="c1"># Dispatch model creation</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">dispatch_model</span><span class="p">(</span><span class="n">MODEL_ZOO</span><span class="p">[</span><span class="n">arch</span><span class="p">],</span> <span class="n">config_arch</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Got config.</span><span class="si">{</span><span class="n">arch</span><span class="si">=}</span><span class="s1">, expected one of </span><span class="si">{</span><span class="n">MODEL_ZOO</span><span class="o">.</span><span class="n">keys</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span></div>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Got config.arch=</span><span class="si">{</span><span class="n">arch</span><span class="si">}</span><span class="s2">, expected one of </span><span class="si">{</span><span class="n">MODEL_ZOO</span><span class="o">.</span><span class="n">keys</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span></div>
 
 
 <span class="k">def</span> <span class="nf">dispatch_model</span><span class="p">(</span><span class="n">ModelClass</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;This function just creates an instance of the model ModelClass(**config)</span>
 <span class="sd">    but performs additional checks to warn users about missing/wrong arguments.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    ModelClass : nn.Module</span>
@@ -197,18 +197,25 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">ModelClass</span><span class="p">)</span>
     <span class="n">model_name</span> <span class="o">=</span> <span class="n">ModelClass</span><span class="o">.</span><span class="vm">__name__</span>
-    
+
     <span class="c1"># Verify that given parameters are actually arguments of the model</span>
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Given argument </span><span class="si">{</span><span class="n">key</span><span class="si">=}</span><span class="s2"> that is not in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&#39;s signature.&quot;</span><span class="p">)</span>
-            <span class="c1"># warnings.warn(f&quot;Given argument {key=} that is not in {model_name}&#39;s signature.&quot;)</span>
-    
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Given argument key=</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> &quot;</span>
+                  <span class="sa">f</span><span class="s2">&quot;that is not in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&#39;s signature.&quot;</span><span class="p">)</span>
+            <span class="c1"># warnings.warn(f&quot;Given argument {key=} &quot;</span>
+            <span class="c1">#               f&quot;that is not in {model_name}&#39;s signature.&quot;)</span>
+
     <span class="c1"># Check for model arguments not specified in the configuration</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">inspect</span><span class="o">.</span><span class="n">_empty</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="p">):</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Keyword argument </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> not specified for model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">, using default=</span><span class="si">{</span><span class="n">value</span><span class="o">.</span><span class="n">default</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-            <span class="c1"># warnings.warn(f&quot;Keyword argument {key} not specified for model {model_name}, using default={value.default}.&quot;)</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Keyword argument </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> not specified for model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;using default=</span><span class="si">{</span><span class="n">value</span><span class="o">.</span><span class="n">default</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+            <span class="c1"># warnings.warn(</span>
+            <span class="c1">#     f&quot;Keyword argument {key} not specified for model {model_name}, &quot;</span>
+            <span class="c1">#     f&quot;using default={value.default}.&quot;)</span>
 
     <span class="k">return</span> <span class="n">ModelClass</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span>
 </pre></div>

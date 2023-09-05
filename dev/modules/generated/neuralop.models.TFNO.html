@@ -188,8 +188,9 @@ The dimensionality of the TFNO is inferred from <code class="docutils literal no
 <dt><strong>n_layers</strong><span class="classifier">int, optional</span></dt><dd><p>Number of Fourier Layers, by default 4</p>
 </dd>
 <dt><strong>incremental_n_modes</strong><span class="classifier">None or int tuple, default is None</span></dt><dd><ul class="simple">
-<li><p>If not None, this allows to incrementally increase the number of modes in Fourier domain 
-during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, n_modes).</p></li>
+<li><p>If not None, this allows to incrementally increase the number of
+modes in Fourier domain during training. Has to verify n &lt;= N
+for (n, m) in zip(incremental_n_modes, n_modes).</p></li>
 <li><p>If None, all the n_modes are used.</p></li>
 </ul>
 <p>This can be updated dynamically during training.</p>
@@ -222,15 +223,22 @@ if ‘mixed’, the contraction and inverse FFT run in half precision</p>
 * If None, a dense tensor parametrizes the Spectral convolutions
 * Otherwise, the specified tensor factorization is used.</p>
 </dd>
-<dt><strong>joint_factorization</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False</p>
+<dt><strong>joint_factorization</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether all the Fourier Layers should be parametrized by a single tensor
+(vs one per layer), by default False</p>
 </dd>
 <dt><strong>rank</strong><span class="classifier">float or rank, optional</span></dt><dd><p>Rank of the tensor factorization of the Fourier weights, by default 1.0</p>
 </dd>
 <dt><strong>fixed_rank_modes</strong><span class="classifier">bool, optional</span></dt><dd><p>Modes to not factorize, by default False</p>
 </dd>
 <dt><strong>implementation</strong><span class="classifier">{‘factorized’, ‘reconstructed’}, optional, default is ‘factorized’</span></dt><dd><p>If factorization is not None, forward mode to use::
-* <cite>reconstructed</cite> : the full weight tensor is reconstructed from the factorization and used for the forward pass
-* <cite>factorized</cite> : the input is directly contracted with the factors of the decomposition</p>
+* <cite>reconstructed</cite> : the full weight tensor is reconstructed from the</p>
+<blockquote>
+<div><p>factorization and used for the forward pass</p>
+</div></blockquote>
+<ul class="simple">
+<li><p><cite>factorized</cite> : the input is directly contracted with the factors of
+the decomposition</p></li>
+</ul>
 </dd>
 <dt><strong>decomposition_kwargs</strong><span class="classifier">dict, optional, default is {}</span></dt><dd><p>Optionaly additional parameters to pass to the tensor decomposition</p>
 </dd>

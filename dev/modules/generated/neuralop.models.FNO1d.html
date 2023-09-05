@@ -169,72 +169,11 @@
 <dt class="sig sig-object py" id="neuralop.models.FNO1d">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.models.</span></span><span class="sig-name descname"><span class="pre">FNO1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_modes_height</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_channels=3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_channels=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lifting_channels=256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">projection_channels=256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">incremental_n_modes=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fno_block_precision='full'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_layers=4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_scaling_factor=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_linearity=&lt;built-in</span> <span class="pre">function</span> <span class="pre">gelu&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stabilizer=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_mlp=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_dropout=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_expansion=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip='soft-gating'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separable=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preactivation=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factorization=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">joint_factorization=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_rank_modes=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implementation='factorized'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomposition_kwargs={}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_padding=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_padding_mode='one-sided'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_norm='forward'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/fno.html#FNO1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.FNO1d" title="Permalink to this definition"></a></dt>
 <dd><p>1D Fourier Neural Operator</p>
-<dl class="field-list">
+<p>For the full list of parameters, see <a class="reference internal" href="neuralop.models.FNO.html#neuralop.models.FNO" title="neuralop.models.FNO"><code class="xref py py-class docutils literal notranslate"><span class="pre">neuralop.models.FNO</span></code></a>.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl>
+<dd class="field-odd"><dl class="simple">
 <dt><strong>modes_height</strong><span class="classifier">int</span></dt><dd><p>number of Fourier modes to keep along the height</p>
-</dd>
-<dt><strong>hidden_channels</strong><span class="classifier">int</span></dt><dd><p>width of the FNO (i.e. number of channels)</p>
-</dd>
-<dt><strong>in_channels</strong><span class="classifier">int, optional</span></dt><dd><p>Number of input channels, by default 3</p>
-</dd>
-<dt><strong>out_channels</strong><span class="classifier">int, optional</span></dt><dd><p>Number of output channels, by default 1</p>
-</dd>
-<dt><strong>lifting_channels</strong><span class="classifier">int, optional</span></dt><dd><p>number of hidden channels of the lifting block of the FNO, by default 256</p>
-</dd>
-<dt><strong>projection_channels</strong><span class="classifier">int, optional</span></dt><dd><p>number of hidden channels of the projection block of the FNO, by default 256</p>
-</dd>
-<dt><strong>n_layers</strong><span class="classifier">int, optional</span></dt><dd><p>Number of Fourier Layers, by default 4</p>
-</dd>
-<dt><strong>incremental_n_modes</strong><span class="classifier">None or int tuple, default is None</span></dt><dd><ul class="simple">
-<li><p>If not None, this allows to incrementally increase the number of modes in Fourier domain 
-during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, n_modes).</p></li>
-<li><p>If None, all the n_modes are used.</p></li>
-</ul>
-<p>This can be updated dynamically during training.</p>
-</dd>
-<dt><strong>fno_block_precision</strong><span class="classifier">str {‘full’, ‘half’, ‘mixed’}</span></dt><dd><p>if ‘full’, the FNO Block runs in full precision
-if ‘half’, the FFT, contraction, and inverse FFT run in half precision
-if ‘mixed’, the contraction and inverse FFT run in half precision</p>
-</dd>
-<dt><strong>stabilizer</strong><span class="classifier">str {‘tanh’} or None, optional</span></dt><dd><p>By default None, otherwise tanh is used before FFT in the FNO block</p>
-</dd>
-<dt><strong>use_mlp</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to use an MLP layer after each FNO block, by default False</p>
-</dd>
-<dt><strong>mlp</strong><span class="classifier">dict, optional</span></dt><dd><p>Parameters of the MLP, by default None
-{‘expansion’: float, ‘dropout’: float}</p>
-</dd>
-<dt><strong>non_linearity</strong><span class="classifier">nn.Module, optional</span></dt><dd><p>Non-Linearity module to use, by default F.gelu</p>
-</dd>
-<dt><strong>norm</strong><span class="classifier">F.module, optional</span></dt><dd><p>Normalization layer to use, by default None</p>
-</dd>
-<dt><strong>preactivation</strong><span class="classifier">bool, default is False</span></dt><dd><p>if True, use resnet-style preactivation</p>
-</dd>
-<dt><strong>skip</strong><span class="classifier">{‘linear’, ‘identity’, ‘soft-gating’}, optional</span></dt><dd><p>Type of skip connection to use, by default ‘soft-gating’</p>
-</dd>
-<dt><strong>separable</strong><span class="classifier">bool, default is False</span></dt><dd><p>if True, use a depthwise separable spectral convolution</p>
-</dd>
-<dt><strong>factorization</strong><span class="classifier">str or None, {‘tucker’, ‘cp’, ‘tt’}</span></dt><dd><p>Tensor factorization of the parameters weight to use, by default None.
-* If None, a dense tensor parametrizes the Spectral convolutions
-* Otherwise, the specified tensor factorization is used.</p>
-</dd>
-<dt><strong>joint_factorization</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False</p>
-</dd>
-<dt><strong>rank</strong><span class="classifier">float or rank, optional</span></dt><dd><p>Rank of the tensor factorization of the Fourier weights, by default 1.0</p>
-</dd>
-<dt><strong>fixed_rank_modes</strong><span class="classifier">bool, optional</span></dt><dd><p>Modes to not factorize, by default False</p>
-</dd>
-<dt><strong>implementation</strong><span class="classifier">{‘factorized’, ‘reconstructed’}, optional, default is ‘factorized’</span></dt><dd><p>If factorization is not None, forward mode to use::
-* <cite>reconstructed</cite> : the full weight tensor is reconstructed from the factorization and used for the forward pass
-* <cite>factorized</cite> : the input is directly contracted with the factors of the decomposition</p>
-</dd>
-<dt><strong>decomposition_kwargs</strong><span class="classifier">dict, optional, default is {}</span></dt><dd><p>Optionaly additional parameters to pass to the tensor decomposition</p>
-</dd>
-<dt><strong>domain_padding</strong><span class="classifier">None or float, optional</span></dt><dd><p>If not None, percentage of padding to use, by default None</p>
-</dd>
-<dt><strong>domain_padding_mode</strong><span class="classifier">{‘symmetric’, ‘one-sided’}, optional</span></dt><dd><p>How to perform domain padding, by default ‘one-sided’</p>
-</dd>
-<dt><strong>fft_norm</strong><span class="classifier">str, optional</span></dt><dd><p>by default ‘forward’</p>
 </dd>
 </dl>
 </dd>

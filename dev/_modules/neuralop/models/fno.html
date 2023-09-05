@@ -117,15 +117,15 @@
       <div class="container content main-content">
         
   <h1>Source code for neuralop.models.fno</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span></span><span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partialmethod</span>
+
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 <span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
-<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partialmethod</span>
 
 <span class="kn">from</span> <span class="nn">..layers.spectral_convolution</span> <span class="kn">import</span> <span class="n">SpectralConv</span>
 <span class="kn">from</span> <span class="nn">..layers.spherical_convolution</span> <span class="kn">import</span> <span class="n">SphericalConv</span>
 <span class="kn">from</span> <span class="nn">..layers.padding</span> <span class="kn">import</span> <span class="n">DomainPadding</span>
-<span class="kn">from</span> <span class="nn">..layers.fno_block</span> <span class="kn">import</span> <span class="n">FNOBlocks</span><span class="p">,</span> <span class="n">resample</span>
+<span class="kn">from</span> <span class="nn">..layers.fno_block</span> <span class="kn">import</span> <span class="n">FNOBlocks</span>
 <span class="kn">from</span> <span class="nn">..layers.mlp</span> <span class="kn">import</span> <span class="n">MLP</span>
 
 
@@ -150,9 +150,10 @@
 <span class="sd">    n_layers : int, optional</span>
 <span class="sd">        Number of Fourier Layers, by default 4</span>
 <span class="sd">    incremental_n_modes : None or int tuple, default is None</span>
-<span class="sd">        * If not None, this allows to incrementally increase the number of modes in Fourier domain </span>
-<span class="sd">          during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, n_modes).</span>
-<span class="sd">        </span>
+<span class="sd">        * If not None, this allows to incrementally increase the number of</span>
+<span class="sd">          modes in Fourier domain during training. Has to verify n &lt;= N</span>
+<span class="sd">          for (n, m) in zip(incremental_n_modes, n_modes).</span>
+
 <span class="sd">        * If None, all the n_modes are used.</span>
 
 <span class="sd">        This can be updated dynamically during training.</span>
@@ -161,7 +162,7 @@
 <span class="sd">        if &#39;half&#39;, the FFT, contraction, and inverse FFT run in half precision</span>
 <span class="sd">        if &#39;mixed&#39;, the contraction and inverse FFT run in half precision</span>
 <span class="sd">    stabilizer : str {&#39;tanh&#39;} or None, optional</span>
-<span class="sd">        By default None, otherwise tanh is used before FFT in the FNO block </span>
+<span class="sd">        By default None, otherwise tanh is used before FFT in the FNO block</span>
 <span class="sd">    use_mlp : bool, optional</span>
 <span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
 <span class="sd">    mlp_dropout : float , optional</span>
@@ -185,15 +186,18 @@
 <span class="sd">        * If None, a dense tensor parametrizes the Spectral convolutions</span>
 <span class="sd">        * Otherwise, the specified tensor factorization is used.</span>
 <span class="sd">    joint_factorization : bool, optional</span>
-<span class="sd">        Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False</span>
+<span class="sd">        Whether all the Fourier Layers should be parametrized by a single tensor</span>
+<span class="sd">        (vs one per layer), by default False</span>
 <span class="sd">    rank : float or rank, optional</span>
 <span class="sd">        Rank of the tensor factorization of the Fourier weights, by default 1.0</span>
 <span class="sd">    fixed_rank_modes : bool, optional</span>
 <span class="sd">        Modes to not factorize, by default False</span>
 <span class="sd">    implementation : {&#39;factorized&#39;, &#39;reconstructed&#39;}, optional, default is &#39;factorized&#39;</span>
 <span class="sd">        If factorization is not None, forward mode to use::</span>
-<span class="sd">        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass</span>
-<span class="sd">        * `factorized` : the input is directly contracted with the factors of the decomposition</span>
+<span class="sd">        * `reconstructed` : the full weight tensor is reconstructed from the</span>
+<span class="sd">          factorization and used for the forward pass</span>
+<span class="sd">        * `factorized` : the input is directly contracted with the factors of</span>
+<span class="sd">          the decomposition</span>
 <span class="sd">    decomposition_kwargs : dict, optional, default is {}</span>
 <span class="sd">        Optionaly additional parameters to pass to the tensor decomposition</span>
 <span class="sd">    domain_padding : None or float, optional</span>
@@ -203,33 +207,41 @@
 <span class="sd">    fft_norm : str, optional</span>
 <span class="sd">        by default &#39;forward&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_modes</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="p">,</span>
-                 <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
-                 <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                 <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
-                 <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
-                 <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-                 <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="n">fno_block_precision</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">,</span>
-                 <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-                 <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
-                 <span class="n">stabilizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
-                 <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">preactivation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                 <span class="n">fno_skip</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span>
-                 <span class="n">mlp_skip</span><span class="o">=</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span>
-                 <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                 <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="n">rank</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-                 <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
-                 <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                 <span class="n">implementation</span><span class="o">=</span><span class="s1">&#39;factorized&#39;</span><span class="p">,</span>
-                 <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
-                 <span class="n">domain_padding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s1">&#39;one-sided&#39;</span><span class="p">,</span>
-                 <span class="n">fft_norm</span><span class="o">=</span><span class="s1">&#39;forward&#39;</span><span class="p">,</span>
-                 <span class="n">SpectralConv</span><span class="o">=</span><span class="n">SpectralConv</span><span class="p">,</span>
-                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n_modes</span><span class="p">,</span>
+        <span class="n">hidden_channels</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+        <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+        <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">fno_block_precision</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
+        <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
+        <span class="n">stabilizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">preactivation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">fno_skip</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span>
+        <span class="n">mlp_skip</span><span class="o">=</span><span class="s2">&quot;soft-gating&quot;</span><span class="p">,</span>
+        <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">rank</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">implementation</span><span class="o">=</span><span class="s2">&quot;factorized&quot;</span><span class="p">,</span>
+        <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+        <span class="n">domain_padding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s2">&quot;one-sided&quot;</span><span class="p">,</span>
+        <span class="n">fft_norm</span><span class="o">=</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span>
+        <span class="n">SpectralConv</span><span class="o">=</span><span class="n">SpectralConv</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_modes</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span> <span class="o">=</span> <span class="n">n_modes</span>
@@ -245,8 +257,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">factorization</span> <span class="o">=</span> <span class="n">factorization</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fixed_rank_modes</span> <span class="o">=</span> <span class="n">fixed_rank_modes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">decomposition_kwargs</span> <span class="o">=</span> <span class="n">decomposition_kwargs</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fno_skip</span> <span class="o">=</span> <span class="n">fno_skip</span><span class="p">,</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mlp_skip</span> <span class="o">=</span> <span class="n">mlp_skip</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fno_skip</span> <span class="o">=</span> <span class="p">(</span><span class="n">fno_skip</span><span class="p">,)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mlp_skip</span> <span class="o">=</span> <span class="p">(</span><span class="n">mlp_skip</span><span class="p">,)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fft_norm</span> <span class="o">=</span> <span class="n">fft_norm</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">implementation</span> <span class="o">=</span> <span class="n">implementation</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">separable</span> <span class="o">=</span> <span class="n">separable</span>
@@ -257,8 +269,15 @@
         <span class="c1"># When updated, change should be reflected in fno blocks</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_incremental_n_modes</span> <span class="o">=</span> <span class="n">incremental_n_modes</span>
 
-        <span class="k">if</span> <span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">sum</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="ow">and</span> <span class="n">domain_padding</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="o">=</span> <span class="n">DomainPadding</span><span class="p">(</span><span class="n">domain_padding</span><span class="o">=</span><span class="n">domain_padding</span><span class="p">,</span> <span class="n">padding_mode</span><span class="o">=</span><span class="n">domain_padding_mode</span><span class="p">,</span> <span class="n">output_scaling_factor</span><span class="o">=</span><span class="n">output_scaling_factor</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">sum</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="ow">and</span> <span class="n">domain_padding</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="o">=</span> <span class="n">DomainPadding</span><span class="p">(</span>
+                <span class="n">domain_padding</span><span class="o">=</span><span class="n">domain_padding</span><span class="p">,</span>
+                <span class="n">padding_mode</span><span class="o">=</span><span class="n">domain_padding_mode</span><span class="p">,</span>
+                <span class="n">output_scaling_factor</span><span class="o">=</span><span class="n">output_scaling_factor</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -266,25 +285,28 @@
 
         <span class="k">if</span> <span class="n">output_scaling_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">joint_factorization</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_scaling_factor</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
-                <span class="n">output_scaling_factor</span> <span class="o">=</span> <span class="p">[</span><span class="n">output_scaling_factor</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span>
+                <span class="n">output_scaling_factor</span> <span class="o">=</span> <span class="p">[</span><span class="n">output_scaling_factor</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span> <span class="o">=</span> <span class="n">output_scaling_factor</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">fno_blocks</span> <span class="o">=</span> <span class="n">FNOBlocks</span><span class="p">(</span>
             <span class="n">in_channels</span><span class="o">=</span><span class="n">hidden_channels</span><span class="p">,</span>
-            <span class="n">out_channels</span><span class="o">=</span><span class="n">hidden_channels</span><span class="p">,</span> 
+            <span class="n">out_channels</span><span class="o">=</span><span class="n">hidden_channels</span><span class="p">,</span>
             <span class="n">n_modes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span><span class="p">,</span>
             <span class="n">output_scaling_factor</span><span class="o">=</span><span class="n">output_scaling_factor</span><span class="p">,</span>
-            <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
-            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span> 
+            <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span>
+            <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span>
+            <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
+            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
             <span class="n">stabilizer</span><span class="o">=</span><span class="n">stabilizer</span><span class="p">,</span>
-            <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span> <span class="n">preactivation</span><span class="o">=</span><span class="n">preactivation</span><span class="p">,</span>
+            <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
+            <span class="n">preactivation</span><span class="o">=</span><span class="n">preactivation</span><span class="p">,</span>
             <span class="n">fno_skip</span><span class="o">=</span><span class="n">fno_skip</span><span class="p">,</span>
             <span class="n">mlp_skip</span><span class="o">=</span><span class="n">mlp_skip</span><span class="p">,</span>
             <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
             <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
             <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
             <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
-            <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span> 
+            <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span>
             <span class="n">implementation</span><span class="o">=</span><span class="n">implementation</span><span class="p">,</span>
             <span class="n">separable</span><span class="o">=</span><span class="n">separable</span><span class="p">,</span>
             <span class="n">factorization</span><span class="o">=</span><span class="n">factorization</span><span class="p">,</span>
@@ -292,19 +314,39 @@
             <span class="n">joint_factorization</span><span class="o">=</span><span class="n">joint_factorization</span><span class="p">,</span>
             <span class="n">SpectralConv</span><span class="o">=</span><span class="n">SpectralConv</span><span class="p">,</span>
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span>
 
-        <span class="c1"># if lifting_channels is passed, make lifting an MLP with a hidden layer of size lifting_channels</span>
+        <span class="c1"># if lifting_channels is passed, make lifting an MLP</span>
+        <span class="c1"># with a hidden layer of size lifting_channels</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lifting_channels</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lifting_channels</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span>
+                <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                <span class="n">out_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span>
+                <span class="n">hidden_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lifting_channels</span><span class="p">,</span>
+                <span class="n">n_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="c1"># otherwise, make it a linear layer</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">projection_channels</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">,</span> <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">)</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span>
+                <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                <span class="n">out_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span>
+                <span class="n">hidden_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span>
+                <span class="n">n_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span>
+            <span class="n">in_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span>
+            <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
+            <span class="n">hidden_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">projection_channels</span><span class="p">,</span>
+            <span class="n">n_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">,</span>
+            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
+        <span class="p">)</span>
 
 <div class="viewcode-block" id="FNO.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO.html#neuralop.models.FNO.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;TFNO&#39;s forward pass</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;TFNO&#39;s forward pass&quot;&quot;&quot;</span>
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -332,135 +374,83 @@
 <div class="viewcode-block" id="FNO1d"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO1d.html#neuralop.models.FNO1d">[docs]</a><span class="k">class</span> <span class="nc">FNO1d</span><span class="p">(</span><span class="n">FNO</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;1D Fourier Neural Operator</span>
 
+<span class="sd">    For the full list of parameters, see :class:`neuralop.models.FNO`.</span>
+
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    modes_height : int</span>
 <span class="sd">        number of Fourier modes to keep along the height</span>
-<span class="sd">    hidden_channels : int</span>
-<span class="sd">        width of the FNO (i.e. number of channels)</span>
-<span class="sd">    in_channels : int, optional</span>
-<span class="sd">        Number of input channels, by default 3</span>
-<span class="sd">    out_channels : int, optional</span>
-<span class="sd">        Number of output channels, by default 1</span>
-<span class="sd">    lifting_channels : int, optional</span>
-<span class="sd">        number of hidden channels of the lifting block of the FNO, by default 256</span>
-<span class="sd">    projection_channels : int, optional</span>
-<span class="sd">        number of hidden channels of the projection block of the FNO, by default 256</span>
-<span class="sd">    n_layers : int, optional</span>
-<span class="sd">        Number of Fourier Layers, by default 4</span>
-<span class="sd">    incremental_n_modes : None or int tuple, default is None</span>
-<span class="sd">        * If not None, this allows to incrementally increase the number of modes in Fourier domain </span>
-<span class="sd">          during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, n_modes).</span>
-<span class="sd">        </span>
-<span class="sd">        * If None, all the n_modes are used.</span>
-
-<span class="sd">        This can be updated dynamically during training.</span>
-<span class="sd">    fno_block_precision : str {&#39;full&#39;, &#39;half&#39;, &#39;mixed&#39;}</span>
-<span class="sd">        if &#39;full&#39;, the FNO Block runs in full precision</span>
-<span class="sd">        if &#39;half&#39;, the FFT, contraction, and inverse FFT run in half precision</span>
-<span class="sd">        if &#39;mixed&#39;, the contraction and inverse FFT run in half precision</span>
-<span class="sd">    stabilizer : str {&#39;tanh&#39;} or None, optional</span>
-<span class="sd">        By default None, otherwise tanh is used before FFT in the FNO block </span>
-<span class="sd">    use_mlp : bool, optional</span>
-<span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
-<span class="sd">    mlp : dict, optional</span>
-<span class="sd">        Parameters of the MLP, by default None</span>
-<span class="sd">        {&#39;expansion&#39;: float, &#39;dropout&#39;: float}</span>
-<span class="sd">    non_linearity : nn.Module, optional</span>
-<span class="sd">        Non-Linearity module to use, by default F.gelu</span>
-<span class="sd">    norm : F.module, optional</span>
-<span class="sd">        Normalization layer to use, by default None</span>
-<span class="sd">    preactivation : bool, default is False</span>
-<span class="sd">        if True, use resnet-style preactivation</span>
-<span class="sd">    skip : {&#39;linear&#39;, &#39;identity&#39;, &#39;soft-gating&#39;}, optional</span>
-<span class="sd">        Type of skip connection to use, by default &#39;soft-gating&#39;</span>
-<span class="sd">    separable : bool, default is False</span>
-<span class="sd">        if True, use a depthwise separable spectral convolution</span>
-<span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}</span>
-<span class="sd">        Tensor factorization of the parameters weight to use, by default None.</span>
-<span class="sd">        * If None, a dense tensor parametrizes the Spectral convolutions</span>
-<span class="sd">        * Otherwise, the specified tensor factorization is used.</span>
-<span class="sd">    joint_factorization : bool, optional</span>
-<span class="sd">        Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False</span>
-<span class="sd">    rank : float or rank, optional</span>
-<span class="sd">        Rank of the tensor factorization of the Fourier weights, by default 1.0</span>
-<span class="sd">    fixed_rank_modes : bool, optional</span>
-<span class="sd">        Modes to not factorize, by default False</span>
-<span class="sd">    implementation : {&#39;factorized&#39;, &#39;reconstructed&#39;}, optional, default is &#39;factorized&#39;</span>
-<span class="sd">        If factorization is not None, forward mode to use::</span>
-<span class="sd">        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass</span>
-<span class="sd">        * `factorized` : the input is directly contracted with the factors of the decomposition</span>
-<span class="sd">    decomposition_kwargs : dict, optional, default is {}</span>
-<span class="sd">        Optionaly additional parameters to pass to the tensor decomposition</span>
-<span class="sd">    domain_padding : None or float, optional</span>
-<span class="sd">        If not None, percentage of padding to use, by default None</span>
-<span class="sd">    domain_padding_mode : {&#39;symmetric&#39;, &#39;one-sided&#39;}, optional</span>
-<span class="sd">        How to perform domain padding, by default &#39;one-sided&#39;</span>
-<span class="sd">    fft_norm : str, optional</span>
-<span class="sd">        by default &#39;forward&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n_modes_height</span><span class="p">,</span>
         <span class="n">hidden_channels</span><span class="p">,</span>
-        <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
+        <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
         <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">fno_block_precision</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">,</span>
+        <span class="n">fno_block_precision</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
         <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
         <span class="n">stabilizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
         <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">skip</span><span class="o">=</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span>
+        <span class="n">skip</span><span class="o">=</span><span class="s2">&quot;soft-gating&quot;</span><span class="p">,</span>
         <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">preactivation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+        <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">rank</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-        <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+        <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">implementation</span><span class="o">=</span><span class="s1">&#39;factorized&#39;</span><span class="p">,</span>
+        <span class="n">implementation</span><span class="o">=</span><span class="s2">&quot;factorized&quot;</span><span class="p">,</span>
         <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
         <span class="n">domain_padding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s1">&#39;one-sided&#39;</span><span class="p">,</span>
-        <span class="n">fft_norm</span><span class="o">=</span><span class="s1">&#39;forward&#39;</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s2">&quot;one-sided&quot;</span><span class="p">,</span>
+        <span class="n">fft_norm</span><span class="o">=</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="n">n_modes_height</span><span class="p">,</span> <span class="p">),</span>
+            <span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="n">n_modes_height</span><span class="p">,),</span>
             <span class="n">hidden_channels</span><span class="o">=</span><span class="n">hidden_channels</span><span class="p">,</span>
-            <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> 
+            <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
             <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
             <span class="n">lifting_channels</span><span class="o">=</span><span class="n">lifting_channels</span><span class="p">,</span>
             <span class="n">projection_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
             <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span> 
+            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
             <span class="n">stabilizer</span><span class="o">=</span><span class="n">stabilizer</span><span class="p">,</span>
-            <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
+            <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span>
+            <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span>
+            <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
             <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
             <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
             <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
             <span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">,</span>
             <span class="n">separable</span><span class="o">=</span><span class="n">separable</span><span class="p">,</span>
             <span class="n">preactivation</span><span class="o">=</span><span class="n">preactivation</span><span class="p">,</span>
-            <span class="n">factorization</span><span class="o">=</span><span class="n">factorization</span><span class="p">,</span> 
+            <span class="n">factorization</span><span class="o">=</span><span class="n">factorization</span><span class="p">,</span>
             <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
-            <span class="n">joint_factorization</span><span class="o">=</span><span class="n">joint_factorization</span><span class="p">,</span> 
+            <span class="n">joint_factorization</span><span class="o">=</span><span class="n">joint_factorization</span><span class="p">,</span>
             <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span>
             <span class="n">implementation</span><span class="o">=</span><span class="n">implementation</span><span class="p">,</span>
             <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="n">decomposition_kwargs</span><span class="p">,</span>
             <span class="n">domain_padding</span><span class="o">=</span><span class="n">domain_padding</span><span class="p">,</span>
             <span class="n">domain_padding_mode</span><span class="o">=</span><span class="n">domain_padding_mode</span><span class="p">,</span>
-            <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span>
-            <span class="p">)</span>
+            <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span> <span class="o">=</span> <span class="n">n_modes_height</span></div>
 
 
 <div class="viewcode-block" id="FNO2d"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO2d.html#neuralop.models.FNO2d">[docs]</a><span class="k">class</span> <span class="nc">FNO2d</span><span class="p">(</span><span class="n">FNO</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;2D Fourier Neural Operator</span>
+
+<span class="sd">    For the full list of parameters, see :class:`neuralop.models.FNO`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -468,240 +458,128 @@
 <span class="sd">        number of modes to keep in Fourier Layer, along the width</span>
 <span class="sd">    n_modes_height : int</span>
 <span class="sd">        number of Fourier modes to keep along the height</span>
-<span class="sd">    hidden_channels : int</span>
-<span class="sd">        width of the FNO (i.e. number of channels)</span>
-<span class="sd">    in_channels : int, optional</span>
-<span class="sd">        Number of input channels, by default 3</span>
-<span class="sd">    out_channels : int, optional</span>
-<span class="sd">        Number of output channels, by default 1</span>
-<span class="sd">    lifting_channels : int, optional</span>
-<span class="sd">        number of hidden channels of the lifting block of the FNO, by default 256</span>
-<span class="sd">    projection_channels : int, optional</span>
-<span class="sd">        number of hidden channels of the projection block of the FNO, by default 256</span>
-<span class="sd">    n_layers : int, optional</span>
-<span class="sd">        Number of Fourier Layers, by default 4</span>
-<span class="sd">    incremental_n_modes : None or int tuple, default is None</span>
-<span class="sd">        * If not None, this allows to incrementally increase the number of modes in Fourier domain </span>
-<span class="sd">          during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, n_modes).</span>
-<span class="sd">        </span>
-<span class="sd">        * If None, all the n_modes are used.</span>
-
-<span class="sd">        This can be updated dynamically during training.</span>
-<span class="sd">    fno_block_precision : str {&#39;full&#39;, &#39;half&#39;, &#39;mixed&#39;}</span>
-<span class="sd">        if &#39;full&#39;, the FNO Block runs in full precision</span>
-<span class="sd">        if &#39;half&#39;, the FFT, contraction, and inverse FFT run in half precision</span>
-<span class="sd">        if &#39;mixed&#39;, the contraction and inverse FFT run in half precision</span>
-<span class="sd">    stabilizer : str {&#39;tanh&#39;} or None, optional</span>
-<span class="sd">        By default None, otherwise tanh is used before FFT in the FNO block </span>
-<span class="sd">    use_mlp : bool, optional</span>
-<span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
-<span class="sd">    mlp : dict, optional</span>
-<span class="sd">        Parameters of the MLP, by default None</span>
-<span class="sd">        {&#39;expansion&#39;: float, &#39;dropout&#39;: float}</span>
-<span class="sd">    non_linearity : nn.Module, optional</span>
-<span class="sd">        Non-Linearity module to use, by default F.gelu</span>
-<span class="sd">    norm : F.module, optional</span>
-<span class="sd">        Normalization layer to use, by default None</span>
-<span class="sd">    preactivation : bool, default is False</span>
-<span class="sd">        if True, use resnet-style preactivation</span>
-<span class="sd">    skip : {&#39;linear&#39;, &#39;identity&#39;, &#39;soft-gating&#39;}, optional</span>
-<span class="sd">        Type of skip connection to use, by default &#39;soft-gating&#39;</span>
-<span class="sd">    separable : bool, default is False</span>
-<span class="sd">        if True, use a depthwise separable spectral convolution</span>
-<span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}</span>
-<span class="sd">        Tensor factorization of the parameters weight to use, by default None.</span>
-<span class="sd">        * If None, a dense tensor parametrizes the Spectral convolutions</span>
-<span class="sd">        * Otherwise, the specified tensor factorization is used.</span>
-<span class="sd">    joint_factorization : bool, optional</span>
-<span class="sd">        Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False</span>
-<span class="sd">    rank : float or rank, optional</span>
-<span class="sd">        Rank of the tensor factorization of the Fourier weights, by default 1.0</span>
-<span class="sd">    fixed_rank_modes : bool, optional</span>
-<span class="sd">        Modes to not factorize, by default False</span>
-<span class="sd">    implementation : {&#39;factorized&#39;, &#39;reconstructed&#39;}, optional, default is &#39;factorized&#39;</span>
-<span class="sd">        If factorization is not None, forward mode to use::</span>
-<span class="sd">        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass</span>
-<span class="sd">        * `factorized` : the input is directly contracted with the factors of the decomposition</span>
-<span class="sd">    decomposition_kwargs : dict, optional, default is {}</span>
-<span class="sd">        Optionaly additional parameters to pass to the tensor decomposition</span>
-<span class="sd">    domain_padding : None or float, optional</span>
-<span class="sd">        If not None, percentage of padding to use, by default None</span>
-<span class="sd">    domain_padding_mode : {&#39;symmetric&#39;, &#39;one-sided&#39;}, optional</span>
-<span class="sd">        How to perform domain padding, by default &#39;one-sided&#39;</span>
-<span class="sd">    fft_norm : str, optional</span>
-<span class="sd">        by default &#39;forward&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n_modes_height</span><span class="p">,</span>
         <span class="n">n_modes_width</span><span class="p">,</span>
         <span class="n">hidden_channels</span><span class="p">,</span>
-        <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
+        <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
         <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
         <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">fno_block_precision</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">,</span>
+        <span class="n">fno_block_precision</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
         <span class="n">stabilizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
         <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">skip</span><span class="o">=</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span>
+        <span class="n">skip</span><span class="o">=</span><span class="s2">&quot;soft-gating&quot;</span><span class="p">,</span>
         <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">preactivation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+        <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">rank</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-        <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+        <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">implementation</span><span class="o">=</span><span class="s1">&#39;factorized&#39;</span><span class="p">,</span>
+        <span class="n">implementation</span><span class="o">=</span><span class="s2">&quot;factorized&quot;</span><span class="p">,</span>
         <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
         <span class="n">domain_padding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s1">&#39;one-sided&#39;</span><span class="p">,</span>
-        <span class="n">fft_norm</span><span class="o">=</span><span class="s1">&#39;forward&#39;</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s2">&quot;one-sided&quot;</span><span class="p">,</span>
+        <span class="n">fft_norm</span><span class="o">=</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="n">n_modes_height</span><span class="p">,</span> <span class="n">n_modes_width</span><span class="p">),</span>
             <span class="n">hidden_channels</span><span class="o">=</span><span class="n">hidden_channels</span><span class="p">,</span>
-            <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> 
+            <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
             <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
             <span class="n">lifting_channels</span><span class="o">=</span><span class="n">lifting_channels</span><span class="p">,</span>
             <span class="n">projection_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
             <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span> 
+            <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
             <span class="n">stabilizer</span><span class="o">=</span><span class="n">stabilizer</span><span class="p">,</span>
-            <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
+            <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span>
+            <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span>
+            <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
             <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
             <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
             <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
             <span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">,</span>
             <span class="n">separable</span><span class="o">=</span><span class="n">separable</span><span class="p">,</span>
             <span class="n">preactivation</span><span class="o">=</span><span class="n">preactivation</span><span class="p">,</span>
-            <span class="n">factorization</span><span class="o">=</span><span class="n">factorization</span><span class="p">,</span> 
+            <span class="n">factorization</span><span class="o">=</span><span class="n">factorization</span><span class="p">,</span>
             <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
-            <span class="n">joint_factorization</span><span class="o">=</span><span class="n">joint_factorization</span><span class="p">,</span> 
+            <span class="n">joint_factorization</span><span class="o">=</span><span class="n">joint_factorization</span><span class="p">,</span>
             <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span>
             <span class="n">implementation</span><span class="o">=</span><span class="n">implementation</span><span class="p">,</span>
             <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="n">decomposition_kwargs</span><span class="p">,</span>
             <span class="n">domain_padding</span><span class="o">=</span><span class="n">domain_padding</span><span class="p">,</span>
             <span class="n">domain_padding_mode</span><span class="o">=</span><span class="n">domain_padding_mode</span><span class="p">,</span>
-            <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span>
-            <span class="p">)</span>
+            <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span> <span class="o">=</span> <span class="n">n_modes_height</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_width</span> <span class="o">=</span> <span class="n">n_modes_width</span></div>
 
 
-
 <div class="viewcode-block" id="FNO3d"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO3d.html#neuralop.models.FNO3d">[docs]</a><span class="k">class</span> <span class="nc">FNO3d</span><span class="p">(</span><span class="n">FNO</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;3D Fourier Neural Operator</span>
+
+<span class="sd">    For the full list of parameters, see :class:`neuralop.models.FNO`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    modes_width : int</span>
 <span class="sd">        number of modes to keep in Fourier Layer, along the width</span>
 <span class="sd">    modes_height : int</span>
-<span class="sd">        number of Fourier modes to keep along the height    </span>
+<span class="sd">        number of Fourier modes to keep along the height</span>
 <span class="sd">    modes_depth : int</span>
 <span class="sd">        number of Fourier modes to keep along the depth</span>
-<span class="sd">    hidden_channels : int</span>
-<span class="sd">        width of the FNO (i.e. number of channels)</span>
-<span class="sd">    in_channels : int, optional</span>
-<span class="sd">        Number of input channels, by default 3</span>
-<span class="sd">    out_channels : int, optional</span>
-<span class="sd">        Number of output channels, by default 1</span>
-<span class="sd">    lifting_channels : int, optional</span>
-<span class="sd">        number of hidden channels of the lifting block of the FNO, by default 256</span>
-<span class="sd">    projection_channels : int, optional</span>
-<span class="sd">        number of hidden channels of the projection block of the FNO, by default 256</span>
-<span class="sd">    n_layers : int, optional</span>
-<span class="sd">        Number of Fourier Layers, by default 4</span>
-<span class="sd">    incremental_n_modes : None or int tuple, default is None</span>
-<span class="sd">        * If not None, this allows to incrementally increase the number of modes in Fourier domain </span>
-<span class="sd">          during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, n_modes).</span>
-<span class="sd">        </span>
-<span class="sd">        * If None, all the n_modes are used.</span>
-
-<span class="sd">        This can be updated dynamically during training.</span>
-<span class="sd">    fno_block_precision : str {&#39;full&#39;, &#39;half&#39;, &#39;mixed&#39;}</span>
-<span class="sd">        if &#39;full&#39;, the FNO Block runs in full precision</span>
-<span class="sd">        if &#39;half&#39;, the FFT, contraction, and inverse FFT run in half precision</span>
-<span class="sd">        if &#39;mixed&#39;, the contraction and inverse FFT run in half precision</span>
-<span class="sd">    stabilizer : str {&#39;tanh&#39;} or None, optional</span>
-<span class="sd">        By default None, otherwise tanh is used before FFT in the FNO block </span>
-<span class="sd">    use_mlp : bool, optional</span>
-<span class="sd">        Whether to use an MLP layer after each FNO block, by default False</span>
-<span class="sd">    mlp : dict, optional</span>
-<span class="sd">        Parameters of the MLP, by default None</span>
-<span class="sd">        {&#39;expansion&#39;: float, &#39;dropout&#39;: float}</span>
-<span class="sd">    non_linearity : nn.Module, optional</span>
-<span class="sd">        Non-Linearity module to use, by default F.gelu</span>
-<span class="sd">    norm : F.module, optional</span>
-<span class="sd">        Normalization layer to use, by default None</span>
-<span class="sd">    preactivation : bool, default is False</span>
-<span class="sd">        if True, use resnet-style preactivation</span>
-<span class="sd">    skip : {&#39;linear&#39;, &#39;identity&#39;, &#39;soft-gating&#39;}, optional</span>
-<span class="sd">        Type of skip connection to use, by default &#39;soft-gating&#39;</span>
-<span class="sd">    separable : bool, default is False</span>
-<span class="sd">        if True, use a depthwise separable spectral convolution</span>
-<span class="sd">    factorization : str or None, {&#39;tucker&#39;, &#39;cp&#39;, &#39;tt&#39;}</span>
-<span class="sd">        Tensor factorization of the parameters weight to use, by default None.</span>
-<span class="sd">        * If None, a dense tensor parametrizes the Spectral convolutions</span>
-<span class="sd">        * Otherwise, the specified tensor factorization is used.</span>
-<span class="sd">    joint_factorization : bool, optional</span>
-<span class="sd">        Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False</span>
-<span class="sd">    rank : float or rank, optional</span>
-<span class="sd">        Rank of the tensor factorization of the Fourier weights, by default 1.0</span>
-<span class="sd">    fixed_rank_modes : bool, optional</span>
-<span class="sd">        Modes to not factorize, by default False</span>
-<span class="sd">    implementation : {&#39;factorized&#39;, &#39;reconstructed&#39;}, optional, default is &#39;factorized&#39;</span>
-<span class="sd">        If factorization is not None, forward mode to use::</span>
-<span class="sd">        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass</span>
-<span class="sd">        * `factorized` : the input is directly contracted with the factors of the decomposition</span>
-<span class="sd">    decomposition_kwargs : dict, optional, default is {}</span>
-<span class="sd">        Optionaly additional parameters to pass to the tensor decomposition</span>
-<span class="sd">    domain_padding : None or float, optional</span>
-<span class="sd">        If not None, percentage of padding to use, by default None</span>
-<span class="sd">    domain_padding_mode : {&#39;symmetric&#39;, &#39;one-sided&#39;}, optional</span>
-<span class="sd">        How to perform domain padding, by default &#39;one-sided&#39;</span>
-<span class="sd">    fft_norm : str, optional</span>
-<span class="sd">        by default &#39;forward&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>                  
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
         <span class="n">n_modes_height</span><span class="p">,</span>
         <span class="n">n_modes_width</span><span class="p">,</span>
         <span class="n">n_modes_depth</span><span class="p">,</span>
         <span class="n">hidden_channels</span><span class="p">,</span>
-        <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
+        <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
         <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
         <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">fno_block_precision</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">,</span>
+        <span class="n">fno_block_precision</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
         <span class="n">stabilizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">mlp_expansion</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
         <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">skip</span><span class="o">=</span><span class="s1">&#39;soft-gating&#39;</span><span class="p">,</span>
+        <span class="n">skip</span><span class="o">=</span><span class="s2">&quot;soft-gating&quot;</span><span class="p">,</span>
         <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">preactivation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+        <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">rank</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-        <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+        <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">implementation</span><span class="o">=</span><span class="s1">&#39;factorized&#39;</span><span class="p">,</span>
+        <span class="n">implementation</span><span class="o">=</span><span class="s2">&quot;factorized&quot;</span><span class="p">,</span>
         <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
         <span class="n">domain_padding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s1">&#39;one-sided&#39;</span><span class="p">,</span>
-        <span class="n">fft_norm</span><span class="o">=</span><span class="s1">&#39;forward&#39;</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s2">&quot;one-sided&quot;</span><span class="p">,</span>
+        <span class="n">fft_norm</span><span class="o">=</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="n">n_modes_height</span><span class="p">,</span> <span class="n">n_modes_width</span><span class="p">,</span> <span class="n">n_modes_depth</span><span class="p">),</span>
             <span class="n">hidden_channels</span><span class="o">=</span><span class="n">hidden_channels</span><span class="p">,</span>
-            <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> 
+            <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
             <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
             <span class="n">lifting_channels</span><span class="o">=</span><span class="n">lifting_channels</span><span class="p">,</span>
             <span class="n">projection_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
@@ -711,21 +589,23 @@
             <span class="n">stabilizer</span><span class="o">=</span><span class="n">stabilizer</span><span class="p">,</span>
             <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
             <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
-            <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span> <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span> <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
+            <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span>
+            <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span>
+            <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
             <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
             <span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">,</span>
             <span class="n">separable</span><span class="o">=</span><span class="n">separable</span><span class="p">,</span>
             <span class="n">preactivation</span><span class="o">=</span><span class="n">preactivation</span><span class="p">,</span>
-            <span class="n">factorization</span><span class="o">=</span><span class="n">factorization</span><span class="p">,</span> 
+            <span class="n">factorization</span><span class="o">=</span><span class="n">factorization</span><span class="p">,</span>
             <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
-            <span class="n">joint_factorization</span><span class="o">=</span><span class="n">joint_factorization</span><span class="p">,</span> 
+            <span class="n">joint_factorization</span><span class="o">=</span><span class="n">joint_factorization</span><span class="p">,</span>
             <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span>
             <span class="n">implementation</span><span class="o">=</span><span class="n">implementation</span><span class="p">,</span>
             <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="n">decomposition_kwargs</span><span class="p">,</span>
             <span class="n">domain_padding</span><span class="o">=</span><span class="n">domain_padding</span><span class="p">,</span>
             <span class="n">domain_padding_mode</span><span class="o">=</span><span class="n">domain_padding_mode</span><span class="p">,</span>
-            <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span>
-            <span class="p">)</span>
+            <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span> <span class="o">=</span> <span class="n">n_modes_height</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_width</span> <span class="o">=</span> <span class="n">n_modes_width</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_depth</span> <span class="o">=</span> <span class="n">n_modes_depth</span></div>
@@ -748,23 +628,27 @@
 <span class="sd">    Instead, here, we define dynamically a new class, inheriting from the existing one.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="fm">__init__</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">new_class</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">new_name</span><span class="p">,</span> <span class="p">(</span><span class="bp">cls</span><span class="p">,),</span>  <span class="p">{</span>
-        <span class="s1">&#39;__init__&#39;</span><span class="p">:</span> <span class="fm">__init__</span><span class="p">,</span>
-        <span class="s1">&#39;__doc__&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__doc__</span><span class="p">,</span>
-        <span class="s1">&#39;forward&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">forward</span><span class="p">,</span> 
-    <span class="p">})</span>
+    <span class="n">new_class</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span>
+        <span class="n">new_name</span><span class="p">,</span>
+        <span class="p">(</span><span class="bp">cls</span><span class="p">,),</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;__init__&quot;</span><span class="p">:</span> <span class="fm">__init__</span><span class="p">,</span>
+            <span class="s2">&quot;__doc__&quot;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__doc__</span><span class="p">,</span>
+            <span class="s2">&quot;forward&quot;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">forward</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">new_class</span>
 
 
-<span class="n">TFNO</span>   <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;TFNO&#39;</span><span class="p">,</span> <span class="n">FNO</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;Tucker&#39;</span><span class="p">)</span>
-<span class="n">TFNO1d</span> <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;TFNO1d&#39;</span><span class="p">,</span> <span class="n">FNO1d</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;Tucker&#39;</span><span class="p">)</span>
-<span class="n">TFNO2d</span> <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;TFNO2d&#39;</span><span class="p">,</span> <span class="n">FNO2d</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;Tucker&#39;</span><span class="p">)</span>
-<span class="n">TFNO3d</span> <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;TFNO3d&#39;</span><span class="p">,</span> <span class="n">FNO3d</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;Tucker&#39;</span><span class="p">)</span>
+<span class="n">TFNO</span> <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s2">&quot;TFNO&quot;</span><span class="p">,</span> <span class="n">FNO</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s2">&quot;Tucker&quot;</span><span class="p">)</span>
+<span class="n">TFNO1d</span> <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s2">&quot;TFNO1d&quot;</span><span class="p">,</span> <span class="n">FNO1d</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s2">&quot;Tucker&quot;</span><span class="p">)</span>
+<span class="n">TFNO2d</span> <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s2">&quot;TFNO2d&quot;</span><span class="p">,</span> <span class="n">FNO2d</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s2">&quot;Tucker&quot;</span><span class="p">)</span>
+<span class="n">TFNO3d</span> <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s2">&quot;TFNO3d&quot;</span><span class="p">,</span> <span class="n">FNO3d</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s2">&quot;Tucker&quot;</span><span class="p">)</span>
 
-<span class="n">SFNO</span>   <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s1">&#39;SFNO&#39;</span><span class="p">,</span> <span class="n">FNO</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;dense&#39;</span><span class="p">,</span> <span class="n">SpectralConv</span><span class="o">=</span><span class="n">SphericalConv</span><span class="p">)</span>
-<span class="n">SFNO</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">SFNO</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;Fourier&#39;</span><span class="p">,</span> <span class="s1">&#39;Spherical Fourier&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">SFNO</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">SFNO</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;FNO&#39;</span><span class="p">,</span> <span class="s1">&#39;SFNO&#39;</span><span class="p">)</span>
-<span class="n">SFNO</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">SFNO</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;fno&#39;</span><span class="p">,</span> <span class="s1">&#39;sfno&#39;</span><span class="p">)</span>
+<span class="n">SFNO</span> <span class="o">=</span> <span class="n">partialclass</span><span class="p">(</span><span class="s2">&quot;SFNO&quot;</span><span class="p">,</span> <span class="n">FNO</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s2">&quot;dense&quot;</span><span class="p">,</span> <span class="n">SpectralConv</span><span class="o">=</span><span class="n">SphericalConv</span><span class="p">)</span>
+<span class="n">SFNO</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">SFNO</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Fourier&quot;</span><span class="p">,</span> <span class="s2">&quot;Spherical Fourier&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">SFNO</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">SFNO</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;FNO&quot;</span><span class="p">,</span> <span class="s2">&quot;SFNO&quot;</span><span class="p">)</span>
+<span class="n">SFNO</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">SFNO</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;fno&quot;</span><span class="p">,</span> <span class="s2">&quot;sfno&quot;</span><span class="p">)</span>
 </pre></div>
 
       </div>
