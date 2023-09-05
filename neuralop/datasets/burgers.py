@@ -9,7 +9,7 @@ def load_burgers(
     data_path = Path(data_path).joinpath("burgers.pt").as_posix()
     data = torch.load(data_path)
 
-    x_train = data[0:n_train, :, 0]
+    x_train = data[0:n_train, :, time]
     x_test = data[n_train : (n_train + n_test), :, 0]
 
     y_train = data[0:n_train, :, time]
