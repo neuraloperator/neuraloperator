@@ -228,13 +228,15 @@ class Trainer:
                 
 
                 for loader_name, loader in test_loaders.items():
-                    _ = self.evaluate(eval_losses, loader, log_prefix=loader_name)
+                    errors = self.evaluate(eval_losses, loader, log_prefix=loader_name)
 
                 if self.callbacks:
                     self.callbacks.on_val_end()
             
             if self.callbacks:
                 self.callbacks.on_epoch_end(epoch=epoch, train_err=train_err, avg_loss=avg_loss)
+
+        return errors
 
     def evaluate(self, loss_dict, data_loader,
                  log_prefix=''):
