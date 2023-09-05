@@ -14,6 +14,7 @@ tenalg.set_backend('einsum')
 @pytest.mark.parametrize('n_dim', [1, 2, 3])
 @pytest.mark.parametrize('fno_block_precision', ['full', 'half', 'mixed'])
 @pytest.mark.parametrize('stabilizer', [None, 'tanh'])
+@pytest.mark.parameterized('lifting_channels', [None, 256])
 def test_tfno(factorization, implementation, n_dim, fno_block_precision, stabilizer):
     if torch.has_cuda:
         device = 'cuda'

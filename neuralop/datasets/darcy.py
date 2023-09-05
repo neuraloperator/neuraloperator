@@ -87,9 +87,7 @@ def load_darcy_pt(
     encoding="channel-wise",
     channel_dim=1,
 ):
-    """Load the Navier-Stokes dataset
-    For the 241 dataset, one must use the keys as 'coeff' and 'sol' for the 'x' and 'y' keys respectively.
-    """
+    """Load the Navier-Stokes dataset"""
     data = torch.load(
         Path(data_path).joinpath(f"darcy_train_{train_resolution}.pt").as_posix()
     )

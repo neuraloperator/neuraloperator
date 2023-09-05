@@ -1,4 +1,5 @@
 import torch.nn as nn
+import numpy as np
 import torch.nn.functional as F
 from functools import partialmethod
 
@@ -44,17 +45,20 @@ class FNO(nn.Module):
         By default None, otherwise tanh is used before FFT in the FNO block 
     use_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
-    mlp : dict, optional
-        Parameters of the MLP, by default None
-        {'expansion': float, 'dropout': float}
+    mlp_dropout : float , optional
+        droupout parameter of MLP layer, by default 0
+    mlp_expansion : float, optional
+        expansion parameter of MLP layer, by default 0.5
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
     norm : F.module, optional
         Normalization layer to use, by default None
     preactivation : bool, default is False
         if True, use resnet-style preactivation
-    skip : {'linear', 'identity', 'soft-gating'}, optional
-        Type of skip connection to use, by default 'soft-gating'
+    fno_skip : {'linear', 'identity', 'soft-gating'}, optional
+        Type of skip connection to use in fno, by default 'linear'
+    mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
+        Type of skip connection to use in mlp, by default 'soft-gating'
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
     factorization : str or None, {'tucker', 'cp', 'tt'}
@@ -134,10 +138,11 @@ class FNO(nn.Module):
         # When updated, change should be reflected in fno blocks
         self._incremental_n_modes = incremental_n_modes
 
-        if domain_padding is not None and domain_padding > 0:
-            self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scaling_factor=output_scaling_factor)
+        if domain_padding is not None and ((isinstance(domain_padding, list) and sum(domain_padding) > 0) or (isinstance(domain_padding, (float, int)) and domain_padding > 0)):
+                self.domain_padding = DomainPadding(domain_padding=domain_padding, padding_mode=domain_padding_mode, output_scaling_factor=output_scaling_factor)
         else:
             self.domain_padding = None
+
         self.domain_padding_mode = domain_padding_mode
 
         if output_scaling_factor is not None and not joint_factorization:
@@ -167,9 +172,15 @@ class FNO(nn.Module):
             decomposition_kwargs=decomposition_kwargs,
             joint_factorization=joint_factorization,
             SpectralConv=SpectralConv,
-            n_layers=n_layers)
+            n_layers=n_layers,
+            **kwargs)
 
-        self.lifting = MLP(in_channels=in_channels, out_channels=self.hidden_channels, hidden_channels=self.hidden_channels, n_layers=1, n_dim=self.n_dim)
+        # if lifting_channels is passed, make lifting an MLP with a hidden layer of size lifting_channels
+        if self.lifting_channels:
+            self.lifting = MLP(in_channels=in_channels, out_channels=self.hidden_channels, hidden_channels=self.lifting_channels, n_layers=2, n_dim=self.n_dim)
+        # otherwise, make it a linear layer
+        else:
+            self.lifting = MLP(in_channels=in_channels, out_channels=self.hidden_channels, hidden_channels=self.hidden_channels, n_layers=1, n_dim=self.n_dim)
         self.projection = MLP(in_channels=self.hidden_channels, out_channels=out_channels, hidden_channels=self.projection_channels, n_layers=2, n_dim=self.n_dim, non_linearity=non_linearity) 
 
     def forward(self, x):
@@ -598,7 +609,7 @@ class FNO3d(FNO):
             )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
-        self.n_modes_height = n_modes_height
+        self.n_modes_depth = n_modes_depth
 
 
 def partialclass(new_name, cls, *args, **kwargs):

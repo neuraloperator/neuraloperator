@@ -1,0 +1,6 @@
+title = "neuralop"
+
+[tool.black]
+    line-length = 88  # Allow for 90-ish characters
+    target-versions = ["py36", "py38", "py310"]
+    include = ["neuralop/layers/*"]
