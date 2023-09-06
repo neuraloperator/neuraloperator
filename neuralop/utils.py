@@ -2,6 +2,7 @@ from typing import Union, Literal, Optional, List, Tuple, Generator
 import torch
 from torch import Tensor
 import wandb
+import math
 
 
 # normalization, pointwise gaussian
@@ -42,13 +43,28 @@ class UnitGaussianNormalizer:
             count = len(x)
         elif isinstance(x, Generator):
             first_item = next(x)
-            total_sum = first_item
-            total_sum_square = first_item**2
-            count = 1
+
+            # reduce over the reduction dimensions if provided
+            def compute_statistics(item):
+                if reduce_dim is not None:
+                    shape = item.shape
+                    count = math.prod([shape[i] for i in reduce_dim])
+                    total_sum = torch.sum(item, reduce_dim, keepdim=True).squeeze(0)
+                    total_sum_square = torch.sum(
+                        item**2, reduce_dim, keepdim=True
+                    ).squeeze(0)
+                else:
+                    total_sum = item
+                    total_sum_square = item**2
+                    count = 1
+                return count, total_sum, total_sum_square
+
+            count, total_sum, total_sum_square = compute_statistics(first_item)
             for item in x:
-                total_sum += item
-                total_sum_square += item**2
-                count += 1
+                curr_count, curr_sum, curr_square = compute_statistics(item)
+                total_sum += curr_sum
+                total_sum_square += curr_square
+                count += curr_count
             mean = total_sum / count
             # Compute unbiased variance
             variance = (total_sum_square - (total_sum**2) / count) / (count - 1)
@@ -190,22 +206,3 @@ def spectrum_2d(signal, n_observations, normalize=True):
 
     spectrum = spectrum.mean(dim=0)
     return spectrum
-
-
-if __name__ == "__main__":
-    # Test the Gaussian normalizer
-    X = torch.randn(100, 10)
-    normalizer = UnitGaussianNormalizer(X)
-    X_norm = normalizer.encode(X)
-    X_recon = normalizer.decode(X_norm)
-    print(torch.allclose(X, X_recon))
-
-    # Create a generator
-    def gen():
-        for i in range(100):
-            yield X[i]
-
-    normalizer = UnitGaussianNormalizer(gen())
-    X_norm = normalizer.encode(X)
-    X_recon = normalizer.decode(X_norm)
-    print(torch.allclose(X, X_recon))
