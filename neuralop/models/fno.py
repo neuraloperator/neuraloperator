@@ -210,21 +210,28 @@ class FNO(nn.Module):
             )
         # otherwise, make it a linear layer
         else:
-            self.lifting = MLP(
-                in_channels=in_channels,
-                out_channels=self.hidden_channels,
-                hidden_channels=self.hidden_channels,
-                n_layers=1,
-                n_dim=self.n_dim,
+            self.lifting = nn.Linear(
+                in_features=in_channels,
+                out_features=self.hidden_channels,
             )
-        self.projection = MLP(
-            in_channels=self.hidden_channels,
-            out_channels=out_channels,
-            hidden_channels=self.projection_channels,
-            n_layers=2,
-            n_dim=self.n_dim,
-            non_linearity=non_linearity,
-        )
+            
+        # if projection_channels is passed, make projection an MLP
+        # with a hidden layer of size projection_channels
+        if self.projection_channels:
+            self.projection = MLP(
+                in_channels=self.hidden_channels,
+                out_channels=out_channels,
+                hidden_channels=self.projection_channels,
+                n_layers=2,
+                n_dim=self.n_dim,
+                non_linearity=non_linearity,
+            )
+        # otherwise, make it a linear layer
+        else:
+            self.projection = nn.Linear(
+                in_features=self.hidden_channels,
+                out_features=out_channels,
+            )
 
     def forward(self, x):
         """TFNO's forward pass"""
