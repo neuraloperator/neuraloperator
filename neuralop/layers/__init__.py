@@ -1,1 +1,1 @@
-from spectral_convolution import SpectralConv, SpectralConv1d
+from .spectral_convolution import SpectralConv, SpectralConv1d

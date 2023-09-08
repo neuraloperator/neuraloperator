@@ -1,11 +1,6 @@
 import itertools
 from typing import Optional, Tuple
 
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
 import torch
 from torch import nn
 

@@ -6,7 +6,7 @@ from numpy import load as np_load
 DEFAULT_DATA_HOME = Path.home().joinpath("neuraloperator_data")
 
 
-def _get_data_home(data_home: Optional[str, Path] = None) -> Path:
+def _get_data_home(data_home: Optional[Union[str, Path]] = None) -> Path:
     if data_home is None:
         data_home = DEFAULT_DATA_HOME
     if isinstance(data_home, str):
@@ -20,7 +20,7 @@ def _get_data_home(data_home: Optional[str, Path] = None) -> Path:
 
 def fetch_npz(
     file_name: str,
-    unused_zenodo_url: str,
+    _zenodo_url: str,
     data_home: Optional[Union[str, Path]] = None,
 ):
     """Loads a target ``.npz`` file.
