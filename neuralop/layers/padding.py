@@ -1,6 +1,8 @@
 from torch import nn
 from torch.nn import functional as F
 
+from neuralop.utils import validate_output_scaling_factor_1d
+
 
 class DomainPadding(nn.Module):
     """Applies domain padding scaled automatically to the input's resolution
@@ -12,6 +14,7 @@ class DomainPadding(nn.Module):
         if a list, make sure if matches the dim of (d1, ..., dN)
     padding_mode : {'symmetric', 'one-sided'}, optional
         whether to pad on both sides, by default 'one-sided'
+    output_scaling_factor : int ; default is 1
 
     Notes
     -----
@@ -20,7 +23,7 @@ class DomainPadding(nn.Module):
     """
 
     def __init__(
-        self, domain_padding, padding_mode="one-sided", output_scaling_factor=None
+        self, domain_padding, padding_mode="one-sided", output_scaling_factor=1
     ):
         super().__init__()
         self.domain_padding = domain_padding
@@ -48,17 +51,15 @@ class DomainPadding(nn.Module):
         if isinstance(self.domain_padding, (float, int)):
             self.domain_padding = [float(self.domain_padding)] * len(resolution)
 
-        assert len(self.domain_padding) == len(
-            resolution
-        ), "domain_padding length must match the number of spatial/time dimensions " \
-           "(excluding batch, ch)"
+        assert len(self.domain_padding) == len(resolution), (
+            "domain_padding length must match the number of spatial/time dimensions "
+            "(excluding batch, ch)"
+        )
 
-        if self.output_scaling_factor is None:
-            self.output_scaling_factor = [1] * len(resolution)
-        elif isinstance(self.output_scaling_factor, (float, int)):
-            self.output_scaling_factor = [float(self.output_scaling_factor)] * len(
-                resolution
-            )
+        # if unset by the user, scaling will be 1 be default:
+        output_scaling_factor = validate_output_scaling_factor_1d(
+            self.output_scaling_factor, resolution
+        )
 
         try:
             padding = self._padding[f"{resolution}"]
@@ -80,7 +81,7 @@ class DomainPadding(nn.Module):
             output_pad = padding
 
             output_pad = [
-                round(i * j) for (i, j) in zip(self.output_scaling_factor, output_pad)
+                round(i * j) for (i, j) in zip(output_scaling_factor, output_pad)
             ]
 
             # the F.pad(x, padding) funtion pads the tensor 'x' in reverse order
@@ -122,14 +123,13 @@ class DomainPadding(nn.Module):
 
             padded = F.pad(x, padding, mode="constant")
 
-            out_put_shape = padded.shape[2:]
+            output_shape = padded.shape[2:]
 
-            out_put_shape = [
-                round(i * j)
-                for (i, j) in zip(self.output_scaling_factor, out_put_shape)
+            output_shape = [
+                round(i * j) for (i, j) in zip(output_scaling_factor, output_shape)
             ]
 
-            self._unpad_indices[f"{[i for i in out_put_shape]}"] = unpad_indices
+            self._unpad_indices[f"{[i for i in output_shape]}"] = unpad_indices
 
             return padded
 

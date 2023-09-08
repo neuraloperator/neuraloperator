@@ -7,6 +7,7 @@ from .normalization_layers import AdaIN
 from .resample import resample
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
+from ..utils import validate_output_scaling_factor_2d
 
 
 class FNOBlocks(nn.Module):
@@ -46,16 +47,9 @@ class FNOBlocks(nn.Module):
         self.n_modes = n_modes
         self.n_dim = len(n_modes)
 
-        if output_scaling_factor is not None:
-            if isinstance(output_scaling_factor, (float, int)):
-                output_scaling_factor = [
-                    [float(output_scaling_factor)] * len(self.n_modes)
-                ] * n_layers
-            elif isinstance(output_scaling_factor[0], (float, int)):
-                output_scaling_factor = [
-                    [s] * len(self.n_modes) for s in output_scaling_factor
-                ]
-        self.output_scaling_factor = output_scaling_factor
+        self.output_scaling_factor = validate_output_scaling_factor_2d(
+            output_scaling_factor, self.n_dim, n_layers
+        )
 
         self._incremental_n_modes = incremental_n_modes
         self.fno_block_precision = fno_block_precision
@@ -197,23 +191,11 @@ class FNOBlocks(nn.Module):
 
     def forward(self, x, index=0, output_shape=None):
         x_skip_fno = self.fno_skips[index](x)
-        if self.output_scaling_factor is not None:
-            x_skip_fno = resample(
-                x_skip_fno,
-                self.output_scaling_factor[index],
-                list(range(-len(self.output_scaling_factor[index]), 0)),
-                output_shape=output_shape,
-            )
+        x_skip_fno = self.resample(x_skip_fno, index, output_shape)
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
-            if self.output_scaling_factor is not None:
-                x_skip_mlp = resample(
-                    x_skip_mlp,
-                    self.output_scaling_factor[index],
-                    list(range(-len(self.output_scaling_factor[index]), 0)),
-                    output_shape=output_shape,
-                )
+            x_skip_mlp = self.resample(x_skip_mlp, index, output_shape)
 
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
@@ -248,23 +230,11 @@ class FNOBlocks(nn.Module):
             x = self.norm[self.n_norms * index](x)
 
         x_skip_fno = self.fno_skips[index](x)
-        if self.output_scaling_factor is not None:
-            x_skip_fno = resample(
-                x_skip_fno,
-                self.output_scaling_factor[index],
-                list(range(-len(self.output_scaling_factor[index]), 0)),
-                output_shape=output_shape,
-            )
+        x_skip_fno = self.resample(x_skip_fno, index, output_shape)
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
-            if self.output_scaling_factor is not None:
-                x_skip_mlp = resample(
-                    x_skip_mlp,
-                    self.output_scaling_factor[index],
-                    list(range(-len(self.output_scaling_factor[index]), 0)),
-                    output_shape=output_shape,
-                )
+            x_skip_mlp = self.resample(x_skip_mlp, index, output_shape)
 
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
@@ -282,6 +252,19 @@ class FNOBlocks(nn.Module):
             x = self.mlp[index](x) + x_skip_mlp
 
         return x
+
+    def resample(self, x, index, output_shape):
+        """Resamples input if scaling factors are available for this block."""
+        if self.output_scaling_factor is None:
+            return x
+
+        scaling_factor = self.output_scaling_factor[index]
+        return resample(
+            x,
+            scaling_factor,
+            list(range(-len(scaling_factor), 0)),
+            output_shape=output_shape,
+        )
 
     @property
     def incremental_n_modes(self):

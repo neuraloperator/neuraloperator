@@ -1,6 +1,8 @@
 import itertools
 from typing import Optional, Tuple
 
+from ..utils import validate_output_scaling_factor_2d
+
 try:
     from typing import Literal
 except ImportError:
@@ -285,21 +287,14 @@ class SpectralConv(nn.Module):
         self.n_layers = n_layers
         self.implementation = implementation
 
-        if output_scaling_factor is not None:
-            if isinstance(output_scaling_factor, (float, int)):
-                output_scaling_factor = [
-                    [float(output_scaling_factor)] * len(self.n_modes)
-                ] * n_layers
-            elif isinstance(output_scaling_factor[0], (float, int)):
-                output_scaling_factor = [
-                    [s] * len(self.n_modes) for s in output_scaling_factor
-                ]
-        self.output_scaling_factor = output_scaling_factor
+        self.output_scaling_factor = validate_output_scaling_factor_2d(
+            output_scaling_factor, self.order, n_layers
+        )
 
         if init_std == "auto":
             init_std = 1 / (in_channels * out_channels)
         else:
-            init_std = 0.02
+            init_std = init_std
 
         if isinstance(fixed_rank_modes, bool):
             if fixed_rank_modes:
