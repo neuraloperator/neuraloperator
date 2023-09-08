@@ -58,7 +58,7 @@ class FNOBlocks(nn.Module):
         self.output_scaling_factor = output_scaling_factor
 
         self._incremental_n_modes = incremental_n_modes
-        self.fno_block_preicison = fno_block_precision
+        self.fno_block_precision = fno_block_precision
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.n_layers = n_layers
@@ -101,7 +101,10 @@ class FNOBlocks(nn.Module):
         self.fno_skips = nn.ModuleList(
             [
                 skip_connection(
-                    self.in_channels, self.out_channels, skip_type=fno_skip, n_dim=self.n_dim
+                    self.in_channels,
+                    self.out_channels,
+                    skip_type=fno_skip,
+                    n_dim=self.n_dim,
                 )
                 for _ in range(n_layers)
             ]
@@ -173,6 +176,9 @@ class FNOBlocks(nn.Module):
                 "[instance_norm, group_norm, layer_norm]"
             )
 
+        if self.preactivation:
+            self.forward = self.forward_with_preactivation
+
     def set_ada_in_embeddings(self, *embeddings):
         """Sets the embeddings of each Ada-IN norm layers
 
@@ -190,20 +196,8 @@ class FNOBlocks(nn.Module):
                 norm.set_embedding(embedding)
 
     def forward(self, x, index=0, output_shape=None):
-
-        if self.preactivation:
-            x = self.non_linearity(x)
-
-            if self.norm is not None:
-                x = self.norm[self.n_norms * index](x)
-
         x_skip_fno = self.fno_skips[index](x)
-        if self.convs.output_scaling_factor is not None:
-            # x_skip_fno = resample(
-            #     x_skip_fno,
-            #     self.convs.output_scaling_factor[index],
-            #     list(range(-len(self.convs.output_scaling_factor[index]), 0))
-            # )
+        if self.output_scaling_factor is not None:
             x_skip_fno = resample(
                 x_skip_fno,
                 self.output_scaling_factor[index],
@@ -213,7 +207,7 @@ class FNOBlocks(nn.Module):
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
-            if self.convs.output_scaling_factor is not None:
+            if self.output_scaling_factor is not None:
                 x_skip_mlp = resample(
                     x_skip_mlp,
                     self.output_scaling_factor[index],
@@ -226,36 +220,67 @@ class FNOBlocks(nn.Module):
 
         x_fno = self.convs(x, index, output_shape=output_shape)
 
-        if not self.preactivation and self.norm is not None:
+        if self.norm is not None:
             x_fno = self.norm[self.n_norms * index](x_fno)
 
         x = x_fno + x_skip_fno
 
-        if (
-            not self.preactivation
-            and (self.mlp is not None)
-            or (index < (self.n_layers - index))
-        ):
+        if (self.mlp is not None) or (index < (self.n_layers - index)):
             x = self.non_linearity(x)
 
         if self.mlp is not None:
-            # x_skip = self.mlp_skips[index](x)
+            x = self.mlp[index](x) + x_skip_mlp
 
-            if self.preactivation:
-                if index < (self.n_layers - 1):
-                    x = self.non_linearity(x)
+            if self.norm is not None:
+                x = self.norm[self.n_norms * index + 1](x)
 
-                if self.norm is not None:
-                    x = self.norm[self.n_norms * index + 1](x)
+            if index < (self.n_layers - 1):
+                x = self.non_linearity(x)
+
+        return x
+
+    def forward_with_preactivation(self, x, index=0, output_shape=None):
+        # Apply non-linear activation (and norm)
+        # before this block's convolution/forward pass:
+        x = self.non_linearity(x)
+
+        if self.norm is not None:
+            x = self.norm[self.n_norms * index](x)
+
+        x_skip_fno = self.fno_skips[index](x)
+        if self.output_scaling_factor is not None:
+            x_skip_fno = resample(
+                x_skip_fno,
+                self.output_scaling_factor[index],
+                list(range(-len(self.output_scaling_factor[index]), 0)),
+                output_shape=output_shape,
+            )
+
+        if self.mlp is not None:
+            x_skip_mlp = self.mlp_skips[index](x)
+            if self.output_scaling_factor is not None:
+                x_skip_mlp = resample(
+                    x_skip_mlp,
+                    self.output_scaling_factor[index],
+                    list(range(-len(self.output_scaling_factor[index]), 0)),
+                    output_shape=output_shape,
+                )
+
+        if self.stabilizer == "tanh":
+            x = torch.tanh(x)
+
+        x_fno = self.convs(x, index, output_shape=output_shape)
+        x = x_fno + x_skip_fno
+
+        if self.mlp is not None:
+            if index < (self.n_layers - 1):
+                x = self.non_linearity(x)
+
+            if self.norm is not None:
+                x = self.norm[self.n_norms * index + 1](x)
 
             x = self.mlp[index](x) + x_skip_mlp
 
-            if not self.preactivation and self.norm is not None:
-                x = self.norm[self.n_norms * index + 1](x)
-
-            if not self.preactivation:
-                if index < (self.n_layers - 1):
-                    x = self.non_linearity(x)
         return x
 
     @property
