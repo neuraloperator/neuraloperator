@@ -32,6 +32,7 @@ class MLP(nn.Module):
         **kwargs,
     ):
         super().__init__()
+        self.n_dim = n_dim
         self.n_layers = n_layers
         self.in_channels = in_channels
         self.out_channels = in_channels if out_channels is None else out_channels
@@ -69,16 +70,23 @@ class MLP(nn.Module):
                 self.fcs.append(nn.Linear(layers[j], layers[j + 1]))
 
     def forward(self, x):
-        size = list(x.shape)
-        x = x.reshape(size[0], size[1], -1).permute(0, -1, 1)
+        if self.n_dim > 3:
+            size = list(x.shape)
+            x = x.reshape(size[0], size[1], -1).permute(0, -1, 1)
+            
         for i, fc in enumerate(self.fcs):
             x = fc(x)
             if i < self.n_layers - 1:
                 x = self.non_linearity(x)
             if self.dropout is not None:
                 x = self.dropout[i](x)  # Correctly use the dropout from the ModuleList
-        size[1] = self.out_channels
-        return x.permute(0, -1, 1).reshape(size)
+                
+        if self.n_dim > 3:
+            size[1] = self.out_channels
+            x = x.permute(0, -1, 1).reshape(size)   
+            
+        return x
+
 
 
 # Reimplementation of the MLP class using Linear instead of Conv
