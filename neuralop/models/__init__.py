@@ -3,4 +3,5 @@ from .fno import FNO, FNO1d, FNO2d, FNO3d
 from .fno import SFNO
 from .uno import UNO
 from .fnogno import FNOGNO
+from .nestedfno import NestedFNO
 from .model_dispatcher import get_model

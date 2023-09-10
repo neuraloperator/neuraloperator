@@ -98,14 +98,25 @@ class FNOBlocks(nn.Module):
             n_layers=n_layers,
         )
 
-        self.fno_skips = nn.ModuleList(
-            [
-                skip_connection(
-                    self.in_channels, self.out_channels, skip_type=fno_skip, n_dim=self.n_dim
-                )
-                for _ in range(n_layers)
-            ]
-        )
+        if self.n_dim == 4:
+            self.fno_skips = nn.ModuleList(
+                [
+                    skip_connection(
+                        self.in_channels, self.out_channels, skip_type=fno_skip, n_dim=1
+                    )
+                    for _ in range(n_layers)
+                ]
+            )
+
+        else:
+            self.fno_skips = nn.ModuleList(
+                [
+                    skip_connection(
+                        self.in_channels, self.out_channels, skip_type=fno_skip, n_dim=self.n_dim
+                    )
+                    for _ in range(n_layers)
+                ]
+            )
 
         if use_mlp:
             self.mlp = nn.ModuleList(
@@ -196,8 +207,17 @@ class FNOBlocks(nn.Module):
 
             if self.norm is not None:
                 x = self.norm[self.n_norms * index](x)
-
+        
+        size = list(x.shape)
+        if self.n_dim == 4:
+            x = x.reshape(size[0], size[1], -1)
+        
         x_skip_fno = self.fno_skips[index](x)
+        
+        if self.n_dim == 4:
+            x_skip_fno = x_skip_fno.reshape(size)
+            x = x.reshape(size)
+            
         if self.convs.output_scaling_factor is not None:
             # x_skip_fno = resample(
             #     x_skip_fno,
@@ -228,6 +248,7 @@ class FNOBlocks(nn.Module):
 
         if not self.preactivation and self.norm is not None:
             x_fno = self.norm[self.n_norms * index](x_fno)
+
 
         x = x_fno + x_skip_fno
 
