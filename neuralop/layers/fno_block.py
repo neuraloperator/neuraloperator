@@ -170,9 +170,6 @@ class FNOBlocks(nn.Module):
                 "[instance_norm, group_norm, layer_norm]"
             )
 
-        if self.preactivation:
-            self.forward = self.forward_with_preactivation
-
     def set_ada_in_embeddings(self, *embeddings):
         """Sets the embeddings of each Ada-IN norm layers
 
@@ -190,6 +187,12 @@ class FNOBlocks(nn.Module):
                 norm.set_embedding(embedding)
 
     def forward(self, x, index=0, output_shape=None):
+        if self.preactivation:
+            return self.forward_with_preactivation(x, index, output_shape)
+        else:
+            return self.forward_with_postactivation(x, index, output_shape)
+
+    def forward_with_postactivation(self, x, index=0, output_shape=None):
         x_skip_fno = self.fno_skips[index](x)
         x_skip_fno = self.resample(x_skip_fno, index, output_shape)
 
