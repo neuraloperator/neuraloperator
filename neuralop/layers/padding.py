@@ -58,8 +58,8 @@ class DomainPadding(nn.Module):
 
         # if unset by the user, scaling_factor will be 1 be default:
         output_scaling_factor = validate_output_scaling_factor(
-            self.output_scaling_factor, resolution
-        )
+            self.output_scaling_factor, len(resolution)
+        )[0]
 
         try:
             padding = self._padding[f"{resolution}"]
