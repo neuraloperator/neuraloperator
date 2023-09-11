@@ -165,30 +165,19 @@ def spectrum_2d(signal, n_observations, normalize=True):
 
 Number = Union[float, int]
 
-def validate_output_scaling_factor_1d(
-    output_scaling_factor: Optional[Union[Number, List[Number]]],
-    order: int,
-) -> Optional[List[float]]:
-    if output_scaling_factor is None:
-        return None
-    if isinstance(output_scaling_factor, (float, int)):
-        return [float(output_scaling_factor)] * len(order)
-
-    # TODO raise ValueError
-    return None
-
-
-def validate_output_scaling_factor_2d(
+def validate_output_scaling_factor(
     output_scaling_factor: Optional[Union[Number, List[Number]]],
     n_dim: int,
-    n_layers: int,
+    n_layers: int = 1,
 ) -> Optional[List[List[float]]]:
     if output_scaling_factor is None:
         return None
     if isinstance(output_scaling_factor, (float, int)):
         return [[float(output_scaling_factor)] * n_dim] * n_layers
-    if isinstance(output_scaling_factor, list) and isinstance(
-        output_scaling_factor[0], (float, int)
+    if (
+        isinstance(output_scaling_factor, list)
+        and len(output_scaling_factor) > 0
+        and all([isinstance(s, (float, int)) for s in output_scaling_factor])
     ):
         return [[float(s)] * n_dim for s in output_scaling_factor]
 

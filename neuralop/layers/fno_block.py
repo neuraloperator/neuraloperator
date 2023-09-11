@@ -7,7 +7,7 @@ from .normalization_layers import AdaIN
 from .resample import resample
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
-from ..utils import validate_output_scaling_factor_2d
+from ..utils import validate_output_scaling_factor
 
 
 class FNOBlocks(nn.Module):
@@ -47,7 +47,7 @@ class FNOBlocks(nn.Module):
         self.n_modes = n_modes
         self.n_dim = len(n_modes)
 
-        self.output_scaling_factor = validate_output_scaling_factor_2d(
+        self.output_scaling_factor = validate_output_scaling_factor(
             output_scaling_factor, self.n_dim, n_layers
         )
 

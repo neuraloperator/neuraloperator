@@ -1,7 +1,7 @@
 from torch import nn
 from torch.nn import functional as F
 
-from neuralop.utils import validate_output_scaling_factor_1d
+from neuralop.utils import validate_output_scaling_factor
 
 
 class DomainPadding(nn.Module):
@@ -56,8 +56,8 @@ class DomainPadding(nn.Module):
             "(excluding batch, ch)"
         )
 
-        # if unset by the user, scaling will be 1 be default:
-        output_scaling_factor = validate_output_scaling_factor_1d(
+        # if unset by the user, scaling_factor will be 1 be default:
+        output_scaling_factor = validate_output_scaling_factor(
             self.output_scaling_factor, resolution
         )
 

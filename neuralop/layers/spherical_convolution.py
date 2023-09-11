@@ -6,7 +6,7 @@ import tensorly as tl
 from tensorly.plugins import use_opt_einsum
 from tltorch.factorized_tensors.core import FactorizedTensor
 
-from neuralop.utils import validate_output_scaling_factor_1d
+from neuralop.utils import validate_output_scaling_factor
 
 tl.set_backend("pytorch")
 use_opt_einsum("optimal")
@@ -254,7 +254,7 @@ class SphericalConv(nn.Module):
                 output_scaling_factor = [float(output_scaling_factor)] * len(
                     self.n_modes
                 )
-        self.output_scaling_factor = validate_output_scaling_factor_1d(
+        self.output_scaling_factor = validate_output_scaling_factor(
             output_scaling_factor, self.order
         )
 

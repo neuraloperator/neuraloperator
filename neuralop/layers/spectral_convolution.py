@@ -1,7 +1,7 @@
 import itertools
 from typing import Optional, Tuple
 
-from ..utils import validate_output_scaling_factor_2d
+from ..utils import validate_output_scaling_factor
 
 try:
     from typing import Literal
@@ -287,7 +287,7 @@ class SpectralConv(nn.Module):
         self.n_layers = n_layers
         self.implementation = implementation
 
-        self.output_scaling_factor = validate_output_scaling_factor_2d(
+        self.output_scaling_factor = validate_output_scaling_factor(
             output_scaling_factor, self.order, n_layers
         )
 
