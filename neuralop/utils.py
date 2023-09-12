@@ -152,7 +152,8 @@ def spectrum_2d(signal, n_observations, normalize=True):
 
     # Remove symmetric components from wavenumbers
     index = -1.0 * torch.ones((n_observations, n_observations))
-    index[0 : k_max + 1, 0 : k_max + 1] = sum_k[0 : k_max + 1, 0 : k_max + 1]
+    k_max1 = k_max + 1
+    index[0:k_max1, 0:k_max1] = sum_k[0:k_max1, 0:k_max1]
 
     spectrum = torch.zeros((T, n_observations))
     for j in range(1, n_observations + 1):
@@ -165,21 +166,33 @@ def spectrum_2d(signal, n_observations, normalize=True):
 
 Number = Union[float, int]
 
-def validate_output_scaling_factor(
-    output_scaling_factor: Optional[Union[Number, List[Number]]],
-    n_dim: int,
-    n_layers: int = 1,
-) -> Optional[List[List[float]]]:
-    if output_scaling_factor is None:
-        return None
-    if isinstance(output_scaling_factor, (float, int)):
-        return [[float(output_scaling_factor)] * n_dim] * n_layers
-    if (
-        isinstance(output_scaling_factor, list)
-        and len(output_scaling_factor) > 0
-        and all([isinstance(s, (float, int)) for s in output_scaling_factor])
-    ):
-        return [[float(s)] * n_dim for s in output_scaling_factor]
 
-    # TODO raise ValueError
+def validate_scaling_factor(
+    scaling_factor: Union[None, Number, List[Number]],
+    n_dim: int,
+    n_layers: int,
+) -> Union[None, List[float], List[List[float]]]:
+    """
+    Parameters
+    ----------
+    scaling_factor : None OR float OR list[float]
+    n_dim : int
+    n_layers : int
+        If less than 1, return a single list (rather than a list of lists)
+        with `factor` repeated `dim` times.
+    """
+    if scaling_factor is None:
+        return None
+    if isinstance(scaling_factor, (float, int)):
+        if n_layers < 1:
+            return [[float(scaling_factor)] * n_dim]
+
+        return [[float(scaling_factor)] * n_dim] * n_layers
+    if (
+        isinstance(scaling_factor, list)
+        and len(scaling_factor) > 0
+        and all([isinstance(s, (float, int)) for s in scaling_factor])
+    ):
+        return [[float(s)] * n_dim for s in scaling_factor]
+
     return None

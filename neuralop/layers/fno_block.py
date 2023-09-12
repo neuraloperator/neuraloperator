@@ -1,3 +1,5 @@
+from typing import List, Optional, Union
+
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -7,7 +9,10 @@ from .normalization_layers import AdaIN
 from .resample import resample
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
-from ..utils import validate_output_scaling_factor
+from ..utils import validate_scaling_factor
+
+
+Number = Union[int, float]
 
 
 class FNOBlocks(nn.Module):
@@ -16,7 +21,7 @@ class FNOBlocks(nn.Module):
         in_channels,
         out_channels,
         n_modes,
-        output_scaling_factor=None,
+        output_scaling_factor: Optional[Union[Number, List[Number]]] = None,
         n_layers=1,
         incremental_n_modes=None,
         fno_block_precision="full",
@@ -47,9 +52,9 @@ class FNOBlocks(nn.Module):
         self.n_modes = n_modes
         self.n_dim = len(n_modes)
 
-        self.output_scaling_factor = validate_output_scaling_factor(
-            output_scaling_factor, self.n_dim, n_layers
-        )
+        self.output_scaling_factor: Union[
+            None, List[List[float]]
+        ] = validate_scaling_factor(output_scaling_factor, self.n_dim, n_layers)
 
         self._incremental_n_modes = incremental_n_modes
         self.fno_block_precision = fno_block_precision
@@ -210,7 +215,7 @@ class FNOBlocks(nn.Module):
 
         x = x_fno + x_skip_fno
 
-        if (self.mlp is not None) or (index < (self.n_layers - index)):
+        if (self.mlp is not None) or (index < (self.n_layers - 1)):
             x = self.non_linearity(x)
 
         if self.mlp is not None:

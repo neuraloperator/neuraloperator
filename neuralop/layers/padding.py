@@ -1,7 +1,9 @@
+from typing import List
+
 from torch import nn
 from torch.nn import functional as F
 
-from neuralop.utils import validate_output_scaling_factor
+from neuralop.utils import validate_scaling_factor
 
 
 class DomainPadding(nn.Module):
@@ -23,12 +25,15 @@ class DomainPadding(nn.Module):
     """
 
     def __init__(
-        self, domain_padding, padding_mode="one-sided", output_scaling_factor=1
+        self,
+        domain_padding,
+        padding_mode="one-sided",
+        output_scaling_factor: float = 1.0,
     ):
         super().__init__()
         self.domain_padding = domain_padding
         self.padding_mode = padding_mode.lower()
-        self.output_scaling_factor = output_scaling_factor
+        self.output_scaling_factor: float = output_scaling_factor
 
         # dict(f'{resolution}'=padding) such that padded = F.pad(x, indices)
         self._padding = dict()
@@ -56,10 +61,11 @@ class DomainPadding(nn.Module):
             "(excluding batch, ch)"
         )
 
-        # if unset by the user, scaling_factor will be 1 be default:
-        output_scaling_factor = validate_output_scaling_factor(
-            self.output_scaling_factor, len(resolution)
-        )[0]
+        # if unset by the user, scaling_factor will be 1 be default,
+        # so `output_scaling_factor` should never be None.
+        output_scaling_factor: List[float] = validate_scaling_factor(
+            self.output_scaling_factor, len(resolution), n_layers=-1
+        )
 
         try:
             padding = self._padding[f"{resolution}"]
