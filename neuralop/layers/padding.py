@@ -66,7 +66,7 @@ class DomainPadding(nn.Module):
             # if unset by the user, scaling_factor will be 1 be default,
             # so `output_scaling_factor` should never be None.
             output_scaling_factor: List[float] = validate_scaling_factor(
-                self.output_scaling_factor, len(resolution), n_layers=-1
+                self.output_scaling_factor, len(resolution), n_layers=None
             )
 
         try:

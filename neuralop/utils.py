@@ -170,21 +170,21 @@ Number = Union[float, int]
 def validate_scaling_factor(
     scaling_factor: Union[None, Number, List[Number]],
     n_dim: int,
-    n_layers: int,
+    n_layers: Optional[int] = None,
 ) -> Union[None, List[float], List[List[float]]]:
     """
     Parameters
     ----------
     scaling_factor : None OR float OR list[float]
     n_dim : int
-    n_layers : int
-        If less than 1, return a single list (rather than a list of lists)
+    n_layers : int or None; defaults to None
+        If None, return a single list (rather than a list of lists)
         with `factor` repeated `dim` times.
     """
     if scaling_factor is None:
         return None
     if isinstance(scaling_factor, (float, int)):
-        if n_layers < 1:
+        if n_layers is None:
             return [float(scaling_factor)] * n_dim
 
         return [[float(scaling_factor)] * n_dim] * n_layers
