@@ -185,7 +185,7 @@ def validate_scaling_factor(
         return None
     if isinstance(scaling_factor, (float, int)):
         if n_layers < 1:
-            return [[float(scaling_factor)] * n_dim]
+            return [float(scaling_factor)] * n_dim
 
         return [[float(scaling_factor)] * n_dim] * n_layers
     if (

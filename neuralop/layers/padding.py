@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 from torch import nn
 from torch.nn import functional as F
@@ -28,12 +28,12 @@ class DomainPadding(nn.Module):
         self,
         domain_padding,
         padding_mode="one-sided",
-        output_scaling_factor: float = 1.0,
+        output_scaling_factor: Union[int, List[int]] = 1,
     ):
         super().__init__()
         self.domain_padding = domain_padding
         self.padding_mode = padding_mode.lower()
-        self.output_scaling_factor: float = output_scaling_factor
+        self.output_scaling_factor: Union[int, List[int]] = output_scaling_factor
 
         # dict(f'{resolution}'=padding) such that padded = F.pad(x, indices)
         self._padding = dict()
@@ -61,11 +61,13 @@ class DomainPadding(nn.Module):
             "(excluding batch, ch)"
         )
 
-        # if unset by the user, scaling_factor will be 1 be default,
-        # so `output_scaling_factor` should never be None.
-        output_scaling_factor: List[float] = validate_scaling_factor(
-            self.output_scaling_factor, len(resolution), n_layers=-1
-        )
+        output_scaling_factor = self.output_scaling_factor
+        if not isinstance(self.output_scaling_factor, list):
+            # if unset by the user, scaling_factor will be 1 be default,
+            # so `output_scaling_factor` should never be None.
+            output_scaling_factor: List[float] = validate_scaling_factor(
+                self.output_scaling_factor, len(resolution), n_layers=-1
+            )
 
         try:
             padding = self._padding[f"{resolution}"]
