@@ -261,11 +261,15 @@ class FNOBlocks(nn.Module):
 
         return x
 
-    def resample(self, x, index, output_shape):
+    def resample(self, x, index, output_shape=None):
         """Resamples input if scaling factors are available for this block."""
-        if self.output_scaling_factor is None:
+        if self.output_scaling_factor is None and output_shape is None:
             return x
 
+        if output_shape is not None:
+            return resample(x, res_scale=1, axis=None, output_shape=output_shape)
+
+        # output_shape is None and self.output_scaling_factor is not None
         scaling_factor = self.output_scaling_factor[index]
         return resample(
             x,
