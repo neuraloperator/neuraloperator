@@ -23,46 +23,45 @@ class Callback(object):
 
     def on_init_start(self, **kwargs):
         self._update_state_dict(**kwargs)
-        pass
 
     def on_init_end(self, *args, **kwargs):
-        pass
+        self._update_state_dict(**kwargs)
 
     def on_before_train(self, *args, **kwargs):
-        pass
+        self._update_state_dict(**kwargs)
 
     def on_train_start(self, *args, **kwargs):
-        pass
+        self._update_state_dict(**kwargs)
 
     def on_epoch_start(self, *args, **kwargs):
-        pass
+        self._update_state_dict(**kwargs)
     
     def on_batch_start(self, *args, **kwargs):
-        pass
+        self._update_state_dict(**kwargs)
 
     def on_load_to_device(self, *args, **kwargs):
-        pass
+        self._update_state_dict(**kwargs)
     
     def on_before_forward(self, *args, **kwargs):
-        pass
+        self._update_state_dict(**kwargs)
 
     def on_before_loss(self, *args, **kwargs):
-        pass
+        self._update_state_dict(**kwargs)
     
     def on_batch_end(self, *args, **kwargs):
-        pass
+        self._update_state_dict(**kwargs)
     
     def on_epoch_end(self, *args, **kwargs):
-        pass
+        self._update_state_dict(**kwargs)
 
     def on_train_start(self, *args, **kwargs):
-        pass
+        self._update_state_dict(**kwargs)
 
     def on_before_val(self, *args, **kwargs):
-        pass
+        self._update_state_dict(**kwargs)
     
     def on_val_batch_start(self, *args, **kwargs):
-        pass
+        self._update_state_dict(**kwargs)
 
 class SimpleLoggerCallback(Callback):
     """
@@ -116,18 +115,32 @@ class MGPatchingCallback(Callback):
     
     def on_batch_start(self, **kwargs):
         self._update_state_dict(**kwargs)
-        x,y = self.patcher.patch(self.state_dict['sample']['x'],
-                                 self.state_dict['sample']['y'])
-
-        self.state_dict['sample']['x'] = x
-        self.state_dict['sample']['y'] = y
+        self.state_dict['sample']['x'],self.state_dict['sample']['y'] =\
+              self.patcher.patch(self.state_dict['sample']['x'],
+                                 self.state_dict['sample']['y'],)
     
+    def on_val_batch_start(self, *args, **kwargs):
+        return self.on_batch_start(*args, **kwargs)
+        
     def on_before_loss(self, out):
+        
         self._update_state_dict(out=out)
         self.state_dict['out'], self.state_dict['sample']['y'] = \
             self.patcher.unpatch(self.state_dict['out'],
                                  self.state_dict['sample']['y'])
+
+class NoPatchingOutputEncoderCallback(Callback):
+    """
+    Callback class for a training loop that involves
+    an output normalizer but no MG patching
+    """
+    def __init__(self, encoder):
+        super().__init__()
+        self.encoder = encoder
     
+    def on_before_loss(self, out):
+        self.state_dict['out'] = self.encoder.decode(out)
+        self.state_dict['sample']['y'] = self.encoder.decode(self.state_dict['sample']['y'])
 
         
 
