@@ -405,6 +405,25 @@ class SphericalConv(nn.Module):
                 slice(None, n // 2) for n in self._incremental_n_modes
             ]
             self.half_n_modes = [m // 2 for m in self._incremental_n_modes]
+    
+    def transform(self, x, layer_index=0, output_shape=None):
+        *_, in_height, in_width = x.shape
+
+        if self.output_scaling_factor is not None and output_shape is None:
+            height = round(height * self.output_scaling_factor[0])
+            width = round(width * self.output_scaling_factor[1])
+        elif output_shape is not None:
+            height, width = output_shape[0], output_shape[1]
+
+        if (in_height == height) and (in_width == width) and (layer_index != 0) and layer_index != (self.n_layers - 1):
+            return x
+        else:
+            return resample(
+                x,
+                self.output_scaling_factor[layer_index],
+                list(range(-len(self.output_scaling_factor[layer_index]), 0)),
+                output_shape=output_shape,
+            )
 
     def forward(self, x, indices=0, output_shape=None):
         """Generic forward pass for the Factorized Spectral Conv
