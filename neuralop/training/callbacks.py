@@ -48,13 +48,16 @@ class Callback(object):
     def on_before_loss(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
     
+    def compute_training_loss(self, *args, **kwargs):
+        return 0.
+    
     def on_batch_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
     
     def on_epoch_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
-
-    def on_train_start(self, *args, **kwargs):
+    
+    def on_train_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
 
     def on_before_val(self, *args, **kwargs):
@@ -65,6 +68,7 @@ class Callback(object):
 
     def on_before_val_loss(self, **kwargs):
         self._update_state_dict(**kwargs)
+    
 
 class SimpleLoggerCallback(Callback):
     """
@@ -105,11 +109,12 @@ class SimpleLoggerCallback(Callback):
             print(f'Raw outputs of size {out.shape=}')
 
 class MGPatchingCallback(Callback):
-    def __init__(self, levels, padding_fraction,stitching):
+    def __init__(self, levels, padding_fraction,stitching, encoder=None):
         super().__init__()
         self.levels = levels
         self.padding_fraction = padding_fraction
         self.stitching = stitching
+        self.encoder = encoder
         
     def on_init_end(self, model, **kwargs):
         self.patcher = MultigridPatching2D(model=model, levels=self.levels, 
@@ -133,9 +138,18 @@ class MGPatchingCallback(Callback):
             self.patcher.unpatch(self.state_dict['out'],
                                  self.state_dict['sample']['y'],
                                  evaluation=evaluation)
+
+        if self.encoder:
+            self.state_dict['out'] = self.encoder.decode(self.state_dict['out'])
+            self.state_dict['sample']['y'] = self.encoder.decode(self.state_dict['sample']['y'])
+        
+        self.state_dict['sample'].pop('x')
     
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs, evaluation=True)
+
+    '''def compute_training_loss(self, out, y, loss, **kwargs):
+        return loss(out, y, **kwargs)'''
 
 class NoPatchingOutputEncoderCallback(Callback):
     """
