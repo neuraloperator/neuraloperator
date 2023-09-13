@@ -63,6 +63,9 @@ class Callback(object):
     def on_val_batch_start(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
 
+    def on_before_val_loss(self, **kwargs):
+        self._update_state_dict(**kwargs)
+
 class SimpleLoggerCallback(Callback):
     """
     Callback that implements simple logging functionality 
@@ -122,12 +125,17 @@ class MGPatchingCallback(Callback):
     def on_val_batch_start(self, *args, **kwargs):
         return self.on_batch_start(*args, **kwargs)
         
-    def on_before_loss(self, out):
+    def on_before_loss(self, out, **kwargs):
         
+        evaluation = kwargs.get('eval', False)
         self._update_state_dict(out=out)
         self.state_dict['out'], self.state_dict['sample']['y'] = \
             self.patcher.unpatch(self.state_dict['out'],
-                                 self.state_dict['sample']['y'])
+                                 self.state_dict['sample']['y'],
+                                 evaluation=evaluation)
+    
+    def on_before_val_loss(self, **kwargs):
+        return self.on_before_loss(**kwargs, evaluation=True)
 
 class NoPatchingOutputEncoderCallback(Callback):
     """
@@ -141,6 +149,9 @@ class NoPatchingOutputEncoderCallback(Callback):
     def on_before_loss(self, out):
         self.state_dict['out'] = self.encoder.decode(out)
         self.state_dict['sample']['y'] = self.encoder.decode(self.state_dict['sample']['y'])
+    
+    def on_before_val_loss(self, **kwargs):
+        return self.on_before_loss(**kwargs)
 
         
 

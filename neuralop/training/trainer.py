@@ -8,13 +8,22 @@ import neuralop.mpu.comm as comm
 
 from .patching import MultigridPatching2D
 from .losses import LpLoss
+from .callbacks import Callback
 
 
 class Trainer:
-    def __init__(self, model, n_epochs, output_field_indices=None, wandb_log=True, 
-                 device=None, amp_autocast=False, mg_patching_levels=0, 
-                 mg_patching_padding=0, mg_patching_stitching=True, sample_max = None,
-                 log_test_interval=1, log_output=False, use_distributed=False, 
+    def __init__(self, *, 
+                 model, 
+                 n_epochs, 
+                 output_field_indices=None, 
+                 wandb_log=True, 
+                 device=None, 
+                 amp_autocast=False, 
+                 sample_max = None,
+                 callbacks = None,
+                 log_test_interval=1, 
+                 log_output=False, 
+                 use_distributed=False, 
                  verbose=True):
         """
         A general Trainer class to train neural-operators on given datasets
@@ -29,17 +38,6 @@ class Trainer:
         wandb_log : bool, default is True
         device : torch.device
         amp_autocast : bool, default is False
-        mg_patching_levels : int, default is 0
-            if 0, no multi-grid domain decomposition is used
-            if > 0, indicates the number of levels to use
-        mg_patching_padding : float, default is 0
-            value between 0 and 1, indicates the fraction of size to use as padding on each side
-            e.g. for an image of size 64, padding=0.25 will use 16 pixels of padding on each side
-        mg_patching_stitching: bool, default is True
-            if False, the patches are not stitched back together and the loss is instead computed per patch
-        sample_max : int | None, default is None
-            max number of points per batch (total centroids, for example) to use
-            If inputs with more points are passed, they are randomly sampled
         log_test_interval : int, default is 1
             how frequently to print updates
         log_output : bool, default is False
@@ -48,6 +46,31 @@ class Trainer:
             whether to use DDP
         verbose : bool, default is True
         """
+
+        if self.callbacks:
+            assert type(callbacks) == list, "Callbacks must be a list of Callback objects"
+            self.callbacks = callbacks
+        else:
+            self.callbacks = []
+        
+        # unless load to device is overriden, call a basic loading function
+        override_load_to_device = False
+        for callback in self.callbacks:
+            if callback.on_load_to_device is not Callback.on_load_to_device:
+                self.override_load_to_device = True
+
+        for callback in self.callbacks:
+            callback.on_init_start(model=model, 
+                 n_epochs=n_epochs, 
+                 wandb_log=wandb_log, 
+                 device=device, 
+                 amp_autocast=amp_autocast, 
+                 log_test_interval=log_test_interval, 
+                 log_output=log_output, 
+                 use_distributed=use_distributed, 
+                 verbose=verbose)
+
+        self.model = model
         self.n_epochs = n_epochs
 
         if not output_field_indices:
@@ -60,38 +83,25 @@ class Trainer:
         self.log_test_interval = log_test_interval
         self.log_output = log_output
         self.verbose = verbose
-        self.mg_patching_levels = mg_patching_levels
-        self.mg_patching_stitching = mg_patching_stitching
         self.sample_max = sample_max
         self.use_distributed = use_distributed
         self.device = device
         self.amp_autocast = amp_autocast
 
-        if mg_patching_levels > 0:
-            self.mg_n_patches = 2**mg_patching_levels
-            if verbose:
-                print(f'Training on {self.mg_n_patches**2} multi-grid patches.')
-                sys.stdout.flush()
-        else:
-            self.mg_n_patches = 1
-            mg_patching_padding = 0
-            if verbose:
-                print(f'Training on regular inputs (no multi-grid patching).')
-                sys.stdout.flush()
-
-        # Some models (FNOGNO) won't use multigrid domain patching and handle output differently
-        self.mg_patching_padding = mg_patching_padding
-        if mg_patching_levels > 0:
-            self.use_mg_patching = True
-            self.patcher = MultigridPatching2D(model, levels=mg_patching_levels, padding_fraction=mg_patching_padding,
-                                            use_distributed=use_distributed, stitching=mg_patching_stitching)
-        else:
-            self.use_mg_patching = False
-            self.patcher = None
-
+        for callback in self.callbacks:
+            callback.on_init_end(model=model, 
+                 n_epochs=n_epochs, 
+                 wandb_log=wandb_log, 
+                 device=device, 
+                 amp_autocast=amp_autocast, 
+                 log_test_interval=log_test_interval, 
+                 log_output=log_output, 
+                 use_distributed=use_distributed, 
+                 verbose=verbose)
+        
         
     def train(self, train_loader, test_loaders, output_encoder,
-              model, optimizer, scheduler, regularizer, dataset_preprocess_fn,
+            optimizer, scheduler, regularizer, dataset_preprocess_fn,
               training_loss=None, eval_losses=None):
         
         """Trains the given model on the given datasets.
@@ -107,16 +117,11 @@ class Trainer:
             computation. 
         """
 
-        n_train = len(train_loader.dataset)
-
-        if not isinstance(test_loaders, dict):
-            test_loaders = dict(test=test_loaders)
-
-        if self.verbose:
-            print(f'Training on {n_train} samples')
-            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
-                  f'         on resolutions {[name for name in test_loaders]}.')
-            sys.stdout.flush()
+        for callback in self.callbacks:
+            callback.on_train_start(train_loader=train_loader, test_loaders=test_loaders,
+                                    optimizer=optimizer, scheduler=scheduler, 
+                                    regularizer=regularizer, training_loss=training_loss, 
+                                    eval_losses=eval_losses)
 
         if training_loss is None:
             training_loss = LpLoss(d=2)
@@ -130,21 +135,26 @@ class Trainer:
             is_logger = True 
         
         for epoch in range(self.n_epochs):
+
+            for callback in self.callbacks:
+                callback.on_epoch_start(epoch=epoch)
+
             avg_loss = 0
             avg_lasso_loss = 0
-            model.train()
+            self.model.train()
             t1 = default_timer()
             train_err = 0.0
 
             for idx, sample in enumerate(train_loader):
+
+                for callback in self.callbacks:
+                    callback.on_batch_start(idx=idx, sample=sample)
+
                 if dataset_preprocess_fn:
                     sample = dataset_preprocess_fn(sample)
                 # Decide what to do about logging later when we decide on batch naming conventions
                 '''if epoch == 0 and idx == 0 and self.verbose and is_logger:
                     print(f'Training on raw inputs of size {x.shape=}, {y.shape=}')'''
-
-                if self.sample_max:
-                    sample = resample(self.sample_max, **sample)
 
                 y = sample.pop('y')
 
@@ -159,36 +169,29 @@ class Trainer:
                 '''x = x.to(self.device)
                 y = y.to(self.device)'''
 
-                # load everything from the batch onto self.device
-                for k,v in sample.items():
-                    if hasattr(v, 'to'):
-                        sample[k] = v.to(self.device)
+                # load everything from the batch onto self.device if 
+                # no callback overrides default load to device
+                
+                if self.override_load_to_device:
+                    for callback in self.callbacks:
+                        callback.on_load_to_device(sample=sample)
+                else:
+                    for k,v in sample.items():
+                        if hasattr(v, 'to'):
+                            sample[k] = v.to(self.device)
 
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
                     regularizer.reset()
                 
-
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
-                        out = model(**sample)
+                        out = self.model(**sample)
                 else:
-                    out = model(**sample)
+                    out = self.model(**sample)
 
-                if epoch == 0 and idx == 0 and self.verbose and is_logger:
-                    print(f'Raw outputs of size {out.shape=}')
-
-                if self.use_mg_patching:
-                    out, y = self.patcher.unpatch(out, y)
-
-                # If patching is used, output encoding only works if output is stiched
-                # If patching is not used, decode no matter what
-                if output_encoder is not None and (self.mg_patching_stitching or not self.use_mg_patching):
-                    out = output_encoder.decode(out)
-                    y = output_encoder.decode(y)
-                        
-                if epoch == 0 and idx == 0 and self.verbose and is_logger:
-                    print(f'.. Processed (unpatched) outputs of size {out.shape=}')
+                for callback in self.callbacks:
+                    callback.on_before_loss(out=out)
 
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
@@ -217,8 +220,12 @@ class Trainer:
             epoch_train_time = default_timer() - t1
             del x, y
 
-            train_err /= n_train
+            
+
+            train_err /= len(train_loader)
             avg_loss  /= self.n_epochs
+
+            
             
             if epoch % self.log_test_interval == 0: 
                 
@@ -232,7 +239,7 @@ class Trainer:
                     else:
                         to_log_output = False
 
-                    errors = self.evaluate(model, eval_losses, loader, output_encoder, log_prefix=loader_name)
+                    errors = self.evaluate(eval_losses, loader, output_encoder, log_prefix=loader_name)
 
                     for loss_name, loss_value in errors.items():
                         msg += f', {loss_name}={loss_value:.4f}'
@@ -252,19 +259,23 @@ class Trainer:
                         lr = pg['lr']
                         values_to_log['lr'] = lr
                     wandb.log(values_to_log, step=epoch, commit=True)
+            
+            for callback in self.callbacks:
+                callback.on_epoch_end(epoch_train_time=epoch_train_time,
+                                      train_err=train_err,
+                                      avg_loss=avg_loss,
+                                      avg_lasso_loss=avg_lasso_loss)
 
-    def evaluate(self, model, loss_dict, data_loader, output_encoder=None,
+    def evaluate(self, loss_dict, data_loader,
                  log_prefix=''):
         """Evaluates the model on a dictionary of losses
         
         Parameters
         ----------
-        model : model to evaluate
         loss_dict : dict of functions 
           each function takes as input a tuple (prediction, ground_truth)
           and returns the corresponding loss
         data_loader : data_loader to evaluate on
-        output_encoder : used to decode outputs if not None
         log_prefix : str, default is ''
             if not '', used as prefix in output dictionary
 
@@ -273,7 +284,12 @@ class Trainer:
         errors : dict
             dict[f'{log_prefix}_{loss_name}] = loss for loss in loss_dict
         """
-        model.eval()
+
+        for callback in self.callbacks:
+            callback.on_before_val(loss_dict=loss_dict,
+                                   data_loader=data_loader)
+
+        self.model.eval()
 
         if self.use_distributed:
             is_logger = (comm.get_world_rank() == 0)
@@ -284,37 +300,33 @@ class Trainer:
 
         n_samples = 0
         with torch.no_grad():
-            for it, sample in enumerate(data_loader):
+            for idx, sample in enumerate(data_loader):
                 
-                if self.sample_max:
-                    sample = resample(self.sample_max, **sample)
+                for callback in self.callbacks:
+                    self.callbacks.on_val_batch_start(idx=idx, sample=sample)
                 
-                y = sample.pop('y')
+                y = sample['y']
                 n_samples += y.size(0)
                 
                 if self.use_mg_patching:
                     x, y = self.patcher.patch(sample['x'],y)
                     sample['x'] = x
 
-                for k,v in sample.items():
-                    if hasattr(v, 'to'):
-                        sample[k] = v.to(self.device)
+                # load everything from the batch onto self.device if 
+                # no callback overrides default load to device
                 
-                out = model(**sample)
+                if self.override_load_to_device:
+                    for callback in self.callbacks:
+                        callback.on_load_to_device(sample=sample)
+                else:
+                    for k,v in sample.items():
+                        if hasattr(v, 'to'):
+                            sample[k] = v.to(self.device)
+                
+                out = self.model(**sample)
 
-                if self.use_mg_patching:
-                    out, y = self.patcher.unpatch(out, y, evaluation=True)
-
-                if output_encoder is not None:
-                    out = output_encoder.decode(out)
-                    y = output_encoder.decode(y)
-                '''
-                if (it == 0) and self.log_output and self.wandb_log and is_logger:
-                    if out.ndim == 2:
-                        img = out
-                    else:
-                        img = out.squeeze()[0]
-                    wandb.log({f'image_{log_prefix}': wandb.Image(img.unsqueeze(-1).cpu().numpy())}, commit=False)'''
+                for callback in self.callbacks:
+                    callback.on_before_val_loss(out=out)
                 
                 for loss_name, loss in loss_dict.items():
                     errors[f'{log_prefix}_{loss_name}'] += loss(out, y).item()
@@ -325,27 +337,3 @@ class Trainer:
             errors[key] /= n_samples
 
         return errors
-
-def resample(sample_max, args_to_resample, **model_args):
-    """resample a  training batch from a dict dataset
-
-    Parameters
-    ----------
-    sample_max : int
-        max number of points before resampling applied
-    args_to_resample : list[tuple(Str)]
-        keys of arguments in model_args to resample
-        dataloader collate_fn turns list[Str] into list[Tuple]
-    **model_args: dict
-        splatted dict output by a DictDataset.__getitem__()
-    Returns
-    -------
-    model_args: dict
-    """
-    y = model_args['y']
-    r = min(sample_max, y.shape[0])
-    indices = torch.randperm(y.shape[0])[:r]
-    for k in args_to_resample:
-        model_args[k] = model_args[k][indices,...]
-
-    return model_args
