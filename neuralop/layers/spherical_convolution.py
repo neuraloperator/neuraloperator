@@ -1,16 +1,17 @@
+from typing import List, Optional, Union
+
 import torch
 from torch import nn
-
 from torch_harmonics import RealSHT, InverseRealSHT
 
 import tensorly as tl
 from tensorly.plugins import use_opt_einsum
+from tltorch.factorized_tensors.core import FactorizedTensor
+
+from neuralop.utils import validate_scaling_factor
 
 tl.set_backend("pytorch")
-
 use_opt_einsum("optimal")
-
-from tltorch.factorized_tensors.core import FactorizedTensor
 
 einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -198,6 +199,9 @@ def get_contract_fun(weight, implementation="reconstructed", separable=False):
         )
 
 
+Number = Union[int, float]
+
+
 class SphericalConv(nn.Module):
     def __init__(
         self,
@@ -208,7 +212,7 @@ class SphericalConv(nn.Module):
         bias=True,
         n_layers=1,
         separable=False,
-        output_scaling_factor=None,
+        output_scaling_factor: Optional[Union[Number, List[Number]]] = None,
         fno_block_precision="full",
         rank=0.5,
         factorization="cp",
@@ -225,7 +229,7 @@ class SphericalConv(nn.Module):
         self.out_channels = out_channels
         self.joint_factorization = joint_factorization
 
-        # We index quadrands only
+        # We index quadrants only
         # n_modes is the total number of modes kept along each dimension
         # half_n_modes is half of that except in the last mode, corresponding to
         # the number of modes to keep in *each* quadrant for each dim
@@ -250,17 +254,14 @@ class SphericalConv(nn.Module):
         self.n_layers = n_layers
         self.implementation = implementation
 
-        if output_scaling_factor is not None:
-            if isinstance(output_scaling_factor, (float, int)):
-                output_scaling_factor = [float(output_scaling_factor)] * len(
-                    self.n_modes
-                )
-        self.output_scaling_factor = output_scaling_factor
+        self.output_scaling_factor: Union[
+            None, List[List[float]]
+        ] = validate_scaling_factor(output_scaling_factor, self.order, n_layers)
 
         if init_std == "auto":
             init_std = 1 / (in_channels * out_channels)
         else:
-            init_std = 0.02
+            init_std = init_std
 
         if isinstance(fixed_rank_modes, bool):
             if fixed_rank_modes:
@@ -422,8 +423,9 @@ class SphericalConv(nn.Module):
         batchsize, channels, height, width = x.shape
 
         if self.output_scaling_factor is not None and output_shape is None:
-            height = round(height * self.output_scaling_factor[0])
-            width = round(width * self.output_scaling_factor[1])
+            scaling_factors = self.output_scaling_factor[indices]
+            height = round(height * scaling_factors[0])
+            width = round(width * scaling_factors[1])
         elif output_shape is not None:
             height, width = output_shape[0], output_shape[1]
 
