@@ -7,11 +7,14 @@ from neuralop import get_model
 from neuralop.utils import get_wandb_api_key, count_params
 from neuralop.training.losses import IregularLpqLoss, pressure_drag, friction_drag, WeightedL2DragLoss, FieldwiseAggregatorLoss, SumAggregatorLoss
 from neuralop.training.trainer import Trainer
-from neuralop.datasets.cfd_dataset import load_
+from neuralop.datasets.mesh_datamodule import MeshDataModule
 from neuralop.datasets.output_encoder import MultipleFieldOutputEncoder
 from copy import deepcopy
 from timeit import default_timer
 
+# query points is [sdf_query_resolution] * 3 (taken from config ahmed)
+cfd = MeshDataModule(base_dir='/home/ubuntu/data/cfd/car-pressure-data', item_dir_name='', attributes=['press'], query_points=[64,64,64])
+'''
 
     
 # Read the configuration
@@ -134,4 +137,4 @@ trainer.train(model=model,
               regularizer=None,
               dataset_preprocess_fn=preprocessor)
 
-model = model.cpu()
+model = model.cpu()'''
