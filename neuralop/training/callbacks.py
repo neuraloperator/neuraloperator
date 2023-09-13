@@ -69,6 +69,9 @@ class Callback(object):
     def on_before_val_loss(self, **kwargs):
         self._update_state_dict(**kwargs)
     
+    def compute_val_loss(self, *args, **kwargs):
+        return 0.
+    
 
 class SimpleLoggerCallback(Callback):
     """
@@ -148,8 +151,6 @@ class MGPatchingCallback(Callback):
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs, evaluation=True)
 
-    '''def compute_training_loss(self, out, y, loss, **kwargs):
-        return loss(out, y, **kwargs)'''
 
 class NoPatchingOutputEncoderCallback(Callback):
     """
