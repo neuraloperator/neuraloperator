@@ -16,7 +16,8 @@ from tensorly.plugins import use_opt_einsum
 from tltorch.factorized_tensors.core import FactorizedTensor
 
 from .einsum_utils import einsum_complexhalf
-
+from .base_spectral_conv import BaseSpectralConv
+from .resample import resample
 
 tl.set_backend("pytorch")
 use_opt_einsum("optimal")
@@ -187,7 +188,7 @@ def get_contract_fun(weight, implementation="reconstructed", separable=False):
 Number = Union[int, float]
 
 
-class SpectralConv(nn.Module):
+class SpectralConv(BaseSpectralConv):
     """Generic N-Dimensional Fourier Neural Operator
 
     Parameters
@@ -396,6 +397,30 @@ class SpectralConv(nn.Module):
             ]
             self.half_n_modes = [m // 2 for m in self._incremental_n_modes]
 
+    def transform(self, x, layer_index=0, output_shape=None):
+        in_shape = list(x.shape)
+
+        if self.output_scaling_factor is not None and output_shape is None:
+            out_shape = tuple(
+                [
+                    round(s * r)
+                    for (s, r) in zip(in_shape, self.output_scaling_factor[layer_index])
+                ]
+            )
+
+        if output_shape is not None:
+            out_size = output_shape
+
+        if in_shape == out_shape:
+            return x
+        else:
+            return resample(
+                x,
+                self.output_scaling_factor[layer_index],
+                list(range(-len(self.output_scaling_factor[layer_index]), 0)),
+                output_shape=output_shape,
+            )
+
     def forward(
         self, x: torch.Tensor, indices=0, output_shape: Optional[Tuple[int]] = None
     ):
@@ -511,8 +536,11 @@ class SubConv(nn.Module):
         self.main_conv = main_conv
         self.indices = indices
 
-    def forward(self, x):
-        return self.main_conv.forward(x, self.indices)
+    def forward(self, x, **kwargs):
+        return self.main_conv.forward(x, self.indices, **kwargs)
+
+    def transform(self, x, **kwargs):
+        return self.main_conv.transform(x, self.indices, **kwargs)
 
 
 class SpectralConv1d(SpectralConv):
