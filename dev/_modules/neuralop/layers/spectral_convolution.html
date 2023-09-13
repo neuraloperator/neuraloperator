@@ -118,7 +118,9 @@
         
   <h1>Source code for neuralop.layers.spectral_convolution</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">itertools</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">validate_scaling_factor</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
@@ -301,6 +303,9 @@
         <span class="p">)</span>
 
 
+<span class="n">Number</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+
+
 <div class="viewcode-block" id="SpectralConv"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spectral_convolution.SpectralConv.html#neuralop.layers.spectral_convolution.SpectralConv">[docs]</a><span class="k">class</span> <span class="nc">SpectralConv</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generic N-Dimensional Fourier Neural Operator</span>
 
@@ -362,7 +367,7 @@
         <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">output_scaling_factor</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Number</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Number</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">fno_block_precision</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
         <span class="n">rank</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
         <span class="n">factorization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -404,21 +409,14 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span> <span class="o">=</span> <span class="n">n_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">implementation</span> <span class="o">=</span> <span class="n">implementation</span>
 
-        <span class="k">if</span> <span class="n">output_scaling_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_scaling_factor</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
-                <span class="n">output_scaling_factor</span> <span class="o">=</span> <span class="p">[</span>
-                    <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">output_scaling_factor</span><span class="p">)]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span><span class="p">)</span>
-                <span class="p">]</span> <span class="o">*</span> <span class="n">n_layers</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_scaling_factor</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
-                <span class="n">output_scaling_factor</span> <span class="o">=</span> <span class="p">[</span>
-                    <span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">output_scaling_factor</span>
-                <span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span> <span class="o">=</span> <span class="n">output_scaling_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="kc">None</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">validate_scaling_factor</span><span class="p">(</span><span class="n">output_scaling_factor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">init_std</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
             <span class="n">init_std</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">in_channels</span> <span class="o">*</span> <span class="n">out_channels</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">init_std</span> <span class="o">=</span> <span class="mf">0.02</span>
+            <span class="n">init_std</span> <span class="o">=</span> <span class="n">init_std</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fixed_rank_modes</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">fixed_rank_modes</span><span class="p">:</span>

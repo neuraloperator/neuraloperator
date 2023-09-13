@@ -195,11 +195,11 @@ Example: For a five layer UNO with 2D input, the uno_scalings can be : [[1.0,1.0
 </dd>
 <dt><strong>horizontal_skips_map: Dict, optional</strong></dt><dd><p>a map {…., b: a, ….} denoting horizontal skip connection from a-th layer to
 b-th layer. If None default skip connection is applied.
-Example: For a 5 layer UNO architecture, the skip connections can be 
+Example: For a 5 layer UNO architecture, the skip connections can be
 horizontal_skips_map ={4:0,3:1}</p>
 </dd>
 <dt><strong>incremental_n_modes</strong><span class="classifier">None or int tuple, default is None</span></dt><dd><ul class="simple">
-<li><p>If not None, this allows to incrementally increase the number of modes in Fourier domain 
+<li><p>If not None, this allows to incrementally increase the number of modes in Fourier domain
 during training. Has to verify n &lt;= N for (n, m) in zip(incremental_n_modes, n_modes).</p></li>
 <li><p>If None, all the n_modes are used.</p></li>
 </ul>

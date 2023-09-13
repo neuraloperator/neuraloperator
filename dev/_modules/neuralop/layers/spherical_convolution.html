@@ -117,19 +117,20 @@
       <div class="container content main-content">
         
   <h1>Source code for neuralop.layers.spherical_convolution</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
 <span class="kn">from</span> <span class="nn">torch_harmonics</span> <span class="kn">import</span> <span class="n">RealSHT</span><span class="p">,</span> <span class="n">InverseRealSHT</span>
 
 <span class="kn">import</span> <span class="nn">tensorly</span> <span class="k">as</span> <span class="nn">tl</span>
 <span class="kn">from</span> <span class="nn">tensorly.plugins</span> <span class="kn">import</span> <span class="n">use_opt_einsum</span>
+<span class="kn">from</span> <span class="nn">tltorch.factorized_tensors.core</span> <span class="kn">import</span> <span class="n">FactorizedTensor</span>
+
+<span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">validate_scaling_factor</span>
 
 <span class="n">tl</span><span class="o">.</span><span class="n">set_backend</span><span class="p">(</span><span class="s2">&quot;pytorch&quot;</span><span class="p">)</span>
-
 <span class="n">use_opt_einsum</span><span class="p">(</span><span class="s2">&quot;optimal&quot;</span><span class="p">)</span>
-
-<span class="kn">from</span> <span class="nn">tltorch.factorized_tensors.core</span> <span class="kn">import</span> <span class="n">FactorizedTensor</span>
 
 <span class="n">einsum_symbols</span> <span class="o">=</span> <span class="s2">&quot;abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;</span>
 
@@ -317,6 +318,9 @@
         <span class="p">)</span>
 
 
+<span class="n">Number</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+
+
 <div class="viewcode-block" id="SphericalConv"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv">[docs]</a><span class="k">class</span> <span class="nc">SphericalConv</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -327,7 +331,7 @@
         <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">output_scaling_factor</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Number</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Number</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">fno_block_precision</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
         <span class="n">rank</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
         <span class="n">factorization</span><span class="o">=</span><span class="s2">&quot;cp&quot;</span><span class="p">,</span>
@@ -344,7 +348,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span> <span class="o">=</span> <span class="n">out_channels</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">joint_factorization</span> <span class="o">=</span> <span class="n">joint_factorization</span>
 
-        <span class="c1"># We index quadrands only</span>
+        <span class="c1"># We index quadrants only</span>
         <span class="c1"># n_modes is the total number of modes kept along each dimension</span>
         <span class="c1"># half_n_modes is half of that except in the last mode, corresponding to</span>
         <span class="c1"># the number of modes to keep in *each* quadrant for each dim</span>
@@ -369,17 +373,14 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span> <span class="o">=</span> <span class="n">n_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">implementation</span> <span class="o">=</span> <span class="n">implementation</span>
 
-        <span class="k">if</span> <span class="n">output_scaling_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_scaling_factor</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
-                <span class="n">output_scaling_factor</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">output_scaling_factor</span><span class="p">)]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span>
-                <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span> <span class="o">=</span> <span class="n">output_scaling_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="kc">None</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">validate_scaling_factor</span><span class="p">(</span><span class="n">output_scaling_factor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">init_std</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
             <span class="n">init_std</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">in_channels</span> <span class="o">*</span> <span class="n">out_channels</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">init_std</span> <span class="o">=</span> <span class="mf">0.02</span>
+            <span class="n">init_std</span> <span class="o">=</span> <span class="n">init_std</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fixed_rank_modes</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">fixed_rank_modes</span><span class="p">:</span>
@@ -541,8 +542,9 @@
         <span class="n">batchsize</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">output_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">height</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">height</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="n">width</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">width</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">scaling_factors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
+            <span class="n">height</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">height</span> <span class="o">*</span> <span class="n">scaling_factors</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">width</span> <span class="o">*</span> <span class="n">scaling_factors</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
         <span class="k">elif</span> <span class="n">output_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">height</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">output_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">output_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 
