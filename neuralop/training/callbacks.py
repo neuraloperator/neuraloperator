@@ -7,7 +7,7 @@ logic of callbacks in Pytorch-Lightning (https://lightning.ai/docs/pytorch/stabl
 """
 
 import sys
-
+import wandb
 from neuralop.training.patching import MultigridPatching2D
 
 class Callback(object):
@@ -62,6 +62,9 @@ class Callback(object):
 
     def on_before_val(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
+
+    def on_val_epoch_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
     
     def on_val_batch_start(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
@@ -72,8 +75,17 @@ class Callback(object):
     def compute_val_loss(self, *args, **kwargs):
         return 0.
     
+    def on_val_batch_end(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
 
-class SimpleLoggerCallback(Callback):
+    def on_val_epoch_end(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+    
+    def on_val_end(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+    
+
+class SimpleWandBLoggerCallback(Callback):
     """
     Callback that implements simple logging functionality 
     expected when passing verbose to a Trainer
@@ -104,12 +116,44 @@ class SimpleLoggerCallback(Callback):
         self._update_state_dict(epoch=epoch)
     
     def on_batch_start(self, idx, **kwargs):
-        self.state_dict.update(idx=idx)
+        self._update_state_dict(idx=idx)
 
-    def on_before_loss(self, out):
+    def on_before_loss(self, out, **kwargs):
         if self.state_dict['epoch'] == 0 and self.state_dict['idx'] == 0 \
             and self.state_dict['verbose']:
             print(f'Raw outputs of size {out.shape=}')
+    
+    def on_before_val(self, epoch, train_err, time, avg_loss, avg_lasso_loss, **kwargs):
+        # track training err and val losses to print at interval epochs
+        msg = f'[{epoch}] time={time:.2f}, avg_loss={avg_loss:.4f}, train_err={train_err:.4f}'
+        values_to_log = dict(train_err=train_err, time=time, avg_loss=avg_loss)
+
+        self._update_state_dict(msg=msg, values_to_log=values_to_log)
+        self._update_state_dict(avg_lasso_loss=avg_lasso_loss)
+        
+    def on_val_epoch_end(self, errors, **kwargs):
+        for loss_name, loss_value in errors.items():
+            self.state_dict['msg'] += f', {loss_name}={loss_value:.4f}'
+            self.state_dict['values_to_log'][loss_name] = loss_value
+    
+    def on_val_end(self, *args, **kwargs):
+        if self.state_dict.get('regularizer', False):
+            avg_lasso = self.state_dict.get('avg_lasso_loss', 0.)
+            avg_lasso /= self.state_dict.get('n_epochs')
+            self.state_dict['msg'] += f', avg_lasso={avg_lasso:.5f}'
+        
+        print(self.state_dict['msg'])
+        sys.stdout.flush()
+
+        if self.state_dict.get('wandb_log', False):
+            for pg in self.state_dict['optimizer'].param_groups:
+                lr = pg['lr']
+                self.state_dict['values_to_log']['lr'] = lr
+            wandb.log(self.state_dict['values_to_log'], step=self.state_dict['epoch'], commit=True)
+
+        
+        
+        
 
 class MGPatchingCallback(Callback):
     def __init__(self, levels, padding_fraction,stitching, encoder=None):

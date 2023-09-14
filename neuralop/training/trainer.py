@@ -247,43 +247,20 @@ class Trainer:
             avg_loss  /= self.n_epochs
             
             if epoch % self.log_test_interval == 0: 
-                
-                msg = f'[{epoch}] time={epoch_train_time:.2f}, avg_loss={avg_loss:.4f}, train_err={train_err:.4f}'
 
-                values_to_log = dict(train_err=train_err, time=epoch_train_time, avg_loss=avg_loss)
+                for callback in self.callbacks:
+                    callback.on_before_val(epoch=epoch, train_err=train_err, time=epoch_train_time, \
+                                           avg_loss=avg_loss, avg_lasso_loss=avg_lasso_loss)
+                
 
                 for loader_name, loader in test_loaders.items():
-                    if epoch == self.n_epochs - 1 and self.log_output:
-                        to_log_output = True
-                    else:
-                        to_log_output = False
+                    _ = self.evaluate(eval_losses, loader, log_prefix=loader_name)
 
-                    errors = self.evaluate(eval_losses, loader, log_prefix=loader_name)
-
-                    for loss_name, loss_value in errors.items():
-                        msg += f', {loss_name}={loss_value:.4f}'
-                        values_to_log[loss_name] = loss_value
-
-                if regularizer:
-                    avg_lasso_loss /= self.n_epochs
-                    msg += f', avg_lasso={avg_lasso_loss:.5f}'
-
-                if self.verbose and is_logger:
-                    print(msg)
-                    sys.stdout.flush()
-
-                # Wandb loging
-                if self.wandb_log and is_logger:
-                    for pg in optimizer.param_groups:
-                        lr = pg['lr']
-                        values_to_log['lr'] = lr
-                    wandb.log(values_to_log, step=epoch, commit=True)
+                for callback in self.callbacks:
+                    callback.on_val_end()
             
             for callback in self.callbacks:
-                callback.on_epoch_end(epoch_train_time=epoch_train_time,
-                                      train_err=train_err,
-                                      avg_loss=avg_loss,
-                                      avg_lasso_loss=avg_lasso_loss)
+                callback.on_epoch_end(epoch=epoch, train_err=train_err, avg_loss=avg_loss)
 
     def evaluate(self, loss_dict, data_loader,
                  log_prefix=''):
@@ -305,15 +282,9 @@ class Trainer:
         """
 
         for callback in self.callbacks:
-            callback.on_before_val(loss_dict=loss_dict,
-                                   data_loader=data_loader)
+            callback.on_val_epoch_start(loss_dict = loss_dict, data_loader=data_loader)
 
         self.model.eval()
-
-        if self.use_distributed:
-            is_logger = (comm.get_world_rank() == 0)
-        else:
-            is_logger = True 
 
         errors = {f'{log_prefix}_{loss_name}':0 for loss_name in loss_dict.keys()}
 
@@ -344,11 +315,29 @@ class Trainer:
                     callback.on_before_val_loss(out=out)
                 
                 for loss_name, loss in loss_dict.items():
-                    errors[f'{log_prefix}_{loss_name}'] += loss(out, **sample).item()
+                    if self.overrides_loss:
+                        for callback in self.callbacks:
+                            if isinstance(out, torch.Tensor):
+                                val_loss = callback.compute_training_loss(out.float(), **sample)
+                            elif isinstance(out, dict):
+                                val_loss = callback.compute_training_loss(**out, **sample)
+                    else:
+                        if isinstance(out, torch.Tensor):
+                            val_loss = loss(out, **sample).item()
+                        elif isinstance(out, dict):
+                            val_loss = loss(out, **sample).item()
 
+                    errors[f'{log_prefix}_{loss_name}'] += val_loss
+
+                for callback in self.callbacks:
+                    callback.on_val_batch_end()
+        
         del y, out
 
         for key in errors.keys():
             errors[key] /= n_samples
+        
+        for callback in self.callbacks:
+            callback.on_val_epoch_end(errors=errors)
 
         return errors

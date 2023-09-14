@@ -8,7 +8,7 @@ import wandb
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets import load_darcy_flow_small
 from neuralop.training import setup
-from neuralop.training.callbacks import MGPatchingCallback
+from neuralop.training.callbacks import MGPatchingCallback, SimpleWandBLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_params
 
 
@@ -172,6 +172,7 @@ trainer = Trainer(
                                   padding_fraction=config.patching.padding,
                                   stitching=config.patching.stitching,
                                   encoder=output_encoder),
+        SimpleWandBLoggerCallback()
               ]
               )
 
