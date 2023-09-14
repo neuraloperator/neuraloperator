@@ -296,7 +296,7 @@ class SpectralConv(BaseSpectralConv):
         ] = validate_scaling_factor(output_scaling_factor, self.order, n_layers)
 
         if init_std == "auto":
-            init_std = 1 / (in_channels * out_channels)
+            init_std = (2 / (in_channels + out_channels))**0.5
         else:
             init_std = init_std
 
