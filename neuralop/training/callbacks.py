@@ -7,7 +7,9 @@ logic of callbacks in Pytorch-Lightning (https://lightning.ai/docs/pytorch/stabl
 """
 
 import sys
+import torch
 import wandb
+
 from neuralop.training.patching import MultigridPatching2D
 
 class Callback(object):
@@ -211,9 +213,3 @@ class NoPatchingOutputEncoderCallback(Callback):
     
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs)
-
-        
-
-
-
-

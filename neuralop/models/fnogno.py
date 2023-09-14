@@ -311,7 +311,7 @@ class FNOGNO(nn.Module):
         return out
 
 
-    def forward(self, in_p, out_p, f, ada_in=None):
+    def forward(self, in_p, out_p, f, ada_in=None, **kwargs):
         
         #Compute latent space embedding
         latent_embed = self.latent_embedding(in_p=in_p, 

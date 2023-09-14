@@ -19,7 +19,6 @@ class Trainer:
                  wandb_log=True, 
                  device=None, 
                  amp_autocast=False, 
-                 sample_max = None,
                  callbacks = None,
                  log_test_interval=1, 
                  log_output=False, 
@@ -100,7 +99,6 @@ class Trainer:
         self.log_test_interval = log_test_interval
         self.log_output = log_output
         self.verbose = verbose
-        self.sample_max = sample_max
         self.use_distributed = use_distributed
         self.device = device
         self.amp_autocast = amp_autocast
