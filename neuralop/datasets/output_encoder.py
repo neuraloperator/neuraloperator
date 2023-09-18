@@ -99,16 +99,19 @@ class UnitGaussianNormalizer(torch.nn.Module):
     def cuda(self):
         self.mean = self.mean.cuda()
         self.std = self.std.cuda()
+        self.eps = self.eps.cuda()
         return self
 
     def cpu(self):
         self.mean = self.mean.cpu()
         self.std = self.std.cpu()
+        self.eps = self.eps.cpu()
         return self
     
     def to(self, device):
         self.mean = self.mean.to(device)
         self.std = self.std.to(device)
+        self.eps = self.eps.to(device)
         return self
 
 

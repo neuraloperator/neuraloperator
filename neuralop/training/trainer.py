@@ -54,9 +54,9 @@ class Trainer:
         
         # unless load to device is overriden, call a basic loading function
         # More than one callback cannot separately overload the device loading
-        overrides_device_load = [getattr(c, "on_load_to_device") == getattr(Callback, "on_load_to_device")\
+        overrides_device_load = [getattr(c, "on_load_to_device") != getattr(Callback, "on_load_to_device")\
                                   for c in callbacks]
-        assert sum(overrides_device_load) < 2, "More than one callback cannot override device loading"
+        assert sum(overrides_device_load) >= 2, "More than one callback cannot override device loading"
         if sum(overrides_device_load) == 1:
             self.override_load_to_device = True
             print("using custom callback to load data to device.")
@@ -65,10 +65,11 @@ class Trainer:
             print("using standard method to load data to device.")
 
         # unless loss computation is overriden, call a basic loss function calculation
-        overrides_loss = [getattr(c, "compute_training_loss") == getattr(Callback, "compute_training_loss")\
+        overrides_loss = [getattr(c, "compute_training_loss") != getattr(Callback, "compute_training_loss")\
                                   for c in callbacks]
-        
-        if sum(overrides_loss) == 1:
+        print(overrides_loss)
+
+        if sum(overrides_loss) >= 1:
             self.overrides_loss = True
             print("using custom callback to compute loss.")
         else:
@@ -123,8 +124,8 @@ class Trainer:
         params:
         train_loader: torch.utils.data.DataLoader
             training dataloader
-        test_loader: torch.utils.data.DataLoader
-            testing dataloader
+        test_loaders: dict[torch.utils.data.DataLoader]
+            testing dataloaders
         optimizer: torch.optim.Optimizer
             optimizer to use during training
         optimizer: torch.optim.lr_scheduler
@@ -143,7 +144,7 @@ class Trainer:
 
         if eval_losses is None: # By default just evaluate on the training loss
             eval_losses = dict(l2=training_loss)
-        
+
         if self.use_distributed:
             is_logger = (comm.get_world_rank() == 0)
         else:
@@ -200,7 +201,7 @@ class Trainer:
                 if self.overrides_loss:
                     for callback in self.callbacks:
                         if isinstance(out, torch.Tensor):
-                            loss += callback.compute_training_loss(out.float(), **sample, amp_autocast=self.amp_autocast)
+                            loss += callback.compute_training_loss(out=out.float(), **sample, amp_autocast=self.amp_autocast)
                         elif isinstance(out, dict):
                             loss += callback.compute_training_loss(**out, **sample, amp_autocast=self.amp_autocast)
                 else:
@@ -232,7 +233,7 @@ class Trainer:
                         avg_lasso_loss += regularizer.loss
 
                 for callback in self.callbacks:
-                    callback.on_batch_end()
+                    callback.on_init_end()
 
             if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler.step(train_err)

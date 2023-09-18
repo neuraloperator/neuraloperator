@@ -119,12 +119,15 @@ class CFDDataPreprocessingCallback(Callback):
         super().__init__()
 
     def on_batch_start(self, idx, sample):
+        # Turn a data dictionary returned by MeshDataModule's DictDataset
+        # into the form expected by the FNOGNO
         self.state_dict['sample'] = sample
         device = self.state_dict.get('device', 'cpu')
         in_p = sample['query_points'].squeeze(0).to(device)
         out_p = sample['centroids'].squeeze(0).to(device)
+
         f = sample['distance'].squeeze(0).to(device)
-        
+
         weights = sample['triangle_areas'].squeeze(0).to(device)
 
         #Output data
@@ -132,7 +135,13 @@ class CFDDataPreprocessingCallback(Callback):
         if len(truth.shape) == 1:
             truth = truth.unsqueeze(-1)
         
+        # for now, grab the first 3682 vertices of the output mesh to correspond to pressure
+        output_vertices = truth.shape[0]
+        if out_p.shape[0] > output_vertices:
+            out_p = out_p[:output_vertices,:]
+
         truth = truth.to(device)
+
 
         inward_normals = -sample['triangle_normals'].squeeze(0).to(device)
         flow_normals = torch.zeros((sample['triangle_areas'].shape[1], 3)).to(device)
@@ -160,6 +169,17 @@ class CFDDataPreprocessingCallback(Callback):
                                          flow_speed=None,
                                          vol_elm=weights,
                                          reference_area=None)
+        
+    def compute_training_loss(self, *args, **kwargs):
+        loss_fn = self.state_dict['training_loss']
+        self._update_state_dict(**kwargs)
+        return loss_fn(x = self.state_dict['out'], y = self.state_dict['sample']['y'], z=None)
+
+    def on_val_batch_start(self, *args, **kwargs):
+        return self.on_batch_start(*args, **kwargs)
+    
+    def compute_val_loss(self, *args, **kwargs):
+        return self.compute_training_loss(self, *args, **kwargs)
 
 trainer = Trainer(model=model, 
                   n_epochs=config.opt.n_epochs,
@@ -172,12 +192,12 @@ trainer = Trainer(model=model,
 
 trainer.train(
               train_loader=train_loader,
-              test_loaders=test_loader,
+              test_loaders={'':test_loader},
               optimizer=optimizer,
               scheduler=scheduler,
               training_loss=train_loss_fn,
               #eval_losses={config.opt.testing_loss: test_loss_fn, 'drag': DragLoss},
-              eval_losses=config.opt.testing_loss,
+              eval_losses={config.opt.testing_loss: test_loss_fn},
               regularizer=None,)
 
 model = model.cpu()
