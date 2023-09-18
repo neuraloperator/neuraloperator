@@ -18,8 +18,8 @@ cfd: &CFD
     entity_name: ''
     load_attributes: ['press']
     sdf_query_resolution: 32
-    n_train: 10
-    n_test: 10
+    n_train: 490
+    n_test: 100
     input_points: 'query_points'
     input_fields: ['distance']
     output_points: 'centroids'
@@ -41,7 +41,7 @@ cfd: &CFD
     gno_radius: 0.033
     gno_transform_type: 'linear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
     fno_n_modes: [32, 32, 32]
-    fno_hidden_channels: 32
+    fno_hidden_channels: 256
     fno_use_mlp: True
     fno_norm: 'instance_norm'
     fno_ada_in_features: 32
