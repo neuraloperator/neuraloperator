@@ -17,7 +17,7 @@ cfd: &CFD
     path: '/home/ubuntu/data/cfd/car-pressure-data'
     entity_name: ''
     load_attributes: ['press']
-    sdf_query_resolution: 64
+    sdf_query_resolution: 32
     n_train: 10
     n_test: 10
     input_points: 'query_points'
@@ -34,21 +34,22 @@ cfd: &CFD
     weights: 'triangle_areas'
 
   fnogno:
-    data_channels: 2
-    out_channels: 2
+    data_channels: 1
+    out_channels: 1
     gno_coord_dim: 3
     gno_coord_embed_dim: 16
     gno_radius: 0.033
     gno_transform_type: 'linear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
     fno_n_modes: [32, 32, 32]
-    fno_hidden_channels: 86
+    fno_hidden_channels: 32
     fno_use_mlp: True
-    fno_norm: 'ada_in'
-    fno_ada_in_features: 64
+    fno_norm: 'instance_norm'
+    fno_ada_in_features: 32
     fno_factorization: 'tucker'
     fno_rank: 0.4
     fno_domain_padding: 0.125
     fno_mlp_expansion: 1.0
+    fno_output_scaling_factor: 1
 
   opt:
     n_epochs: 301
