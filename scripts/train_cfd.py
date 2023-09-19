@@ -16,9 +16,9 @@ from neuralop.training.callbacks import NoPatchingOutputEncoderCallback, Callbac
     
 # Read the configuration
 config_name = 'cfd'
-pipe = ConfigPipeline([YamlConfig('./cfd_config.yaml', config_name=config_name, config_folder='config'),
+pipe = ConfigPipeline([YamlConfig('./cfd_config.yaml', config_name=config_name, config_folder='../config'),
                        ArgparseConfig(infer_types=True, config_name=None, config_file=None),
-                       YamlConfig(config_folder='config')
+                       YamlConfig(config_folder='../config')
                       ])
 config = pipe.read_conf()
 
