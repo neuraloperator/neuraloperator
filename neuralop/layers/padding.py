@@ -73,15 +73,17 @@ class DomainPadding(nn.Module):
                     f"padding={padding}, {self.padding_mode}"
                 )
 
-            # padding is being applied in reverse order
-            # (so we must reverse the padding list)
-            padding = padding[::-1]
-
             output_pad = padding
 
             output_pad = [
                 round(i * j) for (i, j) in zip(self.output_scaling_factor, output_pad)
             ]
+
+            # padding is being applied in reverse order
+            # (so we must reverse the padding list)
+            padding = padding[::-1]
+
+            
 
             # the F.pad(x, padding) funtion pads the tensor 'x' in reverse order
             # of the "padding" list i.e. the last axis of tensor 'x' will be
@@ -92,7 +94,7 @@ class DomainPadding(nn.Module):
             if self.padding_mode == "symmetric":
                 # Pad both sides
                 unpad_list = list()
-                for p in output_pad[::-1]:
+                for p in output_pad:
                     if p == 0:
                         padding_end = None
                         padding_start = None
