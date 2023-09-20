@@ -51,7 +51,7 @@ class Callback(object):
         self._update_state_dict(**kwargs)
     
     def compute_training_loss(self, *args, **kwargs):
-        return 0.
+        raise NotImplementedError
     
     def on_batch_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
@@ -75,7 +75,7 @@ class Callback(object):
         self._update_state_dict(**kwargs)
     
     def compute_val_loss(self, *args, **kwargs):
-        return 0.
+        raise NotImplementedError
     
     def on_val_batch_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
