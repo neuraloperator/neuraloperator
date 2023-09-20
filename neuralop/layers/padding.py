@@ -109,7 +109,7 @@ class DomainPadding(nn.Module):
             elif self.padding_mode == "one-sided":
                 # One-side padding
                 unpad_list = list()
-                for p in output_pad[::-1]:
+                for p in output_pad:
                     if p == 0:
                         padding_start = None
                     else:
