@@ -198,7 +198,7 @@ class MGPatchingCallback(Callback):
         return self.on_before_loss(**kwargs, evaluation=True)
 
 
-class NoPatchingOutputEncoderCallback(Callback):
+class OutputEncoderCallback(Callback):
     """
     Callback class for a training loop that involves
     an output normalizer but no MG patching
