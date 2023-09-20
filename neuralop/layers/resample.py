@@ -15,7 +15,8 @@ def resample(x, res_scale, axis, output_shape=None):
     res_scale: int or tuple
             Scaling factor along each of the dimensions in 'axis' parameter. If res_scale is scaler, then isotropic 
             scaling is performed
-    axis: axis or dimensions along which interpolation will be performed. 
+    axis: axis or dimensions along which interpolation will be performed.
+    output_shape : None or tuple[int]
     """
 
     if isinstance(res_scale, (float, int)):
