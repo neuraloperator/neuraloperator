@@ -7,7 +7,7 @@ import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets.navier_stokes import load_navier_stokes_pt
-from neuralop.training import setup, MGPatchingCallback, SimpleWandBLoggerCallback, OutputEncoderCallback
+from neuralop.training import setup, MGPatchingCallback, SimpleWandBLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_params
 
 
@@ -89,7 +89,6 @@ train_loader, test_loaders, output_encoder = load_navier_stokes_pt(
 
 model = get_model(config)
 model = model.to(device)
-print(f"{model.output_scaling_factor=}")
 
 # Use distributed data parallel
 if config.distributed.use_distributed:
