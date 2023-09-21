@@ -432,16 +432,18 @@ class SphericalConv(BaseSpectralConv):
         *_, in_height, in_width = x.shape
 
         if self.output_scaling_factor is not None and output_shape is None:
-            height = round(height * self.output_scaling_factor[0])
-            width = round(width * self.output_scaling_factor[1])
+            height = round(in_height * self.output_scaling_factor[layer_index][0])
+            width = round(in_width * self.output_scaling_factor[layer_index][1])
         elif output_shape is not None:
             height, width = output_shape[0], output_shape[1]
+        else:
+            height, width = in_height, in_width
 
         if (in_height == height) and (in_width == width) and (layer_index != 0) and layer_index != (self.n_layers - 1):
             return x
         else:
             x = self.sht_handle.sht(x, s=self.n_modes)
-            x = self.sht_handle.isht(x, s=(height, width))
+            return self.sht_handle.isht(x, s=(height, width))
 
     def forward(self, x, indices=0, output_shape=None):
         """Generic forward pass for the Factorized Spectral Conv

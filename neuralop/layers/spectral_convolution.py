@@ -400,7 +400,7 @@ class SpectralConv(BaseSpectralConv):
             self.half_n_modes = [m // 2 for m in self._incremental_n_modes]
 
     def transform(self, x, layer_index=0, output_shape=None):
-        in_shape = list(x.shape)
+        in_shape = list(x.shape[2:])
 
         if self.output_scaling_factor is not None and output_shape is None:
             out_shape = tuple(
@@ -409,18 +409,19 @@ class SpectralConv(BaseSpectralConv):
                     for (s, r) in zip(in_shape, self.output_scaling_factor[layer_index])
                 ]
             )
-
-        if output_shape is not None:
-            out_size = output_shape
+        elif output_shape is not None:
+            out_shape = output_shape
+        else:
+            out_shape = in_shape
 
         if in_shape == out_shape:
             return x
         else:
             return resample(
                 x,
-                self.output_scaling_factor[layer_index],
-                list(range(-len(self.output_scaling_factor[layer_index]), 0)),
-                output_shape=output_shape,
+                1.0,
+                list(range(2, x.ndim)),
+                output_shape=out_shape,
             )
 
     def forward(
@@ -512,9 +513,10 @@ class SpectralConv(BaseSpectralConv):
         The parametrization of sub-convolutional layers is shared with the main one.
         """
         if self.n_layers == 1:
-            raise ValueError(
-                "A single convolution is parametrized, directly use the main class."
-            )
+            Warning("A single convolution is parametrized, directly use the main class.")
+            # raise ValueError(
+            #     "A single convolution is parametrized, directly use the main class."
+            # )
 
         return SubConv(self, indices)
 
