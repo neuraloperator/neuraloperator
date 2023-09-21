@@ -259,8 +259,10 @@ class SpectralConv(BaseSpectralConv):
         decomposition_kwargs: Optional[dict] = None,
         init_std="auto",
         fft_norm="backward",
+        device=None,
+        dtype=None,
     ):
-        super().__init__()
+        super().__init__(dtype=dtype, device=device)
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -542,6 +544,9 @@ class SubConv(nn.Module):
     def transform(self, x, **kwargs):
         return self.main_conv.transform(x, self.indices, **kwargs)
 
+    @property
+    def weight(self):
+        return self.main_conv.get_weight(indices=self.indices)
 
 class SpectralConv1d(SpectralConv):
     """1D Spectral Conv

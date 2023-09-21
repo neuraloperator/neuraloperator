@@ -9,6 +9,7 @@ from tensorly.plugins import use_opt_einsum
 from tltorch.factorized_tensors.core import FactorizedTensor
 
 from neuralop.utils import validate_scaling_factor
+from .base_spectral_conv import BaseSpectralConv
 
 tl.set_backend("pytorch")
 use_opt_einsum("optimal")
@@ -125,16 +126,17 @@ def _contract_tt(x, tt_weight, separable=False, dhconv=False):
     order = tl.ndim(x)
 
     x_syms = list(einsum_symbols[:order])
-    if dhconv:
-        weight_syms = list(x_syms[1:-1])  # no batch-size, no y dim
-    else:
-        weight_syms = list(x_syms[1:])  # no batch-size
+    weight_syms = list(x_syms[1:])  # no batch-size
     if not separable:
         weight_syms.insert(1, einsum_symbols[order])  # outputs
         out_syms = list(weight_syms)
         out_syms[0] = x_syms[0]
     else:
         out_syms = list(x_syms)
+
+    if dhconv:
+        weight_syms = weight_syms[:-1]  # no batch-size, no y dim
+
     rank_syms = list(einsum_symbols[order + 1 :])
     tt_syms = []
     for i, s in enumerate(weight_syms):
@@ -201,8 +203,74 @@ def get_contract_fun(weight, implementation="reconstructed", separable=False):
 
 Number = Union[int, float]
 
+from torch_harmonics import RealSHT, InverseRealSHT
+from torch import nn
 
-class SphericalConv(nn.Module):
+class SHT(nn.Module):
+    def __init__(self, dtype=torch.float32, device=None):
+        super().__init__()
+        self.device = device
+        self.dtype = dtype
+        self._SHT_cache = nn.ModuleDict()
+        self._iSHT_cache = nn.ModuleDict()
+
+    def sht(self, x, s=None, projection='equiangular', norm="ortho"):
+        *_, height, width = x.shape # height = latitude, width = longitude
+        if s is None:
+            modes_height = modes_width = None
+        else:
+            modes_height, modes_width = s
+
+        cache_key = f"{height}_{width}_{modes_height}_{modes_width}_{projection}"
+
+        try:
+            sht = self._SHT_cache[cache_key]
+        except KeyError:
+            sht = (
+                RealSHT(
+                    nlat=height,
+                    nlon=width,
+                    lmax=modes_height,
+                    mmax=modes_width,
+                    grid=projection,
+                )
+                .to(device=self.device)
+                .to(dtype=self.dtype)
+            )
+            self._SHT_cache[cache_key] = sht
+        
+        return sht(x)
+
+
+    def isht(self, x, s=None, projection='equiangular', norm="ortho"):
+        *_, modes_height, modes_width = x.shape # height = latitude, width = longitude
+        if s is None:
+            height = width = None
+        else:
+            height, width = s
+
+        cache_key = f"{height}_{width}_{modes_height}_{modes_width}_{projection}"
+
+        try:
+            isht = self._iSHT_cache[cache_key]
+        except KeyError:
+            isht = (
+                InverseRealSHT(
+                    nlat=height,
+                    nlon=width,
+                    lmax=modes_height,
+                    mmax=modes_width,
+                    grid=projection,
+                )
+                .to(device=self.device)
+                .to(dtype=self.dtype)
+            )
+            self._iSHT_cache[cache_key] = isht
+        
+        return isht(x)
+
+
+class SphericalConv(BaseSpectralConv):
     def __init__(
         self,
         in_channels,
@@ -222,8 +290,10 @@ class SphericalConv(nn.Module):
         decomposition_kwargs=dict(),
         init_std="auto",
         fft_norm="backward",
+        device=None,
+        dtype=torch.float32,
     ):
-        super().__init__()
+        super().__init__(dtype=dtype, device=device)
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -324,55 +394,7 @@ class SphericalConv(nn.Module):
         else:
             self.bias = None
 
-        # First and last SHT Project respectively from and to equiangular grid
-        self._shts_first = nn.ModuleDict()
-        self._ishts_last = nn.ModuleDict()
-        # Others just use Legendre
-        self._shts = nn.ModuleDict()
-        self._ishts = nn.ModuleDict()
-
-    def _get_sht(self, height, width, layer=0):
-        if layer == 0:
-            projection_sht = "equiangular"
-            projection_isht = "legendre-gauss"
-        elif layer == (self.n_layers - 1):
-            projection_sht = "legendre-gauss"
-            projection_isht = "equiangular"
-        else:
-            projection_sht = "legendre-gauss"
-            projection_isht = "legendre-gauss"
-
-        key_sht = f"{height}_{width}_{projection_sht}"
-        key_isht = f"{height}_{width}_{projection_isht}"
-
-        try:
-            return self._shts[key_sht], self._ishts[key_isht]
-        except KeyError:
-            sht = (
-                RealSHT(
-                    nlat=height,
-                    nlon=width,
-                    lmax=self.half_total_n_modes[0],
-                    mmax=self.half_total_n_modes[1],
-                    grid=projection_sht,
-                )
-                .to(device=self.bias.device)
-                .to(dtype=torch.float32)
-            )
-            isht = (
-                InverseRealSHT(
-                    nlat=height,
-                    nlon=width,
-                    lmax=self.half_total_n_modes[0],
-                    mmax=self.half_total_n_modes[1],
-                    grid=projection_isht,
-                )
-                .to(device=self.bias.device)
-                .to(dtype=torch.float32)
-            )
-            self._shts[key_sht] = sht
-            self._ishts[key_isht] = isht
-            return sht, isht
+        self.sht_handle = SHT(dtype=self.dtype, device=self.device)
 
     def _get_weight(self, index):
         if self.incremental_n_modes is not None:
@@ -407,27 +429,19 @@ class SphericalConv(nn.Module):
             self.half_n_modes = [m // 2 for m in self._incremental_n_modes]
     
     def transform(self, x, layer_index=0, output_shape=None):
-        pass
-        # *_, in_height, in_width = x.shape
+        *_, in_height, in_width = x.shape
 
-        # if self.output_scaling_factor is not None and output_shape is None:
-        #     height = round(height * self.output_scaling_factor[0])
-        #     width = round(width * self.output_scaling_factor[1])
-        # elif output_shape is not None:
-        #     height, width = output_shape[0], output_shape[1]
+        if self.output_scaling_factor is not None and output_shape is None:
+            height = round(height * self.output_scaling_factor[0])
+            width = round(width * self.output_scaling_factor[1])
+        elif output_shape is not None:
+            height, width = output_shape[0], output_shape[1]
 
-        # if (in_height == height) and (in_width == width) and (layer_index != 0) and layer_index != (self.n_layers - 1):
-        #     return x
-        # else:
-        #     sht, isht = self._get_sht(height, width, layer=layer_index)
-
-        #     sht = 
-        #     return resample(
-        #         x,
-        #         self.output_scaling_factor[layer_index],
-        #         list(range(-len(self.output_scaling_factor[layer_index]), 0)),
-        #         output_shape=output_shape,
-        #     )
+        if (in_height == height) and (in_width == width) and (layer_index != 0) and layer_index != (self.n_layers - 1):
+            return x
+        else:
+            x = self.sht_handle.sht(x, s=self.n_modes)
+            x = self.sht_handle.isht(x, s=(height, width))
 
     def forward(self, x, indices=0, output_shape=None):
         """Generic forward pass for the Factorized Spectral Conv
@@ -452,9 +466,7 @@ class SphericalConv(nn.Module):
         elif output_shape is not None:
             height, width = output_shape[0], output_shape[1]
 
-        sht, isht = self._get_sht(height, width)
-
-        out_fft = sht(x)
+        out_fft = self.sht_handle.sht(x, s=self.half_total_n_modes)
 
         # xp = torch.zeros_like(x)
         # xp[..., : self.modes_lat_local, : self.modes_lon_local] = self._contract(
@@ -466,13 +478,13 @@ class SphericalConv(nn.Module):
 
         # upper block (truncate high freq)
         out_fft = self._contract(
-            out_fft[:, :, : self.half_total_n_modes[0], : self.half_total_n_modes[1]],
+            out_fft[:, :, :self.half_total_n_modes[0], :self.half_total_n_modes[1]],
             self._get_weight(indices),
             separable=self.separable,
             dhconv=True,
         )
 
-        x = isht(out_fft)
+        x = self.sht_handle.isht(out_fft, s=(height, width))
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]

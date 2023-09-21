@@ -2,12 +2,15 @@ from torch import nn
 
 
 class BaseSpectralConv(nn.Module):
-    def __init__(self):
+    def __init__(self, device=None, dtype=None):
         """Base Class for Spectral Convolutions
         
         Use it when you want to build your own FNO-type Neural Operators
         """
         super().__init__()
+
+        self.dtype = dtype
+        self.device = device
 
     def transform(self, x):
         """Transforms an input x for a skip connection, by default just an identity map 
