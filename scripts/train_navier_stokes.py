@@ -49,7 +49,7 @@ if config.wandb.log and is_logger:
                 config.patching.padding,
             ]
         )
-    wandb.init(
+    wandb_init_args = dict(
         config=config,
         name=wandb_name,
         group=config.wandb.group,
@@ -60,6 +60,8 @@ if config.wandb.log and is_logger:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
 
+else: 
+    wandb_init_args = {}
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
 
@@ -87,6 +89,7 @@ train_loader, test_loaders, output_encoder = load_navier_stokes_pt(
 
 model = get_model(config)
 model = model.to(device)
+print(f"{model.output_scaling_factor=}")
 
 # Use distributed data parallel
 if config.distributed.use_distributed:
@@ -163,15 +166,15 @@ if config.verbose:
 
 # only perform MG patching if config patching levels > 0
 
-if config.patching.levels > 0:
-    encoder_callback = MGPatchingCallback(
-            levels=config.patching.levels,
-            padding_fraction=config.patching.padding,
-            stitching=config.patching.stitching, 
-            encoder=output_encoder
-        )
-else:
-    encoder_callback = OutputEncoderCallback(output_encoder)
+callbacks = [
+    MGPatchingCallback(
+        levels=config.patching.levels,
+        padding_fraction=config.patching.padding,
+        stitching=config.patching.stitching, 
+        encoder=output_encoder
+    ),
+    SimpleWandBLoggerCallback(**wandb_init_args)
+]
 
 
 trainer = Trainer(
@@ -179,14 +182,13 @@ trainer = Trainer(
     n_epochs=config.opt.n_epochs,
     device=device,
     amp_autocast=config.opt.amp_autocast,
-    callbacks=[
-        encoder_callback,
-        SimpleWandBLoggerCallback()
-    ],
+    callbacks=callbacks,
     log_test_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,
+    wandb_log = config.wandb.log
+
 )
 
 

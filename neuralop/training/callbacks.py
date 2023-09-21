@@ -217,8 +217,10 @@ class SimpleWandBLoggerCallback(Callback):
     expected when passing verbose to a Trainer
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
+        if kwargs:
+            wandb.init(kwargs)
     
     def on_init_end(self, *args, **kwargs):
         return self._update_state_dict(**kwargs)
@@ -292,8 +294,9 @@ class MGPatchingCallback(Callback):
         self.stitching = stitching
         self.encoder = encoder
         
-    def on_init_end(self, model, **kwargs):
-        self.patcher = MultigridPatching2D(model=model, levels=self.levels, 
+    def on_init_end(self, **kwargs):
+        self._update_state_dict(**kwargs)
+        self.patcher = MultigridPatching2D(model=self.state_dict['model'], levels=self.levels, 
                                       padding_fraction=self.padding_fraction,
                                       stitching=self.stitching)
     
@@ -337,6 +340,7 @@ class OutputEncoderCallback(Callback):
     def on_before_loss(self, out):
         self.state_dict['out'] = self.encoder.decode(out)
         self.state_dict['sample']['y'] = self.encoder.decode(self.state_dict['sample']['y'])
+        self.state_dict['sample'].pop('x')
     
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs)
