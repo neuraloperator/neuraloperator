@@ -223,7 +223,8 @@ class SimpleWandBLoggerCallback(Callback):
             wandb.init(kwargs)
     
     def on_init_end(self, *args, **kwargs):
-        return self._update_state_dict(**kwargs)
+        self._update_state_dict(**kwargs)
+        self._update_state_dict(n_train = len(self.state_dict['train_loader'].dataset))
     
     def on_train_start(self, **kwargs):
         self._update_state_dict(**kwargs)
@@ -257,7 +258,7 @@ class SimpleWandBLoggerCallback(Callback):
     def on_before_val(self, epoch, train_err, time, avg_loss, avg_lasso_loss, **kwargs):
         # track training err and val losses to print at interval epochs
         msg = f'[{epoch}] time={time:.2f}, avg_loss={avg_loss:.4f}, train_err={train_err:.4f}'
-        values_to_log = dict(train_err=train_err, time=time, avg_loss=avg_loss)
+        values_to_log = dict(train_err=train_err / self.state_dict['n_train'], time=time, avg_loss=avg_loss)
 
         self._update_state_dict(msg=msg, values_to_log=values_to_log)
         self._update_state_dict(avg_lasso_loss=avg_lasso_loss)
