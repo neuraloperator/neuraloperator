@@ -24,67 +24,67 @@ class Callback(object):
         self.state_dict.update(kwargs)
 
     def on_init_start(self, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
 
     def on_init_end(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
 
     def on_before_train(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
 
     def on_train_start(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
 
     def on_epoch_start(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
     
     def on_batch_start(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
 
     def on_load_to_device(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
     
     def on_before_forward(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
 
     def on_before_loss(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
     
     def compute_training_loss(self, *args, **kwargs):
         raise NotImplementedError
     
     def on_batch_end(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
     
     def on_epoch_end(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
     
     def on_train_end(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
 
     def on_before_val(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
 
     def on_val_epoch_start(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
     
     def on_val_batch_start(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
 
     def on_before_val_loss(self, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
     
     def compute_val_loss(self, *args, **kwargs):
-        raise NotImplementedError
+        pass
     
     def on_val_batch_end(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
 
     def on_val_epoch_end(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
     
     def on_val_end(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+        pass
     
 
 class SimpleWandBLoggerCallback(Callback):
@@ -95,6 +95,9 @@ class SimpleWandBLoggerCallback(Callback):
 
     def __init__(self):
         super().__init__()
+    
+    def on_init_end(self, *args, **kwargs):
+        return self._update_state_dict(**kwargs)
     
     def on_train_start(self, **kwargs):
         self._update_state_dict(**kwargs)
