@@ -7,8 +7,9 @@ import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets.navier_stokes import load_navier_stokes_pt
-from neuralop.training import setup
+from neuralop.training import setup, MGPatchingCallback, SimpleWandBLoggerCallback, OutputEncoderCallback
 from neuralop.utils import get_wandb_api_key, count_params
+
 
 
 # Read the configuration
@@ -160,15 +161,28 @@ if config.verbose:
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
 
+# only perform MG patching if config patching levels > 0
+
+if config.patching.levels > 0:
+    encoder_callback = MGPatchingCallback(
+            levels=config.patching.levels,
+            padding_fraction=config.patching.padding,
+            stitching=config.patching.stitching, 
+            encoder=output_encoder
+        )
+else:
+    encoder_callback = OutputEncoderCallback(output_encoder)
+
+
 trainer = Trainer(
-    model,
+    model=model,
     n_epochs=config.opt.n_epochs,
     device=device,
     amp_autocast=config.opt.amp_autocast,
-    mg_patching_levels=config.patching.levels,
-    mg_patching_padding=config.patching.padding,
-    mg_patching_stitching=config.patching.stitching,
-    wandb_log=config.wandb.log,
+    callbacks=[
+        encoder_callback,
+        SimpleWandBLoggerCallback()
+    ],
     log_test_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
@@ -179,8 +193,6 @@ trainer = Trainer(
 trainer.train(
     train_loader,
     test_loaders,
-    output_encoder,
-    model,
     optimizer,
     scheduler,
     regularizer=False,

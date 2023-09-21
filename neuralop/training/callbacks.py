@@ -97,9 +97,9 @@ class PipelineCallback(Callback):
     def __init__(self, callbacks: List[Callback]):
         self.callbacks = callbacks
 
-        overrides_device_load = [getattr(c, "on_load_to_device") != getattr(Callback, "on_load_to_device")\
-                                  for c in callbacks]
-        assert sum(overrides_device_load) <= 2, "More than one callback cannot override device loading"
+        overrides_device_load = ["on_load_to_device" in c.__class__.__dict__.keys() for c in callbacks]
+       
+        assert sum(overrides_device_load) < 2, "More than one callback cannot override device loading"
         if sum(overrides_device_load) == 1:
             self.device_load_callback_idx = overrides_device_load.index(True)
             print("using custom callback to load data to device.")
@@ -108,9 +108,7 @@ class PipelineCallback(Callback):
             print("using standard method to load data to device.")
 
         # unless loss computation is overriden, call a basic loss function calculation
-        overrides_loss = [getattr(c, "compute_training_loss") != getattr(Callback, "compute_training_loss")\
-                                  for c in callbacks]
-        print(overrides_loss)
+        overrides_loss = ["compute_training_loss" in c.__class__.__dict__.keys() for c in callbacks]
 
         if sum(overrides_loss) >= 1:
             self.overrides_loss = True

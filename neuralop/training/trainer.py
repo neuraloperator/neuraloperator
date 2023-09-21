@@ -48,8 +48,12 @@ class Trainer:
         if callbacks:
             assert type(callbacks) == list, "Callbacks must be a list of Callback objects"
             self.callbacks = PipelineCallback(callbacks=callbacks)
+            self.override_load_to_device = (self.callbacks.device_load_callback_idx is not None)
+            self.overrides_loss = self.callbacks.overrides_loss
         else:
             self.callbacks = []
+            self.override_load_to_device = False
+            self.overrides_loss = False
 
         if self.callbacks:
             self.callbacks.on_init_start(model=model, 
