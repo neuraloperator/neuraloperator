@@ -89,7 +89,11 @@ class Callback(object):
         pass
 
 
-class CallbackPipeline(object):
+class PipelineCallback(Callback):
+    """
+    PipelineCallback handles the specific logic for the case in which
+    a user passes more than one Callback to a trainer.
+    """
     def __init__(self, callbacks: List[Callback]):
         self.callbacks = callbacks
 

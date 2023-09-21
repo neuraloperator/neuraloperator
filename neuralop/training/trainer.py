@@ -8,8 +8,7 @@ import neuralop.mpu.comm as comm
 
 from .patching import MultigridPatching2D
 from .losses import LpLoss
-from .callbacks import Callback
-
+from .callbacks import Callback, PipelineCallback
 
 class Trainer:
     def __init__(self, *, 
@@ -48,36 +47,12 @@ class Trainer:
 
         if callbacks:
             assert type(callbacks) == list, "Callbacks must be a list of Callback objects"
-            self.callbacks = callbacks
+            self.callbacks = PipelineCallback(callbacks=callbacks)
         else:
             self.callbacks = []
-        
-        # unless load to device is overriden, call a basic loading function
-        # More than one callback cannot separately overload the device loading
-        overrides_device_load = [getattr(c, "on_load_to_device") != getattr(Callback, "on_load_to_device")\
-                                  for c in callbacks]
-        assert sum(overrides_device_load) >= 2, "More than one callback cannot override device loading"
-        if sum(overrides_device_load) == 1:
-            self.override_load_to_device = True
-            print("using custom callback to load data to device.")
-        else:
-            self.override_load_to_device = False
-            print("using standard method to load data to device.")
 
-        # unless loss computation is overriden, call a basic loss function calculation
-        overrides_loss = [getattr(c, "compute_training_loss") != getattr(Callback, "compute_training_loss")\
-                                  for c in callbacks]
-        print(overrides_loss)
-
-        if sum(overrides_loss) >= 1:
-            self.overrides_loss = True
-            print("using custom callback to compute loss.")
-        else:
-            self.overrides_loss = False
-            print("using standard method to compute loss.")
-
-        for callback in self.callbacks:
-            callback.on_init_start(model=model, 
+        if self.callbacks:
+            self.callbacks.on_init_start(model=model, 
                  n_epochs=n_epochs, 
                  wandb_log=wandb_log, 
                  device=device, 
@@ -104,8 +79,8 @@ class Trainer:
         self.device = device
         self.amp_autocast = amp_autocast
 
-        for callback in self.callbacks:
-            callback.on_init_end(model=model, 
+        if self.callbacks:
+            self.callbacks.on_init_end(model=model, 
                  n_epochs=n_epochs, 
                  wandb_log=wandb_log, 
                  device=device, 
@@ -133,8 +108,8 @@ class Trainer:
         training_loss: function to use 
         """
 
-        for callback in self.callbacks:
-            callback.on_train_start(train_loader=train_loader, test_loaders=test_loaders,
+        if self.callbacks:
+            self.callbacks.on_train_start(train_loader=train_loader, test_loaders=test_loaders,
                                     optimizer=optimizer, scheduler=scheduler, 
                                     regularizer=regularizer, training_loss=training_loss, 
                                     eval_losses=eval_losses)
@@ -152,8 +127,8 @@ class Trainer:
         
         for epoch in range(self.n_epochs):
 
-            for callback in self.callbacks:
-                callback.on_epoch_start(epoch=epoch)
+            if self.callbacks:
+                self.callbacks.on_epoch_start(epoch=epoch)
 
             avg_loss = 0
             avg_lasso_loss = 0
@@ -163,8 +138,8 @@ class Trainer:
 
             for idx, sample in enumerate(train_loader):
 
-                for callback in self.callbacks:
-                    callback.on_batch_start(idx=idx, sample=sample)
+                if self.callbacks:
+                    self.callbacks.on_batch_start(idx=idx, sample=sample)
 
                 # Decide what to do about logging later when we decide on batch naming conventions
                 '''if epoch == 0 and idx == 0 and self.verbose and is_logger:
@@ -176,8 +151,7 @@ class Trainer:
                 # no callback overrides default load to device
                 
                 if self.override_load_to_device:
-                    for callback in self.callbacks:
-                        callback.on_load_to_device(sample=sample)
+                    self.callbacks.on_load_to_device(sample=sample)
                 else:
                     for k,v in sample.items():
                         if hasattr(v, 'to'):
@@ -193,17 +167,16 @@ class Trainer:
                 else:
                     out = self.model(**sample)
 
-                for callback in self.callbacks:
-                    callback.on_before_loss(out=out)
+                if self.callbacks:
+                    self.callbacks.on_before_loss(out=out)
 
                 loss = 0.
 
                 if self.overrides_loss:
-                    for callback in self.callbacks:
-                        if isinstance(out, torch.Tensor):
-                            loss += callback.compute_training_loss(out=out.float(), **sample, amp_autocast=self.amp_autocast)
-                        elif isinstance(out, dict):
-                            loss += callback.compute_training_loss(**out, **sample, amp_autocast=self.amp_autocast)
+                    if isinstance(out, torch.Tensor):
+                        loss += self.callbacks.compute_training_loss(out=out.float(), **sample, amp_autocast=self.amp_autocast)
+                    elif isinstance(out, dict):
+                        loss += self.callbacks.compute_training_loss(**out, **sample, amp_autocast=self.amp_autocast)
                 else:
                     if self.amp_autocast:
                         with amp.autocast(enabled=True):
@@ -232,8 +205,8 @@ class Trainer:
                     if regularizer:
                         avg_lasso_loss += regularizer.loss
 
-                for callback in self.callbacks:
-                    callback.on_init_end()
+                if self.callbacks:
+                    self.callbacks.on_init_end()
 
             if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler.step(train_err)
@@ -247,19 +220,19 @@ class Trainer:
             
             if epoch % self.log_test_interval == 0: 
 
-                for callback in self.callbacks:
-                    callback.on_before_val(epoch=epoch, train_err=train_err, time=epoch_train_time, \
+                if self.callbacks:
+                    self.callbacks.on_before_val(epoch=epoch, train_err=train_err, time=epoch_train_time, \
                                            avg_loss=avg_loss, avg_lasso_loss=avg_lasso_loss)
                 
 
                 for loader_name, loader in test_loaders.items():
                     _ = self.evaluate(eval_losses, loader, log_prefix=loader_name)
 
-                for callback in self.callbacks:
-                    callback.on_val_end()
+                if self.callbacks:
+                    self.callbacks.on_val_end()
             
-            for callback in self.callbacks:
-                callback.on_epoch_end(epoch=epoch, train_err=train_err, avg_loss=avg_loss)
+            if self.callbacks:
+                self.callbacks.on_epoch_end(epoch=epoch, train_err=train_err, avg_loss=avg_loss)
 
     def evaluate(self, loss_dict, data_loader,
                  log_prefix=''):
@@ -280,8 +253,8 @@ class Trainer:
             dict[f'{log_prefix}_{loss_name}] = loss for loss in loss_dict
         """
 
-        for callback in self.callbacks:
-            callback.on_val_epoch_start(loss_dict = loss_dict, data_loader=data_loader)
+        if self.callbacks:
+            self.callbacks.on_val_epoch_start(loss_dict = loss_dict, data_loader=data_loader)
 
         self.model.eval()
 
@@ -291,8 +264,8 @@ class Trainer:
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
                 
-                for callback in self.callbacks:
-                    callback.on_val_batch_start(idx=idx, sample=sample)
+                if self.callbacks:
+                    self.callbacks.on_val_batch_start(idx=idx, sample=sample)
                 
                 y = sample['y']
                 n_samples += y.size(0)
@@ -301,8 +274,7 @@ class Trainer:
                 # no callback overrides default load to device
                 
                 if self.override_load_to_device:
-                    for callback in self.callbacks:
-                        callback.on_load_to_device(sample=sample)
+                    self.callbacks.on_load_to_device(sample=sample)
                 else:
                     for k,v in sample.items():
                         if hasattr(v, 'to'):
@@ -310,16 +282,15 @@ class Trainer:
                 
                 out = self.model(**sample)
 
-                for callback in self.callbacks:
-                    callback.on_before_val_loss(out=out)
+                if self.callbacks:
+                    self.callbacks.on_before_val_loss(out=out)
                 
                 for loss_name, loss in loss_dict.items():
                     if self.overrides_loss:
-                        for callback in self.callbacks:
-                            if isinstance(out, torch.Tensor):
-                                val_loss = callback.compute_training_loss(out.float(), **sample)
-                            elif isinstance(out, dict):
-                                val_loss = callback.compute_training_loss(**out, **sample)
+                        if isinstance(out, torch.Tensor):
+                            val_loss = self.callbacks.compute_training_loss(out.float(), **sample)
+                        elif isinstance(out, dict):
+                            val_loss = self.callbacks.compute_training_loss(**out, **sample)
                     else:
                         if isinstance(out, torch.Tensor):
                             val_loss = loss(out, **sample).item()
@@ -328,15 +299,15 @@ class Trainer:
 
                     errors[f'{log_prefix}_{loss_name}'] += val_loss
 
-                for callback in self.callbacks:
-                    callback.on_val_batch_end()
+                if self.callbacks:
+                    self.callbacks.on_val_batch_end()
         
         del y, out
 
         for key in errors.keys():
             errors[key] /= n_samples
         
-        for callback in self.callbacks:
-            callback.on_val_epoch_end(errors=errors)
+        if self.callbacks:
+            self.callbacks.on_val_epoch_end(errors=errors)
 
         return errors
