@@ -33,6 +33,8 @@ class DomainPadding(nn.Module):
         super().__init__()
         self.domain_padding = domain_padding
         self.padding_mode = padding_mode.lower()
+        if output_scaling_factor is None:
+            output_scaling_factor = 1
         self.output_scaling_factor: Union[int, List[int]] = output_scaling_factor
 
         # dict(f'{resolution}'=padding) such that padded = F.pad(x, indices)
