@@ -263,20 +263,21 @@ class FNOBlocks(nn.Module):
 
     def resample(self, x, index, output_shape=None):
         """Resamples input if scaling factors are available for this block."""
-        if self.output_scaling_factor is None and output_shape is None:
-            return x
+        return self.convs[index].transform(x, output_shape=output_shape)
+        # if self.output_scaling_factor is None and output_shape is None:
+        #     return x
 
-        if output_shape is not None:
-            return resample(x, res_scale=1, axis=None, output_shape=output_shape)
+        # if output_shape is not None:
+        #     return resample(x, res_scale=1, axis=None, output_shape=output_shape)
 
-        # output_shape is None and self.output_scaling_factor is not None
-        scaling_factor = self.output_scaling_factor[index]
-        return resample(
-            x,
-            scaling_factor,
-            list(range(-len(scaling_factor), 0)),
-            output_shape=output_shape,
-        )
+        # # output_shape is None and self.output_scaling_factor is not None
+        # scaling_factor = self.output_scaling_factor[index]
+        # return resample(
+        #     x,
+        #     scaling_factor,
+        #     list(range(-len(scaling_factor), 0)),
+        #     output_shape=output_shape,
+        # )
 
     @property
     def incremental_n_modes(self):
