@@ -1,12 +1,12 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from functools import partialmethod
 import torch
 from ..layers.mlp import MLP
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.skip_connections import skip_connection
 from ..layers.padding import DomainPadding
-from ..layers.fno_block import FNOBlocks, resample
+from ..layers.fno_block import FNOBlocks
+from ..layers.resample import resample
 
 
 class UNO(nn.Module):

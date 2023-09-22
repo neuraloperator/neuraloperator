@@ -16,7 +16,8 @@ from tensorly.plugins import use_opt_einsum
 from tltorch.factorized_tensors.core import FactorizedTensor
 
 from .einsum_utils import einsum_complexhalf
-
+from .base_spectral_conv import BaseSpectralConv
+from .resample import resample
 
 tl.set_backend("pytorch")
 use_opt_einsum("optimal")
@@ -187,7 +188,7 @@ def get_contract_fun(weight, implementation="reconstructed", separable=False):
 Number = Union[int, float]
 
 
-class SpectralConv(nn.Module):
+class SpectralConv(BaseSpectralConv):
     """Generic N-Dimensional Fourier Neural Operator
 
     Parameters
@@ -258,8 +259,10 @@ class SpectralConv(nn.Module):
         decomposition_kwargs: Optional[dict] = None,
         init_std="auto",
         fft_norm="backward",
+        device=None,
+        dtype=None,
     ):
-        super().__init__()
+        super().__init__(dtype=dtype, device=device)
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -295,7 +298,7 @@ class SpectralConv(nn.Module):
         ] = validate_scaling_factor(output_scaling_factor, self.order, n_layers)
 
         if init_std == "auto":
-            init_std = 1 / (in_channels * out_channels)
+            init_std = (2 / (in_channels + out_channels))**0.5
         else:
             init_std = init_std
 
@@ -396,6 +399,31 @@ class SpectralConv(nn.Module):
             ]
             self.half_n_modes = [m // 2 for m in self._incremental_n_modes]
 
+    def transform(self, x, layer_index=0, output_shape=None):
+        in_shape = list(x.shape[2:])
+
+        if self.output_scaling_factor is not None and output_shape is None:
+            out_shape = tuple(
+                [
+                    round(s * r)
+                    for (s, r) in zip(in_shape, self.output_scaling_factor[layer_index])
+                ]
+            )
+        elif output_shape is not None:
+            out_shape = output_shape
+        else:
+            out_shape = in_shape
+
+        if in_shape == out_shape:
+            return x
+        else:
+            return resample(
+                x,
+                1.0,
+                list(range(2, x.ndim)),
+                output_shape=out_shape,
+            )
+
     def forward(
         self, x: torch.Tensor, indices=0, output_shape: Optional[Tuple[int]] = None
     ):
@@ -485,9 +513,10 @@ class SpectralConv(nn.Module):
         The parametrization of sub-convolutional layers is shared with the main one.
         """
         if self.n_layers == 1:
-            raise ValueError(
-                "A single convolution is parametrized, directly use the main class."
-            )
+            Warning("A single convolution is parametrized, directly use the main class.")
+            # raise ValueError(
+            #     "A single convolution is parametrized, directly use the main class."
+            # )
 
         return SubConv(self, indices)
 
@@ -511,9 +540,15 @@ class SubConv(nn.Module):
         self.main_conv = main_conv
         self.indices = indices
 
-    def forward(self, x):
-        return self.main_conv.forward(x, self.indices)
+    def forward(self, x, **kwargs):
+        return self.main_conv.forward(x, self.indices, **kwargs)
 
+    def transform(self, x, **kwargs):
+        return self.main_conv.transform(x, self.indices, **kwargs)
+
+    @property
+    def weight(self):
+        return self.main_conv.get_weight(indices=self.indices)
 
 class SpectralConv1d(SpectralConv):
     """1D Spectral Conv

@@ -2,6 +2,7 @@ import inspect
 
 from .fno import TFNO, TFNO1d, TFNO2d, TFNO3d
 from .fno import FNO, FNO1d, FNO2d, FNO3d
+from .fno import SFNO
 from .uno import UNO
 from .fnogno import FNOGNO
 
@@ -12,6 +13,7 @@ MODEL_ZOO = {
     "tfno2d": TFNO2d,
     "tfno3d": TFNO3d,
     "fno": FNO,
+    'sfno': SFNO,
     "fno1d": FNO1d,
     "fno2d": FNO2d,
     "fno3d": FNO3d,
@@ -27,6 +29,9 @@ def available_models():
 
 def get_model(config):
     """Returns an instantiated model for the given config
+
+    * Reads the model to be used from config['arch']
+    * Adjusts config["arch"]["data_channels"] accordingly if multi-grid patching is used
 
     Also prints warnings for safety, in case::
     * some given arguments aren't actually used by the model
