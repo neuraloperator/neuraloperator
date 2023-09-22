@@ -85,7 +85,7 @@ class DomainPadding(nn.Module):
             output_pad = padding
 
             output_pad = [
-                round(i * j) for (i, j) in zip(self.output_scaling_factor, output_pad)
+                round(i * j) for (i, j) in zip(output_scaling_factor, output_pad)
             ]
 
             # padding is being applied in reverse order
@@ -136,7 +136,7 @@ class DomainPadding(nn.Module):
             output_shape = padded.shape[2:]
 
             output_shape = [
-                round(i * j) for (i, j) in zip(self.output_scaling_factor, output_shape)
+                round(i * j) for (i, j) in zip(output_scaling_factor, output_shape)
             ]
 
             self._unpad_indices[f"{[i for i in output_shape]}"] = unpad_indices
