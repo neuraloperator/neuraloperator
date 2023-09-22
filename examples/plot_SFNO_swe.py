@@ -70,9 +70,8 @@ sys.stdout.flush()
 
 # %% 
 # Create the trainer
-trainer = Trainer(model, n_epochs=20,
+trainer = Trainer(model=model, n_epochs=20,
                   device=device,
-                  mg_patching_levels=0,
                   wandb_log=False,
                   log_test_interval=3,
                   use_distributed=False,
@@ -82,11 +81,10 @@ trainer = Trainer(model, n_epochs=20,
 # %%
 # Actually train the model on our small Darcy-Flow dataset
 
-trainer.train(train_loader, test_loaders,
-              None,
-              model, 
-              optimizer,
-              scheduler, 
+trainer.train(train_loader=train_loader,
+              test_loaders=test_loaders,
+              optimizer=optimizer,
+              scheduler=scheduler, 
               regularizer=False, 
               training_loss=train_loss,
               eval_losses=eval_losses)
