@@ -3,6 +3,7 @@ import inspect
 from .fno import TFNO, TFNO1d, TFNO2d, TFNO3d
 from .fno import FNO, FNO1d, FNO2d, FNO3d
 from .uno import UNO
+from .fnogno import FNOGNO
 
 
 MODEL_ZOO = {
@@ -15,6 +16,7 @@ MODEL_ZOO = {
     "fno2d": FNO2d,
     "fno3d": FNO3d,
     "uno": UNO,
+    "fnogno": FNOGNO
 }
 
 

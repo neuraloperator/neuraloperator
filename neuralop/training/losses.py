@@ -1,5 +1,7 @@
-import torch
 import math
+from typing import List
+
+import torch
 
 
 #Set fix{x,y,z}_bnd if function is non-periodic in {x,y,z} direction
@@ -302,7 +304,7 @@ class IregularLpqLoss(torch.nn.Module):
     def rel(self, x, y, vol_elm):
         return self.abs(x, y, vol_elm)/self.norm(y, vol_elm)
     
-    def forward(self, x, y, vol_elm):
+    def forward(self, x, y, vol_elm, **kwargs):
         return self.rel(x, y, vol_elm)
 
 
@@ -322,6 +324,8 @@ def friction_drag(wall_shear_stress, vol_elm,
     const = 2.0/(mass_density*(flow_speed**2)*reference_area)
     direction = torch.sum(wall_shear_stress*flow_direction_normal, dim=1, keepdim=False)
 
+    x = torch.sum(direction*vol_elm)
+
     return const*torch.sum(direction*vol_elm)
 
 def total_drag(pressure, wall_shear_stress, vol_elm, 
@@ -337,3 +341,66 @@ def total_drag(pressure, wall_shear_stress, vol_elm,
                        reference_area, mass_density)
     
     return cp + cf 
+
+
+class WeightedL2DragLoss(object):
+
+    def __init__(self, mappings: dict, device: str = 'cuda'):
+        """WeightedL2DragPlusLPQLoss calculates the l2 drag loss
+            over the shear stress and pressure outputs of a model.
+
+        Parameters
+        ----------
+        mappings: dict[tuple(Slice)]
+            indices of an input tensor corresponding to above fields
+        device : str, optional
+            device on which to do tensor calculations, by default 'cuda'
+        """
+        # take in a dictionary of drag functions to be calculated on model output over output fields
+        super().__init__()
+        self.mappings = mappings
+        self.device = device
+
+
+    def __call__(self, pred, truth, vol_elm, inward_normals, flow_normals, flow_speed, reference_area, **kwargs):
+        c_pred = None
+        c_truth = None
+        loss = 0.
+        
+        stress_indices = self.mappings['wall_shear_stress']
+        pred_stress = pred[stress_indices].view(-1,1)
+        truth_stress = truth[stress_indices]
+
+        # friction drag takes padded input
+        pred_stress_pad = torch.zeros((pred_stress.shape[0], 3), device=self.device)
+        pred_stress_pad[:,0] = pred_stress.view(-1,)
+
+        truth_stress_pad = torch.zeros((truth_stress.shape[0], 3), device=self.device)
+        truth_stress_pad[:,0] = truth_stress.view(-1,)
+
+        pressure_indices = self.mappings['pressure']
+        pred_pressure = pred[pressure_indices].view(-1,1)
+        truth_pressure = truth[pressure_indices]
+
+        c_pred = total_drag(pressure=pred_pressure,
+                            wall_shear_stress=pred_stress_pad,
+                            vol_elm=vol_elm,
+                            inward_surface_normal=inward_normals,
+                            flow_direction_normal=flow_normals,
+                            flow_speed=flow_speed,
+                            reference_area=reference_area
+                            )
+        c_truth = total_drag(pressure=truth_pressure,
+                            wall_shear_stress=truth_stress_pad,
+                            vol_elm=vol_elm,
+                            inward_surface_normal=inward_normals,
+                            flow_direction_normal=flow_normals,
+                            flow_speed=flow_speed,
+                            reference_area=reference_area
+                            )
+
+        loss += torch.abs(c_pred - c_truth) / torch.abs(c_truth)
+
+        loss = (1.0/len(self.mappings) + 1)*loss
+
+        return loss
