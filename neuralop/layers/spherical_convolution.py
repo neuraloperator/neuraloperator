@@ -10,6 +10,7 @@ from tltorch.factorized_tensors.core import FactorizedTensor
 
 from neuralop.utils import validate_scaling_factor
 from .base_spectral_conv import BaseSpectralConv
+from .spectral_convolution import SubConv
 
 tl.set_backend("pytorch")
 use_opt_einsum("optimal")
@@ -517,23 +518,3 @@ class SphericalConv(BaseSpectralConv):
 
     def __getitem__(self, indices):
         return self.get_conv(indices)
-
-
-class SubConv(nn.Module):
-    """Class representing one of the convolutions
-    from the mother joint factorized convolution
-
-    Notes
-    -----
-    This relies on the fact that nn.Parameters are not duplicated:
-    if the same nn.Parameter is assigned to multiple modules,
-    they all point to the same data, which is shared.
-    """
-
-    def __init__(self, main_conv, indices):
-        super().__init__()
-        self.main_conv = main_conv
-        self.indices = indices
-
-    def forward(self, x):
-        return self.main_conv.forward(x, self.indices)
