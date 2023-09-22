@@ -214,14 +214,18 @@ class SHT(nn.Module):
         self._SHT_cache = nn.ModuleDict()
         self._iSHT_cache = nn.ModuleDict()
 
-    def sht(self, x, s=None, projection='equiangular', norm="ortho"):
+    def sht(self, x, s=None, norm="ortho", grid="equiangular"):
         *_, height, width = x.shape # height = latitude, width = longitude
         if s is None:
-            modes_height = modes_width = None
+            if grid == "equiangular":
+                modes_width = height // 2
+            else:
+                modes_width = height
+            modes_height = height
         else:
             modes_height, modes_width = s
 
-        cache_key = f"{height}_{width}_{modes_height}_{modes_width}_{projection}"
+        cache_key = f"{height}_{width}_{modes_height}_{modes_width}_{norm}_{grid}"
 
         try:
             sht = self._SHT_cache[cache_key]
@@ -232,7 +236,8 @@ class SHT(nn.Module):
                     nlon=width,
                     lmax=modes_height,
                     mmax=modes_width,
-                    grid=projection,
+                    grid=grid,
+                    norm=norm
                 )
                 .to(device=self.device)
                 .to(dtype=self.dtype)
@@ -242,14 +247,18 @@ class SHT(nn.Module):
         return sht(x)
 
 
-    def isht(self, x, s=None, projection='equiangular', norm="ortho"):
+    def isht(self, x, s=None, norm="ortho", grid="equiangular"):
         *_, modes_height, modes_width = x.shape # height = latitude, width = longitude
         if s is None:
-            height = width = None
+            if grid == "equiangular":
+                width = modes_width*2
+            else:
+                width = modes_width
+            height = modes_height
         else:
             height, width = s
 
-        cache_key = f"{height}_{width}_{modes_height}_{modes_width}_{projection}"
+        cache_key = f"{height}_{width}_{modes_height}_{modes_width}_{norm}_{grid}"
 
         try:
             isht = self._iSHT_cache[cache_key]
@@ -260,7 +269,8 @@ class SHT(nn.Module):
                     nlon=width,
                     lmax=modes_height,
                     mmax=modes_width,
-                    grid=projection,
+                    grid=grid,
+                    norm=norm
                 )
                 .to(device=self.device)
                 .to(dtype=self.dtype)

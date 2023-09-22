@@ -2,7 +2,7 @@ import pytest
 import torch
 from tltorch import FactorizedTensor
 from ..spherical_convolution import SphericalConv
-
+from ..spherical_convolution import SHT
 
 @pytest.mark.parametrize('factorization', ['ComplexDense', 'ComplexCP', 'ComplexTucker', 'ComplexTT'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
@@ -29,7 +29,6 @@ def test_SphericalConv(factorization, implementation):
 
     res_dense = conv_dense(x)
     res = conv(x)
-    res_shape = res.shape
 
     torch.testing.assert_close(res_dense, res)
 
@@ -49,3 +48,30 @@ def test_SphericalConv(factorization, implementation):
     res = block(x)
     assert res.shape[1] == 4 # Check out channels
     assert(list(res.shape[2:]) == [12*2, 12*2])
+
+
+
+@pytest.mark.parametrize('grid', ['equiangular', 'legendre-gauss'])
+def test_sht(grid):
+    nlat = 16
+    nlon = 2*nlat
+    batch_size = 2
+    if grid == "equiangular":
+        mmax = nlat // 2
+    else:
+        mmax = nlat
+    lmax = mmax
+    norm = 'ortho'
+    dtype = torch.float32
+
+    sht_handle = SHT(dtype=dtype)
+
+    # Create input
+    coeffs = torch.zeros(batch_size, lmax, mmax, dtype=torch.complex64)
+    coeffs[:, :lmax, :mmax] = torch.randn(batch_size, lmax, mmax, dtype=torch.complex64)
+    
+    signal = sht_handle.isht(coeffs, s=(nlat, nlon), grid=grid, norm=norm).to(torch.float32)
+
+    coeffs = sht_handle.sht(signal, s=(lmax, mmax), grid=grid, norm=norm)
+    rec = sht_handle.isht(coeffs, s=(nlat, nlon), grid=grid, norm=norm)
+    torch.testing.assert_close(signal, rec, rtol=1e-4, atol=1e-4)
