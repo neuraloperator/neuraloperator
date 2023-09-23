@@ -241,7 +241,7 @@ class SHT(nn.Module):
                     norm=norm
                 )
                 .to(device=x.device)
-                .to(dtype=x.dtype)
+                .to(dtype=self.dtype)
             )
             self._SHT_cache[cache_key] = sht
         
@@ -274,7 +274,7 @@ class SHT(nn.Module):
                     norm=norm
                 )
                 .to(device=x.device)
-                .to(dtype=x.dtype)
+                .to(dtype=self.dtype)
             )
             self._iSHT_cache[cache_key] = isht
         
