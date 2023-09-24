@@ -10,7 +10,7 @@ from ..layers.resample import resample
 
 
 class UNO(nn.Module):
-    """U-Shaped Neural Operator
+    """U-Shaped Neural Operator [1]_
 
     Parameters
     ----------
@@ -85,6 +85,8 @@ class UNO(nn.Module):
         How to perform domain padding, by default 'one-sided'
     fft_norm : str, optional
         by default 'forward'
+
+    [1] : U-NO: U-shaped Neural Operators, Md Ashiqur Rahman, Zachary E Ross, Kamyar Azizzadenesheli, TMLR 2022
     """
 
     def __init__(
