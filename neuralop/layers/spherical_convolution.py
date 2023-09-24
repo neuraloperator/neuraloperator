@@ -474,11 +474,11 @@ class SphericalConv(BaseSpectralConv):
             height, width = in_height, in_width
 
         # Return the identity if the resolution and grid of the input and output are the same
-        if ((in_height, in_width) (height, width)) and (self.sht_girds[layer_index] == self.sht_girds[layer_index+1]):
+        if ((in_height, in_width) == (height, width)) and (self.sht_grids[layer_index] == self.sht_grids[layer_index+1]):
             return x
         else:
-            x = self.sht_handle.sht(x, s=self.n_modes, norm=self.sht_norm, grid=self.sht_girds[layer_index])
-            return self.sht_handle.isht(x, s=(height, width), norm=self.sht_norm, grid=self.sht_girds[layer_index + 1])
+            coefs = self.sht_handle.sht(x, s=self.n_modes, norm=self.sht_norm, grid=self.sht_grids[layer_index])
+            return self.sht_handle.isht(coefs, s=(height, width), norm=self.sht_norm, grid=self.sht_grids[layer_index + 1])
 
     def forward(self, x, indices=0, output_shape=None):
         """Generic forward pass for the Factorized Spectral Conv
