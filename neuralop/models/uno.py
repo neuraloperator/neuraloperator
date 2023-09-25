@@ -273,7 +273,7 @@ class UNO(nn.Module):
             non_linearity=non_linearity,
         )
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         x = self.lifting(x)
 
         if self.domain_padding is not None:
