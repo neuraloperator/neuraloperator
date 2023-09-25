@@ -16,7 +16,7 @@ def test_SphericalConv(factorization, implementation):
 
     Verifies that dynamically changing the number of Fourier modes doesn't break the conv
     """
-    n_modes = (10, 8)
+    n_modes = (6, 6)
 
     conv = SphericalConv(
         3, 3, n_modes, n_layers=1, bias=False, implementation=implementation, factorization=factorization)
@@ -49,6 +49,17 @@ def test_SphericalConv(factorization, implementation):
     assert res.shape[1] == 4 # Check out channels
     assert(list(res.shape[2:]) == [12*2, 12*2])
 
+    # Test change of grid
+    block = SphericalConv(
+        4, 4, n_modes, n_layers=2, sht_grids=["equiangular", "legendre-gauss", "equiangular"])
+    x = torch.randn(2, 4, *(12, 12))
+    res = block[0](x)
+    res = block[1](res)
+    assert(res.shape[2:] == x.shape[2:])
+
+    res = block[0].transform(x)
+    res = block[1].transform(res)
+    assert(res.shape[2:] == x.shape[2:])
 
 
 @pytest.mark.parametrize('grid', ['equiangular', 'legendre-gauss'])
