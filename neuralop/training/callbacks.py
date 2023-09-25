@@ -323,7 +323,6 @@ class MGPatchingCallback(Callback):
             self.state_dict['out'] = self.encoder.decode(self.state_dict['out'])
             self.state_dict['sample']['y'] = self.encoder.decode(self.state_dict['sample']['y'])
         
-        self.state_dict['sample'].pop('x')
     
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs, evaluation=True)
@@ -344,29 +343,7 @@ class OutputEncoderCallback(Callback):
     def on_before_loss(self, out):
         self.state_dict['out'] = self.encoder.decode(out)
         self.state_dict['sample']['y'] = self.encoder.decode(self.state_dict['sample']['y'])
-        self.state_dict['sample'].pop('x')
     
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs)
     
-
-class GenericLossCallback(Callback):
-    """
-    A very simple callback class that removes the key
-    'x' from the training batch to avoid overloading it 
-    when LpLoss or H1Loss is called.
-    """
-    def __init__(self):
-        super().__init__()
-    
-    def on_batch_start(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
-    
-    def on_val_batch_start(self, *args, **kwargs):
-        return self.on_batch_start(*args, **kwargs)
-
-    def on_before_loss(self, *args, **kwargs):
-        self.state_dict['sample'].pop('x')
-    
-    def on_before_val_loss(self, **kwargs):
-        return self.on_before_loss(**kwargs)
