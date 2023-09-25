@@ -178,6 +178,7 @@ the small Darcy-Flow example we ship with the package</p>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">TFNO</span><span class="p">,</span> <span class="n">UNO</span>
+<span class="kn">from</span> <span class="nn">neuralop.training</span> <span class="kn">import</span> <span class="n">OutputEncoderCallback</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">Trainer</span>
 <span class="kn">from</span> <span class="nn">neuralop.datasets</span> <span class="kn">import</span> <span class="n">load_darcy_flow_small</span>
 <span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">count_params</span>
@@ -313,52 +314,40 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f9171438520&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fbbd00cdeb0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.training.losses.H1Loss object at 0x7f9171438070&gt;
+ * Train: &lt;neuralop.training.losses.H1Loss object at 0x7fbbd0096c40&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7f9171438070&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f91714384c0&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7fbbd0096c40&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7fbbd0096e50&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+                   <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
                   <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
-                  <span class="n">mg_patching_levels</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                  <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">OutputEncoderCallback</span><span class="p">(</span><span class="n">output_encoder</span><span class="p">)],</span>
                   <span class="n">wandb_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">log_test_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
                   <span class="n">use_distributed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on regular inputs (no multi-grid patching).
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>using standard method to load data to device.
+using standard method to compute loss.
+self.override_load_to_device=False
+self.overrides_loss=False
 </pre></div>
 </div>
 <p>Actually train the model on our small Darcy-Flow dataset</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span>
-              <span class="n">output_encoder</span><span class="p">,</span>
-              <span class="n">model</span><span class="p">,</span>
-              <span class="n">optimizer</span><span class="p">,</span>
-              <span class="n">scheduler</span><span class="p">,</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">train_loader</span><span class="o">=</span><span class="n">train_loader</span><span class="p">,</span>
+              <span class="n">test_loaders</span><span class="o">=</span><span class="n">test_loaders</span><span class="p">,</span>
+              <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+              <span class="n">scheduler</span><span class="o">=</span><span class="n">scheduler</span><span class="p">,</span>
               <span class="n">regularizer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
               <span class="n">training_loss</span><span class="o">=</span><span class="n">train_loss</span><span class="p">,</span>
               <span class="n">eval_losses</span><span class="o">=</span><span class="n">eval_losses</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 1000 samples
-Testing on [50, 50] samples         on resolutions [16, 32].
-Training on raw inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torch.Size([32, 1, 16, 16])
-.. patched inputs of size x.shape=torch.Size([32, 3, 16, 16]), y.shape=torch.Size([32, 1, 16, 16])
-Raw outputs of size out.shape=torch.Size([32, 1, 16, 16])
-.. Processed (unpatched) outputs of size out.shape=torch.Size([32, 1, 16, 16])
-[0] time=6.18, avg_loss=25.3615, train_err=0.5072, 16_h1=0.3872, 16_l2=0.3064, 32_h1=0.4735, 32_l2=0.3295
-[3] time=5.83, avg_loss=12.6702, train_err=0.2534, 16_h1=0.2743, 16_l2=0.2119, 32_h1=0.3288, 32_l2=0.2148
-[6] time=5.81, avg_loss=11.7206, train_err=0.2344, 16_h1=0.2940, 16_l2=0.2316, 32_h1=0.3785, 32_l2=0.2404
-[9] time=5.75, avg_loss=10.5276, train_err=0.2106, 16_h1=0.2526, 16_l2=0.2019, 32_h1=0.3427, 32_l2=0.2248
-[12] time=5.74, avg_loss=10.1750, train_err=0.2035, 16_h1=0.2463, 16_l2=0.1995, 32_h1=0.3303, 32_l2=0.2238
-[15] time=5.82, avg_loss=9.4003, train_err=0.1880, 16_h1=0.1776, 16_l2=0.1298, 32_h1=0.2772, 32_l2=0.1553
-[18] time=5.73, avg_loss=8.4049, train_err=0.1681, 16_h1=0.1653, 16_l2=0.1192, 32_h1=0.2515, 32_l2=0.1362
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -407,7 +396,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 59.305 seconds)</p>
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 40.372 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/f9c1e50d48828a746410d5400feb61f7/plot_UNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_UNO_darcy.py</span></code></a></p>

@@ -24,7 +24,7 @@ Training a SFNO on the spherical Shallow Water equations
 In this example, we demonstrate how to use the small Spherical Shallow Water Equations example we ship with the package
 to train a Spherical Fourier-Neural Operator
 
-.. GENERATED FROM PYTHON SOURCE LINES 11-25
+.. GENERATED FROM PYTHON SOURCE LINES 11-24
 
 .. code-block:: default
 
@@ -48,12 +48,11 @@ to train a Spherical Fourier-Neural Operator
 
 
 
-
-.. GENERATED FROM PYTHON SOURCE LINES 26-27
+.. GENERATED FROM PYTHON SOURCE LINES 25-26
 
 Loading the Navier-Stokes dataset in 128x128 resolution
 
-.. GENERATED FROM PYTHON SOURCE LINES 27-31
+.. GENERATED FROM PYTHON SOURCE LINES 26-30
 
 .. code-block:: default
 
@@ -76,11 +75,11 @@ Loading the Navier-Stokes dataset in 128x128 resolution
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 32-33
+.. GENERATED FROM PYTHON SOURCE LINES 31-32
 
 We create a tensorized FNO model
 
-.. GENERATED FROM PYTHON SOURCE LINES 33-42
+.. GENERATED FROM PYTHON SOURCE LINES 32-41
 
 .. code-block:: default
 
@@ -107,11 +106,11 @@ We create a tensorized FNO model
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 43-44
+.. GENERATED FROM PYTHON SOURCE LINES 42-43
 
 Create the optimizer
 
-.. GENERATED FROM PYTHON SOURCE LINES 44-50
+.. GENERATED FROM PYTHON SOURCE LINES 43-49
 
 .. code-block:: default
 
@@ -128,11 +127,11 @@ Create the optimizer
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 51-52
+.. GENERATED FROM PYTHON SOURCE LINES 50-51
 
 Creating the losses
 
-.. GENERATED FROM PYTHON SOURCE LINES 52-59
+.. GENERATED FROM PYTHON SOURCE LINES 51-58
 
 .. code-block:: default
 
@@ -150,7 +149,7 @@ Creating the losses
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 60-71
+.. GENERATED FROM PYTHON SOURCE LINES 59-70
 
 .. code-block:: default
 
@@ -181,10 +180,10 @@ Creating the losses
           (weight): ModuleList(
             (0-3): 4 x ComplexDenseTensor(shape=torch.Size([32, 32, 32]), rank=None)
           )
-          (_shts_first): ModuleDict()
-          (_ishts_last): ModuleDict()
-          (_shts): ModuleDict()
-          (_ishts): ModuleDict()
+          (sht_handle): SHT(
+            (_SHT_cache): ModuleDict()
+            (_iSHT_cache): ModuleDict()
+          )
         )
         (fno_skips): ModuleList(
           (0-3): 4 x Conv2d(32, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
@@ -221,28 +220,27 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f9168f87c70>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fbbc6c7d5b0>
 
     ### LOSSES ###
 
-     * Train: <neuralop.training.losses.LpLoss object at 0x7f9168f87ac0>
+     * Train: <neuralop.training.losses.LpLoss object at 0x7fbbc6ce7250>
 
-     * Test: {'l2': <neuralop.training.losses.LpLoss object at 0x7f9168f87ac0>}
-
-
+     * Test: {'l2': <neuralop.training.losses.LpLoss object at 0x7fbbc6ce7250>}
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 72-73
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 71-72
 
 Create the trainer
 
-.. GENERATED FROM PYTHON SOURCE LINES 73-82
+.. GENERATED FROM PYTHON SOURCE LINES 72-80
 
 .. code-block:: default
 
-    trainer = Trainer(model, n_epochs=20,
+    trainer = Trainer(model=model, n_epochs=20,
                       device=device,
-                      mg_patching_levels=0,
                       wandb_log=False,
                       log_test_interval=3,
                       use_distributed=False,
@@ -257,25 +255,25 @@ Create the trainer
 
  .. code-block:: none
 
-    Training on regular inputs (no multi-grid patching).
+    self.override_load_to_device=False
+    self.overrides_loss=False
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 83-84
+.. GENERATED FROM PYTHON SOURCE LINES 81-82
 
 Actually train the model on our small Darcy-Flow dataset
 
-.. GENERATED FROM PYTHON SOURCE LINES 84-95
+.. GENERATED FROM PYTHON SOURCE LINES 82-92
 
 .. code-block:: default
 
 
-    trainer.train(train_loader, test_loaders,
-                  None,
-                  model, 
-                  optimizer,
-                  scheduler, 
+    trainer.train(train_loader=train_loader,
+                  test_loaders=test_loaders,
+                  optimizer=optimizer,
+                  scheduler=scheduler, 
                   regularizer=False, 
                   training_loss=train_loss,
                   eval_losses=eval_losses)
@@ -285,28 +283,10 @@ Actually train the model on our small Darcy-Flow dataset
 
 
 
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
-
-    Training on 200 samples
-    Testing on [50, 50] samples         on resolutions [(32, 64), (64, 128)].
-    Training on raw inputs of size x.shape=torch.Size([4, 3, 32, 64]), y.shape=torch.Size([4, 3, 32, 64])
-    .. patched inputs of size x.shape=torch.Size([4, 3, 32, 64]), y.shape=torch.Size([4, 3, 32, 64])
-    Raw outputs of size out.shape=torch.Size([4, 3, 32, 64])
-    .. Processed (unpatched) outputs of size out.shape=torch.Size([4, 3, 32, 64])
-    [0] time=4.58, avg_loss=23.6509, train_err=2.3651, (32, 64)_l2=1.7399, (64, 128)_l2=2.5014
-    [3] time=4.53, avg_loss=9.7636, train_err=0.9764, (32, 64)_l2=1.0287, (64, 128)_l2=2.1955
-    [6] time=4.47, avg_loss=9.4822, train_err=0.9482, (32, 64)_l2=0.9645, (64, 128)_l2=2.2162
-    [9] time=4.55, avg_loss=9.2522, train_err=0.9252, (32, 64)_l2=0.9738, (64, 128)_l2=2.2244
-    [12] time=4.47, avg_loss=9.3246, train_err=0.9325, (32, 64)_l2=0.9429, (64, 128)_l2=2.2240
-    [15] time=4.52, avg_loss=9.1371, train_err=0.9137, (32, 64)_l2=0.9421, (64, 128)_l2=2.2318
-    [18] time=4.58, avg_loss=9.0499, train_err=0.9050, (32, 64)_l2=0.9443, (64, 128)_l2=2.2473
 
 
 
-
-.. GENERATED FROM PYTHON SOURCE LINES 96-106
+.. GENERATED FROM PYTHON SOURCE LINES 93-103
 
 Plot the prediction, and compare with the ground-truth 
 Note that we trained on a very small resolution for
@@ -319,7 +299,7 @@ ii) can be trained quickly on CPU
 
 In practice we would train a Neural Operator on one or multiple GPUs
 
-.. GENERATED FROM PYTHON SOURCE LINES 106-141
+.. GENERATED FROM PYTHON SOURCE LINES 103-138
 
 .. code-block:: default
 
@@ -373,7 +353,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 56.091 seconds)
+   **Total running time of the script:** (2 minutes 45.381 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_SFNO_swe.py:

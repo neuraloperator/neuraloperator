@@ -121,7 +121,9 @@
 
 <span class="kn">from</span> <span class="nn">.fno</span> <span class="kn">import</span> <span class="n">TFNO</span><span class="p">,</span> <span class="n">TFNO1d</span><span class="p">,</span> <span class="n">TFNO2d</span><span class="p">,</span> <span class="n">TFNO3d</span>
 <span class="kn">from</span> <span class="nn">.fno</span> <span class="kn">import</span> <span class="n">FNO</span><span class="p">,</span> <span class="n">FNO1d</span><span class="p">,</span> <span class="n">FNO2d</span><span class="p">,</span> <span class="n">FNO3d</span>
+<span class="kn">from</span> <span class="nn">.fno</span> <span class="kn">import</span> <span class="n">SFNO</span>
 <span class="kn">from</span> <span class="nn">.uno</span> <span class="kn">import</span> <span class="n">UNO</span>
+<span class="kn">from</span> <span class="nn">.fnogno</span> <span class="kn">import</span> <span class="n">FNOGNO</span>
 
 
 <span class="n">MODEL_ZOO</span> <span class="o">=</span> <span class="p">{</span>
@@ -130,10 +132,12 @@
     <span class="s2">&quot;tfno2d&quot;</span><span class="p">:</span> <span class="n">TFNO2d</span><span class="p">,</span>
     <span class="s2">&quot;tfno3d&quot;</span><span class="p">:</span> <span class="n">TFNO3d</span><span class="p">,</span>
     <span class="s2">&quot;fno&quot;</span><span class="p">:</span> <span class="n">FNO</span><span class="p">,</span>
+    <span class="s1">&#39;sfno&#39;</span><span class="p">:</span> <span class="n">SFNO</span><span class="p">,</span>
     <span class="s2">&quot;fno1d&quot;</span><span class="p">:</span> <span class="n">FNO1d</span><span class="p">,</span>
     <span class="s2">&quot;fno2d&quot;</span><span class="p">:</span> <span class="n">FNO2d</span><span class="p">,</span>
     <span class="s2">&quot;fno3d&quot;</span><span class="p">:</span> <span class="n">FNO3d</span><span class="p">,</span>
     <span class="s2">&quot;uno&quot;</span><span class="p">:</span> <span class="n">UNO</span><span class="p">,</span>
+    <span class="s2">&quot;fnogno&quot;</span><span class="p">:</span> <span class="n">FNOGNO</span>
 <span class="p">}</span>
 
 
@@ -144,6 +148,9 @@
 
 <div class="viewcode-block" id="get_model"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.model_dispatcher.get_model.html#neuralop.models.model_dispatcher.get_model">[docs]</a><span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns an instantiated model for the given config</span>
+
+<span class="sd">    * Reads the model to be used from config[&#39;arch&#39;]</span>
+<span class="sd">    * Adjusts config[&quot;arch&quot;][&quot;data_channels&quot;] accordingly if multi-grid patching is used</span>
 
 <span class="sd">    Also prints warnings for safety, in case::</span>
 <span class="sd">    * some given arguments aren&#39;t actually used by the model</span>

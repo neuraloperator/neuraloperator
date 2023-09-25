@@ -128,6 +128,8 @@
 <span class="kn">from</span> <span class="nn">tltorch.factorized_tensors.core</span> <span class="kn">import</span> <span class="n">FactorizedTensor</span>
 
 <span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">validate_scaling_factor</span>
+<span class="kn">from</span> <span class="nn">.base_spectral_conv</span> <span class="kn">import</span> <span class="n">BaseSpectralConv</span>
+<span class="kn">from</span> <span class="nn">.spectral_convolution</span> <span class="kn">import</span> <span class="n">SubConv</span>
 
 <span class="n">tl</span><span class="o">.</span><span class="n">set_backend</span><span class="p">(</span><span class="s2">&quot;pytorch&quot;</span><span class="p">)</span>
 <span class="n">use_opt_einsum</span><span class="p">(</span><span class="s2">&quot;optimal&quot;</span><span class="p">)</span>
@@ -244,16 +246,17 @@
     <span class="n">order</span> <span class="o">=</span> <span class="n">tl</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
     <span class="n">x_syms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">einsum_symbols</span><span class="p">[:</span><span class="n">order</span><span class="p">])</span>
-    <span class="k">if</span> <span class="n">dhconv</span><span class="p">:</span>
-        <span class="n">weight_syms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">x_syms</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># no batch-size, no y dim</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">weight_syms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">x_syms</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>  <span class="c1"># no batch-size</span>
+    <span class="n">weight_syms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">x_syms</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>  <span class="c1"># no batch-size</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">separable</span><span class="p">:</span>
         <span class="n">weight_syms</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">einsum_symbols</span><span class="p">[</span><span class="n">order</span><span class="p">])</span>  <span class="c1"># outputs</span>
         <span class="n">out_syms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">weight_syms</span><span class="p">)</span>
         <span class="n">out_syms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_syms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">out_syms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">x_syms</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">dhconv</span><span class="p">:</span>
+        <span class="n">weight_syms</span> <span class="o">=</span> <span class="n">weight_syms</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># no batch-size, no y dim</span>
+
     <span class="n">rank_syms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">einsum_symbols</span><span class="p">[</span><span class="n">order</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:])</span>
     <span class="n">tt_syms</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">weight_syms</span><span class="p">):</span>
@@ -321,7 +324,101 @@
 <span class="n">Number</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
 
 
-<div class="viewcode-block" id="SphericalConv"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv">[docs]</a><span class="k">class</span> <span class="nc">SphericalConv</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">SHT</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A wrapper for the Spherical Harmonics transform </span>
+
+<span class="sd">    Allows to call it with an interface similar to that of FFT</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_SHT_cache</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleDict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_iSHT_cache</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleDict</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">sht</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="s2">&quot;ortho&quot;</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="s2">&quot;equiangular&quot;</span><span class="p">):</span>
+        <span class="o">*</span><span class="n">_</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span> <span class="c1"># height = latitude, width = longitude</span>
+        <span class="k">if</span> <span class="n">s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">grid</span> <span class="o">==</span> <span class="s2">&quot;equiangular&quot;</span><span class="p">:</span>
+                <span class="n">modes_width</span> <span class="o">=</span> <span class="n">height</span> <span class="o">//</span> <span class="mi">2</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">modes_width</span> <span class="o">=</span> <span class="n">height</span>
+            <span class="n">modes_height</span> <span class="o">=</span> <span class="n">height</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">modes_height</span><span class="p">,</span> <span class="n">modes_width</span> <span class="o">=</span> <span class="n">s</span>
+
+        <span class="n">cache_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">height</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">modes_height</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">modes_width</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">norm</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">grid</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">sht</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SHT_cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">sht</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">RealSHT</span><span class="p">(</span>
+                    <span class="n">nlat</span><span class="o">=</span><span class="n">height</span><span class="p">,</span>
+                    <span class="n">nlon</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
+                    <span class="n">lmax</span><span class="o">=</span><span class="n">modes_height</span><span class="p">,</span>
+                    <span class="n">mmax</span><span class="o">=</span><span class="n">modes_width</span><span class="p">,</span>
+                    <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span>
+                    <span class="n">norm</span><span class="o">=</span><span class="n">norm</span>
+                <span class="p">)</span>
+                <span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_SHT_cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">sht</span>
+        
+        <span class="k">return</span> <span class="n">sht</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">isht</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="s2">&quot;ortho&quot;</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="s2">&quot;equiangular&quot;</span><span class="p">):</span>
+        <span class="o">*</span><span class="n">_</span><span class="p">,</span> <span class="n">modes_height</span><span class="p">,</span> <span class="n">modes_width</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span> <span class="c1"># height = latitude, width = longitude</span>
+        <span class="k">if</span> <span class="n">s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">grid</span> <span class="o">==</span> <span class="s2">&quot;equiangular&quot;</span><span class="p">:</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="n">modes_width</span><span class="o">*</span><span class="mi">2</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="n">modes_width</span>
+            <span class="n">height</span> <span class="o">=</span> <span class="n">modes_height</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">height</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">s</span>
+
+        <span class="n">cache_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">height</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">modes_height</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">modes_width</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">norm</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">grid</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">isht</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iSHT_cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">isht</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">InverseRealSHT</span><span class="p">(</span>
+                    <span class="n">nlat</span><span class="o">=</span><span class="n">height</span><span class="p">,</span>
+                    <span class="n">nlon</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
+                    <span class="n">lmax</span><span class="o">=</span><span class="n">modes_height</span><span class="p">,</span>
+                    <span class="n">mmax</span><span class="o">=</span><span class="n">modes_width</span><span class="p">,</span>
+                    <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span>
+                    <span class="n">norm</span><span class="o">=</span><span class="n">norm</span>
+                <span class="p">)</span>
+                <span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_iSHT_cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">isht</span>
+        
+        <span class="k">return</span> <span class="n">isht</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SphericalConv"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv">[docs]</a><span class="k">class</span> <span class="nc">SphericalConv</span><span class="p">(</span><span class="n">BaseSpectralConv</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spherical Convolution, base class for the SFNO [1]_</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sht_norm : str, {&#39;ortho&#39;}</span>
+<span class="sd">    sht_grids : str or str list, default is &quot;equiangular&quot;, {&quot;equiangular&quot;, &quot;legendre-gauss&quot;}</span>
+<span class="sd">                * If str, the same grid is used for all layers</span>
+<span class="sd">                * If list, should have n_layers + 1 values, corresponding to the input and output grid of each layer</span>
+<span class="sd">                  e.g. for 1 layer, [&quot;input_grid&quot;, &quot;output_grid&quot;]</span>
+
+<span class="sd">    See SpectralConv for full list of other parameters</span>
+
+<span class="sd">    [1] : Spherical Fourier Neural Operators: Learning Stable Dynamics on the Sphere,</span>
+<span class="sd">          Boris Bonev, Thorsten Kurth, Christian Hundt, Jaideep Pathak, Maximilian Baust, Karthik Kashinath, Anima Anandkumar,</span>
+<span class="sd">          ICML 2023.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">in_channels</span><span class="p">,</span>
@@ -332,7 +429,7 @@
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">output_scaling_factor</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Number</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Number</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">fno_block_precision</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
+        <span class="c1"># fno_block_precision=&quot;full&quot;,</span>
         <span class="n">rank</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
         <span class="n">factorization</span><span class="o">=</span><span class="s2">&quot;cp&quot;</span><span class="p">,</span>
         <span class="n">implementation</span><span class="o">=</span><span class="s2">&quot;reconstructed&quot;</span><span class="p">,</span>
@@ -340,9 +437,12 @@
         <span class="n">joint_factorization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
         <span class="n">init_std</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
-        <span class="n">fft_norm</span><span class="o">=</span><span class="s2">&quot;backward&quot;</span><span class="p">,</span>
+        <span class="n">sht_norm</span><span class="o">=</span><span class="s2">&quot;ortho&quot;</span><span class="p">,</span>
+        <span class="n">sht_grids</span><span class="o">=</span><span class="s2">&quot;equiangular&quot;</span><span class="p">,</span>
+        <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">in_channels</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span> <span class="o">=</span> <span class="n">out_channels</span>
@@ -378,7 +478,7 @@
         <span class="p">]</span> <span class="o">=</span> <span class="n">validate_scaling_factor</span><span class="p">(</span><span class="n">output_scaling_factor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">init_std</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
-            <span class="n">init_std</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">in_channels</span> <span class="o">*</span> <span class="n">out_channels</span><span class="p">)</span>
+            <span class="n">init_std</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">in_channels</span> <span class="o">+</span> <span class="n">out_channels</span><span class="p">))</span><span class="o">**</span><span class="mf">0.5</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">init_std</span> <span class="o">=</span> <span class="n">init_std</span>
 
@@ -443,55 +543,11 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># First and last SHT Project respectively from and to equiangular grid</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_shts_first</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleDict</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_ishts_last</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleDict</span><span class="p">()</span>
-        <span class="c1"># Others just use Legendre</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_shts</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleDict</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_ishts</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleDict</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="nf">_get_sht</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">layer</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">layer</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">projection_sht</span> <span class="o">=</span> <span class="s2">&quot;equiangular&quot;</span>
-            <span class="n">projection_isht</span> <span class="o">=</span> <span class="s2">&quot;legendre-gauss&quot;</span>
-        <span class="k">elif</span> <span class="n">layer</span> <span class="o">==</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="n">projection_sht</span> <span class="o">=</span> <span class="s2">&quot;legendre-gauss&quot;</span>
-            <span class="n">projection_isht</span> <span class="o">=</span> <span class="s2">&quot;equiangular&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">projection_sht</span> <span class="o">=</span> <span class="s2">&quot;legendre-gauss&quot;</span>
-            <span class="n">projection_isht</span> <span class="o">=</span> <span class="s2">&quot;legendre-gauss&quot;</span>
-
-        <span class="n">key_sht</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">height</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">projection_sht</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="n">key_isht</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">height</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">projection_isht</span><span class="si">}</span><span class="s2">&quot;</span>
-
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shts</span><span class="p">[</span><span class="n">key_sht</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ishts</span><span class="p">[</span><span class="n">key_isht</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-            <span class="n">sht</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">RealSHT</span><span class="p">(</span>
-                    <span class="n">nlat</span><span class="o">=</span><span class="n">height</span><span class="p">,</span>
-                    <span class="n">nlon</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
-                    <span class="n">lmax</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">half_total_n_modes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                    <span class="n">mmax</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">half_total_n_modes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-                    <span class="n">grid</span><span class="o">=</span><span class="n">projection_sht</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
-                <span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-            <span class="p">)</span>
-            <span class="n">isht</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">InverseRealSHT</span><span class="p">(</span>
-                    <span class="n">nlat</span><span class="o">=</span><span class="n">height</span><span class="p">,</span>
-                    <span class="n">nlon</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
-                    <span class="n">lmax</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">half_total_n_modes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                    <span class="n">mmax</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">half_total_n_modes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-                    <span class="n">grid</span><span class="o">=</span><span class="n">projection_isht</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
-                <span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-            <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_shts</span><span class="p">[</span><span class="n">key_sht</span><span class="p">]</span> <span class="o">=</span> <span class="n">sht</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_ishts</span><span class="p">[</span><span class="n">key_isht</span><span class="p">]</span> <span class="o">=</span> <span class="n">isht</span>
-            <span class="k">return</span> <span class="n">sht</span><span class="p">,</span> <span class="n">isht</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sht_norm</span> <span class="o">=</span> <span class="n">sht_norm</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sht_grids</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">sht_grids</span> <span class="o">=</span> <span class="p">[</span><span class="n">sht_grids</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sht_grids</span> <span class="o">=</span> <span class="n">sht_grids</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sht_handle</span> <span class="o">=</span> <span class="n">SHT</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_weight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">incremental_n_modes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -524,6 +580,24 @@
                 <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">n</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_incremental_n_modes</span>
             <span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">half_n_modes</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span> <span class="o">//</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_incremental_n_modes</span><span class="p">]</span>
+    
+<div class="viewcode-block" id="SphericalConv.transform"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">layer_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">output_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="o">*</span><span class="n">_</span><span class="p">,</span> <span class="n">in_height</span><span class="p">,</span> <span class="n">in_width</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">output_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">height</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">in_height</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span><span class="p">[</span><span class="n">layer_index</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">in_width</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span><span class="p">[</span><span class="n">layer_index</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">output_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">height</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">output_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">output_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">height</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">in_height</span><span class="p">,</span> <span class="n">in_width</span>
+
+        <span class="c1"># Return the identity if the resolution and grid of the input and output are the same</span>
+        <span class="k">if</span> <span class="p">((</span><span class="n">in_height</span><span class="p">,</span> <span class="n">in_width</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sht_grids</span><span class="p">[</span><span class="n">layer_index</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">sht_grids</span><span class="p">[</span><span class="n">layer_index</span><span class="o">+</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="n">x</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">coefs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sht_handle</span><span class="o">.</span><span class="n">sht</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sht_norm</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sht_grids</span><span class="p">[</span><span class="n">layer_index</span><span class="p">])</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sht_handle</span><span class="o">.</span><span class="n">isht</span><span class="p">(</span><span class="n">coefs</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="p">(</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">),</span> <span class="n">norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sht_norm</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sht_grids</span><span class="p">[</span><span class="n">layer_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span></div>
 
 <div class="viewcode-block" id="SphericalConv.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">indices</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">output_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generic forward pass for the Factorized Spectral Conv</span>
@@ -548,9 +622,8 @@
         <span class="k">elif</span> <span class="n">output_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">height</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">output_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">output_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 
-        <span class="n">sht</span><span class="p">,</span> <span class="n">isht</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_sht</span><span class="p">(</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">)</span>
-
-        <span class="n">out_fft</span> <span class="o">=</span> <span class="n">sht</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">out_fft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sht_handle</span><span class="o">.</span><span class="n">sht</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">half_total_n_modes</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sht_norm</span><span class="p">,</span>
+                                      <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sht_grids</span><span class="p">[</span><span class="n">indices</span><span class="p">])</span>
 
         <span class="c1"># xp = torch.zeros_like(x)</span>
         <span class="c1"># xp[..., : self.modes_lat_local, : self.modes_lon_local] = self._contract(</span>
@@ -562,13 +635,14 @@
 
         <span class="c1"># upper block (truncate high freq)</span>
         <span class="n">out_fft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contract</span><span class="p">(</span>
-            <span class="n">out_fft</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">half_total_n_modes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">half_total_n_modes</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+            <span class="n">out_fft</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">half_total_n_modes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">half_total_n_modes</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_get_weight</span><span class="p">(</span><span class="n">indices</span><span class="p">),</span>
             <span class="n">separable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">separable</span><span class="p">,</span>
             <span class="n">dhconv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="n">x</span> <span class="o">=</span> <span class="n">isht</span><span class="p">(</span><span class="n">out_fft</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sht_handle</span><span class="o">.</span><span class="n">isht</span><span class="p">(</span><span class="n">out_fft</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="p">(</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">),</span> <span class="n">norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sht_norm</span><span class="p">,</span>
+                                 <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sht_grids</span><span class="p">[</span><span class="n">indices</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">[</span><span class="n">indices</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
@@ -589,26 +663,6 @@
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indices</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_conv</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span></div>
-
-
-<span class="k">class</span> <span class="nc">SubConv</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class representing one of the convolutions</span>
-<span class="sd">    from the mother joint factorized convolution</span>
-
-<span class="sd">    Notes</span>
-<span class="sd">    -----</span>
-<span class="sd">    This relies on the fact that nn.Parameters are not duplicated:</span>
-<span class="sd">    if the same nn.Parameter is assigned to multiple modules,</span>
-<span class="sd">    they all point to the same data, which is shared.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">main_conv</span><span class="p">,</span> <span class="n">indices</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">main_conv</span> <span class="o">=</span> <span class="n">main_conv</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">indices</span> <span class="o">=</span> <span class="n">indices</span>
-
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_conv</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">)</span>
 </pre></div>
 
       </div>

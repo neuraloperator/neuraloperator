@@ -14,6 +14,7 @@ import torch
 import matplotlib.pyplot as plt
 import sys
 from neuralop.models import TFNO, UNO
+from neuralop.training import OutputEncoderCallback
 from neuralop import Trainer
 from neuralop.datasets import load_darcy_flow_small
 from neuralop.utils import count_params
@@ -73,9 +74,10 @@ sys.stdout.flush()
 
 # %% 
 # Create the trainer
-trainer = Trainer(model, n_epochs=20,
+trainer = Trainer(model=model,
+                   n_epochs=20,
                   device=device,
-                  mg_patching_levels=0,
+                  callbacks=[OutputEncoderCallback(output_encoder)],
                   wandb_log=False,
                   log_test_interval=3,
                   use_distributed=False,
@@ -85,11 +87,10 @@ trainer = Trainer(model, n_epochs=20,
 # %%
 # Actually train the model on our small Darcy-Flow dataset
 
-trainer.train(train_loader, test_loaders,
-              output_encoder,
-              model, 
-              optimizer,
-              scheduler, 
+trainer.train(train_loader=train_loader,
+              test_loaders=test_loaders,
+              optimizer=optimizer,
+              scheduler=scheduler, 
               regularizer=False, 
               training_loss=train_loss,
               eval_losses=eval_losses)

@@ -169,6 +169,10 @@
 <dt class="sig sig-object py" id="neuralop.models.model_dispatcher.get_model">
 <span class="sig-prename descclassname"><span class="pre">neuralop.models.model_dispatcher.</span></span><span class="sig-name descname"><span class="pre">get_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/models/model_dispatcher.html#get_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.models.model_dispatcher.get_model" title="Permalink to this definition"></a></dt>
 <dd><p>Returns an instantiated model for the given config</p>
+<ul class="simple">
+<li><p>Reads the model to be used from config[‘arch’]</p></li>
+<li><p>Adjusts config[“arch”][“data_channels”] accordingly if multi-grid patching is used</p></li>
+</ul>
 <p>Also prints warnings for safety, in case::
 * some given arguments aren’t actually used by the model
 * some keyword arguments of the models aren’t provided by the config</p>

@@ -239,10 +239,10 @@ Loading test dataloader at resolution (64, 128) with 50 samples and batch-size=1
       (weight): ModuleList(
         (0-3): 4 x ComplexDenseTensor(shape=torch.Size([32, 32, 32]), rank=None)
       )
-      (_shts_first): ModuleDict()
-      (_ishts_last): ModuleDict()
-      (_shts): ModuleDict()
-      (_ishts): ModuleDict()
+      (sht_handle): SHT(
+        (_SHT_cache): ModuleDict()
+        (_iSHT_cache): ModuleDict()
+      )
     )
     (fno_skips): ModuleList(
       (0-3): 4 x Conv2d(32, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
@@ -279,52 +279,36 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f9168f87c70&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fbbc6c7d5b0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.training.losses.LpLoss object at 0x7f9168f87ac0&gt;
+ * Train: &lt;neuralop.training.losses.LpLoss object at 0x7fbbc6ce7250&gt;
 
- * Test: {&#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f9168f87ac0&gt;}
+ * Test: {&#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7fbbc6ce7250&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
                   <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
-                  <span class="n">mg_patching_levels</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                   <span class="n">wandb_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">log_test_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
                   <span class="n">use_distributed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on regular inputs (no multi-grid patching).
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>self.override_load_to_device=False
+self.overrides_loss=False
 </pre></div>
 </div>
 <p>Actually train the model on our small Darcy-Flow dataset</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span>
-              <span class="kc">None</span><span class="p">,</span>
-              <span class="n">model</span><span class="p">,</span>
-              <span class="n">optimizer</span><span class="p">,</span>
-              <span class="n">scheduler</span><span class="p">,</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">train_loader</span><span class="o">=</span><span class="n">train_loader</span><span class="p">,</span>
+              <span class="n">test_loaders</span><span class="o">=</span><span class="n">test_loaders</span><span class="p">,</span>
+              <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+              <span class="n">scheduler</span><span class="o">=</span><span class="n">scheduler</span><span class="p">,</span>
               <span class="n">regularizer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
               <span class="n">training_loss</span><span class="o">=</span><span class="n">train_loss</span><span class="p">,</span>
               <span class="n">eval_losses</span><span class="o">=</span><span class="n">eval_losses</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 200 samples
-Testing on [50, 50] samples         on resolutions [(32, 64), (64, 128)].
-Training on raw inputs of size x.shape=torch.Size([4, 3, 32, 64]), y.shape=torch.Size([4, 3, 32, 64])
-.. patched inputs of size x.shape=torch.Size([4, 3, 32, 64]), y.shape=torch.Size([4, 3, 32, 64])
-Raw outputs of size out.shape=torch.Size([4, 3, 32, 64])
-.. Processed (unpatched) outputs of size out.shape=torch.Size([4, 3, 32, 64])
-[0] time=4.58, avg_loss=23.6509, train_err=2.3651, (32, 64)_l2=1.7399, (64, 128)_l2=2.5014
-[3] time=4.53, avg_loss=9.7636, train_err=0.9764, (32, 64)_l2=1.0287, (64, 128)_l2=2.1955
-[6] time=4.47, avg_loss=9.4822, train_err=0.9482, (32, 64)_l2=0.9645, (64, 128)_l2=2.2162
-[9] time=4.55, avg_loss=9.2522, train_err=0.9252, (32, 64)_l2=0.9738, (64, 128)_l2=2.2244
-[12] time=4.47, avg_loss=9.3246, train_err=0.9325, (32, 64)_l2=0.9429, (64, 128)_l2=2.2240
-[15] time=4.52, avg_loss=9.1371, train_err=0.9137, (32, 64)_l2=0.9421, (64, 128)_l2=2.2318
-[18] time=4.58, avg_loss=9.0499, train_err=0.9050, (32, 64)_l2=0.9443, (64, 128)_l2=2.2473
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -371,7 +355,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 56.091 seconds)</p>
+<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 45.381 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-sfno-swe-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/be42c4c413e9b89016fa3a4984cb9758/plot_SFNO_swe.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_SFNO_swe.py</span></code></a></p>
