@@ -164,8 +164,6 @@ class Trainer:
                         if hasattr(v, 'to'):
                             sample[k] = v.to(self.device)
 
-                print({k:v.device for k,v in sample.items()})
-
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
                     regularizer.reset()
