@@ -1,3 +1,10 @@
+"""
+losses.py contains code to compute standard data objective 
+functions for training Neural Operators. 
+
+By default, losses expect arguments y_pred (model predictions) and y (ground y.)
+"""
+
 import math
 from typing import List
 
@@ -133,8 +140,8 @@ class LpLoss(object):
             
         return diff
 
-    def __call__(self, x, y):
-        return self.rel(x, y)
+    def __call__(self, y_pred, y, **kwargs):
+        return self.rel(y_pred, y)
 
 
 class H1Loss(object):
@@ -275,8 +282,8 @@ class H1Loss(object):
         return diff
 
 
-    def __call__(self, x, y, h=None):
-        return self.rel(x, y, h=h)
+    def __call__(self, y_pred, y, h=None, **kwargs):
+        return self.rel(y_pred, y, h=h)
 
 
 class IregularLpqLoss(torch.nn.Module):
@@ -300,12 +307,12 @@ class IregularLpqLoss(torch.nn.Module):
     def abs(self, x, y, vol_elm):
         return self.norm(x - y, vol_elm)
     
-    #y is assumed truth
+    #y is assumed y
     def rel(self, x, y, vol_elm):
         return self.abs(x, y, vol_elm)/self.norm(y, vol_elm)
     
-    def forward(self, x, y, vol_elm, **kwargs):
-        return self.rel(x, y, vol_elm)
+    def forward(self, y_pred, y, vol_elm, **kwargs):
+        return self.rel(y_pred, y, vol_elm)
 
 
 def pressure_drag(pressure, vol_elm, inward_surface_normal, 
@@ -362,14 +369,14 @@ class WeightedL2DragLoss(object):
         self.device = device
 
 
-    def __call__(self, pred, truth, vol_elm, inward_normals, flow_normals, flow_speed, reference_area, **kwargs):
+    def __call__(self, y_pred, y, vol_elm, inward_normals, flow_normals, flow_speed, reference_area, **kwargs):
         c_pred = None
         c_truth = None
         loss = 0.
         
         stress_indices = self.mappings['wall_shear_stress']
-        pred_stress = pred[stress_indices].view(-1,1)
-        truth_stress = truth[stress_indices]
+        pred_stress = y_pred[stress_indices].view(-1,1)
+        truth_stress = y[stress_indices]
 
         # friction drag takes padded input
         pred_stress_pad = torch.zeros((pred_stress.shape[0], 3), device=self.device)
@@ -379,8 +386,8 @@ class WeightedL2DragLoss(object):
         truth_stress_pad[:,0] = truth_stress.view(-1,)
 
         pressure_indices = self.mappings['pressure']
-        pred_pressure = pred[pressure_indices].view(-1,1)
-        truth_pressure = truth[pressure_indices]
+        pred_pressure = y_pred[pressure_indices].view(-1,1)
+        truth_pressure = y[pressure_indices]
 
         c_pred = total_drag(pressure=pred_pressure,
                             wall_shear_stress=pred_stress_pad,

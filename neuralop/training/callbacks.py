@@ -323,7 +323,6 @@ class MGPatchingCallback(Callback):
             self.state_dict['out'] = self.encoder.decode(self.state_dict['out'])
             self.state_dict['sample']['y'] = self.encoder.decode(self.state_dict['sample']['y'])
         
-        self.state_dict['sample'].pop('x')
     
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs, evaluation=True)
@@ -338,10 +337,13 @@ class OutputEncoderCallback(Callback):
         super().__init__()
         self.encoder = encoder
     
+    def on_batch_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+    
     def on_before_loss(self, out):
         self.state_dict['out'] = self.encoder.decode(out)
         self.state_dict['sample']['y'] = self.encoder.decode(self.state_dict['sample']['y'])
-        self.state_dict['sample'].pop('x')
     
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs)
+    

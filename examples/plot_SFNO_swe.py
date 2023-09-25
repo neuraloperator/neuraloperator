@@ -21,7 +21,6 @@ from neuralop import LpLoss, H1Loss
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-
 # %%
 # Loading the Navier-Stokes dataset in 128x128 resolution
 train_loader, test_loaders = load_spherical_swe(n_train=200, batch_size=4, train_resolution=(32, 64),

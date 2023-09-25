@@ -6,9 +6,8 @@ import wandb
 
 import neuralop.mpu.comm as comm
 
-from .patching import MultigridPatching2D
 from .losses import LpLoss
-from .callbacks import Callback, PipelineCallback
+from .callbacks import PipelineCallback
 
 class Trainer:
     def __init__(self, *, 
@@ -54,6 +53,10 @@ class Trainer:
             self.callbacks = []
             self.override_load_to_device = False
             self.overrides_loss = False
+        
+        if verbose:
+            print(f"{self.override_load_to_device=}")
+            print(f"{self.overrides_loss=}")
 
         if self.callbacks:
             self.callbacks.on_init_start(model=model, 
@@ -164,7 +167,7 @@ class Trainer:
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
                     regularizer.reset()
-                
+
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
                         out = self.model(**sample)
@@ -283,7 +286,7 @@ class Trainer:
                     for k,v in sample.items():
                         if hasattr(v, 'to'):
                             sample[k] = v.to(self.device)
-                
+
                 out = self.model(**sample)
 
                 if self.callbacks:
