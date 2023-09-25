@@ -140,7 +140,7 @@ class LpLoss(object):
             
         return diff
 
-    def __call__(self, y_pred, y):
+    def __call__(self, y_pred, y, **kwargs):
         return self.rel(y_pred, y)
 
 
@@ -282,7 +282,7 @@ class H1Loss(object):
         return diff
 
 
-    def __call__(self, y_pred, y, h=None):
+    def __call__(self, y_pred, y, h=None, **kwargs):
         return self.rel(y_pred, y, h=h)
 
 

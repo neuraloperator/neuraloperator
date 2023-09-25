@@ -1,6 +1,7 @@
 import torch
 from torch.cuda import amp
 from timeit import default_timer
+import inspect
 import sys 
 import wandb
 
@@ -54,6 +55,10 @@ class Trainer:
             self.callbacks = []
             self.override_load_to_device = False
             self.overrides_loss = False
+        
+        if verbose:
+            print(f"{self.override_load_to_device=}")
+            print(f"{self.overrides_loss=}")
 
         if self.callbacks:
             self.callbacks.on_init_start(model=model, 
@@ -161,15 +166,21 @@ class Trainer:
                         if hasattr(v, 'to'):
                             sample[k] = v.to(self.device)
 
+                print({k:v.device for k,v in sample.items()})
+
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
                     regularizer.reset()
                 
+                # pass only required args to self.model.forward()
+                model_forward_signature = inspect.getfullargspec(self.model.forward).args
+                model_args = {k:v for k,v in sample.items() if k in model_forward_signature}
+
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
-                        out = self.model(**sample)
+                        out = self.model(**model_args)
                 else:
-                    out = self.model(**sample)
+                    out = self.model(**model_args)
 
                 if self.callbacks:
                     self.callbacks.on_before_loss(out=out)
@@ -283,8 +294,12 @@ class Trainer:
                     for k,v in sample.items():
                         if hasattr(v, 'to'):
                             sample[k] = v.to(self.device)
-                
-                out = self.model(**sample)
+                                
+                # pass only required arguments to self.model
+                model_forward_signature = inspect.getfullargspec(self.model.forward).args
+                model_args = {k:v for k,v in sample.items() if k in model_forward_signature}
+
+                out = self.model(**model_args)
 
                 if self.callbacks:
                     self.callbacks.on_before_val_loss(out=out)
