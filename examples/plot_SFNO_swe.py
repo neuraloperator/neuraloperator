@@ -19,8 +19,8 @@ from neuralop.datasets import load_spherical_swe
 from neuralop.utils import count_params
 from neuralop import LpLoss, H1Loss
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
+#device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device = 'cpu'
 
 # %%
 # Loading the Navier-Stokes dataset in 128x128 resolution
