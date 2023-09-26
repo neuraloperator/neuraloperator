@@ -7,8 +7,9 @@ import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets.navier_stokes import load_navier_stokes_pt
-from neuralop.training import setup
+from neuralop.training import setup, MGPatchingCallback, SimpleWandBLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_params
+
 
 
 # Read the configuration
@@ -48,7 +49,7 @@ if config.wandb.log and is_logger:
                 config.patching.padding,
             ]
         )
-    wandb.init(
+    wandb_init_args = dict(
         config=config,
         name=wandb_name,
         group=config.wandb.group,
@@ -59,6 +60,8 @@ if config.wandb.log and is_logger:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
 
+else: 
+    wandb_init_args = {}
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
 
@@ -160,27 +163,37 @@ if config.verbose:
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
 
+# only perform MG patching if config patching levels > 0
+
+callbacks = [
+    MGPatchingCallback(
+        levels=config.patching.levels,
+        padding_fraction=config.patching.padding,
+        stitching=config.patching.stitching, 
+        encoder=output_encoder
+    ),
+    SimpleWandBLoggerCallback(**wandb_init_args)
+]
+
+
 trainer = Trainer(
-    model,
+    model=model,
     n_epochs=config.opt.n_epochs,
     device=device,
     amp_autocast=config.opt.amp_autocast,
-    mg_patching_levels=config.patching.levels,
-    mg_patching_padding=config.patching.padding,
-    mg_patching_stitching=config.patching.stitching,
-    wandb_log=config.wandb.log,
+    callbacks=callbacks,
     log_test_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,
+    wandb_log = config.wandb.log
+
 )
 
 
 trainer.train(
     train_loader,
     test_loaders,
-    output_encoder,
-    model,
     optimizer,
     scheduler,
     regularizer=False,

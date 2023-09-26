@@ -104,7 +104,7 @@ class MLPLinear(torch.nn.Module):
     def forward(self, x):
         for i, fc in enumerate(self.fcs):
             x = fc(x)
-            if i < self.n_layers:
+            if i < self.n_layers - 1:
                 x = self.non_linearity(x)
             if self.dropout is not None:
                 x = self.dropout(x)

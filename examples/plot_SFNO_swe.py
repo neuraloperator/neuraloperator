@@ -21,7 +21,6 @@ from neuralop import LpLoss, H1Loss
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-
 # %%
 # Loading the Navier-Stokes dataset in 128x128 resolution
 train_loader, test_loaders = load_spherical_swe(n_train=200, batch_size=4, train_resolution=(32, 64),
@@ -70,9 +69,8 @@ sys.stdout.flush()
 
 # %% 
 # Create the trainer
-trainer = Trainer(model, n_epochs=20,
+trainer = Trainer(model=model, n_epochs=20,
                   device=device,
-                  mg_patching_levels=0,
                   wandb_log=False,
                   log_test_interval=3,
                   use_distributed=False,
@@ -82,11 +80,10 @@ trainer = Trainer(model, n_epochs=20,
 # %%
 # Actually train the model on our small Darcy-Flow dataset
 
-trainer.train(train_loader, test_loaders,
-              None,
-              model, 
-              optimizer,
-              scheduler, 
+trainer.train(train_loader=train_loader,
+              test_loaders=test_loaders,
+              optimizer=optimizer,
+              scheduler=scheduler, 
               regularizer=False, 
               training_loss=train_loss,
               eval_losses=eval_losses)

@@ -8,6 +8,7 @@ import wandb
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets import load_darcy_flow_small
 from neuralop.training import setup
+from neuralop.training.callbacks import MGPatchingCallback, SimpleWandBLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_params
 
 
@@ -157,28 +158,30 @@ if config.verbose and is_logger:
     sys.stdout.flush()
 
 trainer = Trainer(
-    model,
+    model=model,
     n_epochs=config.opt.n_epochs,
     device=device,
     amp_autocast=config.opt.amp_autocast,
-    mg_patching_levels=config.patching.levels,
-    mg_patching_padding=config.patching.padding,
-    mg_patching_stitching=config.patching.stitching,
     wandb_log=config.wandb.log,
     log_test_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
-)
+    callbacks=[
+        MGPatchingCallback(levels=config.patching.levels,
+                                  padding_fraction=config.patching.padding,
+                                  stitching=config.patching.stitching,
+                                  encoder=output_encoder),
+        SimpleWandBLoggerCallback()
+              ]
+              )
 
 
 trainer.train(
-    train_loader,
-    test_loaders,
-    output_encoder,
-    model,
-    optimizer,
-    scheduler,
+    train_loader=train_loader,
+    test_loaders=test_loaders,
+    optimizer=optimizer,
+    scheduler=scheduler,
     regularizer=False,
     training_loss=train_loss,
     eval_losses=eval_losses,
