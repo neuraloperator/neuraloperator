@@ -85,7 +85,7 @@ Gallery of examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Short summary =========================== Spectral analysis is useful because it allows researc...">
+    <div class="sphx-glr-thumbcontainer" tooltip="Short summary -------------">
 
 .. only:: html
 

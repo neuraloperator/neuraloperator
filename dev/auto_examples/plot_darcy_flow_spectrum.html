@@ -137,7 +137,6 @@
 <li class="toctree-l2"><a class="reference internal" href="plot_SFNO_swe.html">Training a SFNO on the spherical Shallow Water equations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_UNO_darcy.html">U-NO on Darcy-Flow</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">A simple Darcy-Flow spectrum analysis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#short-summary">Short summary</a></li>
 </ul>
 </li>
 </ul>
@@ -173,14 +172,14 @@ to download the full example code</p>
 <span id="sphx-glr-auto-examples-plot-darcy-flow-spectrum-py"></span><h1>A simple Darcy-Flow spectrum analysis<a class="headerlink" href="#a-simple-darcy-flow-spectrum-analysis" title="Permalink to this heading"></a></h1>
 <p>In this example, we demonstrate how to use the spectrum analysis function on the small Darcy-Flow example.
 For more details on spectrum analysis, users can take a look at this reference: <a class="reference external" href="https://www.astronomy.ohio-state.edu/ryden.1/ast825/ch7.pdf">https://www.astronomy.ohio-state.edu/ryden.1/ast825/ch7.pdf</a></p>
-</section>
 <section id="short-summary">
-<h1>Short summary<a class="headerlink" href="#short-summary" title="Permalink to this heading"></a></h1>
+<h2>Short summary<a class="headerlink" href="#short-summary" title="Permalink to this heading"></a></h2>
 <p>Spectral analysis is useful because it allows researchers to study the distribution of energy across different scales in a fluid flow. By examining the energy spectrum, one can gain insights into the behavior of turbulence or any other dataset and the underlying physical processes. The energy spectrum is analysed through the Fourier transform which is a mathematical tool that decomposes a function or signal into its constituent frequencies. In a fluid flow, it is used to analyze the distribution of energy across different scales in a flow. Specifically, the Fourier transform is applied to the velocity field of the flow, converting it into a frequency domain representation. Higher the wavenumber corresponds to higher frequency and higher energy and is a much harder task to solve as we need higher modes to capture the high-frequency behavior of the flow. Overall this allows researchers to study the energy spectrum, which provides insights into the behavior of turbulence and the underlying physical processes.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Original Author: Zongyi Li</span>
 <span class="c1"># Modified by: Robert Joseph George</span>
 </pre></div>
 </div>
+</section>
 <section id="import-the-library">
 <h2>Import the library<a class="headerlink" href="#import-the-library" title="Permalink to this heading"></a></h2>
 <p>We first import our <cite>neuralop</cite> library and required dependencies.</p>
@@ -280,11 +279,11 @@ For more details on spectrum analysis, users can take a look at this reference: 
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_darcy_flow_spectrum_001.png" srcset="../_images/sphx_glr_plot_darcy_flow_spectrum_001.png" alt="Spectrum of Darcy Flow Datset" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/home/runner/work/neuraloperator/neuraloperator/examples/plot_darcy_flow_spectrum.py:102: UserWarning: Attempt to set non-positive ylim on a log-scaled axis will be ignored.
+<img src="../_images/sphx_glr_plot_darcy_flow_spectrum_001.png" srcset="../_images/sphx_glr_plot_darcy_flow_spectrum_001.png" alt="Spectrum of Darcy Flow Datset" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/home/runner/work/neuraloperator/neuraloperator/examples/plot_darcy_flow_spectrum.py:104: UserWarning: Attempt to set non-positive ylim on a log-scaled axis will be ignored.
   ax.set_ylim(10, 10^10)
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.337 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.254 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-darcy-flow-spectrum-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/e24a0a604c121d50b764a91b613b2142/plot_darcy_flow_spectrum.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_darcy_flow_spectrum.py</span></code></a></p>
@@ -341,8 +340,8 @@ For more details on spectrum analysis, users can take a look at this reference: 
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#">A simple Darcy-Flow spectrum analysis</a></li>
-<li><a class="reference internal" href="#short-summary">Short summary</a><ul>
+<li><a class="reference internal" href="#">A simple Darcy-Flow spectrum analysis</a><ul>
+<li><a class="reference internal" href="#short-summary">Short summary</a></li>
 <li><a class="reference internal" href="#import-the-library">Import the library</a></li>
 </ul>
 </li>

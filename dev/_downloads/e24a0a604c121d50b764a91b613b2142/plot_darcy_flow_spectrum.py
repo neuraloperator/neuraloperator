@@ -1,14 +1,16 @@
 """
 A simple Darcy-Flow spectrum analysis
-===========================
+=====================================
 In this example, we demonstrate how to use the spectrum analysis function on the small Darcy-Flow example.
 For more details on spectrum analysis, users can take a look at this reference: https://www.astronomy.ohio-state.edu/ryden.1/ast825/ch7.pdf
 
 Short summary
-===========================
+-------------
+
 Spectral analysis is useful because it allows researchers to study the distribution of energy across different scales in a fluid flow. By examining the energy spectrum, one can gain insights into the behavior of turbulence or any other dataset and the underlying physical processes. The energy spectrum is analysed through the Fourier transform which is a mathematical tool that decomposes a function or signal into its constituent frequencies. In a fluid flow, it is used to analyze the distribution of energy across different scales in a flow. Specifically, the Fourier transform is applied to the velocity field of the flow, converting it into a frequency domain representation. Higher the wavenumber corresponds to higher frequency and higher energy and is a much harder task to solve as we need higher modes to capture the high-frequency behavior of the flow. Overall this allows researchers to study the energy spectrum, which provides insights into the behavior of turbulence and the underlying physical processes.
 
 """
+
 # Original Author: Zongyi Li
 # Modified by: Robert Joseph George
 # %%
