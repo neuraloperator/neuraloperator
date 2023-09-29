@@ -73,7 +73,7 @@ class RNO(nn.Module):
         self.n_modes = n_modes
         self.n_dims = len(n_modes)
         self.n_layers = n_layers
-        self.width = width
+        self.hidden_channels = hidden_channels
 
         if domain_padding is not None and ((isinstance(domain_padding, list) and sum(domain_padding) > 0)):
                 domain_padding = [0,] + domain_padding # avoid padding channel dimension
@@ -91,22 +91,22 @@ class RNO(nn.Module):
 
         # if lifting_channels is passed, make lifting an MLP with a hidden layer of size lifting_channels
         if self.lifting_channels:
-            self.lifting = MLP(in_channels=in_channels, out_channels=self.width, hidden_channels=self.lifting_channels, n_layers=2, n_dim=self.n_dims)
+            self.lifting = MLP(in_channels=in_channels, out_channels=self.hidden_channels, hidden_channels=self.lifting_channels, n_layers=2, n_dim=self.n_dims)
         # otherwise, make it a linear layer
         else:
-            self.lifting = MLP(in_channels=in_channels, out_channels=self.width, hidden_channels=self.width, n_layers=1, n_dim=self.n_dims)
+            self.lifting = MLP(in_channels=in_channels, out_channels=self.hidden_channels, hidden_channels=self.hidden_channels, n_layers=1, n_dim=self.n_dims)
 
-        module_list = [RNO_layer(n_modes, width, return_sequences=True, fft_norm=fft_norm, factorization=factorization, separable=separable)
+        module_list = [RNO_layer(n_modes, hidden_channels, return_sequences=True, fft_norm=fft_norm, factorization=factorization, separable=separable)
                                      for _ in range(n_layers - 1)]
-        module_list.append(RNO_layer(n_modes, width, return_sequences=False, fft_norm=fft_norm, factorization=factorization, separable=separable))
+        module_list.append(RNO_layer(n_modes, hidden_channels, return_sequences=False, fft_norm=fft_norm, factorization=factorization, separable=separable))
         self.layers = nn.ModuleList(module_list)
 
         # if projection_channels is passed, make lifting an MLP with a hidden layer of size lifting_channels
         if self.projection_channels:
-            self.projection = MLP(in_channels=self.width, out_channels=out_channels, hidden_channels=self.projection_channels, n_layers=2, n_dim=self.n_dims)
+            self.projection = MLP(in_channels=self.hidden_channels, out_channels=out_channels, hidden_channels=self.projection_channels, n_layers=2, n_dim=self.n_dims)
         # otherwise, make it a linear layer
         else:
-            self.projection = MLP(in_channels=self.width, out_channels=out_channels, hidden_channels=out_channels, n_layers=1, n_dim=self.n_dims)
+            self.projection = MLP(in_channels=self.hidden_channels, out_channels=out_channels, hidden_channels=out_channels, n_layers=1, n_dim=self.n_dims)
     
     def forward(self, x, init_hidden_states=None): # h must be padded if using padding
         # x shape (batch, timesteps, dim, dom_size1, dom_size2, ..., dom_sizen)
