@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 from ..layers.recurrent_layers import RNO_layer
 from ..layers.padding import DomainPadding
+from ..layer.mlp import MLP
 
 
 class RNO(nn.Module):
@@ -29,6 +30,12 @@ class RNO(nn.Module):
         Number of output channels.
     n_layers : int
         Number of RNO layers to use.
+    lifting_channels : int or None
+        Number of channels to use in hidden layer of lifting. If None, then
+        a linear layer is used.
+    projection_channels : int or None
+        Number of channels to use in hidden layer of projection. If None, then
+        a linear layer is used.
     residual : bool
         Whether to use residual connections in the hidden layers.
     domain_padding : float list, optional
@@ -51,6 +58,8 @@ class RNO(nn.Module):
                 in_channels, 
                 out_channels, 
                 n_layers, 
+                lifting_channels=None,
+                projection_channels=None,
                 residual=False, 
                 domain_padding=None, 
                 domain_padding_mode='one-sided', 
@@ -76,29 +85,40 @@ class RNO(nn.Module):
 
         self.in_channels = in_channels
         self.out_channels = out_channels
+        self.lifting_channels = lifting_channels
+        self.projection_channels = projection_channels
         self.residual = residual
 
-        self.lifting = nn.Linear(in_channels, self.width)
+        # if lifting_channels is passed, make lifting an MLP with a hidden layer of size lifting_channels
+        if self.lifting_channels:
+            self.lifting = MLP(in_channels=in_channels, out_channels=self.width, hidden_channels=self.lifting_channels, n_layers=2, n_dim=self.n_dims)
+        # otherwise, make it a linear layer
+        else:
+            self.lifting = MLP(in_channels=in_channels, out_channels=self.width, hidden_channels=self.width, n_layers=1, n_dim=self.n_dims)
 
         module_list = [RNO_layer(n_modes, width, return_sequences=True, fft_norm=fft_norm, factorization=factorization, separable=separable)
                                      for _ in range(n_layers - 1)]
         module_list.append(RNO_layer(n_modes, width, return_sequences=False, fft_norm=fft_norm, factorization=factorization, separable=separable))
         self.layers = nn.ModuleList(module_list)
 
-        self.projection = nn.Linear(self.width, out_channels)
+        # if projection_channels is passed, make lifting an MLP with a hidden layer of size lifting_channels
+        if self.projection_channels:
+            self.projection = MLP(in_channels=self.width, out_channels=out_channels, hidden_channels=self.projection_channels, n_layers=2, n_dim=self.n_dims)
+        # otherwise, make it a linear layer
+        else:
+            self.projection = MLP(in_channels=self.width, out_channels=out_channels, hidden_channels=out_channels, n_layers=1, n_dim=self.n_dims)
     
     def forward(self, x, init_hidden_states=None): # h must be padded if using padding
+        # x shape (batch, timesteps, dim, dom_size1, dom_size2, ..., dom_sizen)
         batch_size, timesteps = x.shape[:2]
-        dim = x.shape[-1]
-        dom_sizes = x.shape[2 : 2 + self.n_dims]
+        dim = x.shape[2]
+        dom_sizes = x.shape[3 : 3 + self.n_dims]
         x_size = len(x.shape)
 
         if init_hidden_states is None:
             init_hidden_states = [None] * self.n_layers
         
         x = self.lifting(x)
-
-        x = torch.movedim(x, x_size - 1, 2) # new shape: (batch, timesteps, dim, dom_size1, dom_size2, ..., dom_sizen)
 
         if self.domain_padding:
             x = self.domain_padding.pad(x)
@@ -121,8 +141,6 @@ class RNO(nn.Module):
             h = h.unsqueeze(1) # add dim for padding compatibility
             h = self.domain_padding.unpad(h)
             h = h[:,0] # remove extraneous dim
-
-        h = torch.movedim(h, 1, x_size - 2)
 
         pred = self.projection(h)
 

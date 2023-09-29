@@ -6,28 +6,6 @@ import torch.nn.functional as F
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.fno_block import FNOBlocks
 
-class FourierLayer(nn.Module):
-    def __init__(self, n_modes, width, fft_norm='ortho', factorization=None, separable=False):
-        """
-            n_modes : tuple of modes
-            width : int of width of spectral convolution
-        """
-        super(FourierLayer, self).__init__()
-
-        self.width = width
-
-        self.conv = SpectralConv(width, width, n_modes, n_layers=1, fft_norm=fft_norm, factorization=factorization, separable=separable)
-        self.w = nn.Conv1d(self.width, self.width, 1)
-
-    def forward(self, x):
-        batch_size, dim = x.shape[:2]
-        dom_sizes = x.shape[2:]
-        
-        x1 = self.conv(x)
-        x2 = self.w(x.reshape((batch_size, dim, -1))).view(batch_size, self.width, *dom_sizes)
-
-        return x1 + x2
-
 class RNO_cell(nn.Module):
     def __init__(self, n_modes, width, skip='linear', fft_norm='ortho', factorization=None, separable=False):
         super(RNO_cell, self).__init__()
