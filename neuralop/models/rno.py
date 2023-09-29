@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 from ..layers.recurrent_layers import RNO_layer
 from ..layers.padding import DomainPadding
-from ..layer.mlp import MLP
+from ..layers.mlp import MLP
 
 
 class RNO(nn.Module):
@@ -123,7 +123,8 @@ class RNO(nn.Module):
         if init_hidden_states is None:
             init_hidden_states = [None] * self.n_layers
         
-        x = self.lifting(x)
+        x = self.lifting(x.reshape(batch_size * timesteps, *x.shape[2:]))
+        x = x.reshape(batch_size, timesteps, *x.shape[1:])
 
         if self.domain_padding:
             x = self.domain_padding.pad(x)
