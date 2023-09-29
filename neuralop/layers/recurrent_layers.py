@@ -8,7 +8,7 @@ from ..layers.fno_block import FNOBlocks
 
 class RNO_cell(nn.Module):
     def __init__(self, n_modes, width, output_scaling_factor=None, skip='linear', fft_norm='ortho', factorization=None, separable=False):
-        # output_scaling_factor is provided here as an integer
+        # output_scaling_factor is provided here as an integer or float
         super(RNO_cell, self).__init__()
 
         self.width = width
@@ -35,7 +35,7 @@ class RNO_cell(nn.Module):
 
 class RNO_layer(nn.Module):
     def __init__(self, n_modes, width, return_sequences=False, output_scaling_factor=None, fft_norm='ortho', factorization=None, separable=False):
-        # output_scaling_factor is an integer here
+        # output_scaling_factor is an integer or float here
         super(RNO_layer, self).__init__()
 
         self.width = width
