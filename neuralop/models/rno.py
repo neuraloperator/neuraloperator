@@ -42,8 +42,8 @@ class RNO(nn.Module):
         If not None, percentage of padding to use, by default None
     domain_padding_mode : {'symmetric', 'one-sided'}, optional
         How to perform domain padding, by default 'one-sided'.
-    output_scaling_factor : int or None
-        Scaling factor of output resolution, by default None.
+    output_scaling_factor : List or None
+        Scaling factor of output resolution for each layer, by default None.
     fft_norm : str, optional
         by default 'forward'.
     separable : bool, default is False
@@ -74,6 +74,11 @@ class RNO(nn.Module):
         self.n_dims = len(n_modes)
         self.n_layers = n_layers
         self.hidden_channels = hidden_channels
+        if output_scaling_factor:
+            assert len(output_scaling_factor) == n_layers
+            self.output_scaling_factor = output_scaling_factor
+        else:
+            self.output_scaling_factor = [None] * n_layers
 
         if domain_padding is not None and ((isinstance(domain_padding, list) and sum(domain_padding) > 0)):
                 domain_padding = [0,] + domain_padding # avoid padding channel dimension
@@ -96,9 +101,9 @@ class RNO(nn.Module):
         else:
             self.lifting = MLP(in_channels=in_channels, out_channels=self.hidden_channels, hidden_channels=self.hidden_channels, n_layers=1, n_dim=self.n_dims)
 
-        module_list = [RNO_layer(n_modes, hidden_channels, return_sequences=True, fft_norm=fft_norm, factorization=factorization, separable=separable)
-                                     for _ in range(n_layers - 1)]
-        module_list.append(RNO_layer(n_modes, hidden_channels, return_sequences=False, fft_norm=fft_norm, factorization=factorization, separable=separable))
+        module_list = [RNO_layer(n_modes, hidden_channels, return_sequences=True, output_scaling_factor=self.output_scaling_factor[i], fft_norm=fft_norm, factorization=factorization, separable=separable)
+                                     for i in range(n_layers - 1)]
+        module_list.append(RNO_layer(n_modes, hidden_channels, return_sequences=False, output_scaling_factor=self.output_scaling_factor[-1], fft_norm=fft_norm, factorization=factorization, separable=separable))
         self.layers = nn.ModuleList(module_list)
 
         # if projection_channels is passed, make lifting an MLP with a hidden layer of size lifting_channels
