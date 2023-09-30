@@ -15,12 +15,14 @@ class RNO_cell(nn.Module):
 
         scaling_factor = None if not output_scaling_factor else [output_scaling_factor]
 
+        # Some output_scaling_factors are None to super-resolution purposes. We use the hidden representation in the scaled size always (it's initialized that way),
+        # so we only need to scale the dimensions of f1, f3, and f5, which act on x (original dimensionality).
         self.f1 = FNOBlocks(width, width, n_modes, output_scaling_factor=scaling_factor, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
-        self.f2 = FNOBlocks(width, width, n_modes, output_scaling_factor=scaling_factor, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
+        self.f2 = FNOBlocks(width, width, n_modes, output_scaling_factor=None, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
         self.f3 = FNOBlocks(width, width, n_modes, output_scaling_factor=scaling_factor, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
-        self.f4 = FNOBlocks(width, width, n_modes, output_scaling_factor=scaling_factor, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
+        self.f4 = FNOBlocks(width, width, n_modes, output_scaling_factor=None, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
         self.f5 = FNOBlocks(width, width, n_modes, output_scaling_factor=scaling_factor, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
-        self.f6 = FNOBlocks(width, width, n_modes, output_scaling_factor=scaling_factor, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
+        self.f6 = FNOBlocks(width, width, n_modes, output_scaling_factor=None, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
 
         self.b1 = nn.Parameter(torch.normal(torch.tensor(0.),torch.tensor(1.))) # constant bias terms
         self.b2 = nn.Parameter(torch.normal(torch.tensor(0.),torch.tensor(1.)))
@@ -42,6 +44,7 @@ class RNO_layer(nn.Module):
 
         self.width = width
         self.return_sequences = return_sequences
+        self.output_scaling_factor = output_scaling_factor
 
         self.cell = RNO_cell(n_modes, width, output_scaling_factor=output_scaling_factor, skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
         self.bias_h = nn.Parameter(torch.normal(torch.tensor(0.),torch.tensor(1.)))
@@ -51,7 +54,8 @@ class RNO_layer(nn.Module):
         dom_sizes = x.shape[3:]
 
         if h is None:
-            h = torch.zeros((batch_size, self.width, *dom_sizes)).to(x.device)
+            h_shape = (batch_size, self.width, *dom_sizes) if not self.output_scaling_factor else (batch_size, self.width,) + tuple([int(round(self.output_scaling_factor*s)) for s in dom_sizes])
+            h = torch.zeros(h_shape).to(x.device)
             h += self.bias_h
 
         outputs = []

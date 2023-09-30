@@ -2,20 +2,19 @@ import torch
 from neuralop.models import RNO
 import pytest
 from math import prod
-from configmypy import Bunch
 
 @pytest.mark.parametrize('n_dim', [1, 2, 3])
-@pytest.mark.parameterized('lifting_channels', [None, 256])
-@pytest.mark.parameterized('projection_channels', [None, 256])
+@pytest.mark.parametrize('lifting_channels', [None, 32])
+@pytest.mark.parametrize('projection_channels', [None, 32])
 def test_rno(n_dim, lifting_channels, projection_channels):
     device = 'cuda'
-    s = 128
-    modes = 16
-    width = 64
+    s = 32
+    modes = 8
+    width = 16
     n_layers = 3
     residual = False
 
-    batch_size = 3
+    batch_size = 2
     size = (s, )*n_dim
     num_time_steps = 5
     n_modes = (modes,)*n_dim
@@ -56,8 +55,6 @@ def test_rno(n_dim, lifting_channels, projection_channels):
                          [[2, 1, 1], [1, 2, 1], [1, 1, 2], [1, 2, 2], [1, 0.5, 1]])
 def test_rno_superresolution(output_scaling_factor):
     device = 'cuda'
-    s = 16
-    modes = 5
     s = 128
     modes = 16
     width = 15
@@ -80,7 +77,7 @@ def test_rno_superresolution(output_scaling_factor):
                 residual=residual, 
                 domain_padding=None, 
                 domain_padding_mode='one-sided', 
-                output_scaling_factor=None,
+                output_scaling_factor=output_scaling_factor,
                 fft_norm='forward',  
                 separable=False,
                 factorization=None
