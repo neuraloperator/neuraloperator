@@ -221,13 +221,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fcd9c555430>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7febdc5fbf70>
 
     ### LOSSES ###
 
-     * Train: <neuralop.training.losses.H1Loss object at 0x7fcd9c5a6790>
+     * Train: <neuralop.training.losses.H1Loss object at 0x7febdc652d00>
 
-     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7fcd9c5a6790>, 'l2': <neuralop.training.losses.LpLoss object at 0x7fcd9c5a65b0>}
+     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7febdc652d00>, 'l2': <neuralop.training.losses.LpLoss object at 0x7febdc652be0>}
 
 
 
@@ -359,7 +359,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 36.168 seconds)
+   **Total running time of the script:** (1 minutes 33.960 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_FNO_darcy.py:
