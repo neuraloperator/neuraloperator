@@ -226,15 +226,32 @@ class FNO(nn.Module):
             non_linearity=non_linearity,
         )
 
-    def forward(self, x, **kwargs):
-        """TFNO's forward pass"""
+    def forward(self, x, output_shape=None, **kwargs):
+        """TFNO's forward pass
+
+        Parameters
+        ----------
+        x : tensor
+            input tensor
+        output_shape : {tuple, tuple list, None}, default is None
+            Gives the option of specifying the exact output shape for odd shaped inputs.
+            * If None, don't specify an output shape
+            * If tuple, specifies the output-shape of the **last** FNO Block
+            * If tuple list, specifies the exact output-shape of each FNO Block
+        """
+
+        if output_shape is None:
+            output_shape = [None]*self.n_layers
+        elif isinstance(output_shape, tuple):
+            output_shape = [None]*(self.n_layers - 1) + [output_shape]
+
         x = self.lifting(x)
 
         if self.domain_padding is not None:
             x = self.domain_padding.pad(x)
 
         for layer_idx in range(self.n_layers):
-            x = self.fno_blocks(x, layer_idx)
+            x = self.fno_blocks(x, layer_idx, output_shape=output_shape[layer_idx])
 
         if self.domain_padding is not None:
             x = self.domain_padding.unpad(x)

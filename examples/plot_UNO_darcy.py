@@ -74,7 +74,8 @@ sys.stdout.flush()
 
 # %% 
 # Create the trainer
-trainer = Trainer(model, n_epochs=20,
+trainer = Trainer(model=model,
+                   n_epochs=20,
                   device=device,
                   callbacks=[OutputEncoderCallback(output_encoder)],
                   wandb_log=False,

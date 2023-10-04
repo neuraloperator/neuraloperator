@@ -296,9 +296,11 @@ class SphericalConv(BaseSpectralConv):
 
     See SpectralConv for full list of other parameters
 
-    [1] : Spherical Fourier Neural Operators: Learning Stable Dynamics on the Sphere,
-          Boris Bonev, Thorsten Kurth, Christian Hundt, Jaideep Pathak, Maximilian Baust, Karthik Kashinath, Anima Anandkumar,
-          ICML 2023.
+    References
+    ----------
+    .. [1] Spherical Fourier Neural Operators: Learning Stable Dynamics on the Sphere,
+           Boris Bonev, Thorsten Kurth, Christian Hundt, Jaideep Pathak, Maximilian Baust, Karthik Kashinath, Anima Anandkumar,
+           ICML 2023.
     """
     def __init__(
         self,
