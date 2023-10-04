@@ -233,6 +233,7 @@ class SimpleWandBLoggerCallback(Callback):
         verbose = self.state_dict['verbose']
 
         n_train = len(train_loader.dataset)
+        self._update_state_dict(n_train=n_train)
 
         if not isinstance(test_loaders, dict):
             test_loaders = dict(test=test_loaders)
