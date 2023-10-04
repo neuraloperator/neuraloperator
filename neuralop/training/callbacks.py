@@ -220,7 +220,7 @@ class SimpleWandBLoggerCallback(Callback):
     def __init__(self, **kwargs):
         super().__init__()
         if kwargs:
-            wandb.init(kwargs)
+            wandb.init(**kwargs)
     
     def on_init_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
