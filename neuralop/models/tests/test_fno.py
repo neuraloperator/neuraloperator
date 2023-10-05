@@ -31,11 +31,11 @@ def test_tfno(
 ):
     if torch.has_cuda:
         device = "cuda"
-        s = 128
+        s = 16
         modes = 16
-        width = 64
-        fc_channels = 256
-        batch_size = 20
+        width = 16
+        fc_channels = 16
+        batch_size = 10
         use_mlp = True
         n_layers = 4
         mlp = Bunch(dict(expansion=0.5, dropout=0))
@@ -67,7 +67,7 @@ def test_tfno(
         fno_block_precision=fno_block_precision,
         use_mlp=use_mlp,
         mlp=mlp,
-        stabilizer=stabilizer,
+        stabilizer=stabilizer,  
         fc_channels=fc_channels,
         lifting_channels=lifting_channels,
         preactivation=preactivation,
