@@ -28,18 +28,15 @@ def segment_csr(src: torch.Tensor, indptr: torch.Tensor, reduce: Literal['mean',
         raise ValueError("reduce must be one of \'mean\', \'sum\'")
 
     n_nbrs = indptr[1:] - indptr[:-1] # end indices - start indices
-    n_neighborhoods = indptr.shape[0] - 1
     output_shape = list(src.shape)
-    output_shape[0] = n_neighborhoods
+    output_shape[0] = indptr.shape[0] - 1
 
     out = torch.zeros(output_shape, device=src.device)
 
-    for i in range(n_neighborhoods):
-        nbr_idx = indptr[i]
-
-        accum = src[nbr_idx]
+    for i,start in enumerate(indptr[:-1]):
+        accum = src[start]
         for j in range(1,n_nbrs[i]):
-            accum += src[nbr_idx + j]
+            accum += src[start + j]
         if reduce == 'mean':
             accum /= n_nbrs[i]
         

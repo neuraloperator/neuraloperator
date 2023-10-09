@@ -23,7 +23,8 @@ def test_fnogno(gno_transform_type, fno_n_modes):
                    gno_transform_type=gno_transform_type,
                    fno_n_modes=fno_n_modes,
                    fno_norm='ada_in',
-                   fno_ada_in_features=4).to(device)
+                   fno_ada_in_features=4,
+                   gno_use_torch_cluster=torch.backends.cuda.is_available()).to(device)
     
     in_p_shape = [32,]*n_dim
     in_p_shape.append(n_dim)

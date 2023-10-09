@@ -43,6 +43,8 @@ class FNOGNO(nn.Module):
         gno_use_open3d : bool, defaults to False
             whether to use Open3D functionality
             if False, uses torch_scatter
+        gno_use_torch_cluster : bool, defaults to False
+            if False, uses pure python instead of torch_cluster
         fno_n_modes : tuple, defaults to (16, 16, 16)
             number of modes to keep along each spectral dimension of FNO block
         fno_hidden_channels : int, defaults to 64
@@ -122,6 +124,7 @@ class FNOGNO(nn.Module):
             gno_mlp_non_linearity=F.gelu, 
             gno_transform_type='linear',
             gno_use_open3d=False,
+            gno_use_torch_cluster=True,
             fno_n_modes=(16, 16, 16), 
             fno_hidden_channels=64,
             fno_lifting_channels=256,
@@ -213,7 +216,7 @@ class FNOGNO(nn.Module):
         )
         del self.fno.projection
 
-        self.nb_search_out = NeighborSearch(use_open3d=gno_use_open3d)
+        self.nb_search_out = NeighborSearch(use_open3d=gno_use_open3d, use_torch_cluster=gno_use_torch_cluster)
         self.gno_radius = gno_radius
 
         if gno_coord_embed_dim is not None:
