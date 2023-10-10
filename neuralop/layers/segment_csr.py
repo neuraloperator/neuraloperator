@@ -36,10 +36,10 @@ def segment_csr(src: torch.Tensor, indptr: torch.Tensor, reduce: Literal['mean',
     for i,start in enumerate(indptr[:-1]):
         if start == src.shape[0]: # if the last neighborhoods are empty, skip
             break
-        accum = src[start]
-        for j in range(1,n_nbrs[i]):
+        accum = 0
+        for j in range(n_nbrs[i]):
             accum += src[start + j]
-        if reduce == 'mean':
+        if reduce == 'mean':        
             accum /= n_nbrs[i]
         
         out[i] = accum
