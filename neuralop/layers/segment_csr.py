@@ -26,27 +26,31 @@ def segment_csr(src: torch.Tensor, indptr: torch.Tensor, reduce: Literal['mean',
     """
     if reduce not in ['mean', 'sum']:
         raise ValueError("reduce must be one of \'mean\', \'sum\'")
-
-    n_nbrs = indptr[1:] - indptr[:-1] # end indices - start indices
-    output_shape = list(src.shape)
-    output_shape[0] = indptr.shape[0] - 1
-
-    out = torch.zeros(output_shape, device=src.device)
-
-    for i,start in enumerate(indptr[:-1]):
-        if start == src.shape[0]: # if the last neighborhoods are empty, skip
-            break
-        accum = 0
-        for j in range(n_nbrs[i]):
-            accum += src[start + j]
-        if reduce == 'mean':        
-            accum /= n_nbrs[i]
-        
-        out[i] = accum
     
-    return out
+    if torch.backends.cuda.is_built():
+        """only import torch_scatter when cuda is available"""
+        import torch_scatter.segment_csr as scatter_segment_csr
+        return scatter_segment_csr(src, indptr, reduce)
+    else:
+        n_nbrs = indptr[1:] - indptr[:-1] # end indices - start indices
+        output_shape = list(src.shape)
+        output_shape[0] = indptr.shape[0] - 1
 
+        out = torch.zeros(output_shape, device=src.device)
+
+        for i,start in enumerate(indptr[:-1]):
+            if start == src.shape[0]: # if the last neighborhoods are empty, skip
+                break
+            accum = 0
+            for j in range(n_nbrs[i]):
+                accum += src[start + j]
+            if reduce == 'mean':        
+                accum /= n_nbrs[i]
             
+            out[i] = accum
+        
+        return out
+
 
 
     
