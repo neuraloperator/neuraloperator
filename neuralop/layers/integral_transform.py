@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-#from torch_scatter import segment_csr
 
 from .mlp import MLPLinear
 from .segment_csr import segment_csr
@@ -146,7 +145,6 @@ class IntegralTransform(nn.Module):
             neighbors["neighbors_row_splits"][1:]
             - neighbors["neighbors_row_splits"][:-1]
         )
-        print(f"{num_reps.shape=}, {x.shape=}")
         self_features = torch.repeat_interleave(x, num_reps, dim=0)
 
         agg_features = torch.cat([rep_features, self_features], dim=1)
