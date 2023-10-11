@@ -362,7 +362,7 @@ class ModelCheckpointingCallback(Callback):
         ckpt_path : str
             path at which to save checkpoints
         epoch_interval : int
-            interval of epochs 
+            interval at which to check metric
         """
 
         self.monitor = monitor
