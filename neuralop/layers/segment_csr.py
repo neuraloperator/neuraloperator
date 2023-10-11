@@ -1,5 +1,5 @@
 from typing import Literal
-import imp
+import importlib
 
 import torch
 
@@ -25,17 +25,11 @@ def segment_csr(src: torch.Tensor, indptr: torch.Tensor, reduce: Literal['mean',
     if reduce not in ['mean', 'sum']:
         raise ValueError("reduce must be one of \'mean\', \'sum\'")
     
-    # Check if torch_scatter is installed
-    try:
-        imp.find_module('torch_scatter')
-        scatter_avail = True
-    except ImportError:
-        scatter_avail = False
-
-    if torch.backends.cuda.is_built() and scatter_avail:
+    if torch.backends.cuda.is_built() and importlib.find_loader('torch_scatter'):
         """only import torch_scatter when cuda is available"""
         import torch_scatter.segment_csr as scatter_segment_csr
         return scatter_segment_csr(src, indptr, reduce)
+
     else:
         n_nbrs = indptr[1:] - indptr[:-1] # end indices - start indices
         output_shape = list(src.shape)
