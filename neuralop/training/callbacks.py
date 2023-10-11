@@ -349,7 +349,7 @@ class ModelCheckpointCallback(Callback):
     Implements basic model checkpointing by saving a model every N epochs
     """
 
-    def __init__(self, ckpt_dir: Union(Path, str) = Path('./checkpoints'), interval: int = 1):
+    def __init__(self, ckpt_dir: Union[Path, str] = Path('./checkpoints'), interval: int = 1):
         """
         Parameters
         ----------
