@@ -7,7 +7,8 @@ logic of callbacks in Pytorch-Lightning (https://lightning.ai/docs/pytorch/stabl
 """
 
 import sys
-from typing import List
+from typing import List, Union
+from pathlib import Path
 
 import torch
 import wandb
@@ -283,10 +284,6 @@ class SimpleWandBLoggerCallback(Callback):
                 self.state_dict['values_to_log']['lr'] = lr
             wandb.log(self.state_dict['values_to_log'], step=self.state_dict['epoch'], commit=True)
 
-        
-        
-        
-
 class MGPatchingCallback(Callback):
     def __init__(self, levels, padding_fraction,stitching, encoder=None):
         super().__init__()
@@ -346,31 +343,66 @@ class OutputEncoderCallback(Callback):
     
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs)
-    
-class ModelCheckpointingCallback(Callback):
+
+class ModelCheckpointCallback(Callback):
     """
-    Implements model checkpointing
+    Implements basic model checkpointing by saving a model every N epochs
     """
 
-    def __init__(self, monitor: str, ckpt_dir: str = './checkpoints', epoch_interval: int = 1):
+    def __init__(self, ckpt_dir: Union(Path, str) = Path('./checkpoints'), interval: int = 1):
         """
-        ModelCheckpointingCallback 
+        Parameters
+        ----------
+        ckpt_dir : str | pathlib.Path
+            folder in which to save checkpoints
+        interval : int
+            interval at which to check metric
+        """
+        super().__init()
 
+        if isinstance(ckpt_dir, str):
+            ckpt_dir = Path(ckpt_dir)
+
+        if not ckpt_dir.exists():
+            ckpt_dir.mkdir(parents=True)
+        self.ckpt_dir = ckpt_dir
+        self.interval = interval
+
+    def on_init_end(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+    
+    def on_epoch_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+
+    def on_epoch_end(self, *args, **kwargs):
+        if self.state_dict['epoch'] % self.interval == 0:
+            ckpt_path = self.ckpt_dir / f"{self.state_dict['epoch']}"
+            torch.save(self.state_dict['model'], ckpt_path)
+        
+
+class MonitorMetricCheckpointCallback(ModelCheckpointCallback):
+    """
+    Implements model checkpointing with the addition of monitoring a metric
+    """
+
+    def __init__(self, monitor: str, ckpt_dir: str = './checkpoints'):
+        """
+        Parameters
         ----------
         monitor : str
             key name of validation metric to monitor
         ckpt_path : str
-            path at which to save checkpoints
-        epoch_interval : int
-            interval at which to check metric
+            folder in which to save checkpoints
         """
 
+        super().__init()
+
         self.monitor = monitor
+        if isinstance(ckpt_dir, str):
+            ckpt_dir = Path(ckpt_dir)
+        if not ckpt_dir.exists():
+            ckpt_dir.mkdir(parents=True)
         self.ckpt_dir = ckpt_dir
-        self.epoch_interval = epoch_interval
-    
-    def on_init_end(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
 
     def on_train_start(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
