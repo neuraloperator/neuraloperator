@@ -385,7 +385,7 @@ class MonitorMetricCheckpointCallback(ModelCheckpointCallback):
     Implements model checkpointing with the addition of monitoring a metric
     """
 
-    def __init__(self, monitor: str, checkpoint_dir: str = './checkpoints'):
+    def __init__(self, loss_key: str, checkpoint_dir: str = './checkpoints'):
         """
         Parameters
         ----------
@@ -397,7 +397,7 @@ class MonitorMetricCheckpointCallback(ModelCheckpointCallback):
 
         super().__init()
 
-        self.monitor = monitor
+        self.loss_key = loss_key
         if isinstance(checkpoint_dir, str):
             checkpoint_dir = Path(checkpoint_dir)
         if not checkpoint_dir.exists():
@@ -406,7 +406,7 @@ class MonitorMetricCheckpointCallback(ModelCheckpointCallback):
 
     def on_train_start(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
-        assert self.monitor in self.state_dict['eval_losses'].keys(), \
+        assert self.loss_key in self.state_dict['eval_losses'].keys(), \
             "Error: ModelCheckpointingCallback can only monitor metrics\
                 tracked in eval_losses."
 
@@ -414,13 +414,13 @@ class MonitorMetricCheckpointCallback(ModelCheckpointCallback):
     
     def on_val_epoch_end(self, errors):
         """
-        save model if monitor metric is lower than best
+        save model if loss_key metric is lower than best
         """
         epoch = self.state_dict['epoch']
-        if errors[self.monitor] < self.state_dict['best_score']:
+        if errors[self.loss_key] < self.state_dict['best_score']:
             model_save_path = f"{self.checkpoint_dir}/ep_{epoch}.pt"
             torch.save(self.state_dict['model'].state_dict(), model_save_path)
-            print(f"Best value for {self.monitor} found, saving to {model_save_path}")
+            print(f"Best value for {self.loss_key} found, saving to {model_save_path}")
         
         
         
