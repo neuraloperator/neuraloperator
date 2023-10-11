@@ -347,3 +347,48 @@ class OutputEncoderCallback(Callback):
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs)
     
+class ModelCheckpointingCallback(Callback):
+    """
+    Implements model checkpointing
+    """
+
+    def __init__(self, monitor: str, ckpt_dir: str = './checkpoints', epoch_interval: int = 1):
+        """
+        ModelCheckpointingCallback 
+
+        ----------
+        monitor : str
+            key name of validation metric to monitor
+        ckpt_path : str
+            path at which to save checkpoints
+        epoch_interval : int
+            interval of epochs 
+        """
+
+        self.monitor = monitor
+        self.ckpt_dir = ckpt_dir
+        self.epoch_interval = epoch_interval
+    
+    def on_init_end(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+
+    def on_train_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+        assert self.monitor in self.state_dict['eval_losses'].keys(), \
+            "Error: ModelCheckpointingCallback can only monitor metrics\
+                tracked in eval_losses."
+
+        self._update_state_dict(best_score=float('inf'))
+    
+    def on_val_epoch_end(self, errors):
+        """
+        save model if monitor metric is lower than best
+        """
+        epoch = self.state_dict['epoch']
+        if errors[self.monitor] < self.state_dict['best_score']:
+            model_save_path = f"{self.ckpt_dir}/ep_{epoch}.pt"
+            torch.save(self.state_dict['model'], model_save_path)
+            print(f"Best value for {self.monitor} found, saving to {model_save_path}")
+        
+        
+        

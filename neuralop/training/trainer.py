@@ -21,6 +21,7 @@ class Trainer:
                  log_test_interval=1, 
                  log_output=False, 
                  use_distributed=False, 
+                 load_from_checkpoint=False,
                  verbose=True):
         """
         A general Trainer class to train neural-operators on given datasets
@@ -69,6 +70,8 @@ class Trainer:
                  use_distributed=use_distributed, 
                  verbose=verbose)
 
+        if load_from_checkpoint:
+            self.model = torch.load()
         self.model = model
         self.n_epochs = n_epochs
 
