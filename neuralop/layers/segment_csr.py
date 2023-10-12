@@ -36,7 +36,7 @@ def segment_csr(src: torch.Tensor, indptr: torch.Tensor, reduce: Literal['mean',
         output_shape[0] = indptr.shape[0] - 1
 
         out = torch.zeros(output_shape, device=src.device, requires_grad=True)
-
+       
         for i,start in enumerate(indptr[:-1]):
             if start == src.shape[0]: # if the last neighborhoods are empty, skip
                 break
@@ -44,7 +44,6 @@ def segment_csr(src: torch.Tensor, indptr: torch.Tensor, reduce: Literal['mean',
                 out[i].data += src[start + j]
             if reduce == 'mean':        
                 out[i].data /= n_nbrs[i]
-                    
         return out
 
 
