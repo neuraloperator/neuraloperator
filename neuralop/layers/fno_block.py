@@ -94,31 +94,17 @@ class FNOBlocks(nn.Module):
             n_layers=n_layers,
         )
 
-        if self.n_dim == 4:
-            self.fno_skips = nn.ModuleList(
-                [
-                    skip_connection(
-                        self.in_channels, 
-                      self.out_channels, 
-                      skip_type=fno_skip, 
-                      n_dim=1
-                    )
-                    for _ in range(n_layers)
-                ]
-            )
-
-        else:
-            self.fno_skips = nn.ModuleList(
-                [
-                    skip_connection(
-                        self.in_channels, 
-                      self.out_channels, 
-                      skip_type=fno_skip, 
-                      n_dim=self.n_dim
-                    )
-                    for _ in range(n_layers)
-                ]
-            )
+        self.fno_skips = nn.ModuleList(
+            [
+                skip_connection(
+                    self.in_channels,
+                    self.out_channels,
+                    skip_type=fno_skip,
+                    n_dim=self.n_dim,
+                )
+                for _ in range(n_layers)
+            ]
+        )
 
         if use_mlp:
             self.mlp = nn.ModuleList(
@@ -209,17 +195,7 @@ class FNOBlocks(nn.Module):
             return self.forward_with_postactivation(x, index, output_shape)
 
     def forward_with_postactivation(self, x, index=0, output_shape=None):
-        # reshape x for 4D case
-        size = list(x.shape)
-        if self.n_dim == 4:
-            x = x.reshape(size[0], size[1], -1)
-        
         x_skip_fno = self.fno_skips[index](x)
-        
-        if self.n_dim == 4:
-            x_skip_fno = x_skip_fno.reshape(size)
-            x = x.reshape(size)
-        
         x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
 
         if self.mlp is not None:
@@ -233,7 +209,6 @@ class FNOBlocks(nn.Module):
 
         if self.norm is not None:
             x_fno = self.norm[self.n_norms * index](x_fno)
-
 
         x = x_fno + x_skip_fno
 
