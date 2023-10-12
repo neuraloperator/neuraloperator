@@ -9,6 +9,7 @@ def test_segment_csr_backward():
     out = segment_csr(data, splits, reduce='sum', use_scatter=False)
     loss = out.sum()
     loss.backward()
+    assert out.grad.any # assert not None, not 0
 
                             
                             
