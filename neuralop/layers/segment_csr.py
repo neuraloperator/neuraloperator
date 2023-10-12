@@ -3,7 +3,7 @@ import importlib
 
 import torch
 
-def segment_csr(src: torch.Tensor, indptr: torch.Tensor, reduce: Literal['mean', 'sum']):
+def segment_csr(src: torch.Tensor, indptr: torch.Tensor, reduce: Literal['mean', 'sum'], use_scatter=True):
     """segment_csr reduces all entries of a CSR-formatted 
     matrix by summing or averaging over neighbors. 
 
@@ -25,7 +25,7 @@ def segment_csr(src: torch.Tensor, indptr: torch.Tensor, reduce: Literal['mean',
     if reduce not in ['mean', 'sum']:
         raise ValueError("reduce must be one of \'mean\', \'sum\'")
     
-    if torch.backends.cuda.is_built() and importlib.find_loader('torch_scatter'):
+    if torch.backends.cuda.is_built() and importlib.find_loader('torch_scatter') and use_scatter:
         """only import torch_scatter when cuda is available"""
         import torch_scatter.segment_csr as scatter_segment_csr
         return scatter_segment_csr(src, indptr, reduce)
@@ -35,19 +35,16 @@ def segment_csr(src: torch.Tensor, indptr: torch.Tensor, reduce: Literal['mean',
         output_shape = list(src.shape)
         output_shape[0] = indptr.shape[0] - 1
 
-        out = torch.zeros(output_shape, device=src.device)
+        out = torch.zeros(output_shape, device=src.device, requires_grad=True)
 
         for i,start in enumerate(indptr[:-1]):
             if start == src.shape[0]: # if the last neighborhoods are empty, skip
                 break
-            accum = 0
             for j in range(n_nbrs[i]):
-                accum += src[start + j]
+                out[i].data += src[start + j]
             if reduce == 'mean':        
-                accum /= n_nbrs[i]
-            
-            out[i] = accum
-        
+                out[i].data /= n_nbrs[i]
+                    
         return out
 
 
