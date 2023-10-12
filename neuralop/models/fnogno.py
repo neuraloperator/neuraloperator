@@ -42,7 +42,7 @@ class FNOGNO(nn.Module):
                         'nonlinear' : integrand is k(x, y, f(y)) * f(y)
         gno_use_open3d : bool, defaults to False
             whether to use Open3D functionality
-            if False, uses torch_scatter
+            if False, uses simple fallback neighbor search
         fno_n_modes : tuple, defaults to (16, 16, 16)
             number of modes to keep along each spectral dimension of FNO block
         fno_hidden_channels : int, defaults to 64

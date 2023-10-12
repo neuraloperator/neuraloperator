@@ -1,10 +1,9 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torch_scatter import segment_csr
 
 from .mlp import MLPLinear
-
+from .segment_csr import segment_csr
 
 class IntegralTransform(nn.Module):
     """Integral Kernel Transform (GNO)
