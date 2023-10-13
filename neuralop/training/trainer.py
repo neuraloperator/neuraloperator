@@ -3,6 +3,7 @@ from torch.cuda import amp
 from timeit import default_timer
 import sys 
 import wandb
+import pathlib
 
 import neuralop.mpu.comm as comm
 
@@ -21,6 +22,7 @@ class Trainer:
                  log_test_interval=1, 
                  log_output=False, 
                  use_distributed=False, 
+                 checkpoint_to_load: pathlib.Path=None,
                  verbose=True):
         """
         A general Trainer class to train neural-operators on given datasets
@@ -68,6 +70,9 @@ class Trainer:
                  log_output=log_output, 
                  use_distributed=use_distributed, 
                  verbose=verbose)
+
+        if checkpoint_to_load:
+            self.model.load_state_dict(torch.load(checkpoint_to_load))
 
         self.model = model
         self.n_epochs = n_epochs

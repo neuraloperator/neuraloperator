@@ -7,7 +7,8 @@ logic of callbacks in Pytorch-Lightning (https://lightning.ai/docs/pytorch/stabl
 """
 
 import sys
-from typing import List
+from typing import List, Union
+from pathlib import Path
 
 import torch
 import wandb
@@ -283,10 +284,6 @@ class SimpleWandBLoggerCallback(Callback):
                 self.state_dict['values_to_log']['lr'] = lr
             wandb.log(self.state_dict['values_to_log'], step=self.state_dict['epoch'], commit=True)
 
-        
-        
-        
-
 class MGPatchingCallback(Callback):
     def __init__(self, levels, padding_fraction,stitching, encoder=None):
         super().__init__()
@@ -346,4 +343,84 @@ class OutputEncoderCallback(Callback):
     
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs)
+
+class ModelCheckpointCallback(Callback):
+    """
+    Implements basic model checkpointing by saving a model every N epochs
+    """
+
+    def __init__(self, checkpoint_dir: Union[Path, str] = Path('./checkpoints'), interval: int = 1):
+        """
+        Parameters
+        ----------
+        checkpoint_dir : str | pathlib.Path
+            folder in which to save checkpoints
+        interval : int
+            interval at which to check metric
+        """
+        super().__init()
+
+        if isinstance(checkpoint_dir, str):
+            checkpoint_dir = Path(checkpoint_dir)
+
+        if not checkpoint_dir.exists():
+            checkpoint_dir.mkdir(parents=True)
+        self.checkpoint_dir = checkpoint_dir
+        self.interval = interval
+
+    def on_init_end(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
     
+    def on_epoch_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+
+    def on_epoch_end(self, *args, **kwargs):
+        if self.state_dict['epoch'] % self.interval == 0:
+            checkpoint_path = self.checkpoint_dir / f"{self.state_dict['epoch']}"
+            torch.save(self.state_dict['model'].state_dict(), checkpoint_path)
+        
+
+class MonitorMetricCheckpointCallback(ModelCheckpointCallback):
+    """
+    Implements model checkpointing with the addition of monitoring a metric
+    """
+
+    def __init__(self, loss_key: str, checkpoint_dir: str = './checkpoints'):
+        """
+        Parameters
+        ----------
+        monitor : str
+            key name of validation metric to monitor
+        checkpoint_path : str
+            folder in which to save checkpoints
+        """
+
+        super().__init()
+
+        self.loss_key = loss_key
+        if isinstance(checkpoint_dir, str):
+            checkpoint_dir = Path(checkpoint_dir)
+        if not checkpoint_dir.exists():
+            checkpoint_dir.mkdir(parents=True)
+        self.checkpoint_dir = checkpoint_dir
+
+    def on_train_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+        assert self.loss_key in self.state_dict['eval_losses'].keys(), \
+            "Error: ModelCheckpointingCallback can only monitor metrics\
+                tracked in eval_losses."
+
+        self._update_state_dict(best_score=float('inf'))
+    
+    def on_val_epoch_end(self, errors):
+        """
+        save model if loss_key metric is lower than best
+        """
+        epoch = self.state_dict['epoch']
+        if errors[self.loss_key] < self.state_dict['best_score']:
+            model_save_path = f"{self.checkpoint_dir}/ep_{epoch}.pt"
+            torch.save(self.state_dict['model'].state_dict(), model_save_path)
+            print(f"Best value for {self.loss_key} found, saving to {model_save_path}")
+        
+        
+        
