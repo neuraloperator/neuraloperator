@@ -14,7 +14,6 @@ class Trainer:
     def __init__(self, *, 
                  model, 
                  n_epochs, 
-                 output_field_indices=None, 
                  wandb_log=True, 
                  device=None, 
                  amp_autocast=False, 
@@ -31,9 +30,6 @@ class Trainer:
         ----------
         model : nn.Module
         n_epochs : int
-        output_field_indices : dict | None
-            if a model has multiple output fields, this maps to
-            the indices of a model's output associated with each field. 
         wandb_log : bool, default is True
         device : torch.device
         amp_autocast : bool, default is False
@@ -76,12 +72,6 @@ class Trainer:
 
         self.model = model
         self.n_epochs = n_epochs
-
-        if not output_field_indices:
-            self.output_field_indices = {'':None}
-        else:
-            self.output_field_indices = output_field_indices
-        self.output_fields = list(self.output_field_indices.keys())
 
         self.wandb_log = wandb_log
         self.log_test_interval = log_test_interval
