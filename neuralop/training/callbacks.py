@@ -19,6 +19,12 @@ class Callback(object):
     """
     Base callback class. Each abstract method is called in the trainer's
     training loop at the appropriate time. 
+
+    Callbacks are stateful, meaning they keep track of a state and 
+        update it throughout the lifetime of a Trainer class.
+        Storing the state as a dict enables the Callback to keep track of
+        references to underlying parts of the Trainer's process, such as 
+        models, cost functions and output encoders
     """
     def __init__(self):
         self.state_dict = {}
@@ -91,11 +97,17 @@ class Callback(object):
 
 
 class PipelineCallback(Callback):
-    """
-    PipelineCallback handles the specific logic for the case in which
-    a user passes more than one Callback to a trainer.
-    """
+    
     def __init__(self, callbacks: List[Callback]):
+        """
+        PipelineCallback handles logic for the case in which
+        a user passes more than one Callback to a trainer.
+
+        Parameters
+        ----------
+        callbacks : List[Callback]
+            list of Callbacks to use in Trainer
+        """
         self.callbacks = callbacks
 
         overrides_device_load = ["on_load_to_device" in c.__class__.__dict__.keys() for c in callbacks]
@@ -221,7 +233,7 @@ class SimpleWandBLoggerCallback(Callback):
     def __init__(self, **kwargs):
         super().__init__()
         if kwargs:
-            wandb.init(kwargs)
+            wandb.init(**kwargs)
     
     def on_init_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
@@ -285,7 +297,21 @@ class SimpleWandBLoggerCallback(Callback):
             wandb.log(self.state_dict['values_to_log'], step=self.state_dict['epoch'], commit=True)
 
 class MGPatchingCallback(Callback):
-    def __init__(self, levels, padding_fraction,stitching, encoder=None):
+    def __init__(self, levels: int, padding_fraction: float, stitching: float, encoder=None):
+        """MGPatchingCallback implements multigrid patching functionality
+        for datasets that require domain patching, stitching and/or padding.
+
+        Parameters
+        ----------
+        levels : int
+            mg_patching level parameter for MultigridPatching2D
+        padding_fraction : float
+            mg_padding_fraction parameter for MultigridPatching2D
+        stitching : _type_
+            mg_patching_stitching parameter for MultigridPatching2D
+        encoder : neuralop.datasets.output_encoder.OutputEncoder, optional
+            OutputEncoder to decode model outputs, by default None
+        """
         super().__init__()
         self.levels = levels
         self.padding_fraction = padding_fraction
@@ -326,11 +352,17 @@ class MGPatchingCallback(Callback):
 
 
 class OutputEncoderCallback(Callback):
-    """
-    Callback class for a training loop that involves
-    an output normalizer but no MG patching
-    """
+    
     def __init__(self, encoder):
+        """
+        Callback class for a training loop that involves
+        an output normalizer but no MG patching.
+
+        Parameters
+        -----------
+        encoder : neuralop.datasets.output_encoder.OutputEncoder
+            module to normalize model inputs/outputs
+        """
         super().__init__()
         self.encoder = encoder
     
@@ -345,12 +377,11 @@ class OutputEncoderCallback(Callback):
         return self.on_before_loss(**kwargs)
 
 class ModelCheckpointCallback(Callback):
-    """
-    Implements basic model checkpointing by saving a model every N epochs
-    """
 
     def __init__(self, checkpoint_dir: Union[Path, str] = Path('./checkpoints'), interval: int = 1):
         """
+        Implements basic model checkpointing by saving a model every N epochs.
+        
         Parameters
         ----------
         checkpoint_dir : str | pathlib.Path
@@ -376,17 +407,16 @@ class ModelCheckpointCallback(Callback):
 
     def on_epoch_end(self, *args, **kwargs):
         if self.state_dict['epoch'] % self.interval == 0:
-            checkpoint_path = self.checkpoint_dir / f"{self.state_dict['epoch']}"
+            checkpoint_path = self.checkpoint_dir / f"ep_{self.state_dict['epoch']}.pt"
             torch.save(self.state_dict['model'].state_dict(), checkpoint_path)
         
 
 class MonitorMetricCheckpointCallback(ModelCheckpointCallback):
-    """
-    Implements model checkpointing with the addition of monitoring a metric
-    """
 
     def __init__(self, loss_key: str, checkpoint_dir: str = './checkpoints'):
         """
+        Implements model checkpointing with the addition of monitoring a chosen metric
+
         Parameters
         ----------
         monitor : str
