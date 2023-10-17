@@ -10,3 +10,4 @@ User guide
    quickstart
    neural_operators
    fno
+   training

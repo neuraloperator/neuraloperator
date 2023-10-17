@@ -180,7 +180,7 @@ Training
 We provide functionality that automates the boilerplate code associated with 
 training a machine learning model to minimize a loss function on a dataset:
 
-.. automodule:: neuralop.training.Trainer
+.. automodule:: neuralop.training
     :no-members:
     :no-inherited-members:
 
