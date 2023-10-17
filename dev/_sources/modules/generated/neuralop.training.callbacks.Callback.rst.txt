@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.training.callbacks`.Callback
+==================================================
+
+.. currentmodule:: neuralop.training.callbacks
+
+.. autoclass:: Callback
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

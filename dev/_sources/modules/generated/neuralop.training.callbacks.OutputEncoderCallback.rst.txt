@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.training.callbacks`.OutputEncoderCallback
+===============================================================
+
+.. currentmodule:: neuralop.training.callbacks
+
+.. autoclass:: OutputEncoderCallback
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

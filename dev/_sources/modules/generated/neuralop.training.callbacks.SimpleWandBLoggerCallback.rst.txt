@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.training.callbacks`.SimpleWandBLoggerCallback
+===================================================================
+
+.. currentmodule:: neuralop.training.callbacks
+
+.. autoclass:: SimpleWandBLoggerCallback
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

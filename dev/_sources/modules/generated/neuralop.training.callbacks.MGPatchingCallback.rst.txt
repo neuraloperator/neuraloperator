@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.training.callbacks`.MGPatchingCallback
+============================================================
+
+.. currentmodule:: neuralop.training.callbacks
+
+.. autoclass:: MGPatchingCallback
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

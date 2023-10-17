@@ -135,6 +135,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#models">Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-neuralop.layers">Layers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#model-dispatching">Model Dispatching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#training">Training</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#datasets">Datasets</a></li>
 </ul>
 </li>
@@ -310,6 +311,48 @@ It has the advantage of doing some checks on the parameters it receives.</p>
 </tbody>
 </table>
 </section>
+<section id="training">
+<h2>Training<a class="headerlink" href="#training" title="Permalink to this heading"></a></h2>
+<p>We provide functionality that automates the boilerplate code associated with
+training a machine learning model to minimize a loss function on a dataset:</p>
+<span class="target" id="module-neuralop.training.Trainer"></span><table class="autosummary longtable docutils align-default">
+<tbody>
+</tbody>
+</table>
+<p>The general case (assuming no modifications) is covered above. To implement domain-specific
+logic in your training loop while still using the automation and logging provided by a
+Trainer, we provide a Callback class and several examples of common domain-specific Callbacks.</p>
+<span class="target" id="module-neuralop.training.callbacks"></span><p>Callbacks store all non-essential logic
+required to run specific training scripts.</p>
+<p>The callbacks in this module follow the form and 
+logic of callbacks in Pytorch-Lightning (<a class="reference external" href="https://lightning.ai/docs/pytorch/stable">https://lightning.ai/docs/pytorch/stable</a>)</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.Callback.html#neuralop.training.callbacks.Callback" title="neuralop.training.callbacks.Callback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Callback</span></code></a>()</p></td>
+<td><p>Base callback class.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.SimpleWandBLoggerCallback.html#neuralop.training.callbacks.SimpleWandBLoggerCallback" title="neuralop.training.callbacks.SimpleWandBLoggerCallback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimpleWandBLoggerCallback</span></code></a>(**kwargs)</p></td>
+<td><p>Callback that implements simple logging functionality  expected when passing verbose to a Trainer</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.OutputEncoderCallback.html#neuralop.training.callbacks.OutputEncoderCallback" title="neuralop.training.callbacks.OutputEncoderCallback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OutputEncoderCallback</span></code></a>(encoder)</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.MGPatchingCallback.html#neuralop.training.callbacks.MGPatchingCallback" title="neuralop.training.callbacks.MGPatchingCallback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MGPatchingCallback</span></code></a>(levels, padding_fraction, ...)</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.ModelCheckpointCallback.html#neuralop.training.callbacks.ModelCheckpointCallback" title="neuralop.training.callbacks.ModelCheckpointCallback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ModelCheckpointCallback</span></code></a>([checkpoint_dir, ...])</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.MonitorMetricCheckpointCallback.html#neuralop.training.callbacks.MonitorMetricCheckpointCallback" title="neuralop.training.callbacks.MonitorMetricCheckpointCallback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MonitorMetricCheckpointCallback</span></code></a>(loss_key[, ...])</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+</tbody>
+</table>
+</section>
 <section id="datasets">
 <h2>Datasets<a class="headerlink" href="#datasets" title="Permalink to this heading"></a></h2>
 <p>We ship a small dataset for testing:</p>
@@ -390,6 +433,7 @@ It has the advantage of doing some checks on the parameters it receives.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#model-dispatching">Model Dispatching</a></li>
+<li><a class="reference internal" href="#training">Training</a></li>
 <li><a class="reference internal" href="#datasets">Datasets</a></li>
 </ul>
 </li>
