@@ -28,7 +28,8 @@ We also provide a simple way to use PyTorch's :code:`DistributedDataParallel`
 functionality to hold data across multiple GPUs. We use PyTorch's MPI backend,
 so all you need to do on a multi-GPU system is the following:
 
-.. code:: bash
+::
+    
     pip install mpi4py
 
     mpiexec --allow-run-as-root -n N_GPUS python my_script.py
