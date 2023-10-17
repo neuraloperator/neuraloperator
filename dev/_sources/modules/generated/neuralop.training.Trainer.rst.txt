@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.training`.Trainer
+=======================================
+
+.. currentmodule:: neuralop.training
+
+.. autoclass:: Trainer
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

@@ -35,6 +35,8 @@
  
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="API reference" href="../modules/api.html" />
+    <link rel="prev" title="Fourier Neural Operators" href="fno.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -126,9 +128,15 @@
 </div>
       
       <div class="sidebar-menu-toc">
-      <ul>
+      <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installing NeuralOperator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="index.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">User guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html">Quick-Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="neural_operators.html">Neural Operators: an Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fno.html">Fourier Neural Operators</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Training neural operator models</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../modules/api.html">API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../auto_examples/index.html">Gallery of examples</a></li>
 </ul>
@@ -178,6 +186,11 @@ can override individual methods as necessary for your custom logic.</p>
 <p>We also provide a simple way to use PyTorch’s <code class="code docutils literal notranslate"><span class="pre">DistributedDataParallel</span></code>
 functionality to hold data across multiple GPUs. We use PyTorch’s MPI backend,
 so all you need to do on a multi-GPU system is the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">mpi4py</span>
+
+<span class="n">mpiexec</span> <span class="o">--</span><span class="n">allow</span><span class="o">-</span><span class="n">run</span><span class="o">-</span><span class="k">as</span><span class="o">-</span><span class="n">root</span> <span class="o">-</span><span class="n">n</span> <span class="n">N_GPUS</span> <span class="n">python</span> <span class="n">my_script</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
 <p>You may need to adjust the batch size, model parallel size and world size in
 accordance with your specific use case.</p>
 </section>
@@ -189,6 +202,20 @@ accordance with your specific use case.</p>
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
+    <a class="button pagination-previous" href="fno.html" title="previous page" accesskey="p">
+        <span class="icon">
+            <i class="fa fa-arrow-circle-left"></i>
+        </span>
+        <span>Fourier Neural Operators</span>
+    </a>
+    
+    
+    <a class="button pagination-next" href="../modules/api.html" title="next page" accesskey="n">
+        <span>API reference </span>
+        <span class="icon">
+            <i class="fa fa-arrow-circle-right"></i>
+        </span>
+    </a>
     
 </nav>
 

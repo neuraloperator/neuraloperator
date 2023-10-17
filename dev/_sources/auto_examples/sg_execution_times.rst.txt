@@ -6,18 +6,18 @@
 
 Computation times
 =================
-**05:18.937** total execution time for **auto_examples** files:
+**07:38.392** total execution time for **auto_examples** files:
 
 +---------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_plot_UNO_darcy.py` (``plot_UNO_darcy.py``)                     | 02:09.256 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_plot_SFNO_swe.py` (``plot_SFNO_swe.py``)                       | 03:03.664 | 0.0 MB |
 +---------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_plot_SFNO_swe.py` (``plot_SFNO_swe.py``)                       | 02:03.998 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_plot_UNO_darcy.py` (``plot_UNO_darcy.py``)                     | 02:57.565 | 0.0 MB |
 +---------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_plot_FNO_darcy.py` (``plot_FNO_darcy.py``)                     | 01:04.862 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_plot_FNO_darcy.py` (``plot_FNO_darcy.py``)                     | 01:36.145 | 0.0 MB |
 +---------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_plot_darcy_flow.py` (``plot_darcy_flow.py``)                   | 00:00.525 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_plot_darcy_flow.py` (``plot_darcy_flow.py``)                   | 00:00.662 | 0.0 MB |
 +---------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_plot_darcy_flow_spectrum.py` (``plot_darcy_flow_spectrum.py``) | 00:00.295 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_plot_darcy_flow_spectrum.py` (``plot_darcy_flow_spectrum.py``) | 00:00.356 | 0.0 MB |
 +---------------------------------------------------------------------------------------------+-----------+--------+
 | :ref:`sphx_glr_auto_examples_checkpoint_FNO_darcy.py` (``checkpoint_FNO_darcy.py``)         | 00:00.000 | 0.0 MB |
 +---------------------------------------------------------------------------------------------+-----------+--------+

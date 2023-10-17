@@ -36,7 +36,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="neuralop.models.FNO" href="generated/neuralop.models.FNO.html" />
-    <link rel="prev" title="Fourier Neural Operators" href="../user_guide/fno.html" />
+    <link rel="prev" title="Training neural operator models" href="../user_guide/training.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -315,8 +315,12 @@ It has the advantage of doing some checks on the parameters it receives.</p>
 <h2>Training<a class="headerlink" href="#training" title="Permalink to this heading"></a></h2>
 <p>We provide functionality that automates the boilerplate code associated with
 training a machine learning model to minimize a loss function on a dataset:</p>
-<span class="target" id="module-neuralop.training.Trainer"></span><table class="autosummary longtable docutils align-default">
+<span class="target" id="module-neuralop.training"></span><table class="autosummary longtable docutils align-default">
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.training.Trainer.html#neuralop.training.Trainer" title="neuralop.training.Trainer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Trainer</span></code></a>(*, model, n_epochs[, wandb_log, ...])</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
 </tbody>
 </table>
 <p>The general case (assuming no modifications) is covered above. To implement domain-specific
@@ -372,11 +376,11 @@ logic of callbacks in Pytorch-Lightning (<a class="reference external" href="htt
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="../user_guide/fno.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="../user_guide/training.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span>Fourier Neural Operators</span>
+        <span>Training neural operator models</span>
     </a>
     
     
@@ -433,7 +437,9 @@ logic of callbacks in Pytorch-Lightning (<a class="reference external" href="htt
 </ul>
 </li>
 <li><a class="reference internal" href="#model-dispatching">Model Dispatching</a></li>
-<li><a class="reference internal" href="#training">Training</a></li>
+<li><a class="reference internal" href="#training">Training</a><ul>
+</ul>
+</li>
 <li><a class="reference internal" href="#datasets">Datasets</a></li>
 </ul>
 </li>

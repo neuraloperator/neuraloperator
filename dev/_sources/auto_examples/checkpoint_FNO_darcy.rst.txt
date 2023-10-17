@@ -18,23 +18,11 @@
 .. _sphx_glr_auto_examples_checkpoint_FNO_darcy.py:
 
 
-SyntaxError
-===========
+Training a TFNO on Darcy-Flow
+=============================
 
-Example script with invalid Python syntax
-
-.. GENERATED FROM PYTHON SOURCE LINES 1-9
-
-.. code-block:: default
-
-    """
-    Training a TFNO on Darcy-Flow
-    =============================
-
-    In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
-    to train a Tensorized Fourier-Neural Operator
-    """
-
+In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
+to train a Tensorized Fourier-Neural Operator
 
 .. GENERATED FROM PYTHON SOURCE LINES 11-26
 
@@ -170,7 +158,7 @@ Actually train the model on our small Darcy-Flow dataset
 
 
     trainer.train(train_loader=train_loader,
-                  test_loaders={}
+                  test_loaders={},
                   optimizer=optimizer,
                   scheduler=scheduler, 
                   regularizer=False, 
@@ -198,7 +186,7 @@ Grab the model from the 15th epoch checkpoint
 
     # train and evaluate
     trainer.train(train_loader=train_loader,
-                  test_loaders=test_loaders
+                  test_loaders=test_loaders,
                   optimizer=optimizer,
                   scheduler=scheduler, 
                   regularizer=False, 

@@ -102,7 +102,7 @@ Gallery of examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Example script with invalid Python syntax ">
+    <div class="sphx-glr-thumbcontainer" tooltip="In this example, we demonstrate how to use the small Darcy-Flow example we ship with the packag...">
 
 .. only:: html
 
@@ -113,7 +113,7 @@ Gallery of examples
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">SyntaxError</div>
+      <div class="sphx-glr-thumbnail-title">Training a TFNO on Darcy-Flow</div>
     </div>
 
 
