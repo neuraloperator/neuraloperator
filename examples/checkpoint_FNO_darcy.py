@@ -92,7 +92,7 @@ trainer = Trainer(model=model, n_epochs=20,
 # Actually train the model on our small Darcy-Flow dataset
 
 trainer.train(train_loader=train_loader,
-              test_loaders={}
+              test_loaders={},
               optimizer=optimizer,
               scheduler=scheduler, 
               regularizer=False, 
@@ -113,7 +113,7 @@ checkpointed_trainer = Trainer(model=model, n_epochs=5,
 
 # train and evaluate
 trainer.train(train_loader=train_loader,
-              test_loaders=test_loaders
+              test_loaders=test_loaders,
               optimizer=optimizer,
               scheduler=scheduler, 
               regularizer=False, 
