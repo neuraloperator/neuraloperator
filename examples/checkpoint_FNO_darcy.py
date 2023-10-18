@@ -98,27 +98,16 @@ trainer.train(train_loader=train_loader,
               regularizer=False, 
               training_loss=train_loss)
 
-# %%
-# Grab the model from the 15th epoch checkpoint
-checkpointed_trainer = Trainer(model=model, n_epochs=5,
-                  device=device,
-                  callbacks=[
-                    OutputEncoderCallback(output_encoder),
-                        ],             
-                  wandb_log=False,
-                  log_test_interval=3,
-                  use_distributed=False,
-                  verbose=True,
-                  checkpoint_to_load='./checkpoints/ep_15.pt')
 
-# train and evaluate
+# train and evaluate on checkpointed model
 trainer.train(train_loader=train_loader,
               test_loaders=test_loaders,
               optimizer=optimizer,
               scheduler=scheduler, 
               regularizer=False, 
               training_loss=train_loss,
-              eval_losses=eval_losses)
+              eval_losses=eval_losses,
+              checkpoint_to_load='./checkpoints/ep_15.pt')
 
 
 # %%
