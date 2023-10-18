@@ -21,7 +21,6 @@ class Trainer:
                  log_test_interval=1, 
                  log_output=False, 
                  use_distributed=False, 
-                 checkpoint_to_load: pathlib.Path=None,
                  verbose=True):
         """
         A general Trainer class to train neural-operators on given datasets
@@ -67,9 +66,6 @@ class Trainer:
                  use_distributed=use_distributed, 
                  verbose=verbose)
 
-        if checkpoint_to_load:
-            self.model.load_state_dict(torch.load(checkpoint_to_load))
-
         self.model = model
         self.n_epochs = n_epochs
 
@@ -95,7 +91,8 @@ class Trainer:
         
     def train(self, train_loader, test_loaders,
             optimizer, scheduler, regularizer,
-              training_loss=None, eval_losses=None):
+              training_loss=None, eval_losses=None,
+            checkpoint_to_load: pathlib.Path=None,):
         
         """Trains the given model on the given datasets.
         params:
@@ -107,7 +104,12 @@ class Trainer:
             optimizer to use during training
         optimizer: torch.optim.lr_scheduler
             learning rate scheduler to use during training
-        training_loss: function to use 
+        training_loss: training.losses function
+            cost function to minimize
+        eval_losses: dict[Loss]
+            dict of losses to use in self.eval()
+        checkpoint_to_load: Pathlib.path, optional
+            checkpoint from which to load model
         """
 
         if self.callbacks:
@@ -116,6 +118,9 @@ class Trainer:
                                     regularizer=regularizer, training_loss=training_loss, 
                                     eval_losses=eval_losses)
 
+        if checkpoint_to_load:
+            self.model.load_state_dict(torch.load(checkpoint_to_load))
+            
         if training_loss is None:
             training_loss = LpLoss(d=2)
 
