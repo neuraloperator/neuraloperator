@@ -389,7 +389,7 @@ class ModelCheckpointCallback(Callback):
         interval : int
             interval at which to check metric
         """
-        super().__init()
+        super().__init__()
 
         if isinstance(checkpoint_dir, str):
             checkpoint_dir = Path(checkpoint_dir)
@@ -425,7 +425,7 @@ class MonitorMetricCheckpointCallback(ModelCheckpointCallback):
             folder in which to save checkpoints
         """
 
-        super().__init()
+        super().__init__()
 
         self.loss_key = loss_key
         if isinstance(checkpoint_dir, str):
