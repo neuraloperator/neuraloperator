@@ -86,11 +86,9 @@ class Trainer:
                  use_distributed=use_distributed, 
                  verbose=verbose)
         
-        
     def train(self, train_loader, test_loaders,
             optimizer, scheduler, regularizer,
-              training_loss=None, eval_losses=None,
-            checkpoint_to_load: pathlib.Path=None,):
+              training_loss=None, eval_losses=None):
         
         """Trains the given model on the given datasets.
         params:
@@ -106,8 +104,6 @@ class Trainer:
             cost function to minimize
         eval_losses: dict[Loss]
             dict of losses to use in self.eval()
-        checkpoint_to_load: Pathlib.path, optional
-            checkpoint from which to load model
         """
 
         if self.callbacks:
@@ -115,9 +111,6 @@ class Trainer:
                                     optimizer=optimizer, scheduler=scheduler, 
                                     regularizer=regularizer, training_loss=training_loss, 
                                     eval_losses=eval_losses)
-
-        if checkpoint_to_load:
-            self.model.load_state_dict(torch.load(checkpoint_to_load))
             
         if training_loss is None:
             training_loss = LpLoss(d=2)

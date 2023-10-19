@@ -6,9 +6,10 @@ The callbacks in this module follow the form and
 logic of callbacks in Pytorch-Lightning (https://lightning.ai/docs/pytorch/stable)
 """
 
+import os
+from pathlib import Path
 import sys
 from typing import List, Union, Literal
-from pathlib import Path
 
 import torch
 import wandb
@@ -407,8 +408,9 @@ class ModelCheckpointCallback(Callback):
 
     def on_epoch_end(self, *args, **kwargs):
         if self.state_dict['epoch'] % self.interval == 0:
-            checkpoint_path = self.checkpoint_dir / f"ep_{self.state_dict['epoch']}.pt"
-            torch.save(self.state_dict['model'].state_dict(), checkpoint_path)
+            checkpoint_path = self.checkpoint_dir / f"ep_{self.state_dict['epoch']}"
+            checkpoint_path.mkdir(parents=True)
+            torch.save(self.state_dict['model'].state_dict(), checkpoint_path / "model.pt")
         
 
 class MonitorMetricCheckpointCallback(ModelCheckpointCallback):
@@ -446,17 +448,17 @@ class MonitorMetricCheckpointCallback(ModelCheckpointCallback):
         """
         save model if loss_key metric is lower than best
         """
-        epoch = self.state_dict['epoch']
         if errors[self.loss_key] < self.state_dict['best_score']:
-            model_save_path = f"{self.checkpoint_dir}/ep_{epoch}.pt"
-            torch.save(self.state_dict['model'].state_dict(), model_save_path)
-            print(f"Best value for {self.loss_key} found, saving to {model_save_path}")
+            checkpoint_path = self.checkpoint_dir / f"ep_{self.state_dict['epoch']}"
+            checkpoint_path.mkdir(parents=True)
+            torch.save(self.state_dict['model'].state_dict(), checkpoint_path / "model.pt")
+            print(f"Best value for {self.loss_key} found, saving to {checkpoint_path}")
         
 class PauseTrainingOnEpochCallback(Callback):
     
     def __init__(self, pause_epoch: int, 
-                 checkpoint_dir: int, 
-                 states_to_save: List[Literal] = ['model', 
+                 checkpoint_dir: str = './checkpoints', 
+                 states_to_save: List[str] = ['model', 
                                                   'scheduler', 
                                                   'optimizer']):
         """PauseTraningOnEpochCallback saves the model,
@@ -468,7 +470,7 @@ class PauseTrainingOnEpochCallback(Callback):
             epoch on which to stop training
         checkpoint_dir : str | pathlib.Path
             folder in which to save model, opt and sched states
-        states_to_save: List[Literal]
+        states_to_save: List[str]
             which states to save when pausing training. By default
             model, scheduler and optimizer states are saved. 
         """
@@ -503,7 +505,47 @@ class PauseTrainingOnEpochCallback(Callback):
         Save all states to checkpoint dir 
         """
         if self.state_dict['epoch'] == self.pause_epoch:
+            checkpoint_path = self.checkpoint_dir / f"ep_{self.state_dict['epoch']}"
+            checkpoint_path.mkdir(parents=True, exist_ok=True)
             for state in self.states_to_save:
-                fname = f"{state}_ep_{self.state_dict['epoch']}.pt"
-                torch.save(self.state_dict[state].state_dict(), self.checkpoint_dir / fname)
+                save_path = checkpoint_path / f"{state}.pt"
+                torch.save(self.state_dict[state].state_dict(), save_path)
+                print(f"Saved {state} to {save_path}")
+
+class ResumeTrainingFromCheckpointCallback(Callback):
+    def __init__(self, checkpoint_dir: Union[Path, str]):
+        """
+        ResumeTrainingFromCheckpointCallback
+        loads states of all modules saved in checkpoint_dir
+ 
+
+        Parameters
+        ----------
+        checkpoint_dir : Union[pathlib.Path, str]
+            folder in which checkpoints of all modules are saved.
+            If more than one thing is saved in the directory, e.g. model and scheduler,
+            it loads everything that is named according to a key in the Callback
+            _state_dict. 
+        """
+        super().__init__()
+
+        # Convert pure strings to pathlib.Path
+        if isinstance(checkpoint_dir, str):
+            self.checkpoint_dir = Path(checkpoint_dir)
+        
+
+    def on_init_end(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+    
+    def on_train_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+
+        save_fnames = os.listdir(self.checkpoint_dir)
+        
+        for fname in save_fnames:
+            # Strip the file extensions from .pt save files
+            state = fname.split('.')[0]
+            if state in self.state_dict.keys():
+                print(f"Loading {state} from state_dict")
+                self.state_dict[state].load_state_dict(torch.load(self.checkpoint_dir / fname))
 
