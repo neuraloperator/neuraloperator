@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
-from neuralop.training import Trainer, LpLoss, H1Loss, ModelCheckpointCallback, ResumeTrainingFromCheckpointCallback
+from neuralop.training import Trainer, LpLoss, H1Loss, StateCheckpointCallback
 
 class DummyDataset(Dataset):
     # Simple linear regression problem, PyTorch style
@@ -44,7 +44,7 @@ def test_model_checkpoint_saves():
     trainer = Trainer(model=model,
                       n_epochs=5,
                       callbacks=[
-                          ModelCheckpointCallback()
+                          StateCheckpointCallback()
                       ]
     )
 
@@ -77,7 +77,9 @@ def test_model_checkpoint_and_resume():
     trainer = Trainer(model=model,
                       n_epochs=5,
                       callbacks=[
-                          ModelCheckpointCallback()
+                          StateCheckpointCallback(save_dir='./full_states',
+                                                  save_optimizer=True,
+                                                  save_scheduler=True)
                       ]
     )
 
@@ -106,7 +108,7 @@ def test_model_checkpoint_and_resume():
     trainer = Trainer(model=model,
                       n_epochs=5,
                       callbacks=[
-                          ResumeTrainingFromCheckpointCallback('./checkpoints/ep_4')
+                          StateCheckpointCallback(resume_from_dir='./full_states/ep_4')
                           ]
     )
 
