@@ -103,6 +103,7 @@ def test_model_checkpoint_and_resume():
                   eval_losses=eval_losses,
                   )
     
+    assert sorted(os.listdir('./full_states/ep_4')) == sorted(['model.pt', 'optimizer.pt', 'scheduler.pt'])
 
     # Resume from checkpoint
     trainer = Trainer(model=model,
