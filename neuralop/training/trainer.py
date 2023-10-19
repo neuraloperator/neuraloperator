@@ -36,7 +36,7 @@ class Trainer:
             if True, and if wandb_log is also True, log output images to wandb
         use_distributed : bool, default is False
             whether to use DDP
-        verbose : bool, default is True
+        verbose : bool, default is False
         """
 
         if callbacks:
