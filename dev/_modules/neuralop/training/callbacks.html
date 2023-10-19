@@ -508,7 +508,7 @@
 <span class="sd">        interval : int</span>
 <span class="sd">            interval at which to check metric</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">checkpoint_dir</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">checkpoint_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">checkpoint_dir</span><span class="p">)</span>
@@ -544,7 +544,7 @@
 <span class="sd">            folder in which to save checkpoints</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">loss_key</span> <span class="o">=</span> <span class="n">loss_key</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">checkpoint_dir</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
