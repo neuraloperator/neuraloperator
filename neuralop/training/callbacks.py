@@ -491,7 +491,7 @@ class StateCheckpointCallback(Callback):
                 states_to_save.append('scheduler')
             if self.save_regularizer:
                 states_to_save.append('regularizer')
-            for state in self.states_to_save:
+            for state in states_to_save:
                 save_path = checkpoint_path / f"{state}.pt"
                 torch.save(self.state_dict[state].state_dict(), save_path)
                 print(f"Saved {state} to {save_path}")
