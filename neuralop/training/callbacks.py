@@ -7,7 +7,7 @@ logic of callbacks in Pytorch-Lightning (https://lightning.ai/docs/pytorch/stabl
 """
 
 import sys
-from typing import List, Union
+from typing import List, Union, Literal
 from pathlib import Path
 
 import torch
@@ -452,5 +452,58 @@ class MonitorMetricCheckpointCallback(ModelCheckpointCallback):
             torch.save(self.state_dict['model'].state_dict(), model_save_path)
             print(f"Best value for {self.loss_key} found, saving to {model_save_path}")
         
-        
-        
+class PauseTrainingOnEpochCallback(Callback):
+    
+    def __init__(self, pause_epoch: int, 
+                 checkpoint_dir: int, 
+                 states_to_save: List[Literal] = ['model', 
+                                                  'scheduler', 
+                                                  'optimizer']):
+        """PauseTraningOnEpochCallback saves the model,
+        optimizer and scheduler states at a certain epoch.
+
+        Parameters
+        ----------
+        pause_epoch : int
+            epoch on which to stop training
+        checkpoint_dir : str | pathlib.Path
+            folder in which to save model, opt and sched states
+        states_to_save: List[Literal]
+            which states to save when pausing training. By default
+            model, scheduler and optimizer states are saved. 
+        """
+        super().__init__()
+        self.pause_epoch = pause_epoch
+        if isinstance(checkpoint_dir, str): 
+            checkpoint_dir = Path(checkpoint_dir)
+        if not checkpoint_dir.exists():
+            checkpoint_dir.mkdir(parents=True)
+        self.checkpoint_dir = checkpoint_dir
+        self.states_to_save = states_to_save
+
+    def on_init_end(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+        max_epochs = self.state_dict['n_epochs']
+        if self.pause_epoch >= max_epochs:
+            print("Cannot pause on an epoch later than the max\
+                   n_epochs. Reverting to pause on epoch {max_epochs}.")
+            self.pause_epoch = max_epochs
+    
+    def on_train_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+        for state in self.states_to_save:
+            assert state in self.state_dict.keys(),\
+                  "Error: cannot save variable that is not tracked in state dict."
+
+    def on_epoch_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+
+    def on_epoch_end(self, *args, **kwargs):
+        """
+        Save all states to checkpoint dir 
+        """
+        if self.state_dict['epoch'] == self.pause_epoch:
+            for state in self.states_to_save:
+                fname = f"{state}_ep_{self.state_dict['epoch']}.pt"
+                torch.save(self.state_dict[state].state_dict(), self.checkpoint_dir / fname)
+

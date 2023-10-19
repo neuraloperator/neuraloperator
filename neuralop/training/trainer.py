@@ -1,8 +1,6 @@
 import torch
 from torch.cuda import amp
 from timeit import default_timer
-import sys 
-import wandb
 import pathlib
 
 import neuralop.mpu.comm as comm
@@ -147,12 +145,6 @@ class Trainer:
 
                 if self.callbacks:
                     self.callbacks.on_batch_start(idx=idx, sample=sample)
-
-                # Decide what to do about logging later when we decide on batch naming conventions
-                '''if epoch == 0 and idx == 0 and self.verbose and is_logger:
-                    print(f'Training on raw inputs of size {x.shape=}, {y.shape=}')'''
-
-                y = sample['y']
 
                 # load everything from the batch onto self.device if 
                 # no callback overrides default load to device
