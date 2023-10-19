@@ -411,8 +411,7 @@ class StateCheckpointCallback(Callback):
                 model.pt, optimizer.pt, scheduler.pt, regularizer.pt
             All state files present will be loaded. 
         """
-
-
+        
         super().__init__()
         if isinstance(save_dir, str): 
             save_dir = Path(save_dir)
