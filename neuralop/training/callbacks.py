@@ -494,5 +494,6 @@ class StateCheckpointCallback(Callback):
             for state in states_to_save:
                 save_path = checkpoint_path / f"{state}.pt"
                 torch.save(self.state_dict[state].state_dict(), save_path)
-                print(f"Saved {state} to {save_path}")
+                if self.state_dict['verbose']:
+                    print(f"Saved {state} to {save_path}")
 

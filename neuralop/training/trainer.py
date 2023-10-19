@@ -19,7 +19,7 @@ class Trainer:
                  log_test_interval=1, 
                  log_output=False, 
                  use_distributed=False, 
-                 verbose=True):
+                 verbose=False):
         """
         A general Trainer class to train neural-operators on given datasets
 
