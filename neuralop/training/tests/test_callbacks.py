@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
-from neuralop.training import Trainer, LpLoss, H1Loss, ModelCheckpointCallback
+from neuralop.training import Trainer, LpLoss, H1Loss, ModelCheckpointCallback, ResumeTrainingFromCheckpointCallback
 
 class DummyDataset(Dataset):
     # Simple linear regression problem, PyTorch style
@@ -65,7 +65,7 @@ def test_model_checkpoint_saves():
                   eval_losses=None,
                   )
     
-    assert sorted(os.listdir('./checkpoints')) == [f"ep_{i}.pt" for i in range(5)]
+    assert sorted(os.listdir('./checkpoints')) == [f"ep_{i}" for i in range(5)]
 
 
 def test_model_checkpoint_and_resume():
@@ -98,8 +98,17 @@ def test_model_checkpoint_and_resume():
                   scheduler=scheduler,
                   regularizer=None,
                   training_loss=l2loss,
-                  eval_losses=eval_losses
+                  eval_losses=eval_losses,
                   )
+    
+
+    # Resume from checkpoint
+    trainer = Trainer(model=model,
+                      n_epochs=5,
+                      callbacks=[
+                          ResumeTrainingFromCheckpointCallback('./checkpoints/ep_4')
+                          ]
+    )
 
     trainer.train(train_loader=train_loader, 
                   test_loaders={'': test_loader}, 
@@ -108,5 +117,4 @@ def test_model_checkpoint_and_resume():
                   regularizer=None,
                   training_loss=l2loss,
                   eval_losses=eval_losses,
-                  checkpoint_to_load='./checkpoints/ep_4.pt'
                   )

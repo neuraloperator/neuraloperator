@@ -409,7 +409,7 @@ class ModelCheckpointCallback(Callback):
     def on_epoch_end(self, *args, **kwargs):
         if self.state_dict['epoch'] % self.interval == 0:
             checkpoint_path = self.checkpoint_dir / f"ep_{self.state_dict['epoch']}"
-            checkpoint_path.mkdir(parents=True)
+            checkpoint_path.mkdir(parents=True, exist_ok=True)
             torch.save(self.state_dict['model'].state_dict(), checkpoint_path / "model.pt")
         
 
@@ -450,7 +450,7 @@ class MonitorMetricCheckpointCallback(ModelCheckpointCallback):
         """
         if errors[self.loss_key] < self.state_dict['best_score']:
             checkpoint_path = self.checkpoint_dir / f"ep_{self.state_dict['epoch']}"
-            checkpoint_path.mkdir(parents=True)
+            checkpoint_path.mkdir(parents=True, exist_ok=True)
             torch.save(self.state_dict['model'].state_dict(), checkpoint_path / "model.pt")
             print(f"Best value for {self.loss_key} found, saving to {checkpoint_path}")
         
