@@ -456,7 +456,7 @@ class CheckpointCallback(Callback):
                 state = fname.stem
                 if state in self.state_dict.keys(): # load all states saved
                     print(f"Loading {state} from state_dict")
-                    self.state_dict[state].load_state_dict(torch.load(self.resume_from_dir / fname))
+                    self.state_dict[state].load_state_dict(torch.load(fname))
 
     def on_epoch_start(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
