@@ -382,13 +382,13 @@ class CheckpointCallback(Callback):
     def __init__(self, 
                  save_dir: Union[Path, str], 
                  save_best : str = None,
-                 save_step : int = 1,
+                 save_interval : int = 1,
                  save_optimizer : bool = False,
                  save_scheduler : bool = False,
                  save_regularizer : bool = False,
                  resume_from_dir : Union[Path, str] = None
                  ):
-        """StateCheckpointCallback handles saving and resuming 
+        """CheckpointCallback handles saving and resuming 
         training state from checkpoint .pt save files. 
 
         Parameters
@@ -397,7 +397,7 @@ class CheckpointCallback(Callback):
             folder in which to save checkpoints, by default './checkpoints'
         save_best : str, optional
             metric to monitor for best value in order to save state
-        save_step : int, optional
+        save_interval : int, optional
             interval on which to save/check metric, by default 1
         save_optimizer : bool, optional
             whether to save optimizer state, by default False
@@ -419,7 +419,7 @@ class CheckpointCallback(Callback):
             save_dir.mkdir(parents=True)
         self.save_dir = save_dir
 
-        self.save_step = save_step
+        self.save_interval = save_interval
         self.save_best = save_best
         self.save_optimizer = save_optimizer
         self.save_scheduler = save_scheduler
@@ -449,11 +449,11 @@ class CheckpointCallback(Callback):
         
         # load state dict if resume_from_dir is given
         if self.resume_from_dir:
-            save_fnames = os.listdir(self.resume_from_dir)
+            save_files = self.resume_from_dir.glob('*.pt')
         
-            for fname in save_fnames:
+            for fname in save_files:
                 # Strip the file extensions from .pt save files
-                state = fname.split('.')[0]
+                state = fname.stem
                 if state in self.state_dict.keys(): # load all states saved
                     print(f"Loading {state} from state_dict")
                     self.state_dict[state].load_state_dict(torch.load(self.resume_from_dir / fname))
@@ -480,7 +480,7 @@ class CheckpointCallback(Callback):
             metric_cond=True
 
         # Save states to save_dir 
-        if self.state_dict['epoch'] % self.save_step == 0 and metric_cond:
+        if self.state_dict['epoch'] % self.save_interval == 0 and metric_cond:
             checkpoint_path = self.save_dir / f"ep_{self.state_dict['epoch']}"
             checkpoint_path.mkdir(parents=True, exist_ok=True)
             states_to_save = ['model']
