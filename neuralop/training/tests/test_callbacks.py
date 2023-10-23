@@ -109,7 +109,8 @@ def test_model_checkpoint_and_resume():
     trainer = Trainer(model=model,
                       n_epochs=5,
                       callbacks=[
-                          CheckpointCallback(resume_from_dir='./full_states/ep_4')
+                          CheckpointCallback(save_dir='./checkpoints',
+                                             resume_from_dir='./full_states/ep_4')
                           ]
     )
 
