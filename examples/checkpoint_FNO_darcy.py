@@ -103,7 +103,7 @@ trainer = Trainer(model=model, n_epochs=20,
                   device=device,
                   callbacks=[
                     OutputEncoderCallback(output_encoder),
-                    StateCheckpointCallback(save_dir = './new_checkpoints',
+                    StateCheckpointCallback(save_dir='./new_checkpoints',
                                             resume_from_dir='./checkpoints/ep_10')
                         ],             
                   wandb_log=False,
