@@ -377,10 +377,10 @@ class OutputEncoderCallback(Callback):
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs)
         
-class StateCheckpointCallback(Callback):
+class CheckpointCallback(Callback):
     
     def __init__(self, 
-                 save_dir: Union[Path, str] = './checkpoints', 
+                 save_dir: Union[Path, str], 
                  save_best : str = None,
                  save_step : int = 1,
                  save_optimizer : bool = False,

@@ -97,7 +97,7 @@ trainer.train(train_loader=train_loader,
               training_loss=train_loss)
 
 
-# resume training from checkpoint
+# resume training from saved checkpoint at epoch 10
 
 trainer = Trainer(model=model, n_epochs=20,
                   device=device,
