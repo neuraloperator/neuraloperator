@@ -269,18 +269,11 @@ class SpectralConv(BaseSpectralConv):
         self.joint_factorization = joint_factorization
 
         # n_modes is the total number of modes kept along each dimension
-        if isinstance(n_modes, int): # Should happen for 1D FNO only
-            n_modes = [n_modes]
-        else:
-            n_modes = list(n_modes)
-        # The last mode has a redundacy as we use real FFT
-        # As a design choice we do the operation here to avoid users dealing with the +1
-        n_modes[-1] = n_modes[-1] // 2 + 1
         self.n_modes = n_modes
-        self.order = len(n_modes)
+        self.order = len(self.n_modes)
 
         if max_n_modes is None:
-            max_n_modes = n_modes
+            max_n_modes = self.n_modes
         elif isinstance(max_n_modes, int):
             max_n_modes = [max_n_modes]
         self.max_n_modes = max_n_modes
@@ -390,6 +383,21 @@ class SpectralConv(BaseSpectralConv):
                 list(range(2, x.ndim)),
                 output_shape=out_shape,
             )
+    
+    @property
+    def n_modes(self):
+        return self._n_modes
+    
+    @n_modes.setter
+    def n_modes(self, n_modes):
+        if isinstance(n_modes, int): # Should happen for 1D FNO only
+            n_modes = [n_modes]
+        else:
+            n_modes = list(n_modes)
+        # The last mode has a redundacy as we use real FFT
+        # As a design choice we do the operation here to avoid users dealing with the +1
+        n_modes[-1] = n_modes[-1] // 2 + 1
+        self._n_modes = n_modes
 
     def forward(
         self, x: torch.Tensor, indices=0, output_shape: Optional[Tuple[int]] = None
