@@ -437,15 +437,12 @@ class SpectralConv(BaseSpectralConv):
         slices_w =  [slice(None), slice(None)] # Batch_size, channels
         slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
         slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
-        print(f' full_weight.shape={self._get_weight(indices).shape}')
         weight = self._get_weight(indices)[slices_w]
 
         starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[2:]))]
         slices_x =  [slice(None), slice(None)] # Batch_size, channels
         slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
         slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
-
-        print(f'{x[slices_x].shape=}, {weight.shape=}')
         out_fft[slices_x] = self._contract(x[slices_x], weight, separable=False)
 
         if self.output_scaling_factor is not None and output_shape is None:
@@ -647,7 +644,6 @@ class SpectralConv3d(SpectralConv):
             slice(-self.n_modes[1] // 2, None),  # -half_n_modes[1],
             slice(self.n_modes[2]),  # ...... :half_n_modes[2]]
         )
-        print(f'3D: {x[slices0].shape=}, {self._get_weight(indices)[slices0].shape=}, {self._get_weight(indices).shape=}')
 
         """Upper block -- truncate high frequencies."""
         out_fft[slices0] = self._contract(

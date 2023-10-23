@@ -30,10 +30,10 @@ class FNO(nn.Module):
         number of hidden channels of the projection block of the FNO, by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
-    incremental_n_modes : None or int tuple, default is None
+    max_n_modes : None or int tuple, default is None
         * If not None, this allows to incrementally increase the number of
           modes in Fourier domain during training. Has to verify n <= N
-          for (n, m) in zip(incremental_n_modes, n_modes).
+          for (n, m) in zip(max_n_modes, n_modes).
 
         * If None, all the n_modes are used.
 
@@ -99,7 +99,7 @@ class FNO(nn.Module):
         projection_channels=256,
         n_layers=4,
         output_scaling_factor=None,
-        incremental_n_modes=None,
+        max_n_modes=None,
         fno_block_precision="full",
         use_mlp=False,
         mlp_dropout=0,
@@ -125,7 +125,10 @@ class FNO(nn.Module):
     ):
         super().__init__()
         self.n_dim = len(n_modes)
-        self.n_modes = n_modes
+
+        # See the class' property for underlying mechanism
+        # When updated, change should be reflected in fno blocks
+        self._n_modes = n_modes
         self.hidden_channels = hidden_channels
         self.lifting_channels = lifting_channels
         self.projection_channels = projection_channels
@@ -145,10 +148,6 @@ class FNO(nn.Module):
         self.separable = separable
         self.preactivation = preactivation
         self.fno_block_precision = fno_block_precision
-
-        # See the class' property for underlying mechanism
-        # When updated, change should be reflected in fno blocks
-        self._incremental_n_modes = incremental_n_modes
 
         if domain_padding is not None and (
             (isinstance(domain_padding, list) and sum(domain_padding) > 0)
@@ -183,7 +182,7 @@ class FNO(nn.Module):
             preactivation=preactivation,
             fno_skip=fno_skip,
             mlp_skip=mlp_skip,
-            incremental_n_modes=incremental_n_modes,
+            max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             rank=rank,
             fft_norm=fft_norm,
@@ -261,12 +260,13 @@ class FNO(nn.Module):
         return x
 
     @property
-    def incremental_n_modes(self):
-        return self._incremental_n_modes
+    def n_modes(self):
+        return self._n_modes
 
-    @incremental_n_modes.setter
-    def incremental_n_modes(self, incremental_n_modes):
-        self.fno_blocks.incremental_n_modes = incremental_n_modes
+    @n_modes.setter
+    def n_modes(self, n_modes):
+        self.fno_blocks.n_modes = n_modes
+        self._n_modes = n_modes
 
 
 class FNO1d(FNO):
@@ -288,7 +288,7 @@ class FNO1d(FNO):
         out_channels=1,
         lifting_channels=256,
         projection_channels=256,
-        incremental_n_modes=None,
+        max_n_modes=None,
         fno_block_precision="full",
         n_layers=4,
         output_scaling_factor=None,
@@ -320,13 +320,13 @@ class FNO1d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
-            output_scaling_factor=None,
+            output_scaling_factor=output_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
             use_mlp=use_mlp,
             mlp_dropout=mlp_dropout,
             mlp_expansion=mlp_expansion,
-            incremental_n_modes=incremental_n_modes,
+            max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             norm=norm,
             skip=skip,
@@ -369,7 +369,7 @@ class FNO2d(FNO):
         projection_channels=256,
         n_layers=4,
         output_scaling_factor=None,
-        incremental_n_modes=None,
+        max_n_modes=None,
         fno_block_precision="full",
         non_linearity=F.gelu,
         stabilizer=None,
@@ -399,13 +399,13 @@ class FNO2d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
-            output_scaling_factor=None,
+            output_scaling_factor=output_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
             use_mlp=use_mlp,
             mlp_dropout=mlp_dropout,
             mlp_expansion=mlp_expansion,
-            incremental_n_modes=incremental_n_modes,
+            max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             norm=norm,
             skip=skip,
@@ -452,7 +452,7 @@ class FNO3d(FNO):
         projection_channels=256,
         n_layers=4,
         output_scaling_factor=None,
-        incremental_n_modes=None,
+        max_n_modes=None,
         fno_block_precision="full",
         non_linearity=F.gelu,
         stabilizer=None,
@@ -482,10 +482,10 @@ class FNO3d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
-            output_scaling_factor=None,
+            output_scaling_factor=output_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            incremental_n_modes=incremental_n_modes,
+            max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             use_mlp=use_mlp,
             mlp_dropout=mlp_dropout,

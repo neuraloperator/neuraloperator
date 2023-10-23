@@ -1,7 +1,7 @@
 import pytest
 import torch
 from tltorch import FactorizedTensor
-from ..spectral_convolution import (SpectralConv3d, SpectralConv2d,
+from ..legacy_spectral_convolution import (SpectralConv3d, SpectralConv2d,
                                        SpectralConv1d, SpectralConv)
 
 
