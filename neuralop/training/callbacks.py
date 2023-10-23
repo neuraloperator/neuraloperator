@@ -408,8 +408,10 @@ class CheckpointCallback(Callback):
         resume_from_dir : Union[Path, str], optional
             folder from which to resume training state. 
             Expects saved states in the form: (all but model optional)
-                model.pt, optimizer.pt, scheduler.pt, regularizer.pt
+               (best_model.pt or model.pt), optimizer.pt, scheduler.pt, regularizer.pt
             All state files present will be loaded. 
+            if some metric was monitored during checkpointing, 
+            the file name will be best_model.pt. 
         """
         
         super().__init__()
@@ -440,25 +442,40 @@ class CheckpointCallback(Callback):
     def on_train_start(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
 
+        verbose = self.state_dict.get('verbose', False)
         if self.save_best:
             assert self.state_dict['eval_losses'], "Error: cannot monitor a metric if no validation metrics exist."
             assert self.save_best in self.state_dict['eval_losses'].keys(), "Error: cannot monitor a metric outside of eval_losses."
-            self.best_metric_value = float['inf']
+            self.best_metric_value = float('inf')
         else:
             self.best_metric_value = None
         
         # load state dict if resume_from_dir is given
         if self.resume_from_dir:
-            save_files = self.resume_from_dir.glob('*.pt')
-        
-            for fname in save_files:
-                # Strip the file extensions from .pt save files
-                state = fname.stem
-                if state in self.state_dict.keys(): # load all states saved
-                    print(f"Loading {state} from state_dict")
-                    self.state_dict[state].load_state_dict(torch.load(fname))
+            saved_modules = [x.stem for x in self.resume_from_dir.glob('*.pt')]
+
+            assert 'best_model' in saved_modules or 'model' in saved_modules,\
+                  "Error: CheckpointCallback expects a model state dict named model.pt or best_model.pt."
+            
+            # no need to handle exceptions if assertion that either model file exists passes
+            if 'best_model' in saved_modules:
+                self.state_dict['model'].load_state_dict(torch.load(self.resume_from_dir / 'best_model.pt'))
+                if verbose:
+                    print(f"Loading model state from best_model.pt")
+            else:
+                self.state_dict['model'].load_state_dict(torch.load(self.resume_from_dir / 'model.pt'))
+                if verbose:
+                    print(f"Loading model state from model.pt")
+            
+            # load all of optimizer, scheduler, regularizer if they exist
+            for module in ['optimizer', 'scheduler', 'regularizer']:
+                if module in saved_modules:
+                    self.state_dict[module].load_state_dict(torch.load(self.resume_from_dir / f"{module}.pt"))
 
     def on_epoch_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+    
+    def on_val_epoch_start(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
 
     def on_val_epoch_end(self, *args, **kwargs):
@@ -472,7 +489,8 @@ class CheckpointCallback(Callback):
         Save state to dir if all conditions are met
         """
         if self.save_best:
-            if self.state_dict['errors'][self.save_best] < self.best_metric_value:
+            log_prefix = self.state_dict['log_prefix']
+            if self.state_dict['errors'][f"{log_prefix}_{self.save_best}"] < self.best_metric_value:
                 metric_cond = True
             else:
                 metric_cond = False
@@ -481,18 +499,25 @@ class CheckpointCallback(Callback):
 
         # Save states to save_dir 
         if self.state_dict['epoch'] % self.save_interval == 0 and metric_cond:
-            checkpoint_path = self.save_dir / f"ep_{self.state_dict['epoch']}"
-            checkpoint_path.mkdir(parents=True, exist_ok=True)
-            states_to_save = ['model']
+            # save model or best_model.pt no matter what
+            if self.save_best:
+                model_name = 'best_model'
+            else:
+                model_name = 'model'
+            save_path = self.save_dir / f"{model_name}.pt"
+            torch.save(self.state_dict['model'].state_dict(), save_path)
+
+            # save optimizer, scheduler, regularizer according to flags
             if self.save_optimizer:
-                states_to_save.append('optimizer')
+                save_path = self.save_dir / "optimizer.pt"
+                torch.save(self.state_dict['optimizer'].state_dict(), save_path)
             if self.save_scheduler:
-                states_to_save.append('scheduler')
+                save_path = self.save_dir / "scheduler.pt"
+                torch.save(self.state_dict['scheduler'].state_dict(), save_path)
             if self.save_regularizer:
-                states_to_save.append('regularizer')
-            for state in states_to_save:
-                save_path = checkpoint_path / f"{state}.pt"
-                torch.save(self.state_dict[state].state_dict(), save_path)
-                if self.state_dict['verbose']:
-                    print(f"Saved {state} to {save_path}")
+                save_path = self.save_dir / "regularizer.pt"
+                torch.save(self.state_dict['regularizer'].state_dict(), save_path)
+            
+            if self.state_dict['verbose']:
+                print(f"Saved training state to {save_path}")
 

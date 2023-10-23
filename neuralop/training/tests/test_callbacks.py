@@ -44,7 +44,9 @@ def test_model_checkpoint_saves():
     trainer = Trainer(model=model,
                       n_epochs=5,
                       callbacks=[
-                          CheckpointCallback(save_dir='./checkpoints')
+                          CheckpointCallback(save_dir='./checkpoints',
+                                             save_optimizer=True,
+                                             save_scheduler=True)
                       ]
     )
 
@@ -65,7 +67,7 @@ def test_model_checkpoint_saves():
                   eval_losses=None,
                   )
     
-    assert sorted(os.listdir('./checkpoints')) == [f"ep_{i}" for i in range(5)]
+    assert sorted(os.listdir('./checkpoints')) == sorted(['model.pt', 'optimizer.pt', 'scheduler.pt'])
 
 
 def test_model_checkpoint_and_resume():
@@ -79,7 +81,8 @@ def test_model_checkpoint_and_resume():
                       callbacks=[
                           CheckpointCallback(save_dir='./full_states',
                                                   save_optimizer=True,
-                                                  save_scheduler=True)
+                                                  save_scheduler=True,
+                                                  save_best='h1') # monitor h1 loss
                       ]
     )
 
@@ -100,17 +103,17 @@ def test_model_checkpoint_and_resume():
                   scheduler=scheduler,
                   regularizer=None,
                   training_loss=l2loss,
-                  eval_losses=eval_losses,
+                  eval_losses=eval_losses
                   )
     
-    assert sorted(os.listdir('./full_states/ep_4')) == sorted(['model.pt', 'optimizer.pt', 'scheduler.pt'])
+    assert sorted(os.listdir('./full_states')) == sorted(['best_model.pt', 'optimizer.pt', 'scheduler.pt'])
 
     # Resume from checkpoint
     trainer = Trainer(model=model,
                       n_epochs=5,
                       callbacks=[
                           CheckpointCallback(save_dir='./checkpoints',
-                                             resume_from_dir='./full_states/ep_4')
+                                             resume_from_dir='./full_states')
                           ]
     )
 

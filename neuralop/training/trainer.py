@@ -246,7 +246,7 @@ class Trainer:
         """
 
         if self.callbacks:
-            self.callbacks.on_val_epoch_start(loss_dict = loss_dict, data_loader=data_loader)
+            self.callbacks.on_val_epoch_start(log_prefix=log_prefix, loss_dict = loss_dict, data_loader=data_loader)
 
         self.model.eval()
 
