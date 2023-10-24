@@ -19,8 +19,9 @@ class BaseSpectralConv(nn.Module):
         so the skip connection can also work. 
 
         Typical usecases are:
+
         * Your upsample or downsample the input in the Spectral conv: the skip connection has to be similarly scaled. 
-           THis allows you to deal with it however you want (e.g. avoid aliasing)
+          This allows you to deal with it however you want (e.g. avoid aliasing)
         * You perform a change of basis in your Spectral Conv, again, this needs to be applied to the skip connection too.
         """
         return x

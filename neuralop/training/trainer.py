@@ -1,8 +1,6 @@
 import torch
 from torch.cuda import amp
 from timeit import default_timer
-import sys 
-import wandb
 import pathlib
 
 import neuralop.mpu.comm as comm
@@ -21,8 +19,7 @@ class Trainer:
                  log_test_interval=1, 
                  log_output=False, 
                  use_distributed=False, 
-                 checkpoint_to_load: pathlib.Path=None,
-                 verbose=True):
+                 verbose=False):
         """
         A general Trainer class to train neural-operators on given datasets
 
@@ -39,7 +36,7 @@ class Trainer:
             if True, and if wandb_log is also True, log output images to wandb
         use_distributed : bool, default is False
             whether to use DDP
-        verbose : bool, default is True
+        verbose : bool, default is False
         """
 
         if callbacks:
@@ -67,9 +64,6 @@ class Trainer:
                  use_distributed=use_distributed, 
                  verbose=verbose)
 
-        if checkpoint_to_load:
-            self.model.load_state_dict(torch.load(checkpoint_to_load))
-
         self.model = model
         self.n_epochs = n_epochs
 
@@ -92,7 +86,6 @@ class Trainer:
                  use_distributed=use_distributed, 
                  verbose=verbose)
         
-        
     def train(self, train_loader, test_loaders,
             optimizer, scheduler, regularizer,
               training_loss=None, eval_losses=None):
@@ -107,7 +100,10 @@ class Trainer:
             optimizer to use during training
         optimizer: torch.optim.lr_scheduler
             learning rate scheduler to use during training
-        training_loss: function to use 
+        training_loss: training.losses function
+            cost function to minimize
+        eval_losses: dict[Loss]
+            dict of losses to use in self.eval()
         """
 
         if self.callbacks:
@@ -115,7 +111,7 @@ class Trainer:
                                     optimizer=optimizer, scheduler=scheduler, 
                                     regularizer=regularizer, training_loss=training_loss, 
                                     eval_losses=eval_losses)
-
+            
         if training_loss is None:
             training_loss = LpLoss(d=2)
 
@@ -142,12 +138,6 @@ class Trainer:
 
                 if self.callbacks:
                     self.callbacks.on_batch_start(idx=idx, sample=sample)
-
-                # Decide what to do about logging later when we decide on batch naming conventions
-                '''if epoch == 0 and idx == 0 and self.verbose and is_logger:
-                    print(f'Training on raw inputs of size {x.shape=}, {y.shape=}')'''
-
-                y = sample['y']
 
                 # load everything from the batch onto self.device if 
                 # no callback overrides default load to device
@@ -256,7 +246,7 @@ class Trainer:
         """
 
         if self.callbacks:
-            self.callbacks.on_val_epoch_start(loss_dict = loss_dict, data_loader=data_loader)
+            self.callbacks.on_val_epoch_start(log_prefix=log_prefix, loss_dict = loss_dict, data_loader=data_loader)
 
         self.model.eval()
 

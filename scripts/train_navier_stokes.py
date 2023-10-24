@@ -96,23 +96,6 @@ if config.distributed.use_distributed:
         model, device_ids=[device.index], output_device=device.index, static_graph=True
     )
 
-# Log parameter count
-if is_logger:
-    n_params = count_params(model)
-
-    if config.verbose:
-        print(f"\nn_params: {n_params}")
-        sys.stdout.flush()
-
-    if config.wandb.log:
-        to_log = {"n_params": n_params}
-        if config.n_params_baseline is not None:
-            to_log["n_params_baseline"] = (config.n_params_baseline,)
-            to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
-            to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
-        wandb.log(to_log)
-        wandb.watch(model)
-
 # Create the optimizer
 optimizer = torch.optim.Adam(
     model.parameters(),
@@ -187,8 +170,24 @@ trainer = Trainer(
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,
     wandb_log = config.wandb.log
-
 )
+
+# Log parameter count
+if is_logger:
+    n_params = count_params(model)
+
+    if config.verbose:
+        print(f"\nn_params: {n_params}")
+        sys.stdout.flush()
+
+    if config.wandb.log:
+        to_log = {"n_params": n_params}
+        if config.n_params_baseline is not None:
+            to_log["n_params_baseline"] = (config.n_params_baseline,)
+            to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
+            to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
+        wandb.log(to_log)
+        wandb.watch(model)
 
 
 trainer.train(

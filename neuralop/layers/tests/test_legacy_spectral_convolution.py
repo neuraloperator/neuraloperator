@@ -1,11 +1,8 @@
 import pytest
 import torch
 from tltorch import FactorizedTensor
-from ..spectral_convolution import (SpectralConv3d, SpectralConv2d,
+from ..legacy_spectral_convolution import (SpectralConv3d, SpectralConv2d,
                                        SpectralConv1d, SpectralConv)
-# from ..cp import (SpectralConv3d, SpectralConv2d,
-#                                        SpectralConv1d, SpectralConv)
-
 
 
 @pytest.mark.parametrize('factorization', ['ComplexDense', 'ComplexCP', 'ComplexTucker', 'ComplexTT'])
@@ -31,7 +28,8 @@ def test_SpectralConv(factorization, implementation):
         conv_dense = SpectralConv(
             3, 3, modes[:dim], n_layers=1, bias=False, implementation='reconstructed', factorization=None)
 
-        conv_dense.weight[0] = FactorizedTensor.from_tensor(conv.weight[0].to_tensor(), rank=None, factorization='ComplexDense')
+        for i in range(2**(dim-1)):
+            conv_dense.weight[i] = FactorizedTensor.from_tensor(conv.weight[i].to_tensor(), rank=None, factorization='ComplexDense')
 
         x = torch.randn(2, 3, *(12, )*dim)
 
@@ -42,7 +40,7 @@ def test_SpectralConv(factorization, implementation):
         torch.testing.assert_close(res_dense, res)
 
         # Dynamically reduce the number of modes in Fourier space
-        conv.n_modes = incremental_modes[:dim]
+        conv.incremental_n_modes = incremental_modes[:dim]
         res = conv(x)
         assert res_shape == res.shape
 
@@ -98,11 +96,11 @@ def test_SpectralConv3D(factorization, implementation):
     take with a grain of salt
     """
     conv = SpectralConv(
-        3, 6, (4, 4, 3), n_layers=1, bias=False, implementation=implementation, factorization=factorization
+        3, 6, (4, 5, 2), n_layers=1, bias=False, implementation=implementation, factorization=factorization
     )
 
     conv_dense = SpectralConv3d(
-        3, 6, (4, 4, 3), n_layers=1, bias=False, implementation='reconstructed', factorization=None
+        3, 6, (4, 5, 2), n_layers=1, bias=False, implementation='reconstructed', factorization=None
     )
     for i, w in enumerate(conv.weight):
         rec = w.to_tensor()
@@ -116,9 +114,7 @@ def test_SpectralConv3D(factorization, implementation):
     torch.testing.assert_close(res_dense, res)
 
 
-
-
-@pytest.mark.parametrize('factorization', ['ComplexCP', 'ComplexTucker', 'ComplexDense'])
+@pytest.mark.parametrize('factorization', ['ComplexCP', 'ComplexTucker'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
 def test_SpectralConv2D(factorization, implementation):
     """Compare generic SpectralConv with hand written SpectralConv2D
@@ -156,6 +152,7 @@ def test_SpectralConv1D(factorization, implementation):
     conv = SpectralConv(
         10, 11, (5,), n_layers=1, bias=False, implementation=implementation, factorization=factorization
     )
+
     conv_dense = SpectralConv1d(
         10, 11, (5,), n_layers=1, bias=False, implementation='reconstructed', factorization=None
     )

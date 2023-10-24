@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 import torch
 
 class OutputEncoder(torch.nn.Module):
@@ -48,7 +49,7 @@ class UnitGaussianNormalizer(torch.nn.Module):
             mean = torch.mean(data, dim, keepdim=True).squeeze(0)
             std = torch.std(data, dim, keepdim=True).squeeze(0)
 
-        elif isinstance(data, list):
+        elif isinstance(data, Iterable):
             total_n = self.get_total_elements(data[0], dim)
             mean = torch.mean(data[0], dim=dim, keepdim=True)
             squared_mean = torch.mean(data[0]**2, dim=dim, keepdim=True)

@@ -8,14 +8,12 @@ to train a Tensorized Fourier-Neural Operator
 
 # %%
 # 
-
-
 import torch
 import matplotlib.pyplot as plt
 import sys
 from neuralop.models import TFNO
 from neuralop import Trainer
-from neuralop.training import OutputEncoderCallback, ModelCheckpointCallback
+from neuralop.training import OutputEncoderCallback, CheckpointCallback
 from neuralop.datasets import load_darcy_flow_small
 from neuralop.utils import count_params
 from neuralop import LpLoss, H1Loss
@@ -78,9 +76,10 @@ trainer = Trainer(model=model, n_epochs=20,
                   device=device,
                   callbacks=[
                     OutputEncoderCallback(output_encoder),
-                    ModelCheckpointCallback(
-                        checkpoint_dir='./checkpoints',
-                        interval='5')
+                    CheckpointCallback(save_dir='./checkpoints',
+                                       save_interval=10,
+                                            save_optimizer=True,
+                                            save_scheduler=True)
                         ],             
                   wandb_log=False,
                   log_test_interval=3,
@@ -98,29 +97,27 @@ trainer.train(train_loader=train_loader,
               regularizer=False, 
               training_loss=train_loss)
 
-# %%
-# Grab the model from the 15th epoch checkpoint
-checkpointed_trainer = Trainer(model=model, n_epochs=5,
+
+# resume training from saved checkpoint at epoch 10
+
+trainer = Trainer(model=model, n_epochs=20,
                   device=device,
                   callbacks=[
                     OutputEncoderCallback(output_encoder),
+                    CheckpointCallback(save_dir='./new_checkpoints',
+                                            resume_from_dir='./checkpoints/ep_10')
                         ],             
                   wandb_log=False,
                   log_test_interval=3,
                   use_distributed=False,
-                  verbose=True,
-                  checkpoint_to_load='./checkpoints/ep_15.pt')
+                  verbose=True)
 
-# train and evaluate
 trainer.train(train_loader=train_loader,
-              test_loaders=test_loaders,
+              test_loaders={},
               optimizer=optimizer,
               scheduler=scheduler, 
               regularizer=False, 
-              training_loss=train_loss,
-              eval_losses=eval_losses)
-
-
+              training_loss=train_loss)
 # %%
 # Plot the prediction, and compare with the ground-truth 
 # Note that we trained on a very small resolution for
