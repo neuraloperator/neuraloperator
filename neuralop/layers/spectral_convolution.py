@@ -1,12 +1,6 @@
-import itertools
 from typing import List, Optional, Tuple, Union
 
 from ..utils import validate_scaling_factor
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 import torch
 from torch import nn
@@ -432,8 +426,6 @@ class SpectralConv(BaseSpectralConv):
 
         fft_size = list(mode_sizes)
         fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient
-
-        # Compute Fourier coeffcients
         fft_dims = list(range(-self.order, 0))
 
         if self.fno_block_precision == "half":
@@ -488,9 +480,6 @@ class SpectralConv(BaseSpectralConv):
         """
         if self.n_layers == 1:
             Warning("A single convolution is parametrized, directly use the main class.")
-            # raise ValueError(
-            #     "A single convolution is parametrized, directly use the main class."
-            # )
 
         return SubConv(self, indices)
 
