@@ -1,5 +1,9 @@
 import torch
-import neuralop.mpu.comm as comm
+import torch.distributed as dist
+import torch.multiprocessing as mp
+
+import neuralop.mpu.pure_py_comm as comm
+
 
 
 def setup(config):
@@ -20,10 +24,15 @@ def setup(config):
         is_logger : bool
     """
     if config.distributed.use_distributed:
-        comm.init(config, verbose=config.verbose)
+        world_size = torch.cuda.device_count()
+        world_rank = dist.get_rank()
+
+        comm.init(world_rank=world_rank, 
+                  world_size=world_size, 
+                  config=config)
 
         #Set process 0 to log screen and wandb
-        is_logger = (comm.get_world_rank() == 0)
+        is_logger = (world_rank == 0)
 
         #Set device and random seed
         device = torch.device(f"cuda:{comm.get_local_rank()}")
