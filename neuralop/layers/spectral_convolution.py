@@ -197,21 +197,33 @@ class SpectralConv(BaseSpectralConv):
         Number of input channels
     out_channels : int, optional
         Number of output channels
-    n_modes : int tuple
-        total number of modes to keep in Fourier Layer, along each dim
+    max_n_modes : None or int tuple, default is None
+        Number of modes to use for contraction in Fourier domain during training.
+ 
+        ..warning::
+            
+            We take care of the redundancy in the Fourier modes, therefore, for an input 
+            of size I_1, ..., I_N, please provide modes M_K that are I_1 < M_K <= I_N
+            We will automatically keep the right amount of modes: specifically, for the 
+            last mode only, if you specify M_N modes we will use M_N // 2 + 1 modes 
+            as the real FFT is redundant along that last dimension.
+
+        .. mode::
+
+            Provided modes should be even integers. odd numbers will be rounded to the closest even number.  
+
+        This can be updated dynamically during training.
+
+    max_n_modes : int tuple or None, default is None
+        * If not None, **maximum** number of modes to keep in Fourier Layer, along each dim
+            The number of modes (`n_modes`) cannot be increased beyond that.
+        * If None, all the n_modes are used.
+
     separable : bool, default is True
     init_std : float or 'auto', default is 'auto'
         std to use for the init
     n_layers : int, optional
         Number of Fourier Layers, by default 4
-    incremental_n_modes : None or int tuple, default is None
-        * If not None, this allows to incrementally increase the number of modes
-          in Fourier domain during training. Has to verify n <= N for (n, m) in
-          zip(incremental_n_modes, n_modes).
-
-        * If None, all the n_modes are used.
-
-        This can be updated dynamically during training.
     factorization : str or None, {'tucker', 'cp', 'tt'}, default is None
         If None, a single dense weight is learned for the FNO.
         Otherwise, that weight, used for the contraction in the Fourier domain
@@ -572,13 +584,13 @@ class SpectralConv2d(SpectralConv):
             slice(None),  # Equivalent to: [:,
             slice(None),  # ............... :,
             slice(self.n_modes[0] // 2),  # :half_n_modes[0],
-            slice(self.n_modes[1]),  # :half_n_modes[1]]
+            slice(self.n_modes[1]),  #      :half_n_modes[1]]
         )
         slices1 = (
             slice(None),  # Equivalent to:        [:,
             slice(None),  # ...................... :,
             slice(-self.n_modes[0] // 2, None),  # -half_n_modes[0]:,
-            slice(self.n_modes[1]),  # ...... :half_n_modes[1]]
+            slice(self.n_modes[1]),  # ......      :half_n_modes[1]]
         )
         print(f'2D: {x[slices0].shape=}, {self._get_weight(indices)[slices0].shape=}, {self._get_weight(indices).shape=}')
 
@@ -636,21 +648,21 @@ class SpectralConv3d(SpectralConv):
             slice(None),  # ...................... :,
             slice(self.n_modes[0] // 2),  # ...... :half_n_modes[0],
             slice(-self.n_modes[1] // 2, None),  # -half_n_modes[1]:,
-            slice(self.n_modes[2]),  # ...... :half_n_modes[0]]
+            slice(self.n_modes[2]),  # ......      :half_n_modes[0]]
         )
         slices2 = (
             slice(None),  # Equivalent to:        [:,
             slice(None),  # ...................... :,
             slice(-self.n_modes[0] // 2, None),  # -half_n_modes[0]:,
             slice(self.n_modes[1] // 2),  # ...... :half_n_modes[1],
-            slice(self.n_modes[2]),  # ...... :half_n_modes[2]]
+            slice(self.n_modes[2]),  # ......      :half_n_modes[2]]
         )
         slices3 = (
             slice(None),  # Equivalent to:        [:,
             slice(None),  # ...................... :,
             slice(-self.n_modes[0] // 2, None),  # -half_n_modes[0],
             slice(-self.n_modes[1] // 2, None),  # -half_n_modes[1],
-            slice(self.n_modes[2]),  # ...... :half_n_modes[2]]
+            slice(self.n_modes[2]),  # ......      :half_n_modes[2]]
         )
 
         """Upper block -- truncate high frequencies."""
