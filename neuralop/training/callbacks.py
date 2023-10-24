@@ -6,9 +6,10 @@ The callbacks in this module follow the form and
 logic of callbacks in Pytorch-Lightning (https://lightning.ai/docs/pytorch/stable)
 """
 
-import sys
-from typing import List, Union
+import os
 from pathlib import Path
+import sys
+from typing import List, Union, Literal
 
 import torch
 import wandb
@@ -375,82 +376,148 @@ class OutputEncoderCallback(Callback):
     
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs)
-
-class ModelCheckpointCallback(Callback):
-
-    def __init__(self, checkpoint_dir: Union[Path, str] = Path('./checkpoints'), interval: int = 1):
-        """
-        Implements basic model checkpointing by saving a model every N epochs.
         
+class CheckpointCallback(Callback):
+    
+    def __init__(self, 
+                 save_dir: Union[Path, str], 
+                 save_best : str = None,
+                 save_interval : int = 1,
+                 save_optimizer : bool = False,
+                 save_scheduler : bool = False,
+                 save_regularizer : bool = False,
+                 resume_from_dir : Union[Path, str] = None
+                 ):
+        """CheckpointCallback handles saving and resuming 
+        training state from checkpoint .pt save files. 
+
         Parameters
         ----------
-        checkpoint_dir : str | pathlib.Path
-            folder in which to save checkpoints
-        interval : int
-            interval at which to check metric
+        save_dir : Union[Path, str], optional
+            folder in which to save checkpoints, by default './checkpoints'
+        save_best : str, optional
+            metric to monitor for best value in order to save state
+        save_interval : int, optional
+            interval on which to save/check metric, by default 1
+        save_optimizer : bool, optional
+            whether to save optimizer state, by default False
+        save_scheduler : bool, optional
+            whether to save scheduler state, by default False
+        save_regularizer : bool, optional
+            whether to save regularizer state, by default False
+        resume_from_dir : Union[Path, str], optional
+            folder from which to resume training state. 
+            Expects saved states in the form: (all but model optional)
+               (best_model.pt or model.pt), optimizer.pt, scheduler.pt, regularizer.pt
+            All state files present will be loaded. 
+            if some metric was monitored during checkpointing, 
+            the file name will be best_model.pt. 
         """
+        
         super().__init__()
+        if isinstance(save_dir, str): 
+            save_dir = Path(save_dir)
+        if not save_dir.exists():
+            save_dir.mkdir(parents=True)
+        self.save_dir = save_dir
 
-        if isinstance(checkpoint_dir, str):
-            checkpoint_dir = Path(checkpoint_dir)
+        self.save_interval = save_interval
+        self.save_best = save_best
+        self.save_optimizer = save_optimizer
+        self.save_scheduler = save_scheduler
+        self.save_regularizer = save_regularizer
 
-        if not checkpoint_dir.exists():
-            checkpoint_dir.mkdir(parents=True)
-        self.checkpoint_dir = checkpoint_dir
-        self.interval = interval
+        if resume_from_dir:
+            if isinstance(resume_from_dir, str):
+                resume_from_dir = Path(resume_from_dir)
+            assert resume_from_dir.exists()
+
+        self.resume_from_dir = resume_from_dir
+        
 
     def on_init_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
+
     
+    def on_train_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+
+        verbose = self.state_dict.get('verbose', False)
+        if self.save_best:
+            assert self.state_dict['eval_losses'], "Error: cannot monitor a metric if no validation metrics exist."
+            assert self.save_best in self.state_dict['eval_losses'].keys(), "Error: cannot monitor a metric outside of eval_losses."
+            self.best_metric_value = float('inf')
+        else:
+            self.best_metric_value = None
+        
+        # load state dict if resume_from_dir is given
+        if self.resume_from_dir:
+            saved_modules = [x.stem for x in self.resume_from_dir.glob('*.pt')]
+
+            assert 'best_model' in saved_modules or 'model' in saved_modules,\
+                  "Error: CheckpointCallback expects a model state dict named model.pt or best_model.pt."
+            
+            # no need to handle exceptions if assertion that either model file exists passes
+            if 'best_model' in saved_modules:
+                self.state_dict['model'].load_state_dict(torch.load(self.resume_from_dir / 'best_model.pt'))
+                if verbose:
+                    print(f"Loading model state from best_model.pt")
+            else:
+                self.state_dict['model'].load_state_dict(torch.load(self.resume_from_dir / 'model.pt'))
+                if verbose:
+                    print(f"Loading model state from model.pt")
+            
+            # load all of optimizer, scheduler, regularizer if they exist
+            for module in ['optimizer', 'scheduler', 'regularizer']:
+                if module in saved_modules:
+                    self.state_dict[module].load_state_dict(torch.load(self.resume_from_dir / f"{module}.pt"))
+
     def on_epoch_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+    
+    def on_val_epoch_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+
+    def on_val_epoch_end(self, *args, **kwargs):
+        """
+        Update state dict with errors
+        """
         self._update_state_dict(**kwargs)
 
     def on_epoch_end(self, *args, **kwargs):
-        if self.state_dict['epoch'] % self.interval == 0:
-            checkpoint_path = self.checkpoint_dir / f"ep_{self.state_dict['epoch']}.pt"
-            torch.save(self.state_dict['model'].state_dict(), checkpoint_path)
-        
-
-class MonitorMetricCheckpointCallback(ModelCheckpointCallback):
-
-    def __init__(self, loss_key: str, checkpoint_dir: str = './checkpoints'):
         """
-        Implements model checkpointing with the addition of monitoring a chosen metric
-
-        Parameters
-        ----------
-        monitor : str
-            key name of validation metric to monitor
-        checkpoint_path : str
-            folder in which to save checkpoints
+        Save state to dir if all conditions are met
         """
+        if self.save_best:
+            log_prefix = self.state_dict['log_prefix']
+            if self.state_dict['errors'][f"{log_prefix}_{self.save_best}"] < self.best_metric_value:
+                metric_cond = True
+            else:
+                metric_cond = False
+        else:
+            metric_cond=True
 
-        super().__init__()
+        # Save states to save_dir 
+        if self.state_dict['epoch'] % self.save_interval == 0 and metric_cond:
+            # save model or best_model.pt no matter what
+            if self.save_best:
+                model_name = 'best_model'
+            else:
+                model_name = 'model'
+            save_path = self.save_dir / f"{model_name}.pt"
+            torch.save(self.state_dict['model'].state_dict(), save_path)
 
-        self.loss_key = loss_key
-        if isinstance(checkpoint_dir, str):
-            checkpoint_dir = Path(checkpoint_dir)
-        if not checkpoint_dir.exists():
-            checkpoint_dir.mkdir(parents=True)
-        self.checkpoint_dir = checkpoint_dir
+            # save optimizer, scheduler, regularizer according to flags
+            if self.save_optimizer:
+                save_path = self.save_dir / "optimizer.pt"
+                torch.save(self.state_dict['optimizer'].state_dict(), save_path)
+            if self.save_scheduler:
+                save_path = self.save_dir / "scheduler.pt"
+                torch.save(self.state_dict['scheduler'].state_dict(), save_path)
+            if self.save_regularizer:
+                save_path = self.save_dir / "regularizer.pt"
+                torch.save(self.state_dict['regularizer'].state_dict(), save_path)
+            
+            if self.state_dict['verbose']:
+                print(f"Saved training state to {save_path}")
 
-    def on_train_start(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
-        assert self.loss_key in self.state_dict['eval_losses'].keys(), \
-            "Error: ModelCheckpointingCallback can only monitor metrics\
-                tracked in eval_losses."
-
-        self._update_state_dict(best_score=float('inf'))
-    
-    def on_val_epoch_end(self, errors):
-        """
-        save model if loss_key metric is lower than best
-        """
-        epoch = self.state_dict['epoch']
-        if errors[self.loss_key] < self.state_dict['best_score']:
-            model_save_path = f"{self.checkpoint_dir}/ep_{epoch}.pt"
-            torch.save(self.state_dict['model'].state_dict(), model_save_path)
-            print(f"Best value for {self.loss_key} found, saving to {model_save_path}")
-        
-        
-        
