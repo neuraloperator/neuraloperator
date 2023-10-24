@@ -88,7 +88,7 @@ Loading the Darcy Flow dataset
        Mean and std of shape torch.Size([1, 1, 1]), eps=1e-05
     Loading test db at resolution 32 with 50 samples and batch-size=32
 
-    Our model has 1738177 parameters.
+    Our model has 2033089 parameters.
 
 
 
@@ -173,7 +173,7 @@ Creating the losses
         (0): FNOBlocks(
           (convs): SpectralConv(
             (weight): ModuleList(
-              (0-1): 2 x ComplexDenseTensor(shape=torch.Size([64, 32, 8, 8]), rank=None)
+              (0): ComplexDenseTensor(shape=torch.Size([64, 32, 16, 9]), rank=None)
             )
           )
           (fno_skips): ModuleList(
@@ -183,7 +183,7 @@ Creating the losses
         (1): FNOBlocks(
           (convs): SpectralConv(
             (weight): ModuleList(
-              (0-1): 2 x ComplexDenseTensor(shape=torch.Size([32, 64, 4, 4]), rank=None)
+              (0): ComplexDenseTensor(shape=torch.Size([32, 64, 8, 5]), rank=None)
             )
           )
           (fno_skips): ModuleList(
@@ -193,7 +193,7 @@ Creating the losses
         (2-3): 2 x FNOBlocks(
           (convs): SpectralConv(
             (weight): ModuleList(
-              (0-1): 2 x ComplexDenseTensor(shape=torch.Size([64, 64, 4, 4]), rank=None)
+              (0): ComplexDenseTensor(shape=torch.Size([64, 64, 8, 5]), rank=None)
             )
           )
           (fno_skips): ModuleList(
@@ -203,7 +203,7 @@ Creating the losses
         (4): FNOBlocks(
           (convs): SpectralConv(
             (weight): ModuleList(
-              (0-1): 2 x ComplexDenseTensor(shape=torch.Size([64, 32, 8, 8]), rank=None)
+              (0): ComplexDenseTensor(shape=torch.Size([64, 32, 16, 9]), rank=None)
             )
           )
           (fno_skips): ModuleList(
@@ -237,13 +237,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7efbd91c0b50>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7febf5ecb550>
 
     ### LOSSES ###
 
-     * Train: <neuralop.training.losses.H1Loss object at 0x7efbd91c0310>
+     * Train: <neuralop.training.losses.H1Loss object at 0x7febf5ee9730>
 
-     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7efbd91c0310>, 'l2': <neuralop.training.losses.LpLoss object at 0x7efbd91c0fa0>}
+     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7febf5ee9730>, 'l2': <neuralop.training.losses.LpLoss object at 0x7febf5ecb160>}
 
 
 
@@ -376,7 +376,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (2 minutes 40.064 seconds)
+   **Total running time of the script:** (2 minutes 0.240 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_UNO_darcy.py:

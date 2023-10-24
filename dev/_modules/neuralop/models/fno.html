@@ -149,10 +149,10 @@
 <span class="sd">        number of hidden channels of the projection block of the FNO, by default 256</span>
 <span class="sd">    n_layers : int, optional</span>
 <span class="sd">        Number of Fourier Layers, by default 4</span>
-<span class="sd">    incremental_n_modes : None or int tuple, default is None</span>
+<span class="sd">    max_n_modes : None or int tuple, default is None</span>
 <span class="sd">        * If not None, this allows to incrementally increase the number of</span>
 <span class="sd">          modes in Fourier domain during training. Has to verify n &lt;= N</span>
-<span class="sd">          for (n, m) in zip(incremental_n_modes, n_modes).</span>
+<span class="sd">          for (n, m) in zip(max_n_modes, n_modes).</span>
 
 <span class="sd">        * If None, all the n_modes are used.</span>
 
@@ -218,7 +218,7 @@
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
         <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">fno_block_precision</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
         <span class="n">use_mlp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">mlp_dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
@@ -244,7 +244,10 @@
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_modes</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span> <span class="o">=</span> <span class="n">n_modes</span>
+
+        <span class="c1"># See the class&#39; property for underlying mechanism</span>
+        <span class="c1"># When updated, change should be reflected in fno blocks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_modes</span> <span class="o">=</span> <span class="n">n_modes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span> <span class="o">=</span> <span class="n">hidden_channels</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lifting_channels</span> <span class="o">=</span> <span class="n">lifting_channels</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">projection_channels</span> <span class="o">=</span> <span class="n">projection_channels</span>
@@ -264,10 +267,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">separable</span> <span class="o">=</span> <span class="n">separable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">preactivation</span> <span class="o">=</span> <span class="n">preactivation</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fno_block_precision</span> <span class="o">=</span> <span class="n">fno_block_precision</span>
-
-        <span class="c1"># See the class&#39; property for underlying mechanism</span>
-        <span class="c1"># When updated, change should be reflected in fno blocks</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_incremental_n_modes</span> <span class="o">=</span> <span class="n">incremental_n_modes</span>
 
         <span class="k">if</span> <span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
             <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">sum</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
@@ -302,7 +301,7 @@
             <span class="n">preactivation</span><span class="o">=</span><span class="n">preactivation</span><span class="p">,</span>
             <span class="n">fno_skip</span><span class="o">=</span><span class="n">fno_skip</span><span class="p">,</span>
             <span class="n">mlp_skip</span><span class="o">=</span><span class="n">mlp_skip</span><span class="p">,</span>
-            <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
+            <span class="n">max_n_modes</span><span class="o">=</span><span class="n">max_n_modes</span><span class="p">,</span>
             <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
             <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
             <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
@@ -380,12 +379,13 @@
         <span class="k">return</span> <span class="n">x</span></div>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">incremental_n_modes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_incremental_n_modes</span>
+    <span class="k">def</span> <span class="nf">n_modes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_modes</span>
 
-    <span class="nd">@incremental_n_modes</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">incremental_n_modes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">incremental_n_modes</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">incremental_n_modes</span> <span class="o">=</span> <span class="n">incremental_n_modes</span></div>
+    <span class="nd">@n_modes</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">n_modes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_modes</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">n_modes</span> <span class="o">=</span> <span class="n">n_modes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_modes</span> <span class="o">=</span> <span class="n">n_modes</span></div>
 
 
 <div class="viewcode-block" id="FNO1d"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO1d.html#neuralop.models.FNO1d">[docs]</a><span class="k">class</span> <span class="nc">FNO1d</span><span class="p">(</span><span class="n">FNO</span><span class="p">):</span>
@@ -407,7 +407,7 @@
         <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
-        <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">fno_block_precision</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
         <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -439,13 +439,13 @@
             <span class="n">lifting_channels</span><span class="o">=</span><span class="n">lifting_channels</span><span class="p">,</span>
             <span class="n">projection_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
-            <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">output_scaling_factor</span><span class="o">=</span><span class="n">output_scaling_factor</span><span class="p">,</span>
             <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
             <span class="n">stabilizer</span><span class="o">=</span><span class="n">stabilizer</span><span class="p">,</span>
             <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span>
             <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span>
             <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
-            <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
+            <span class="n">max_n_modes</span><span class="o">=</span><span class="n">max_n_modes</span><span class="p">,</span>
             <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
             <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
             <span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">,</span>
@@ -488,7 +488,7 @@
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
         <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">fno_block_precision</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
         <span class="n">stabilizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -518,13 +518,13 @@
             <span class="n">lifting_channels</span><span class="o">=</span><span class="n">lifting_channels</span><span class="p">,</span>
             <span class="n">projection_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
-            <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">output_scaling_factor</span><span class="o">=</span><span class="n">output_scaling_factor</span><span class="p">,</span>
             <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
             <span class="n">stabilizer</span><span class="o">=</span><span class="n">stabilizer</span><span class="p">,</span>
             <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span>
             <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span>
             <span class="n">mlp_expansion</span><span class="o">=</span><span class="n">mlp_expansion</span><span class="p">,</span>
-            <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
+            <span class="n">max_n_modes</span><span class="o">=</span><span class="n">max_n_modes</span><span class="p">,</span>
             <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
             <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
             <span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">,</span>
@@ -571,7 +571,7 @@
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
         <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">incremental_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">fno_block_precision</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
         <span class="n">non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
         <span class="n">stabilizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -601,10 +601,10 @@
             <span class="n">lifting_channels</span><span class="o">=</span><span class="n">lifting_channels</span><span class="p">,</span>
             <span class="n">projection_channels</span><span class="o">=</span><span class="n">projection_channels</span><span class="p">,</span>
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
-            <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">output_scaling_factor</span><span class="o">=</span><span class="n">output_scaling_factor</span><span class="p">,</span>
             <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
             <span class="n">stabilizer</span><span class="o">=</span><span class="n">stabilizer</span><span class="p">,</span>
-            <span class="n">incremental_n_modes</span><span class="o">=</span><span class="n">incremental_n_modes</span><span class="p">,</span>
+            <span class="n">max_n_modes</span><span class="o">=</span><span class="n">max_n_modes</span><span class="p">,</span>
             <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
             <span class="n">use_mlp</span><span class="o">=</span><span class="n">use_mlp</span><span class="p">,</span>
             <span class="n">mlp_dropout</span><span class="o">=</span><span class="n">mlp_dropout</span><span class="p">,</span>
