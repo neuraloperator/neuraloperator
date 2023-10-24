@@ -418,7 +418,7 @@ class SpectralConv(BaseSpectralConv):
         batchsize, channels, *mode_sizes = x.shape
 
         fft_size = list(mode_sizes)
-        fft_size[-1] = fft_size[-1] // 2 + 1# Redundant last coefficient
+        fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient
 
         # Compute Fourier coeffcients
         fft_dims = list(range(-self.order, 0))
