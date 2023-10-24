@@ -307,7 +307,7 @@ class SphericalConv(BaseSpectralConv):
         in_channels,
         out_channels,
         n_modes,
-        incremental_n_modes=None,
+        max_n_modes=None,
         bias=True,
         n_layers=1,
         separable=False,
@@ -331,25 +331,16 @@ class SphericalConv(BaseSpectralConv):
         self.out_channels = out_channels
         self.joint_factorization = joint_factorization
 
-        # We index quadrants only
-        # n_modes is the total number of modes kept along each dimension
-        # half_n_modes is half of that except in the last mode, corresponding to
-        # the number of modes to keep in *each* quadrant for each dim
         if isinstance(n_modes, int):
             n_modes = [n_modes]
-        self.n_modes = n_modes
+        self._n_modes = n_modes
         self.order = len(n_modes)
 
-        half_total_n_modes = list(n_modes)
-        half_total_n_modes[-1] = half_total_n_modes[-1] // 2
-        self.half_total_n_modes = half_total_n_modes
-
-        # WE use half_total_n_modes to build the full weights
-        # During training we can adjust incremental_n_modes which will also
-        # update half_n_modes
-        # So that we can train on a smaller part of the Fourier modes
-        # and total weights
-        self.incremental_n_modes = incremental_n_modes
+        if max_n_modes is None:
+            max_n_modes = self.n_modes
+        elif isinstance(max_n_modes, int):
+            max_n_modes = [max_n_modes]
+        self.max_n_modes = max_n_modes
 
         self.rank = rank
         self.factorization = factorization
@@ -385,9 +376,9 @@ class SphericalConv(BaseSpectralConv):
                     f"to out_channels, but got in_channels={in_channels} "
                     f"and out_channels={out_channels}",
                 )
-            weight_shape = (in_channels, *half_total_n_modes[:-1])
+            weight_shape = (in_channels, *self.n_modes[:-1])
         else:
-            weight_shape = (in_channels, out_channels, *half_total_n_modes[:-1])
+            weight_shape = (in_channels, out_channels, *self.n_modes[:-1])
         self.separable = separable
 
         if joint_factorization:
@@ -433,36 +424,7 @@ class SphericalConv(BaseSpectralConv):
         self.sht_handle = SHT(dtype=self.dtype, device=self.device)
 
     def _get_weight(self, index):
-        if self.incremental_n_modes is not None:
-            return self.weight[index][self.weight_slices]
-        else:
-            return self.weight[index]
-
-    @property
-    def incremental_n_modes(self):
-        return self._incremental_n_modes
-
-    @incremental_n_modes.setter
-    def incremental_n_modes(self, incremental_n_modes):
-        if incremental_n_modes is None:
-            self._incremental_n_modes = None
-            self.half_n_modes = [m // 2 for m in self.n_modes]
-
-        else:
-            if isinstance(incremental_n_modes, int):
-                self._incremental_n_modes = [incremental_n_modes] * len(self.n_modes)
-            else:
-                if len(incremental_n_modes) == len(self.n_modes):
-                    self._incremental_n_modes = incremental_n_modes
-                else:
-                    raise ValueError(
-                        f"Provided {incremental_n_modes} for actual"
-                        f" n_modes={self.n_modes}."
-                    )
-            self.weight_slices = [slice(None)] * 2 + [
-                slice(None, n // 2) for n in self._incremental_n_modes
-            ]
-            self.half_n_modes = [m // 2 for m in self._incremental_n_modes]
+        return self.weight[index]
     
     def transform(self, x, layer_index=0, output_shape=None):
         *_, in_height, in_width = x.shape
@@ -505,21 +467,12 @@ class SphericalConv(BaseSpectralConv):
         elif output_shape is not None:
             height, width = output_shape[0], output_shape[1]
 
-        out_fft = self.sht_handle.sht(x, s=self.half_total_n_modes, norm=self.sht_norm,
-                                      grid=self.sht_grids[indices])
+        out_fft = self.sht_handle.sht(x, s=(self.n_modes[0], self.n_modes[1]//2),
+                                      norm=self.sht_norm, grid=self.sht_grids[indices])
 
-        # xp = torch.zeros_like(x)
-        # xp[..., : self.modes_lat_local, : self.modes_lon_local] = self._contract(
-        #     x[..., : self.modes_lat_local, : self.modes_lon_local],
-        #     self.weight,
-        #     separable=self.separable,
-        #     operator_type=self.operator_type,
-        # )
-
-        # upper block (truncate high freq)
         out_fft = self._contract(
-            out_fft[:, :, :self.half_total_n_modes[0], :self.half_total_n_modes[1]],
-            self._get_weight(indices),
+            out_fft[:, :, :self.n_modes[0], :self.n_modes[1]//2],
+            self._get_weight(indices)[:, :, :self.n_modes[0]],
             separable=self.separable,
             dhconv=True,
         )
@@ -531,6 +484,18 @@ class SphericalConv(BaseSpectralConv):
             x = x + self.bias[indices, ...]
 
         return x
+
+    @property
+    def n_modes(self):
+        return self._n_modes
+    
+    @n_modes.setter
+    def n_modes(self, n_modes):
+        if isinstance(n_modes, int): # Should happen for 1D FNO only
+            n_modes = [n_modes]
+        else:
+            n_modes = list(n_modes)
+        self._n_modes = n_modes
 
     def get_conv(self, indices):
         """Returns a sub-convolutional layer from the joint parametrize main-convolution
