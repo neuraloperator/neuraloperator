@@ -22,7 +22,7 @@ class FNOBlocks(nn.Module):
         n_modes,
         output_scaling_factor: Optional[Union[Number, List[Number]]] = None,
         n_layers=1,
-        incremental_n_modes=None,
+        max_n_modes=None,
         fno_block_precision="full",
         use_mlp=False,
         mlp_dropout=0,
@@ -48,14 +48,14 @@ class FNOBlocks(nn.Module):
         super().__init__()
         if isinstance(n_modes, int):
             n_modes = [n_modes]
-        self.n_modes = n_modes
+        self._n_modes = n_modes
         self.n_dim = len(n_modes)
 
         self.output_scaling_factor: Union[
             None, List[List[float]]
         ] = validate_scaling_factor(output_scaling_factor, self.n_dim, n_layers)
 
-        self._incremental_n_modes = incremental_n_modes
+        self.max_n_modes = max_n_modes
         self.fno_block_precision = fno_block_precision
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -83,7 +83,7 @@ class FNOBlocks(nn.Module):
             self.out_channels,
             self.n_modes,
             output_scaling_factor=output_scaling_factor,
-            incremental_n_modes=incremental_n_modes,
+            max_n_modes=max_n_modes,
             rank=rank,
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
@@ -259,12 +259,13 @@ class FNOBlocks(nn.Module):
         return x
 
     @property
-    def incremental_n_modes(self):
-        return self._incremental_n_modes
+    def n_modes(self):
+        return self._n_modes
 
-    @incremental_n_modes.setter
-    def incremental_n_modes(self, incremental_n_modes):
-        self.convs.incremental_n_modes = incremental_n_modes
+    @n_modes.setter
+    def n_modes(self, n_modes):
+        self.convs.n_modes = n_modes
+        self._n_modes = n_modes
 
     def get_block(self, indices):
         """Returns a sub-FNO Block layer from the jointly parametrized main block
