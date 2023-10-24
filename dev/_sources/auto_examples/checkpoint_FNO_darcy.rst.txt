@@ -24,18 +24,16 @@ Training a TFNO on Darcy-Flow
 In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
 to train a Tensorized Fourier-Neural Operator
 
-.. GENERATED FROM PYTHON SOURCE LINES 11-26
+.. GENERATED FROM PYTHON SOURCE LINES 11-24
 
 .. code-block:: default
-
-
 
     import torch
     import matplotlib.pyplot as plt
     import sys
     from neuralop.models import TFNO
     from neuralop import Trainer
-    from neuralop.training import OutputEncoderCallback, ModelCheckpointCallback
+    from neuralop.training import OutputEncoderCallback, CheckpointCallback
     from neuralop.datasets import load_darcy_flow_small
     from neuralop.utils import count_params
     from neuralop import LpLoss, H1Loss
@@ -44,11 +42,11 @@ to train a Tensorized Fourier-Neural Operator
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 27-28
+.. GENERATED FROM PYTHON SOURCE LINES 25-26
 
 Loading the Navier-Stokes dataset in 128x128 resolution
 
-.. GENERATED FROM PYTHON SOURCE LINES 28-35
+.. GENERATED FROM PYTHON SOURCE LINES 26-33
 
 .. code-block:: default
 
@@ -60,11 +58,11 @@ Loading the Navier-Stokes dataset in 128x128 resolution
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 36-37
+.. GENERATED FROM PYTHON SOURCE LINES 34-35
 
 We create a tensorized FNO model
 
-.. GENERATED FROM PYTHON SOURCE LINES 37-46
+.. GENERATED FROM PYTHON SOURCE LINES 35-44
 
 .. code-block:: default
 
@@ -78,11 +76,11 @@ We create a tensorized FNO model
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 47-48
+.. GENERATED FROM PYTHON SOURCE LINES 45-46
 
 Create the optimizer
 
-.. GENERATED FROM PYTHON SOURCE LINES 48-54
+.. GENERATED FROM PYTHON SOURCE LINES 46-52
 
 .. code-block:: default
 
@@ -93,11 +91,11 @@ Create the optimizer
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 55-56
+.. GENERATED FROM PYTHON SOURCE LINES 53-54
 
 Creating the losses
 
-.. GENERATED FROM PYTHON SOURCE LINES 56-63
+.. GENERATED FROM PYTHON SOURCE LINES 54-61
 
 .. code-block:: default
 
@@ -109,7 +107,7 @@ Creating the losses
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 64-75
+.. GENERATED FROM PYTHON SOURCE LINES 62-73
 
 .. code-block:: default
 
@@ -125,11 +123,11 @@ Creating the losses
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 76-77
+.. GENERATED FROM PYTHON SOURCE LINES 74-75
 
 Create the trainer
 
-.. GENERATED FROM PYTHON SOURCE LINES 77-91
+.. GENERATED FROM PYTHON SOURCE LINES 75-90
 
 .. code-block:: default
 
@@ -137,9 +135,10 @@ Create the trainer
                       device=device,
                       callbacks=[
                         OutputEncoderCallback(output_encoder),
-                        ModelCheckpointCallback(
-                            checkpoint_dir='./checkpoints',
-                            interval='5')
+                        CheckpointCallback(save_dir='./checkpoints',
+                                           save_interval=10,
+                                                save_optimizer=True,
+                                                save_scheduler=True)
                             ],             
                       wandb_log=False,
                       log_test_interval=3,
@@ -148,11 +147,11 @@ Create the trainer
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 92-93
+.. GENERATED FROM PYTHON SOURCE LINES 91-92
 
 Actually train the model on our small Darcy-Flow dataset
 
-.. GENERATED FROM PYTHON SOURCE LINES 93-101
+.. GENERATED FROM PYTHON SOURCE LINES 92-121
 
 .. code-block:: default
 
@@ -165,37 +164,28 @@ Actually train the model on our small Darcy-Flow dataset
                   training_loss=train_loss)
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 102-103
+    # resume training from saved checkpoint at epoch 10
 
-Grab the model from the 15th epoch checkpoint
-
-.. GENERATED FROM PYTHON SOURCE LINES 103-124
-
-.. code-block:: default
-
-    checkpointed_trainer = Trainer(model=model, n_epochs=5,
+    trainer = Trainer(model=model, n_epochs=20,
                       device=device,
                       callbacks=[
                         OutputEncoderCallback(output_encoder),
+                        CheckpointCallback(save_dir='./new_checkpoints',
+                                                resume_from_dir='./checkpoints/ep_10')
                             ],             
                       wandb_log=False,
                       log_test_interval=3,
                       use_distributed=False,
-                      verbose=True,
-                      checkpoint_to_load='./checkpoints/ep_15.pt')
+                      verbose=True)
 
-    # train and evaluate
     trainer.train(train_loader=train_loader,
-                  test_loaders=test_loaders,
+                  test_loaders={},
                   optimizer=optimizer,
                   scheduler=scheduler, 
                   regularizer=False, 
-                  training_loss=train_loss,
-                  eval_losses=eval_losses)
+                  training_loss=train_loss)
 
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 125-135
+.. GENERATED FROM PYTHON SOURCE LINES 122-132
 
 Plot the prediction, and compare with the ground-truth 
 Note that we trained on a very small resolution for
@@ -208,7 +198,7 @@ ii) can be trained quickly on CPU
 
 In practice we would train a Neural Operator on one or multiple GPUs
 
-.. GENERATED FROM PYTHON SOURCE LINES 135-172
+.. GENERATED FROM PYTHON SOURCE LINES 132-169
 
 .. code-block:: default
 

@@ -120,8 +120,6 @@
 <span></span><span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">torch.cuda</span> <span class="kn">import</span> <span class="n">amp</span>
 <span class="kn">from</span> <span class="nn">timeit</span> <span class="kn">import</span> <span class="n">default_timer</span>
-<span class="kn">import</span> <span class="nn">sys</span> 
-<span class="kn">import</span> <span class="nn">wandb</span>
 <span class="kn">import</span> <span class="nn">pathlib</span>
 
 <span class="kn">import</span> <span class="nn">neuralop.mpu.comm</span> <span class="k">as</span> <span class="nn">comm</span>
@@ -140,8 +138,7 @@
                  <span class="n">log_test_interval</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> 
                  <span class="n">log_output</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
                  <span class="n">use_distributed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
-                 <span class="n">checkpoint_to_load</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                 <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A general Trainer class to train neural-operators on given datasets</span>
 
@@ -158,7 +155,7 @@
 <span class="sd">            if True, and if wandb_log is also True, log output images to wandb</span>
 <span class="sd">        use_distributed : bool, default is False</span>
 <span class="sd">            whether to use DDP</span>
-<span class="sd">        verbose : bool, default is True</span>
+<span class="sd">        verbose : bool, default is False</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">callbacks</span><span class="p">:</span>
@@ -186,9 +183,6 @@
                  <span class="n">use_distributed</span><span class="o">=</span><span class="n">use_distributed</span><span class="p">,</span> 
                  <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">checkpoint_to_load</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">checkpoint_to_load</span><span class="p">))</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_epochs</span> <span class="o">=</span> <span class="n">n_epochs</span>
 
@@ -211,7 +205,6 @@
                  <span class="n">use_distributed</span><span class="o">=</span><span class="n">use_distributed</span><span class="p">,</span> 
                  <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
         
-        
 <div class="viewcode-block" id="Trainer.train"><a class="viewcode-back" href="../../../modules/generated/neuralop.training.Trainer.html#neuralop.training.Trainer.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span>
             <span class="n">optimizer</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">,</span> <span class="n">regularizer</span><span class="p">,</span>
               <span class="n">training_loss</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eval_losses</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -226,7 +219,10 @@
 <span class="sd">            optimizer to use during training</span>
 <span class="sd">        optimizer: torch.optim.lr_scheduler</span>
 <span class="sd">            learning rate scheduler to use during training</span>
-<span class="sd">        training_loss: function to use </span>
+<span class="sd">        training_loss: training.losses function</span>
+<span class="sd">            cost function to minimize</span>
+<span class="sd">        eval_losses: dict[Loss]</span>
+<span class="sd">            dict of losses to use in self.eval()</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
@@ -234,7 +230,7 @@
                                     <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">scheduler</span><span class="o">=</span><span class="n">scheduler</span><span class="p">,</span> 
                                     <span class="n">regularizer</span><span class="o">=</span><span class="n">regularizer</span><span class="p">,</span> <span class="n">training_loss</span><span class="o">=</span><span class="n">training_loss</span><span class="p">,</span> 
                                     <span class="n">eval_losses</span><span class="o">=</span><span class="n">eval_losses</span><span class="p">)</span>
-
+            
         <span class="k">if</span> <span class="n">training_loss</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">training_loss</span> <span class="o">=</span> <span class="n">LpLoss</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
@@ -261,12 +257,6 @@
 
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">on_batch_start</span><span class="p">(</span><span class="n">idx</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span> <span class="n">sample</span><span class="o">=</span><span class="n">sample</span><span class="p">)</span>
-
-                <span class="c1"># Decide what to do about logging later when we decide on batch naming conventions</span>
-<span class="w">                </span><span class="sd">&#39;&#39;&#39;if epoch == 0 and idx == 0 and self.verbose and is_logger:</span>
-<span class="sd">                    print(f&#39;Training on raw inputs of size {x.shape=}, {y.shape=}&#39;)&#39;&#39;&#39;</span>
-
-                <span class="n">y</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
 
                 <span class="c1"># load everything from the batch onto self.device if </span>
                 <span class="c1"># no callback overrides default load to device</span>
@@ -375,7 +365,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">on_val_epoch_start</span><span class="p">(</span><span class="n">loss_dict</span> <span class="o">=</span> <span class="n">loss_dict</span><span class="p">,</span> <span class="n">data_loader</span><span class="o">=</span><span class="n">data_loader</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">on_val_epoch_start</span><span class="p">(</span><span class="n">log_prefix</span><span class="o">=</span><span class="n">log_prefix</span><span class="p">,</span> <span class="n">loss_dict</span> <span class="o">=</span> <span class="n">loss_dict</span><span class="p">,</span> <span class="n">data_loader</span><span class="o">=</span><span class="n">data_loader</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
 

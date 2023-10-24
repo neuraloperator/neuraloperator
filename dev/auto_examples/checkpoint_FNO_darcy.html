@@ -178,7 +178,7 @@ to train a Tensorized Fourier-Neural Operator</p>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">TFNO</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">Trainer</span>
-<span class="kn">from</span> <span class="nn">neuralop.training</span> <span class="kn">import</span> <span class="n">OutputEncoderCallback</span><span class="p">,</span> <span class="n">ModelCheckpointCallback</span>
+<span class="kn">from</span> <span class="nn">neuralop.training</span> <span class="kn">import</span> <span class="n">OutputEncoderCallback</span><span class="p">,</span> <span class="n">CheckpointCallback</span>
 <span class="kn">from</span> <span class="nn">neuralop.datasets</span> <span class="kn">import</span> <span class="n">load_darcy_flow_small</span>
 <span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">count_params</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">LpLoss</span><span class="p">,</span> <span class="n">H1Loss</span>
@@ -232,9 +232,10 @@ to train a Tensorized Fourier-Neural Operator</p>
                   <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
                   <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
                     <span class="n">OutputEncoderCallback</span><span class="p">(</span><span class="n">output_encoder</span><span class="p">),</span>
-                    <span class="n">ModelCheckpointCallback</span><span class="p">(</span>
-                        <span class="n">checkpoint_dir</span><span class="o">=</span><span class="s1">&#39;./checkpoints&#39;</span><span class="p">,</span>
-                        <span class="n">interval</span><span class="o">=</span><span class="s1">&#39;5&#39;</span><span class="p">)</span>
+                    <span class="n">CheckpointCallback</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="s1">&#39;./checkpoints&#39;</span><span class="p">,</span>
+                                       <span class="n">save_interval</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                                            <span class="n">save_optimizer</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                            <span class="n">save_scheduler</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                         <span class="p">],</span>
                   <span class="n">wandb_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">log_test_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
@@ -249,28 +250,28 @@ to train a Tensorized Fourier-Neural Operator</p>
               <span class="n">scheduler</span><span class="o">=</span><span class="n">scheduler</span><span class="p">,</span>
               <span class="n">regularizer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
               <span class="n">training_loss</span><span class="o">=</span><span class="n">train_loss</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Grab the model from the 15th epoch checkpoint</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">checkpointed_trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+
+
+<span class="c1"># resume training from saved checkpoint at epoch 10</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
                   <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
                   <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
                     <span class="n">OutputEncoderCallback</span><span class="p">(</span><span class="n">output_encoder</span><span class="p">),</span>
+                    <span class="n">CheckpointCallback</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="s1">&#39;./new_checkpoints&#39;</span><span class="p">,</span>
+                                            <span class="n">resume_from_dir</span><span class="o">=</span><span class="s1">&#39;./checkpoints/ep_10&#39;</span><span class="p">)</span>
                         <span class="p">],</span>
                   <span class="n">wandb_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">log_test_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
                   <span class="n">use_distributed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                  <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                  <span class="n">checkpoint_to_load</span><span class="o">=</span><span class="s1">&#39;./checkpoints/ep_15.pt&#39;</span><span class="p">)</span>
+                  <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-<span class="c1"># train and evaluate</span>
 <span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">train_loader</span><span class="o">=</span><span class="n">train_loader</span><span class="p">,</span>
-              <span class="n">test_loaders</span><span class="o">=</span><span class="n">test_loaders</span><span class="p">,</span>
+              <span class="n">test_loaders</span><span class="o">=</span><span class="p">{},</span>
               <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
               <span class="n">scheduler</span><span class="o">=</span><span class="n">scheduler</span><span class="p">,</span>
               <span class="n">regularizer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-              <span class="n">training_loss</span><span class="o">=</span><span class="n">train_loss</span><span class="p">,</span>
-              <span class="n">eval_losses</span><span class="o">=</span><span class="n">eval_losses</span><span class="p">)</span>
+              <span class="n">training_loss</span><span class="o">=</span><span class="n">train_loss</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
