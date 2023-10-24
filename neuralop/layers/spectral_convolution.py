@@ -200,7 +200,7 @@ class SpectralConv(BaseSpectralConv):
     max_n_modes : None or int tuple, default is None
         Number of modes to use for contraction in Fourier domain during training.
  
-        ..warning::
+        .. warning::
             
             We take care of the redundancy in the Fourier modes, therefore, for an input 
             of size I_1, ..., I_N, please provide modes M_K that are I_1 < M_K <= I_N
@@ -208,7 +208,8 @@ class SpectralConv(BaseSpectralConv):
             last mode only, if you specify M_N modes we will use M_N // 2 + 1 modes 
             as the real FFT is redundant along that last dimension.
 
-        .. mode::
+            
+        .. note::
 
             Provided modes should be even integers. odd numbers will be rounded to the closest even number.  
 
@@ -543,7 +544,7 @@ class SpectralConv1d(SpectralConv):
         slices = (
             slice(None),  # Equivalent to: [:,
             slice(None),  # ............... :,
-            slice(None, self.n_modes[0]),  # :half_n_modes[0]]
+            slice(None, self.n_modes[0]), # :half_n_modes[0]]
         )
         out_fft[slices] = self._contract(
             x[slices], self._get_weight(indices)[slices], separable=self.separable
