@@ -319,7 +319,7 @@
 <span class="sd">    max_n_modes : None or int tuple, default is None</span>
 <span class="sd">        Number of modes to use for contraction in Fourier domain during training.</span>
 <span class="sd"> </span>
-<span class="sd">        ..warning::</span>
+<span class="sd">        .. warning::</span>
 <span class="sd">            </span>
 <span class="sd">            We take care of the redundancy in the Fourier modes, therefore, for an input </span>
 <span class="sd">            of size I_1, ..., I_N, please provide modes M_K that are I_1 &lt; M_K &lt;= I_N</span>
@@ -327,7 +327,8 @@
 <span class="sd">            last mode only, if you specify M_N modes we will use M_N // 2 + 1 modes </span>
 <span class="sd">            as the real FFT is redundant along that last dimension.</span>
 
-<span class="sd">        .. mode::</span>
+<span class="sd">            </span>
+<span class="sd">        .. note::</span>
 
 <span class="sd">            Provided modes should be even integers. odd numbers will be rounded to the closest even number.  </span>
 
@@ -662,7 +663,7 @@
         <span class="n">slices</span> <span class="o">=</span> <span class="p">(</span>
             <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>  <span class="c1"># Equivalent to: [:,</span>
             <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>  <span class="c1"># ............... :,</span>
-            <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>  <span class="c1"># :half_n_modes[0]]</span>
+            <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="c1"># :half_n_modes[0]]</span>
         <span class="p">)</span>
         <span class="n">out_fft</span><span class="p">[</span><span class="n">slices</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contract</span><span class="p">(</span>
             <span class="n">x</span><span class="p">[</span><span class="n">slices</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_weight</span><span class="p">(</span><span class="n">indices</span><span class="p">)[</span><span class="n">slices</span><span class="p">],</span> <span class="n">separable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">separable</span>
