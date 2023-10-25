@@ -16,7 +16,7 @@ import sys
 from neuralop.models import SFNO
 from neuralop import Trainer
 from neuralop.datasets import load_spherical_swe
-from neuralop.utils import count_params
+from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -33,7 +33,7 @@ train_loader, test_loaders = load_spherical_swe(n_train=200, batch_size=4, train
 model = SFNO(n_modes=(32, 32), in_channels=3, out_channels=3, hidden_channels=32, projection_channels=64, factorization='dense')
 model = model.to(device)
 
-n_params = count_params(model)
+n_params = count_model_params(model)
 print(f'\nOur model has {n_params} parameters.')
 sys.stdout.flush()
 

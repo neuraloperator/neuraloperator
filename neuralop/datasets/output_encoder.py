@@ -1,4 +1,5 @@
-from abc import ABC, abstractmethod
+from ..utils import count_tensor_params
+from abc import abstractmethod
 from collections.abc import Iterable
 import torch
 
@@ -7,7 +8,7 @@ class OutputEncoder(torch.nn.Module):
         into a form usable by some cost function.
     """
     def __init__(self):
-        pass
+        super().__init__()
     
     @abstractmethod
     def encode(self):
@@ -29,36 +30,62 @@ class OutputEncoder(torch.nn.Module):
     def to(self, device):
         pass
 
-class UnitGaussianNormalizer(torch.nn.Module):
+class UnitGaussianNormalizer(OutputEncoder):
     """
-    UnitGaussianNormalizer normalizes data to fit a 
-    Gaussian distribution with unit variance. 
+    UnitGaussianNormalizer normalizes data to be zero mean and unit std. 
     """
-    def __init__(self, data, dim=None, eps=1e-6):
+    def __init__(self, mean=None, std=None, eps=0):
         super().__init__()
 
-        if isinstance(dim, int):
-            dim = [dim]
+        self.register_buffer('mean', torch.tensor(mean))
+        self.register_buffer('std', torch.tensor(std))
+        self.register_buffer('eps', torch.tensor(eps))
+    
+    @classmethod
+    def from_data(cls, data, dims=None):
+        """Initialize the Normalizer from a batch of data
+        
+        Parameters
+        ----------
+        data : torch.tensor
+            tensor of size (batch_size, ...)
+            We always normalize over batch-size, and by default all other dims.
+            To specify the dimensions over which to normalize (in addition to batch-size), 
+            use dims
+        dims : int list or None, default is None
+            if not None, dimensions to reduce (average) over.
+
+        Notes
+        -----
+        The resulting mean will have the same size as the input MINUS the specified dims.
+        If you do not specify any dims, the mean and std will both be scalars.
+
+        Returns
+        -------
+        UnitGaussianNormalizer instance
+        """
+        if isinstance(dims, int):
+            dims = [dims]
 
         if isinstance(data, torch.Tensor):
-            #Asumes batch dimension is first
-            if dim is not None:
-                if 0 not in dim:
-                    dim.append(0)
+            #Asumes batch dimsension is first
+            if dims is not None:
+                if 0 not in dims:
+                    dims.append(0)
 
-            mean = torch.mean(data, dim, keepdim=True).squeeze(0)
-            std = torch.std(data, dim, keepdim=True).squeeze(0)
+            mean = torch.mean(data, dims, keepdim=True).squeeze(0)
+            std = torch.std(data, dims, keepdim=True).squeeze(0)
 
         elif isinstance(data, Iterable):
-            total_n = self.get_total_elements(data[0], dim)
-            mean = torch.mean(data[0], dim=dim, keepdim=True)
-            squared_mean = torch.mean(data[0]**2, dim=dim, keepdim=True)
+            total_n = count_tensor_params(data[0], dims)
+            mean = torch.mean(data[0], dims=dims, keepdim=True)
+            squared_mean = torch.mean(data[0]**2, dims=dims, keepdim=True)
 
             for j in range(1, len(data)):
-                current_n = self.get_total_elements(data[j], dim)
+                current_n = count_tensor_params(data[j], dims)
 
-                mean = (1.0/(total_n + current_n))*(total_n*mean + torch.sum(data[j], dim=dim, keepdim=True))
-                squared_mean = (1.0/(total_n + current_n))*(total_n*squared_mean + torch.sum(data[j]**2, dim=dim, keepdim=True))
+                mean = (1.0/(total_n + current_n))*(total_n*mean + torch.sum(data[j], dims=dims, keepdim=True))
+                squared_mean = (1.0/(total_n + current_n))*(total_n*squared_mean + torch.sum(data[j]**2, dims=dims, keepdim=True))
 
                 total_n += current_n
             
@@ -66,11 +93,9 @@ class UnitGaussianNormalizer(torch.nn.Module):
             
         else:
             raise ValueError
-
-        self.register_buffer('mean', mean)
-        self.register_buffer('std', std)
-        self.register_buffer('eps', torch.tensor([eps]))
     
+        return cls(mean=mean, std=std)
+
     def encode(self, x):
         x = x - self.mean
         x = x / (self.std + self.eps)
@@ -82,17 +107,6 @@ class UnitGaussianNormalizer(torch.nn.Module):
         x = x + self.mean
 
         return x
-
-    def get_total_elements(sef, x, dim):
-        n = 1
-        if dim is not None:
-            for d in dim:
-                n *= x.shape[d]
-        else:
-            for j in range(len(x.shape)):
-                n *= x.shape[j]
-        
-        return n
     
     def forward(self, x):
         return self.encode(x)
