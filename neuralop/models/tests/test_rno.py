@@ -7,7 +7,8 @@ from math import prod
 @pytest.mark.parametrize('lifting_channels', [None, 32])
 @pytest.mark.parametrize('projection_channels', [None, 32])
 def test_rno(n_dim, lifting_channels, projection_channels):
-    device = 'cuda'
+    device = "cuda" if torch.has_cuda else "cpu"
+    
     s = 32
     modes = 8
     width = 16
@@ -54,8 +55,8 @@ def test_rno(n_dim, lifting_channels, projection_channels):
 @pytest.mark.parametrize('output_scaling_factor', 
                          [[2, 1, 1], [1, 2, 1], [1, 1, 2], [1, 2, 2], [1, 0.5, 1]])
 def test_rno_superresolution(output_scaling_factor):
-    device = 'cuda'
-    s = 128
+    device = "cuda" if torch.has_cuda else "cpu"
+    s = 16
     modes = 16
     width = 15
     n_layers = 3
