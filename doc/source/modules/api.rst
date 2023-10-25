@@ -175,9 +175,43 @@ It has the advantage of doing some checks on the parameters it receives.
     get_model
     available_models
 
+Training
+========
+We provide functionality that automates the boilerplate code associated with 
+training a machine learning model to minimize a loss function on a dataset:
+
+.. automodule:: neuralop.training
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    Trainer
+
+The general case (assuming no modifications) is covered above. To implement domain-specific 
+logic in your training loop while still using the automation and logging provided by a
+Trainer, we provide a Callback class and several examples of common domain-specific Callbacks.
+
+.. automodule:: neuralop.training.callbacks
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    Callback
+    SimpleWandBLoggerCallback
+    OutputEncoderCallback
+    MGPatchingCallback
+    ModelCheckpointCallback
+    MonitorMetricCheckpointCallback
+
+
 Datasets
 ========
-
 We ship a small dataset for testing:
 
 .. automodule:: neuralop.datasets

@@ -15,8 +15,9 @@ import matplotlib.pyplot as plt
 import sys
 from neuralop.models import TFNO
 from neuralop import Trainer
+from neuralop.training import OutputEncoderCallback
 from neuralop.datasets import load_darcy_flow_small
-from neuralop.utils import count_params
+from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
 
 device = 'cpu'
@@ -37,7 +38,7 @@ train_loader, test_loaders, output_encoder = load_darcy_flow_small(
 model = TFNO(n_modes=(16, 16), hidden_channels=32, projection_channels=64, factorization='tucker', rank=0.42)
 model = model.to(device)
 
-n_params = count_params(model)
+n_params = count_model_params(model)
 print(f'\nOur model has {n_params} parameters.')
 sys.stdout.flush()
 
@@ -73,9 +74,9 @@ sys.stdout.flush()
 
 # %% 
 # Create the trainer
-trainer = Trainer(model, n_epochs=20,
+trainer = Trainer(model=model, n_epochs=20,
                   device=device,
-                  mg_patching_levels=0,
+                  callbacks=[OutputEncoderCallback(output_encoder)],             
                   wandb_log=False,
                   log_test_interval=3,
                   use_distributed=False,
@@ -85,11 +86,10 @@ trainer = Trainer(model, n_epochs=20,
 # %%
 # Actually train the model on our small Darcy-Flow dataset
 
-trainer.train(train_loader, test_loaders,
-              output_encoder,
-              model, 
-              optimizer,
-              scheduler, 
+trainer.train(train_loader=train_loader,
+              test_loaders=test_loaders,
+              optimizer=optimizer,
+              scheduler=scheduler, 
               regularizer=False, 
               training_loss=train_loss,
               eval_losses=eval_losses)

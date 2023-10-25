@@ -16,11 +16,10 @@ import sys
 from neuralop.models import SFNO
 from neuralop import Trainer
 from neuralop.datasets import load_spherical_swe
-from neuralop.utils import count_params
+from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
 
 # %%
 # Loading the Navier-Stokes dataset in 128x128 resolution
@@ -34,7 +33,7 @@ train_loader, test_loaders = load_spherical_swe(n_train=200, batch_size=4, train
 model = SFNO(n_modes=(32, 32), in_channels=3, out_channels=3, hidden_channels=32, projection_channels=64, factorization='dense')
 model = model.to(device)
 
-n_params = count_params(model)
+n_params = count_model_params(model)
 print(f'\nOur model has {n_params} parameters.')
 sys.stdout.flush()
 
@@ -70,9 +69,8 @@ sys.stdout.flush()
 
 # %% 
 # Create the trainer
-trainer = Trainer(model, n_epochs=20,
+trainer = Trainer(model=model, n_epochs=20,
                   device=device,
-                  mg_patching_levels=0,
                   wandb_log=False,
                   log_test_interval=3,
                   use_distributed=False,
@@ -82,11 +80,10 @@ trainer = Trainer(model, n_epochs=20,
 # %%
 # Actually train the model on our small Darcy-Flow dataset
 
-trainer.train(train_loader, test_loaders,
-              None,
-              model, 
-              optimizer,
-              scheduler, 
+trainer.train(train_loader=train_loader,
+              test_loaders=test_loaders,
+              optimizer=optimizer,
+              scheduler=scheduler, 
               regularizer=False, 
               training_loss=train_loss,
               eval_losses=eval_losses)

@@ -1,21 +1,19 @@
 """
-U-NO on Darcy-Flow
-==================
+Training a TFNO on Darcy-Flow
+=============================
 
-In this example, we demonstrate how to train a U-shaped Neural Operator on 
-the small Darcy-Flow example we ship with the package
+In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
+to train a Tensorized Fourier-Neural Operator
 """
 
 # %%
 # 
-
-
 import torch
 import matplotlib.pyplot as plt
 import sys
-from neuralop.models import TFNO, UNO
-from neuralop.training import OutputEncoderCallback
+from neuralop.models import TFNO
 from neuralop import Trainer
+from neuralop.training import OutputEncoderCallback, CheckpointCallback
 from neuralop.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
@@ -24,7 +22,7 @@ device = 'cpu'
 
 
 # %%
-# Loading the Darcy Flow dataset
+# Loading the Navier-Stokes dataset in 128x128 resolution
 train_loader, test_loaders, output_encoder = load_darcy_flow_small(
         n_train=1000, batch_size=32, 
         test_resolutions=[16, 32], n_tests=[100, 50],
@@ -32,10 +30,10 @@ train_loader, test_loaders, output_encoder = load_darcy_flow_small(
 )
 
 
+# %%
+# We create a tensorized FNO model
 
-model = UNO(3,1, hidden_channels=64, projection_channels=64,uno_out_channels = [32,64,64,64,32], \
-            uno_n_modes= [[16,16],[8,8],[8,8],[8,8],[16,16]], uno_scalings=  [[1.0,1.0],[0.5,0.5],[1,1],[2,2],[1,1]],\
-            horizontal_skips_map = None, n_layers = 5, domain_padding = 0.2)
+model = TFNO(n_modes=(16, 16), hidden_channels=32, projection_channels=64, factorization='tucker', rank=0.42)
 model = model.to(device)
 
 n_params = count_model_params(model)
@@ -74,10 +72,15 @@ sys.stdout.flush()
 
 # %% 
 # Create the trainer
-trainer = Trainer(model=model,
-                   n_epochs=20,
+trainer = Trainer(model=model, n_epochs=20,
                   device=device,
-                  callbacks=[OutputEncoderCallback(output_encoder)],
+                  callbacks=[
+                    OutputEncoderCallback(output_encoder),
+                    CheckpointCallback(save_dir='./checkpoints',
+                                       save_interval=10,
+                                            save_optimizer=True,
+                                            save_scheduler=True)
+                        ],             
                   wandb_log=False,
                   log_test_interval=3,
                   use_distributed=False,
@@ -88,14 +91,33 @@ trainer = Trainer(model=model,
 # Actually train the model on our small Darcy-Flow dataset
 
 trainer.train(train_loader=train_loader,
-              test_loaders=test_loaders,
+              test_loaders={},
               optimizer=optimizer,
               scheduler=scheduler, 
               regularizer=False, 
-              training_loss=train_loss,
-              eval_losses=eval_losses)
+              training_loss=train_loss)
 
 
+# resume training from saved checkpoint at epoch 10
+
+trainer = Trainer(model=model, n_epochs=20,
+                  device=device,
+                  callbacks=[
+                    OutputEncoderCallback(output_encoder),
+                    CheckpointCallback(save_dir='./new_checkpoints',
+                                            resume_from_dir='./checkpoints/ep_10')
+                        ],             
+                  wandb_log=False,
+                  log_test_interval=3,
+                  use_distributed=False,
+                  verbose=True)
+
+trainer.train(train_loader=train_loader,
+              test_loaders={},
+              optimizer=optimizer,
+              scheduler=scheduler, 
+              regularizer=False, 
+              training_loss=train_loss)
 # %%
 # Plot the prediction, and compare with the ground-truth 
 # Note that we trained on a very small resolution for
@@ -118,7 +140,7 @@ for index in range(3):
     # Ground-truth
     y = data['y']
     # Model prediction
-    out = model(x.unsqueeze(0).to(device)).cpu()
+    out = model(x.unsqueeze(0))
 
     ax = fig.add_subplot(3, 3, index*3 + 1)
     ax.imshow(x[0], cmap='gray')

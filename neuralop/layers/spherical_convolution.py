@@ -1,16 +1,19 @@
+from typing import List, Optional, Union
+
 import torch
 from torch import nn
-
 from torch_harmonics import RealSHT, InverseRealSHT
 
 import tensorly as tl
 from tensorly.plugins import use_opt_einsum
+from tltorch.factorized_tensors.core import FactorizedTensor
+
+from neuralop.utils import validate_scaling_factor
+from .base_spectral_conv import BaseSpectralConv
+from .spectral_convolution import SubConv
 
 tl.set_backend("pytorch")
-
 use_opt_einsum("optimal")
-
-from tltorch.factorized_tensors.core import FactorizedTensor
 
 einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -124,16 +127,17 @@ def _contract_tt(x, tt_weight, separable=False, dhconv=False):
     order = tl.ndim(x)
 
     x_syms = list(einsum_symbols[:order])
-    if dhconv:
-        weight_syms = list(x_syms[1:-1])  # no batch-size, no y dim
-    else:
-        weight_syms = list(x_syms[1:])  # no batch-size
+    weight_syms = list(x_syms[1:])  # no batch-size
     if not separable:
         weight_syms.insert(1, einsum_symbols[order])  # outputs
         out_syms = list(weight_syms)
         out_syms[0] = x_syms[0]
     else:
         out_syms = list(x_syms)
+
+    if dhconv:
+        weight_syms = weight_syms[:-1]  # no batch-size, no y dim
+
     rank_syms = list(einsum_symbols[order + 1 :])
     tt_syms = []
     for i, s in enumerate(weight_syms):
@@ -198,18 +202,117 @@ def get_contract_fun(weight, implementation="reconstructed", separable=False):
         )
 
 
-class SphericalConv(nn.Module):
+Number = Union[int, float]
+
+
+class SHT(nn.Module):
+    """A wrapper for the Spherical Harmonics transform 
+
+    Allows to call it with an interface similar to that of FFT
+    """
+    def __init__(self, dtype=torch.float32, device=None):
+        super().__init__()
+        self.device = device
+        self.dtype = dtype
+        self._SHT_cache = nn.ModuleDict()
+        self._iSHT_cache = nn.ModuleDict()
+
+    def sht(self, x, s=None, norm="ortho", grid="equiangular"):
+        *_, height, width = x.shape # height = latitude, width = longitude
+        if s is None:
+            if grid == "equiangular":
+                modes_width = height // 2
+            else:
+                modes_width = height
+            modes_height = height
+        else:
+            modes_height, modes_width = s
+
+        cache_key = f"{height}_{width}_{modes_height}_{modes_width}_{norm}_{grid}"
+
+        try:
+            sht = self._SHT_cache[cache_key]
+        except KeyError:
+            sht = (
+                RealSHT(
+                    nlat=height,
+                    nlon=width,
+                    lmax=modes_height,
+                    mmax=modes_width,
+                    grid=grid,
+                    norm=norm
+                )
+                .to(device=x.device)
+                .to(dtype=self.dtype)
+            )
+            self._SHT_cache[cache_key] = sht
+        
+        return sht(x)
+
+
+    def isht(self, x, s=None, norm="ortho", grid="equiangular"):
+        *_, modes_height, modes_width = x.shape # height = latitude, width = longitude
+        if s is None:
+            if grid == "equiangular":
+                width = modes_width*2
+            else:
+                width = modes_width
+            height = modes_height
+        else:
+            height, width = s
+
+        cache_key = f"{height}_{width}_{modes_height}_{modes_width}_{norm}_{grid}"
+
+        try:
+            isht = self._iSHT_cache[cache_key]
+        except KeyError:
+            isht = (
+                InverseRealSHT(
+                    nlat=height,
+                    nlon=width,
+                    lmax=modes_height,
+                    mmax=modes_width,
+                    grid=grid,
+                    norm=norm
+                )
+                .to(device=x.device)
+                .to(dtype=self.dtype)
+            )
+            self._iSHT_cache[cache_key] = isht
+        
+        return isht(x)
+
+
+class SphericalConv(BaseSpectralConv):
+    """Spherical Convolution, base class for the SFNO [1]_
+    
+    Parameters
+    ----------
+    sht_norm : str, {'ortho'}
+    sht_grids : str or str list, default is "equiangular", {"equiangular", "legendre-gauss"}
+                * If str, the same grid is used for all layers
+                * If list, should have n_layers + 1 values, corresponding to the input and output grid of each layer
+                  e.g. for 1 layer, ["input_grid", "output_grid"]
+
+    See SpectralConv for full list of other parameters
+
+    References
+    ----------
+    .. [1] Spherical Fourier Neural Operators: Learning Stable Dynamics on the Sphere,
+           Boris Bonev, Thorsten Kurth, Christian Hundt, Jaideep Pathak, Maximilian Baust, Karthik Kashinath, Anima Anandkumar,
+           ICML 2023.
+    """
     def __init__(
         self,
         in_channels,
         out_channels,
         n_modes,
-        incremental_n_modes=None,
+        max_n_modes=None,
         bias=True,
         n_layers=1,
         separable=False,
-        output_scaling_factor=None,
-        fno_block_precision="full",
+        output_scaling_factor: Optional[Union[Number, List[Number]]] = None,
+        # fno_block_precision="full",
         rank=0.5,
         factorization="cp",
         implementation="reconstructed",
@@ -217,50 +320,41 @@ class SphericalConv(nn.Module):
         joint_factorization=False,
         decomposition_kwargs=dict(),
         init_std="auto",
-        fft_norm="backward",
+        sht_norm="ortho",
+        sht_grids="equiangular",
+        device=None,
+        dtype=torch.float32,
     ):
-        super().__init__()
+        super().__init__(dtype=dtype, device=device)
 
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.joint_factorization = joint_factorization
 
-        # We index quadrands only
-        # n_modes is the total number of modes kept along each dimension
-        # half_n_modes is half of that except in the last mode, corresponding to
-        # the number of modes to keep in *each* quadrant for each dim
         if isinstance(n_modes, int):
             n_modes = [n_modes]
-        self.n_modes = n_modes
+        self._n_modes = n_modes
         self.order = len(n_modes)
 
-        half_total_n_modes = list(n_modes)
-        half_total_n_modes[-1] = half_total_n_modes[-1] // 2
-        self.half_total_n_modes = half_total_n_modes
-
-        # WE use half_total_n_modes to build the full weights
-        # During training we can adjust incremental_n_modes which will also
-        # update half_n_modes
-        # So that we can train on a smaller part of the Fourier modes
-        # and total weights
-        self.incremental_n_modes = incremental_n_modes
+        if max_n_modes is None:
+            max_n_modes = self.n_modes
+        elif isinstance(max_n_modes, int):
+            max_n_modes = [max_n_modes]
+        self.max_n_modes = max_n_modes
 
         self.rank = rank
         self.factorization = factorization
         self.n_layers = n_layers
         self.implementation = implementation
 
-        if output_scaling_factor is not None:
-            if isinstance(output_scaling_factor, (float, int)):
-                output_scaling_factor = [float(output_scaling_factor)] * len(
-                    self.n_modes
-                )
-        self.output_scaling_factor = output_scaling_factor
+        self.output_scaling_factor: Union[
+            None, List[List[float]]
+        ] = validate_scaling_factor(output_scaling_factor, self.order, n_layers)
 
         if init_std == "auto":
-            init_std = 1 / (in_channels * out_channels)
+            init_std = (2 / (in_channels + out_channels))**0.5
         else:
-            init_std = 0.02
+            init_std = init_std
 
         if isinstance(fixed_rank_modes, bool):
             if fixed_rank_modes:
@@ -282,9 +376,9 @@ class SphericalConv(nn.Module):
                     f"to out_channels, but got in_channels={in_channels} "
                     f"and out_channels={out_channels}",
                 )
-            weight_shape = (in_channels, *half_total_n_modes[:-1])
+            weight_shape = (in_channels, *self.n_modes[:-1])
         else:
-            weight_shape = (in_channels, out_channels, *half_total_n_modes[:-1])
+            weight_shape = (in_channels, out_channels, *self.n_modes[:-1])
         self.separable = separable
 
         if joint_factorization:
@@ -323,87 +417,32 @@ class SphericalConv(nn.Module):
         else:
             self.bias = None
 
-        # First and last SHT Project respectively from and to equiangular grid
-        self._shts_first = nn.ModuleDict()
-        self._ishts_last = nn.ModuleDict()
-        # Others just use Legendre
-        self._shts = nn.ModuleDict()
-        self._ishts = nn.ModuleDict()
-
-    def _get_sht(self, height, width, layer=0):
-        if layer == 0:
-            projection_sht = "equiangular"
-            projection_isht = "legendre-gauss"
-        elif layer == (self.n_layers - 1):
-            projection_sht = "legendre-gauss"
-            projection_isht = "equiangular"
-        else:
-            projection_sht = "legendre-gauss"
-            projection_isht = "legendre-gauss"
-
-        key_sht = f"{height}_{width}_{projection_sht}"
-        key_isht = f"{height}_{width}_{projection_isht}"
-
-        try:
-            return self._shts[key_sht], self._ishts[key_isht]
-        except KeyError:
-            sht = (
-                RealSHT(
-                    nlat=height,
-                    nlon=width,
-                    lmax=self.half_total_n_modes[0],
-                    mmax=self.half_total_n_modes[1],
-                    grid=projection_sht,
-                )
-                .to(device=self.bias.device)
-                .to(dtype=torch.float32)
-            )
-            isht = (
-                InverseRealSHT(
-                    nlat=height,
-                    nlon=width,
-                    lmax=self.half_total_n_modes[0],
-                    mmax=self.half_total_n_modes[1],
-                    grid=projection_isht,
-                )
-                .to(device=self.bias.device)
-                .to(dtype=torch.float32)
-            )
-            self._shts[key_sht] = sht
-            self._ishts[key_isht] = isht
-            return sht, isht
+        self.sht_norm = sht_norm
+        if isinstance(sht_grids, str):
+            sht_grids = [sht_grids]*(self.n_layers + 1)
+        self.sht_grids = sht_grids
+        self.sht_handle = SHT(dtype=self.dtype, device=self.device)
 
     def _get_weight(self, index):
-        if self.incremental_n_modes is not None:
-            return self.weight[index][self.weight_slices]
+        return self.weight[index]
+    
+    def transform(self, x, layer_index=0, output_shape=None):
+        *_, in_height, in_width = x.shape
+
+        if self.output_scaling_factor is not None and output_shape is None:
+            height = round(in_height * self.output_scaling_factor[layer_index][0])
+            width = round(in_width * self.output_scaling_factor[layer_index][1])
+        elif output_shape is not None:
+            height, width = output_shape[0], output_shape[1]
         else:
-            return self.weight[index]
+            height, width = in_height, in_width
 
-    @property
-    def incremental_n_modes(self):
-        return self._incremental_n_modes
-
-    @incremental_n_modes.setter
-    def incremental_n_modes(self, incremental_n_modes):
-        if incremental_n_modes is None:
-            self._incremental_n_modes = None
-            self.half_n_modes = [m // 2 for m in self.n_modes]
-
+        # Return the identity if the resolution and grid of the input and output are the same
+        if ((in_height, in_width) == (height, width)) and (self.sht_grids[layer_index] == self.sht_grids[layer_index+1]):
+            return x
         else:
-            if isinstance(incremental_n_modes, int):
-                self._incremental_n_modes = [incremental_n_modes] * len(self.n_modes)
-            else:
-                if len(incremental_n_modes) == len(self.n_modes):
-                    self._incremental_n_modes = incremental_n_modes
-                else:
-                    raise ValueError(
-                        f"Provided {incremental_n_modes} for actual"
-                        f" n_modes={self.n_modes}."
-                    )
-            self.weight_slices = [slice(None)] * 2 + [
-                slice(None, n // 2) for n in self._incremental_n_modes
-            ]
-            self.half_n_modes = [m // 2 for m in self._incremental_n_modes]
+            coefs = self.sht_handle.sht(x, s=self.n_modes, norm=self.sht_norm, grid=self.sht_grids[layer_index])
+            return self.sht_handle.isht(coefs, s=(height, width), norm=self.sht_norm, grid=self.sht_grids[layer_index + 1])
 
     def forward(self, x, indices=0, output_shape=None):
         """Generic forward pass for the Factorized Spectral Conv
@@ -422,37 +461,41 @@ class SphericalConv(nn.Module):
         batchsize, channels, height, width = x.shape
 
         if self.output_scaling_factor is not None and output_shape is None:
-            height = round(height * self.output_scaling_factor[0])
-            width = round(width * self.output_scaling_factor[1])
+            scaling_factors = self.output_scaling_factor[indices]
+            height = round(height * scaling_factors[0])
+            width = round(width * scaling_factors[1])
         elif output_shape is not None:
             height, width = output_shape[0], output_shape[1]
 
-        sht, isht = self._get_sht(height, width)
+        out_fft = self.sht_handle.sht(x, s=(self.n_modes[0], self.n_modes[1]//2),
+                                      norm=self.sht_norm, grid=self.sht_grids[indices])
 
-        out_fft = sht(x)
-
-        # xp = torch.zeros_like(x)
-        # xp[..., : self.modes_lat_local, : self.modes_lon_local] = self._contract(
-        #     x[..., : self.modes_lat_local, : self.modes_lon_local],
-        #     self.weight,
-        #     separable=self.separable,
-        #     operator_type=self.operator_type,
-        # )
-
-        # upper block (truncate high freq)
         out_fft = self._contract(
-            out_fft[:, :, : self.half_total_n_modes[0], : self.half_total_n_modes[1]],
-            self._get_weight(indices),
+            out_fft[:, :, :self.n_modes[0], :self.n_modes[1]//2],
+            self._get_weight(indices)[:, :, :self.n_modes[0]],
             separable=self.separable,
             dhconv=True,
         )
 
-        x = isht(out_fft)
+        x = self.sht_handle.isht(out_fft, s=(height, width), norm=self.sht_norm,
+                                 grid=self.sht_grids[indices+1])
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
 
         return x
+
+    @property
+    def n_modes(self):
+        return self._n_modes
+    
+    @n_modes.setter
+    def n_modes(self, n_modes):
+        if isinstance(n_modes, int): # Should happen for 1D FNO only
+            n_modes = [n_modes]
+        else:
+            n_modes = list(n_modes)
+        self._n_modes = n_modes
 
     def get_conv(self, indices):
         """Returns a sub-convolutional layer from the joint parametrize main-convolution
@@ -468,23 +511,3 @@ class SphericalConv(nn.Module):
 
     def __getitem__(self, indices):
         return self.get_conv(indices)
-
-
-class SubConv(nn.Module):
-    """Class representing one of the convolutions
-    from the mother joint factorized convolution
-
-    Notes
-    -----
-    This relies on the fact that nn.Parameters are not duplicated:
-    if the same nn.Parameter is assigned to multiple modules,
-    they all point to the same data, which is shared.
-    """
-
-    def __init__(self, main_conv, indices):
-        super().__init__()
-        self.main_conv = main_conv
-        self.indices = indices
-
-    def forward(self, x):
-        return self.main_conv.forward(x, self.indices)

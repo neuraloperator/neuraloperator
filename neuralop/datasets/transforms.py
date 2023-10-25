@@ -7,10 +7,7 @@ class Normalizer():
     def __init__(self, mean, std, eps=1e-6):
         self.mean = mean
         self.std = std
-        if std > eps:
-            self.eps = 0
-        else:
-            self.eps = eps
+        self.eps = eps
 
     def __call__(self, data):
         return (data - self.mean)/(self.std + self.eps)
