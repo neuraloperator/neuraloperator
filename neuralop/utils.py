@@ -2,12 +2,17 @@ from typing import List, Optional, Union
 from math import prod
 import torch
 import wandb
+import warnings
 
 
 # normalization, pointwise gaussian
 class UnitGaussianNormalizer:
     def __init__(self, x, eps=0.00001, reduce_dim=[0], verbose=True):
         super().__init__()
+
+        msg = ("neuralop.utils.UnitGaussianNormalizer has been deprecated. "
+               "Please use the newer neuralop.datasets.UnitGaussianNormalizer instead.")
+        warnings.warn(msg, DeprecationWarning)
         n_samples, *shape = x.shape
         self.sample_shape = shape
         self.verbose = verbose
