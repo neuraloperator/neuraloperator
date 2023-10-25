@@ -17,7 +17,7 @@ from neuralop.models import TFNO
 from neuralop import Trainer
 from neuralop.training import OutputEncoderCallback
 from neuralop.datasets import load_darcy_flow_small
-from neuralop.utils import count_params
+from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
 
 device = 'cpu'
@@ -38,7 +38,7 @@ train_loader, test_loaders, output_encoder = load_darcy_flow_small(
 model = TFNO(n_modes=(16, 16), hidden_channels=32, projection_channels=64, factorization='tucker', rank=0.42)
 model = model.to(device)
 
-n_params = count_params(model)
+n_params = count_model_params(model)
 print(f'\nOur model has {n_params} parameters.')
 sys.stdout.flush()
 

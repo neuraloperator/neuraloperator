@@ -180,7 +180,7 @@ to train a Spherical Fourier-Neural Operator</p>
 <span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">SFNO</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">Trainer</span>
 <span class="kn">from</span> <span class="nn">neuralop.datasets</span> <span class="kn">import</span> <span class="n">load_spherical_swe</span>
-<span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">count_params</span>
+<span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">count_model_params</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">LpLoss</span><span class="p">,</span> <span class="n">H1Loss</span>
 
 <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda:0&#39;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
@@ -200,7 +200,7 @@ Loading test dataloader at resolution (64, 128) with 50 samples and batch-size=1
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">SFNO</span><span class="p">(</span><span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span> <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">projection_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;dense&#39;</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 
-<span class="n">n_params</span> <span class="o">=</span> <span class="n">count_params</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">n_params</span> <span class="o">=</span> <span class="n">count_model_params</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Our model has </span><span class="si">{</span><span class="n">n_params</span><span class="si">}</span><span class="s1"> parameters.&#39;</span><span class="p">)</span>
 <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 </pre></div>
@@ -279,13 +279,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f9040697b50&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f1903613d60&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.training.losses.LpLoss object at 0x7f90406d8cd0&gt;
+ * Train: &lt;neuralop.training.losses.LpLoss object at 0x7f190361e7c0&gt;
 
- * Test: {&#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f90406d8cd0&gt;}
+ * Test: {&#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f190361e7c0&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -355,7 +355,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 47.069 seconds)</p>
+<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 40.745 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-sfno-swe-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/be42c4c413e9b89016fa3a4984cb9758/plot_SFNO_swe.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_SFNO_swe.py</span></code></a></p>

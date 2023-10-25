@@ -37,7 +37,7 @@ to train a Tensorized Fourier-Neural Operator
     from neuralop import Trainer
     from neuralop.training import OutputEncoderCallback
     from neuralop.datasets import load_darcy_flow_small
-    from neuralop.utils import count_params
+    from neuralop.utils import count_model_params
     from neuralop import LpLoss, H1Loss
 
     device = 'cpu'
@@ -92,7 +92,7 @@ We create a tensorized FNO model
     model = TFNO(n_modes=(16, 16), hidden_channels=32, projection_channels=64, factorization='tucker', rank=0.42)
     model = model.to(device)
 
-    n_params = count_params(model)
+    n_params = count_model_params(model)
     print(f'\nOur model has {n_params} parameters.')
     sys.stdout.flush()
 
@@ -221,13 +221,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f9048af7d00>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f190c9eefa0>
 
     ### LOSSES ###
 
-     * Train: <neuralop.training.losses.H1Loss object at 0x7f9048aaf220>
+     * Train: <neuralop.training.losses.H1Loss object at 0x7f190c9ee310>
 
-     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7f9048aaf220>, 'l2': <neuralop.training.losses.LpLoss object at 0x7f9048aafc40>}
+     * Test: {'h1': <neuralop.training.losses.H1Loss object at 0x7f190c9ee310>, 'l2': <neuralop.training.losses.LpLoss object at 0x7f190c9b0400>}
 
 
 
@@ -359,7 +359,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 58.810 seconds)
+   **Total running time of the script:** (1 minutes 28.718 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_FNO_darcy.py:

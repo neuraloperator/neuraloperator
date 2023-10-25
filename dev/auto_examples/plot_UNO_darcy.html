@@ -181,7 +181,7 @@ the small Darcy-Flow example we ship with the package</p>
 <span class="kn">from</span> <span class="nn">neuralop.training</span> <span class="kn">import</span> <span class="n">OutputEncoderCallback</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">Trainer</span>
 <span class="kn">from</span> <span class="nn">neuralop.datasets</span> <span class="kn">import</span> <span class="n">load_darcy_flow_small</span>
-<span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">count_params</span>
+<span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">count_model_params</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">LpLoss</span><span class="p">,</span> <span class="n">H1Loss</span>
 
 <span class="n">device</span> <span class="o">=</span> <span class="s1">&#39;cpu&#39;</span>
@@ -201,7 +201,7 @@ the small Darcy-Flow example we ship with the package</p>
             <span class="n">horizontal_skips_map</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">n_layers</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">domain_padding</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 
-<span class="n">n_params</span> <span class="o">=</span> <span class="n">count_params</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">n_params</span> <span class="o">=</span> <span class="n">count_model_params</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Our model has </span><span class="si">{</span><span class="n">n_params</span><span class="si">}</span><span class="s1"> parameters.&#39;</span><span class="p">)</span>
 <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 </pre></div>
@@ -314,13 +314,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f9049e73ca0&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f190c9f27c0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.training.losses.H1Loss object at 0x7f9048b43160&gt;
+ * Train: &lt;neuralop.training.losses.H1Loss object at 0x7f190c9f2cd0&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7f9048b43160&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f9048b43a00&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.training.losses.H1Loss object at 0x7f190c9f2cd0&gt;, &#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f190c9f2700&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -396,7 +396,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 55.660 seconds)</p>
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 33.394 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/f9c1e50d48828a746410d5400feb61f7/plot_UNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_UNO_darcy.py</span></code></a></p>
