@@ -227,7 +227,7 @@ class PipelineCallback(Callback):
 
 class SimpleWandBLoggerCallback(Callback):
 
-    def __init__(self, is_logger: bool, **wandb_init_kwargs):
+    def __init__(self, is_logger: bool=True, **wandb_init_kwargs):
         """
         Callback that implements simple logging functionality 
         expected when passing verbose to a Trainer

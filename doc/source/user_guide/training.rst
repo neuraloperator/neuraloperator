@@ -25,16 +25,15 @@ For more specific documentation on callbacks, check the API reference.
 Distributed Training
 =====================
 We also provide a simple way to use PyTorch's :code:`DistributedDataParallel`
-functionality to hold data across multiple GPUs. We use PyTorch's MPI backend,
-so all you need to do on a multi-GPU system is the following:
+functionality to hold data across multiple GPUs. We use PyTorch's NCCL backend,
+so the dependencies are totally shared with those of :code:`neuraloperator`. 
 
-::
-    
-    pip install mpi4py
+We currently have support for a pure-Python implementation of single-node, multi-GPU
+training. In order to run training across multiple GPUs in our example script 
+:code:`scripts/train_darcy.py`, simply adjust the configuration file to set 
+:code:`config.distributed.use_distributed` to :code:`True`. 
 
-    mpiexec --allow-run-as-root -n N_GPUS python my_script.py
-
-You may need to adjust the batch size, model parallel size and world size in 
+You may need to adjust the batch size and world size in 
 accordance with your specific use case. 
 
 
