@@ -2,11 +2,11 @@ import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-import neuralop.mpu.pure_py_comm as comm
+import neuralop.mpu.comm as comm
 
 
 
-def setup(config):
+def setup(config, world_rank=0):
     """A convenience function to intialize the device, setup torch settings and
     check multi-grid and other values. It sets up distributed communitation, if used.
     
@@ -16,6 +16,8 @@ def setup(config):
         this function checks:
         * config.distributed (use_distributed, seed)
         * config.data (n_train, batch_size, test_batch_sizes, n_tests, test_resolutions)
+    world_rank : int
+        rank of the current process, <= world_size
     
     Returns
     -------
@@ -25,7 +27,6 @@ def setup(config):
     """
     if config.distributed.use_distributed:
         world_size = torch.cuda.device_count()
-        world_rank = dist.get_rank()
 
         comm.init(world_rank=world_rank, 
                   world_size=world_size, 
@@ -35,7 +36,7 @@ def setup(config):
         is_logger = (world_rank == 0)
 
         #Set device and random seed
-        device = torch.device(f"cuda:{comm.get_local_rank()}")
+        device = torch.device(f"cuda:{comm.get_world_rank()}")
         seed = config.distributed.seed + comm.get_data_parallel_rank()
 
         #Ensure every iteration has the same amount of data 

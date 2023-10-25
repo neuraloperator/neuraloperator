@@ -12,12 +12,13 @@ from neuralop.datasets import load_darcy_flow_small
 from neuralop.training import setup
 from neuralop.training.callbacks import MGPatchingCallback, SimpleWandBLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_params
-from neuralop.mpu.pure_py_comm import init, cleanup
+from neuralop.mpu.comm import cleanup
 
 
-def train(rank, world_size):
+def main(rank=0):
     """
-    
+    main function to train and evaluate TFNO 
+    on the small Darcy flow dataset. DDP is implemented. 
     """
     # Read the configuration
     config_name = "default"
@@ -36,6 +37,7 @@ def train(rank, world_size):
     # Set-up distributed communication, if using
     is_logger = not config.distributed.use_distributed
     # Set up WandB logging
+    wandb_init_args = {}
     if config.wandb.log and is_logger:
         wandb.login(key=get_wandb_api_key())
         if config.wandb.name:
@@ -55,7 +57,7 @@ def train(rank, world_size):
                     config.patching.padding,
                 ]
             )
-        wandb.init(
+        wandb_init_args = dict(
             config=config,
             name=wandb_name,
             group=config.wandb.group,
@@ -66,10 +68,7 @@ def train(rank, world_size):
             for key in wandb.config.keys():
                 config.params[key] = wandb.config[key]
     # initialize process group
-    if config.distributed.use_distributed:
-        #world_rank = torch.distributed.get_rank()
-        init(world_rank=rank, world_size=world_size, config=config)
-
+    device, is_logger = setup(config, world_rank=rank)
 
     # set up device
 
@@ -106,24 +105,6 @@ def train(rank, world_size):
         model = DDP(
             model, device_ids=[rank], output_device=rank, static_graph=True
         )
-
-    # Log parameter count
-    if is_logger:
-        n_params = count_params(model)
-
-        if config.verbose:
-            print(f"\nn_params: {n_params}")
-            sys.stdout.flush()
-
-        if config.wandb.log:
-            to_log = {"n_params": n_params}
-            if config.n_params_baseline is not None:
-                to_log["n_params_baseline"] = (config.n_params_baseline,)
-                to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
-                to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
-            wandb.log(to_log)
-            wandb.watch(model)
-
 
     # Create the optimizer
     optimizer = torch.optim.Adam(
@@ -190,9 +171,28 @@ def train(rank, world_size):
                                     padding_fraction=config.patching.padding,
                                     stitching=config.patching.stitching,
                                     encoder=output_encoder),
-            SimpleWandBLoggerCallback()
+            SimpleWandBLoggerCallback(is_logger=is_logger,
+                                      **wandb_init_args)
                 ]
                 )
+
+    # Log parameter count after initalizing wandb in Callback
+    if is_logger:
+        n_params = count_params(model)
+
+        if config.verbose:
+            print(f"\nn_params: {n_params}")
+            sys.stdout.flush()
+
+        if config.wandb.log:
+            to_log = {"n_params": n_params}
+            if config.n_params_baseline is not None:
+                to_log["n_params_baseline"] = (config.n_params_baseline,)
+                to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
+                to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
+            wandb.log(to_log)
+            wandb.watch(model)
+
 
 
     trainer.train(
@@ -223,53 +223,12 @@ if __name__ == "__main__":
         ]
     )
     config = pipe.read_conf()
-    print(''.join(['#' for _ in range(40)]))
-    print(type(config))
-    print(dict(config))
-    print(''.join(['#' for _ in range(40)]))
 
     config_name = pipe.steps[-1].config_name
 
-    # Set-up distributed communication, if using
-    is_logger = not config.distributed.use_distributed
-    # Set up WandB logging
-    if config.wandb.log and is_logger:
-        wandb.login(key=get_wandb_api_key())
-        if config.wandb.name:
-            wandb_name = config.wandb.name
-        else:
-            wandb_name = "_".join(
-                f"{var}"
-                for var in [
-                    config_name,
-                    config.tfno2d.n_layers,
-                    config.tfno2d.hidden_channels,
-                    config.tfno2d.n_modes_width,
-                    config.tfno2d.n_modes_height,
-                    config.tfno2d.factorization,
-                    config.tfno2d.rank,
-                    config.patching.levels,
-                    config.patching.padding,
-                ]
-            )
-        wandb.init(
-            config=config,
-            name=wandb_name,
-            group=config.wandb.group,
-            project=config.wandb.project,
-            entity=config.wandb.entity,
-        )
-        if config.wandb.sweep:
-            for key in wandb.config.keys():
-                config.params[key] = wandb.config[key]
-
-    # Make sure we only print information when needed
-    config.verbose = config.verbose and is_logger
     if config.distributed.use_distributed:
-        
         world_size = torch.cuda.device_count()
-        mp.spawn(train, 
-                 args=(world_size,),
+        mp.spawn(main, 
                  nprocs=world_size)
     else:
-        train(rank=-1, world_size=-1)
+        main()
