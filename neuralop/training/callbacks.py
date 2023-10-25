@@ -226,15 +226,26 @@ class PipelineCallback(Callback):
             c.on_val_end(*args, **kwargs)
 
 class SimpleWandBLoggerCallback(Callback):
-    """
-    Callback that implements simple logging functionality 
-    expected when passing verbose to a Trainer
-    """
 
-    def __init__(self, **kwargs):
+    def __init__(self, is_logger: bool, **wandb_init_kwargs):
+        """
+        Callback that implements simple logging functionality 
+        expected when passing verbose to a Trainer
+        
+        Params
+        --------
+
+        is_logger : bool
+            whether to log information to stdout
+        wandb_init_kwargs: **dict
+            splatted dictionary of kwargs to initialize wandb for logging
+        """
         super().__init__()
-        if kwargs:
-            wandb.init(**kwargs)
+
+        self.is_logger = is_logger
+
+        if wandb_init_kwargs:
+            wandb.init(**wandb_init_kwargs)
     
     def on_init_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
@@ -252,7 +263,7 @@ class SimpleWandBLoggerCallback(Callback):
         if not isinstance(test_loaders, dict):
             test_loaders = dict(test=test_loaders)
 
-        if verbose:
+        if verbose and self.is_logger:
             print(f'Training on {n_train} samples')
             print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
                   f'         on resolutions {[name for name in test_loaders]}.')
@@ -265,8 +276,10 @@ class SimpleWandBLoggerCallback(Callback):
         self._update_state_dict(idx=idx)
 
     def on_before_loss(self, out, **kwargs):
+        verbose = self.state_dict['verbose']
+
         if self.state_dict['epoch'] == 0 and self.state_dict['idx'] == 0 \
-            and self.state_dict['verbose']:
+            and verbose and self.is_logger:
             print(f'Raw outputs of size {out.shape=}')
     
     def on_before_val(self, epoch, train_err, time, avg_loss, avg_lasso_loss, **kwargs):
@@ -288,10 +301,11 @@ class SimpleWandBLoggerCallback(Callback):
             avg_lasso /= self.state_dict.get('n_epochs')
             self.state_dict['msg'] += f', avg_lasso={avg_lasso:.5f}'
         
-        print(self.state_dict['msg'])
-        sys.stdout.flush()
+        if self.is_logger:
+            print(self.state_dict['msg'])
+            sys.stdout.flush()
 
-        if self.state_dict.get('wandb_log', False):
+        if self.state_dict.get('wandb_log', False) and self.is_logger:
             for pg in self.state_dict['optimizer'].param_groups:
                 lr = pg['lr']
                 self.state_dict['values_to_log']['lr'] = lr
