@@ -1,6 +1,6 @@
+from ..utils import count_tensor_params
 from abc import abstractmethod
 from collections.abc import Iterable
-from math import prod
 import torch
 
 class OutputEncoder(torch.nn.Module):
@@ -8,7 +8,7 @@ class OutputEncoder(torch.nn.Module):
         into a form usable by some cost function.
     """
     def __init__(self):
-        pass
+        super().__init__()
     
     @abstractmethod
     def encode(self):
@@ -32,8 +32,7 @@ class OutputEncoder(torch.nn.Module):
 
 class UnitGaussianNormalizer(OutputEncoder):
     """
-    UnitGaussianNormalizer normalizes data to fit a 
-    Gaussian distribution with unit variance. 
+    UnitGaussianNormalizer normalizes data to be zero mean and unit std. 
     """
     def __init__(self, mean=None, std=None, eps=0):
         super().__init__()
@@ -43,30 +42,50 @@ class UnitGaussianNormalizer(OutputEncoder):
         self.register_buffer('eps', torch.tensor(eps))
     
     @classmethod
-    def from_data(cls, data, dim=None):
+    def from_data(cls, data, dims=None):
+        """Initialize the Normalizer from a batch of data
+        
+        Parameters
+        ----------
+        data : torch.tensor
+            tensor of size (batch_size, ...)
+            We always normalize over batch-size, and by default all other dims.
+            To specify the dimensions over which to normalize (in addition to batch-size), 
+            use dims
+        dims : int list or None, default is None
+            if not None, dimensions to reduce (average) over.
 
-        if isinstance(dim, int):
-            dim = [dim]
+        Notes
+        -----
+        The resulting mean will have the same size as the input MINUS the specified dims.
+        If you do not specify any dims, the mean and std will both be scalars.
+
+        Returns
+        -------
+        UnitGaussianNormalizer instance
+        """
+        if isinstance(dims, int):
+            dims = [dims]
 
         if isinstance(data, torch.Tensor):
-            #Asumes batch dimension is first
-            if dim is not None:
-                if 0 not in dim:
-                    dim.append(0)
+            #Asumes batch dimsension is first
+            if dims is not None:
+                if 0 not in dims:
+                    dims.append(0)
 
-            mean = torch.mean(data, dim, keepdim=True).squeeze(0)
-            std = torch.std(data, dim, keepdim=True).squeeze(0)
+            mean = torch.mean(data, dims, keepdim=True).squeeze(0)
+            std = torch.std(data, dims, keepdim=True).squeeze(0)
 
         elif isinstance(data, Iterable):
-            total_n = cls.get_total_elements(data[0], dim)
-            mean = torch.mean(data[0], dim=dim, keepdim=True)
-            squared_mean = torch.mean(data[0]**2, dim=dim, keepdim=True)
+            total_n = count_tensor_params(data[0], dims)
+            mean = torch.mean(data[0], dims=dims, keepdim=True)
+            squared_mean = torch.mean(data[0]**2, dims=dims, keepdim=True)
 
             for j in range(1, len(data)):
-                current_n = cls.get_total_elements(data[j], dim)
+                current_n = count_tensor_params(data[j], dims)
 
-                mean = (1.0/(total_n + current_n))*(total_n*mean + torch.sum(data[j], dim=dim, keepdim=True))
-                squared_mean = (1.0/(total_n + current_n))*(total_n*squared_mean + torch.sum(data[j]**2, dim=dim, keepdim=True))
+                mean = (1.0/(total_n + current_n))*(total_n*mean + torch.sum(data[j], dims=dims, keepdim=True))
+                squared_mean = (1.0/(total_n + current_n))*(total_n*squared_mean + torch.sum(data[j]**2, dims=dims, keepdim=True))
 
                 total_n += current_n
             
@@ -88,17 +107,6 @@ class UnitGaussianNormalizer(OutputEncoder):
         x = x + self.mean
 
         return x
-
-    @staticmethod
-    def count_model_params(x, dims=None):
-        if dims is None:
-            dims = list(x.shape)
-        else:
-            dims = [x.shape[d] for d in dims]
-        n_params = prod(dims)
-        if x.is_complex():
-            return 2*n_params
-        return n_params
     
     def forward(self, x):
         return self.encode(x)
