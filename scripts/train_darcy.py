@@ -11,7 +11,7 @@ from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets import load_darcy_flow_small
 from neuralop.training import setup
 from neuralop.training.callbacks import MGPatchingCallback, SimpleWandBLoggerCallback
-from neuralop.utils import get_wandb_api_key, count_params
+from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.mpu.comm import cleanup
 
 
@@ -178,7 +178,7 @@ def main(rank=0):
 
     # Log parameter count after initalizing wandb in Callback
     if is_logger:
-        n_params = count_params(model)
+        n_params = count_model_params(model)
 
         if config.verbose:
             print(f"\nn_params: {n_params}")

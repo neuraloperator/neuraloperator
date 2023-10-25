@@ -9,7 +9,7 @@ import wandb
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets.navier_stokes import load_navier_stokes_pt
 from neuralop.training import setup, MGPatchingCallback, SimpleWandBLoggerCallback
-from neuralop.utils import get_wandb_api_key, count_params
+from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.mpu.comm import cleanup
 
 
@@ -176,7 +176,7 @@ def main(rank=0):
 
     # Log parameter count
     if is_logger:
-        n_params = count_params(model)
+        n_params = count_model_params(model)
 
         if config.verbose:
             print(f"\nn_params: {n_params}")
