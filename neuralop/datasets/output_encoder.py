@@ -78,14 +78,14 @@ class UnitGaussianNormalizer(OutputEncoder):
 
         elif isinstance(data, Iterable):
             total_n = count_tensor_params(data[0], dims)
-            mean = torch.mean(data[0], dims=dims, keepdim=True)
-            squared_mean = torch.mean(data[0]**2, dims=dims, keepdim=True)
+            mean = torch.mean(data[0], dim=tuple(dims), keepdim=True)
+            squared_mean = torch.mean(data[0]**2, dim=tuple(dims), keepdim=True)
 
             for j in range(1, len(data)):
                 current_n = count_tensor_params(data[j], dims)
 
-                mean = (1.0/(total_n + current_n))*(total_n*mean + torch.sum(data[j], dims=dims, keepdim=True))
-                squared_mean = (1.0/(total_n + current_n))*(total_n*squared_mean + torch.sum(data[j]**2, dims=dims, keepdim=True))
+                mean = (1.0/(total_n + current_n))*(total_n*mean + torch.sum(data[j], dim=tuple(dims), keepdim=True))
+                squared_mean = (1.0/(total_n + current_n))*(total_n*squared_mean + torch.sum(data[j]**2, dim=tuple(dims), keepdim=True))
 
                 total_n += current_n
             

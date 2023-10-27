@@ -182,7 +182,7 @@ class MeshDataModule():
             for attr in attributes:
                 if isinstance(data[0][attr], torch.Tensor):
                     attr_data = [data[j][attr] for j in range(n_train)]
-                    self.normalizers[attr] = UnitGaussianNormalizer(attr_data, dim=0)
+                    self.normalizers[attr] = UnitGaussianNormalizer.from_data(attr_data, dims=0)
 
                     #Encode all data
                     for j in range(len(data)):

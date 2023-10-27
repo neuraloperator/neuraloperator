@@ -131,6 +131,8 @@ class PipelineCallback(Callback):
             self.overrides_loss = False
             print("using standard method to compute loss.")
         
+        self.overrides_loss_idx = overrides_loss
+
     def _update_state_dict(self, **kwargs):
         for c in self.callbacks:
             c._update_state_dict(kwargs)
@@ -172,9 +174,12 @@ class PipelineCallback(Callback):
             c.on_before_loss(*args, **kwargs)
     
     def compute_training_loss(self, *args, **kwargs):
+        loss = 0.
         if self.overrides_loss:
-            for c in self.callbacks:
-                c.compute_training_loss(*args, **kwargs)
+            for i,c in enumerate(self.callbacks):
+                if self.overrides_loss_idx[i]:
+                    loss += c.compute_training_loss(*args, **kwargs)
+            return loss
         else:
             pass
     
@@ -207,9 +212,12 @@ class PipelineCallback(Callback):
             c.on_before_val_loss(*args, **kwargs)
     
     def compute_val_loss(self, *args, **kwargs):
+        loss = 0.
         if self.overrides_loss:
-            for c in self.callbacks:
-                c.compute_val_loss(*args, **kwargs)
+            for i,c in enumerate(self.callbacks):
+                if self.overrides_loss_idx[i]:
+                    c.compute_val_loss(*args, **kwargs)
+            return loss
         else:
             pass
     
