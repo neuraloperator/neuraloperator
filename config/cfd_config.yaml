@@ -40,8 +40,8 @@ cfd: &CFD
     gno_coord_embed_dim: 16
     gno_radius: 0.033
     gno_transform_type: 'linear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
-    fno_n_modes: [32, 32, 32]
-    fno_hidden_channels: 256
+    fno_n_modes: [16, 16, 16]
+    fno_hidden_channels: 64
     fno_use_mlp: True
     fno_norm: 'instance_norm'
     fno_ada_in_features: 32
