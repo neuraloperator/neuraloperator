@@ -299,6 +299,7 @@ class SimpleWandBLoggerCallback(Callback):
         print(self.state_dict['msg'])
         sys.stdout.flush()
 
+        wandb_log = self.state_dict.get('wandb_log', False)
         if self.state_dict.get('wandb_log', False):
             for pg in self.state_dict['optimizer'].param_groups:
                 lr = pg['lr']

@@ -5,11 +5,12 @@ from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from neuralop.training import setup
 from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
-from neuralop.training.losses import IregularLpqLoss, WeightedL2DragLoss, SumAggregatorLoss
+from neuralop.training.losses import IregularLpqLoss, WeightedL2DragLoss
+from neuralop.training.meta_losses import SumAggregatorLoss, FieldwiseAggregatorLoss
 from neuralop.training.trainer import Trainer
 from neuralop.datasets.mesh_datamodule import MeshDataModule
 from copy import deepcopy
-from neuralop.training.callbacks import NoPatchingOutputEncoderCallback, Callback
+from neuralop.training.callbacks import OutputEncoderCallback, Callback, SimpleWandBLoggerCallback
 
 # query points is [sdf_query_resolution] * 3 (taken from config ahmed)
 
@@ -35,6 +36,7 @@ output_indices = {k:tuple([slice(*tuple(x)) for x in v]) for k,v in config.data.
 # are grabbed in train_ahmed original
 
 #Set up WandB logging
+wandb_init_args = {}
 config_name = 'dragloss'
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
@@ -44,8 +46,11 @@ if config.wandb.log and is_logger:
         wandb_name = '_'.join(
             f'{var}' for var in [config_name, config.data.sdf_query_resolution])
         
-    wandb.init(config=config, name=wandb_name, group=config.wandb.group,
-               project=config.wandb.project, entity=config.wandb.entity)
+    wandb_init_args = dict(config=config, 
+                           name=wandb_name, 
+                           group=config.wandb.group,
+                           project=config.wandb.project,
+                           entity=config.wandb.entity)
     
     if config.wandb.sweep:
         for key in wandb.config.keys():
@@ -60,8 +65,6 @@ data_module = MeshDataModule(config.data.path,
                              attributes=config.data.load_attributes,
                              )
 
-if config.wandb.log:
-    wandb.log({'time_to_distance': data_module.time_to_distance})
 
 train_loader = data_module.train_dataloader(batch_size=1, shuffle=True)
 test_loader = data_module.test_dataloader(batch_size=1, shuffle=False)
@@ -105,7 +108,7 @@ elif config.opt.testing_loss == 'weightedl2':
 else:
     raise ValueError(f'Got {config.opt.testing_loss=}')
 
-encoder_callback = NoPatchingOutputEncoderCallback(encoder=output_encoder)
+encoder_callback = OutputEncoderCallback(encoder=output_encoder)
 
 # Handle data preprocessing to FNOGNO as a Callback object
         
@@ -117,6 +120,9 @@ class CFDDataPreprocessingCallback(Callback):
 
     def __init__(self):
         super().__init__()
+    
+    def on_train_start(self, **kwargs):
+        self._update_state_dict(**kwargs)
 
     def on_batch_start(self, idx, sample):
         # Turn a data dictionary returned by MeshDataModule's DictDataset
@@ -147,19 +153,6 @@ class CFDDataPreprocessingCallback(Callback):
         flow_normals = torch.zeros((sample['triangle_areas'].shape[1], 3)).to(device)
         flow_normals[:,0] = -1.0
 
-        '''
-        The current cleaned CFD dataset doesn't contain these.
-        
-        Revisit when preprocessing again, as they are part of another
-        MeshDataModule dataset.
-
-        flow_speed = sample['info']['velocity'].item()
-        reference_w = sample['info']['width'].item()
-        reference_h = sample['info']['height'].item()
-        reference_area = (reference_w*reference_h/2) * 1e-6
-        '''
-
-
         self.state_dict['sample'].update(in_p = in_p,
                                          out_p=out_p,
                                          f=f,
@@ -186,9 +179,13 @@ trainer = Trainer(model=model,
                   device=device,
                   callbacks=[
                       encoder_callback,
-                      CFDDataPreprocessingCallback()
+                      CFDDataPreprocessingCallback(),
+                      SimpleWandBLoggerCallback(**wandb_init_args)
                   ]
                   )
+
+if config.wandb.log:
+    wandb.log({'time_to_distance': data_module.time_to_distance})
 
 trainer.train(
               train_loader=train_loader,

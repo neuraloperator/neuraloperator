@@ -12,7 +12,7 @@ class Trainer:
     def __init__(self, *, 
                  model, 
                  n_epochs, 
-                 wandb_log=True, 
+                 wandb_log=False, 
                  device=None, 
                  amp_autocast=False, 
                  callbacks = None,
@@ -27,7 +27,8 @@ class Trainer:
         ----------
         model : nn.Module
         n_epochs : int
-        wandb_log : bool, default is True
+        wandb_log : bool, default is False
+            whether to log data to wandb
         device : torch.device
         amp_autocast : bool, default is False
         log_test_interval : int, default is 1
