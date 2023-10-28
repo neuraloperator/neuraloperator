@@ -101,6 +101,107 @@ class MultipleFieldOutputEncoder(OutputEncoder):
     def to(self, device):
         self.encoders = {k:v.to(device) for k,v in self.encoders.items()}
 
+
+class TransformCallback(torch.nn.Module):
+    """OutputEncoder: converts the output of a model
+        into a form usable by some cost function.
+    """
+    def __init__(self):
+        super().__init__()
+    
+    @abstractmethod
+    def transform(self):
+        pass
+
+    @abstractmethod
+    def inverse_transform(self):
+        pass
+
+    @abstractmethod
+    def cuda(self):
+        pass
+
+    @abstractmethod
+    def cpu(self):
+        pass
+
+    @abstractmethod
+    def to(self, device):
+        pass
+
+
+class DictTransformCallback(OutputEncoder):
+    """When a model has multiple input and output fields, 
+        apply a different transform to each field, 
+        tries to apply the inverse_transform to each output
+    
+    Parameters
+    -----------
+
+    transform_dict: dict
+        dictionary of output encoders
+    input_mappings: dict[tuple(Slice)]
+        indices of an output tensor x to use for
+        each field, such that x[mappings[field]]
+        returns the correct slice of x.
+    return_mappings: dict[tuple(Slice)]
+        same as above. if only certain indices
+        of encoder output are important, this indexes those.
+    """
+    def __init__(self, transform_dict, input_mappings, return_mappings=None):
+        self.transforms = transform_dict
+        self.output_fields = transform_dict.keys()
+        self.input_mappings = input_mappings
+        self.return_mappings = return_mappings
+
+        assert transform_dict.keys() == input_mappings.keys()
+        if self.return_mappings:
+            assert transform_dict.keys() == return_mappings.keys()
+
+    def transform(self, x):
+        """
+        Parameters
+        ----------
+        x : Torch.tensor
+            model output, indexed according to self.mappings
+        """
+        out = torch.zeros_like(x)
+        
+        for field,indices in self.input_mappings.items():
+            encoded = self.transforms[field].transform(x[indices])
+            if self.return_mappings:
+                encoded = encoded[self.return_mappings[field]]
+            out[indices] = encoded
+
+        return out
+
+    def inverse_transform(self, x):
+        """
+        Parameters
+        ----------
+        x : Torch.tensor
+            model output, indexed according to self.mappings
+        """
+        out = torch.zeros_like(x)
+        
+        for field,indices in self.input_mappings.items():
+            decoded = self.transforms[field].inverse_transform(x[indices])
+            if self.return_mappings:
+                decoded = decoded[self.return_mappings[field]]
+            out[indices] = decoded
+            
+        return out
+    
+    def cpu(self):
+        self.encoders = {k:v.cpu() for k,v in self.encoders.items()}
+
+    def cuda(self):
+        self.encoders = {k:v.cuda() for k,v in self.encoders.items()}
+
+    def to(self, device):
+        self.encoders = {k:v.to(device) for k,v in self.encoders.items()}
+
+
 class UnitGaussianNormalizer(torch.nn.Module):
     """
     UnitGaussianNormalizer normalizes data to be zero mean and unit std. 
