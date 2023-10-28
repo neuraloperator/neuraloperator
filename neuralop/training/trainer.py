@@ -160,7 +160,7 @@ class Trainer:
                     out = self.model(**sample)
 
                 if self.callbacks:
-                    self.callbacks.on_before_loss(out=out)
+                    self.callbacks.on_before_loss(out=out, sample=sample)
 
                 loss = 0.
 

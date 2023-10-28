@@ -158,11 +158,11 @@ class DictTransformCallback(OutputEncoder):
         if self.return_mappings:
             assert transform_dict.keys() == return_mappings.keys()
 
-    def transform(self, x):
+    def transform(self, tensor_dict):
         """
         Parameters
         ----------
-        x : Torch.tensor
+        tensor_dict : Torch.tensor dict
             model output, indexed according to self.mappings
         """
         out = torch.zeros_like(x)
