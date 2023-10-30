@@ -279,7 +279,11 @@ class SimpleWandBLoggerCallback(Callback):
         
     def on_val_epoch_end(self, errors, **kwargs):
         for loss_name, loss_value in errors.items():
-            self.state_dict['msg'] += f', {loss_name}={loss_value:.4f}'
+            if isinstance(loss_value, float):
+                self.state_dict['msg'] += f', {loss_name}={loss_value:.4f}'
+            else:
+                loss_value = {i:e.item() for (i, e) in enumerate(loss_value)}
+                self.state_dict['msg'] += f', {loss_name}={loss_value}'
             self.state_dict['values_to_log'][loss_name] = loss_value
     
     def on_val_end(self, *args, **kwargs):

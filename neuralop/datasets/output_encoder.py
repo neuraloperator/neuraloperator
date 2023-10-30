@@ -253,7 +253,7 @@ class UnitGaussianNormalizer(torch.nn.Module):
         n_samples = len(data_batch)
         while count < n_samples:
             samples = data_batch[count:count+batch_size]
-            print(samples.shape)
+            # print(samples.shape)
             # if batch_size == 1:
             #     samples = samples.unsqueeze(0)
             if self.n_elements:
@@ -302,19 +302,19 @@ class UnitGaussianNormalizer(torch.nn.Module):
     def cuda(self):
         self.mean = self.mean.cuda()
         self.std = self.std.cuda()
-        self.eps = self.eps.cuda()
+        # self.eps = self.eps.cuda()
         return self
 
     def cpu(self):
         self.mean = self.mean.cpu()
         self.std = self.std.cpu()
-        self.eps = self.eps.cpu()
+        # self.eps = self.eps.cpu()
         return self
     
     def to(self, device):
         self.mean = self.mean.to(device)
         self.std = self.std.to(device)
-        self.eps = self.eps.to(device)
+        # self.eps = self.eps.to(device)
         return self
     
     @classmethod
