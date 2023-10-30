@@ -10,7 +10,7 @@ from neuralop.training.meta_losses import SumAggregatorLoss, FieldwiseAggregator
 from neuralop.training.trainer import Trainer
 from neuralop.datasets.mesh_datamodule import MeshDataModule
 from copy import deepcopy
-from neuralop.training.callbacks import OutputEncoderCallback, Callback, SimpleWandBLoggerCallback
+from neuralop.training.callbacks import Callback, SimpleWandBLoggerCallback, TransformCallback
 
 # query points is [sdf_query_resolution] * 3 (taken from config ahmed)
 
@@ -108,8 +108,6 @@ elif config.opt.testing_loss == 'weightedl2':
 else:
     raise ValueError(f'Got {config.opt.testing_loss=}')
 
-encoder_callback = OutputEncoderCallback(encoder=output_encoder)
-
 # Handle data preprocessing to FNOGNO as a Callback object
         
 class CFDDataPreprocessingCallback(Callback):
@@ -178,7 +176,7 @@ trainer = Trainer(model=model,
                   n_epochs=config.opt.n_epochs,
                   device=device,
                   callbacks=[
-                      encoder_callback,
+                      TransformCallback(output_encoder),
                       CFDDataPreprocessingCallback(),
                       SimpleWandBLoggerCallback(**wandb_init_args)
                   ]

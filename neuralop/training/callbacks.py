@@ -385,6 +385,31 @@ class OutputEncoderCallback(Callback):
     
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs)
+
+class TransformCallback(Callback):
+    
+    def __init__(self, transform):
+        """
+        Callback class for a training loop that involves
+        an output normalizer but no MG patching.
+
+        Parameters
+        -----------
+        encoder : neuralop.datasets.output_encoder.OutputEncoder
+            module to normalize model inputs/outputs
+        """
+        super().__init__()
+        self.transform = transform
+    
+    def on_batch_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+    
+    def on_before_loss(self, out):
+        self.state_dict['out'] = self.transform.inverse_transform(out)
+        self.state_dict['sample']['y'] = self.transform.inverse_transform(self.state_dict['sample']['y'])
+    
+    def on_before_val_loss(self, **kwargs):
+        return self.on_before_loss(**kwargs)
         
 class CheckpointCallback(Callback):
     
