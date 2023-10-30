@@ -1,0 +1,1 @@
+from .data_losses import LpLoss, H1Loss

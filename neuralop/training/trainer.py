@@ -3,10 +3,10 @@ from torch.cuda import amp
 from timeit import default_timer
 import pathlib
 
-import neuralop.mpu.comm as comm
-
-from .losses import LpLoss
 from .callbacks import PipelineCallback
+import neuralop.mpu.comm as comm
+from neuralop.losses import LpLoss
+
 
 class Trainer:
     def __init__(self, *, 
