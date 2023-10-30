@@ -1,6 +1,5 @@
 from pathlib import Path
 import torch
-import scipy.io
 import numpy as np
 from .tensor_dataset import TensorDataset
 
@@ -50,16 +49,15 @@ def load_burgers_1dtime(
     Load burgers.mat data. Given the initial condition (t=0),
     predict timesteps 1 to temporal_length.
     """
+    with np.load(data_path) as data:
+        x_data = data['input']
+        y_data = data['output']
+        visc = data['visc']
 
-    data = scipy.io.loadmat(data_path)
-    x_data = data['input']
     x_data = torch.from_numpy(x_data.astype(np.float32))
     x_data = x_data[:, :spatial_length:spatial_subsample]
-
-    y_data = data['output']
     y_data = torch.from_numpy(y_data.astype(np.float32))
     y_data = y_data[:, :temporal_length:temporal_subsample, :spatial_length:spatial_subsample]
-    visc = data['visc']
     visc = torch.from_numpy(visc.astype(np.float32)).item()
 
     x_train = x_data[:n_train]

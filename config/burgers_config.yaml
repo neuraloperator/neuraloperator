@@ -64,7 +64,7 @@ default: &DEFAULT
 
   # Dataset related
   data:
-    folder: '/home/ubuntu/data/burgers/burgers.mat' 
+    folder: '/home/ubuntu/data/burgers/burgers.npz' 
     batch_size: 16
     n_train: 800
     test_batch_sizes: [16]
