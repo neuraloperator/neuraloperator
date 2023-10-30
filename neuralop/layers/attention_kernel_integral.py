@@ -104,11 +104,12 @@ class AttentionKernelIntegral(torch.nn.Module):
         ----------
         u_x: input (query) function of shape [b, n, c]
         pos_x: coordinate of input function's grid points [b, n, d]
+        pos_emb: positional encoding module for encoding q/k torch.nn.Module
         u_y: the second source of function (key and value), if not provided, u_y = u_x
         pos_y: coordinate of the second source of function's grid points, if not provided, assume pos_y = pos_x
         weights : tensor of shape [b, n], if not provided assume to be 1/n
-                Weights for each point y proprtional to the
-                volume around f(y)=u_y W_v being integrated.
+                  Weights for each point y proprtional to the
+                  volume around f(y)=u_y W_v being integrated.
         associate: if True, use associativity of matrix multiplication, first multiply K^T V, then multiply Q
         get_kernel: if True, return the kernel matrix (for analyzing the kernel)
         Output
