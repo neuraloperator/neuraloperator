@@ -178,16 +178,18 @@ class MeshDataModule():
                         data[j][attr] = data[j][attr].to(torch.float32)
 
             #Compute Gaussian normalizers based on training data
-            self.normalizers = {}
+            normalizer_keys = []
             for attr in attributes:
                 if isinstance(data[0][attr], torch.Tensor):
-                    attr_data = [data[j][attr] for j in range(n_train)]
-                    self.normalizers[attr] = UnitGaussianNormalizer.from_dataset(attr_data, dim=0)
+                    normalizer_keys.append(attr)
+            # returns keyed dict of UnitGaussianNormalizer instances
+            self.normalizers = UnitGaussianNormalizer.from_dataset(data, dim=0, keys=normalizer_keys) 
 
-                    #Encode all data
-                    for j in range(len(data)):
-                        data[j][attr] = self.normalizers[attr](data[j][attr])
-
+            #Encode all data
+            for attr in normalizer_keys:
+                for j in range(len(data)):
+                    data[j][attr] = self.normalizers[attr].transform(data[j][attr])
+            
             if not bool(self.normalizers):
                 self.normalizers = None
         else:
