@@ -120,10 +120,7 @@ class AttentionKernelIntegral(torch.nn.Module):
             u_y = u_x   # go back to self attention
 
         if get_kernel and associate:
-            raise Exception('Cannot get attention when associate is True')
-
-        if self.use_pe and pos_emb is None:
-            raise Warning('pos_emb is not provided, but use_pe is True')
+            raise Exception('Cannot get kernel matrix when associate is set to True')
 
         b, n = u_y.shape[:2]
 
