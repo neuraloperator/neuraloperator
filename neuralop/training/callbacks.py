@@ -521,3 +521,81 @@ class CheckpointCallback(Callback):
             if self.state_dict['verbose']:
                 print(f"Saved training state to {save_path}")
 
+
+class RegularDatasetToFNOGNOCallback(Callback):
+    def __init__(self, out_p_gradient: bool=False, 
+                 pad: int=0,
+                 include_out_p_endpoint: bool=True,
+                 domain_lengths: Union[Union[Tuple[float], List[float]], float] = 1):
+        """RegularDatasetToFNOGNOCallback
+
+        Performs simple data preprocessing to convert a data batch
+        from a form expected by an FNO or similar model to that
+        expected by an FNOGNO.
+
+        Params
+        -------
+        out_p_gradient: bool, defaults to False
+            whether generated output grid requires_grad or not
+        pad: int, defaults to 0.
+            number of pixels/discretization units to pad on each side
+        include_out_p_endpoint: bool, defaults to True
+            whether to include the endpoint of out_p
+        domain_lengths: List or Tuple of float, or float
+            size of data domain along each dimension
+
+        TODO @COLIN: should this belong in datasets
+        under some "generate_out_p=True" flag?
+        """
+        super().__init__()
+        self.out_p_gradient = out_p_gradient
+        self.pad = pad
+        self.include_out_p_endpoint = include_out_p_endpoint
+        self.domain_lengths=domain_lengths
+    
+    def create_out_p(self, batch_size=16, train_resolution=(16,16), device=None, sample_random=None, bound_dist=0):
+        domain_lengths = self.domain_lengths
+        if not isinstance(self.domain_lengths, (tuple, list)):
+            domain_lengths = [domain_lengths] * len(train_resolution)
+
+        if sample_random is None:
+            include_endpoint = self.include_out_p_endpoint
+            if not isinstance(include_endpoint, (tuple, list)):
+                include_endpoint = [include_endpoint] * len(train_resolution)
+
+            tx = []
+            for resolution, domain_length, endpoint in zip(train_resolution, domain_lengths, include_endpoint):
+                if endpoint:
+                    tx.append(torch.linspace(0, domain_length, resolution))
+                else:
+                    tx.append(torch.linspace(0, domain_length, resolution + 1)[:-1])
+
+            out_p = torch.stack(
+                torch.meshgrid(*tx, indexing="ij"), axis=-1
+            ).astype(torch.float32)
+
+            # duplicate batch_size times
+            out_p = torch.tile(out_p, (batch_size, 1, 1, 1))
+            # convert to a list of coordinate points
+            out_p = out_p.reshape(batch_size, out_p.shape[1] * out_p.shape[2], 2)
+            out_p = out_p.to(device)
+        
+        else:
+            # TODO(jberner): make this more general for other boundary conditions
+            x = np.linspace(0, domain_lengths[1], train_resolution[1] + 1)[:-1]
+            x = torch.from_numpy(x).float().to(device)
+            boundary = torch.stack([torch.zeros_like(x), x], dim=1).tile([batch_size, 1, 1])
+
+            domain_lengths = torch.tensor(domain_lengths, device=device)
+            out_p = bound_dist + torch.rand(batch_size, sample_random, len(train_resolution), device=device) * (domain_lengths - 2 * bound_dist)
+            out_p = torch.cat([out_p, boundary], dim=1)
+        return out_p
+
+    
+    def on_batch_start(self, *args, **kwargs):
+        self._update_state_dict(**kwargs)
+        x = self.state_dict['sample']['x']
+        train_resolution = [s - 2 * self.pad for s in x.shape[-2:]]
+        out_p = self.create_out_p(batch_size=x.shape[0], train_resolution=train_resolution, device=self.device, sample_random=self.sample_random)
+        out_p.requires_grad_(self.out_p_gradient)
+
