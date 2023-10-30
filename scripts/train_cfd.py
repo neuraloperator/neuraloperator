@@ -194,5 +194,3 @@ trainer.train(
               #eval_losses={config.opt.testing_loss: test_loss_fn, 'drag': DragLoss},
               eval_losses={config.opt.testing_loss: test_loss_fn},
               regularizer=None,)
-
-model = model.cpu()
