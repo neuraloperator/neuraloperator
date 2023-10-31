@@ -16,7 +16,7 @@ config_name = "default"
 pipe = ConfigPipeline(
     [
         YamlConfig(
-            "./burgers_pino_config.yaml", config_name="default", config_folder="../config"
+            "./burgers_config.yaml", config_name="default", config_folder="../config"
         ),
         ArgparseConfig(infer_types=True, config_name=None, config_file=None),
         YamlConfig(config_folder="../config"),
@@ -117,7 +117,8 @@ else:
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
 ic_loss = ICLoss()
-equation_loss = BurgersEqnLoss(method=config.opt.pino_method, visc=0.01, loss=F.mse_loss)
+equation_loss = BurgersEqnLoss(method=config.opt.get('pino_method', None), 
+                               visc=0.01, loss=F.mse_loss)
 
 training_loss = config.opt.training_loss
 if not isinstance(training_loss, (tuple, list)):
