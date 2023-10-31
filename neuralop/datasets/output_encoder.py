@@ -249,6 +249,8 @@ class UnitGaussianNormalizer(torch.nn.Module):
         self.update_mean_std(data_batch)
 
     def partial_fit(self, data_batch, batch_size=1):
+        if 0 in list(data_batch.shape):
+            return
         count = 0
         n_samples = len(data_batch)
         while count < n_samples:
@@ -302,19 +304,19 @@ class UnitGaussianNormalizer(torch.nn.Module):
     def cuda(self):
         self.mean = self.mean.cuda()
         self.std = self.std.cuda()
-        # self.eps = self.eps.cuda()
+#         self.eps = self.eps.cuda()
         return self
 
     def cpu(self):
         self.mean = self.mean.cpu()
         self.std = self.std.cpu()
-        # self.eps = self.eps.cpu()
+#         self.eps = self.eps.cpu()
         return self
     
     def to(self, device):
         self.mean = self.mean.to(device)
         self.std = self.std.to(device)
-        # self.eps = self.eps.to(device)
+#         self.eps = self.eps.to(device)
         return self
     
     @classmethod
