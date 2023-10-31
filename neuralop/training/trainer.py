@@ -136,18 +136,18 @@ class Trainer:
 
             for idx, sample in enumerate(train_loader):
 
-                if self.callbacks:
-                    self.callbacks.on_batch_start(idx=idx, sample=sample)
-
                 # load everything from the batch onto self.device if 
                 # no callback overrides default load to device
                 
-                if self.override_load_to_device:
-                    self.callbacks.on_load_to_device(sample=sample)
-                else:
-                    for k,v in sample.items():
-                        if hasattr(v, 'to'):
-                            sample[k] = v.to(self.device)
+                # if self.override_load_to_device:
+                #     self.callbacks.on_load_to_device(sample=sample)
+                # else:
+                #     for k,v in sample.items():
+                #         if hasattr(v, 'to'):
+                #             sample[k] = v.to(self.device)
+
+                if self.callbacks:
+                    self.callbacks.on_batch_start(idx=idx, sample=sample)
 
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
@@ -155,9 +155,9 @@ class Trainer:
 
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
-                        out = self.model(**sample)
+                        out, sample  = self.model(**sample)
                 else:
-                    out = self.model(**sample)
+                    out, sample  = self.model(**sample)
 
                 if self.callbacks:
                     self.callbacks.on_before_loss(out=out)
@@ -182,13 +182,14 @@ class Trainer:
                         elif isinstance(out, dict):
                             loss += training_loss(**out, **sample)
                 
-                del out
+                # del out
 
                 if regularizer:
                     loss += regularizer.loss
                 
                 loss.backward()
-                
+                del out
+
                 optimizer.step()
                 train_err += loss.item()
         
@@ -255,24 +256,23 @@ class Trainer:
         n_samples = 0
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
-                
-                if self.callbacks:
-                    self.callbacks.on_val_batch_start(idx=idx, sample=sample)
-                
-                y = sample['y']
-                n_samples += y.size(0)
+
+                n_samples += sample['y'].size(0)
 
                 # load everything from the batch onto self.device if 
                 # no callback overrides default load to device
                 
-                if self.override_load_to_device:
-                    self.callbacks.on_load_to_device(sample=sample)
-                else:
-                    for k,v in sample.items():
-                        if hasattr(v, 'to'):
-                            sample[k] = v.to(self.device)
+                # if self.override_load_to_device:
+                #     self.callbacks.on_load_to_device(sample=sample)
+                # else:
+                #     for k,v in sample.items():
+                #         if hasattr(v, 'to'):
+                #             sample[k] = v.to(self.device)
 
-                out = self.model(**sample)
+                if self.callbacks:
+                    self.callbacks.on_val_batch_start(idx=idx, sample=sample)
+
+                out, sample = self.model(**sample)
 
                 if self.callbacks:
                     self.callbacks.on_before_val_loss(out=out)
@@ -285,16 +285,18 @@ class Trainer:
                             val_loss = self.callbacks.compute_training_loss(**out, **sample)
                     else:
                         if isinstance(out, torch.Tensor):
-                            val_loss = loss(out, **sample).item()
+                            val_loss = loss(out, **sample)
                         elif isinstance(out, dict):
-                            val_loss = loss(out, **sample).item()
+                            val_loss = loss(out, **sample)
+                        if val_loss.shape == ():
+                            val_loss = val_loss.item()
 
                     errors[f'{log_prefix}_{loss_name}'] += val_loss
 
                 if self.callbacks:
                     self.callbacks.on_val_batch_end()
         
-        del y, out
+        del out
 
         for key in errors.keys():
             errors[key] /= n_samples
@@ -303,3 +305,4 @@ class Trainer:
             self.callbacks.on_val_epoch_end(errors=errors)
 
         return errors
+
