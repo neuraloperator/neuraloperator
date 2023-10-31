@@ -235,8 +235,8 @@ class UnitGaussianNormalizer(torch.nn.Module):
         """
         super().__init__()
 
-        self.mean = mean
-        self.std = std
+        self.register_buffer('mean', mean)
+        self.register_buffer('std', std)
         self.eps = eps
         if mean is not None:
             self.ndim = mean.ndim
@@ -267,9 +267,9 @@ class UnitGaussianNormalizer(torch.nn.Module):
     def update_mean_std(self, data_batch):
         self.ndim = data_batch.ndim  # Note this includes batch-size
         self.n_elements = count_tensor_params(data_batch, self.dim)
-        self.register_buffer('mean', torch.mean(data_batch, dim=self.dim, keepdim=True))
-        self.register_buffer('squared_mean', torch.mean(data_batch**2, dim=self.dim, keepdim=True))
-        self.register_buffer('std', torch.sqrt(self.squared_mean - self.mean**2))
+        self.mean = torch.mean(data_batch, dim=self.dim, keepdim=True)
+        self.squared_mean = torch.mean(data_batch**2, dim=self.dim, keepdim=True)
+        self.std = torch.sqrt(self.squared_mean - self.mean**2)
 
     def incremental_update_mean_std(self, data_batch):
         n_elements = count_tensor_params(data_batch, self.dim)
