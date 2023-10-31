@@ -136,16 +136,6 @@ class Trainer:
 
             for idx, sample in enumerate(train_loader):
 
-                # load everything from the batch onto self.device if 
-                # no callback overrides default load to device
-                
-                # if self.override_load_to_device:
-                #     self.callbacks.on_load_to_device(sample=sample)
-                # else:
-                #     for k,v in sample.items():
-                #         if hasattr(v, 'to'):
-                #             sample[k] = v.to(self.device)
-
                 if self.callbacks:
                     self.callbacks.on_batch_start(idx=idx, sample=sample)
 
@@ -258,17 +248,6 @@ class Trainer:
             for idx, sample in enumerate(data_loader):
 
                 n_samples += sample['y'].size(0)
-
-                # load everything from the batch onto self.device if 
-                # no callback overrides default load to device
-                
-                # if self.override_load_to_device:
-                #     self.callbacks.on_load_to_device(sample=sample)
-                # else:
-                #     for k,v in sample.items():
-                #         if hasattr(v, 'to'):
-                #             sample[k] = v.to(self.device)
-
                 if self.callbacks:
                     self.callbacks.on_val_batch_start(idx=idx, sample=sample)
 

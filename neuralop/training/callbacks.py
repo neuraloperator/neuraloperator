@@ -282,10 +282,7 @@ class SimpleWandBLoggerCallback(Callback):
             if isinstance(loss_value, float):
                 self.state_dict['msg'] += f', {loss_name}={loss_value:.4f}'
             else:
-<<<<<<< HEAD
                 loss_value = {i:e.item() for (i, e) in enumerate(loss_value)}
-=======
->>>>>>> a3e937838ad9ae9a558522bafa5cdceaddf2d97b
                 self.state_dict['msg'] += f', {loss_name}={loss_value}'
             self.state_dict['values_to_log'][loss_name] = loss_value
     

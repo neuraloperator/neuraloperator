@@ -206,7 +206,7 @@ class UnitGaussianNormalizer(torch.nn.Module):
     """
     UnitGaussianNormalizer normalizes data to be zero mean and unit std. 
     """
-    def __init__(self, mean=None, std=None, eps=0, dim=None):
+    def __init__(self, mean=None, std=None, eps=1e-7, dim=None):
         """
         mean : torch.tensor or None
             has to include batch-size as a dim of 1
@@ -267,9 +267,9 @@ class UnitGaussianNormalizer(torch.nn.Module):
     def update_mean_std(self, data_batch):
         self.ndim = data_batch.ndim  # Note this includes batch-size
         self.n_elements = count_tensor_params(data_batch, self.dim)
-        self.mean = torch.mean(data_batch, dim=self.dim, keepdim=True)
-        self.squared_mean = torch.mean(data_batch**2, dim=self.dim, keepdim=True)
-        self.std = torch.sqrt(self.squared_mean - self.mean**2)
+        self.register_buffer('mean', torch.mean(data_batch, dim=self.dim, keepdim=True))
+        self.register_buffer('squared_mean', torch.mean(data_batch**2, dim=self.dim, keepdim=True))
+        self.register_buffer('std', torch.sqrt(self.squared_mean - self.mean**2))
 
     def incremental_update_mean_std(self, data_batch):
         n_elements = count_tensor_params(data_batch, self.dim)
@@ -304,19 +304,16 @@ class UnitGaussianNormalizer(torch.nn.Module):
     def cuda(self):
         self.mean = self.mean.cuda()
         self.std = self.std.cuda()
-#         self.eps = self.eps.cuda()
         return self
 
     def cpu(self):
         self.mean = self.mean.cpu()
         self.std = self.std.cpu()
-#         self.eps = self.eps.cpu()
         return self
     
     def to(self, device):
         self.mean = self.mean.to(device)
         self.std = self.std.to(device)
-#         self.eps = self.eps.to(device)
         return self
     
     @classmethod
