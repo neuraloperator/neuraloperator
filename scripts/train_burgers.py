@@ -1,10 +1,11 @@
 import sys
-from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 import torch
-from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
+from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
+from torch.nn.parallel import DistributedDataParallel as DDP
+import torch.nn.functional as F
 
-from neuralop import H1Loss, LpLoss, Trainer, get_model
+from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Trainer, get_model
 from neuralop.datasets import load_burgers_1dtime
 from neuralop.training import setup, MGPatchingCallback, SimpleWandBLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
@@ -15,7 +16,7 @@ config_name = "default"
 pipe = ConfigPipeline(
     [
         YamlConfig(
-            "./burgers_config.yaml", config_name="default", config_folder="../config"
+            "./burgers_pino_config.yaml", config_name="default", config_folder="../config"
         ),
         ArgparseConfig(infer_types=True, config_name=None, config_file=None),
         YamlConfig(config_folder="../config"),
@@ -115,15 +116,35 @@ else:
 # Creating the losses
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
-if config.opt.training_loss == "l2":
-    train_loss = l2loss
-elif config.opt.training_loss == "h1":
-    train_loss = h1loss
-else:
-    raise ValueError(
-        f'Got training_loss={config.opt.training_loss} '
-        f'but expected one of ["l2", "h1"]'
-    )
+ic_loss = ICLoss()
+equation_loss = BurgersEqnLoss(method=config.opt.pino_method, visc=0.01, loss=F.mse_loss)
+
+training_loss = config.opt.training_loss
+if not isinstance(training_loss, (tuple, list)):
+    training_loss = [training_loss]
+
+losses = []
+weights = []
+for loss in training_loss:
+    # Append loss
+    if loss == 'l2':
+        losses.append(l2loss)
+    elif loss == 'h1':
+        losses.append(h1loss)
+    elif loss == 'equation':
+        losses.append(equation_loss)
+    elif loss == 'ic':
+        losses.append(ic_loss)
+    else:
+        raise ValueError(f'Training_loss={loss} is not supported.')
+
+    # Append loss weight
+    if "loss_weights" in config.opt:
+        weights.append(config.opt.loss_weights.get(loss, 1.))
+    else:
+        weights.append(1.)
+
+train_loss = WeightedSumLoss(losses=losses, weights=weights)
 eval_losses = {"h1": h1loss, "l2": l2loss}
 
 if config.verbose:

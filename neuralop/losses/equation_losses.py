@@ -46,9 +46,9 @@ class BurgersEqnLoss(object):
         # compute the loss of the left and right hand sides of Burgers' equation
         return self.loss(dudt, right_hand_side)
 
-    def __call__(self, _, __, u, ___):
+    def __call__(self, y_pred, **kwargs):
         if self.method == "fdm":
-            return self.fdm(u)
+            return self.fdm(u=y_pred)
         raise NotImplementedError()
 
 
@@ -61,10 +61,10 @@ class ICLoss(object):
         super().__init__()
         self.loss = loss
 
-    def initial_condition_loss(self, u, a):
-        boundary_a = a[:, 0, 0, :]
-        boundary_u = u[:, 0, 0, :]
-        return self.loss(boundary_u, boundary_a)
+    def initial_condition_loss(self, y_pred, x):
+        boundary_true = x[:, 0, 0, :]
+        boundary_pred = y_pred[:, 0, 0, :]
+        return self.loss(boundary_pred, boundary_true)
 
-    def __call__(self, a, _, u, __):
-        return self.initial_condition_loss(u, a)
+    def __call__(self, y_pred, x, **kwargs):
+        return self.initial_condition_loss(y_pred, x)
