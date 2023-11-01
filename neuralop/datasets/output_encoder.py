@@ -283,20 +283,10 @@ class UnitGaussianNormalizer(torch.nn.Module):
         self.std = torch.sqrt(self.squared_mean - self.mean**2)
 
     def transform(self, x):
-        if x.ndim == self.ndim: #Normalize a batch of data
-            return (x - self.mean)/(self.std + self.eps)
-        elif x.ndim == self.ndim - 1: # Normalize a single sample
-            return (x - self.mean.squeeze(0))/(self.std + self.eps.squeeze(0))
-        else:
-            raise ValueError(f'Got sample of size {x.shape} but learned stats on samples of size {self.data_shape}')
+        return (x - self.mean)/(self.std + self.eps)
     
     def inverse_transform(self, x):
-        if x.ndim == self.ndim: #Normalize a batch of data
-            return (x*(self.std + self.eps) + self.mean)
-        elif x.ndim == self.ndim - 1: # Normalize a single sample
-            return (x*(self.std.squeeze(0) + self.eps) + self.mean.squeeze(0))
-        else:
-            raise ValueError(f'Got sample of size {x.shape} but learned stats on samples of size {self.data_shape}')
+        return (x*(self.std + self.eps) + self.mean)
     
     def forward(self, x):
         return self.transform(x)
