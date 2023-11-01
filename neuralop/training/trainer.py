@@ -191,7 +191,7 @@ class Trainer:
                 
                 optimizer.step()
                 train_err += loss.item()
-        
+
                 with torch.no_grad():
                     avg_loss += loss.item()
                     if regularizer:
@@ -216,6 +216,11 @@ class Trainer:
                     self.callbacks.on_before_val(epoch=epoch, train_err=train_err, time=epoch_train_time, \
                                            avg_loss=avg_loss, avg_lasso_loss=avg_lasso_loss)
                 
+
+                train_errors = self.evaluate(model, eval_losses, train_loader, output_encoder, log_prefix='train')
+                for loss_name, loss_value in train_errors.items():
+                    msg += f', {loss_name}={loss_value:.4f}'
+                    values_to_log[loss_name] = loss_value
 
                 for loader_name, loader in test_loaders.items():
                     _ = self.evaluate(eval_losses, loader, log_prefix=loader_name)
