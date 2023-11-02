@@ -504,8 +504,11 @@ class CheckpointCallback(Callback):
                 model_name = 'best_model'
             else:
                 model_name = 'model'
-            save_path = self.save_dir / f"{model_name}.pt"
-            torch.save(self.state_dict['model'].state_dict(), save_path)
+            if hasattr(self.state_dict['model'], 'save_checkpoint'):
+                self.state_dict['model'].save_checkpoint(self.save_dir, model_name)
+            else:
+                save_path = self.save_dir / f"{model_name}.pt"
+                torch.save(self.state_dict['model'].state_dict(), save_path)
 
             # save optimizer, scheduler, regularizer according to flags
             if self.save_optimizer:
