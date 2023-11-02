@@ -329,7 +329,6 @@ class UnitGaussianNormalizer(torch.nn.Module):
         dim : int list, default is None
             * If None, reduce over all dims (scalar mean and std)
             * Otherwise, must include batch-dimensions and all over dims to reduce over
-
         keys : str list or None
             if not None, a normalizer is instanciated only for the given keys
         """
