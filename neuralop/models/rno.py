@@ -17,6 +17,17 @@ class RNO(nn.Module):
     Fourier layers (Li et al., 2021), and for regression problems, the output 
     nonlinearity is replaced by a SELU activation.
 
+    The operation of the GRU is as follows:
+    z_t = sigmoid(W_z x + U_z h_{t-1} + b_z)
+    r_t = sigmoid(W_r x + U_r h_{t-1} + b_r)
+    \hat h_t = selu(W_h x_t + U_h (r_t * h_{t-1}) + b_h)
+    h_t = (1 - z_t) * h_{t-1} + z_t * \hat h_t,
+
+    where * is element-wise, the b_i's are bias functions, and W_i, U_i are
+    linear Fourier layers.
+
+    Paper: https://arxiv.org/abs/2308.08794 
+
     Parameters
     ----------
     n_modes : int tuple

@@ -7,6 +7,31 @@ from ..layers.spectral_convolution import SpectralConv
 from ..layers.fno_block import FNOBlocks
 
 class RNO_cell(nn.Module):
+    """N-Dimensional Recurrent Neural Operator cell. The RNO cell takes in an
+    input and history function, and it outputs the next step of the hidden function.
+    
+    Paper: https://arxiv.org/abs/2308.08794 
+
+    Parameters
+    ----------
+    n_modes : int tuple
+        number of modes to keep in Fourier Layer, along each dimension
+        The dimensionality of the RNO is inferred from ``len(n_modes)``
+    width : int
+        width of the RNO (i.e. number of channels)
+    output_scaling_factor : int, optional
+        factor by which to scale the resolution of the output
+    skip : {'linear', 'identity', 'soft-gating'}, optional
+        Type of skip connection to use in fno, by default 'linear'
+    fft_norm : str, optional
+        by default 'forward'
+    factorization : str or None, {'tucker', 'cp', 'tt'}
+        Tensor factorization of the parameters weight to use, by default None.
+        * If None, a dense tensor parametrizes the Spectral convolutions
+        * Otherwise, the specified tensor factorization is used.
+    separable : bool, default is False
+        if True, use a depthwise separable spectral convolution
+    """
     def __init__(self, n_modes, width, output_scaling_factor=None, skip='linear', fft_norm='ortho', factorization=None, separable=False):
         # output_scaling_factor is provided here as an integer or float
         super(RNO_cell, self).__init__()
@@ -38,7 +63,36 @@ class RNO_cell(nn.Module):
         return h_next
 
 class RNO_layer(nn.Module):
-    def __init__(self, n_modes, width, return_sequences=False, output_scaling_factor=None, fft_norm='ortho', factorization=None, separable=False):
+    """N-Dimensional Recurrent Neural Operator layer. The RNO layer extends the
+    action of the RNO cell to take in some sequence of time-steps as input
+    and output the next output function. 
+
+    Paper: https://arxiv.org/abs/2308.08794 
+
+    Parameters
+    ----------
+    n_modes : int tuple
+        number of modes to keep in Fourier Layer, along each dimension
+        The dimensionality of the RNO is inferred from ``len(n_modes)``
+    width : int
+        width of the RNO (i.e. number of channels)
+    return_sequences : boolean, optional
+        Whether to return the sequence of hidden states associated with processing
+        the inputs sequence of functions.
+    output_scaling_factor : int, optional
+        factor by which to scale the resolution of the output
+    skip : {'linear', 'identity', 'soft-gating'}, optional
+        Type of skip connection to use in fno, by default 'linear'
+    fft_norm : str, optional
+        by default 'forward'
+    factorization : str or None, {'tucker', 'cp', 'tt'}
+        Tensor factorization of the parameters weight to use, by default None.
+        * If None, a dense tensor parametrizes the Spectral convolutions
+        * Otherwise, the specified tensor factorization is used.
+    separable : bool, default is False
+        if True, use a depthwise separable spectral convolution
+    """
+    def __init__(self, n_modes, width, return_sequences=False, output_scaling_factor=None, skip='linear', fft_norm='ortho', factorization=None, separable=False):
         # output_scaling_factor is an integer or float here
         super(RNO_layer, self).__init__()
 

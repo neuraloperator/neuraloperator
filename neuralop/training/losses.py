@@ -287,6 +287,32 @@ class H1Loss(object):
 
 
 class DissipativeLoss(object):
+    """Dissipative loss is used to avoid model blow-up and to encourage the model
+    to learn dissipative dynamics (particularly in chaotic systems). The dissipative
+    loss samples points uniformly and randomly in a spherical shell around the
+    attractor of a chaotic system (at user-specified radii) and encourages
+    that a learned model's predictions on this shell scale inwards by some
+    user-specified dissipative rule.
+    
+    Introduced in "Learning Dissipative Dynamics in Chaotic Systems," NeurIPS 2022. 
+    Paper: https://arxiv.org/abs/2106.06898
+
+    Parameters
+    ----------
+    data_loss : function of inputs and outputs
+        Loss function to use for data (e.g., L2 loss)
+    diss_y_rule : function
+        Maps input x on a spherical shell to a desired dissipative y values
+        * E.g., linear scaling: lambda x : b * x for some b
+    loss_weight : float
+        Weighting between the dissipative loss and data loss
+    diss_radii : float tuple
+        Inner and outer radii of shell to sample from
+    out_dim : int
+        Dimension of input/output space (i.e., channels)
+    domain_shape : int tuple
+        Shape of PDE domain (resolution)
+    """
     def __init__(self, data_loss, diss_y_rule, loss_weight: float, diss_radii: tuple, out_dim: int, domain_shape: tuple):
         self.data_loss = data_loss
         self.reduce_dims = data_loss.reduce_dims
