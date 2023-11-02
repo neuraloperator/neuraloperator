@@ -262,7 +262,13 @@ class Trainer:
                 if self.callbacks:
                     self.callbacks.on_val_batch_start(idx=idx, sample=sample)
 
-                out, sample = self.model(**sample)
+                if self.data_processor is not None:
+                    sample = self.data_processor.preprocess(sample)
+
+                out = self.model(**sample)
+
+                if self.data_processor is not None:
+                    out = self.data_processor.postprocess(out)
 
                 if self.callbacks:
                     self.callbacks.on_before_val_loss(out=out)
