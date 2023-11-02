@@ -6,9 +6,9 @@ import torch.nn.functional as F
 from ..layers.recurrent_layers import RNO_layer
 from ..layers.padding import DomainPadding
 from ..layers.mlp import MLP
+from .base_model import BaseModel
 
-
-class RNO(nn.Module):
+class RNO(BaseModel, name='RNO'):
     """
     N-Dimensional Recurrent Neural Operator.
     
