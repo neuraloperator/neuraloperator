@@ -8,9 +8,9 @@ from ..layers.spherical_convolution import SphericalConv
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
 from ..layers.mlp import MLP
+from .base_model import BaseModel
 
-
-class FNO(nn.Module):
+class FNO(BaseModel, name='FNO'):
     """N-Dimensional Fourier Neural Operator
 
     Parameters
