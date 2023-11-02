@@ -100,6 +100,30 @@ We create a tensorized FNO model
 
  .. code-block:: none
 
+    Keyword argument lifting_channels not specified for model SFNO, using default=256.
+    Keyword argument n_layers not specified for model SFNO, using default=4.
+    Keyword argument output_scaling_factor not specified for model SFNO, using default=None.
+    Keyword argument max_n_modes not specified for model SFNO, using default=None.
+    Keyword argument fno_block_precision not specified for model SFNO, using default=full.
+    Keyword argument use_mlp not specified for model SFNO, using default=False.
+    Keyword argument mlp_dropout not specified for model SFNO, using default=0.
+    Keyword argument mlp_expansion not specified for model SFNO, using default=0.5.
+    Keyword argument non_linearity not specified for model SFNO, using default=<built-in function gelu>.
+    Keyword argument stabilizer not specified for model SFNO, using default=None.
+    Keyword argument norm not specified for model SFNO, using default=None.
+    Keyword argument preactivation not specified for model SFNO, using default=False.
+    Keyword argument fno_skip not specified for model SFNO, using default=linear.
+    Keyword argument mlp_skip not specified for model SFNO, using default=soft-gating.
+    Keyword argument separable not specified for model SFNO, using default=False.
+    Keyword argument rank not specified for model SFNO, using default=1.0.
+    Keyword argument joint_factorization not specified for model SFNO, using default=False.
+    Keyword argument fixed_rank_modes not specified for model SFNO, using default=False.
+    Keyword argument implementation not specified for model SFNO, using default=factorized.
+    Keyword argument decomposition_kwargs not specified for model SFNO, using default={}.
+    Keyword argument domain_padding not specified for model SFNO, using default=None.
+    Keyword argument domain_padding_mode not specified for model SFNO, using default=one-sided.
+    Keyword argument fft_norm not specified for model SFNO, using default=forward.
+    Keyword argument SpectralConv not specified for model SFNO, using default=<class 'neuralop.layers.spherical_convolution.SphericalConv'>.
 
     Our model has 277923 parameters.
 
@@ -220,13 +244,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f06bb6d38b0>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fbd1630cd90>
 
     ### LOSSES ###
 
-     * Train: <neuralop.training.losses.LpLoss object at 0x7f06bb6ded30>
+     * Train: <neuralop.training.losses.LpLoss object at 0x7fbd1633a880>
 
-     * Test: {'l2': <neuralop.training.losses.LpLoss object at 0x7f06bb6ded30>}
+     * Test: {'l2': <neuralop.training.losses.LpLoss object at 0x7fbd1633a880>}
 
 
 
@@ -353,7 +377,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (2 minutes 38.532 seconds)
+   **Total running time of the script:** (2 minutes 46.177 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_SFNO_swe.py:

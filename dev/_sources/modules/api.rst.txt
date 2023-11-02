@@ -164,7 +164,7 @@ Model Dispatching
 We provide a utility function to create model instances from a configuration.
 It has the advantage of doing some checks on the parameters it receives.
 
-.. automodule:: neuralop.models.model_dispatcher
+.. automodule:: neuralop.models.base_model
     :no-members:
     :no-inherited-members:
 

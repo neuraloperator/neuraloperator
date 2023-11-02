@@ -1,0 +1,10 @@
+﻿:mod:`neuralop.models.base_model`.available_models
+===============================================================
+
+.. currentmodule:: neuralop.models.base_model
+
+.. autofunction:: available_models
+
+.. raw:: html
+
+    <div class="clearer"></div>

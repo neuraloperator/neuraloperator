@@ -205,7 +205,32 @@ Loading test dataloader at resolution (64, 128) with 50 samples and batch-size=1
 <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Our model has 277923 parameters.
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Keyword argument lifting_channels not specified for model SFNO, using default=256.
+Keyword argument n_layers not specified for model SFNO, using default=4.
+Keyword argument output_scaling_factor not specified for model SFNO, using default=None.
+Keyword argument max_n_modes not specified for model SFNO, using default=None.
+Keyword argument fno_block_precision not specified for model SFNO, using default=full.
+Keyword argument use_mlp not specified for model SFNO, using default=False.
+Keyword argument mlp_dropout not specified for model SFNO, using default=0.
+Keyword argument mlp_expansion not specified for model SFNO, using default=0.5.
+Keyword argument non_linearity not specified for model SFNO, using default=&lt;built-in function gelu&gt;.
+Keyword argument stabilizer not specified for model SFNO, using default=None.
+Keyword argument norm not specified for model SFNO, using default=None.
+Keyword argument preactivation not specified for model SFNO, using default=False.
+Keyword argument fno_skip not specified for model SFNO, using default=linear.
+Keyword argument mlp_skip not specified for model SFNO, using default=soft-gating.
+Keyword argument separable not specified for model SFNO, using default=False.
+Keyword argument rank not specified for model SFNO, using default=1.0.
+Keyword argument joint_factorization not specified for model SFNO, using default=False.
+Keyword argument fixed_rank_modes not specified for model SFNO, using default=False.
+Keyword argument implementation not specified for model SFNO, using default=factorized.
+Keyword argument decomposition_kwargs not specified for model SFNO, using default={}.
+Keyword argument domain_padding not specified for model SFNO, using default=None.
+Keyword argument domain_padding_mode not specified for model SFNO, using default=one-sided.
+Keyword argument fft_norm not specified for model SFNO, using default=forward.
+Keyword argument SpectralConv not specified for model SFNO, using default=&lt;class &#39;neuralop.layers.spherical_convolution.SphericalConv&#39;&gt;.
+
+Our model has 277923 parameters.
 </pre></div>
 </div>
 <p>Create the optimizer</p>
@@ -279,13 +304,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f06bb6d38b0&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fbd1630cd90&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.training.losses.LpLoss object at 0x7f06bb6ded30&gt;
+ * Train: &lt;neuralop.training.losses.LpLoss object at 0x7fbd1633a880&gt;
 
- * Test: {&#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7f06bb6ded30&gt;}
+ * Test: {&#39;l2&#39;: &lt;neuralop.training.losses.LpLoss object at 0x7fbd1633a880&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -355,7 +380,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 38.532 seconds)</p>
+<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 46.177 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-sfno-swe-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/be42c4c413e9b89016fa3a4984cb9758/plot_SFNO_swe.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_SFNO_swe.py</span></code></a></p>

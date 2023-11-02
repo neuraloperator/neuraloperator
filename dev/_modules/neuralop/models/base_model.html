@@ -1,0 +1,297 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>neuralop.models.base_model &#8212; neuraloperator 0.2.1 documentation</title> 
+<link rel="stylesheet" href="../../../_static/tensorly_style.css">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../_static/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../_static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../../_static/favicon/favicon-16x16.png">
+<link rel="manifest" href="../../../_static/favicon/site.webmanifest">
+<link rel="mask-icon" href="../../../_static/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="../../../_static/favicon/favicon.ico">
+<meta name="theme-color" content="#ffffff">
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/tensorly_style.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css" />
+
+  
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+ <script src="../../../_static/navbar_burger.js"></script>
+ <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+ 
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  </head>
+<body  class="has-navbar-fixed-top">
+
+  <header>
+    <navbar>
+      <nav class="navbar top-navbar is-fixed-top has-shadow is-flex-wrap-wrap" role="navigation" aria-label="main top navigation">
+        <div class="navbar-brand">
+        
+
+          <a class="navbar-item" href="../../../index.html">
+            <img src="../../../_static/neuraloperator_logo.png" height="28">
+          </a>
+          <a class="navbar-item is-hidden-desktop" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon"><i class="fab fa-github"></i></span>
+          </a>
+
+          <a role="button" class="navbar-burger" data-target="top-nav-menu" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+
+        </div>
+        
+        <div class="navbar-menu" id="top-nav-menu">
+        
+
+          <div class="navbar-start">
+            
+              <a class="navbar-item" href="../../../install.html">
+              Install
+            </a>
+              <a class="navbar-item" href="../../../user_guide/index.html">
+              User Guide
+            </a>
+              <a class="navbar-item" href="../../../modules/api.html">
+              API
+            </a>
+              <a class="navbar-item" href="../../../auto_examples/index.html">
+              Examples
+            </a>
+          </div>
+        
+          <div class="navbar-end">
+            <div class="navbar-item">
+            
+            <a class="button is-hidden-touch is-dark" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon-text">
+                <span class="icon is-large">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>Github</span>
+              </span>
+            </a>
+
+            </div> 
+          </div> 
+        </div> 
+
+      </nav>
+      
+    </navbar>
+  </header>
+
+
+  <div id="column-container">
+  <div class="columns is-mobile is-centered">
+	
+  
+
+  <div class="column main-column">
+
+    
+    <div class="main-section">
+
+      
+      
+
+      <div class="container content main-content">
+        
+  <h1>Source code for neuralop.models.base_model</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+
+<span class="k">class</span> <span class="nc">BaseModel</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Based class for all Models</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_models</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">_version</span> <span class="o">=</span> <span class="s1">&#39;0.1.0&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init_subclass__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;When a subclass is created, register it in _models&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init_subclass__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">BaseModel</span><span class="o">.</span><span class="n">_models</span><span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span> <span class="o">=</span> <span class="bp">cls</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Creating a subclass of BaseModel </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> with no name, initializing with </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span>
+            <span class="n">BaseModel</span><span class="o">.</span><span class="n">_models</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span> <span class="o">=</span> <span class="bp">cls</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span>
+
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Verify arguments and save init kwargs for loading/saving</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="n">model_name</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span>
+
+        <span class="c1"># Verify that given parameters are actually arguments of the model</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Given argument key=</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> &quot;</span>
+                      <span class="sa">f</span><span class="s2">&quot;that is not in </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&#39;s signature.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check for model arguments not specified in the configuration</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">inspect</span><span class="o">.</span><span class="n">_empty</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Keyword argument </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> not specified for model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;using default=</span><span class="si">{</span><span class="n">value</span><span class="o">.</span><span class="n">default</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">default</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s1">&#39;_version&#39;</span><span class="p">):</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;_version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_version</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="n">instance</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">_init_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+        <span class="k">return</span> <span class="n">instance</span>
+    
+    <span class="k">def</span> <span class="nf">save_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">save_name</span><span class="p">):</span>
+        <span class="n">save_folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>
+
+        <span class="n">state_dict_filepath</span> <span class="o">=</span> <span class="n">save_folder</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">save_name</span><span class="si">}</span><span class="s1">_state_dict.pt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="n">state_dict_filepath</span><span class="p">)</span>
+        
+        <span class="n">metadata_filepath</span> <span class="o">=</span> <span class="n">save_folder</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">save_name</span><span class="si">}</span><span class="s1">_metadata.json&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">metadata_filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_init_kwargs</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">load_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">save_name</span><span class="p">):</span>
+        <span class="n">save_folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>
+        <span class="n">state_dict_filepath</span> <span class="o">=</span> <span class="n">save_folder</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">save_name</span><span class="si">}</span><span class="s1">_state_dict.pt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">state_dict_filepath</span><span class="p">))</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_checkpoint</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">save_name</span><span class="p">):</span>
+        <span class="n">save_folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>
+
+        <span class="n">metadata_filepath</span> <span class="o">=</span> <span class="n">save_folder</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">save_name</span><span class="si">}</span><span class="s1">_metadata.json&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">metadata_filepath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">init_kwargs</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        
+        <span class="n">version</span> <span class="o">=</span> <span class="n">init_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;_version&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s1">&#39;_version&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">version</span> <span class="o">!=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_version</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">version</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Checkpoing saved for version </span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s1"> of model </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s1"> but current code is version </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">_version</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="s1">&#39;args&#39;</span> <span class="ow">in</span> <span class="n">init_kwargs</span><span class="p">:</span>
+            <span class="n">init_args</span> <span class="o">=</span> <span class="n">init_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;args&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">init_args</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">*</span><span class="n">init_args</span><span class="p">,</span> <span class="o">**</span><span class="n">init_kwargs</span><span class="p">)</span>
+
+        <span class="n">instance</span><span class="o">.</span><span class="n">load_checkpoint</span><span class="p">(</span><span class="n">save_folder</span><span class="p">,</span> <span class="n">save_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">instance</span>
+
+
+<div class="viewcode-block" id="available_models"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.base_model.available_models.html#neuralop.models.base_model.available_models">[docs]</a><span class="k">def</span> <span class="nf">available_models</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List the available neural operators&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">BaseModel</span><span class="o">.</span><span class="n">_models</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="get_model"><a class="viewcode-back" href="../../../modules/generated/neuralop.models.base_model.get_model.html#neuralop.models.base_model.get_model">[docs]</a><span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns an instantiated model for the given config</span>
+
+<span class="sd">    * Reads the model to be used from config[&#39;arch&#39;]</span>
+<span class="sd">    * Adjusts config[&quot;arch&quot;][&quot;data_channels&quot;] accordingly if multi-grid patching is used</span>
+
+<span class="sd">    Also prints warnings for safety, in case::</span>
+<span class="sd">    * some given arguments aren&#39;t actually used by the model</span>
+<span class="sd">    * some keyword arguments of the models aren&#39;t provided by the config</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config : Bunch or dict-like</span>
+<span class="sd">        configuration, must have</span>
+<span class="sd">        arch = config[&#39;arch&#39;] (string)</span>
+<span class="sd">        and the corresponding config[arch] (a subdict with the kwargs of the model)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    model : nn.Module</span>
+<span class="sd">        the instanciated module</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">arch</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;arch&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">config_arch</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">arch</span><span class="p">)</span>
+
+    <span class="c1"># Set the number of input channels depending on channels in data + mg patching</span>
+    <span class="n">data_channels</span> <span class="o">=</span> <span class="n">config_arch</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;data_channels&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">patching_levels</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;patching&quot;</span><span class="p">][</span><span class="s2">&quot;levels&quot;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">patching_levels</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">patching_levels</span><span class="p">:</span>
+        <span class="n">data_channels</span> <span class="o">*=</span> <span class="n">patching_levels</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">config_arch</span><span class="p">[</span><span class="s2">&quot;in_channels&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_channels</span>
+
+    <span class="c1"># Dispatch model creation</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">BaseModel</span><span class="o">.</span><span class="n">_models</span><span class="p">[</span><span class="n">arch</span><span class="p">](</span><span class="o">**</span><span class="n">config_arch</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Got config.arch=</span><span class="si">{</span><span class="n">arch</span><span class="si">}</span><span class="s2">, expected one of </span><span class="si">{</span><span class="n">available_models</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span></div>
+</pre></div>
+
+      </div>
+
+      
+
+        <footer class="footer">
+    <div class="content has-text-centered">
+        <div class="block">
+          &copy; Copyright 2023, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+        </div>
+    </div>
+  </footer>
+
+    </div>
+
+  </div>  
+
+	
+
+  </div>  
+  </div> 
+
+  
+  <script>
+    function toggle_sidebar() {
+        var element = document.getElementById("sidebar");
+        var container = document.getElementById("column-container");
+        var localtoccolumn = document.getElementById("localtoc-column");
+        element.classList.toggle("hide-tablet");
+        element.classList.toggle("is-hidden-mobile");
+        container.classList.toggle("sidemenu-hidden");
+        localtoccolumn.classList.toggle("is-one-fifth-widescreen");
+        localtoccolumn.classList.toggle("is-2-desktop");
+        localtoccolumn.classList.toggle("is-3-desktop");
+    }
+  </script> 
+
+
+
+  </body>
+</html>
