@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
-from neuralop.training import Trainer, LpLoss, H1Loss, CheckpointCallback
+from neuralop import Trainer, LpLoss, H1Loss, CheckpointCallback
 
 class DummyDataset(Dataset):
     # Simple linear regression problem, PyTorch style
