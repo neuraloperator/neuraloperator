@@ -14,7 +14,8 @@ class Trainer:
                  n_epochs, 
                  wandb_log=True, 
                  device=None, 
-                 amp_autocast=False, 
+                 amp_autocast=False,
+                 data_processor=None,
                  callbacks = None,
                  log_test_interval=1, 
                  log_output=False, 
@@ -30,6 +31,9 @@ class Trainer:
         wandb_log : bool, default is True
         device : torch.device
         amp_autocast : bool, default is False
+        data_processor : class to transform data, default is None
+            if not None, data from the loaders is transform first with data_processor.preprocess,
+            then after getting an output from the model, that is transformed with data_processor.postprocess.
         log_test_interval : int, default is 1
             how frequently to print updates
         log_output : bool, default is False
@@ -74,6 +78,7 @@ class Trainer:
         self.use_distributed = use_distributed
         self.device = device
         self.amp_autocast = amp_autocast
+        self.data_processor = data_processor.to(device)
 
         if self.callbacks:
             self.callbacks.on_init_end(model=model, 
@@ -143,11 +148,17 @@ class Trainer:
                 if regularizer:
                     regularizer.reset()
 
+                if self.data_processor is not None:
+                    sample = self.data_processor.preprocess(sample)
+
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
-                        out, sample  = self.model(**sample)
+                        out  = self.model(**sample)
                 else:
-                    out, sample  = self.model(**sample)
+                    out  = self.model(**sample)
+
+                if self.data_processor is not None:
+                    out = self.data_processor.postprocess(out)
 
                 if self.callbacks:
                     self.callbacks.on_before_loss(out=out)
