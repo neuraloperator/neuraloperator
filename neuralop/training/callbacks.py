@@ -462,7 +462,7 @@ class CheckpointCallback(Callback):
                   "Error: CheckpointCallback expects a model state dict named model.pt or best_model.pt."
             
             # no need to handle exceptions if assertion that either model file exists passes
-            if 'best_model' in saved_modules:
+            if 'best_model_state_dict' in saved_modules:
                 if hasattr(self.state_dict['model'], 'load_checkpoint'):
                     self.state_dict['model'].load_checkpoint(save_folder = self.resume_from_dir, save_name = 'best_model')
                 else: 
