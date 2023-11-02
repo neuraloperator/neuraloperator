@@ -78,7 +78,7 @@ class Trainer:
         self.use_distributed = use_distributed
         self.device = device
         self.amp_autocast = amp_autocast
-        self.data_processor = data_processor.to(device)
+        self.data_processor = self.data_processor
 
         if self.callbacks:
             self.callbacks.on_init_end(model=model, 
