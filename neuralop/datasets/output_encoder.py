@@ -158,11 +158,11 @@ class DictTransformCallback(OutputEncoder):
         if self.return_mappings:
             assert transform_dict.keys() == return_mappings.keys()
 
-    def transform(self, x):
+    def transform(self, tensor_dict):
         """
         Parameters
         ----------
-        x : Torch.tensor
+        tensor_dict : Torch.tensor dict
             model output, indexed according to self.mappings
         """
         out = torch.zeros_like(x)
@@ -206,7 +206,7 @@ class UnitGaussianNormalizer(torch.nn.Module):
     """
     UnitGaussianNormalizer normalizes data to be zero mean and unit std. 
     """
-    def __init__(self, mean=None, std=None, eps=0, dim=None):
+    def __init__(self, mean=None, std=None, eps=1e-7, dim=None):
         """
         mean : torch.tensor or None
             has to include batch-size as a dim of 1
@@ -235,8 +235,8 @@ class UnitGaussianNormalizer(torch.nn.Module):
         """
         super().__init__()
 
-        self.mean = mean
-        self.std = std
+        self.register_buffer('mean', mean)
+        self.register_buffer('std', std)
         self.eps = eps
         if mean is not None:
             self.ndim = mean.ndim
@@ -249,11 +249,13 @@ class UnitGaussianNormalizer(torch.nn.Module):
         self.update_mean_std(data_batch)
 
     def partial_fit(self, data_batch, batch_size=1):
+        if 0 in list(data_batch.shape):
+            return
         count = 0
         n_samples = len(data_batch)
         while count < n_samples:
             samples = data_batch[count:count+batch_size]
-            print(samples.shape)
+            # print(samples.shape)
             # if batch_size == 1:
             #     samples = samples.unsqueeze(0)
             if self.n_elements:
@@ -281,20 +283,10 @@ class UnitGaussianNormalizer(torch.nn.Module):
         self.std = torch.sqrt(self.squared_mean - self.mean**2)
 
     def transform(self, x):
-        if x.ndim == self.ndim: #Normalize a batch of data
-            return (x - self.mean)/(self.std + self.eps)
-        elif x.ndim == self.ndim - 1: # Normalize a single sample
-            return (x - self.mean.squeeze(0))/(self.std + self.eps.squeeze(0))
-        else:
-            raise ValueError(f'Got sample of size {x.shape} but learned stats on samples of size {self.data_shape}')
+        return (x - self.mean)/(self.std + self.eps)
     
     def inverse_transform(self, x):
-        if x.ndim == self.ndim: #Normalize a batch of data
-            return (x*(self.std + self.eps) + self.mean)
-        elif x.ndim == self.ndim - 1: # Normalize a single sample
-            return (x*(self.std.squeeze(0) + self.eps) + self.mean.squeeze(0))
-        else:
-            raise ValueError(f'Got sample of size {x.shape} but learned stats on samples of size {self.data_shape}')
+        return (x*(self.std + self.eps) + self.mean)
     
     def forward(self, x):
         return self.transform(x)
@@ -302,19 +294,16 @@ class UnitGaussianNormalizer(torch.nn.Module):
     def cuda(self):
         self.mean = self.mean.cuda()
         self.std = self.std.cuda()
-        self.eps = self.eps.cuda()
         return self
 
     def cpu(self):
         self.mean = self.mean.cpu()
         self.std = self.std.cpu()
-        self.eps = self.eps.cpu()
         return self
     
     def to(self, device):
         self.mean = self.mean.to(device)
         self.std = self.std.to(device)
-        self.eps = self.eps.to(device)
         return self
     
     @classmethod
