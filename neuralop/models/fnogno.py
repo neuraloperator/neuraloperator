@@ -132,28 +132,7 @@ class FNOGNO(nn.Module):
         sq_radius = self.gno_radius ** 2
         if self.gno_weighting_fn == "linear":
             self.gno_weighting_fn = partial(linear_cutoff, radius=sq_radius, scale=gno_wt_fn_scale)
-        elif self.gno_weighting_fn == "bump":
-            self.gno_weighting_fn = partial(bump_cutoff, radius=sq_radius, scale=gno_wt_fn_scale)
-        elif self.gno_weighting_fn == "tanh":
-            self.gno_weighting_fn = partial(tanh_cutoff, radius=sq_radius, scale=gno_wt_fn_scale)
-        elif self.gno_weighting_fn == "cubic":
-            self.gno_weighting_fn = partial(cubic_cutoff, radius=sq_radius, scale=gno_wt_fn_scale)
-        elif self.gno_weighting_fn == "cos":
-            self.gno_weighting_fn = partial(cos_cutoff, radius=sq_radius, scale=gno_wt_fn_scale)
-        elif self.gno_weighting_fn == "quadr":
-            self.gno_weighting_fn = partial(quadr_cutoff, radius=sq_radius, scale=gno_wt_fn_scale)
-        elif self.gno_weighting_fn == "bump_sqrt":
-            self.gno_weighting_fn = partial(bump_sqrt_cutoff, radius=sq_radius, scale=gno_wt_fn_scale)
-        elif self.gno_weighting_fn == "quartic":
-            self.gno_weighting_fn = partial(quartic_cutoff, radius=sq_radius, scale=gno_wt_fn_scale)
-        elif self.gno_weighting_fn == "quartic_sqrt":
-            self.gno_weighting_fn = partial(quartic_sqrt_cutoff, radius=sq_radius, scale=gno_wt_fn_scale)
-        elif self.gno_weighting_fn == "octic":
-            self.gno_weighting_fn = partial(octic_cutoff, radius=sq_radius, scale=gno_wt_fn_scale)
-        elif self.gno_weighting_fn == "octic_sqrt":
-            self.gno_weighting_fn = partial(octic_sqrt_cutoff, radius=sq_radius, scale=gno_wt_fn_scale)
-        elif self.gno_weighting_fn is not None:
-            raise NotImplementedError
+        
 
         if gno_coord_embed_dim is not None:
             self.pos_embed = PositionalEmbedding(gno_coord_embed_dim)
@@ -194,9 +173,12 @@ class FNOGNO(nn.Module):
 
     #returns: (fno_hidden_channels, n_1, n_2, ...)
     def latent_embedding(self, in_p, f, ada_in=None):
+        # in_p is shape (n_1 x ... x n_k x batch x in_channels + k)
 
         if f is not None:
             in_p = torch.cat((f, in_p), dim=-1)
+
+            # permute (n_modes, 0,1,...n_modes-1)
             in_p = in_p.permute(self.in_coord_dim, *self.in_coord_dim_forward_order).unsqueeze(0)
 
         # todo: make this general to handle any dim and batch_size
@@ -416,66 +398,13 @@ class FNOGNO(nn.Module):
         in_p = in_p[positional_encoding_inds]
 
         #Integrate latent space
-        out = self.integrate_latent(in_p=in_p, 
+        out = self.integrate_latent_batch(in_p=in_p, 
                                     out_p=out_p, 
                                     latent_embed=latent_embed)
   
         return out
 
-# TODO(jberner): normalize by volume?
-def bump_cutoff(x, radius=1., scale=1., eps=1e-7):
-    out = x.clip(0., radius) / radius
-    out = - 1 / ((1 - out ** 2) + eps)
-    return out.exp() * torch.e * scale
-
-def bump_sqrt_cutoff(x, radius=1., scale=1., eps=1e-7):
-    out = - 1 / (1 - x / radius + eps)
-    return out.exp() * torch.e * scale
 
 def linear_cutoff(x, radius=1., scale=1.):
     x = (radius - x).clip(0., radius)
     return x * scale / radius
-
-# TODO(jberner): Tanh gives NaNs for the first derivative at 0. and `radius`
-def tanh_cutoff(x, radius=1., scale=1., slope=2, eps=1e-6):
-    out = x.clip(0., radius) / radius
-    out = slope * (2 * out - 1) / (2 * torch.sqrt((1 - out) * out) + eps)
-    out = - 0.5 * torch.nn.functional.tanh(out) + 0.5
-    return out * scale
-
-def cos_cutoff(x, radius=1., scale=1.):
-    x = x / radius
-    return scale * (0.5 * torch.cos(torch.pi * x) + 0.5)
-
-def quadr_cutoff(x, radius=1., scale=1.):
-    x = x / radius
-    left = 1 - 2 * x ** 2
-    right = 2 * (1 - x) ** 2
-    return scale * torch.where(x < 0.5, left, right)
-
-def cubic_cutoff(x, radius=1., scale=1.):
-    b = 3 * scale / (radius ** 2)
-    a = 2 * b / (3 * radius)
-    out = a * x ** 3 - b * x ** 2 + scale
-    assert (x < radius + 0.001).all()
-    assert (x > -0.001).all()
-    assert (out > -0.001).all()
-    return out
-
-def quartic_cutoff(x, radius=1., scale=1.):
-    a = scale / radius ** 4
-    c = - 2 * scale / radius ** 2 
-    return a * x ** 4 + c * x ** 2 + scale
-
-def quartic_sqrt_cutoff(x, radius=1., scale=1.):
-    a = scale / radius ** 2
-    c = - 2 * scale / radius
-    return a * x ** 2 + c * x + scale
-
-def octic_cutoff(x, radius=1., scale=1.):
-    x = x / radius
-    return scale * (-3 * x ** 8 + 8 * x ** 6 - 6 * x ** 4  + 1)
-
-def octic_sqrt_cutoff(x, radius=1., scale=1.):
-    x = x / radius
-    return scale * (-3 * x ** 4 + 8 * x ** 3 - 6 * x ** 2  + 1)
