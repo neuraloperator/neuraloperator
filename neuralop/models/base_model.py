@@ -58,8 +58,10 @@ class BaseModel(torch.nn.Module):
         torch.save(self.state_dict(), state_dict_filepath)
         
         metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.json').as_posix()
-        with open(metadata_filepath, 'w') as f:
-            json.dump(self._init_kwargs, f)
+        # Objects (e.g. GeLU) are not serializable by json - find a better solution in the future
+        torch.save(self._init_kwargs, metadata_filepath)
+        # with open(metadata_filepath, 'w') as f:
+        #     json.dump(self._init_kwargs, f)
 
     def load_checkpoint(self, save_folder, save_name):
         save_folder = Path(save_folder)
@@ -71,8 +73,9 @@ class BaseModel(torch.nn.Module):
         save_folder = Path(save_folder)
 
         metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.json').as_posix()
-        with open(metadata_filepath, 'r') as f:
-            init_kwargs = json.load(f)
+        init_kwargs = torch.load(metadata_filepath)
+        # with open(metadata_filepath, 'r') as f:
+        #     init_kwargs = json.load(f)
         
         version = init_kwargs.pop('_version')
         if hasattr(cls, '_version') and version != cls._version:
