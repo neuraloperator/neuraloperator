@@ -170,13 +170,9 @@ class FNOGNO(nn.Module):
 
     #returns: (fno_hidden_channels, n_1, n_2, ...)
     def latent_embedding(self, in_p, f, ada_in=None):
-        print(f"{in_p.shape=}")
-        print(f"{f.shape=}")
-        if ada_in is not None:
-            print(f"{ada_in.shape=}")
 
         # in_p : (batch, n_1 , ... , n_k, in_channels + k)
-        # f : (batch, n_1, n_2, ..., n_k, in_channels)
+        # f : (batch, n_1, n_2, ..., n_k, 1)
         # ada_in : (fno_ada_in_dim, )
 
         if f is not None:
@@ -185,9 +181,6 @@ class FNOGNO(nn.Module):
 
         # permute (b, n_1, ..., n_k, c) -> (b,c, n_1,...n_k)
         in_p = in_p.permute(0, len(in_p.shape)-1, *list(range(1,len(in_p.shape)-1)))
-
-        print(f"permuted in_p, shape is {in_p.shape=}")
-
 
         #Update Ada IN embedding
         if ada_in is not None:
@@ -209,19 +202,13 @@ class FNOGNO(nn.Module):
         if self.fno.domain_padding is not None:
             in_p = self.fno.domain_padding.unpad(in_p)
         
-        return in_p # .squeeze(0)no longer needed since we index assuming a batch channel
+        return in_p 
 
     def integrate_latent_batch(self, in_p_batched, out_p_batched, latent_embed_batched):
         # todo: this is extremely inefficient. There are several ways to make it more efficient.
-        # in_p : (b, n1, ...nk, c)
-        # out_p : (b, n_points, gno_coord_dim)
-        # latent_embed_batched: (b, latent embed dims (haven't checked))
-        print(f"{in_p_batched.shape=}")
-        print(f"{out_p_batched.shape=}")
-        print(f"{latent_embed_batched.shape=}")
 
         batch_size = in_p_batched.shape[0]
-        # shape batch size x outupt dim x 1
+        # output shape: (batch, n_out, out_channels)
         output_batched = torch.zeros((batch_size, out_p_batched.shape[1], self.out_channels), device=in_p_batched.device)
         compute_norm = self.gno_weighting_fn is not None
 
@@ -229,10 +216,6 @@ class FNOGNO(nn.Module):
             in_p = in_p_batched[i]
             out_p = out_p_batched[i]
             latent_embed = latent_embed_batched[i]
-            print("one slice:")
-            print(f"{in_p.shape=}")
-            print(f"{out_p.shape=}")
-            print(f"{latent_embed.shape=}")
 
             if self.nbr_caching:
                 if not self.cached_nbrs:
@@ -299,15 +282,17 @@ class FNOGNO(nn.Module):
             input geometry, a lattice.
             At every point on the lattice, we expect an optional stack of data channels
             on top of a positional encoding of dimension that matches length of discr_sizes. 
-            expects shape batch x (discretization_size 1 x ....)_n x (in channels + pos encoding dim)
+            expects shape (batch, n_1,... n_k, in_channels + gno_coord_dim)
+            if no batch dim exists, one is created
         out_p : torch.Tensor
             output points
-            expects shape batch x n output points x output dim
+            expects shape (batch, n_out, out_channels)
         f : torch.tensor, optional
             SDF over the physical domain
-            expects shape (discretization_size 1 x ...)_n x in_channels
-        ada_in : _type_, optional
-            _description_, by default None
+            expects shape (n_1, ...n_k, 1)
+        ada_in : torch.Tensor, optional
+            adaptive instance norm, by default None
+            expects shape (fno_ada_in_dim, )
 
         Returns
         -------
@@ -332,9 +317,7 @@ class FNOGNO(nn.Module):
                                              f=f, 
                                              ada_in=ada_in)
         
-        # todo: make this general to handle any dim and batch size
         data_channels = self.in_channels + self.in_coord_dim - f.shape[-1] - self.gno_coord_dim
-        print(f"in_p has total channels {self.in_channels}, data channels {data_channels=}")
         # just grab positional encoding of in_p, which is indexed along the last dimension 
         positional_encoding_inds = tuple([slice(None) for _ in range(len(input_shape) - 1)] + [slice(data_channels,None,None)])
         in_p = in_p[positional_encoding_inds]
