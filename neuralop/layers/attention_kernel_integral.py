@@ -15,8 +15,8 @@ class AttentionKernelIntegral(torch.nn.Module):
     Parameters
     ----------
     channels : int, input and output channels
-    heads : int, number of attention heads
-    dim_head : int, dimension of each attention head, determines how many function bases to use for the kernel
+    n_heads : int, number of attention heads
+    head_n_channels : int, dimension of each attention head, determines how many function bases to use for the kernel
     pos_dim : int, dimension of domain
     use_pe : bool, whether to use positional encoding
     project_query : bool, whether to project the query function with pointwise linear layer
@@ -24,36 +24,36 @@ class AttentionKernelIntegral(torch.nn.Module):
 
     def __init__(self,
                  channels,
-                 heads,
-                 dim_head,
+                 n_heads,
+                 head_n_channels,
                  pos_dim,
-                 use_pe=True,    # use positional encoding
+                 use_positional_encoding=True,    # use positional encoding
                  project_query=True,
                  ):
         super().__init__()
         self.layers = nn.ModuleList([])
-        self.heads = heads
-        self.dim_head = dim_head
+        self.n_heads = n_heads
+        self.head_n_channels = head_n_channels
 
         self.project_query = project_query
         if project_query:
-            self.to_q = nn.Linear(channels, dim_head * heads, bias=False)
+            self.to_q = nn.Linear(channels, head_n_channels * n_heads, bias=False)
         else:
             self.to_q = nn.Identity()
 
-        self.to_k = nn.Linear(channels, dim_head * heads, bias=False)
+        self.to_k = nn.Linear(channels, head_n_channels * n_heads, bias=False)
 
-        self.k_norm = nn.InstanceNorm1d(dim_head, affine=False)
-        self.v_norm = nn.InstanceNorm1d(dim_head, affine=False)
+        self.k_norm = nn.InstanceNorm1d(head_n_channels, affine=False)
+        self.v_norm = nn.InstanceNorm1d(head_n_channels, affine=False)
 
-        self.to_v = nn.Linear(channels, dim_head * heads, bias=False)
+        self.to_v = nn.Linear(channels, head_n_channels * n_heads, bias=False)
 
-        self.to_out = nn.Linear(dim_head * heads, channels) if dim_head * heads != channels else nn.Identity()
+        self.to_out = nn.Linear(head_n_channels * n_heads, channels) if head_n_channels * n_heads != channels else nn.Identity()
 
-        self.use_pe = use_pe
+        self.use_positional_encoding = use_positional_encoding
         self.pos_dim = pos_dim
 
-        self.init_gain = 1 / math.sqrt(dim_head)
+        self.init_gain = 1 / math.sqrt(head_n_channels)
         self.diagonal_weight = self.init_gain
         self.initialize_qkv_weights()
 
@@ -63,16 +63,14 @@ class AttentionKernelIntegral(torch.nn.Module):
         # this requires input dim = dim_head
         # W = init_fn(W) + I * diagonal_weight
         # init_fn is usually xavier_uniform_
+
         for param in weight.parameters():
             if param.ndim > 1:
-                dim_head = param.size(0) // self.heads
                 for h in range(self.heads):
-                    inif_fn(param[h * dim_head:(h + 1) * dim_head, :], gain=self.init_gain)
-
-                    param.data[h * self.dim_head:(h + 1) * self.dim_head, :] += self.diagonal_weight * \
-                                                                                    torch.diag(torch.ones(
-                                                                                    param.size(-1),
-                                                                                    dtype=torch.float32))
+                    inif_fn(param[h * self.head_n_channels:(h + 1) * self.head_n_channels, :], gain=self.init_gain)
+                    if self.head_n_channels == self.channels:
+                        diagonal_bias = self.diagonal_weight * torch.diag(torch.ones(param.size(-1), dtype=torch.float32))
+                        param.data[h * self.head_n_channels:(h + 1) * self.head_n_channels, :] += diagonal_bias
 
     def initialize_qkv_weights(self):
         init_fn = xavier_uniform_
@@ -82,11 +80,12 @@ class AttentionKernelIntegral(torch.nn.Module):
         self.init_weight(self.to_k, init_fn)
         self.init_weight(self.to_v, init_fn)
 
-    def normalize_wrt_domain(self, x, norm_fn):
-        b = x.shape[0]
-        x = x.view(b*self.heads, -1, self.dim_head)
-        x = norm_fn(x)
-        return x.view(b, self.heads, -1, self.dim_head)
+    def normalize_wrt_domain(self, u, norm_fn):
+        # u: the input or transformed function
+        b = u.shape[0]   # batch size
+        u = u.view(b*self.heads, -1, self.dim_head)
+        u = norm_fn(u)
+        return u.view(b, self.heads, -1, self.dim_head)
 
     def forward(self,
                 u_x,
@@ -95,22 +94,23 @@ class AttentionKernelIntegral(torch.nn.Module):
                 u_y=None,
                 pos_y=None,
                 weights=None,
-                associate=True,   # can be much faster if n is larger than the channel number c
+                associative=True,   # can be much faster if n is larger than the channel number c
                 get_kernel=False):
         """
         Computes kernel integral transform with attention
 
         Parameters
         ----------
-        u_x: input (query) function of shape [b, n, c]
-        pos_x: coordinate of input function's grid points [b, n, d]
-        pos_emb: positional encoding module for encoding q/k torch.nn.Module
+        u_x: input (query) function of shape [batch_size, num_grid_points, channels]
+        pos_x: coordinate of input function's grid points [batch_size, num_grid_points, pos_dim]
+        pos_emb: positional encoding module for encoding q/k, a torch.nn.Module
         u_y: the second source of function (key and value), if not provided, u_y = u_x
         pos_y: coordinate of the second source of function's grid points, if not provided, assume pos_y = pos_x
         weights : tensor of shape [b, n], if not provided assume to be 1/n
                   Weights for each point y proprtional to the
                   volume around f(y)=u_y W_v being integrated.
-        associate: if True, use associativity of matrix multiplication, first multiply K^T V, then multiply Q
+        associative: if True, use associativity of matrix multiplication, first multiply K^T V, then multiply Q,
+                   much faster when nnum_grid_points is larger than the channel number (which is usually the case)
         get_kernel: if True, return the kernel matrix (for analyzing the kernel)
         Output
         ----------
@@ -120,17 +120,17 @@ class AttentionKernelIntegral(torch.nn.Module):
         if u_y is None:
             u_y = u_x   # go back to self attention
 
-        if get_kernel and associate:
+        if get_kernel and associative:
             raise Exception('Cannot get kernel matrix when associate is set to True')
 
-        b, n = u_y.shape[:2]
+        b, n = u_y.shape[:2]   # batch size and number of grid points
 
         q = self.to_q(u_x)
         k = self.to_k(u_y)
         v = self.to_v(u_y)
-        q = q.view(b, -1, self.heads, self.dim_head).permute(0, 2, 1, 3).contiguous()
-        k = k.view(b, -1, self.heads, self.dim_head).permute(0, 2, 1, 3).contiguous()
-        v = v.view(b, -1, self.heads, self.dim_head).permute(0, 2, 1, 3).contiguous()
+        q = q.view(b, -1, self.n_heads, self.head_n_channels).permute(0, 2, 1, 3).contiguous()
+        k = k.view(b, -1, self.n_heads, self.head_n_channels).permute(0, 2, 1, 3).contiguous()
+        v = v.view(b, -1, self.n_heads, self.head_n_channels).permute(0, 2, 1, 3).contiguous()
 
         if weights is None:
             weights = torch.ones((u_y.shape[0], 1, u_y.shape[1], 1), device=u_y.device) / n   # uniform weights
@@ -177,7 +177,7 @@ class AttentionKernelIntegral(torch.nn.Module):
             else:
                 raise Exception('Currently doesnt support relative embedding >= 3 dimensions')
 
-        if associate:
+        if associative:
             dots = torch.matmul(k.transpose(-1, -2), v)
             u = torch.matmul(q, dots) * weights
         else:
@@ -185,7 +185,7 @@ class AttentionKernelIntegral(torch.nn.Module):
             kxy = torch.matmul(q, k.transpose(-1, -2))
             u = torch.matmul(kxy, v) * weights
 
-        u = u.permute(0, 2, 1, 3).contiguous().view(b, n, self.heads*self.dim_head)
+        u = u.permute(0, 2, 1, 3).contiguous().view(b, n, self.n_heads*self.head_n_channels)
         u = self.to_out(u)
         if get_kernel:
             return u, kxy
