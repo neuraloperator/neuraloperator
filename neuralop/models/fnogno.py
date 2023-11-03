@@ -183,12 +183,9 @@ class FNOGNO(nn.Module):
             in_p = torch.cat((f, in_p), dim=-1)
         print(f"catted f and in_p, shape is {in_p.shape=}")
 
-        # TODO david: is this permutation needed?
         # permute (b, n_1, ..., n_k, c) -> (b,c, n_1,...n_k)
-        #in_p = in_p.permute(self.in_coord_dim, *self.in_coord_dim_forward_order)
         in_p = in_p.permute(0, len(in_p.shape)-1, *list(range(1,len(in_p.shape)-1)))
 
-        # todo: make this general to handle any dim and batch_size
         print(f"permuted in_p, shape is {in_p.shape=}")
 
 
@@ -319,19 +316,15 @@ class FNOGNO(nn.Module):
         """
         
         input_shape = in_p.shape
-        # if no batch dimension
+        # if no batch dimension exists, create one
         if len(input_shape) == self.gno_coord_dim + 1:
-            in_p.unsqueeze(0)
-            out_p.unsqueeze(0)
+            in_p = in_p.unsqueeze(0)
+            out_p = out_p.unsqueeze(0)
             if f is not None:
-                f.unsqueeze(0)
+                f = f.unsqueeze(0)
             if ada_in is not None:
-                ada_in.unsqueeze(0)
-        # TODO @dhpitt: is this permutation necessary?
-        # permute b x dim 1 x ... x dim n x in_channels + n --> dim 1 x ... x dim n x b x in_channels + n
-        # 
-        # permute_shape = list(range(1,self.gno_coord_dim+1)) + [0,self.gno_coord_dim+1]
-        # in_p = in_p.permute(*permute_shape)
+                ada_in = ada_in.unsqueeze(0)
+        
 
         #Compute latent space embedding
         # in_p shape (b, n1, ...nk, c)
@@ -340,7 +333,7 @@ class FNOGNO(nn.Module):
                                              ada_in=ada_in)
         
         # todo: make this general to handle any dim and batch size
-        data_channels = self.in_channels - f.shape[-1] - self.gno_coord_dim
+        data_channels = self.in_channels + self.in_coord_dim - f.shape[-1] - self.gno_coord_dim
         print(f"in_p has total channels {self.in_channels}, data channels {data_channels=}")
         # just grab positional encoding of in_p, which is indexed along the last dimension 
         positional_encoding_inds = tuple([slice(None) for _ in range(len(input_shape) - 1)] + [slice(data_channels,None,None)])
