@@ -170,24 +170,27 @@ class FNOGNO(nn.Module):
 
     #returns: (fno_hidden_channels, n_1, n_2, ...)
     def latent_embedding(self, in_p, f, ada_in=None):
+        print(f"{in_p.shape=}")
+        print(f"{f.shape=}")
+        if ada_in is not None:
+            print(f"{ada_in.shape=}")
+
         # in_p : (batch, n_1 , ... , n_k, in_channels + k)
-        # f : (n_1, n_2, ..., n_k, in_channels)
+        # f : (batch, n_1, n_2, ..., n_k, in_channels)
         # ada_in : (fno_ada_in_dim, )
 
         if f is not None:
-            f = f.unsqueeze(0).repeat(in_p.shape[0],*tuple([1] * len(in_p.shape) - 1)) # batch x f_shape x in_channels
             in_p = torch.cat((f, in_p), dim=-1)
+        print(f"catted f and in_p, shape is {in_p.shape=}")
 
-            # TODO david: is this permutation needed?
-            # permute (channels, n_1, ..., n_k, batch)
-            #in_p = in_p.permute(self.in_coord_dim, *self.in_coord_dim_forward_order)
+        # TODO david: is this permutation needed?
+        # permute (b, n_1, ..., n_k, c) -> (b,c, n_1,...n_k)
+        #in_p = in_p.permute(self.in_coord_dim, *self.in_coord_dim_forward_order)
+        in_p = in_p.permute(0, len(in_p.shape)-1, *list(range(1,len(in_p.shape)-1)))
 
         # todo: make this general to handle any dim and batch_size
-        '''if self.gno_coord_dim == 2:
-            if len(in_p.shape) == 3:
-                in_p = in_p.permute(2, 0, 1).unsqueeze(0)
-            else:
-                in_p = in_p.permute(2, 3, 0, 1)'''
+        print(f"permuted in_p, shape is {in_p.shape=}")
+
 
         #Update Ada IN embedding
         if ada_in is not None:
@@ -198,7 +201,6 @@ class FNOGNO(nn.Module):
 
             self.fno.fno_blocks.set_ada_in_embeddings(ada_in_embed)
 
-        in_p = self.fno(in_p)
         #Apply FNO blocks
         in_p = self.fno.lifting(in_p)
         if self.fno.domain_padding is not None:
@@ -217,16 +219,23 @@ class FNOGNO(nn.Module):
         # in_p : (b, n1, ...nk, c)
         # out_p : (b, n_points, gno_coord_dim)
         # latent_embed_batched: (b, latent embed dims (haven't checked))
+        print(f"{in_p_batched.shape=}")
+        print(f"{out_p_batched.shape=}")
+        print(f"{latent_embed_batched.shape=}")
+
         batch_size = in_p_batched.shape[0]
         # shape batch size x outupt dim x 1
-        output_batched = torch.zeros((in_p_batched.shape[2], out_p_batched.shape[1], 1), device=in_p_batched.device)
+        output_batched = torch.zeros((batch_size, out_p_batched.shape[1], self.out_channels), device=in_p_batched.device)
         compute_norm = self.gno_weighting_fn is not None
 
         for i in range(batch_size):
-            # todo: hard-coded for 2-d case
             in_p = in_p_batched[i]
             out_p = out_p_batched[i]
             latent_embed = latent_embed_batched[i]
+            print("one slice:")
+            print(f"{in_p.shape=}")
+            print(f"{out_p.shape=}")
+            print(f"{latent_embed.shape=}")
 
             if self.nbr_caching:
                 if not self.cached_nbrs:
@@ -310,6 +319,14 @@ class FNOGNO(nn.Module):
         """
         
         input_shape = in_p.shape
+        # if no batch dimension
+        if len(input_shape) == self.gno_coord_dim + 1:
+            in_p.unsqueeze(0)
+            out_p.unsqueeze(0)
+            if f is not None:
+                f.unsqueeze(0)
+            if ada_in is not None:
+                ada_in.unsqueeze(0)
         # TODO @dhpitt: is this permutation necessary?
         # permute b x dim 1 x ... x dim n x in_channels + n --> dim 1 x ... x dim n x b x in_channels + n
         # 
@@ -323,15 +340,14 @@ class FNOGNO(nn.Module):
                                              ada_in=ada_in)
         
         # todo: make this general to handle any dim and batch size
-        in_p_channels = self.in_channels + f.shape[-1]
+        data_channels = self.in_channels - f.shape[-1] - self.gno_coord_dim
+        print(f"in_p has total channels {self.in_channels}, data channels {data_channels=}")
         # just grab positional encoding of in_p, which is indexed along the last dimension 
-        positional_encoding_inds = tuple([slice(None) for _ in range(len(input_shape) - 1)] + [slice(in_p_channels,None,None)])
+        positional_encoding_inds = tuple([slice(None) for _ in range(len(input_shape) - 1)] + [slice(data_channels,None,None)])
         in_p = in_p[positional_encoding_inds]
 
         #Integrate latent space
-        out = self.integrate_latent_batch(in_p=in_p, 
-                                    out_p=out_p, 
-                                    latent_embed=latent_embed)
+        out = self.integrate_latent_batch(in_p, out_p, latent_embed)
   
         return out
 
