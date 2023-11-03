@@ -30,7 +30,6 @@ class OutputEncoder(torch.nn.Module):
     def to(self, device):
         pass
 
-
 class MultipleFieldOutputEncoder(OutputEncoder):
     """When a model has multiple output fields, 
         apply a different output encoder to each field. 
@@ -102,7 +101,7 @@ class MultipleFieldOutputEncoder(OutputEncoder):
         self.encoders = {k:v.to(device) for k,v in self.encoders.items()}
 
 
-class TransformCallback(torch.nn.Module):
+class Transform(torch.nn.Module):
     """OutputEncoder: converts the output of a model
         into a form usable by some cost function.
     """
@@ -130,7 +129,7 @@ class TransformCallback(torch.nn.Module):
         pass
 
 
-class DictTransformCallback(OutputEncoder):
+class DictTransform(OutputEncoder):
     """When a model has multiple input and output fields, 
         apply a different transform to each field, 
         tries to apply the inverse_transform to each output
@@ -202,7 +201,7 @@ class DictTransformCallback(OutputEncoder):
         self.encoders = {k:v.to(device) for k,v in self.encoders.items()}
 
 
-class UnitGaussianNormalizer(torch.nn.Module):
+class UnitGaussianNormalizer(OutputEncoder):
     """
     UnitGaussianNormalizer normalizes data to be zero mean and unit std. 
     """
@@ -253,7 +252,6 @@ class UnitGaussianNormalizer(torch.nn.Module):
         n_samples = len(data_batch)
         while count < n_samples:
             samples = data_batch[count:count+batch_size]
-            print(samples.shape)
             # if batch_size == 1:
             #     samples = samples.unsqueeze(0)
             if self.n_elements:
@@ -268,7 +266,7 @@ class UnitGaussianNormalizer(torch.nn.Module):
         self.mean = torch.mean(data_batch, dim=self.dim, keepdim=True)
         self.squared_mean = torch.mean(data_batch**2, dim=self.dim, keepdim=True)
         self.std = torch.sqrt(self.squared_mean - self.mean**2)
-
+        print(self.mean)
     def incremental_update_mean_std(self, data_batch):
         n_elements = count_tensor_params(data_batch, self.dim)
 
@@ -284,7 +282,7 @@ class UnitGaussianNormalizer(torch.nn.Module):
         if x.ndim == self.ndim: #Normalize a batch of data
             return (x - self.mean)/(self.std + self.eps)
         elif x.ndim == self.ndim - 1: # Normalize a single sample
-            return (x - self.mean.squeeze(0))/(self.std + self.eps.squeeze(0))
+            return (x - self.mean.squeeze(0))/(self.std.squeeze(0) + self.eps)
         else:
             raise ValueError(f'Got sample of size {x.shape} but learned stats on samples of size {self.data_shape}')
     
@@ -302,19 +300,16 @@ class UnitGaussianNormalizer(torch.nn.Module):
     def cuda(self):
         self.mean = self.mean.cuda()
         self.std = self.std.cuda()
-        self.eps = self.eps.cuda()
         return self
 
     def cpu(self):
         self.mean = self.mean.cpu()
         self.std = self.std.cpu()
-        self.eps = self.eps.cpu()
         return self
     
     def to(self, device):
         self.mean = self.mean.to(device)
         self.std = self.std.to(device)
-        self.eps = self.eps.to(device)
         return self
     
     @classmethod
@@ -333,12 +328,14 @@ class UnitGaussianNormalizer(torch.nn.Module):
         keys : str list or None
             if not None, a normalizer is instanciated only for the given keys
         """
+        instances = {key: cls(dim=dim) for key in keys}
+
         for i, data_dict in enumerate(dataset):
             if not i:
                 if not keys:
                     keys = data_dict.keys()
                 instances = {key: cls(dim=dim) for key in keys}
             for key, sample in data_dict.items():
-                instances[key].partial_fit(sample.unsqueeze(0))
+                if key in keys:
+                    instances[key].partial_fit(sample.unsqueeze(0))
         return instances
-             
