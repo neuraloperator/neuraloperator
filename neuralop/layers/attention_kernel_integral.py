@@ -110,7 +110,7 @@ class AttentionKernelIntegral(torch.nn.Module):
                   Weights for each point y proprtional to the
                   volume around f(y)=u_y W_v being integrated.
         associative: if True, use associativity of matrix multiplication, first multiply K^T V, then multiply Q,
-                   much faster when nnum_grid_points is larger than the channel number (which is usually the case)
+                   much faster when num_grid_points is larger than the channel number (which is usually the case)
         get_kernel: if True, return the kernel matrix (for analyzing the kernel)
         Output
         ----------
