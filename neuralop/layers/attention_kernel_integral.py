@@ -15,7 +15,7 @@ class AttentionKernelIntegral(torch.nn.Module):
     Parameters
     ----------
     channels : int, input and output channels
-    n_heads : int, number of attention heads
+    n_heads : int, number of attention n_heads
     head_n_channels : int, dimension of each attention head, determines how many function bases to use for the kernel
     pos_dim : int, dimension of domain
     use_pe : bool, whether to use positional encoding
@@ -59,14 +59,14 @@ class AttentionKernelIntegral(torch.nn.Module):
 
     def init_weight(self, weight, inif_fn):
         # initialization for the projection matrix
-        # basically initialize the weights for each heads as
-        # this requires input dim = dim_head
+        # basically initialize the weights for each n_heads
+        # to add the diagonal bias, it requires input dim = head_n_channels
         # W = init_fn(W) + I * diagonal_weight
         # init_fn is usually xavier_uniform_
 
         for param in weight.parameters():
             if param.ndim > 1:
-                for h in range(self.heads):
+                for h in range(self.n_heads):
                     inif_fn(param[h * self.head_n_channels:(h + 1) * self.head_n_channels, :], gain=self.init_gain)
                     if self.head_n_channels == self.channels:
                         diagonal_bias = self.diagonal_weight * torch.diag(torch.ones(param.size(-1), dtype=torch.float32))
@@ -83,9 +83,9 @@ class AttentionKernelIntegral(torch.nn.Module):
     def normalize_wrt_domain(self, u, norm_fn):
         # u: the input or transformed function
         b = u.shape[0]   # batch size
-        u = u.view(b*self.heads, -1, self.dim_head)
-        u = norm_fn(u)
-        return u.view(b, self.heads, -1, self.dim_head)
+        u = u.view(b*self.n_heads, -1, self.head_n_channels)
+        u = norm_fn(u)    # layer norm with channel dimension or instance norm with spatial dimension
+        return u.view(b, self.n_heads, -1, self.head_n_channels)
 
     def forward(self,
                 u_x,
@@ -112,6 +112,7 @@ class AttentionKernelIntegral(torch.nn.Module):
         associative: if True, use associativity of matrix multiplication, first multiply K^T V, then multiply Q,
                    much faster when num_grid_points is larger than the channel number (which is usually the case)
         get_kernel: if True, return the kernel matrix (for analyzing the kernel)
+
         Output
         ----------
         out_features: Output function given on the points x.
@@ -121,7 +122,7 @@ class AttentionKernelIntegral(torch.nn.Module):
             u_y = u_x   # go back to self attention
 
         if get_kernel and associative:
-            raise Exception('Cannot get kernel matrix when associate is set to True')
+            raise Exception('Cannot get kernel matrix when associative is set to True')
 
         b, n = u_y.shape[:2]   # batch size and number of grid points
 
@@ -146,8 +147,8 @@ class AttentionKernelIntegral(torch.nn.Module):
                 assert pos_x.shape[-1] == 2
                 q_freqs_x = pos_emb.forward(pos_x[..., 0], q.device)
                 q_freqs_y = pos_emb.forward(pos_x[..., 1], q.device)
-                q_freqs_x = q_freqs_x.unsqueeze(1).repeat([1, self.heads, 1, 1])
-                q_freqs_y = q_freqs_y.unsqueeze(1).repeat([1, self.heads, 1, 1])
+                q_freqs_x = q_freqs_x.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
+                q_freqs_y = q_freqs_y.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
 
                 if pos_y is None:
                     k_freqs_x = q_freqs_x
@@ -155,8 +156,8 @@ class AttentionKernelIntegral(torch.nn.Module):
                 else:
                     k_freqs_x = pos_emb.forward(pos_y[..., 0], k.device)
                     k_freqs_y = pos_emb.forward(pos_y[..., 1], k.device)
-                    k_freqs_x = k_freqs_x.unsqueeze(1).repeat([1, self.heads, 1, 1])
-                    k_freqs_y = k_freqs_y.unsqueeze(1).repeat([1, self.heads, 1, 1])
+                    k_freqs_x = k_freqs_x.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
+                    k_freqs_y = k_freqs_y.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
 
                 q = pos_emb.apply_2d_rotary_pos_emb(q, q_freqs_x, q_freqs_y)
                 k = pos_emb.apply_2d_rotary_pos_emb(k, k_freqs_x, k_freqs_y)
@@ -164,13 +165,13 @@ class AttentionKernelIntegral(torch.nn.Module):
                 assert pos_x.shape[-1] == 1
 
                 q_freqs = pos_emb.forward(pos_x[..., 0], q.device)
-                q_freqs = q_freqs.unsqueeze(1).repeat([b, self.heads, 1, 1])
+                q_freqs = q_freqs.unsqueeze(1).repeat([b, self.n_heads, 1, 1])
 
                 if pos_y is None:
                     k_freqs = q_freqs
                 else:
                     k_freqs = pos_emb.forward(pos_y[..., 0], k.device)
-                    k_freqs = k_freqs.unsqueeze(1).repeat([b, self.heads, 1, 1])
+                    k_freqs = k_freqs.unsqueeze(1).repeat([b, self.n_heads, 1, 1])
 
                 q = pos_emb.apply_rotary_pos_emb(q, q_freqs)
                 k = pos_emb.apply_rotary_pos_emb(k, k_freqs)
