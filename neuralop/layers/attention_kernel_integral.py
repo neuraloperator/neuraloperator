@@ -82,10 +82,10 @@ class AttentionKernelIntegral(torch.nn.Module):
 
     def normalize_wrt_domain(self, u, norm_fn):
         # u: the input or transformed function
-        b = u.shape[0]   # batch size
-        u = u.view(b*self.n_heads, -1, self.head_n_channels)
+        batch_size = u.shape[0]
+        u = u.view(batch_size*self.n_heads, -1, self.head_n_channels)
         u = norm_fn(u)    # layer norm with channel dimension or instance norm with spatial dimension
-        return u.view(b, self.n_heads, -1, self.head_n_channels)
+        return u.view(batch_size, self.n_heads, -1, self.head_n_channels)
 
     def forward(self,
                 u_x,
@@ -94,7 +94,7 @@ class AttentionKernelIntegral(torch.nn.Module):
                 u_y=None,
                 pos_y=None,
                 weights=None,
-                associative=True,   # can be much faster if n is larger than the channel number c
+                associative=True,   # can be much faster if num_grid_points is larger than the channel number c
                 get_kernel=False):
         """
         Computes kernel integral transform with attention
@@ -103,11 +103,11 @@ class AttentionKernelIntegral(torch.nn.Module):
         ----------
         u_x: input (query) function of shape [batch_size, num_grid_points, channels]
         pos_x: coordinate of input function's grid points [batch_size, num_grid_points, pos_dim]
-        pos_emb: positional encoding module for encoding q/k, a torch.nn.Module
+        pos_emb: positional encoding module for encoding query/key (q/k), a torch.nn.Module
         u_y: the second source of function (key and value), if not provided, u_y = u_x
         pos_y: coordinate of the second source of function's grid points, if not provided, assume pos_y = pos_x
-        weights : tensor of shape [b, n], if not provided assume to be 1/n
-                  Weights for each point y proprtional to the
+        weights : tensor of shape [batch_size, num_grid_points], if not provided assume to be 1/num_grid_points
+                  Weights for each point y proportional to the
                   volume around f(y)=u_y W_v being integrated.
         associative: if True, use associativity of matrix multiplication, first multiply K^T V, then multiply Q,
                    much faster when num_grid_points is larger than the channel number (which is usually the case)
@@ -124,19 +124,19 @@ class AttentionKernelIntegral(torch.nn.Module):
         if get_kernel and associative:
             raise Exception('Cannot get kernel matrix when associative is set to True')
 
-        b, n = u_y.shape[:2]   # batch size and number of grid points
+        batch_size, num_grid_points = u_y.shape[:2]   # batch size and number of grid points
 
         q = self.to_q(u_x)
         k = self.to_k(u_y)
         v = self.to_v(u_y)
-        q = q.view(b, -1, self.n_heads, self.head_n_channels).permute(0, 2, 1, 3).contiguous()
-        k = k.view(b, -1, self.n_heads, self.head_n_channels).permute(0, 2, 1, 3).contiguous()
-        v = v.view(b, -1, self.n_heads, self.head_n_channels).permute(0, 2, 1, 3).contiguous()
+        q = q.view(batch_size, -1, self.n_heads, self.head_n_channels).permute(0, 2, 1, 3).contiguous()
+        k = k.view(batch_size, -1, self.n_heads, self.head_n_channels).permute(0, 2, 1, 3).contiguous()
+        v = v.view(batch_size, -1, self.n_heads, self.head_n_channels).permute(0, 2, 1, 3).contiguous()
 
         if weights is None:
-            weights = torch.ones((u_y.shape[0], 1, u_y.shape[1], 1), device=u_y.device) / n   # uniform weights
+            weights = torch.ones((u_y.shape[0], 1, u_y.shape[1], 1), device=u_y.device) / num_grid_points   # uniform weights
         else:
-            weights = weights.view(b, 1, n, 1)
+            weights = weights.view(batch_size, 1, num_grid_points, 1)
 
         # q = self.q_norm(q)
         k = self.normalize_wrt_domain(k, self.k_norm)
@@ -165,13 +165,13 @@ class AttentionKernelIntegral(torch.nn.Module):
                 assert pos_x.shape[-1] == 1
 
                 q_freqs = pos_emb.forward(pos_x[..., 0], q.device)
-                q_freqs = q_freqs.unsqueeze(1).repeat([b, self.n_heads, 1, 1])
+                q_freqs = q_freqs.unsqueeze(1).repeat([batch_size, self.n_heads, 1, 1])
 
                 if pos_y is None:
                     k_freqs = q_freqs
                 else:
                     k_freqs = pos_emb.forward(pos_y[..., 0], k.device)
-                    k_freqs = k_freqs.unsqueeze(1).repeat([b, self.n_heads, 1, 1])
+                    k_freqs = k_freqs.unsqueeze(1).repeat([batch_size, self.n_heads, 1, 1])
 
                 q = pos_emb.apply_rotary_pos_emb(q, q_freqs)
                 k = pos_emb.apply_rotary_pos_emb(k, k_freqs)
@@ -182,11 +182,11 @@ class AttentionKernelIntegral(torch.nn.Module):
             dots = torch.matmul(k.transpose(-1, -2), v)
             u = torch.matmul(q, dots) * weights
         else:
-            # this is more efficient when n<<c
+            # this is more efficient when num_grid_points<<channels
             kxy = torch.matmul(q, k.transpose(-1, -2))
             u = torch.matmul(kxy, v) * weights
 
-        u = u.permute(0, 2, 1, 3).contiguous().view(b, n, self.n_heads*self.head_n_channels)
+        u = u.permute(0, 2, 1, 3).contiguous().view(batch_size, num_grid_points, self.n_heads*self.head_n_channels)
         u = self.to_out(u)
         if get_kernel:
             return u, kxy
