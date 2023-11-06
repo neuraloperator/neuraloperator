@@ -324,7 +324,9 @@ class FNOGNO(nn.Module):
 
         #Integrate latent space
         out = self.integrate_latent_batch(in_p, out_p, latent_embed)
-  
+
+        if out.shape[0] == 1: # remove batch dim if batch size == 1
+            return out.squeeze(0)
         return out
 
 
