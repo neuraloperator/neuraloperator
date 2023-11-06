@@ -12,7 +12,7 @@ class NeighborSearch(nn.Module):
         Whether to use open3d or torch_cluster
         NOTE: open3d implementation requires 3d data
     """
-    def __init__(self, use_open3d=True, use_torch_cluster=False):
+    def __init__(self, use_open3d=True):
         super().__init__()
         if use_open3d: # slightly faster, works on GPU in 3d only
             from open3d.ml.torch.layers import FixedRadiusSearch
@@ -24,7 +24,7 @@ class NeighborSearch(nn.Module):
             self.use_open3d = False
         
         
-    def forward(self, data, queries, radius):
+    def forward(self, data, queries, radius, compute_norm=False):
         """Find the neighbors, in data, of each point in queries
         within a ball of radius. Returns in CRS format.
 
@@ -60,8 +60,26 @@ class NeighborSearch(nn.Module):
             search_return = self.search_fn(data, queries, radius)
             return_dict['neighbors_index'] = search_return.neighbors_index.long()
             return_dict['neighbors_row_splits'] = search_return.neighbors_row_splits.long()
+        
+        # Compute norms
+        if compute_norm:
+            num_reps = return_dict['neighbors_row_splits'][1:] - return_dict['neighbors_row_splits'][:-1]
+            rep_queries = torch.repeat_interleave(queries, num_reps, dim=0)
+            rep_data = data[return_dict['neighbors_index']]
+            rep_dist = rep_queries - rep_data
+            return_dict['norm'] = (rep_dist ** 2).sum(dim=-1)
 
         else:
             return_dict = self.search_fn(data, queries, radius)
         
+        return return_dict
+
+    def compute_norm_separate(self, nbrs, data, queries):
+        # todo: the forward pass could also call this same method to not have redundant code
+        return_dict = nbrs
+        num_reps = return_dict['neighbors_row_splits'][1:] - return_dict['neighbors_row_splits'][:-1]
+        rep_queries = torch.repeat_interleave(queries, num_reps, dim=0)
+        rep_data = data[return_dict['neighbors_index']]
+        rep_dist = rep_queries - rep_data
+        return_dict['norm'] = (rep_dist ** 2).sum(dim=-1)
         return return_dict

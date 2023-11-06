@@ -1,5 +1,7 @@
+from functools import partial
 import torch
 import torch.nn.functional as F
+import time
 
 from torch import nn
 
@@ -12,108 +14,13 @@ from ..layers.integral_transform import IntegralTransform
 from ..layers.neighbor_search import NeighborSearch
 
 
-class FNOGNO(nn.Module):
-    """FNOGNO: Fourier/Geometry Neural Operator 
 
-        Parameters
-        ----------
-        in_channels : int
-            number of input channels
-        out_channels : int
-            number of output channels
-        projection_channels : int, defaults to 256
-             number of hidden channels in embedding block of FNO. 
-        gno_coord_dim : int, defaults to 3
-            dimension of GNO input data. 
-        gno_coord_embed_dim : int | None, defaults to none
-            dimension of embeddings of GNO coordinates. 
-        gno_radius : float, defaults to 0.033
-            radius parameter to construct graph. 
-        gno_mlp_hidden_layers : list, defaults to [512, 256]
-            dimension of hidden MLP layers of GNO. 
-        gno_mlp_non_linearity : nn.Module, defaults to F.gelu
-            nonlinear activation function between layers
-        gno_transform_type : str, defaults to 'linear'
-            type of kernel integral transform to apply in GNO. 
-            kernel k(x,y): parameterized as MLP integrated over a neighborhood of x
-            options: 'linear_kernelonly': integrand is k(x, y) 
-                        'linear' : integrand is k(x, y) * f(y)
-                        'nonlinear_kernelonly' : integrand is k(x, y, f(y))
-                        'nonlinear' : integrand is k(x, y, f(y)) * f(y)
-        gno_use_open3d : bool, defaults to False
-            whether to use Open3D functionality
-            if False, uses simple fallback neighbor search
-        fno_n_modes : tuple, defaults to (16, 16, 16)
-            number of modes to keep along each spectral dimension of FNO block
-        fno_hidden_channels : int, defaults to 64
-            number of hidden channels of fno block. 
-        fno_lifting_channels : int, defaults to 256
-            dimension of hidden layers in FNO lifting block.
-        fno_n_layers : int, defaults to 4
-            number of FNO layers in the block. 
-        fno_output_scaling_factor : float | None, defaults to None
-            factor by which to rescale output predictions in the original domain
-        fno_incremental_n_modes : list[int] | None, defaults to None
-            if passed, sets n_modes separately for each FNO layer. 
-        fno_block_precision : str, defaults to 'full'
-            data precision to compute within fno block
-        fno_use_mlp : bool, defaults to False
-            Whether to use an MLP layer after each FNO block. 
-        fno_mlp_dropout : float, defaults to 0
-            dropout parameter of above MLP. 
-        fno_mlp_expansion : float, defaults to 0.5
-            expansion parameter of above MLP. 
-        fno_non_linearity : nn.Module, defaults to F.gelu
-            nonlinear activation function between each FNO layer. 
-        fno_stabilizer : nn.Module | None, defaults to None
-            By default None, otherwise tanh is used before FFT in the FNO block. 
-        fno_norm : nn.Module | None, defaults to None
-            normalization layer to use in FNO.
-        fno_ada_in_features : int | None, defaults to None
-            if an adaptive mesh is used, number of channels of its positional embedding. 
-        fno_ada_in_dim : int, defaults to 1
-            dimensions of above FNO adaptive mesh. 
-        fno_preactivation : bool, defaults to False
-            whether to use Resnet-style preactivation. 
-        fno_skip : str, defaults to 'linear'
-            type of skip connection to use. 
-        fno_mlp_skip : str, defaults to 'soft-gating'
-            type of skip connection to use in the FNO
-            'linear': conv layer
-            'soft-gating': weights the channels of the input
-            'identity': nn.Identity
-        fno_separable : bool, defaults to False
-            if True, use a depthwise separable spectral convolution. 
-        fno_factorization : str {'tucker', 'tt', 'cp'} |  None, defaults to None
-            Tensor factorization of the parameters weight to use
-        fno_rank : float, defaults to 1.0
-            Rank of the tensor factorization of the Fourier weights. 
-        fno_joint_factorization : bool, defaults to False
-            Whether all the Fourier layers should be parameterized by a single tensor (vs one per layer). 
-        fno_fixed_rank_modes : bool, defaults to False
-            Modes to not factorize. 
-        fno_implementation : str {'factorized', 'reconstructed'} | None, defaults to 'factorized'
-            If factorization is not None, forward mode to use::
-            * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass
-            * `factorized` : the input is directly contracted with the factors of the decomposition
-        fno_decomposition_kwargs : dict, defaults to dict()
-            Optionaly additional parameters to pass to the tensor decomposition. 
-        fno_domain_padding : float | None, defaults to None
-            If not None, percentage of padding to use. 
-        fno_domain_padding_mode : str {'symmetric', 'one-sided'}, defaults to 'one-sided'
-            How to perform domain padding. 
-        fno_fft_norm : str, defaults to 'forward'
-            normalization parameter of torch.fft to use in FNO. Defaults to 'forward'
-        fno_SpectralConv : nn.Module, defaults to SpectralConv
-             Spectral Convolution module to use.
-        """
-    
-    
-    
+class FNOGNO(nn.Module):
     def __init__(
             self,
             in_channels,
             out_channels,
+            nbr_caching=False,
             projection_channels=256,
             gno_coord_dim=3,
             gno_coord_embed_dim=None,
@@ -121,10 +28,13 @@ class FNOGNO(nn.Module):
             gno_mlp_hidden_layers=[512, 256],
             gno_mlp_non_linearity=F.gelu, 
             gno_transform_type='linear',
+            gno_weighting_fn=None,
+            gno_wt_fn_scale=1,
             gno_use_open3d=False,
             fno_n_modes=(16, 16, 16), 
             fno_hidden_channels=64,
             fno_lifting_channels=256,
+            fno_projection_channels=256,
             fno_n_layers=4,
             fno_output_scaling_factor=None,
             fno_incremental_n_modes=None,
@@ -154,8 +64,10 @@ class FNOGNO(nn.Module):
             **kwargs
         ):
         
-        
         super().__init__()
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
 
         self.gno_coord_dim = gno_coord_dim
         if self.gno_coord_dim != 3 and gno_use_open3d:
@@ -184,7 +96,7 @@ class FNOGNO(nn.Module):
                 in_channels=in_channels + self.in_coord_dim, 
                 out_channels=fno_hidden_channels,
                 lifting_channels=fno_lifting_channels,
-                projection_channels=1,
+                projection_channels=fno_projection_channels,
                 n_layers=fno_n_layers,
                 output_scaling_factor=fno_output_scaling_factor,
                 incremental_n_modes=fno_incremental_n_modes,
@@ -216,6 +128,12 @@ class FNOGNO(nn.Module):
         self.nb_search_out = NeighborSearch(use_open3d=gno_use_open3d)
         self.gno_radius = gno_radius
 
+        self.gno_weighting_fn = gno_weighting_fn
+        sq_radius = self.gno_radius ** 2
+        if self.gno_weighting_fn == "linear":
+            self.gno_weighting_fn = partial(linear_cutoff, radius=sq_radius, scale=gno_wt_fn_scale)
+        
+
         if gno_coord_embed_dim is not None:
             self.pos_embed = PositionalEmbedding(gno_coord_embed_dim)
             self.gno_coord_dim_embed = gno_coord_dim*gno_coord_embed_dim
@@ -233,7 +151,7 @@ class FNOGNO(nn.Module):
         self.gno = IntegralTransform(
                     mlp_layers=gno_mlp_hidden_layers,
                     mlp_non_linearity=gno_mlp_non_linearity,
-                    transform_type=gno_transform_type 
+                    transform_type=gno_transform_type,
         )
 
         self.projection = MLP(in_channels=fno_hidden_channels, 
@@ -243,15 +161,26 @@ class FNOGNO(nn.Module):
                               n_dim=1, 
                               non_linearity=fno_non_linearity) 
 
+        # save cached neighbors
+        self.nbr_caching = nbr_caching
+        self.cached_nbrs = None
+        self.domain_lengths = None
+
     # out_p : (n_out, gno_coord_dim)
-    # in_p : (n_1, n_2, ..., n_k, k)
-    # f : (n_1, n_2, ..., n_k,  in_channels)
-    # ada_in : (fno_ada_in_dim, )
 
     #returns: (fno_hidden_channels, n_1, n_2, ...)
     def latent_embedding(self, in_p, f, ada_in=None):
-        in_p = torch.cat((f, in_p), dim=-1)
-        in_p = in_p.permute(self.in_coord_dim, *self.in_coord_dim_forward_order).unsqueeze(0)
+
+        # in_p : (batch, n_1 , ... , n_k, in_channels + k)
+        # f : (batch, n_1, n_2, ..., n_k, 1)
+        # ada_in : (fno_ada_in_dim, )
+
+        if f is not None:
+            in_p = torch.cat((f, in_p), dim=-1)
+        print(f"catted f and in_p, shape is {in_p.shape=}")
+
+        # permute (b, n_1, ..., n_k, c) -> (b,c, n_1,...n_k)
+        in_p = in_p.permute(0, len(in_p.shape)-1, *list(range(1,len(in_p.shape)-1)))
 
         #Update Ada IN embedding
         if ada_in is not None:
@@ -273,53 +202,134 @@ class FNOGNO(nn.Module):
         if self.fno.domain_padding is not None:
             in_p = self.fno.domain_padding.unpad(in_p)
         
-        return in_p.squeeze(0)
-    
-    def integrate_latent(self, in_p, out_p, latent_embed):
-        #Compute integration region for each output point
-        in_to_out_nb = self.nb_search_out(in_p.view(-1, in_p.shape[-1]), out_p, self.gno_radius)
+        return in_p 
 
-        #Embed input points
-        n_in = in_p.view(-1, in_p.shape[-1]).shape[0]
-        if self.pos_embed is not None:
-            in_p_embed = self.pos_embed(in_p.reshape(-1, )).reshape((n_in, -1))
-        else:
-            in_p_embed = in_p.reshape((n_in, -1))
-        
-        #Embed output points
-        n_out = out_p.shape[0]
-        if self.pos_embed is not None:
-            out_p_embed = self.pos_embed(out_p.reshape(-1, )).reshape((n_out, -1))
-        else:
-            out_p_embed = out_p #.reshape((n_out, -1))
-        
-        #(n_1*n_2*..., fno_hidden_channels)
-        latent_embed = latent_embed.permute(*self.in_coord_dim_reverse_order, 0).reshape(-1, self.fno.hidden_channels)
+    def integrate_latent_batch(self, in_p_batched, out_p_batched, latent_embed_batched):
+        # todo: this is extremely inefficient. There are several ways to make it more efficient.
 
-        #(n_out, fno_hidden_channels)
-        out = self.gno(y=in_p_embed, 
-                       neighbors=in_to_out_nb,
-                       x=out_p_embed,
-                       f_y=latent_embed)
-        
-        out = out.unsqueeze(0).permute(0, 2, 1)
+        batch_size = in_p_batched.shape[0]
+        # output shape: (batch, n_out, out_channels)
+        output_batched = torch.zeros((batch_size, out_p_batched.shape[1], self.out_channels), device=in_p_batched.device)
+        compute_norm = self.gno_weighting_fn is not None
 
-        # Project pointwise to out channels
-        #(n_in, out_channels)
-        out = self.projection(out).squeeze(0).permute(1, 0)  
-        
-        return out
+        for i in range(batch_size):
+            in_p = in_p_batched[i]
+            out_p = out_p_batched[i]
+            latent_embed = latent_embed_batched[i]
 
+            if self.nbr_caching:
+                if not self.cached_nbrs:
+                    print('computing neighbors for the only time')
+                    self.cached_nbrs = self.nb_search_out(
+                        in_p.view(-1, in_p.shape[-1]), 
+                        out_p, 
+                        self.gno_radius, 
+                        compute_norm=None,
+                    )
+                in_to_out_nb = self.cached_nbrs
+                if compute_norm:
+                    in_to_out_nb = self.nb_search_out.compute_norm_separate(
+                        self.cached_nbrs, 
+                        in_p.view(-1, in_p.shape[-1]),
+                        out_p
+                        )
+            else:
+                in_to_out_nb = self.nb_search_out(
+                    in_p.view(-1, in_p.shape[-1]), 
+                    out_p,
+                    self.gno_radius,
+                    compute_norm=compute_norm,
+                    )
 
-    def forward(self, in_p, out_p, f, ada_in=None, **kwargs):
+            #Embed input points
+            n_in = in_p.view(-1, in_p.shape[-1]).shape[0]
+            if self.pos_embed is not None:
+                in_p_embed = self.pos_embed(in_p.reshape(-1, )).reshape((n_in, -1))
+            else:
+                in_p_embed = in_p.reshape((n_in, -1))
+            
+            #Embed output points
+            n_out = out_p.shape[1]
+            if self.pos_embed is not None:
+                out_p_embed = self.pos_embed(out_p.reshape(-1, )).reshape((n_out, -1))
+            else:
+                out_p_embed = out_p #.reshape((n_out, -1))
+
+            latent_embed = latent_embed.permute(*self.in_coord_dim_reverse_order, 0).reshape(-1, self.fno.hidden_channels)
+
+            #(n_out, fno_hidden_channels)
+            out = self.gno(y=in_p_embed, 
+                        neighbors=in_to_out_nb,
+                        x=out_p_embed,
+                        f_y=latent_embed,
+                        weighting_fn=self.gno_weighting_fn)
+
+            out = out.unsqueeze(0).permute(0, 2, 1)
+
+            # Project pointwise to out channels
+            #(n_in, out_channels)
+            out = self.projection(out).squeeze(0).permute(1, 0)  
+            output_batched[i, :, :] = out
         
+        return output_batched
+
+    def forward(self, in_p, out_p, f=None, ada_in=None):
+        """forward call of the FNOGNO model
+
+        Parameters
+        ----------
+        in_p : torch.Tensor
+            input geometry, a lattice.
+            At every point on the lattice, we expect an optional stack of data channels
+            on top of a positional encoding of dimension that matches length of discr_sizes. 
+            expects shape (batch, n_1,... n_k, in_channels + gno_coord_dim)
+            if no batch dim exists, one is created
+        out_p : torch.Tensor
+            output points
+            expects shape (batch, n_out, out_channels)
+        f : torch.tensor, optional
+            SDF over the physical domain
+            expects shape (n_1, ...n_k, 1)
+        ada_in : torch.Tensor, optional
+            adaptive instance norm, by default None
+            expects shape (fno_ada_in_dim, )
+
+        Returns
+        -------
+        out : torch.Tensor
+            predicted values (n output points x output channels)
+        """
+        
+        input_shape = in_p.shape
+        # if no batch dimension exists, create one
+        if len(input_shape) == self.gno_coord_dim + 1:
+            in_p = in_p.unsqueeze(0)
+            out_p = out_p.unsqueeze(0)
+            if f is not None:
+                f = f.unsqueeze(0)
+            if ada_in is not None:
+                ada_in = ada_in.unsqueeze(0)
+        
+
         #Compute latent space embedding
+        # in_p shape (b, n1, ...nk, c)
         latent_embed = self.latent_embedding(in_p=in_p, 
                                              f=f, 
                                              ada_in=ada_in)
-        #Integrate latent space
-        out = self.integrate_latent(in_p=in_p, 
-                                    out_p=out_p, 
-                                    latent_embed=latent_embed)
         
+        data_channels = self.in_channels + self.in_coord_dim - f.shape[-1] - self.gno_coord_dim
+        # just grab positional encoding of in_p, which is indexed along the last dimension 
+        positional_encoding_inds = tuple([slice(None) for _ in range(len(input_shape) - 1)] + [slice(data_channels,None,None)])
+        in_p = in_p[positional_encoding_inds]
+
+        #Integrate latent space
+        out = self.integrate_latent_batch(in_p, out_p, latent_embed)
+
+        if out.shape[0] == 1: # remove batch dim if batch size == 1
+            return out.squeeze(0)
         return out
+
+
+def linear_cutoff(x, radius=1., scale=1.):
+    x = (radius - x).clip(0., radius)
+    return x * scale / radius

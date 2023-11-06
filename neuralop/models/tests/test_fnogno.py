@@ -8,7 +8,7 @@ tenalg.set_backend('einsum')
 @pytest.mark.parametrize('gno_transform_type', ['linear', 'nonlinear_kernelonly', 'nonlinear'])
 @pytest.mark.parametrize('fno_n_modes', [(8,), (8,8), (8,8,8)])
 def test_fnogno(gno_transform_type, fno_n_modes):
-    if torch.has_cuda:
+    if torch.backends.cuda.is_built():
         device = torch.device('cuda:0')
     else:
         device = torch.device('cpu:0')
