@@ -54,7 +54,6 @@ class IntegralTransform(nn.Module):
                  mlp_non_linearity=F.gelu, 
                  transform_type='linear',
                  reduction='sum',
-                 debug=False,
                  ):
         
         super().__init__()
@@ -63,7 +62,6 @@ class IntegralTransform(nn.Module):
 
         self.transform_type = transform_type
         self.reduction = reduction
-        self.debug = debug
         self.magnitudes = {}
 
         if self.transform_type != 'linear_kernelonly' and \
@@ -148,8 +146,6 @@ class IntegralTransform(nn.Module):
             agg_features = torch.cat([agg_features, in_features], dim=1)
 
         rep_features = self.mlp(agg_features)
-        if self.debug:
-            self.compute_magnitudes(neighbors, rep_features)
 
         if f_y is not None and self.transform_type != 'nonlinear_kernelonly':
             rep_features = rep_features*in_features 
@@ -164,15 +160,6 @@ class IntegralTransform(nn.Module):
                                    neighbors['neighbors_row_splits'], 
                                    reduce=self.reduction)
         return out_features
-
-    def compute_magnitudes(self, neighbors, rep_features):
-        #quantiles = torch.linspace(0, 1, num_buckets + 1)
-        #cutoffs = [torch.quantile(neighbors['norm'], q).item() for q in quantiles]
-        cutoffs = [-.01, .001701, .003301, .00501, .006601, .008301, 2]
-        keys = ['b0', 'b0017', 'b0033', 'b005', 'b0066', 'b0083', 'b01']
-        for i in range(len(cutoffs) - 1):
-            mask = (neighbors['norm'] > cutoffs[i]) & (neighbors['norm'] <= cutoffs[i+1])
-            self.magnitudes[keys[i]] = rep_features[mask].norm(dim=-1).mean().item()
 
     def get_magnitudes(self):
         return self.magnitudes
