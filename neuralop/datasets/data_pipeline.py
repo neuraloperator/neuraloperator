@@ -1,5 +1,5 @@
 """
-DataProcessors handle transformations of data for downstream use
+DataPipelines handle transformations of data for downstream use
 in training and testing Neural Operator models.
 """
 
@@ -12,9 +12,9 @@ from torch import nn
 from neuralop.training.patching import MultigridPatching2D
 from .transforms import Transform
 
-class DataProcessor(ABCMeta):
+class DataPipeline(ABCMeta):
     """
-    Abstract base class for DataProcessor objects
+    Abstract base class for DataPipeline objects
     """
     def __init__(self):
         pass
@@ -27,10 +27,10 @@ class DataProcessor(ABCMeta):
     def postprocess(self, sample):
         pass
 
-class MGPatchingDataProcessor(DataProcessor):
+class MGPatchingDataPipeline(DataPipeline):
     def __init__(self, model: nn.Module, levels: int, padding_fraction: float, 
                  stitching: float, device: str='cpu', transforms=None):
-        """MGPatchingDataProcessor 
+        """MGPatchingDataPipeline 
         Applies multigrid patching to inputs out-of-place 
         with an optional output encoder/other data transform
 
@@ -58,7 +58,7 @@ class MGPatchingDataProcessor(DataProcessor):
         self.device = device
         self.transforms = transforms.to(self.device)
         
-        ## TODO @Jean: where should loading to device occur within the DataProcessor?
+        ## TODO @Jean: where should loading to device occur within the DataPipeline?
         #   should it be a default behavior inside the trainer
         #   or should users manage this themselves?
     
@@ -107,23 +107,32 @@ class MGPatchingDataProcessor(DataProcessor):
 
         return out, sample
 
-class Composite(DataProcessor):
-    def __init__(self, transforms: List[Transform], device: str='cpu'):
-        """Composite DataProcessor applies a sequence of transforms
+class Composite(DataPipeline):
+    def __init__(self, in_transforms: List[Transform], out_transforms: List[Transform]=None, device: str='cpu'):
+        """Composite DataPipeline applies a sequence of transforms
         to input data, and applies their inverses in reverse to model outputs
 
         Parameters
         ----------
-        transforms : List[Transform]
-            list of Transform objects to apply to each sample, in order
+        in_transforms : List[Transform]
+            list of Transform objects to apply to each sample's input data, in order
+        out_transforms : List[Transform], optional
+            list of Transform objects to apply to each sample's truth and model output data, in order
+            If none is provided, then in_transforms are applied to everything
         device : str, optional
             device on which to store data, by default 'cpu'
         """
         super().__init__()
-        assert type(transforms) == list, \
-            "Error: Composite transform must be initialized with a list"
+        assert type(in_transforms) == list, \
+            "Error: Composite transform must be initialized with a list of in_transforms"
+        assert type(out_transforms) == list, \
+            "Error: Composite transform must be initialized with a list of out_transforms"
         self.device = device
-        self.transforms = transforms.to(self.device)
+        self.in_transforms = in_transforms.to(self.device)
+        if self.out_transforms:
+            self.out_transforms = out_transforms.to(self.device)
+        else:
+            self.out_transforms = None
     
     def preprocess(self, sample: dict):
         """preprocess a sample, assuming data dict format
@@ -134,11 +143,25 @@ class Composite(DataProcessor):
             data with at least 'x' and 'y' keys
         """
         sample = {k: v.to(self.device) for k,v in sample.items()}
-        for tform in self.transforms:
-            sample = tform.transform(sample)
+        # apply input transformation to 'x'
+        x = sample['x']
+        y = sample['y']
+        for tform in self.in_transforms:
+            x = tform.transform(x)
+        
+        if self.out_transforms:
+            for tform in self.out_transforms:
+                y = tform.transform(y)
+        else:
+            for tform in self.in_transforms:
+                y = tform.transform(y)
+        sample['x'] = x
+        sample['y'] = y
+
+        del x,y
         return sample
     
-    def postprocess(self, sample: dict, out: torch.Tensor):
+    def postprocess(self, out: torch.Tensor, sample: dict):
         """preprocess a sample, assuming data dict format
 
         Parameters
@@ -148,9 +171,19 @@ class Composite(DataProcessor):
         out : torch.tensor
             predictions output by model
         """
-        for tform in self.transforms[::-1]:
-            sample = tform.inverse_transform(sample)
-        return sample
+        y = sample['y']
+        if self.out_transforms:
+            for tform in self.out_transforms[::-1]:
+                y = tform.inverse_transform(y)
+                out = tform.inverse_transform(out)
+        else:
+            for tform in self.in_transforms[::-1]:
+                y = tform.inverse_transform(y)
+                out = tform.inverse_transform(out)
+
+        sample['y'] = y
+        return out, sample
+    
         
 
         
