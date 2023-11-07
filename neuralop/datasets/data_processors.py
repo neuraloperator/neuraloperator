@@ -25,10 +25,10 @@ class Preprocessor(ABCMeta):
 
 class MGPatchingPreprocessor(Preprocessor):
     def __init__(self, model: nn.Module, levels: int, padding_fraction: float, 
-                 stitching: float, encoder=None):
+                 stitching: float, device: str='cpu', transforms=None):
         """MGPatchingPreprocessor 
         Applies multigrid patching to inputs out-of-place 
-        with an optional output encoder
+        with an optional output encoder/other data transform
 
         Parameters
         ----------
@@ -40,17 +40,19 @@ class MGPatchingPreprocessor(Preprocessor):
             mg_padding_fraction parameter for MultigridPatching2D
         stitching : float
             mg_patching_stitching parameter for MultigridPatching2D
-        encoder : neuralop.datasets.output_encoder.OutputEncoder, optional
+        encoder : neuralop.datasets.transforms.Transform, optional
             OutputEncoder to decode model outputs, by default None
+        device 
         """
         super().__init__()
         self.levels = levels
         self.padding_fraction = padding_fraction
         self.stitching = stitching
-        self.encoder = encoder
         self.patcher = MultigridPatching2D(model=model, levels=self.levels, 
                                       padding_fraction=self.padding_fraction,
                                       stitching=self.stitching)
+        self.device = device
+        self.transforms = transforms.to(self.device)
         
         ## TODO @Jean: where should loading to device occur within the preprocessor?
         #   should it be a default behavior inside the trainer
@@ -68,6 +70,9 @@ class MGPatchingPreprocessor(Preprocessor):
             dictionary keyed with 'x', 'y' etc
             represents one batch of data input to a model
         """
+        sample = {k:v.to(self.device) for k,v in sample.items()}
+        if self.transforms:
+            sample = self.transforms.transform(sample)
         sample['x'] = self.patcher.patch(sample['x'])
         sample['y'] = self.patcher.patch(sample['y'])
         return sample
@@ -90,9 +95,9 @@ class MGPatchingPreprocessor(Preprocessor):
         y = self.patcher.unpatch(sample['y'])
         out = self.patcher.unpatch(out)
 
-        if self.encoder:
-            y = self.encoder.decode(y)
-            out = self.encoder.decode(out)
+        if self.transforms:
+            y = self.transforms.inverse_transform(y)
+            out = self.transforms.inverse_transform(out)
         
         sample['y'] = y
 
