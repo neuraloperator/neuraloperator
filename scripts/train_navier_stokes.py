@@ -7,7 +7,8 @@ import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets.navier_stokes import load_navier_stokes_pt
-from neuralop.training import setup, MGPatchingCallback, SimpleWandBLoggerCallback
+from neuralop.datasets.data_pipeline import MGPatchingDataPipeline
+from neuralop.training import setup, BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -30,6 +31,7 @@ config_name = pipe.steps[-1].config_name
 device, is_logger = setup(config)
 
 # Set up WandB logging
+wandb_init_args = None
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
     if config.wandb.name:
@@ -60,8 +62,6 @@ if config.wandb.log and is_logger:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
 
-else: 
-    wandb_init_args = {}
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
 
@@ -149,19 +149,22 @@ if config.verbose:
 # only perform MG patching if config patching levels > 0
 
 callbacks = [
-    MGPatchingCallback(
-        levels=config.patching.levels,
-        padding_fraction=config.patching.padding,
-        stitching=config.patching.stitching, 
-        encoder=output_encoder
-    ),
-    SimpleWandBLoggerCallback(**wandb_init_args)
+    BasicLoggerCallback(wandb_init_args)
 ]
+
+data_pipeline = MGPatchingDataPipeline(model=model,
+                                       levels=config.patching.levels,
+                                       padding_fraction=config.patching.padding,
+                                       stitching=config.patching.stitching,
+                                       device=device,
+                                       in_normalizer=output_encoder,
+                                       out_normalizer=output_encoder)
 
 
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
+    data_pipeline=data_pipeline,
     device=device,
     amp_autocast=config.opt.amp_autocast,
     callbacks=callbacks,
