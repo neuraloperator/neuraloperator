@@ -225,16 +225,16 @@ class PipelineCallback(Callback):
         for c in self.callbacks:
             c.on_val_end(*args, **kwargs)
 
-class SimpleWandBLoggerCallback(Callback):
+class BasicLoggerCallback(Callback):
     """
     Callback that implements simple logging functionality 
     expected when passing verbose to a Trainer
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, wandb_kwargs=None):
         super().__init__()
-        if kwargs:
-            wandb.init(**kwargs)
+        if wandb_kwargs:
+            wandb.init(**wandb_kwargs)
     
     def on_init_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
@@ -354,32 +354,6 @@ class MGPatchingCallback(Callback):
     
     def on_before_val_loss(self, **kwargs):
         return self.on_before_loss(**kwargs, evaluation=True)
-
-
-class OutputEncoderCallback(Callback):
-    
-    def __init__(self, encoder):
-        """
-        Callback class for a training loop that involves
-        an output normalizer but no MG patching.
-
-        Parameters
-        -----------
-        encoder : neuralop.datasets.output_encoder.OutputEncoder
-            module to normalize model inputs/outputs
-        """
-        super().__init__()
-        self.encoder = encoder
-    
-    def on_batch_start(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
-    
-    def on_before_loss(self, out):
-        self.state_dict['out'] = self.encoder.decode(out)
-        self.state_dict['sample']['y'] = self.encoder.decode(self.state_dict['sample']['y'])
-    
-    def on_before_val_loss(self, **kwargs):
-        return self.on_before_loss(**kwargs)
         
 class CheckpointCallback(Callback):
     

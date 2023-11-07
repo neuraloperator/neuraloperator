@@ -7,8 +7,9 @@ import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets import load_darcy_flow_small
+from neuralop.datasets.data_pipeline import MGPatchingDataPipeline
 from neuralop.training import setup
-from neuralop.training.callbacks import MGPatchingCallback, SimpleWandBLoggerCallback
+from neuralop.training.callbacks import BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -30,6 +31,7 @@ config_name = pipe.steps[-1].config_name
 device, is_logger = setup(config)
 
 # Set up WandB logging
+wandb_args = None
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
     if config.wandb.name:
@@ -139,10 +141,18 @@ if config.verbose and is_logger:
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
 
+data_pipeline = MGPatchingDataPipeline(model=model,
+                                       levels=config.patching.levels,
+                                       padding_fraction=config.patching.padding,
+                                       stitching=config.patching.stitching,
+                                       device=device,
+                                       in_normalizer=output_encoder,
+                                       out_normalizer=output_encoder)
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
     device=device,
+    data_pipeline=data_pipeline,
     amp_autocast=config.opt.amp_autocast,
     wandb_log=config.wandb.log,
     log_test_interval=config.wandb.log_test_interval,
@@ -150,11 +160,7 @@ trainer = Trainer(
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
     callbacks=[
-        MGPatchingCallback(levels=config.patching.levels,
-                                  padding_fraction=config.patching.padding,
-                                  stitching=config.patching.stitching,
-                                  encoder=output_encoder),
-        SimpleWandBLoggerCallback(**wandb_args)
+        BasicLoggerCallback(wandb_args)
               ]
               )
 
