@@ -95,7 +95,8 @@ class AttentionKernelIntegral(torch.nn.Module):
 
     def normalize_wrt_domain(self, u, norm_fn):
         """
-        Normalize the input function with respect to the domain
+        Normalize the input function with respect to the domain,
+         reshape the tensor to [batch_size*n_heads, num_grid_points, head_n_channels]
         The second dimension is equal to the number of grid points that discretize the domain
         """
         # u: the input or transformed function
