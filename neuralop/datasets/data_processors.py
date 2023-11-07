@@ -1,16 +1,20 @@
 """
-Preprocessors handle transformations of data for downstream use
+DataProcessors handle transformations of data for downstream use
 in training and testing Neural Operator models.
 """
 
 from abc import ABCMeta, abstractmethod
+from typing import List
+
+import torch
 from torch import nn
 
 from neuralop.training.patching import MultigridPatching2D
+from .transforms import Transform
 
-class Preprocessor(ABCMeta):
+class DataProcessor(ABCMeta):
     """
-    Abstract base class for preprocessor objects
+    Abstract base class for DataProcessor objects
     """
     def __init__(self):
         pass
@@ -23,10 +27,10 @@ class Preprocessor(ABCMeta):
     def postprocess(self, sample):
         pass
 
-class MGPatchingPreprocessor(Preprocessor):
+class MGPatchingDataProcessor(DataProcessor):
     def __init__(self, model: nn.Module, levels: int, padding_fraction: float, 
                  stitching: float, device: str='cpu', transforms=None):
-        """MGPatchingPreprocessor 
+        """MGPatchingDataProcessor 
         Applies multigrid patching to inputs out-of-place 
         with an optional output encoder/other data transform
 
@@ -54,7 +58,7 @@ class MGPatchingPreprocessor(Preprocessor):
         self.device = device
         self.transforms = transforms.to(self.device)
         
-        ## TODO @Jean: where should loading to device occur within the preprocessor?
+        ## TODO @Jean: where should loading to device occur within the DataProcessor?
         #   should it be a default behavior inside the trainer
         #   or should users manage this themselves?
     
@@ -102,6 +106,51 @@ class MGPatchingPreprocessor(Preprocessor):
         sample['y'] = y
 
         return out, sample
+
+class Composite(DataProcessor):
+    def __init__(self, transforms: List[Transform], device: str='cpu'):
+        """Composite DataProcessor applies a sequence of transforms
+        to input data, and applies their inverses in reverse to model outputs
+
+        Parameters
+        ----------
+        transforms : List[Transform]
+            list of Transform objects to apply to each sample, in order
+        device : str, optional
+            device on which to store data, by default 'cpu'
+        """
+        super().__init__()
+        assert type(transforms) == list, \
+            "Error: Composite transform must be initialized with a list"
+        self.device = device
+        self.transforms = transforms.to(self.device)
+    
+    def preprocess(self, sample: dict):
+        """preprocess a sample, assuming data dict format
+
+        Parameters
+        ----------
+        sample : dict
+            data with at least 'x' and 'y' keys
+        """
+        sample = {k: v.to(self.device) for k,v in sample.items()}
+        for tform in self.transforms:
+            sample = tform.transform(sample)
+        return sample
+    
+    def postprocess(self, sample: dict, out: torch.Tensor):
+        """preprocess a sample, assuming data dict format
+
+        Parameters
+        ----------
+        sample : dict
+            data with at least 'x' and 'y' keys
+        out : torch.tensor
+            predictions output by model
+        """
+        for tform in self.transforms[::-1]:
+            sample = tform.inverse_transform(sample)
+        return sample
         
 
         

@@ -1,8 +1,36 @@
+from abc import abstractmethod
 import torch
 from .positional_encoding import get_grid_positional_encoding
 from torch.utils.data import Dataset
 
+class Transform(torch.nn.Module):
+    """
+    Applies transforms or inverse transforms to 
+    model inputs or outputs, respectively
+    """
+    def __init__(self):
+        super().__init__()
+    
+    @abstractmethod
+    def transform(self):
+        pass
 
+    @abstractmethod
+    def inverse_transform(self):
+        pass
+
+    @abstractmethod
+    def cuda(self):
+        pass
+
+    @abstractmethod
+    def cpu(self):
+        pass
+
+    @abstractmethod
+    def to(self, device):
+        pass
+    
 class Normalizer():
     def __init__(self, mean, std, eps=1e-6):
         self.mean = mean
