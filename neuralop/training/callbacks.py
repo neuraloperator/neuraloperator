@@ -458,16 +458,22 @@ class CheckpointCallback(Callback):
         if self.resume_from_dir:
             saved_modules = [x.stem for x in self.resume_from_dir.glob('*.pt')]
 
-            assert 'best_model' in saved_modules or 'model' in saved_modules,\
+            assert 'best_model_state_dict' in saved_modules or 'model_state_dict' in saved_modules,\
                   "Error: CheckpointCallback expects a model state dict named model.pt or best_model.pt."
             
             # no need to handle exceptions if assertion that either model file exists passes
-            if 'best_model' in saved_modules:
-                self.state_dict['model'].load_state_dict(torch.load(self.resume_from_dir / 'best_model.pt'))
+            if 'best_model_state_dict' in saved_modules:
+                if hasattr(self.state_dict['model'], 'load_checkpoint'):
+                    self.state_dict['model'].load_checkpoint(save_folder = self.resume_from_dir, save_name = 'best_model')
+                else: 
+                    self.state_dict['model'].load_state_dict(torch.load(self.resume_from_dir / 'best_model.pt'))
                 if verbose:
-                    print(f"Loading model state from best_model.pt")
+                    print(f"Loading model state from best_model_state_dict.pt")
             else:
-                self.state_dict['model'].load_state_dict(torch.load(self.resume_from_dir / 'model.pt'))
+                if hasattr(self.state_dict['model'], 'load_checkpoint'):
+                    self.state_dict['model'].load_checkpoint(save_folder = self.resume_from_dir, save_name = 'model')
+                else: 
+                    self.state_dict['model'].load_state_dict(torch.load(self.resume_from_dir / 'model.pt'))
                 if verbose:
                     print(f"Loading model state from model.pt")
             

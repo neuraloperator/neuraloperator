@@ -5,6 +5,7 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
 from neuralop import Trainer, LpLoss, H1Loss, CheckpointCallback
+from neuralop.models.base_model import BaseModel
 
 class DummyDataset(Dataset):
     # Simple linear regression problem, PyTorch style
@@ -21,7 +22,7 @@ class DummyDataset(Dataset):
     def __len__(self):
         return self.X.shape[0]
 
-class DummyModel(nn.Module):
+class DummyModel(BaseModel, name='Dummy'):
     """
     Simple linear model to mock-up our model API
     """
@@ -67,7 +68,7 @@ def test_model_checkpoint_saves():
                   eval_losses=None,
                   )
     
-    assert sorted(os.listdir('./checkpoints')) == sorted(['model.pt', 'optimizer.pt', 'scheduler.pt'])
+    assert sorted(os.listdir('./checkpoints')) == sorted(['model_state_dict.pt', 'model_metadata.pkl', 'optimizer.pt', 'scheduler.pt'])
 
 
 def test_model_checkpoint_and_resume():
@@ -106,7 +107,7 @@ def test_model_checkpoint_and_resume():
                   eval_losses=eval_losses
                   )
     
-    assert sorted(os.listdir('./full_states')) == sorted(['best_model.pt', 'optimizer.pt', 'scheduler.pt'])
+    assert sorted(os.listdir('./full_states')) == sorted(['best_model_state_dict.pt', 'best_model_metadata.pkl', 'optimizer.pt', 'scheduler.pt'])
 
     # Resume from checkpoint
     trainer = Trainer(model=model,
@@ -125,3 +126,4 @@ def test_model_checkpoint_and_resume():
                   training_loss=l2loss,
                   eval_losses=eval_losses,
                   )
+
