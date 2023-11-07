@@ -68,7 +68,7 @@ def test_model_checkpoint_saves():
                   eval_losses=None,
                   )
     
-    assert sorted(os.listdir('./checkpoints')) == sorted(['model_state_dict.pt', 'model_metadata.json', 'optimizer.pt', 'scheduler.pt'])
+    assert sorted(os.listdir('./checkpoints')) == sorted(['model_state_dict.pt', 'model_metadata.pkl', 'optimizer.pt', 'scheduler.pt'])
 
 
 def test_model_checkpoint_and_resume():
@@ -107,7 +107,7 @@ def test_model_checkpoint_and_resume():
                   eval_losses=eval_losses
                   )
     
-    assert sorted(os.listdir('./full_states')) == sorted(['best_model_state_dict.pt', 'best_model_metadata.json', 'optimizer.pt', 'scheduler.pt'])
+    assert sorted(os.listdir('./full_states')) == sorted(['best_model_state_dict.pt', 'best_model_metadata.pkl', 'optimizer.pt', 'scheduler.pt'])
 
     # Resume from checkpoint
     trainer = Trainer(model=model,

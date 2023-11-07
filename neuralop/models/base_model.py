@@ -57,7 +57,7 @@ class BaseModel(torch.nn.Module):
         state_dict_filepath = save_folder.joinpath(f'{save_name}_state_dict.pt').as_posix()
         torch.save(self.state_dict(), state_dict_filepath)
         
-        metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.json').as_posix()
+        metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.pkl').as_posix()
         # Objects (e.g. GeLU) are not serializable by json - find a better solution in the future
         torch.save(self._init_kwargs, metadata_filepath)
         # with open(metadata_filepath, 'w') as f:
@@ -72,7 +72,7 @@ class BaseModel(torch.nn.Module):
     def from_checkpoint(cls, save_folder, save_name):
         save_folder = Path(save_folder)
 
-        metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.json').as_posix()
+        metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.pkl').as_posix()
         init_kwargs = torch.load(metadata_filepath)
         # with open(metadata_filepath, 'r') as f:
         #     init_kwargs = json.load(f)
