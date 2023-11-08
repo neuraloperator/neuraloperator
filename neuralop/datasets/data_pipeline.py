@@ -151,10 +151,7 @@ class DNEPipeline(DataPipeline):
         else:
             self.out_normalizer = None
         
-        if pos_encoding:
-            self.pos_encoding = pos_encoding.to(self.device)
-        else:
-            self.pos_encoding = None
+        self.pos_encoding = pos_encoding
         
 
     def preprocess(self, sample: dict):

@@ -1,6 +1,6 @@
 from abc import abstractmethod
 import torch
-from .positional_encoding import get_grid_positional_encoding
+from .positional_encoding import append_2d_grid_positional_encoding
 from torch.utils.data import Dataset
 
 class Transform(torch.nn.Module):
@@ -45,20 +45,12 @@ class PositionalEmbedding():
     def __init__(self, grid_boundaries, channel_dim):
         self.grid_boundaries = grid_boundaries
         self.channel_dim = channel_dim
-        self._grid = None
-
-    def grid(self, data):
-        if self._grid is None:
-            self._grid = get_grid_positional_encoding(data, 
-                                                      grid_boundaries=self.grid_boundaries,
-                                                      channel_dim=self.channel_dim)
-        return self._grid
+        self._grid = None    
 
     def __call__(self, data):
-        x, y = self.grid(data)
-        x, y = x.squeeze(self.channel_dim), y.squeeze(self.channel_dim)
-        
-        return torch.cat((data, x, y), dim=0)
+        return append_2d_grid_positional_encoding(data,
+                                                  self.grid_boundaries,
+                                                  self.channel_dim)
 
 
 class RandomMGPatch():

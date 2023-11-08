@@ -4,11 +4,12 @@ def append_2d_grid_positional_encoding(input_tensor, grid_boundaries=[[0,1],[0,1
     """
     Appends grid positional encoding to an input tensor, concatenating as additional dimensions along the channels
     """
+    device = input_tensor.device
     shape = list(input_tensor.shape)
     shape.pop(channel_dim)
     n_samples, height, width = shape
-    xt = torch.linspace(grid_boundaries[0][0], grid_boundaries[0][1], height + 1)[:-1]
-    yt = torch.linspace(grid_boundaries[1][0], grid_boundaries[1][1], width + 1)[:-1]
+    xt = torch.linspace(grid_boundaries[0][0], grid_boundaries[0][1], height + 1).to(device)[:-1]
+    yt = torch.linspace(grid_boundaries[1][0], grid_boundaries[1][1], width + 1).to(device)[:-1]
 
     grid_x, grid_y = torch.meshgrid(xt, yt, indexing='ij')
 
