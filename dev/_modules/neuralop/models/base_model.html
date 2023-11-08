@@ -119,19 +119,36 @@
   <h1>Source code for neuralop.models.base_model</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">inspect</span>
 <span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 
+<span class="c1"># Author: Jean Kossaifi</span>
 
 <span class="k">class</span> <span class="nc">BaseModel</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Based class for all Models</span>
+
+<span class="sd">    This class has two main functionalities:</span>
+<span class="sd">    * It monitors the creation of subclass, that are automatically registered </span>
+<span class="sd">      for users to use by name using the library&#39;s config system</span>
+<span class="sd">    * When a new instance of this class is created, the init call is intercepted</span>
+<span class="sd">      so we can store the parameters used to create the instance.</span>
+<span class="sd">      This makes it possible to save trained models along with their init parameters,</span>
+<span class="sd">      and therefore load saved modes easily.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Model can be versioned using the _version class attribute. </span>
+<span class="sd">    This can be used for sanity check when loading models from checkpoints to verify the </span>
+<span class="sd">    model hasn&#39;t been updated since.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">_models</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
     <span class="n">_version</span> <span class="o">=</span> <span class="s1">&#39;0.1.0&#39;</span>
 
     <span class="k">def</span> <span class="nf">__init_subclass__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;When a subclass is created, register it in _models&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;When a subclass is created, register it in _models</span>
+<span class="sd">        We look for an existing name attribute. </span>
+<span class="sd">        If not give, then we use the class&#39; name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init_subclass__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">BaseModel</span><span class="o">.</span><span class="n">_models</span><span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span> <span class="o">=</span> <span class="bp">cls</span>
@@ -143,6 +160,11 @@
 
     <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Verify arguments and save init kwargs for loading/saving</span>
+
+<span class="sd">        We inspect the class&#39; signature and check for unused parameters, or </span>
+<span class="sd">        parameters not passed. </span>
+
+<span class="sd">        We store all the args and kwargs given so we can duplicate the instance transparently.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
         <span class="n">model_name</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span>
@@ -165,17 +187,19 @@
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s1">&#39;_version&#39;</span><span class="p">):</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;_version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_version</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_name</span>
         <span class="n">instance</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
         <span class="n">instance</span><span class="o">.</span><span class="n">_init_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
 
         <span class="k">return</span> <span class="n">instance</span>
     
     <span class="k">def</span> <span class="nf">save_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">save_name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Saves the model state and init param in the given folder under the given name</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">save_folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>
 
         <span class="n">state_dict_filepath</span> <span class="o">=</span> <span class="n">save_folder</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">save_name</span><span class="si">}</span><span class="s1">_state_dict.pt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
         <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="n">state_dict_filepath</span><span class="p">)</span>
-        
         <span class="n">metadata_filepath</span> <span class="o">=</span> <span class="n">save_folder</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">save_name</span><span class="si">}</span><span class="s1">_metadata.pkl&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
         <span class="c1"># Objects (e.g. GeLU) are not serializable by json - find a better solution in the future</span>
         <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_init_kwargs</span><span class="p">,</span> <span class="n">metadata_filepath</span><span class="p">)</span>
