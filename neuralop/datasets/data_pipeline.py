@@ -114,33 +114,49 @@ class MGPatchingDataPipeline(DataPipeline):
 
         return out, sample
 
-class Composite(DataPipeline):
-    def __init__(self, in_transforms: List[Transform], out_transforms: List[Transform]=None, device: str='cpu'):
-        """Composite DataPipeline applies a sequence of transforms
-        to input data, and applies their inverses in reverse to model outputs
+class DNEPipeline(DataPipeline):
+    def __init__(self, 
+                 in_normalizer: Transform,
+                 out_normalizer: Transform,
+                 pos_encoding: nn.Module=None,
+                 device: str='cpu'):
+        """DNE DataPipeline sends data to Device, 
+        applies a Normalizer to input data, 
+        then applies optional positional 
+        Encoding.
 
         Parameters
         ----------
-        in_transforms : List[Transform]
-            list of Transform objects to apply to each sample's input data, in order
-        out_transforms : List[Transform], optional
-            list of Transform objects to apply to each sample's truth and model output data, in order
-            If none is provided, then in_transforms are applied to everything
+        in_normalizer : List[Transform], optional
+            normalizer to apply to each sample's input data, in order
+        out_normalizer : List[Transform], optional
+            normalizer to apply to each sample's truth and 
+            model output data, in order
+        pos_encoding: nn.Module, optional
+            optional layer to append positional 
+            encoding onto input data
         device : str, optional
             device on which to store data, by default 'cpu'
         """
         super().__init__()
-        assert type(in_transforms) == list, \
-            "Error: Composite transform must be initialized with a list of in_transforms"
-        assert type(out_transforms) == list, \
-            "Error: Composite transform must be initialized with a list of out_transforms"
         self.device = device
-        self.in_transforms = in_transforms.to(self.device)
-        if self.out_transforms:
-            self.out_transforms = out_transforms.to(self.device)
+
+        if in_normalizer:
+            self.in_normalizer = in_normalizer.to(self.device)
         else:
-            self.out_transforms = None
-    
+            self.in_normalizer = None
+
+        if out_normalizer:
+            self.out_normalizer = out_normalizer.to(self.device)
+        else:
+            self.out_normalizer = None
+        
+        if pos_encoding:
+            self.pos_encoding = pos_encoding.to(self.device)
+        else:
+            self.pos_encoding = None
+        
+
     def preprocess(self, sample: dict):
         """preprocess a sample, assuming data dict format
 
@@ -153,15 +169,14 @@ class Composite(DataPipeline):
         # apply input transformation to 'x'
         x = sample['x']
         y = sample['y']
-        for tform in self.in_transforms:
-            x = tform.transform(x)
+        if self.in_normalizer:
+            x = self.in_normalizer.transform(x)
         
-        if self.out_transforms:
-            for tform in self.out_transforms:
-                y = tform.transform(y)
-        else:
-            for tform in self.in_transforms:
-                y = tform.transform(y)
+        if self.out_normalizer:
+            y = self.out_normalizer.transform(y)
+        
+        if self.pos_encoding:
+            x = self.pos_encoding(x)
         sample['x'] = x
         sample['y'] = y
 
@@ -169,24 +184,19 @@ class Composite(DataPipeline):
         return sample
     
     def postprocess(self, out: torch.Tensor, sample: dict):
-        """preprocess a sample, assuming data dict format
+        """postprocess a sample, assuming data dict format
 
         Parameters
         ----------
+        out : torch.Tensor
+            predictions output by model
         sample : dict
             data with at least 'x' and 'y' keys
-        out : torch.tensor
-            predictions output by model
         """
         y = sample['y']
-        if self.out_transforms:
-            for tform in self.out_transforms[::-1]:
-                y = tform.inverse_transform(y)
-                out = tform.inverse_transform(out)
-        else:
-            for tform in self.in_transforms[::-1]:
-                y = tform.inverse_transform(y)
-                out = tform.inverse_transform(out)
+        if self.out_normalizer:
+            y = self.out_normalizer.inverse_transform(y)
+            out = self.out_normalizer.inverse_transform(out)
 
         sample['y'] = y
         return out, sample
