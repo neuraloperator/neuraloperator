@@ -291,14 +291,14 @@ class Trainer:
 
                 if self.callbacks:
                     self.callbacks.on_val_batch_end()
-        
-        del out
-
+    
         for key in errors.keys():
             errors[key] /= n_samples
         
         if self.callbacks:
             self.callbacks.on_val_epoch_end(errors=errors, sample=sample, out=out)
+        
+        del out
 
         return errors
 
