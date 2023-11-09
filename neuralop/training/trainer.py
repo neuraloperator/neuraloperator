@@ -298,7 +298,7 @@ class Trainer:
             errors[key] /= n_samples
         
         if self.callbacks:
-            self.callbacks.on_val_epoch_end(errors=errors)
+            self.callbacks.on_val_epoch_end(errors=errors, sample=sample, out=out)
 
         return errors
 
