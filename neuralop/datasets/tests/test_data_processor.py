@@ -1,10 +1,10 @@
-from ..data_pipeline import DNEPipeline
+from ..data_transforms import DefaultDataProcessor
 from ..output_encoder import UnitGaussianNormalizer
 from ..transforms import PositionalEmbedding
 import torch
 from torch.testing import assert_close
 
-def test_DNEPipeline():
+def test_DefaultDataProcessor():
     if torch.backends.cuda.is_built():
         device = 'cuda'
     else:
@@ -19,10 +19,9 @@ def test_DNEPipeline():
                                         std=torch.ones((1,2,1,1)),
                                         eps=1e-5)
 
-    pipeline = DNEPipeline(in_normalizer=normalizer,
+    pipeline = DefaultDataProcessor(in_normalizer=normalizer,
                            out_normalizer=normalizer,
-                           pos_encoding=pos_encoder,
-                           device=device)
+                           positional_encoding=pos_encoder)
     
     data = {'x':x, 'y':y} # data on cpu at this point
 
