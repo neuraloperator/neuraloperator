@@ -1,4 +1,5 @@
 import torch
+from neuralop.training.patching import MultigridPatching2D
 
 
 def regular_grid(spatial_dims, grid_boundaries=[[0, 1], [0, 1]]):
@@ -65,6 +66,7 @@ class DefaultDataProcessor(torch.nn.Module):
         self.in_normalizer = in_normalizer
         self.out_normalizer = out_normalizer
         self.positional_encoding = positional_encoding
+        self.device = 'cpu'
     
     def wrap(self, model):
         self.model = model
@@ -94,13 +96,120 @@ class DefaultDataProcessor(torch.nn.Module):
 
         return data_dict
 
-    def postprocess(self, output):
+    def postprocess(self, output, data_dict):
+        y = data_dict['y']
         if self.out_normalizer and not self.train:
             output = self.out_normalizer.inverse_transform(output)
-        return output
+            y = self.out_normalizer.inverse_transform(y)
+        data_dict['y'] = y
+        return output, data_dict
     
     def forward(self, **data_dict):
         data_dict = self.preprocess(data_dict)
         output = self.model(data_dict['x'])
         output = self.postprocess(output)
+        return output, data_dict
+
+class MGPatchingDataProcessor(torch.nn.Module):
+    def __init__(self, model: torch.nn.Module, levels: int, 
+                 padding_fraction: float, stitching: float, 
+                 device: str='cpu', in_normalizer=None, out_normalizer=None):
+        """MGPatchingDataProcessor
+        Applies multigrid patching to inputs out-of-place 
+        with an optional output encoder/other data transform
+
+        Parameters
+        ----------
+        model: nn.Module
+            model to wrap in MultigridPatching2D
+        levels : int
+            mg_patching level parameter for MultigridPatching2D
+        padding_fraction : float
+            mg_padding_fraction parameter for MultigridPatching2D
+        stitching : float
+            mg_patching_stitching parameter for MultigridPatching2D
+        in_normalizer : neuralop.datasets.transforms.Transform, optional
+            OutputEncoder to decode model inputs, by default None
+        in_normalizer : neuralop.datasets.transforms.Transform, optional
+            OutputEncoder to decode model outputs, by default None
+        device : str, optional
+            device 'cuda' or 'cpu' where computations are performed
+        """
+        super().__init__()
+        self.levels = levels
+        self.padding_fraction = padding_fraction
+        self.stitching = stitching
+        self.patcher = MultigridPatching2D(model=model, levels=self.levels, 
+                                      padding_fraction=self.padding_fraction,
+                                      stitching=self.stitching)
+        self.device = device
+        
+        # set normalizers to none by default
+        self.in_normalizer, self.out_normalizer = None, None
+        if in_normalizer:
+            self.in_normalizer = in_normalizer.to(self.device)
+        if out_normalizer:
+            self.out_normalizer = out_normalizer.to(self.device)
+        self.model = None
+    
+    def to(self, device):
+        self.device = device
+        if self.in_normalizer:
+            self.in_normalizer = self.in_normalizer.to(self.device)
+        if self.out_normalizer:
+            self.out_normalizer = self.out_normalizer.to(self.device)
+    
+    def wrap(self, model):
+        self.model = model
+        return self
+    
+    def preprocess(self, data_dict):
+        """
+        Preprocess data assuming that if encoder exists, it has 
+        encoded all data during data loading
+        
+        Params
+        ------
+
+        data_dict: dict
+            dictionary keyed with 'x', 'y' etc
+            represents one batch of data input to a model
+        """
+        data_dict = {k:v.to(self.device) for k,v in data_dict.items()}
+        if self.in_normalizer:
+            data_dict['x'] = self.in_normalizer.transform(data_dict)
+            data_dict['y'] = self.out_normalizer.transform(data_dict)
+        data_dict['x'],data_dict['y'] = self.patcher.patch(data_dict['x'],data_dict['y'])
+        return data_dict
+    
+    def postprocess(self, out, data_dict):
+        """
+        Postprocess model outputs, including decoding
+        if an encoder exists.
+        
+        Params
+        ------
+
+        data_dict: dict
+            dictionary keyed with 'x', 'y' etc
+            represents one batch of data input to a model
+        out: torch.Tensor 
+            model output predictions
+        """
+
+        x,y = self.patcher.unpatch(data_dict['x'],data_dict['y'])
+
+        if self.out_normalizer:
+            y = self.out_normalizer.inverse_transform(y)
+            out = self.out_normalizer.inverse_transform(out)
+        
+        data_dict['x'] = x
+        data_dict['y'] = y
+
+        return out, data_dict
+
+    def forward(self, **data_dict):
+        data_dict = self.preprocess(data_dict)
+        output = self.model(**data_dict)
+        output, data_dict = self.postprocess(output, data_dict)
         return output, data_dict
