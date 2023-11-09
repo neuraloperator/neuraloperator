@@ -1,7 +1,6 @@
-
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,20 +14,17 @@
 <link rel="shortcut icon" href="../../../_static/favicon/favicon.ico">
 <meta name="theme-color" content="#ffffff">
 
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/tensorly_style.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/tensorly_style.css?v=a02e9698" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css?v=61a4c737" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
 
   
-    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../../../_static/doctools.js"></script>
-    <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/documentation_options.js?v=37f418d5"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
  <script src="../../../_static/navbar_burger.js"></script>
  <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
  
@@ -135,7 +131,9 @@
 
 <span class="kn">from</span> <span class="nn">neuralop.training.patching</span> <span class="kn">import</span> <span class="n">MultigridPatching2D</span>
 
-<div class="viewcode-block" id="Callback"><a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.Callback.html#neuralop.training.callbacks.Callback">[docs]</a><span class="k">class</span> <span class="nc">Callback</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Callback">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.Callback.html#neuralop.training.callbacks.Callback">[docs]</a>
+<span class="k">class</span> <span class="nc">Callback</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Base callback class. Each abstract method is called in the trainer&#39;s</span>
 <span class="sd">    training loop at the appropriate time. </span>
@@ -214,6 +212,7 @@
     
     <span class="k">def</span> <span class="nf">on_val_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">pass</span></div>
+
 
 
 <span class="k">class</span> <span class="nc">PipelineCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
@@ -344,7 +343,9 @@
         <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
             <span class="n">c</span><span class="o">.</span><span class="n">on_val_end</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<div class="viewcode-block" id="SimpleWandBLoggerCallback"><a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.SimpleWandBLoggerCallback.html#neuralop.training.callbacks.SimpleWandBLoggerCallback">[docs]</a><span class="k">class</span> <span class="nc">SimpleWandBLoggerCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
+<div class="viewcode-block" id="SimpleWandBLoggerCallback">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.SimpleWandBLoggerCallback.html#neuralop.training.callbacks.SimpleWandBLoggerCallback">[docs]</a>
+<span class="k">class</span> <span class="nc">SimpleWandBLoggerCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Callback that implements simple logging functionality </span>
 <span class="sd">    expected when passing verbose to a Trainer</span>
@@ -420,7 +421,10 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;values_to_log&#39;</span><span class="p">][</span><span class="s1">&#39;lr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lr</span>
             <span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;values_to_log&#39;</span><span class="p">],</span> <span class="n">step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;epoch&#39;</span><span class="p">],</span> <span class="n">commit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="MGPatchingCallback"><a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.MGPatchingCallback.html#neuralop.training.callbacks.MGPatchingCallback">[docs]</a><span class="k">class</span> <span class="nc">MGPatchingCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
+
+<div class="viewcode-block" id="MGPatchingCallback">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.MGPatchingCallback.html#neuralop.training.callbacks.MGPatchingCallback">[docs]</a>
+<span class="k">class</span> <span class="nc">MGPatchingCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">levels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">padding_fraction</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">stitching</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">encoder</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;MGPatchingCallback implements multigrid patching functionality</span>
 <span class="sd">        for datasets that require domain patching, stitching and/or padding.</span>
@@ -475,7 +479,10 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_before_loss</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">evaluation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="OutputEncoderCallback"><a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.OutputEncoderCallback.html#neuralop.training.callbacks.OutputEncoderCallback">[docs]</a><span class="k">class</span> <span class="nc">OutputEncoderCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
+
+<div class="viewcode-block" id="OutputEncoderCallback">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.OutputEncoderCallback.html#neuralop.training.callbacks.OutputEncoderCallback">[docs]</a>
+<span class="k">class</span> <span class="nc">OutputEncoderCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encoder</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -499,6 +506,7 @@
     
     <span class="k">def</span> <span class="nf">on_before_val_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_before_loss</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
         
 <span class="k">class</span> <span class="nc">CheckpointCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
     

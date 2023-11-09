@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>API reference &#8212; neuraloperator 0.2.1 documentation</title> 
 <link rel="stylesheet" href="../_static/tensorly_style.css">
@@ -16,20 +15,17 @@
 <link rel="shortcut icon" href="../_static/favicon/favicon.ico">
 <meta name="theme-color" content="#ffffff">
 
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/tensorly_style.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/tensorly_style.css?v=a02e9698" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=61a4c737" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
 
   
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/documentation_options.js?v=37f418d5"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
  <script src="../_static/navbar_burger.js"></script>
  <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
  
@@ -165,13 +161,13 @@
       <div class="container content main-content">
         
   <section id="api-reference">
-<h1>API reference<a class="headerlink" href="#api-reference" title="Permalink to this heading"></a></h1>
+<h1>API reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h1>
 <p><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop</span></code>: Neural Operators in Python</p>
 <span class="target" id="module-neuralop.models"></span><section id="models">
-<span id="neuralop-models-ref"></span><h2>Models<a class="headerlink" href="#models" title="Permalink to this heading"></a></h2>
+<span id="neuralop-models-ref"></span><h2>Models<a class="headerlink" href="#models" title="Link to this heading"></a></h2>
 <p>In <a class="reference internal" href="#module-neuralop.models" title="neuralop.models"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.models</span></code></a>, we provide neural operator models you can directly use on your applications.</p>
 <section id="fno">
-<h3>FNO<a class="headerlink" href="#fno" title="Permalink to this heading"></a></h3>
+<h3>FNO<a class="headerlink" href="#fno" title="Link to this heading"></a></h3>
 <p>We provide a general Fourier Neural Operator (TFNO) that supports most usecases.</p>
 <p>We have a generic interface that works for any dimension, which is inferred based on <cite>n_modes</cite>
 (a tuple with the number of modes to keep in the Fourier domain for each dimension.)</p>
@@ -198,7 +194,7 @@
 </table>
 </section>
 <section id="tensorized-fno-tfno">
-<h3>Tensorized FNO (TFNO)<a class="headerlink" href="#tensorized-fno-tfno" title="Permalink to this heading"></a></h3>
+<h3>Tensorized FNO (TFNO)<a class="headerlink" href="#tensorized-fno-tfno" title="Link to this heading"></a></h3>
 <p>N-D version:</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
@@ -223,7 +219,7 @@
 </table>
 </section>
 <section id="spherical-fourier-neural-operators-sfno">
-<h3>Spherical Fourier Neural Operators (SFNO)<a class="headerlink" href="#spherical-fourier-neural-operators-sfno" title="Permalink to this heading"></a></h3>
+<h3>Spherical Fourier Neural Operators (SFNO)<a class="headerlink" href="#spherical-fourier-neural-operators-sfno" title="Link to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.SFNO.html#neuralop.models.SFNO" title="neuralop.models.SFNO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SFNO</span></code></a>(*args, **kwargs)</p></td>
@@ -233,7 +229,7 @@
 </table>
 </section>
 <section id="u-shaped-neural-operators-u-no">
-<h3>U-shaped Neural Operators (U-NO)<a class="headerlink" href="#u-shaped-neural-operators-u-no" title="Permalink to this heading"></a></h3>
+<h3>U-shaped Neural Operators (U-NO)<a class="headerlink" href="#u-shaped-neural-operators-u-no" title="Link to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.UNO.html#neuralop.models.UNO" title="neuralop.models.UNO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UNO</span></code></a>(in_channels, out_channels, hidden_channels)</p></td>
@@ -244,7 +240,7 @@
 </section>
 </section>
 <section id="module-neuralop.layers">
-<span id="layers"></span><h2>Layers<a class="headerlink" href="#module-neuralop.layers" title="Permalink to this heading"></a></h2>
+<span id="layers"></span><h2>Layers<a class="headerlink" href="#module-neuralop.layers" title="Link to this heading"></a></h2>
 <p id="neuralop-layers-ref">In addition to the full architectures, we also provide
 in <a class="reference internal" href="#module-neuralop.layers" title="neuralop.layers"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers</span></code></a> building blocks,
 in the form of PyTorch layers, that you can use to build your own models:</p>
@@ -297,7 +293,7 @@ in the form of PyTorch layers, that you can use to build your own models:</p>
 </table>
 </section>
 <section id="model-dispatching">
-<h2>Model Dispatching<a class="headerlink" href="#model-dispatching" title="Permalink to this heading"></a></h2>
+<h2>Model Dispatching<a class="headerlink" href="#model-dispatching" title="Link to this heading"></a></h2>
 <p>We provide a utility function to create model instances from a configuration.
 It has the advantage of doing some checks on the parameters it receives.</p>
 <span class="target" id="module-neuralop.models.base_model"></span><table class="autosummary longtable docutils align-default">
@@ -312,7 +308,7 @@ It has the advantage of doing some checks on the parameters it receives.</p>
 </table>
 </section>
 <section id="training">
-<h2>Training<a class="headerlink" href="#training" title="Permalink to this heading"></a></h2>
+<h2>Training<a class="headerlink" href="#training" title="Link to this heading"></a></h2>
 <p>We provide functionality that automates the boilerplate code associated with
 training a machine learning model to minimize a loss function on a dataset:</p>
 <span class="target" id="module-neuralop.training"></span><table class="autosummary longtable docutils align-default">
@@ -326,7 +322,7 @@ training a machine learning model to minimize a loss function on a dataset:</p>
 <p>The general case (assuming no modifications) is covered above. To implement domain-specific
 logic in your training loop while still using the automation and logging provided by a
 Trainer, we provide a Callback class and several examples of common domain-specific Callbacks.</p>
-<span class="target" id="module-neuralop.training.callbacks"></span><p>Callbacks store all non-essential logic
+<p id="module-neuralop.training.callbacks">Callbacks store all non-essential logic
 required to run specific training scripts.</p>
 <p>The callbacks in this module follow the form and 
 logic of callbacks in Pytorch-Lightning (<a class="reference external" href="https://lightning.ai/docs/pytorch/stable">https://lightning.ai/docs/pytorch/stable</a>)</p>
@@ -350,7 +346,7 @@ logic of callbacks in Pytorch-Lightning (<a class="reference external" href="htt
 </table>
 </section>
 <section id="datasets">
-<h2>Datasets<a class="headerlink" href="#datasets" title="Permalink to this heading"></a></h2>
+<h2>Datasets<a class="headerlink" href="#datasets" title="Link to this heading"></a></h2>
 <p>We ship a small dataset for testing:</p>
 <span class="target" id="module-neuralop.datasets"></span><table class="autosummary longtable docutils align-default">
 <tbody>

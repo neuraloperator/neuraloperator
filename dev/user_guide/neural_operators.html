@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Neural Operators: an Introduction &#8212; neuraloperator 0.2.1 documentation</title> 
 <link rel="stylesheet" href="../_static/tensorly_style.css">
@@ -16,20 +15,17 @@
 <link rel="shortcut icon" href="../_static/favicon/favicon.ico">
 <meta name="theme-color" content="#ffffff">
 
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/tensorly_style.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/tensorly_style.css?v=a02e9698" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=61a4c737" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
 
   
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/documentation_options.js?v=37f418d5"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
  <script src="../_static/navbar_burger.js"></script>
  <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
@@ -165,13 +161,13 @@
       <div class="container content main-content">
         
   <section id="neural-operators-an-introduction">
-<h1>Neural Operators: an Introduction<a class="headerlink" href="#neural-operators-an-introduction" title="Permalink to this heading"></a></h1>
+<h1>Neural Operators: an Introduction<a class="headerlink" href="#neural-operators-an-introduction" title="Link to this heading"></a></h1>
 <p>Here, we introduce neural operators, a class of models that learn
 mappings between function spaces and solve partial differential equations.
 You can also check out the papers <a class="footnote-reference brackets" href="#id4" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> and <a class="footnote-reference brackets" href="#id5" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a> for more formal derivations,
 as well as the blog post <a class="footnote-reference brackets" href="#id6" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>.</p>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>Scientific computations are expensive.
 It could take days and months for numerical solvers to simulate fluid dynamics and many-body motions.
 Because to achieve good accuracy,
@@ -201,7 +197,7 @@ but the learned solver is still able to give reasonable, high-resolution predict
 In some sense, both training and evaluation can be pain-free.</p>
 </section>
 <section id="operator-learning">
-<h2>Operator Learning<a class="headerlink" href="#operator-learning" title="Permalink to this heading"></a></h2>
+<h2>Operator Learning<a class="headerlink" href="#operator-learning" title="Link to this heading"></a></h2>
 <p>In mathematics, operators are usually referring to the mappings between function spaces.
 You most likely have already encountered some operators.
 For example, the differentiation and integration are operators.
@@ -232,7 +228,7 @@ instead of as <span class="math notranslate nohighlight">\(32 \times 32\)</span>
 the mappings between infinite-dimensional spaces, with a special focus on PDEs.</p>
 </section>
 <section id="limitation-of-fixed-discretization">
-<h2>Limitation of Fixed Discretization<a class="headerlink" href="#limitation-of-fixed-discretization" title="Permalink to this heading"></a></h2>
+<h2>Limitation of Fixed Discretization<a class="headerlink" href="#limitation-of-fixed-discretization" title="Link to this heading"></a></h2>
 <p>PDEs are, unfortunately, hard.
 Instead of learning the operator, people usually discretize the physical domain
 and cast the problem in finite-dimensional Euclidean space.
@@ -264,7 +260,7 @@ It has an important mathematical meaning.
 Bear the motivation in mind. Let’s develop a rigorous formulation.</p>
 </section>
 <section id="problem-setting">
-<h2>Problem Setting<a class="headerlink" href="#problem-setting" title="Permalink to this heading"></a></h2>
+<h2>Problem Setting<a class="headerlink" href="#problem-setting" title="Link to this heading"></a></h2>
 <p>Let’s be more concrete. Consider the standard second order elliptic PDE</p>
 <div class="math notranslate nohighlight">
 \[- \nabla \cdot (a(x) \nabla u(x))  = f(x), \quad  x \in D\]</div>
@@ -288,7 +284,7 @@ collection  of input-output pairs indexed by <span class="math notranslate nohig
 We will show how to learn a discretization-invariant mapping based on discretized data.</p>
 </section>
 <section id="kernel-formulation">
-<h2>Kernel Formulation<a class="headerlink" href="#kernel-formulation" title="Permalink to this heading"></a></h2>
+<h2>Kernel Formulation<a class="headerlink" href="#kernel-formulation" title="Link to this heading"></a></h2>
 <p>For a general PDE of the form:</p>
 <div class="math notranslate nohighlight">
 \[(\mathcal{L}_a u)(x)= f(x), \quad x \in D\]</div>
@@ -313,7 +309,7 @@ Since the kernel depends on <span class="math notranslate nohighlight">\(a\)</sp
 \[u(x) = \int_D \kappa(x,y,a(x),a(y))f(y) \: dy\]</div>
 </section>
 <section id="as-an-iterative-solver">
-<h2>As an Iterative Solver<a class="headerlink" href="#as-an-iterative-solver" title="Permalink to this heading"></a></h2>
+<h2>As an Iterative Solver<a class="headerlink" href="#as-an-iterative-solver" title="Link to this heading"></a></h2>
 <p>In our setting, <span class="math notranslate nohighlight">\(f\)</span> is an unknown but fixed function.
 Instead of doing the kernel convolution with <span class="math notranslate nohighlight">\(f\)</span>,
 we will formulate it as an iterative solver
@@ -349,7 +345,7 @@ the output of <span class="math notranslate nohighlight">\(\kappa_{\phi}\)</span
 but a linear transformation <span class="math notranslate nohighlight">\(\kappa_{\phi}\big(x,y,a(x),a(y)\big)\in \mathbb{R}^{n \times n}\)</span>.</p>
 </section>
 <section id="graph-neural-networks">
-<h2>Graph Neural Networks<a class="headerlink" href="#graph-neural-networks" title="Permalink to this heading"></a></h2>
+<h2>Graph Neural Networks<a class="headerlink" href="#graph-neural-networks" title="Link to this heading"></a></h2>
 <p>To do the integration, we again need some discretization.
 Assuming a uniform distribution of <span class="math notranslate nohighlight">\(y\)</span>,
 the integral <span class="math notranslate nohighlight">\(\int_{B(x,r)} \kappa_{\phi}\big(x,y,a(x),a(y)\big)
@@ -378,7 +374,7 @@ Relating to our kernel formulation, <span class="math notranslate nohighlight">\
 <a class="reference internal image-reference" href="../_images/graph.jpg"><img alt="../_images/graph.jpg" src="../_images/graph.jpg" style="width: 800px;" /></a>
 </section>
 <section id="nystrom-approximation">
-<h2>Nystrom Approximation<a class="headerlink" href="#nystrom-approximation" title="Permalink to this heading"></a></h2>
+<h2>Nystrom Approximation<a class="headerlink" href="#nystrom-approximation" title="Link to this heading"></a></h2>
 <p>Ideally, to use all the information available,
 we should construct <span class="math notranslate nohighlight">\(K\)</span> nodes in the graph for all the points in the discretization
 <span class="math notranslate nohighlight">\(P_k = \{x_1,\ldots, x_K\}\)</span>, which will create <span class="math notranslate nohighlight">\(O(K^2)\)</span> edges.
@@ -396,14 +392,14 @@ For example, we can estimate the importance of each points,
 and add more nodes to the difficult and singularity areas in the PDEs.</p>
 </section>
 <section id="experiments-poisson-equations">
-<h2>Experiments: Poisson Equations<a class="headerlink" href="#experiments-poisson-equations" title="Permalink to this heading"></a></h2>
+<h2>Experiments: Poisson Equations<a class="headerlink" href="#experiments-poisson-equations" title="Link to this heading"></a></h2>
 <p>First let’s do a sanity check. Consider a simple poisson equation:</p>
 <div class="math notranslate nohighlight">
 \[-\Delta u = f\]</div>
 <p>We set <span class="math notranslate nohighlight">\(v_0 = f\)</span> and <span class="math notranslate nohighlight">\(T=1\)</span>, using one iteration of the graph kernel network
 to learn the operator <span class="math notranslate nohighlight">\(\mathcal{F}: f \mapsto u\)</span>.</p>
 <section id="poisson-equation">
-<h3>poisson equation<a class="headerlink" href="#poisson-equation" title="Permalink to this heading"></a></h3>
+<h3>poisson equation<a class="headerlink" href="#poisson-equation" title="Link to this heading"></a></h3>
 <a class="reference internal image-reference" href="../_images/nik_kernel.jpg"><img alt="../_images/nik_kernel.jpg" src="../_images/nik_kernel.jpg" style="width: 800px;" /></a>
 <p>As shown in the figure above, we compare the true analytic Green function <span class="math notranslate nohighlight">\(G(x,y)\)</span> (left)
 with the learned kernel <span class="math notranslate nohighlight">\(\kappa_{\phi}(x,y)\)</span>  (right).
@@ -411,7 +407,7 @@ The learned kernel is almost the same as the true kernel,
 which means are neural network formulation does match the Green function expression.</p>
 </section>
 <section id="d-poisson-equation">
-<h3>2D poisson equation<a class="headerlink" href="#d-poisson-equation" title="Permalink to this heading"></a></h3>
+<h3>2D poisson equation<a class="headerlink" href="#d-poisson-equation" title="Link to this heading"></a></h3>
 <a class="reference internal image-reference" href="../_images/GKN_compare.jpg"><img alt="../_images/GKN_compare.jpg" src="../_images/GKN_compare.jpg" style="width: 800px;" /></a>
 <p>By assuming the kernel structure,
 graph kernel networks need only a few training examples to learn the shape of solution <span class="math notranslate nohighlight">\(u\)</span>.
@@ -420,7 +416,7 @@ which a feedforward neural network need at least <span class="math notranslate n
 </section>
 </section>
 <section id="experiments-generalization-of-resolution">
-<h2>Experiments: generalization of resolution<a class="headerlink" href="#experiments-generalization-of-resolution" title="Permalink to this heading"></a></h2>
+<h2>Experiments: generalization of resolution<a class="headerlink" href="#experiments-generalization-of-resolution" title="Link to this heading"></a></h2>
 <p>For the large scale experiments, we use Darcy equation of the form</p>
 <div class="math notranslate nohighlight">
 \[- \nabla \cdot (a(x) \nabla u(x))  = f(x), \quad  x \in D\]</div>
@@ -438,7 +434,7 @@ An figure for <span class="math notranslate nohighlight">\(s=16, s'=241\)</span>
 <a class="reference internal image-reference" href="../_images/uai_16to241.jpg"><img alt="../_images/uai_16to241.jpg" src="../_images/uai_16to241.jpg" style="width: 800px;" /></a>
 </section>
 <section id="conclusion">
-<h2>Conclusion<a class="headerlink" href="#conclusion" title="Permalink to this heading"></a></h2>
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading"></a></h2>
 <p>In the work we purposed to use graph networks for operator learning in PDE problems.
 By varying the underlying graph and discretization,
 the learned kernel is invariant of the discretization.
@@ -446,19 +442,19 @@ Experiments confirm the graph kernel networks are able to generalize among diffe
 And in the fixed discretization setting, the graph kernel networks also have good performances compared to several benchmark.</p>
 </section>
 <section id="references">
-<h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
 <aside class="footnote-list brackets">
-<aside class="footnote brackets" id="id4" role="note">
+<aside class="footnote brackets" id="id4" role="doc-footnote">
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
 <p>Neural operator: Graph kernel network for partial differential equations,
 Zongyi Li, Nikola Kovachki, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar</p>
 </aside>
-<aside class="footnote brackets" id="id5" role="note">
+<aside class="footnote brackets" id="id5" role="doc-footnote">
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">2</a><span class="fn-bracket">]</span></span>
 <p>Neural operator: Learning maps between function spaces,
 Nikola Kovachki, Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar</p>
 </aside>
-<aside class="footnote brackets" id="id6" role="note">
+<aside class="footnote brackets" id="id6" role="doc-footnote">
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">3</a><span class="fn-bracket">]</span></span>
 <p>Blog post by Zongyi Li, <a class="reference external" href="https://zongyi-li.github.io/blog/2020/graph-pde/">https://zongyi-li.github.io/blog/2020/graph-pde/</a></p>
 </aside>

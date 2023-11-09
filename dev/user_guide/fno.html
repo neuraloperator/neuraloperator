@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Fourier Neural Operators &#8212; neuraloperator 0.2.1 documentation</title> 
 <link rel="stylesheet" href="../_static/tensorly_style.css">
@@ -16,20 +15,17 @@
 <link rel="shortcut icon" href="../_static/favicon/favicon.ico">
 <meta name="theme-color" content="#ffffff">
 
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/tensorly_style.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/tensorly_style.css?v=a02e9698" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=61a4c737" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
 
   
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/documentation_options.js?v=37f418d5"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
  <script src="../_static/navbar_burger.js"></script>
  <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
@@ -165,7 +161,7 @@
       <div class="container content main-content">
         
   <section id="fourier-neural-operators">
-<h1>Fourier Neural Operators<a class="headerlink" href="#fourier-neural-operators" title="Permalink to this heading"></a></h1>
+<h1>Fourier Neural Operators<a class="headerlink" href="#fourier-neural-operators" title="Link to this heading"></a></h1>
 <p>This page (which takes about 10 minutes to read), introduces the Fourier neural operator that solves a family of PDEs from scratch.
 It the first work that can learn resolution-invariant solution operators on Navier-Stokes equation,
 achieving state-of-the-art accuracy among all existing deep learning methods and
@@ -173,7 +169,7 @@ up to 1000x faster than traditional solvers.
 Also check out the paper <a class="reference external" href="https://arxiv.org/abs/2010.08895">https://arxiv.org/abs/2010.08895</a> and article
 <a class="reference external" href="https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/">https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/</a></p>
 <section id="operator-learning">
-<h2>Operator learning<a class="headerlink" href="#operator-learning" title="Permalink to this heading"></a></h2>
+<h2>Operator learning<a class="headerlink" href="#operator-learning" title="Link to this heading"></a></h2>
 <p>Thinking in continuum gives us an advantage when dealing with PDE.
 We want to design mesh-indepedent, resolution-invariant operators.</p>
 <p>Problems in science and engineering involve solving
@@ -220,7 +216,7 @@ it learns the continuous function instead of discretized vectors.</p>
 The Fourier layer can be viewed as a substitute for the convolution layer.</p>
 </section>
 <section id="framework-of-neural-operators">
-<h2>Framework of Neural Operators<a class="headerlink" href="#framework-of-neural-operators" title="Permalink to this heading"></a></h2>
+<h2>Framework of Neural Operators<a class="headerlink" href="#framework-of-neural-operators" title="Link to this heading"></a></h2>
 <p>Just like neural networks consist of linear transformations and non-linear activation functions,
 neural operators consist of linear operators and non-linear activation operators.</p>
 <p>Let <span class="math notranslate nohighlight">\(v\)</span> be the input vector, <span class="math notranslate nohighlight">\(u\)</span> be the output vector.
@@ -243,7 +239,7 @@ Let <span class="math notranslate nohighlight">\(x, y\)</span> be the points in 
 and implement it by Fourier transformation.</p>
 </section>
 <section id="fourier-layer">
-<h2>Fourier Layer<a class="headerlink" href="#fourier-layer" title="Permalink to this heading"></a></h2>
+<h2>Fourier Layer<a class="headerlink" href="#fourier-layer" title="Link to this heading"></a></h2>
 <p>The real-world images have lots of edges and shapes,
 so CNN can capture them well with local convolution kernel.
 On the other hand, the inputs and outputs of PDEs are continuous functions.
@@ -279,7 +275,7 @@ which are left out in the Fourier layers.
 Therefore it’s necessary to the Fourier transform and its inverse at each layer.</p>
 </section>
 <section id="implementation">
-<h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading"></a></h2>
+<h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h2>
 <p>We can easily create a 2d Fourier layer using <cite>neuralop</cite> as follows:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralop.models.spectral_convolution</span> <span class="kn">import</span> <span class="n">FactorizedSpectralConv</span>
 <span class="n">fourier_layer</span> <span class="o">=</span> <span class="n">FactorizedSpectralConv</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="n">modes1</span><span class="p">,</span> <span class="n">modes2</span><span class="p">))</span>
@@ -366,7 +362,7 @@ If implemented with standard FFT, then it will be restricted to uniform mesh,
 but still resolution-invariant.</p>
 </section>
 <section id="experiments">
-<h2>Experiments<a class="headerlink" href="#experiments" title="Permalink to this heading"></a></h2>
+<h2>Experiments<a class="headerlink" href="#experiments" title="Link to this heading"></a></h2>
 <p><strong>Burgers Equation</strong>
 The 1-d Burgers’ equation is a non-linear PDE with various applications
 including modeling the one-dimensional flow of a viscous fluid. It takes the form</p>
@@ -611,7 +607,7 @@ The bottom middle and right panels show the vorticity at <span class="math notra
 when the respective approximate posterior means are used as initial conditions.</p>
 </section>
 <section id="conclusion">
-<h2>Conclusion<a class="headerlink" href="#conclusion" title="Permalink to this heading"></a></h2>
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading"></a></h2>
 <p>We propose a neural operator based on Fourier Transformation.
 It is the first work that learns the resolution-invariant solution operator
 for the family of Navier-Stokes equation in the turbulent regime,
@@ -629,9 +625,9 @@ the Fourier neural operator has an inference time of only <span class="math notr
 compared to the <span class="math notranslate nohighlight">\(2.2s\)</span> of the pseudo-spectral method used to solve Navier-Stokes.</p>
 </section>
 <section id="references">
-<h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
 <aside class="footnote-list brackets">
-<aside class="footnote brackets" id="id3" role="note">
+<aside class="footnote brackets" id="id3" role="doc-footnote">
 <span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
 <p>Fourier Neural Operator for Parametric Partial Differential Equations,
 Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli

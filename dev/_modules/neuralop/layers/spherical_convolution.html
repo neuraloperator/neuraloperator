@@ -1,7 +1,6 @@
-
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,20 +14,17 @@
 <link rel="shortcut icon" href="../../../_static/favicon/favicon.ico">
 <meta name="theme-color" content="#ffffff">
 
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/tensorly_style.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/tensorly_style.css?v=a02e9698" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css?v=61a4c737" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
 
   
-    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../../../_static/doctools.js"></script>
-    <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/documentation_options.js?v=37f418d5"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
  <script src="../../../_static/navbar_burger.js"></script>
  <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
  
@@ -402,7 +398,9 @@
         <span class="k">return</span> <span class="n">isht</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="SphericalConv"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv">[docs]</a><span class="k">class</span> <span class="nc">SphericalConv</span><span class="p">(</span><span class="n">BaseSpectralConv</span><span class="p">):</span>
+<div class="viewcode-block" id="SphericalConv">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv">[docs]</a>
+<span class="k">class</span> <span class="nc">SphericalConv</span><span class="p">(</span><span class="n">BaseSpectralConv</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Spherical Convolution, base class for the SFNO [1]_</span>
 <span class="sd">    </span>
 <span class="sd">    Parameters</span>
@@ -545,7 +543,9 @@
     <span class="k">def</span> <span class="nf">_get_weight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
     
-<div class="viewcode-block" id="SphericalConv.transform"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">layer_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">output_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="SphericalConv.transform">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv.transform">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">layer_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">output_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="o">*</span><span class="n">_</span><span class="p">,</span> <span class="n">in_height</span><span class="p">,</span> <span class="n">in_width</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">output_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -563,7 +563,10 @@
             <span class="n">coefs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sht_handle</span><span class="o">.</span><span class="n">sht</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sht_norm</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sht_grids</span><span class="p">[</span><span class="n">layer_index</span><span class="p">])</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sht_handle</span><span class="o">.</span><span class="n">isht</span><span class="p">(</span><span class="n">coefs</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="p">(</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">),</span> <span class="n">norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sht_norm</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sht_grids</span><span class="p">[</span><span class="n">layer_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span></div>
 
-<div class="viewcode-block" id="SphericalConv.forward"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">indices</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">output_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="SphericalConv.forward">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv.forward">[docs]</a>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">indices</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">output_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generic forward pass for the Factorized Spectral Conv</span>
 
 <span class="sd">        Parameters</span>
@@ -604,6 +607,7 @@
 
         <span class="k">return</span> <span class="n">x</span></div>
 
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">n_modes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_modes</span>
@@ -616,7 +620,9 @@
             <span class="n">n_modes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">n_modes</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_n_modes</span> <span class="o">=</span> <span class="n">n_modes</span>
 
-<div class="viewcode-block" id="SphericalConv.get_conv"><a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv.get_conv">[docs]</a>    <span class="k">def</span> <span class="nf">get_conv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indices</span><span class="p">):</span>
+<div class="viewcode-block" id="SphericalConv.get_conv">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv.get_conv">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_conv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indices</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a sub-convolutional layer from the joint parametrize main-convolution</span>
 
 <span class="sd">        The parametrization of sub-convolutional layers is shared with the main one.</span>
@@ -628,8 +634,10 @@
 
         <span class="k">return</span> <span class="n">SubConv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indices</span><span class="p">)</span></div>
 
+
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indices</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_conv</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span></div>
+
 </pre></div>
 
       </div>
