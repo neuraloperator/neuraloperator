@@ -7,7 +7,7 @@ import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets import load_darcy_flow_small
-from neuralop.datasets.data_pipeline import MGPatchingDataPipeline
+from neuralop.datasets.data_transforms import MGPatchingDataProcessor
 from neuralop.training import setup
 from neuralop.training.callbacks import BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
@@ -141,7 +141,7 @@ if config.verbose and is_logger:
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
 
-data_pipeline = MGPatchingDataPipeline(model=model,
+data_pipeline = MGPatchingDataProcessor(model=model,
                                        levels=config.patching.levels,
                                        padding_fraction=config.patching.padding,
                                        stitching=config.patching.stitching,

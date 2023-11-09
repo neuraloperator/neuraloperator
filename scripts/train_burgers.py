@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Trainer, get_model
 from neuralop.datasets import load_burgers_1dtime
-from neuralop.datasets.data_pipeline import MGPatchingDataPipeline
+from neuralop.datasets.data_transforms import MGPatchingDataProcessor
 from neuralop.training import setup, BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
@@ -165,7 +165,7 @@ callbacks = [
     BasicLoggerCallback(wandb_init_args)
 ]
 
-data_pipeline = MGPatchingDataPipeline(model=model,
+data_pipeline = MGPatchingDataProcessor(model=model,
                                        levels=config.patching.levels,
                                        padding_fraction=config.patching.padding,
                                        stitching=config.patching.stitching,
