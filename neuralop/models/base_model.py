@@ -1,18 +1,35 @@
 import inspect
 import torch
-import json
 import warnings
 from pathlib import Path
 
+# Author: Jean Kossaifi
 
 class BaseModel(torch.nn.Module):
     """Based class for all Models
+
+    This class has two main functionalities:
+    * It monitors the creation of subclass, that are automatically registered 
+      for users to use by name using the library's config system
+    * When a new instance of this class is created, the init call is intercepted
+      so we can store the parameters used to create the instance.
+      This makes it possible to save trained models along with their init parameters,
+      and therefore load saved modes easily.
+
+    Notes
+    -----
+    Model can be versioned using the _version class attribute. 
+    This can be used for sanity check when loading models from checkpoints to verify the 
+    model hasn't been updated since.
     """
     _models = dict()
     _version = '0.1.0'
 
     def __init_subclass__(cls, name=None, **kwargs):
-        """When a subclass is created, register it in _models"""
+        """When a subclass is created, register it in _models
+        We look for an existing name attribute. 
+        If not give, then we use the class' name.
+        """
         super().__init_subclass__(**kwargs)
         if name is not None:
             BaseModel._models[name.lower()] = cls
@@ -24,6 +41,11 @@ class BaseModel(torch.nn.Module):
 
     def __new__(cls, *args, **kwargs):
         """Verify arguments and save init kwargs for loading/saving
+
+        We inspect the class' signature and check for unused parameters, or 
+        parameters not passed. 
+
+        We store all the args and kwargs given so we can duplicate the instance transparently.
         """
         sig = inspect.signature(cls)
         model_name = cls.__name__
@@ -46,17 +68,19 @@ class BaseModel(torch.nn.Module):
         if hasattr(cls, '_version'):
             kwargs['_version'] = cls._version
         kwargs['args'] = args
+        kwargs['_name'] = cls._name
         instance = super().__new__(cls)
         instance._init_kwargs = kwargs
 
         return instance
     
     def save_checkpoint(self, save_folder, save_name):
+        """Saves the model state and init param in the given folder under the given name
+        """
         save_folder = Path(save_folder)
 
         state_dict_filepath = save_folder.joinpath(f'{save_name}_state_dict.pt').as_posix()
         torch.save(self.state_dict(), state_dict_filepath)
-        
         metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.pkl').as_posix()
         # Objects (e.g. GeLU) are not serializable by json - find a better solution in the future
         torch.save(self._init_kwargs, metadata_filepath)
