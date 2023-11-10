@@ -1,6 +1,6 @@
 from ..data_transforms import DefaultDataProcessor
 from ..output_encoder import UnitGaussianNormalizer
-from ..transforms import PositionalEmbedding
+from ..transforms import PositionalEmbedding2D
 import torch
 from torch.testing import assert_close
 
@@ -13,8 +13,7 @@ def test_DefaultDataProcessor():
     x = torch.randn((1,2,64,64))
     y = torch.randn((1,2,64,64))
 
-    pos_encoder = PositionalEmbedding(grid_boundaries=[[0,1],[0,1]],
-                                    channel_dim=1)
+    pos_encoder = PositionalEmbedding2D(grid_boundaries=[[0,1],[0,1]])
     normalizer = UnitGaussianNormalizer(mean=torch.zeros((1,2,1,1)),
                                         std=torch.ones((1,2,1,1)),
                                         eps=1e-5)

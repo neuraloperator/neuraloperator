@@ -5,7 +5,7 @@ from torchvision import transforms
 from ..utils import UnitGaussianNormalizer
 from .hdf5_dataset import H5pyDataset
 from .tensor_dataset import TensorDataset
-from .transforms import Normalizer, PositionalEmbedding
+from .transforms import Normalizer, PositionalEmbedding2D
 
 # from .transforms import Normalizer, PositionalEmbedding, MGPTensorDataset
 
@@ -100,7 +100,7 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
         transform_x.append(Normalizer(x_mean, x_std))
     
     if positional_encoding:
-        transform_x.append(PositionalEmbedding(grid_boundaries, 0))
+        transform_x.append(PositionalEmbedding2D(grid_boundaries))
 
     if encode_output:
         y_mean = training_db._attribute('y', 'mean')
@@ -126,7 +126,7 @@ def load_navier_stokes_hdf5(data_path, n_train, batch_size,
         if encode_input:
             transform_x.append(Normalizer(x_mean, x_std))
         if positional_encoding:
-            transform_x.append(PositionalEmbedding(grid_boundaries, 0))
+            transform_x.append(PositionalEmbedding2D(grid_boundaries))
 
         if encode_output:
             transform_y = Normalizer(y_mean, y_std)
@@ -202,12 +202,12 @@ def load_navier_stokes_pt(data_path, train_resolution,
     else:
         output_encoder = None
 
-    train_db = TensorDataset(x_train, y_train, transform_x=PositionalEmbedding(grid_boundaries, 0) if positional_encoding else None)
+    train_db = TensorDataset(x_train, y_train, transform_x=PositionalEmbedding2D(grid_boundaries) if positional_encoding else None)
     train_loader = torch.utils.data.DataLoader(train_db,
                                                batch_size=batch_size, shuffle=True, drop_last=True,
                                                num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
 
-    test_db = TensorDataset(x_test, y_test,transform_x=PositionalEmbedding(grid_boundaries, 0) if positional_encoding else None)
+    test_db = TensorDataset(x_test, y_test,transform_x=PositionalEmbedding2D(grid_boundaries) if positional_encoding else None)
     test_loader = torch.utils.data.DataLoader(test_db,
                                               batch_size=test_batch_size, shuffle=False,
                                               num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
@@ -219,7 +219,7 @@ def load_navier_stokes_pt(data_path, train_resolution,
         if input_encoder is not None:
             x_test = input_encoder.encode(x_test)
 
-        test_db = TensorDataset(x_test, y_test, transform_x=PositionalEmbedding(grid_boundaries, 0) if positional_encoding else None)
+        test_db = TensorDataset(x_test, y_test, transform_x=PositionalEmbedding2D(grid_boundaries) if positional_encoding else None)
         test_loader = torch.utils.data.DataLoader(test_db,
                                                   batch_size=test_batch_size, shuffle=False,
                                                   num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
