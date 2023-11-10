@@ -143,7 +143,7 @@ class Trainer:
                 if regularizer:
                     regularizer.reset()
 
-                if self.data_process is not None:
+                if self.data_processor is not None:
                     sample = self.data_processor.preprocess(sample)
                 else:
                     # load data to device if no preprocessor exists
