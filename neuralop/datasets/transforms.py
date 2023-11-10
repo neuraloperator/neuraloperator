@@ -3,6 +3,7 @@ from typing import List
 
 import torch
 from torch.utils.data import Dataset
+from neuralop.training.patching import MultigridPatching2D
 
 class Transform(torch.nn.Module):
     """
@@ -70,6 +71,56 @@ class Composite(Transform):
     def to(self, device):
         # all Transforms are required to implement .to()
         self.transforms = [t.to(device) for t in self.transforms if hasattr(t, 'to')]
+        return self
+
+class MGPatchingTransform(Transform):
+    def __init__(self, model: torch.nn.Module, levels: int, 
+                 padding_fraction: float, stitching: float):
+        """Wraps MultigridPatching2D to expose canonical
+        transform .transform() and .inverse_transform() API
+
+        Parameters
+        ----------
+        model: nn.Module
+            model to wrap in MultigridPatching2D
+        levels : int
+            mg_patching level parameter for MultigridPatching2D
+        padding_fraction : float
+            mg_padding_fraction parameter for MultigridPatching2D
+        stitching : float
+            mg_patching_stitching parameter for MultigridPatching2D
+        """
+        super.__init__()
+
+        self.levels = levels
+        self.padding_fraction = padding_fraction
+        self.stitching = stitching
+        self.patcher = MultigridPatching2D(model=model, levels=self.levels, 
+                                      padding_fraction=self.padding_fraction,
+                                      stitching=self.stitching)
+    def transform(self, data_dict):
+        
+        x = data_dict['x']
+        y = data_dict['y']
+
+        x,y = self.patcher.patch(x,y)
+
+        data_dict['x'] = x
+        data_dict['y'] = y
+        return data_dict
+    
+    def inverse_transform(self, data_dict):
+        x = data_dict['x']
+        y = data_dict['y']
+
+        x,y = self.patcher.unpatch(x,y)
+
+        data_dict['x'] = x
+        data_dict['y'] = y
+        return data_dict
+    
+    def to(self, _):
+        # nothing to pass to device
         return self
 
 class RandomMGPatch():
