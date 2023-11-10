@@ -15,7 +15,7 @@ class Trainer:
                  wandb_log=True, 
                  device=None, 
                  amp_autocast=False,
-                 data_pipeline=None,
+                 data_processor=None,
                  callbacks = None,
                  log_test_interval=1, 
                  log_output=False, 
@@ -31,9 +31,9 @@ class Trainer:
         wandb_log : bool, default is True
         device : torch.device
         amp_autocast : bool, default is False
-        data_pipeline : class to transform data, default is None
-            if not None, data from the loaders is transform first with data_pipeline.preprocess,
-            then after getting an output from the model, that is transformed with data_pipeline.postprocess.
+        data_processor : class to transform data, default is None
+            if not None, data from the loaders is transform first with data_processor.preprocess,
+            then after getting an output from the model, that is transformed with data_processor.postprocess.
         log_test_interval : int, default is 1
             how frequently to print updates
         log_output : bool, default is False
@@ -78,7 +78,7 @@ class Trainer:
         self.use_distributed = use_distributed
         self.device = device
         self.amp_autocast = amp_autocast
-        self.data_pipeline = data_pipeline
+        self.data_processor = data_processor
 
         if self.callbacks:
             self.callbacks.on_init_end(model=model, 
@@ -143,11 +143,11 @@ class Trainer:
                 if regularizer:
                     regularizer.reset()
 
-                if self.data_pipeline is not None:
-                    sample = self.data_pipeline.preprocess(sample)
+                if self.data_process is not None:
+                    sample = self.data_processor.preprocess(sample)
                 else:
                     # load data to device if no preprocessor exists
-                    sample = {k:v.to(self.device) for k,v in sample.items()}
+                    sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
 
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
@@ -155,8 +155,8 @@ class Trainer:
                 else:
                     out  = self.model(**sample)
 
-                if self.data_pipeline is not None:
-                    out, sample = self.data_pipeline.postprocess(out, sample)
+                if self.data_processor is not None:
+                    out, sample = self.data_processor.postprocess(out, sample)
 
                 if self.callbacks:
                     self.callbacks.on_before_loss(out=out)
@@ -258,16 +258,16 @@ class Trainer:
                 if self.callbacks:
                     self.callbacks.on_val_batch_start(idx=idx, sample=sample)
 
-                if self.data_pipeline is not None:
-                    sample = self.data_pipeline.preprocess(sample)
+                if self.data_processor is not None:
+                    sample = self.data_processor.preprocess(sample)
                 else:
                     # load data to device if no preprocessor exists
                     sample = {k:v.to(self.device) for k,v in sample.items()}
                     
                 out = self.model(**sample)
 
-                if self.data_pipeline is not None:
-                    out, sample = self.data_pipeline.postprocess(out, sample)
+                if self.data_processor is not None:
+                    out, sample = self.data_processor.postprocess(out, sample)
 
                 if self.callbacks:
                     self.callbacks.on_before_val_loss(out=out)

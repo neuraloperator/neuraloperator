@@ -1,6 +1,7 @@
 from abc import abstractmethod
+from typing import List
+
 import torch
-from .positional_encoding import append_2d_grid_positional_encoding
 from torch.utils.data import Dataset
 
 class Transform(torch.nn.Module):
@@ -40,18 +41,36 @@ class Normalizer():
     def __call__(self, data):
         return (data - self.mean)/(self.std + self.eps)
 
+class Composite(Transform):
+    def __init__(self, transforms: List[Transform]):
+        """Composite transform composes a list of
+        Transforms into one Transform object.
 
-class PositionalEmbedding():
-    def __init__(self, grid_boundaries, channel_dim):
-        self.grid_boundaries = grid_boundaries
-        self.channel_dim = channel_dim
-        self._grid = None    
+        Transformations are not assumed to be commutative
 
-    def __call__(self, data):
-        return append_2d_grid_positional_encoding(data,
-                                                  self.grid_boundaries,
-                                                  self.channel_dim)
+        Parameters
+        ----------
+        transforms : List[Transform]
+            list of transforms to be applied to data
+            in order
+        """
+        super.__init__()
+        self.transforms = transforms
+    
+    def transform(self, data_dict):
+        for tform in self.transforms:
+            data_dict = tform.transform(self.data_dict)
+        return data_dict
+    
+    def inverse_transform(self, data_dict):
+        for tform in self.transforms[::-1]:
+            data_dict = tform.transform(self.data_dict)
+        return data_dict
 
+    def to(self, device):
+        # all Transforms are required to implement .to()
+        self.transforms = [t.to(device) for t in self.transforms if hasattr(t, 'to')]
+        return self
 
 class RandomMGPatch():
     def __init__(self, levels=2):
@@ -109,3 +128,48 @@ class MGPTensorDataset(Dataset):
 
     def __len__(self):
         return self.x.size(0)
+    
+
+def regular_grid(spatial_dims, grid_boundaries=[[0, 1], [0, 1]]):
+    """
+    Appends grid positional encoding to an input tensor, concatenating as additional dimensions along the channels
+    """
+    height, width = spatial_dims
+
+    xt = torch.linspace(grid_boundaries[0][0], grid_boundaries[0][1],
+                        height + 1)[:-1]
+    yt = torch.linspace(grid_boundaries[1][0], grid_boundaries[1][1],
+                        width + 1)[:-1]
+
+    grid_x, grid_y = torch.meshgrid(xt, yt, indexing='ij')
+
+    grid_x = grid_x.repeat(1, 1)
+    grid_y = grid_y.repeat(1, 1)
+
+    return grid_x, grid_y
+
+
+class PositionalEmbedding2D():
+    """A simple positional embedding as a regular 2D grid
+    """
+    def __init__(self, grid_boundaries=[[0, 1], [0, 1]]):
+        self.grid_boundaries = grid_boundaries
+        self._grid = None
+
+    def grid(self, spatial_dims, device, dtype):
+        if self._grid is None:
+            grid_x, grid_y = regular_grid(spatial_dims,
+                                      grid_boundaries=self.grid_boundaries)
+            grid_x = grid_x.to(device).to(dtype).unsqueeze(0).unsqueeze(0)
+            grid_y = grid_y.to(device).to(dtype).unsqueeze(0).unsqueeze(0)
+            self._grid = grid_x, grid_y
+
+        return self._grid
+
+    def __call__(self, data):
+        batch_size = data.shape[0]
+        x, y = self.grid(data.shape[-2:], data.device, data.dtype)
+
+        return torch.cat((data, x.expand(batch_size, -1, -1, -1),
+                          y.expand(batch_size, -1, -1, -1)),
+                         dim=1)

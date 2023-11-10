@@ -1,52 +1,6 @@
 import torch
 from neuralop.training.patching import MultigridPatching2D
 
-
-def regular_grid(spatial_dims, grid_boundaries=[[0, 1], [0, 1]]):
-    """
-    Appends grid positional encoding to an input tensor, concatenating as additional dimensions along the channels
-    """
-    height, width = spatial_dims
-
-    xt = torch.linspace(grid_boundaries[0][0], grid_boundaries[0][1],
-                        height + 1)[:-1]
-    yt = torch.linspace(grid_boundaries[1][0], grid_boundaries[1][1],
-                        width + 1)[:-1]
-
-    grid_x, grid_y = torch.meshgrid(xt, yt, indexing='ij')
-
-    grid_x = grid_x.repeat(1, 1)
-    grid_y = grid_y.repeat(1, 1)
-
-    return grid_x, grid_y
-
-
-class PositionalEmbedding2D():
-    """A simple positional embedding as a regular 2D grid
-    """
-    def __init__(self, grid_boundaries=[[0, 1], [0, 1]]):
-        self.grid_boundaries = grid_boundaries
-        self._grid = None
-
-    def grid(self, spatial_dims, device, dtype):
-        if self._grid is None:
-            grid_x, grid_y = regular_grid(spatial_dims,
-                                      grid_boundaries=self.grid_boundaries)
-            grid_x = grid_x.to(device).to(dtype).unsqueeze(0).unsqueeze(0)
-            grid_y = grid_y.to(device).to(dtype).unsqueeze(0).unsqueeze(0)
-            self._grid = grid_x, grid_y
-
-        return self._grid
-
-    def __call__(self, data):
-        batch_size = data.shape[0]
-        x, y = self.grid(data.shape[-2:], data.device, data.dtype)
-
-        return torch.cat((data, x.expand(batch_size, -1, -1, -1),
-                          y.expand(batch_size, -1, -1, -1)),
-                         dim=1)
-
-
 class DefaultDataProcessor(torch.nn.Module):
     def __init__(self, 
                  in_normalizer=None, out_normalizer=None, 
@@ -182,7 +136,7 @@ class MGPatchingDataProcessor(torch.nn.Module):
         data_dict['x'],data_dict['y'] = self.patcher.patch(data_dict['x'],data_dict['y'])
         return data_dict
     
-    def postprocess(self, out, data_dict):
+    def postprocess(self, data_dict):
         """
         Postprocess model outputs, including decoding
         if an encoder exists.
