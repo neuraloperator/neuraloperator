@@ -3,7 +3,7 @@ import torch
 
 from ..utils import UnitGaussianNormalizer
 from .tensor_dataset import TensorDataset
-from .transforms import PositionalEmbedding
+from .transforms import PositionalEmbedding2D
 
 
 def load_darcy_flow_small(
@@ -135,7 +135,7 @@ def load_darcy_pt(
     train_db = TensorDataset(
         x_train,
         y_train,
-        transform_x=PositionalEmbedding(grid_boundaries, 0)
+        transform_x=PositionalEmbedding2D(grid_boundaries)
         if positional_encoding
         else None,
     )
@@ -151,7 +151,7 @@ def load_darcy_pt(
     test_db = TensorDataset(
         x_test,
         y_test,
-        transform_x=PositionalEmbedding(grid_boundaries, 0)
+        transform_x=PositionalEmbedding2D(grid_boundaries)
         if positional_encoding
         else None,
     )
@@ -183,7 +183,7 @@ def load_darcy_pt(
         test_db = TensorDataset(
             x_test,
             y_test,
-            transform_x=PositionalEmbedding(grid_boundaries, 0)
+            transform_x=PositionalEmbedding2D(grid_boundaries)
             if positional_encoding
             else None,
         )
