@@ -136,7 +136,7 @@ class MGPatchingDataProcessor(torch.nn.Module):
         data_dict['x'],data_dict['y'] = self.patcher.patch(data_dict['x'],data_dict['y'])
         return data_dict
     
-    def postprocess(self, data_dict):
+    def postprocess(self, data_dict, out):
         """
         Postprocess model outputs, including decoding
         if an encoder exists.
@@ -151,13 +151,12 @@ class MGPatchingDataProcessor(torch.nn.Module):
             model output predictions
         """
 
-        x,y = self.patcher.unpatch(data_dict['x'],data_dict['y'])
+        out,y = self.patcher.unpatch(out,data_dict['y'])
 
         if self.out_normalizer:
             y = self.out_normalizer.inverse_transform(y)
             out = self.out_normalizer.inverse_transform(out)
         
-        data_dict['x'] = x
         data_dict['y'] = y
 
         return out, data_dict
