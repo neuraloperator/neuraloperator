@@ -19,7 +19,7 @@ from neuralop.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
 
-device = 'cpu'
+device = 'cuda' if torch.backends.cuda.is_built() else 'cpu'
 
 
 # %%
@@ -30,6 +30,7 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
         test_batch_sizes=[32, 32],
         positional_encoding=True
 )
+data_processor = data_processor.to(device)
 
 
 # %%
@@ -112,6 +113,7 @@ test_samples = test_loaders[32].dataset
 fig = plt.figure(figsize=(7, 7))
 for index in range(3):
     data = test_samples[index]
+    data = data_processor.preprocess(data, batched=False)
     # Input x
     x = data['x']
     # Ground-truth

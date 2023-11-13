@@ -34,14 +34,14 @@ class DefaultDataProcessor(torch.nn.Module):
         self.device = device
         return self
 
-    def preprocess(self, data_dict):
+    def preprocess(self, data_dict, batched=True):
         x = data_dict['x'].to(self.device)
         y = data_dict['y'].to(self.device)
 
         if self.in_normalizer is not None:
             x = self.in_normalizer.transform(x)
         if self.positional_encoding is not None:
-            x = self.positional_encoding(x)
+            x = self.positional_encoding(x, batched=batched)
         if self.out_normalizer is not None and self.train:
             y = self.out_normalizer.transform(y)
 
@@ -122,7 +122,7 @@ class MGPatchingDataProcessor(torch.nn.Module):
         self.model = model
         return self
     
-    def preprocess(self, data_dict):
+    def preprocess(self, data_dict, batched=True):
         """
         Preprocess data assuming that if encoder exists, it has 
         encoded all data during data loading
@@ -133,6 +133,8 @@ class MGPatchingDataProcessor(torch.nn.Module):
         data_dict: dict
             dictionary keyed with 'x', 'y' etc
             represents one batch of data input to a model
+        batched: bool
+            whether the first dimension of 'x', 'y' represents batching
         """
         data_dict = {k:v.to(self.device) for k,v in data_dict.items() if torch.is_tensor(v)}
         x,y = data_dict['x'], data_dict['y']
@@ -140,7 +142,7 @@ class MGPatchingDataProcessor(torch.nn.Module):
             x = self.in_normalizer.transform(x)
             y = self.out_normalizer.transform(y)
         if self.positional_encoding is not None:
-            x = self.positional_encoding(x)
+            x = self.positional_encoding(x, batched=batched)
         data_dict['x'],data_dict['y'] = self.patcher.patch(x,y)
         return data_dict
     

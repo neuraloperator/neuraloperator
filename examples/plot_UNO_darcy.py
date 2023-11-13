@@ -112,6 +112,7 @@ test_samples = test_loaders[32].dataset
 fig = plt.figure(figsize=(7, 7))
 for index in range(3):
     data = test_samples[index]
+    data = data_processor.preprocess(data, batched=False)
     # Input x
     x = data['x']
     # Ground-truth
