@@ -201,7 +201,10 @@ class UNO(nn.Module):
         if verbose:
             print("calculated out factor", self.end_to_end_scaling_factor)
 
-        if domain_padding is not None and domain_padding > 0:
+        if domain_padding is not None and (
+            (isinstance(domain_padding, list) and sum(domain_padding) > 0)
+            or (isinstance(domain_padding, (float, int)) and domain_padding > 0)
+        ):
             self.domain_padding = DomainPadding(
                 domain_padding=domain_padding,
                 padding_mode=domain_padding_mode,

@@ -299,7 +299,7 @@ class BasicLoggerCallback(Callback):
             for pg in self.state_dict['optimizer'].param_groups:
                 lr = pg['lr']
                 self.state_dict['values_to_log']['lr'] = lr
-            wandb.log(self.state_dict['values_to_log'], step=self.state_dict['epoch'], commit=True)
+            wandb.log(self.state_dict['values_to_log'], step=self.state_dict['epoch'] + 1, commit=True)
 
 class MGPatchingCallback(Callback):
     def __init__(self, levels: int, padding_fraction: float, stitching: float, encoder=None):
