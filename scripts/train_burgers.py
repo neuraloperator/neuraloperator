@@ -165,7 +165,7 @@ callbacks = [
     BasicLoggerCallback(wandb_init_args)
 ]
 
-data_pipeline = MGPatchingDataProcessor(model=model,
+data_processor = MGPatchingDataProcessor(model=model,
                                        levels=config.patching.levels,
                                        padding_fraction=config.patching.padding,
                                        stitching=config.patching.stitching,
@@ -175,7 +175,7 @@ data_pipeline = MGPatchingDataProcessor(model=model,
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
-    data_pipeline=data_pipeline,
+    data_processor=data_processor,
     device=device,
     amp_autocast=config.opt.amp_autocast,
     callbacks=callbacks,

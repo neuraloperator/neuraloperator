@@ -141,7 +141,7 @@ if config.verbose and is_logger:
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
 
-data_pipeline = MGPatchingDataProcessor(model=model,
+data_processor = MGPatchingDataProcessor(model=model,
                                        levels=config.patching.levels,
                                        padding_fraction=config.patching.padding,
                                        stitching=config.patching.stitching,
@@ -152,7 +152,7 @@ trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
     device=device,
-    data_pipeline=data_pipeline,
+    data_processor=data_processor,
     amp_autocast=config.opt.amp_autocast,
     wandb_log=config.wandb.log,
     log_test_interval=config.wandb.log_test_interval,
