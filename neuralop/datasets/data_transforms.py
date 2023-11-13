@@ -86,6 +86,8 @@ class MGPatchingDataProcessor(torch.nn.Module):
             OutputEncoder to decode model inputs, by default None
         in_normalizer : neuralop.datasets.transforms.Transform, optional
             OutputEncoder to decode model outputs, by default None
+        positional_encoding : neuralop.datasets.transforms.PositionalEmbedding2D, optional
+            appends pos encoding to x if used
         device : str, optional
             device 'cuda' or 'cpu' where computations are performed
         """
@@ -104,6 +106,7 @@ class MGPatchingDataProcessor(torch.nn.Module):
             self.in_normalizer = in_normalizer.to(self.device)
         if out_normalizer:
             self.out_normalizer = out_normalizer.to(self.device)
+        self.positional_encoding = positional_encoding
         self.model = None
     
     def to(self, device):
@@ -134,6 +137,8 @@ class MGPatchingDataProcessor(torch.nn.Module):
         if self.in_normalizer:
             x = self.in_normalizer.transform(x)
             y = self.out_normalizer.transform(y)
+        if self.positional_encoding is not None:
+            x = self.positional_encoding(x)
         data_dict['x'],data_dict['y'] = self.patcher.patch(x,y)
         return data_dict
     

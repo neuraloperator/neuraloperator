@@ -7,6 +7,7 @@ import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets.navier_stokes import load_navier_stokes_pt
+from neuralop.datasets.data_transforms import MGPatchingDataProcessor
 from neuralop.training import setup, BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
@@ -86,6 +87,16 @@ train_loader, test_loaders, data_processor = load_navier_stokes_pt(
     persistent_workers=config.data.persistent_workers,
 )
 
+# convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
+if config.patching.levels > 0:
+    data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
+                                             out_normalizer=data_processor.out_normalizer,
+                                             positional_encoding=data_processor.positional_encoding,
+                                             padding_fraction=config.patching.padding,
+                                             stitching=config.patching.stitching,
+                                             levels=config.patching.levels)
+
+data_processor = data_processor.to(device)
 model = get_model(config)
 model = model.to(device)
 

@@ -7,7 +7,7 @@ import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets import load_darcy_flow_small
-from neuralop.datasets.data_transforms import DefaultDataProcessor
+from neuralop.datasets.data_transforms import MGPatchingDataProcessor
 from neuralop.training import setup
 from neuralop.training.callbacks import BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
@@ -81,7 +81,14 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
     encode_input=False,
     encode_output=False,
 )
-
+# convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
+if config.patching.levels > 0:
+    data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
+                                             out_normalizer=data_processor.out_normalizer,
+                                             positional_encoding=data_processor.positional_encoding,
+                                             padding_fraction=config.patching.padding,
+                                             stitching=config.patching.stitching,
+                                             levels=config.patching.levels)
 data_processor = data_processor.to(device)
 
 model = get_model(config)
