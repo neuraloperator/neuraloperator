@@ -103,7 +103,7 @@ class MultipleFieldOutputEncoder(OutputEncoder):
         self.encoders = {k:v.to(device) for k,v in self.encoders.items()}
 
 
-class DictTransform(OutputEncoder):
+class DictTransform(Transform):
     """When a model has multiple input and output fields, 
         apply a different transform to each field, 
         tries to apply the inverse_transform to each output
