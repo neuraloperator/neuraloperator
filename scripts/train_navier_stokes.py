@@ -7,7 +7,6 @@ import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets.navier_stokes import load_navier_stokes_pt
-from neuralop.datasets.data_transforms import MGPatchingDataProcessor
 from neuralop.training import setup, BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
@@ -71,7 +70,7 @@ if config.verbose:
     sys.stdout.flush()
 
 # Loading the Navier-Stokes dataset in 128x128 resolution
-train_loader, test_loaders, output_encoder = load_navier_stokes_pt(
+train_loader, test_loaders, data_processor = load_navier_stokes_pt(
     config.data.folder,
     train_resolution=config.data.train_resolution,
     n_train=config.data.n_train,
@@ -151,14 +150,6 @@ if config.verbose:
 callbacks = [
     BasicLoggerCallback(wandb_init_args)
 ]
-
-data_processor = MGPatchingDataProcessor(model=model,
-                                       levels=config.patching.levels,
-                                       padding_fraction=config.patching.padding,
-                                       stitching=config.patching.stitching,
-                                       device=device,
-                                       in_normalizer=output_encoder,
-                                       out_normalizer=output_encoder)
 
 
 trainer = Trainer(
