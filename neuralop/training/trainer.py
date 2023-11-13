@@ -262,7 +262,7 @@ class Trainer:
                     sample = self.data_processor.preprocess(sample)
                 else:
                     # load data to device if no preprocessor exists
-                    sample = {k:v.to(self.device) for k,v in sample.items()}
+                    sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
                     
                 out = self.model(**sample)
 
