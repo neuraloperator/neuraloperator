@@ -4,6 +4,7 @@ import torch
 from .output_encoder import UnitGaussianNormalizer
 from .tensor_dataset import TensorDataset
 from .transforms import PositionalEmbedding2D
+from .data_transforms import DefaultDataProcessor
 
 
 def load_darcy_flow_small(
@@ -117,8 +118,8 @@ def load_darcy_pt(
 
         input_encoder = UnitGaussianNormalizer(dim=reduce_dims)
         input_encoder.fit(x_train)
-        x_train = input_encoder.transform(x_train)
-        x_test = input_encoder.transform(x_test.contiguous())
+        #x_train = input_encoder.transform(x_train)
+        #x_test = input_encoder.transform(x_test.contiguous())
     else:
         input_encoder = None
 
@@ -130,16 +131,13 @@ def load_darcy_pt(
 
         output_encoder = UnitGaussianNormalizer(dim=reduce_dims)
         output_encoder.fit(y_train)
-        y_train = output_encoder.transform(y_train)
+        #y_train = output_encoder.transform(y_train)
     else:
         output_encoder = None
 
     train_db = TensorDataset(
         x_train,
         y_train,
-        transform_x=PositionalEmbedding2D(grid_boundaries)
-        if positional_encoding
-        else None,
     )
     train_loader = torch.utils.data.DataLoader(
         train_db,
@@ -153,9 +151,6 @@ def load_darcy_pt(
     test_db = TensorDataset(
         x_test,
         y_test,
-        transform_x=PositionalEmbedding2D(grid_boundaries)
-        if positional_encoding
-        else None,
     )
     test_loader = torch.utils.data.DataLoader(
         test_db,
@@ -179,15 +174,12 @@ def load_darcy_pt(
         )
         y_test = data["y"][:n_test, :, :].unsqueeze(channel_dim).clone()
         del data
-        if input_encoder is not None:
-            x_test = input_encoder.transform(x_test)
+        #if input_encoder is not None:
+            #x_test = input_encoder.transform(x_test)
 
         test_db = TensorDataset(
             x_test,
             y_test,
-            transform_x=PositionalEmbedding2D(grid_boundaries)
-            if positional_encoding
-            else None,
         )
         test_loader = torch.utils.data.DataLoader(
             test_db,
@@ -197,6 +189,16 @@ def load_darcy_pt(
             pin_memory=True,
             persistent_workers=False,
         )
-        test_loaders[res] = test_loader
+        test_loaders[res] = test_loader 
 
-    return train_loader, test_loaders, output_encoder
+    
+    if positional_encoding:
+        pos_encoding = PositionalEmbedding2D(grid_boundaries=grid_boundaries)
+    else:
+        pos_encoding = None
+    data_processor = DefaultDataProcessor(
+        in_normalizer=input_encoder,
+        out_normalizer=output_encoder,
+        positional_encoding=pos_encoding
+    )
+    return train_loader, test_loaders, data_processor

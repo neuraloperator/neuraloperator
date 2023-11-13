@@ -204,29 +204,59 @@ class PositionalEmbedding2D():
     """A simple positional embedding as a regular 2D grid
     """
     def __init__(self, grid_boundaries=[[0, 1], [0, 1]]):
+        """PositionalEmbedding2D applies a simple positional 
+        embedding as a regular 2D grid
+
+        Parameters
+        ----------
+        grid_boundaries : list, optional
+            coordinate boundaries of input grid, by default [[0, 1], [0, 1]]
+        """
         self.grid_boundaries = grid_boundaries
         self._grid = None
+        self._res = None
 
     def grid(self, spatial_dims, device, dtype):
-        if self._grid is None:
+        """grid generates 2D grid needed for pos encoding
+        and caches the grid associated with MRU resolution
+
+        Parameters
+        ----------
+        spatial_dims : torch.size
+             sizes of spatial resolution
+        device : literal 'cpu' or 'cuda:*'
+            where to load data
+        dtype : str
+            dtype to encode data
+
+        Returns
+        -------
+        torch.tensor
+            output grids to concatenate 
+        """
+        # handle case of multiple train resolutions
+        if self._grid is None or self._res != spatial_dims: 
             grid_x, grid_y = regular_grid(spatial_dims,
                                       grid_boundaries=self.grid_boundaries)
             grid_x = grid_x.to(device).to(dtype).unsqueeze(0).unsqueeze(0)
             grid_y = grid_y.to(device).to(dtype).unsqueeze(0).unsqueeze(0)
             self._grid = grid_x, grid_y
+            self._res = spatial_dims
 
         return self._grid
 
-    def __call__(self, data):
-        if data.ndim == 3: #if no batch dim exists, create one
-            data = data.unsqueeze(0)
+    def __call__(self, data, batched=True):
+        if not batched:
+            if data.ndim == 3:
+                data = data.unsqueeze(0)
         batch_size = data.shape[0]
         x, y = self.grid(data.shape[-2:], data.device, data.dtype)
         out =  torch.cat((data, x.expand(batch_size, -1, -1, -1),
                           y.expand(batch_size, -1, -1, -1)),
                          dim=1)
-        # in this case, the dataloader will stack N examples
-        if batch_size == 1: 
+        # in the unbatched case, the dataloader will stack N 
+        # examples with no batch dim to create one
+        if not batched and batch_size == 1: 
             return out.squeeze(0)
         else:
             return out
