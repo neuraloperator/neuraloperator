@@ -138,10 +138,10 @@ class DictTransform(Transform):
         tensor_dict : Torch.tensor dict
             model output, indexed according to self.mappings
         """
-        out = torch.zeros_like(x)
+        out = torch.zeros_like(tensor_dict)
         
         for field,indices in self.input_mappings.items():
-            encoded = self.transforms[field].transform(x[indices])
+            encoded = self.transforms[field].transform(tensor_dict[indices])
             if self.return_mappings:
                 encoded = encoded[self.return_mappings[field]]
             out[indices] = encoded
