@@ -300,60 +300,6 @@ class BasicLoggerCallback(Callback):
                 lr = pg['lr']
                 self.state_dict['values_to_log']['lr'] = lr
             wandb.log(self.state_dict['values_to_log'], step=self.state_dict['epoch'] + 1, commit=True)
-
-class MGPatchingCallback(Callback):
-    def __init__(self, levels: int, padding_fraction: float, stitching: float, encoder=None):
-        """MGPatchingCallback implements multigrid patching functionality
-        for datasets that require domain patching, stitching and/or padding.
-
-        Parameters
-        ----------
-        levels : int
-            mg_patching level parameter for MultigridPatching2D
-        padding_fraction : float
-            mg_padding_fraction parameter for MultigridPatching2D
-        stitching : _type_
-            mg_patching_stitching parameter for MultigridPatching2D
-        encoder : neuralop.datasets.output_encoder.OutputEncoder, optional
-            OutputEncoder to decode model outputs, by default None
-        """
-        super().__init__()
-        self.levels = levels
-        self.padding_fraction = padding_fraction
-        self.stitching = stitching
-        self.encoder = encoder
-        
-    def on_init_end(self, **kwargs):
-        self._update_state_dict(**kwargs)
-        self.patcher = MultigridPatching2D(model=self.state_dict['model'], levels=self.levels, 
-                                      padding_fraction=self.padding_fraction,
-                                      stitching=self.stitching)
-    
-    def on_batch_start(self, **kwargs):
-        self._update_state_dict(**kwargs)
-        self.state_dict['sample']['x'],self.state_dict['sample']['y'] =\
-              self.patcher.patch(self.state_dict['sample']['x'],
-                                 self.state_dict['sample']['y'],)
-    
-    def on_val_batch_start(self, *args, **kwargs):
-        return self.on_batch_start(*args, **kwargs)
-        
-    def on_before_loss(self, out, **kwargs):
-        
-        evaluation = kwargs.get('eval', False)
-        self._update_state_dict(out=out)
-        self.state_dict['out'], self.state_dict['sample']['y'] = \
-            self.patcher.unpatch(self.state_dict['out'],
-                                 self.state_dict['sample']['y'],
-                                 evaluation=evaluation)
-
-        if self.encoder:
-            self.state_dict['out'] = self.encoder.decode(self.state_dict['out'])
-            self.state_dict['sample']['y'] = self.encoder.decode(self.state_dict['sample']['y'])
-        
-    
-    def on_before_val_loss(self, **kwargs):
-        return self.on_before_loss(**kwargs, evaluation=True)
         
 class CheckpointCallback(Callback):
     
