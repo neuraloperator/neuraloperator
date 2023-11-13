@@ -7,7 +7,8 @@ import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets.navier_stokes import load_navier_stokes_pt
-from neuralop.training import setup, MGPatchingCallback, SimpleWandBLoggerCallback
+from neuralop.datasets.data_transforms import MGPatchingDataProcessor
+from neuralop.training import setup, BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -30,6 +31,7 @@ config_name = pipe.steps[-1].config_name
 device, is_logger = setup(config)
 
 # Set up WandB logging
+wandb_init_args = None
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
     if config.wandb.name:
@@ -60,8 +62,6 @@ if config.wandb.log and is_logger:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
 
-else: 
-    wandb_init_args = {}
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
 
@@ -71,7 +71,7 @@ if config.verbose:
     sys.stdout.flush()
 
 # Loading the Navier-Stokes dataset in 128x128 resolution
-train_loader, test_loaders, output_encoder = load_navier_stokes_pt(
+train_loader, test_loaders, data_processor = load_navier_stokes_pt(
     config.data.folder,
     train_resolution=config.data.train_resolution,
     n_train=config.data.n_train,
@@ -87,6 +87,16 @@ train_loader, test_loaders, output_encoder = load_navier_stokes_pt(
     persistent_workers=config.data.persistent_workers,
 )
 
+# convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
+if config.patching.levels > 0:
+    data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
+                                             out_normalizer=data_processor.out_normalizer,
+                                             positional_encoding=data_processor.positional_encoding,
+                                             padding_fraction=config.patching.padding,
+                                             stitching=config.patching.stitching,
+                                             levels=config.patching.levels)
+
+data_processor = data_processor.to(device)
 model = get_model(config)
 model = model.to(device)
 
@@ -149,19 +159,14 @@ if config.verbose:
 # only perform MG patching if config patching levels > 0
 
 callbacks = [
-    MGPatchingCallback(
-        levels=config.patching.levels,
-        padding_fraction=config.patching.padding,
-        stitching=config.patching.stitching, 
-        encoder=output_encoder
-    ),
-    SimpleWandBLoggerCallback(**wandb_init_args)
+    BasicLoggerCallback(wandb_init_args)
 ]
 
 
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
+    data_processor=data_processor,
     device=device,
     amp_autocast=config.opt.amp_autocast,
     callbacks=callbacks,

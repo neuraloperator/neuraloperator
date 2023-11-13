@@ -7,7 +7,8 @@ import torch.nn.functional as F
 
 from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Trainer, get_model
 from neuralop.datasets import load_burgers_1dtime
-from neuralop.training import setup, MGPatchingCallback, SimpleWandBLoggerCallback
+from neuralop.datasets.data_transforms import MGPatchingDataProcessor
+from neuralop.training import setup, BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -60,7 +61,7 @@ if config.wandb.log and is_logger:
             config.params[key] = wandb.config[key]
 
 else: 
-    wandb_init_args = {}
+    wandb_init_args = None
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
 
@@ -161,19 +162,20 @@ if config.verbose:
 # only perform MG patching if config patching levels > 0
 
 callbacks = [
-    MGPatchingCallback(
-        levels=config.patching.levels,
-        padding_fraction=config.patching.padding,
-        stitching=config.patching.stitching, 
-        encoder=output_encoder
-    ),
-    SimpleWandBLoggerCallback(**wandb_init_args)
+    BasicLoggerCallback(wandb_init_args)
 ]
 
-
+data_processor = MGPatchingDataProcessor(model=model,
+                                       levels=config.patching.levels,
+                                       padding_fraction=config.patching.padding,
+                                       stitching=config.patching.stitching,
+                                       device=device,
+                                       in_normalizer=output_encoder,
+                                       out_normalizer=output_encoder)
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
+    data_processor=data_processor,
     device=device,
     amp_autocast=config.opt.amp_autocast,
     callbacks=callbacks,

@@ -1,4 +1,5 @@
 from ..utils import count_tensor_params
+from .transforms import Transform
 from abc import abstractmethod
 from collections.abc import Iterable
 import torch
@@ -102,35 +103,7 @@ class MultipleFieldOutputEncoder(OutputEncoder):
         self.encoders = {k:v.to(device) for k,v in self.encoders.items()}
 
 
-class TransformCallback(torch.nn.Module):
-    """OutputEncoder: converts the output of a model
-        into a form usable by some cost function.
-    """
-    def __init__(self):
-        super().__init__()
-    
-    @abstractmethod
-    def transform(self):
-        pass
-
-    @abstractmethod
-    def inverse_transform(self):
-        pass
-
-    @abstractmethod
-    def cuda(self):
-        pass
-
-    @abstractmethod
-    def cpu(self):
-        pass
-
-    @abstractmethod
-    def to(self, device):
-        pass
-
-
-class DictTransformCallback(OutputEncoder):
+class DictTransform(Transform):
     """When a model has multiple input and output fields, 
         apply a different transform to each field, 
         tries to apply the inverse_transform to each output
@@ -165,10 +138,10 @@ class DictTransformCallback(OutputEncoder):
         tensor_dict : Torch.tensor dict
             model output, indexed according to self.mappings
         """
-        out = torch.zeros_like(x)
+        out = torch.zeros_like(tensor_dict)
         
         for field,indices in self.input_mappings.items():
-            encoded = self.transforms[field].transform(x[indices])
+            encoded = self.transforms[field].transform(tensor_dict[indices])
             if self.return_mappings:
                 encoded = encoded[self.return_mappings[field]]
             out[indices] = encoded
@@ -202,7 +175,7 @@ class DictTransformCallback(OutputEncoder):
         self.encoders = {k:v.to(device) for k,v in self.encoders.items()}
 
 
-class UnitGaussianNormalizer(torch.nn.Module):
+class UnitGaussianNormalizer(Transform):
     """
     UnitGaussianNormalizer normalizes data to be zero mean and unit std. 
     """

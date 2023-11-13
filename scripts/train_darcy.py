@@ -7,8 +7,9 @@ import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets import load_darcy_flow_small
+from neuralop.datasets.data_transforms import MGPatchingDataProcessor
 from neuralop.training import setup
-from neuralop.training.callbacks import MGPatchingCallback, SimpleWandBLoggerCallback
+from neuralop.training.callbacks import BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -30,6 +31,7 @@ config_name = pipe.steps[-1].config_name
 device, is_logger = setup(config)
 
 # Set up WandB logging
+wandb_args = None
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
     if config.wandb.name:
@@ -69,16 +71,25 @@ if config.verbose and is_logger:
     sys.stdout.flush()
 
 # Loading the Darcy flow dataset
-train_loader, test_loaders, output_encoder = load_darcy_flow_small(
+train_loader, test_loaders, data_processor = load_darcy_flow_small(
     n_train=config.data.n_train,
     batch_size=config.data.batch_size,
     positional_encoding=config.data.positional_encoding,
     test_resolutions=config.data.test_resolutions,
     n_tests=config.data.n_tests,
     test_batch_sizes=config.data.test_batch_sizes,
-    encode_input=config.data.encode_input,
-    encode_output=config.data.encode_output,
+    encode_input=False,
+    encode_output=False,
 )
+# convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
+if config.patching.levels > 0:
+    data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
+                                             out_normalizer=data_processor.out_normalizer,
+                                             positional_encoding=data_processor.positional_encoding,
+                                             padding_fraction=config.patching.padding,
+                                             stitching=config.patching.stitching,
+                                             levels=config.patching.levels)
+data_processor = data_processor.to(device)
 
 model = get_model(config)
 model = model.to(device)
@@ -143,6 +154,7 @@ trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
     device=device,
+    data_processor=data_processor,
     amp_autocast=config.opt.amp_autocast,
     wandb_log=config.wandb.log,
     log_test_interval=config.wandb.log_test_interval,
@@ -150,11 +162,7 @@ trainer = Trainer(
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
     callbacks=[
-        MGPatchingCallback(levels=config.patching.levels,
-                                  padding_fraction=config.patching.padding,
-                                  stitching=config.patching.stitching,
-                                  encoder=output_encoder),
-        SimpleWandBLoggerCallback(**wandb_args)
+        BasicLoggerCallback(wandb_args)
               ]
               )
 

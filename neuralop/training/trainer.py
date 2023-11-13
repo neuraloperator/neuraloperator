@@ -122,11 +122,6 @@ class Trainer:
 
         if eval_losses is None: # By default just evaluate on the training loss
             eval_losses = dict(l2=training_loss)
-
-        if self.use_distributed:
-            is_logger = (comm.get_world_rank() == 0)
-        else:
-            is_logger = True 
         
         for epoch in range(self.n_epochs):
 
@@ -150,6 +145,9 @@ class Trainer:
 
                 if self.data_processor is not None:
                     sample = self.data_processor.preprocess(sample)
+                else:
+                    # load data to device if no preprocessor exists
+                    sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
 
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
@@ -158,7 +156,7 @@ class Trainer:
                     out  = self.model(**sample)
 
                 if self.data_processor is not None:
-                    out = self.data_processor.postprocess(out)
+                    out, sample = self.data_processor.postprocess(out, sample)
 
                 if self.callbacks:
                     self.callbacks.on_before_loss(out=out)
@@ -183,8 +181,6 @@ class Trainer:
                         elif isinstance(out, dict):
                             loss += training_loss(**out, **sample)
                 
-                # del out
-
                 if regularizer:
                     loss += regularizer.loss
                 
@@ -264,11 +260,14 @@ class Trainer:
 
                 if self.data_processor is not None:
                     sample = self.data_processor.preprocess(sample)
-
+                else:
+                    # load data to device if no preprocessor exists
+                    sample = {k:v.to(self.device) for k,v in sample.items()}
+                    
                 out = self.model(**sample)
 
                 if self.data_processor is not None:
-                    out = self.data_processor.postprocess(out)
+                    out, sample = self.data_processor.postprocess(out, sample)
 
                 if self.callbacks:
                     self.callbacks.on_before_val_loss(out=out)
