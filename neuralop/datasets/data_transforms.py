@@ -129,14 +129,15 @@ class MGPatchingDataProcessor(torch.nn.Module):
             dictionary keyed with 'x', 'y' etc
             represents one batch of data input to a model
         """
-        data_dict = {k:v.to(self.device) for k,v in data_dict.items()}
+        data_dict = {k:v.to(self.device) for k,v in data_dict.items() if torch.is_tensor(v)}
+        x,y = data_dict['x'], data_dict['y']
         if self.in_normalizer:
-            data_dict['x'] = self.in_normalizer.transform(data_dict)
-            data_dict['y'] = self.out_normalizer.transform(data_dict)
-        data_dict['x'],data_dict['y'] = self.patcher.patch(data_dict['x'],data_dict['y'])
+            x = self.in_normalizer.transform(x)
+            y = self.out_normalizer.transform(y)
+        data_dict['x'],data_dict['y'] = self.patcher.patch(x,y)
         return data_dict
     
-    def postprocess(self, data_dict, out):
+    def postprocess(self, out, data_dict):
         """
         Postprocess model outputs, including decoding
         if an encoder exists.
@@ -150,8 +151,8 @@ class MGPatchingDataProcessor(torch.nn.Module):
         out: torch.Tensor 
             model output predictions
         """
-
-        out,y = self.patcher.unpatch(out,data_dict['y'])
+        y = data_dict['y']
+        out,y = self.patcher.unpatch(out,y)
 
         if self.out_normalizer:
             y = self.out_normalizer.inverse_transform(y)

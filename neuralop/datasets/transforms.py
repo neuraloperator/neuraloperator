@@ -218,9 +218,15 @@ class PositionalEmbedding2D():
         return self._grid
 
     def __call__(self, data):
+        if data.ndim == 3: #if no batch dim exists, create one
+            data = data.unsqueeze(0)
         batch_size = data.shape[0]
         x, y = self.grid(data.shape[-2:], data.device, data.dtype)
-
-        return torch.cat((data, x.expand(batch_size, -1, -1, -1),
+        out =  torch.cat((data, x.expand(batch_size, -1, -1, -1),
                           y.expand(batch_size, -1, -1, -1)),
                          dim=1)
+        # in this case, the dataloader will stack N examples
+        if batch_size == 1: 
+            return out.squeeze(0)
+        else:
+            return out
