@@ -14,7 +14,7 @@ import torch
 import matplotlib.pyplot as plt
 import sys
 from neuralop.models import TFNO, UNO
-from neuralop.training import OutputEncoderCallback
+from neuralop.datasets.data_transforms import DefaultDataProcessor
 from neuralop import Trainer
 from neuralop.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
@@ -77,7 +77,8 @@ sys.stdout.flush()
 trainer = Trainer(model=model,
                    n_epochs=20,
                   device=device,
-                  callbacks=[OutputEncoderCallback(output_encoder)],
+                  data_processor=DefaultDataProcessor(in_normalizer=output_encoder,
+                                                      out_normalizer=output_encoder),
                   wandb_log=False,
                   log_test_interval=3,
                   use_distributed=False,

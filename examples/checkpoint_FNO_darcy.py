@@ -13,8 +13,9 @@ import matplotlib.pyplot as plt
 import sys
 from neuralop.models import TFNO
 from neuralop import Trainer
-from neuralop.training import OutputEncoderCallback, CheckpointCallback
+from neuralop.training import CheckpointCallback
 from neuralop.datasets import load_darcy_flow_small
+from neuralop.datasets.data_transforms import DefaultDataProcessor
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
 
@@ -75,12 +76,15 @@ sys.stdout.flush()
 trainer = Trainer(model=model, n_epochs=20,
                   device=device,
                   callbacks=[
-                    OutputEncoderCallback(output_encoder),
                     CheckpointCallback(save_dir='./checkpoints',
                                        save_interval=10,
                                             save_optimizer=True,
                                             save_scheduler=True)
-                        ],             
+                        ],
+                  data_processor=DefaultDataProcessor(
+                      in_normalizer=output_encoder,
+                      out_normalizer=output_encoder
+                  ),
                   wandb_log=False,
                   log_test_interval=3,
                   use_distributed=False,
