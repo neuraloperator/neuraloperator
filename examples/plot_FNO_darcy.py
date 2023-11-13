@@ -19,7 +19,7 @@ from neuralop.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
 
-device = 'cuda' if torch.backends.cuda.is_built() else 'cpu'
+device = 'cpu'
 
 
 # %%
