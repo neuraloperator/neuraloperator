@@ -2,7 +2,7 @@ import torch
 from pathlib import Path
 from torchvision import transforms
 
-from ..utils import UnitGaussianNormalizer
+from .output_encoder import UnitGaussianNormalizer
 from .hdf5_dataset import H5pyDataset
 from .tensor_dataset import TensorDataset
 from .transforms import Normalizer, PositionalEmbedding2D

@@ -28,6 +28,7 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
         n_train=1000, batch_size=32, 
         test_resolutions=[16, 32], n_tests=[100, 50],
         test_batch_sizes=[32, 32],
+        positional_encoding=True
 )
 
 
