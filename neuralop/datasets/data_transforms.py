@@ -67,7 +67,8 @@ class DefaultDataProcessor(torch.nn.Module):
 class MGPatchingDataProcessor(torch.nn.Module):
     def __init__(self, model: torch.nn.Module, levels: int, 
                  padding_fraction: float, stitching: float, 
-                 device: str='cpu', in_normalizer=None, out_normalizer=None):
+                 device: str='cpu', in_normalizer=None, out_normalizer=None,
+                 positional_encoding=None):
         """MGPatchingDataProcessor
         Applies multigrid patching to inputs out-of-place 
         with an optional output encoder/other data transform
@@ -90,6 +91,7 @@ class MGPatchingDataProcessor(torch.nn.Module):
             appends pos encoding to x if used
         device : str, optional
             device 'cuda' or 'cpu' where computations are performed
+        positional_encoding : neuralop.datasets.transforms.Transform, optional
         """
         super().__init__()
         self.levels = levels
