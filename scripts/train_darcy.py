@@ -9,8 +9,9 @@ import torch.multiprocessing as mp
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets import load_darcy_flow_small
+from neuralop.datasets.data_transforms import MGPatchingDataProcessor
 from neuralop.training import setup
-from neuralop.training.callbacks import MGPatchingCallback, SimpleWandBLoggerCallback
+from neuralop.training.callbacks import BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.mpu.comm import cleanup
 

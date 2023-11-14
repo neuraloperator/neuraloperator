@@ -225,27 +225,16 @@ class PipelineCallback(Callback):
         for c in self.callbacks:
             c.on_val_end(*args, **kwargs)
 
-class SimpleWandBLoggerCallback(Callback):
+class BasicLoggerCallback(Callback):
+    """
+    Callback that implements simple logging functionality 
+    expected when passing verbose to a Trainer
+    """
 
-    def __init__(self, is_logger: bool=True, **wandb_init_kwargs):
-        """
-        Callback that implements simple logging functionality 
-        expected when passing verbose to a Trainer
-        
-        Params
-        --------
-
-        is_logger : bool
-            whether to log information to stdout
-        wandb_init_kwargs: **dict
-            splatted dictionary of kwargs to initialize wandb for logging
-        """
+    def __init__(self, wandb_kwargs=None):
         super().__init__()
-
-        self.is_logger = is_logger
-
-        if wandb_init_kwargs:
-            wandb.init(**wandb_init_kwargs)
+        if wandb_kwargs:
+            wandb.init(**wandb_kwargs)
     
     def on_init_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
@@ -292,7 +281,11 @@ class SimpleWandBLoggerCallback(Callback):
         
     def on_val_epoch_end(self, errors, **kwargs):
         for loss_name, loss_value in errors.items():
-            self.state_dict['msg'] += f', {loss_name}={loss_value:.4f}'
+            if isinstance(loss_value, float):
+                self.state_dict['msg'] += f', {loss_name}={loss_value:.4f}'
+            else:
+                loss_value = {i:e.item() for (i, e) in enumerate(loss_value)}
+                self.state_dict['msg'] += f', {loss_name}={loss_value}'
             self.state_dict['values_to_log'][loss_name] = loss_value
     
     def on_val_end(self, *args, **kwargs):
@@ -309,87 +302,7 @@ class SimpleWandBLoggerCallback(Callback):
             for pg in self.state_dict['optimizer'].param_groups:
                 lr = pg['lr']
                 self.state_dict['values_to_log']['lr'] = lr
-            wandb.log(self.state_dict['values_to_log'], step=self.state_dict['epoch'], commit=True)
-
-class MGPatchingCallback(Callback):
-    def __init__(self, levels: int, padding_fraction: float, stitching: float, encoder=None):
-        """MGPatchingCallback implements multigrid patching functionality
-        for datasets that require domain patching, stitching and/or padding.
-
-        Parameters
-        ----------
-        levels : int
-            mg_patching level parameter for MultigridPatching2D
-        padding_fraction : float
-            mg_padding_fraction parameter for MultigridPatching2D
-        stitching : _type_
-            mg_patching_stitching parameter for MultigridPatching2D
-        encoder : neuralop.datasets.output_encoder.OutputEncoder, optional
-            OutputEncoder to decode model outputs, by default None
-        """
-        super().__init__()
-        self.levels = levels
-        self.padding_fraction = padding_fraction
-        self.stitching = stitching
-        self.encoder = encoder
-        
-    def on_init_end(self, **kwargs):
-        self._update_state_dict(**kwargs)
-        self.patcher = MultigridPatching2D(model=self.state_dict['model'], levels=self.levels, 
-                                      padding_fraction=self.padding_fraction,
-                                      stitching=self.stitching)
-    
-    def on_batch_start(self, **kwargs):
-        self._update_state_dict(**kwargs)
-        self.state_dict['sample']['x'],self.state_dict['sample']['y'] =\
-              self.patcher.patch(self.state_dict['sample']['x'],
-                                 self.state_dict['sample']['y'],)
-    
-    def on_val_batch_start(self, *args, **kwargs):
-        return self.on_batch_start(*args, **kwargs)
-        
-    def on_before_loss(self, out, **kwargs):
-        
-        evaluation = kwargs.get('eval', False)
-        self._update_state_dict(out=out)
-        self.state_dict['out'], self.state_dict['sample']['y'] = \
-            self.patcher.unpatch(self.state_dict['out'],
-                                 self.state_dict['sample']['y'],
-                                 evaluation=evaluation)
-
-        if self.encoder:
-            self.state_dict['out'] = self.encoder.decode(self.state_dict['out'])
-            self.state_dict['sample']['y'] = self.encoder.decode(self.state_dict['sample']['y'])
-        
-    
-    def on_before_val_loss(self, **kwargs):
-        return self.on_before_loss(**kwargs, evaluation=True)
-
-
-class OutputEncoderCallback(Callback):
-    
-    def __init__(self, encoder):
-        """
-        Callback class for a training loop that involves
-        an output normalizer but no MG patching.
-
-        Parameters
-        -----------
-        encoder : neuralop.datasets.output_encoder.OutputEncoder
-            module to normalize model inputs/outputs
-        """
-        super().__init__()
-        self.encoder = encoder
-    
-    def on_batch_start(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
-    
-    def on_before_loss(self, out):
-        self.state_dict['out'] = self.encoder.decode(out)
-        self.state_dict['sample']['y'] = self.encoder.decode(self.state_dict['sample']['y'])
-    
-    def on_before_val_loss(self, **kwargs):
-        return self.on_before_loss(**kwargs)
+            wandb.log(self.state_dict['values_to_log'], step=self.state_dict['epoch'] + 1, commit=True)
         
 class CheckpointCallback(Callback):
     
@@ -468,16 +381,22 @@ class CheckpointCallback(Callback):
         if self.resume_from_dir:
             saved_modules = [x.stem for x in self.resume_from_dir.glob('*.pt')]
 
-            assert 'best_model' in saved_modules or 'model' in saved_modules,\
+            assert 'best_model_state_dict' in saved_modules or 'model_state_dict' in saved_modules,\
                   "Error: CheckpointCallback expects a model state dict named model.pt or best_model.pt."
             
             # no need to handle exceptions if assertion that either model file exists passes
-            if 'best_model' in saved_modules:
-                self.state_dict['model'].load_state_dict(torch.load(self.resume_from_dir / 'best_model.pt'))
+            if 'best_model_state_dict' in saved_modules:
+                if hasattr(self.state_dict['model'], 'load_checkpoint'):
+                    self.state_dict['model'].load_checkpoint(save_folder = self.resume_from_dir, save_name = 'best_model')
+                else: 
+                    self.state_dict['model'].load_state_dict(torch.load(self.resume_from_dir / 'best_model.pt'))
                 if verbose:
-                    print(f"Loading model state from best_model.pt")
+                    print(f"Loading model state from best_model_state_dict.pt")
             else:
-                self.state_dict['model'].load_state_dict(torch.load(self.resume_from_dir / 'model.pt'))
+                if hasattr(self.state_dict['model'], 'load_checkpoint'):
+                    self.state_dict['model'].load_checkpoint(save_folder = self.resume_from_dir, save_name = 'model')
+                else: 
+                    self.state_dict['model'].load_state_dict(torch.load(self.resume_from_dir / 'model.pt'))
                 if verbose:
                     print(f"Loading model state from model.pt")
             
@@ -518,8 +437,12 @@ class CheckpointCallback(Callback):
                 model_name = 'best_model'
             else:
                 model_name = 'model'
+
             save_path = self.save_dir / f"{model_name}.pt"
-            torch.save(self.state_dict['model'].state_dict(), save_path)
+            if hasattr(self.state_dict['model'], 'save_checkpoint'):
+                self.state_dict['model'].save_checkpoint(self.save_dir, model_name)
+            else:
+                torch.save(self.state_dict['model'].state_dict(), save_path)
 
             # save optimizer, scheduler, regularizer according to flags
             if self.save_optimizer:

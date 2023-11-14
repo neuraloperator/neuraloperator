@@ -164,7 +164,7 @@ Model Dispatching
 We provide a utility function to create model instances from a configuration.
 It has the advantage of doing some checks on the parameters it receives.
 
-.. automodule:: neuralop.models.model_dispatcher
+.. automodule:: neuralop.models.base_model
     :no-members:
     :no-inherited-members:
 
@@ -203,11 +203,8 @@ Trainer, we provide a Callback class and several examples of common domain-speci
     :template: class.rst
 
     Callback
-    SimpleWandBLoggerCallback
-    OutputEncoderCallback
-    MGPatchingCallback
-    ModelCheckpointCallback
-    MonitorMetricCheckpointCallback
+    BasicLoggerCallback
+    CheckpointCallback
 
 
 Datasets
@@ -223,3 +220,18 @@ We ship a small dataset for testing:
     :template: function.rst
 
     load_darcy_flow_small
+
+Much like PyTorch's `Torchvision.Datasets` module, our Datasets module also includes
+utilities to transform data from its raw form into the form expected by models and 
+loss functions:
+
+.. automodule:: neuralop.datasets.data_transforms
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    DefaultDataProcessor
+    MGPatchingDataProcessor

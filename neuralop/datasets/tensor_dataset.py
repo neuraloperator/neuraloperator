@@ -17,7 +17,7 @@ class TensorDataset(Dataset):
             x = self.transform_x(x)
 
         if self.transform_y is not None:
-            x = self.transform_y(x)
+            y = self.transform_y(y)
 
         return {'x': x, 'y':y}
 
