@@ -89,6 +89,18 @@ def main(rank=0):
 
     model = get_model(config)
     model = model.to(device)
+    
+    if config.patching.levels > 0:
+        data_processor = MGPatchingDataProcessor(model=model,
+                                                 levels=config.patching.levels,
+                                                 padding_fraction=config.patching.padding,
+                                                 stitching=config.patching.stitching,
+                                                 device=device,
+                                                 in_normalizer=data_processor.in_normalizer,
+                                                 out_normalizer=data_processor.out_normalizer,
+                                                 positional_encoding=data_processor.positional_encoding)
+    
+        data_processor = data_processor.to(device)
 
     # Use distributed data parallel
     if config.distributed.use_distributed:
@@ -163,7 +175,8 @@ def main(rank=0):
         log_output=config.wandb.log_output,
         use_distributed=config.distributed.use_distributed,
         verbose=config.verbose,
-        wandb_log = config.wandb.log
+        wandb_log = config.wandb.log,
+        data_processor=data_processor
     )
 
     # Log parameter count
