@@ -87,7 +87,7 @@ def main(rank=0):
         sys.stdout.flush()
 
     # Loading the Darcy flow dataset
-    train_loader, test_loaders, output_encoder = load_darcy_flow_small(
+    train_loader, test_loaders, data_processor = load_darcy_flow_small(
         n_train=config.data.n_train,
         batch_size=config.data.batch_size,
         positional_encoding=config.data.positional_encoding,
@@ -100,6 +100,18 @@ def main(rank=0):
     
     model = get_model(config)
     model = model.to(device)
+
+    if config.patching.levels > 0:
+        data_processor = MGPatchingDataProcessor(model=model,
+                                                 levels=config.patching.levels,
+                                                 padding_fraction=config.patching.padding,
+                                                 stitching=config.patching.stitching,
+                                                 device=device,
+                                                 in_normalizer=data_processor.in_normalizer,
+                                                 out_normalizer=data_processor.out_normalizer,
+                                                 positional_encoding=data_processor.positional_encoding)
+    
+    data_processor = data_processor.to(device)
 
     # Use distributed data parallel
     if config.distributed.use_distributed:
@@ -168,13 +180,10 @@ def main(rank=0):
         use_distributed=config.distributed.use_distributed,
         verbose=config.verbose and is_logger,
         callbacks=[
-            MGPatchingCallback(levels=config.patching.levels,
-                                    padding_fraction=config.patching.padding,
-                                    stitching=config.patching.stitching,
-                                    encoder=output_encoder),
-            SimpleWandBLoggerCallback(is_logger=is_logger,
+            BasicLoggerCallback(is_logger=is_logger,
                                       **wandb_init_args)
-                ]
+                ],
+        data_processor=data_processor
                 )
 
     # Log parameter count after initalizing wandb in Callback
