@@ -138,6 +138,7 @@ class MGPatchingDataProcessor(torch.nn.Module):
         x,y = data_dict['x'], data_dict['y']
         if self.in_normalizer:
             x = self.in_normalizer.transform(x)
+        if self.out_normalizer:
             y = self.out_normalizer.transform(y)
         if self.positional_encoding is not None:
             x = self.positional_encoding(x)
