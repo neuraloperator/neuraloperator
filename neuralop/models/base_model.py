@@ -35,7 +35,7 @@ class BaseModel(torch.nn.Module):
             BaseModel._models[name.lower()] = cls
             cls._name = name
         else:
-            warnings.warn(f'Creating a subclass of BaseModel {cls.__name__} with no name, initializing with {cls.__name__}.')
+            # warnings.warn(f'Creating a subclass of BaseModel {cls.__name__} with no name, initializing with {cls.__name__}.')
             BaseModel._models[cls.__name__.lower()] = cls
             cls._name = cls.__name__
 
