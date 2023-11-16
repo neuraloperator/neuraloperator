@@ -204,33 +204,7 @@ to train a Tensorized Fourier-Neural Operator</p>
 <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Keyword argument in_channels not specified for model TFNO, using default=3.
-Keyword argument out_channels not specified for model TFNO, using default=1.
-Keyword argument lifting_channels not specified for model TFNO, using default=256.
-Keyword argument n_layers not specified for model TFNO, using default=4.
-Keyword argument output_scaling_factor not specified for model TFNO, using default=None.
-Keyword argument max_n_modes not specified for model TFNO, using default=None.
-Keyword argument fno_block_precision not specified for model TFNO, using default=full.
-Keyword argument use_mlp not specified for model TFNO, using default=False.
-Keyword argument mlp_dropout not specified for model TFNO, using default=0.
-Keyword argument mlp_expansion not specified for model TFNO, using default=0.5.
-Keyword argument non_linearity not specified for model TFNO, using default=&lt;built-in function gelu&gt;.
-Keyword argument stabilizer not specified for model TFNO, using default=None.
-Keyword argument norm not specified for model TFNO, using default=None.
-Keyword argument preactivation not specified for model TFNO, using default=False.
-Keyword argument fno_skip not specified for model TFNO, using default=linear.
-Keyword argument mlp_skip not specified for model TFNO, using default=soft-gating.
-Keyword argument separable not specified for model TFNO, using default=False.
-Keyword argument joint_factorization not specified for model TFNO, using default=False.
-Keyword argument fixed_rank_modes not specified for model TFNO, using default=False.
-Keyword argument implementation not specified for model TFNO, using default=factorized.
-Keyword argument decomposition_kwargs not specified for model TFNO, using default={}.
-Keyword argument domain_padding not specified for model TFNO, using default=None.
-Keyword argument domain_padding_mode not specified for model TFNO, using default=one-sided.
-Keyword argument fft_norm not specified for model TFNO, using default=forward.
-Keyword argument SpectralConv not specified for model TFNO, using default=&lt;class &#39;neuralop.layers.spectral_convolution.SpectralConv&#39;&gt;.
-
-Our model has 523257 parameters.
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Our model has 523257 parameters.
 </pre></div>
 </div>
 <p>Create the optimizer</p>
@@ -300,13 +274,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7efe38ad4760&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fc2d3cd09a0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7efe38a6e520&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fc2d3c6a520&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7efe38a6e520&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7efe38a6e1c0&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fc2d3c6a520&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fc2d3c6a310&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -380,7 +354,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 51.835 seconds)</p>
+<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 51.111 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-fno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/1a3050d57a180b92b424ce128dfe1d36/plot_FNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_FNO_darcy.py</span></code></a></p>

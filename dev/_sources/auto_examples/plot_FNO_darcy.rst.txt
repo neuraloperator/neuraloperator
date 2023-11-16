@@ -104,31 +104,6 @@ We create a tensorized FNO model
 
  .. code-block:: none
 
-    Keyword argument in_channels not specified for model TFNO, using default=3.
-    Keyword argument out_channels not specified for model TFNO, using default=1.
-    Keyword argument lifting_channels not specified for model TFNO, using default=256.
-    Keyword argument n_layers not specified for model TFNO, using default=4.
-    Keyword argument output_scaling_factor not specified for model TFNO, using default=None.
-    Keyword argument max_n_modes not specified for model TFNO, using default=None.
-    Keyword argument fno_block_precision not specified for model TFNO, using default=full.
-    Keyword argument use_mlp not specified for model TFNO, using default=False.
-    Keyword argument mlp_dropout not specified for model TFNO, using default=0.
-    Keyword argument mlp_expansion not specified for model TFNO, using default=0.5.
-    Keyword argument non_linearity not specified for model TFNO, using default=<built-in function gelu>.
-    Keyword argument stabilizer not specified for model TFNO, using default=None.
-    Keyword argument norm not specified for model TFNO, using default=None.
-    Keyword argument preactivation not specified for model TFNO, using default=False.
-    Keyword argument fno_skip not specified for model TFNO, using default=linear.
-    Keyword argument mlp_skip not specified for model TFNO, using default=soft-gating.
-    Keyword argument separable not specified for model TFNO, using default=False.
-    Keyword argument joint_factorization not specified for model TFNO, using default=False.
-    Keyword argument fixed_rank_modes not specified for model TFNO, using default=False.
-    Keyword argument implementation not specified for model TFNO, using default=factorized.
-    Keyword argument decomposition_kwargs not specified for model TFNO, using default={}.
-    Keyword argument domain_padding not specified for model TFNO, using default=None.
-    Keyword argument domain_padding_mode not specified for model TFNO, using default=one-sided.
-    Keyword argument fft_norm not specified for model TFNO, using default=forward.
-    Keyword argument SpectralConv not specified for model TFNO, using default=<class 'neuralop.layers.spectral_convolution.SpectralConv'>.
 
     Our model has 523257 parameters.
 
@@ -245,13 +220,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7efe38ad4760>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fc2d3cd09a0>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7efe38a6e520>
+     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7fc2d3c6a520>
 
-     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7efe38a6e520>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7efe38a6e1c0>}
+     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7fc2d3c6a520>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fc2d3c6a310>}
 
 
 
@@ -382,7 +357,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 51.835 seconds)
+   **Total running time of the script:** (0 minutes 51.111 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_FNO_darcy.py:
