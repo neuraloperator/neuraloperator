@@ -116,9 +116,10 @@
 <span></span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 
-<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">UnitGaussianNormalizer</span>
+<span class="kn">from</span> <span class="nn">.output_encoder</span> <span class="kn">import</span> <span class="n">UnitGaussianNormalizer</span>
 <span class="kn">from</span> <span class="nn">.tensor_dataset</span> <span class="kn">import</span> <span class="n">TensorDataset</span>
-<span class="kn">from</span> <span class="nn">.transforms</span> <span class="kn">import</span> <span class="n">PositionalEmbedding</span>
+<span class="kn">from</span> <span class="nn">.transforms</span> <span class="kn">import</span> <span class="n">PositionalEmbedding2D</span>
+<span class="kn">from</span> <span class="nn">.data_transforms</span> <span class="kn">import</span> <span class="n">DefaultDataProcessor</span>
 
 
 <div class="viewcode-block" id="load_darcy_flow_small">
@@ -233,9 +234,10 @@
         <span class="k">elif</span> <span class="n">encoding</span> <span class="o">==</span> <span class="s2">&quot;pixel-wise&quot;</span><span class="p">:</span>
             <span class="n">reduce_dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="n">input_encoder</span> <span class="o">=</span> <span class="n">UnitGaussianNormalizer</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">reduce_dim</span><span class="o">=</span><span class="n">reduce_dims</span><span class="p">)</span>
-        <span class="n">x_train</span> <span class="o">=</span> <span class="n">input_encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">x_train</span><span class="p">)</span>
-        <span class="n">x_test</span> <span class="o">=</span> <span class="n">input_encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">x_test</span><span class="o">.</span><span class="n">contiguous</span><span class="p">())</span>
+        <span class="n">input_encoder</span> <span class="o">=</span> <span class="n">UnitGaussianNormalizer</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">reduce_dims</span><span class="p">)</span>
+        <span class="n">input_encoder</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x_train</span><span class="p">)</span>
+        <span class="c1">#x_train = input_encoder.transform(x_train)</span>
+        <span class="c1">#x_test = input_encoder.transform(x_test.contiguous())</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">input_encoder</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -245,17 +247,15 @@
         <span class="k">elif</span> <span class="n">encoding</span> <span class="o">==</span> <span class="s2">&quot;pixel-wise&quot;</span><span class="p">:</span>
             <span class="n">reduce_dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="n">output_encoder</span> <span class="o">=</span> <span class="n">UnitGaussianNormalizer</span><span class="p">(</span><span class="n">y_train</span><span class="p">,</span> <span class="n">reduce_dim</span><span class="o">=</span><span class="n">reduce_dims</span><span class="p">)</span>
-        <span class="n">y_train</span> <span class="o">=</span> <span class="n">output_encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">y_train</span><span class="p">)</span>
+        <span class="n">output_encoder</span> <span class="o">=</span> <span class="n">UnitGaussianNormalizer</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">reduce_dims</span><span class="p">)</span>
+        <span class="n">output_encoder</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y_train</span><span class="p">)</span>
+        <span class="c1">#y_train = output_encoder.transform(y_train)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">output_encoder</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="n">train_db</span> <span class="o">=</span> <span class="n">TensorDataset</span><span class="p">(</span>
         <span class="n">x_train</span><span class="p">,</span>
         <span class="n">y_train</span><span class="p">,</span>
-        <span class="n">transform_x</span><span class="o">=</span><span class="n">PositionalEmbedding</span><span class="p">(</span><span class="n">grid_boundaries</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">positional_encoding</span>
-        <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">train_loader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span>
         <span class="n">train_db</span><span class="p">,</span>
@@ -269,9 +269,6 @@
     <span class="n">test_db</span> <span class="o">=</span> <span class="n">TensorDataset</span><span class="p">(</span>
         <span class="n">x_test</span><span class="p">,</span>
         <span class="n">y_test</span><span class="p">,</span>
-        <span class="n">transform_x</span><span class="o">=</span><span class="n">PositionalEmbedding</span><span class="p">(</span><span class="n">grid_boundaries</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">positional_encoding</span>
-        <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">test_loader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span>
         <span class="n">test_db</span><span class="p">,</span>
@@ -295,15 +292,12 @@
         <span class="p">)</span>
         <span class="n">y_test</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">][:</span><span class="n">n_test</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">channel_dim</span><span class="p">)</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">data</span>
-        <span class="k">if</span> <span class="n">input_encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">x_test</span> <span class="o">=</span> <span class="n">input_encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">x_test</span><span class="p">)</span>
+        <span class="c1">#if input_encoder is not None:</span>
+            <span class="c1">#x_test = input_encoder.transform(x_test)</span>
 
         <span class="n">test_db</span> <span class="o">=</span> <span class="n">TensorDataset</span><span class="p">(</span>
             <span class="n">x_test</span><span class="p">,</span>
             <span class="n">y_test</span><span class="p">,</span>
-            <span class="n">transform_x</span><span class="o">=</span><span class="n">PositionalEmbedding</span><span class="p">(</span><span class="n">grid_boundaries</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">positional_encoding</span>
-            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">test_loader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span>
             <span class="n">test_db</span><span class="p">,</span>
@@ -313,9 +307,19 @@
             <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">persistent_workers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">test_loaders</span><span class="p">[</span><span class="n">res</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_loader</span>
+        <span class="n">test_loaders</span><span class="p">[</span><span class="n">res</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_loader</span> 
 
-    <span class="k">return</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">output_encoder</span>
+    
+    <span class="k">if</span> <span class="n">positional_encoding</span><span class="p">:</span>
+        <span class="n">pos_encoding</span> <span class="o">=</span> <span class="n">PositionalEmbedding2D</span><span class="p">(</span><span class="n">grid_boundaries</span><span class="o">=</span><span class="n">grid_boundaries</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pos_encoding</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">data_processor</span> <span class="o">=</span> <span class="n">DefaultDataProcessor</span><span class="p">(</span>
+        <span class="n">in_normalizer</span><span class="o">=</span><span class="n">input_encoder</span><span class="p">,</span>
+        <span class="n">out_normalizer</span><span class="o">=</span><span class="n">output_encoder</span><span class="p">,</span>
+        <span class="n">positional_encoding</span><span class="o">=</span><span class="n">pos_encoding</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">data_processor</span>
 </pre></div>
 
       </div>

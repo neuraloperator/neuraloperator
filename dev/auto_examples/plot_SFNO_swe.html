@@ -31,7 +31,7 @@
  
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="U-NO on Darcy-Flow" href="plot_UNO_darcy.html" />
+    <link rel="next" title="Training a TFNO on Darcy-Flow" href="checkpoint_FNO_darcy.html" />
     <link rel="prev" title="Training a TFNO on Darcy-Flow" href="plot_FNO_darcy.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
@@ -132,9 +132,9 @@
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Training a SFNO on the spherical Shallow Water equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_UNO_darcy.html">U-NO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow_spectrum.html">A simple Darcy-Flow spectrum analysis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 </ul>
 </li>
 </ul>
@@ -300,13 +300,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7feefc930250&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fb42c2c7dc0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.LpLoss object at 0x7feefc930fd0&gt;
+ * Train: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fb42c3098b0&gt;
 
- * Test: {&#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7feefc930fd0&gt;}
+ * Test: {&#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fb42c3098b0&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -376,7 +376,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (3 minutes 4.904 seconds)</p>
+<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 23.128 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-sfno-swe-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/be42c4c413e9b89016fa3a4984cb9758/plot_SFNO_swe.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_SFNO_swe.py</span></code></a></p>
@@ -402,8 +402,8 @@ ii) can be trained quickly on CPU</p>
     </a>
     
     
-    <a class="button pagination-next" href="plot_UNO_darcy.html" title="next page" accesskey="n">
-        <span>U-NO on Darcy-Flow </span>
+    <a class="button pagination-next" href="checkpoint_FNO_darcy.html" title="next page" accesskey="n">
+        <span>Training a TFNO on Darcy-Flow </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>

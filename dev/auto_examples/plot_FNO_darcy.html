@@ -132,9 +132,9 @@
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_SFNO_swe.html">Training a SFNO on the spherical Shallow Water equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_UNO_darcy.html">U-NO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow_spectrum.html">A simple Darcy-Flow spectrum analysis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 </ul>
 </li>
 </ul>
@@ -175,7 +175,6 @@ to train a Tensorized Fourier-Neural Operator</p>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">TFNO</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">Trainer</span>
-<span class="kn">from</span> <span class="nn">neuralop.training</span> <span class="kn">import</span> <span class="n">OutputEncoderCallback</span>
 <span class="kn">from</span> <span class="nn">neuralop.datasets</span> <span class="kn">import</span> <span class="n">load_darcy_flow_small</span>
 <span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">count_model_params</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">LpLoss</span><span class="p">,</span> <span class="n">H1Loss</span>
@@ -184,16 +183,16 @@ to train a Tensorized Fourier-Neural Operator</p>
 </pre></div>
 </div>
 <p>Loading the Navier-Stokes dataset in 128x128 resolution</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">output_encoder</span> <span class="o">=</span> <span class="n">load_darcy_flow_small</span><span class="p">(</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">data_processor</span> <span class="o">=</span> <span class="n">load_darcy_flow_small</span><span class="p">(</span>
         <span class="n">n_train</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
         <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span> <span class="n">n_tests</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
         <span class="n">test_batch_sizes</span><span class="o">=</span><span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span>
+        <span class="n">positional_encoding</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
+<span class="n">data_processor</span> <span class="o">=</span> <span class="n">data_processor</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>UnitGaussianNormalizer init on 1000, reducing over [0, 1, 2, 3], samples of shape [1, 16, 16].
-   Mean and std of shape torch.Size([1, 1, 1]), eps=1e-05
-Loading test db at resolution 32 with 50 samples and batch-size=32
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Loading test db at resolution 32 with 50 samples and batch-size=32
 </pre></div>
 </div>
 <p>We create a tensorized FNO model</p>
@@ -301,28 +300,26 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fef04cc43a0&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fb4346b09a0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fef04cc4160&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fb434718040&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fef04cc4160&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fef04cc4490&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fb434718040&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fb434718400&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
                   <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
-                  <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">OutputEncoderCallback</span><span class="p">(</span><span class="n">output_encoder</span><span class="p">)],</span>
+                  <span class="n">data_processor</span><span class="o">=</span><span class="n">data_processor</span><span class="p">,</span>
                   <span class="n">wandb_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">log_test_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
                   <span class="n">use_distributed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>using standard method to load data to device.
-using standard method to compute loss.
-self.override_load_to_device=False
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>self.override_load_to_device=False
 self.overrides_loss=False
 </pre></div>
 </div>
@@ -349,6 +346,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">))</span>
 <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">test_samples</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data_processor</span><span class="o">.</span><span class="n">preprocess</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="c1"># Input x</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
     <span class="c1"># Ground-truth</span>
@@ -382,7 +380,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 45.166 seconds)</p>
+<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 50.137 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-fno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/1a3050d57a180b92b424ce128dfe1d36/plot_FNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_FNO_darcy.py</span></code></a></p>

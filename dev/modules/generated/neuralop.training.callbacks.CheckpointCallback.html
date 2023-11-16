@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>neuralop.training.callbacks.MGPatchingCallback &#8212; neuraloperator 0.2.1 documentation</title> 
+    <title>neuralop.training.callbacks.CheckpointCallback &#8212; neuraloperator 0.2.1 documentation</title> 
 <link rel="stylesheet" href="../../_static/tensorly_style.css">
 <link rel="apple-touch-icon" sizes="180x180" href="../../_static/favicon/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon/favicon-32x32.png">
@@ -32,7 +32,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="neuralop.datasets.load_darcy_flow_small" href="neuralop.datasets.load_darcy_flow_small.html" />
-    <link rel="prev" title="neuralop.training.callbacks.OutputEncoderCallback" href="neuralop.training.callbacks.OutputEncoderCallback.html" />
+    <link rel="prev" title="neuralop.training.callbacks.BasicLoggerCallback" href="neuralop.training.callbacks.BasicLoggerCallback.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -160,31 +160,50 @@
 
       <div class="container content main-content">
         
-  <section id="neuralop-training-callbacks-mgpatchingcallback">
-<h1><a class="reference internal" href="../api.html#module-neuralop.training.callbacks" title="neuralop.training.callbacks"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code></a>.MGPatchingCallback<a class="headerlink" href="#neuralop-training-callbacks-mgpatchingcallback" title="Link to this heading"></a></h1>
+  <section id="neuralop-training-callbacks-checkpointcallback">
+<h1><a class="reference internal" href="../api.html#module-neuralop.training.callbacks" title="neuralop.training.callbacks"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code></a>.CheckpointCallback<a class="headerlink" href="#neuralop-training-callbacks-checkpointcallback" title="Link to this heading"></a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="neuralop.training.callbacks.MGPatchingCallback">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.training.callbacks.</span></span><span class="sig-name descname"><span class="pre">MGPatchingCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">levels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding_fraction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stitching</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/training/callbacks.html#MGPatchingCallback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.training.callbacks.MGPatchingCallback" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="neuralop.training.callbacks.CheckpointCallback">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.training.callbacks.</span></span><span class="sig-name descname"><span class="pre">CheckpointCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_best</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_optimizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_scheduler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_regularizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resume_from_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/training/callbacks.html#CheckpointCallback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.training.callbacks.CheckpointCallback" title="Link to this definition"></a></dt>
 <dd><p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.training.callbacks.CheckpointCallback.on_epoch_end" title="neuralop.training.callbacks.CheckpointCallback.on_epoch_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_epoch_end</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Save state to dir if all conditions are met</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#neuralop.training.callbacks.CheckpointCallback.on_val_epoch_end" title="neuralop.training.callbacks.CheckpointCallback.on_val_epoch_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_val_epoch_end</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Update state dict with errors</p></td>
+</tr>
+</tbody>
+</table>
 <table class="docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><strong>on_batch_start</strong></p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><strong>on_before_loss</strong></p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><strong>on_before_val_loss</strong></p></td>
+<tr class="row-odd"><td><p><strong>on_epoch_start</strong></p></td>
 <td></td>
 </tr>
 <tr class="row-even"><td><p><strong>on_init_end</strong></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><strong>on_val_batch_start</strong></p></td>
+<tr class="row-odd"><td><p><strong>on_train_start</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>on_val_epoch_start</strong></p></td>
 <td></td>
 </tr>
 </tbody>
 </table>
+<dl class="py method">
+<dt class="sig sig-object py" id="neuralop.training.callbacks.CheckpointCallback.on_val_epoch_end">
+<span class="sig-name descname"><span class="pre">on_val_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/training/callbacks.html#CheckpointCallback.on_val_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.training.callbacks.CheckpointCallback.on_val_epoch_end" title="Link to this definition"></a></dt>
+<dd><p>Update state dict with errors</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="neuralop.training.callbacks.CheckpointCallback.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/training/callbacks.html#CheckpointCallback.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.training.callbacks.CheckpointCallback.on_epoch_end" title="Link to this definition"></a></dt>
+<dd><p>Save state to dir if all conditions are met</p>
+</dd></dl>
+
 </dd></dl>
 
 <div class="clearer"></div></section>
@@ -195,11 +214,11 @@
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="neuralop.training.callbacks.OutputEncoderCallback.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="neuralop.training.callbacks.BasicLoggerCallback.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code>.OutputEncoderCallback</span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code>.BasicLoggerCallback</span>
     </a>
     
     
@@ -240,8 +259,12 @@
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code>.MGPatchingCallback</a><ul>
-<li><a class="reference internal" href="#neuralop.training.callbacks.MGPatchingCallback"><code class="docutils literal notranslate"><span class="pre">MGPatchingCallback</span></code></a></li>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code>.CheckpointCallback</a><ul>
+<li><a class="reference internal" href="#neuralop.training.callbacks.CheckpointCallback"><code class="docutils literal notranslate"><span class="pre">CheckpointCallback</span></code></a><ul>
+<li><a class="reference internal" href="#neuralop.training.callbacks.CheckpointCallback.on_val_epoch_end"><code class="docutils literal notranslate"><span class="pre">CheckpointCallback.on_val_epoch_end()</span></code></a></li>
+<li><a class="reference internal" href="#neuralop.training.callbacks.CheckpointCallback.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">CheckpointCallback.on_epoch_end()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

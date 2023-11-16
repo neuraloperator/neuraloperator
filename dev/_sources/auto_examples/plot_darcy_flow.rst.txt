@@ -55,7 +55,7 @@ Training samples are 16x16 and we load testing samples at both
 .. code-block:: default
 
 
-    train_loader, test_loaders, output_encoder = load_darcy_flow_small(
+    train_loader, test_loaders, data_processor = load_darcy_flow_small(
             n_train=100, batch_size=4, 
             test_resolutions=[16, 32], n_tests=[50, 50], test_batch_sizes=[4, 2],
             )
@@ -70,8 +70,6 @@ Training samples are 16x16 and we load testing samples at both
 
  .. code-block:: none
 
-    UnitGaussianNormalizer init on 100, reducing over [0, 1, 2, 3], samples of shape [1, 16, 16].
-       Mean and std of shape torch.Size([1, 1, 1]), eps=1e-05
     Loading test db at resolution 32 with 50 samples and batch-size=2
 
 
@@ -82,7 +80,7 @@ Training samples are 16x16 and we load testing samples at both
 Visualizing the data
 --------------------
 
-.. GENERATED FROM PYTHON SOURCE LINES 31-71
+.. GENERATED FROM PYTHON SOURCE LINES 31-72
 
 .. code-block:: default
 
@@ -108,6 +106,7 @@ Visualizing the data
     index = 0
 
     data = train_dataset[index]
+    data = data_processor.preprocess(data, batched=False)
     x = data['x']
     y = data['y']
     fig = plt.figure(figsize=(7, 7))
@@ -151,7 +150,7 @@ Visualizing the data
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.727 seconds)
+   **Total running time of the script:** (0 minutes 0.381 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_darcy_flow.py:

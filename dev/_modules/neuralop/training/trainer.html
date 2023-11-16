@@ -241,11 +241,6 @@
 
         <span class="k">if</span> <span class="n">eval_losses</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># By default just evaluate on the training loss</span>
             <span class="n">eval_losses</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">l2</span><span class="o">=</span><span class="n">training_loss</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_distributed</span><span class="p">:</span>
-            <span class="n">is_logger</span> <span class="o">=</span> <span class="p">(</span><span class="n">comm</span><span class="o">.</span><span class="n">get_world_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">is_logger</span> <span class="o">=</span> <span class="kc">True</span> 
         
         <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_epochs</span><span class="p">):</span>
 
@@ -269,6 +264,9 @@
 
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span><span class="o">.</span><span class="n">preprocess</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># load data to device if no preprocessor exists</span>
+                    <span class="n">sample</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">sample</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">v</span><span class="p">)}</span>
 
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">amp_autocast</span><span class="p">:</span>
                     <span class="k">with</span> <span class="n">amp</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -277,7 +275,7 @@
                     <span class="n">out</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">sample</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span><span class="o">.</span><span class="n">postprocess</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+                    <span class="n">out</span><span class="p">,</span> <span class="n">sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span><span class="o">.</span><span class="n">postprocess</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">on_before_loss</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="n">out</span><span class="p">)</span>
@@ -302,8 +300,6 @@
                         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
                             <span class="n">loss</span> <span class="o">+=</span> <span class="n">training_loss</span><span class="p">(</span><span class="o">**</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">sample</span><span class="p">)</span>
                 
-                <span class="c1"># del out</span>
-
                 <span class="k">if</span> <span class="n">regularizer</span><span class="p">:</span>
                     <span class="n">loss</span> <span class="o">+=</span> <span class="n">regularizer</span><span class="o">.</span><span class="n">loss</span>
                 
@@ -386,11 +382,14 @@
 
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span><span class="o">.</span><span class="n">preprocess</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
-
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># load data to device if no preprocessor exists</span>
+                    <span class="n">sample</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">sample</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">v</span><span class="p">)}</span>
+                    
                 <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">sample</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span><span class="o">.</span><span class="n">postprocess</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+                    <span class="n">out</span><span class="p">,</span> <span class="n">sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span><span class="o">.</span><span class="n">postprocess</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">on_before_val_loss</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="n">out</span><span class="p">)</span>

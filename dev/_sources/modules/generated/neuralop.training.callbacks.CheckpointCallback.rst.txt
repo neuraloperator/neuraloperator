@@ -1,9 +1,9 @@
-﻿:mod:`neuralop.training.callbacks`.MGPatchingCallback
+﻿:mod:`neuralop.training.callbacks`.CheckpointCallback
 ============================================================
 
 .. currentmodule:: neuralop.training.callbacks
 
-.. autoclass:: MGPatchingCallback
+.. autoclass:: CheckpointCallback
    :members:
 
 .. raw:: html

@@ -24,7 +24,7 @@ U-NO on Darcy-Flow
 In this example, we demonstrate how to train a U-shaped Neural Operator on 
 the small Darcy-Flow example we ship with the package
 
-.. GENERATED FROM PYTHON SOURCE LINES 11-26
+.. GENERATED FROM PYTHON SOURCE LINES 11-25
 
 .. code-block:: default
 
@@ -34,7 +34,6 @@ the small Darcy-Flow example we ship with the package
     import matplotlib.pyplot as plt
     import sys
     from neuralop.models import TFNO, UNO
-    from neuralop.training import OutputEncoderCallback
     from neuralop import Trainer
     from neuralop.datasets import load_darcy_flow_small
     from neuralop.utils import count_model_params
@@ -50,15 +49,15 @@ the small Darcy-Flow example we ship with the package
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 27-28
+.. GENERATED FROM PYTHON SOURCE LINES 26-27
 
 Loading the Darcy Flow dataset
 
-.. GENERATED FROM PYTHON SOURCE LINES 28-46
+.. GENERATED FROM PYTHON SOURCE LINES 27-45
 
 .. code-block:: default
 
-    train_loader, test_loaders, output_encoder = load_darcy_flow_small(
+    train_loader, test_loaders, data_processor = load_darcy_flow_small(
             n_train=1000, batch_size=32, 
             test_resolutions=[16, 32], n_tests=[100, 50],
             test_batch_sizes=[32, 32],
@@ -84,8 +83,6 @@ Loading the Darcy Flow dataset
 
  .. code-block:: none
 
-    UnitGaussianNormalizer init on 1000, reducing over [0, 1, 2, 3], samples of shape [1, 16, 16].
-       Mean and std of shape torch.Size([1, 1, 1]), eps=1e-05
     Loading test db at resolution 32 with 50 samples and batch-size=32
 
     Our model has 2033089 parameters.
@@ -93,11 +90,11 @@ Loading the Darcy Flow dataset
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 47-48
+.. GENERATED FROM PYTHON SOURCE LINES 46-47
 
 Create the optimizer
 
-.. GENERATED FROM PYTHON SOURCE LINES 48-54
+.. GENERATED FROM PYTHON SOURCE LINES 47-53
 
 .. code-block:: default
 
@@ -114,11 +111,11 @@ Create the optimizer
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 55-56
+.. GENERATED FROM PYTHON SOURCE LINES 54-55
 
 Creating the losses
 
-.. GENERATED FROM PYTHON SOURCE LINES 56-63
+.. GENERATED FROM PYTHON SOURCE LINES 55-62
 
 .. code-block:: default
 
@@ -136,7 +133,7 @@ Creating the losses
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 64-75
+.. GENERATED FROM PYTHON SOURCE LINES 63-74
 
 .. code-block:: default
 
@@ -237,29 +234,29 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fef04c74820>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fb4346b4e80>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7fef04c74c10>
+     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7fb4346b4460>
 
-     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7fef04c74c10>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fef04c74730>}
-
-
+     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7fb4346b4460>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fb4346b4b80>}
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 76-77
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 75-76
 
 Create the trainer
 
-.. GENERATED FROM PYTHON SOURCE LINES 77-87
+.. GENERATED FROM PYTHON SOURCE LINES 76-86
 
 .. code-block:: default
 
     trainer = Trainer(model=model,
                        n_epochs=20,
                       device=device,
-                      callbacks=[OutputEncoderCallback(output_encoder)],
+                      data_processor=data_processor,
                       wandb_log=False,
                       log_test_interval=3,
                       use_distributed=False,
@@ -274,19 +271,17 @@ Create the trainer
 
  .. code-block:: none
 
-    using standard method to load data to device.
-    using standard method to compute loss.
     self.override_load_to_device=False
     self.overrides_loss=False
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 88-89
+.. GENERATED FROM PYTHON SOURCE LINES 87-88
 
 Actually train the model on our small Darcy-Flow dataset
 
-.. GENERATED FROM PYTHON SOURCE LINES 89-99
+.. GENERATED FROM PYTHON SOURCE LINES 88-98
 
 .. code-block:: default
 
@@ -307,7 +302,7 @@ Actually train the model on our small Darcy-Flow dataset
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 100-110
+.. GENERATED FROM PYTHON SOURCE LINES 99-109
 
 Plot the prediction, and compare with the ground-truth 
 Note that we trained on a very small resolution for
@@ -320,7 +315,7 @@ ii) can be trained quickly on CPU
 
 In practice we would train a Neural Operator on one or multiple GPUs
 
-.. GENERATED FROM PYTHON SOURCE LINES 110-147
+.. GENERATED FROM PYTHON SOURCE LINES 109-147
 
 .. code-block:: default
 
@@ -330,6 +325,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
     fig = plt.figure(figsize=(7, 7))
     for index in range(3):
         data = test_samples[index]
+        data = data_processor.preprocess(data, batched=False)
         # Input x
         x = data['x']
         # Ground-truth
@@ -376,7 +372,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (3 minutes 11.237 seconds)
+   **Total running time of the script:** (1 minutes 30.801 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_UNO_darcy.py:

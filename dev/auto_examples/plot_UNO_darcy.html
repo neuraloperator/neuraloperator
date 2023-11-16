@@ -32,7 +32,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="A simple Darcy-Flow spectrum analysis" href="plot_darcy_flow_spectrum.html" />
-    <link rel="prev" title="Training a SFNO on the spherical Shallow Water equations" href="plot_SFNO_swe.html" />
+    <link rel="prev" title="Training a TFNO on Darcy-Flow" href="checkpoint_FNO_darcy.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -132,9 +132,9 @@
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_SFNO_swe.html">Training a SFNO on the spherical Shallow Water equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">U-NO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow_spectrum.html">A simple Darcy-Flow spectrum analysis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 </ul>
 </li>
 </ul>
@@ -174,7 +174,6 @@ the small Darcy-Flow example we ship with the package</p>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">TFNO</span><span class="p">,</span> <span class="n">UNO</span>
-<span class="kn">from</span> <span class="nn">neuralop.training</span> <span class="kn">import</span> <span class="n">OutputEncoderCallback</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">Trainer</span>
 <span class="kn">from</span> <span class="nn">neuralop.datasets</span> <span class="kn">import</span> <span class="n">load_darcy_flow_small</span>
 <span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">count_model_params</span>
@@ -184,7 +183,7 @@ the small Darcy-Flow example we ship with the package</p>
 </pre></div>
 </div>
 <p>Loading the Darcy Flow dataset</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">output_encoder</span> <span class="o">=</span> <span class="n">load_darcy_flow_small</span><span class="p">(</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">data_processor</span> <span class="o">=</span> <span class="n">load_darcy_flow_small</span><span class="p">(</span>
         <span class="n">n_train</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
         <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span> <span class="n">n_tests</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
         <span class="n">test_batch_sizes</span><span class="o">=</span><span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span>
@@ -202,9 +201,7 @@ the small Darcy-Flow example we ship with the package</p>
 <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>UnitGaussianNormalizer init on 1000, reducing over [0, 1, 2, 3], samples of shape [1, 16, 16].
-   Mean and std of shape torch.Size([1, 1, 1]), eps=1e-05
-Loading test db at resolution 32 with 50 samples and batch-size=32
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Loading test db at resolution 32 with 50 samples and batch-size=32
 
 Our model has 2033089 parameters.
 </pre></div>
@@ -310,29 +307,27 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fef04c74820&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fb4346b4e80&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fef04c74c10&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fb4346b4460&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fef04c74c10&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fef04c74730&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fb4346b4460&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fb4346b4b80&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
                    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
                   <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
-                  <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">OutputEncoderCallback</span><span class="p">(</span><span class="n">output_encoder</span><span class="p">)],</span>
+                  <span class="n">data_processor</span><span class="o">=</span><span class="n">data_processor</span><span class="p">,</span>
                   <span class="n">wandb_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">log_test_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
                   <span class="n">use_distributed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>using standard method to load data to device.
-using standard method to compute loss.
-self.override_load_to_device=False
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>self.override_load_to_device=False
 self.overrides_loss=False
 </pre></div>
 </div>
@@ -359,6 +354,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">))</span>
 <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">test_samples</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data_processor</span><span class="o">.</span><span class="n">preprocess</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="c1"># Input x</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
     <span class="c1"># Ground-truth</span>
@@ -392,7 +388,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (3 minutes 11.237 seconds)</p>
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 30.801 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/f9c1e50d48828a746410d5400feb61f7/plot_UNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_UNO_darcy.py</span></code></a></p>
@@ -410,11 +406,11 @@ ii) can be trained quickly on CPU</p>
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="plot_SFNO_swe.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="checkpoint_FNO_darcy.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span>Training a SFNO on the spherical Shallow Water equations</span>
+        <span>Training a TFNO on Darcy-Flow</span>
     </a>
     
     

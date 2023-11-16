@@ -343,18 +343,18 @@
         <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
             <span class="n">c</span><span class="o">.</span><span class="n">on_val_end</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<div class="viewcode-block" id="SimpleWandBLoggerCallback">
-<a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.SimpleWandBLoggerCallback.html#neuralop.training.callbacks.SimpleWandBLoggerCallback">[docs]</a>
-<span class="k">class</span> <span class="nc">SimpleWandBLoggerCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
+<div class="viewcode-block" id="BasicLoggerCallback">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.BasicLoggerCallback.html#neuralop.training.callbacks.BasicLoggerCallback">[docs]</a>
+<span class="k">class</span> <span class="nc">BasicLoggerCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Callback that implements simple logging functionality </span>
 <span class="sd">    expected when passing verbose to a Trainer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wandb_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">kwargs</span><span class="p">:</span>
-            <span class="n">wandb</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">wandb_kwargs</span><span class="p">:</span>
+            <span class="n">wandb</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="o">**</span><span class="n">wandb_kwargs</span><span class="p">)</span>
     
     <span class="k">def</span> <span class="nf">on_init_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_update_state_dict</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -421,93 +421,9 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;values_to_log&#39;</span><span class="p">][</span><span class="s1">&#39;lr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lr</span>
             <span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;values_to_log&#39;</span><span class="p">],</span> <span class="n">step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;epoch&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">commit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="MGPatchingCallback">
-<a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.MGPatchingCallback.html#neuralop.training.callbacks.MGPatchingCallback">[docs]</a>
-<span class="k">class</span> <span class="nc">MGPatchingCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">levels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">padding_fraction</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">stitching</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">encoder</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;MGPatchingCallback implements multigrid patching functionality</span>
-<span class="sd">        for datasets that require domain patching, stitching and/or padding.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        levels : int</span>
-<span class="sd">            mg_patching level parameter for MultigridPatching2D</span>
-<span class="sd">        padding_fraction : float</span>
-<span class="sd">            mg_padding_fraction parameter for MultigridPatching2D</span>
-<span class="sd">        stitching : _type_</span>
-<span class="sd">            mg_patching_stitching parameter for MultigridPatching2D</span>
-<span class="sd">        encoder : neuralop.datasets.output_encoder.OutputEncoder, optional</span>
-<span class="sd">            OutputEncoder to decode model outputs, by default None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">levels</span> <span class="o">=</span> <span class="n">levels</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">padding_fraction</span> <span class="o">=</span> <span class="n">padding_fraction</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stitching</span> <span class="o">=</span> <span class="n">stitching</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
         
-    <span class="k">def</span> <span class="nf">on_init_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_update_state_dict</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">patcher</span> <span class="o">=</span> <span class="n">MultigridPatching2D</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">],</span> <span class="n">levels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">levels</span><span class="p">,</span> 
-                                      <span class="n">padding_fraction</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">padding_fraction</span><span class="p">,</span>
-                                      <span class="n">stitching</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stitching</span><span class="p">)</span>
-    
-    <span class="k">def</span> <span class="nf">on_batch_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_update_state_dict</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;sample&#39;</span><span class="p">][</span><span class="s1">&#39;x&#39;</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;sample&#39;</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span>\
-              <span class="bp">self</span><span class="o">.</span><span class="n">patcher</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;sample&#39;</span><span class="p">][</span><span class="s1">&#39;x&#39;</span><span class="p">],</span>
-                                 <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;sample&#39;</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">],)</span>
-    
-    <span class="k">def</span> <span class="nf">on_val_batch_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_batch_start</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        
-    <span class="k">def</span> <span class="nf">on_before_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        
-        <span class="n">evaluation</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;eval&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_update_state_dict</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="n">out</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;out&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;sample&#39;</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> \
-            <span class="bp">self</span><span class="o">.</span><span class="n">patcher</span><span class="o">.</span><span class="n">unpatch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;out&#39;</span><span class="p">],</span>
-                                 <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;sample&#39;</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">],</span>
-                                 <span class="n">evaluation</span><span class="o">=</span><span class="n">evaluation</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;out&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;out&#39;</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;sample&#39;</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;sample&#39;</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">])</span>
-        
-    
-    <span class="k">def</span> <span class="nf">on_before_val_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_before_loss</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">evaluation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="OutputEncoderCallback">
-<a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.OutputEncoderCallback.html#neuralop.training.callbacks.OutputEncoderCallback">[docs]</a>
-<span class="k">class</span> <span class="nc">OutputEncoderCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
-    
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encoder</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Callback class for a training loop that involves</span>
-<span class="sd">        an output normalizer but no MG patching.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        -----------</span>
-<span class="sd">        encoder : neuralop.datasets.output_encoder.OutputEncoder</span>
-<span class="sd">            module to normalize model inputs/outputs</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
-    
-    <span class="k">def</span> <span class="nf">on_batch_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_update_state_dict</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    
-    <span class="k">def</span> <span class="nf">on_before_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;out&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;sample&#39;</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;sample&#39;</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">])</span>
-    
-    <span class="k">def</span> <span class="nf">on_before_val_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_before_loss</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-        
+<div class="viewcode-block" id="CheckpointCallback">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.CheckpointCallback.html#neuralop.training.callbacks.CheckpointCallback">[docs]</a>
 <span class="k">class</span> <span class="nc">CheckpointCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
@@ -615,12 +531,17 @@
     <span class="k">def</span> <span class="nf">on_val_epoch_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_update_state_dict</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
+<div class="viewcode-block" id="CheckpointCallback.on_val_epoch_end">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.CheckpointCallback.html#neuralop.training.callbacks.CheckpointCallback.on_val_epoch_end">[docs]</a>
     <span class="k">def</span> <span class="nf">on_val_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Update state dict with errors</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_update_state_dict</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_state_dict</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
+
+<div class="viewcode-block" id="CheckpointCallback.on_epoch_end">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.CheckpointCallback.html#neuralop.training.callbacks.CheckpointCallback.on_epoch_end">[docs]</a>
     <span class="k">def</span> <span class="nf">on_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Save state to dir if all conditions are met</span>
@@ -660,7 +581,9 @@
                 <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;regularizer&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="n">save_path</span><span class="p">)</span>
             
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;verbose&#39;</span><span class="p">]:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saved training state to </span><span class="si">{</span><span class="n">save_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saved training state to </span><span class="si">{</span><span class="n">save_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+</div>
+
 
 </pre></div>
 

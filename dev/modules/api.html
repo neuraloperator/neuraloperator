@@ -331,14 +331,10 @@ logic of callbacks in Pytorch-Lightning (<a class="reference external" href="htt
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.Callback.html#neuralop.training.callbacks.Callback" title="neuralop.training.callbacks.Callback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Callback</span></code></a>()</p></td>
 <td><p>Base callback class.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.SimpleWandBLoggerCallback.html#neuralop.training.callbacks.SimpleWandBLoggerCallback" title="neuralop.training.callbacks.SimpleWandBLoggerCallback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimpleWandBLoggerCallback</span></code></a>(**kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.BasicLoggerCallback.html#neuralop.training.callbacks.BasicLoggerCallback" title="neuralop.training.callbacks.BasicLoggerCallback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BasicLoggerCallback</span></code></a>([wandb_kwargs])</p></td>
 <td><p>Callback that implements simple logging functionality  expected when passing verbose to a Trainer</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.OutputEncoderCallback.html#neuralop.training.callbacks.OutputEncoderCallback" title="neuralop.training.callbacks.OutputEncoderCallback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OutputEncoderCallback</span></code></a>(encoder)</p></td>
-<td><p><p class="rubric">Methods</p>
-</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.MGPatchingCallback.html#neuralop.training.callbacks.MGPatchingCallback" title="neuralop.training.callbacks.MGPatchingCallback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MGPatchingCallback</span></code></a>(levels, padding_fraction, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.CheckpointCallback.html#neuralop.training.callbacks.CheckpointCallback" title="neuralop.training.callbacks.CheckpointCallback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CheckpointCallback</span></code></a>(save_dir[, save_best, ...])</p></td>
 <td><p><p class="rubric">Methods</p>
 </p></td>
 </tr>
@@ -352,6 +348,21 @@ logic of callbacks in Pytorch-Lightning (<a class="reference external" href="htt
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.datasets.load_darcy_flow_small.html#neuralop.datasets.load_darcy_flow_small" title="neuralop.datasets.load_darcy_flow_small"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_darcy_flow_small</span></code></a>(n_train, n_tests, ...)</p></td>
 <td><p>Loads a small Darcy-Flow dataset</p></td>
+</tr>
+</tbody>
+</table>
+<p>Much like PyTorch’s <cite>Torchvision.Datasets</cite> module, our Datasets module also includes
+utilities to transform data from its raw form into the form expected by models and
+loss functions:</p>
+<span class="target" id="module-neuralop.datasets.data_transforms"></span><table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.datasets.data_transforms.DefaultDataProcessor.html#neuralop.datasets.data_transforms.DefaultDataProcessor" title="neuralop.datasets.data_transforms.DefaultDataProcessor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DefaultDataProcessor</span></code></a>([in_normalizer, ...])</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.datasets.data_transforms.MGPatchingDataProcessor.html#neuralop.datasets.data_transforms.MGPatchingDataProcessor" title="neuralop.datasets.data_transforms.MGPatchingDataProcessor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MGPatchingDataProcessor</span></code></a>(model, levels, ...)</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
 </tr>
 </tbody>
 </table>
@@ -428,7 +439,9 @@ logic of callbacks in Pytorch-Lightning (<a class="reference external" href="htt
 <li><a class="reference internal" href="#training">Training</a><ul>
 </ul>
 </li>
-<li><a class="reference internal" href="#datasets">Datasets</a></li>
+<li><a class="reference internal" href="#datasets">Datasets</a><ul>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

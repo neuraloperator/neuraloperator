@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>neuralop.training.callbacks.OutputEncoderCallback &#8212; neuraloperator 0.2.1 documentation</title> 
+    <title>neuralop.training.callbacks.BasicLoggerCallback &#8212; neuraloperator 0.2.1 documentation</title> 
 <link rel="stylesheet" href="../../_static/tensorly_style.css">
 <link rel="apple-touch-icon" sizes="180x180" href="../../_static/favicon/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon/favicon-32x32.png">
@@ -31,8 +31,8 @@
  
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="neuralop.training.callbacks.MGPatchingCallback" href="neuralop.training.callbacks.MGPatchingCallback.html" />
-    <link rel="prev" title="neuralop.training.callbacks.SimpleWandBLoggerCallback" href="neuralop.training.callbacks.SimpleWandBLoggerCallback.html" />
+    <link rel="next" title="neuralop.training.callbacks.CheckpointCallback" href="neuralop.training.callbacks.CheckpointCallback.html" />
+    <link rel="prev" title="neuralop.training.callbacks.Callback" href="neuralop.training.callbacks.Callback.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -160,12 +160,14 @@
 
       <div class="container content main-content">
         
-  <section id="neuralop-training-callbacks-outputencodercallback">
-<h1><a class="reference internal" href="../api.html#module-neuralop.training.callbacks" title="neuralop.training.callbacks"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code></a>.OutputEncoderCallback<a class="headerlink" href="#neuralop-training-callbacks-outputencodercallback" title="Link to this heading"></a></h1>
+  <section id="neuralop-training-callbacks-basicloggercallback">
+<h1><a class="reference internal" href="../api.html#module-neuralop.training.callbacks" title="neuralop.training.callbacks"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code></a>.BasicLoggerCallback<a class="headerlink" href="#neuralop-training-callbacks-basicloggercallback" title="Link to this heading"></a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="neuralop.training.callbacks.OutputEncoderCallback">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.training.callbacks.</span></span><span class="sig-name descname"><span class="pre">OutputEncoderCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">encoder</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/training/callbacks.html#OutputEncoderCallback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.training.callbacks.OutputEncoderCallback" title="Link to this definition"></a></dt>
-<dd><p class="rubric">Methods</p>
+<dt class="sig sig-object py" id="neuralop.training.callbacks.BasicLoggerCallback">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.training.callbacks.</span></span><span class="sig-name descname"><span class="pre">BasicLoggerCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wandb_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/training/callbacks.html#BasicLoggerCallback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.training.callbacks.BasicLoggerCallback" title="Link to this definition"></a></dt>
+<dd><p>Callback that implements simple logging functionality 
+expected when passing verbose to a Trainer</p>
+<p class="rubric">Methods</p>
 <table class="docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><strong>on_batch_start</strong></p></td>
@@ -174,7 +176,22 @@
 <tr class="row-even"><td><p><strong>on_before_loss</strong></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><strong>on_before_val_loss</strong></p></td>
+<tr class="row-odd"><td><p><strong>on_before_val</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>on_epoch_start</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>on_init_end</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>on_train_start</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>on_val_end</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>on_val_epoch_end</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -189,16 +206,16 @@
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="neuralop.training.callbacks.SimpleWandBLoggerCallback.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="neuralop.training.callbacks.Callback.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code>.SimpleWandBLoggerCallback</span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code>.Callback</span>
     </a>
     
     
-    <a class="button pagination-next" href="neuralop.training.callbacks.MGPatchingCallback.html" title="next page" accesskey="n">
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code>.MGPatchingCallback </span>
+    <a class="button pagination-next" href="neuralop.training.callbacks.CheckpointCallback.html" title="next page" accesskey="n">
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code>.CheckpointCallback </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>
@@ -234,8 +251,8 @@
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code>.OutputEncoderCallback</a><ul>
-<li><a class="reference internal" href="#neuralop.training.callbacks.OutputEncoderCallback"><code class="docutils literal notranslate"><span class="pre">OutputEncoderCallback</span></code></a></li>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.training.callbacks</span></code>.BasicLoggerCallback</a><ul>
+<li><a class="reference internal" href="#neuralop.training.callbacks.BasicLoggerCallback"><code class="docutils literal notranslate"><span class="pre">BasicLoggerCallback</span></code></a></li>
 </ul>
 </li>
 </ul>
