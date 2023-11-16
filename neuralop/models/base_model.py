@@ -50,19 +50,22 @@ class BaseModel(torch.nn.Module):
         sig = inspect.signature(cls)
         model_name = cls.__name__
 
+        verbose = kwargs.get('verbose', False)
         # Verify that given parameters are actually arguments of the model
         for key in kwargs:
             if key not in sig.parameters:
-                print(f"Given argument key={key} "
-                      f"that is not in {model_name}'s signature.")
+                if verbose:
+                    print(f"Given argument key={key} "
+                        f"that is not in {model_name}'s signature.")
 
         # Check for model arguments not specified in the configuration
         for key, value in sig.parameters.items():
             if (value.default is not inspect._empty) and (key not in kwargs):
-                print(
-                    f"Keyword argument {key} not specified for model {model_name}, "
-                    f"using default={value.default}."
-                )
+                if verbose:
+                    print(
+                        f"Keyword argument {key} not specified for model {model_name}, "
+                        f"using default={value.default}."
+                    )
                 kwargs[key] = value.default
 
         if hasattr(cls, '_version'):
