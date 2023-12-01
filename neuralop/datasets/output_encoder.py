@@ -253,27 +253,29 @@ class UnitGaussianNormalizer(Transform):
         else:
             batch_size = data_batch.shape[0]
             dim = [i - 1 for i in self.dim if i]
+            shape = [s for i, s in enumerate(self.mask.shape) if i not in dim]
             self.n_elements = torch.count_nonzero(self.mask, dim=dim)*batch_size
-            self.mean = torch.zeros_like(self.mask)
-            self.std = torch.zeros_like(self.mask)
-            self.squared_mean = torch.zeros_like(self.mask)
+            self.mean = torch.zeros(shape)
+            self.std = torch.zeros(shape)
+            self.squared_mean = torch.zeros(shape)
             data_batch[:, self.mask==1] = 0
-            self.mean[self.mask == 1] = torch.sum(data_batch, dim=self.dim, keepdim=True) / self.n_elements
-            self.squared_mean = torch.sum(data_batch**2, dim=self.dim, keepdim=True) / self.n_elements
+            self.mean[self.mask == 1] = torch.sum(data_batch, dim=dim, keepdim=True) / self.n_elements
+            self.squared_mean = torch.sum(data_batch**2, dim=dim, keepdim=True) / self.n_elements
             self.std = torch.sqrt(self.squared_mean - self.mean**2)
 
     def incremental_update_mean_std(self, data_batch):
         if self.mask is None:
             n_elements = count_tensor_params(data_batch, self.dim)
+            dim = self.dim
         else:
             dim = [i - 1 for i in self.dim if i]
             n_elements = torch.count_nonzero(self.mask, dim=dim)*data_batch.shape[0]
             data_batch[:, self.mask == 1] = 0
 
         self.mean = (1.0/(self.n_elements + n_elements))*(
-            self.n_elements*self.mean + torch.sum(data_batch, dim=self.dim, keepdim=True))
+            self.n_elements*self.mean + torch.sum(data_batch, dim=dim, keepdim=True))
         self.squared_mean = (1.0/(self.n_elements + n_elements - 1))*(
-            self.n_elements*self.squared_mean + torch.sum(data_batch**2, dim=self.dim, keepdim=True))
+            self.n_elements*self.squared_mean + torch.sum(data_batch**2, dim=dim, keepdim=True))
         self.n_elements += n_elements
 
         self.std = torch.sqrt(self.squared_mean - self.mean**2)
