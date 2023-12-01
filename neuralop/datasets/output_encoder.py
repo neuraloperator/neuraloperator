@@ -179,7 +179,7 @@ class UnitGaussianNormalizer(Transform):
     """
     UnitGaussianNormalizer normalizes data to be zero mean and unit std. 
     """
-    def __init__(self, mean=None, std=None, eps=1e-7, dim=None):
+    def __init__(self, mean=None, std=None, eps=1e-7, dim=None, mask=None):
         """
         mean : torch.tensor or None
             has to include batch-size as a dim of 1
@@ -190,13 +190,17 @@ class UnitGaussianNormalizer(Transform):
             for safe division by the std
         dim : int list, default is None
             if not None, dimensions of the data to reduce over to compute the mean and std.
-
+            
             .. important:: 
 
                 Has to include the batch-size (typically 0).
                 For instance, to normalize data of shape ``(batch_size, channels, height, width)``
                 along batch-size, height and width, pass ``dim=[0, 2, 3]``
         
+        mask : torch.Tensor or None, default is None
+            If not None, a tensor with the same size as a sample, 
+            with value 0 where the data should be ignored and 1 everywhere else
+
         Notes
         -----
         The resulting mean will have the same size as the input MINUS the specified dims.
@@ -210,6 +214,8 @@ class UnitGaussianNormalizer(Transform):
 
         self.register_buffer('mean', mean)
         self.register_buffer('std', std)
+        self.register_buffer('mask', mask)
+
         self.eps = eps
         if mean is not None:
             self.ndim = mean.ndim
@@ -239,13 +245,28 @@ class UnitGaussianNormalizer(Transform):
 
     def update_mean_std(self, data_batch):
         self.ndim = data_batch.ndim  # Note this includes batch-size
-        self.n_elements = count_tensor_params(data_batch, self.dim)
-        self.mean = torch.mean(data_batch, dim=self.dim, keepdim=True)
-        self.squared_mean = torch.mean(data_batch**2, dim=self.dim, keepdim=True)
-        self.std = torch.sqrt(self.squared_mean - self.mean**2)
+        if self.mask is None:
+            self.n_elements = count_tensor_params(data_batch, self.dim)
+            self.mean = torch.mean(data_batch, dim=self.dim, keepdim=True)
+            self.squared_mean = torch.mean(data_batch**2, dim=self.dim, keepdim=True)
+            self.std = torch.sqrt(self.squared_mean - self.mean**2)
+        else:
+            batch_size = data_batch.shape[0]
+            self.n_elements = torch.count_nonzero(self.mask, dim=self.dim)*batch_size
+            self.mean = torch.zeros_like(self.mask)
+            self.std = torch.zeros_like(self.mask)
+            self.squared_mean = torch.zeros_like(self.mask)
+            data_batch[:, self.mask==1] = 0
+            self.mean[self.mask == 1] = torch.sum(data_batch, dim=self.dim, keepdim=True) / self.n_elements
+            self.squared_mean = torch.sum(data_batch**2, dim=self.dim, keepdim=True) / self.n_elements
+            self.std = torch.sqrt(self.squared_mean - self.mean**2)
 
     def incremental_update_mean_std(self, data_batch):
-        n_elements = count_tensor_params(data_batch, self.dim)
+        if self.mask is None:
+            n_elements = count_tensor_params(data_batch, self.dim)
+        else:
+            n_elements = torch.count_nonzero(self.mask, dim=self.dim)*data_batch.shape[0]
+            data_batch[:, self.mask == 1] = 0
 
         self.mean = (1.0/(self.n_elements + n_elements))*(
             self.n_elements*self.mean + torch.sum(data_batch, dim=self.dim, keepdim=True))
@@ -280,7 +301,7 @@ class UnitGaussianNormalizer(Transform):
         return self
     
     @classmethod
-    def from_dataset(cls, dataset, dim=None, keys=None):
+    def from_dataset(cls, dataset, dim=None, keys=None, mask=None):
         """Return a dictionary of normalizer instances, fitted on the given dataset
         
         Parameters
@@ -298,7 +319,7 @@ class UnitGaussianNormalizer(Transform):
             if not i:
                 if not keys:
                     keys = data_dict.keys()
-                instances = {key: cls(dim=dim) for key in keys}
+                instances = {key: cls(dim=dim, mask=mask) for key in keys}
             for key, sample in data_dict.items():
                 instances[key].partial_fit(sample.unsqueeze(0))
         return instances
