@@ -252,7 +252,8 @@ class UnitGaussianNormalizer(Transform):
             self.std = torch.sqrt(self.squared_mean - self.mean**2)
         else:
             batch_size = data_batch.shape[0]
-            self.n_elements = torch.count_nonzero(self.mask, dim=self.dim)*batch_size
+            dim = [i - 1 for i in self.dim if i]
+            self.n_elements = torch.count_nonzero(self.mask, dim=dim)*batch_size
             self.mean = torch.zeros_like(self.mask)
             self.std = torch.zeros_like(self.mask)
             self.squared_mean = torch.zeros_like(self.mask)
@@ -265,7 +266,8 @@ class UnitGaussianNormalizer(Transform):
         if self.mask is None:
             n_elements = count_tensor_params(data_batch, self.dim)
         else:
-            n_elements = torch.count_nonzero(self.mask, dim=self.dim)*data_batch.shape[0]
+            dim = [i - 1 for i in self.dim if i]
+            n_elements = torch.count_nonzero(self.mask, dim=dim)*data_batch.shape[0]
             data_batch[:, self.mask == 1] = 0
 
         self.mean = (1.0/(self.n_elements + n_elements))*(
