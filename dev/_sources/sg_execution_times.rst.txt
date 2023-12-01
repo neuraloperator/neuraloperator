@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**03:48.657** total execution time for 6 files **from all galleries**:
+**03:47.529** total execution time for 6 files **from all galleries**:
 
 .. container::
 
@@ -33,19 +33,19 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_plot_UNO_darcy.py` (``../../examples/plot_UNO_darcy.py``)
-     - 01:31.496
+     - 01:32.338
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_SFNO_swe.py` (``../../examples/plot_SFNO_swe.py``)
-     - 01:23.950
+     - 01:23.653
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_FNO_darcy.py` (``../../examples/plot_FNO_darcy.py``)
-     - 00:52.616
+     - 00:50.867
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_darcy_flow.py` (``../../examples/plot_darcy_flow.py``)
-     - 00:00.394
+     - 00:00.395
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_darcy_flow_spectrum.py` (``../../examples/plot_darcy_flow_spectrum.py``)
-     - 00:00.201
+     - 00:00.275
      - 0.0
    * - :ref:`sphx_glr_auto_examples_checkpoint_FNO_darcy.py` (``../../examples/checkpoint_FNO_darcy.py``)
      - 00:00.000
