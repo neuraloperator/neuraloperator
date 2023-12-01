@@ -170,7 +170,7 @@ to download the full example code</p>
 <span id="sphx-glr-auto-examples-checkpoint-fno-darcy-py"></span><h1>Training a TFNO on Darcy-Flow<a class="headerlink" href="#training-a-tfno-on-darcy-flow" title="Link to this heading"></a></h1>
 <p>In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
 to train a Tensorized Fourier-Neural Operator</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">TFNO</span>
@@ -184,7 +184,7 @@ to train a Tensorized Fourier-Neural Operator</p>
 </pre></div>
 </div>
 <p>Loading the Navier-Stokes dataset in 128x128 resolution</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">data_processor</span> <span class="o">=</span> <span class="n">load_darcy_flow_small</span><span class="p">(</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">data_processor</span> <span class="o">=</span> <span class="n">load_darcy_flow_small</span><span class="p">(</span>
         <span class="n">n_train</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
         <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span> <span class="n">n_tests</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
         <span class="n">test_batch_sizes</span><span class="o">=</span><span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span>
@@ -192,7 +192,7 @@ to train a Tensorized Fourier-Neural Operator</p>
 </pre></div>
 </div>
 <p>We create a tensorized FNO model</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">TFNO</span><span class="p">(</span><span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">projection_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;tucker&#39;</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="mf">0.42</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">TFNO</span><span class="p">(</span><span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">projection_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;tucker&#39;</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="mf">0.42</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 
 <span class="n">n_params</span> <span class="o">=</span> <span class="n">count_model_params</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
@@ -201,21 +201,21 @@ to train a Tensorized Fourier-Neural Operator</p>
 </pre></div>
 </div>
 <p>Create the optimizer</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
                                 <span class="n">lr</span><span class="o">=</span><span class="mf">8e-3</span><span class="p">,</span>
                                 <span class="n">weight_decay</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
 <span class="n">scheduler</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">CosineAnnealingLR</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">T_max</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Creating the losses</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">l2loss</span> <span class="o">=</span> <span class="n">LpLoss</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">l2loss</span> <span class="o">=</span> <span class="n">LpLoss</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 <span class="n">h1loss</span> <span class="o">=</span> <span class="n">H1Loss</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
 <span class="n">train_loss</span> <span class="o">=</span> <span class="n">h1loss</span>
 <span class="n">eval_losses</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;h1&#39;</span><span class="p">:</span> <span class="n">h1loss</span><span class="p">,</span> <span class="s1">&#39;l2&#39;</span><span class="p">:</span> <span class="n">l2loss</span><span class="p">}</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">### MODEL ###</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">### MODEL ###</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">### OPTIMIZER ###</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">### SCHEDULER ###</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">### LOSSES ###&#39;</span><span class="p">)</span>
@@ -225,7 +225,7 @@ to train a Tensorized Fourier-Neural Operator</p>
 </pre></div>
 </div>
 <p>Create the trainer</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
                   <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
                   <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
                     <span class="n">CheckpointCallback</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="s1">&#39;./checkpoints&#39;</span><span class="p">,</span>
@@ -241,7 +241,7 @@ to train a Tensorized Fourier-Neural Operator</p>
 </pre></div>
 </div>
 <p>Actually train the model on our small Darcy-Flow dataset</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">train_loader</span><span class="o">=</span><span class="n">train_loader</span><span class="p">,</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">train_loader</span><span class="o">=</span><span class="n">train_loader</span><span class="p">,</span>
               <span class="n">test_loaders</span><span class="o">=</span><span class="p">{},</span>
               <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
               <span class="n">scheduler</span><span class="o">=</span><span class="n">scheduler</span><span class="p">,</span>
@@ -271,13 +271,12 @@ to train a Tensorized Fourier-Neural Operator</p>
               <span class="n">training_loss</span><span class="o">=</span><span class="n">train_loss</span><span class="p">)</span>
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.000 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-checkpoint-fno-darcy-py">
-<div class="sphx-glr-download sphx-glr-download-python docutils container">
-<p><a class="reference download internal" download="" href="../_downloads/2a3ecbdce9fd535c53d44cc373f6a228/checkpoint_FNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">checkpoint_FNO_darcy.py</span></code></a></p>
-</div>
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/52640fe09fbb5b08e5a2370e57b3b066/checkpoint_FNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">checkpoint_FNO_darcy.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/2a3ecbdce9fd535c53d44cc373f6a228/checkpoint_FNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">checkpoint_FNO_darcy.py</span></code></a></p>
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>

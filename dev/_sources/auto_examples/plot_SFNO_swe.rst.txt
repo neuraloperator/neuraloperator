@@ -26,7 +26,7 @@ to train a Spherical Fourier-Neural Operator
 
 .. GENERATED FROM PYTHON SOURCE LINES 11-24
 
-.. code-block:: default
+.. code-block:: Python
 
 
 
@@ -54,7 +54,7 @@ Loading the Navier-Stokes dataset in 128x128 resolution
 
 .. GENERATED FROM PYTHON SOURCE LINES 26-30
 
-.. code-block:: default
+.. code-block:: Python
 
     train_loader, test_loaders = load_spherical_swe(n_train=200, batch_size=4, train_resolution=(32, 64),
                                                     test_resolutions=[(32, 64), (64, 128)], n_tests=[50, 50], test_batch_sizes=[10, 10],)
@@ -81,7 +81,7 @@ We create a tensorized FNO model
 
 .. GENERATED FROM PYTHON SOURCE LINES 32-41
 
-.. code-block:: default
+.. code-block:: Python
 
 
     model = SFNO(n_modes=(32, 32), in_channels=3, out_channels=3, hidden_channels=32, projection_channels=64, factorization='dense')
@@ -112,7 +112,7 @@ Create the optimizer
 
 .. GENERATED FROM PYTHON SOURCE LINES 43-49
 
-.. code-block:: default
+.. code-block:: Python
 
     optimizer = torch.optim.Adam(model.parameters(), 
                                     lr=8e-4, 
@@ -133,7 +133,7 @@ Creating the losses
 
 .. GENERATED FROM PYTHON SOURCE LINES 51-58
 
-.. code-block:: default
+.. code-block:: Python
 
     l2loss = LpLoss(d=2, p=2, reduce_dims=(0,1))
     # h1loss = H1Loss(d=2, reduce_dims=(0,1))
@@ -151,7 +151,7 @@ Creating the losses
 
 .. GENERATED FROM PYTHON SOURCE LINES 59-70
 
-.. code-block:: default
+.. code-block:: Python
 
 
 
@@ -220,13 +220,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fc2d18e5f40>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f6cfbaa7c10>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.LpLoss object at 0x7fc2d1927ee0>
+     * Train: <neuralop.losses.data_losses.LpLoss object at 0x7f6cfbaa79a0>
 
-     * Test: {'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fc2d1927ee0>}
+     * Test: {'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f6cfbaa79a0>}
 
 
 
@@ -237,7 +237,7 @@ Create the trainer
 
 .. GENERATED FROM PYTHON SOURCE LINES 72-80
 
-.. code-block:: default
+.. code-block:: Python
 
     trainer = Trainer(model=model, n_epochs=20,
                       device=device,
@@ -267,7 +267,7 @@ Actually train the model on our small Darcy-Flow dataset
 
 .. GENERATED FROM PYTHON SOURCE LINES 82-92
 
-.. code-block:: default
+.. code-block:: Python
 
 
     trainer.train(train_loader=train_loader,
@@ -301,7 +301,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. GENERATED FROM PYTHON SOURCE LINES 103-138
 
-.. code-block:: default
+.. code-block:: Python
 
 
     fig = plt.figure(figsize=(7, 7))
@@ -353,7 +353,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 26.544 seconds)
+   **Total running time of the script:** (1 minutes 23.950 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_SFNO_swe.py:
@@ -362,16 +362,13 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
   .. container:: sphx-glr-footer sphx-glr-footer-example
 
+    .. container:: sphx-glr-download sphx-glr-download-jupyter
 
-
+      :download:`Download Jupyter notebook: plot_SFNO_swe.ipynb <plot_SFNO_swe.ipynb>`
 
     .. container:: sphx-glr-download sphx-glr-download-python
 
       :download:`Download Python source code: plot_SFNO_swe.py <plot_SFNO_swe.py>`
-
-    .. container:: sphx-glr-download sphx-glr-download-jupyter
-
-      :download:`Download Jupyter notebook: plot_SFNO_swe.ipynb <plot_SFNO_swe.ipynb>`
 
 
 .. only:: html

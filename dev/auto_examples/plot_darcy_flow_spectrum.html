@@ -172,7 +172,7 @@ For more details on spectrum analysis, users can take a look at this reference: 
 <section id="short-summary">
 <h2>Short summary<a class="headerlink" href="#short-summary" title="Link to this heading"></a></h2>
 <p>Spectral analysis is useful because it allows researchers to study the distribution of energy across different scales in a fluid flow. By examining the energy spectrum, one can gain insights into the behavior of turbulence or any other dataset and the underlying physical processes. The energy spectrum is analysed through the Fourier transform which is a mathematical tool that decomposes a function or signal into its constituent frequencies. In a fluid flow, it is used to analyze the distribution of energy across different scales in a flow. Specifically, the Fourier transform is applied to the velocity field of the flow, converting it into a frequency domain representation. Higher the wavenumber corresponds to higher frequency and higher energy and is a much harder task to solve as we need higher modes to capture the high-frequency behavior of the flow. Overall this allows researchers to study the energy spectrum, which provides insights into the behavior of turbulence and the underlying physical processes.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Original Author: Zongyi Li</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Original Author: Zongyi Li</span>
 <span class="c1"># Modified by: Robert Joseph George</span>
 </pre></div>
 </div>
@@ -180,7 +180,7 @@ For more details on spectrum analysis, users can take a look at this reference: 
 <section id="import-the-library">
 <h2>Import the library<a class="headerlink" href="#import-the-library" title="Link to this heading"></a></h2>
 <p>We first import our <cite>neuralop</cite> library and required dependencies.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">matplotlib</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -195,7 +195,7 @@ For more details on spectrum analysis, users can take a look at this reference: 
 </pre></div>
 </div>
 <p>Define some variables</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">T</span> <span class="o">=</span> <span class="mi">500</span> <span class="c1"># number of time steps</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">T</span> <span class="o">=</span> <span class="mi">500</span> <span class="c1"># number of time steps</span>
 <span class="n">samples</span> <span class="o">=</span> <span class="mi">50</span>
 <span class="n">s</span> <span class="o">=</span> <span class="mi">16</span> <span class="c1"># resolution of the dataset</span>
 
@@ -207,7 +207,7 @@ For more details on spectrum analysis, users can take a look at this reference: 
 </pre></div>
 </div>
 <p>Loading the Navier-Stokes dataset in 128x128 resolution</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">data_processor</span> <span class="o">=</span> <span class="n">load_darcy_flow_small</span><span class="p">(</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">data_processor</span> <span class="o">=</span> <span class="n">load_darcy_flow_small</span><span class="p">(</span>
         <span class="n">n_train</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
         <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span> <span class="n">n_tests</span><span class="o">=</span><span class="p">[</span><span class="mi">50</span><span class="p">],</span>
         <span class="n">test_batch_sizes</span><span class="o">=</span><span class="p">[</span><span class="mi">32</span><span class="p">],</span> <span class="n">positional_encoding</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -247,7 +247,7 @@ For more details on spectrum analysis, users can take a look at this reference: 
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Original dataset shape torch.Size([50, 1, 16, 16])
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate the spectrum of the dataset</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate the spectrum of the dataset</span>
 <span class="c1"># Again only the last two dimensions have to be resolution and the first dimension is the reshaped product of all the other dimensions</span>
 <span class="n">truth_sp</span> <span class="o">=</span> <span class="n">spectrum_2d</span><span class="p">(</span><span class="n">dataset_pred</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">samples</span> <span class="o">*</span> <span class="n">batchsize</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">s</span><span class="p">),</span> <span class="n">s</span><span class="p">)</span>
 
@@ -280,13 +280,13 @@ For more details on spectrum analysis, users can take a look at this reference: 
   ax.set_ylim(10, 10^10)
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.277 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.201 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-darcy-flow-spectrum-py">
-<div class="sphx-glr-download sphx-glr-download-python docutils container">
-<p><a class="reference download internal" download="" href="../_downloads/e24a0a604c121d50b764a91b613b2142/plot_darcy_flow_spectrum.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_darcy_flow_spectrum.py</span></code></a></p>
-</div>
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/c628421a5214dc8f1b3bde8be930715f/plot_darcy_flow_spectrum.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_darcy_flow_spectrum.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/e24a0a604c121d50b764a91b613b2142/plot_darcy_flow_spectrum.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_darcy_flow_spectrum.py</span></code></a></p>
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>

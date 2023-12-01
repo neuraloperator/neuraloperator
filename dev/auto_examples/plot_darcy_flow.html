@@ -172,7 +172,7 @@ to download the full example code</p>
 <section id="import-the-library">
 <h2>Import the library<a class="headerlink" href="#import-the-library" title="Link to this heading"></a></h2>
 <p>We first import our <cite>neuralop</cite> library and required dependencies.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">from</span> <span class="nn">neuralop.datasets</span> <span class="kn">import</span> <span class="n">load_darcy_flow_small</span>
 </pre></div>
 </div>
@@ -181,7 +181,7 @@ to download the full example code</p>
 <h2>Load the dataset<a class="headerlink" href="#load-the-dataset" title="Link to this heading"></a></h2>
 <p>Training samples are 16x16 and we load testing samples at both
 16x16 and 32x32 (to test resolution invariance).</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">data_processor</span> <span class="o">=</span> <span class="n">load_darcy_flow_small</span><span class="p">(</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">data_processor</span> <span class="o">=</span> <span class="n">load_darcy_flow_small</span><span class="p">(</span>
         <span class="n">n_train</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
         <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span> <span class="n">n_tests</span><span class="o">=</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span> <span class="n">test_batch_sizes</span><span class="o">=</span><span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
         <span class="p">)</span>
@@ -195,7 +195,7 @@ to download the full example code</p>
 </section>
 <section id="visualizing-the-data">
 <h2>Visualizing the data<a class="headerlink" href="#visualizing-the-data" title="Link to this heading"></a></h2>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">res</span><span class="p">,</span> <span class="n">test_loader</span> <span class="ow">in</span> <span class="n">test_loaders</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">res</span><span class="p">,</span> <span class="n">test_loader</span> <span class="ow">in</span> <span class="n">test_loaders</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;res&#39;</span><span class="p">)</span>
     <span class="n">test_data</span> <span class="o">=</span> <span class="n">train_dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">test_data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
@@ -243,13 +243,13 @@ Testing samples for res 32 have shape torch.Size([16, 16])
 Training sample have shape torch.Size([16, 16])
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.395 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.394 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-darcy-flow-py">
-<div class="sphx-glr-download sphx-glr-download-python docutils container">
-<p><a class="reference download internal" download="" href="../_downloads/01111202d22a556abc06831baa4765ac/plot_darcy_flow.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_darcy_flow.py</span></code></a></p>
-</div>
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/0ac9f102e4f1903984e3b4a7d517c88f/plot_darcy_flow.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_darcy_flow.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/01111202d22a556abc06831baa4765ac/plot_darcy_flow.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_darcy_flow.py</span></code></a></p>
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>

@@ -30,7 +30,7 @@ Spectral analysis is useful because it allows researchers to study the distribut
 
 .. GENERATED FROM PYTHON SOURCE LINES 13-16
 
-.. code-block:: default
+.. code-block:: Python
 
 
     # Original Author: Zongyi Li
@@ -50,7 +50,7 @@ We first import our `neuralop` library and required dependencies.
 
 .. GENERATED FROM PYTHON SOURCE LINES 20-33
 
-.. code-block:: default
+.. code-block:: Python
 
     import numpy as np
     import torch
@@ -78,7 +78,7 @@ Define some variables
 
 .. GENERATED FROM PYTHON SOURCE LINES 35-45
 
-.. code-block:: default
+.. code-block:: Python
 
     T = 500 # number of time steps
     samples = 50
@@ -103,7 +103,7 @@ Loading the Navier-Stokes dataset in 128x128 resolution
 
 .. GENERATED FROM PYTHON SOURCE LINES 47-83
 
-.. code-block:: default
+.. code-block:: Python
 
     train_loader, test_loaders, data_processor = load_darcy_flow_small(
             n_train=50, batch_size=50, 
@@ -162,7 +162,7 @@ Loading the Navier-Stokes dataset in 128x128 resolution
 
 .. GENERATED FROM PYTHON SOURCE LINES 87-115
 
-.. code-block:: default
+.. code-block:: Python
 
 
     # Generate the spectrum of the dataset
@@ -214,7 +214,7 @@ Loading the Navier-Stokes dataset in 128x128 resolution
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.277 seconds)
+   **Total running time of the script:** (0 minutes 0.201 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_darcy_flow_spectrum.py:
@@ -223,16 +223,13 @@ Loading the Navier-Stokes dataset in 128x128 resolution
 
   .. container:: sphx-glr-footer sphx-glr-footer-example
 
+    .. container:: sphx-glr-download sphx-glr-download-jupyter
 
-
+      :download:`Download Jupyter notebook: plot_darcy_flow_spectrum.ipynb <plot_darcy_flow_spectrum.ipynb>`
 
     .. container:: sphx-glr-download sphx-glr-download-python
 
       :download:`Download Python source code: plot_darcy_flow_spectrum.py <plot_darcy_flow_spectrum.py>`
-
-    .. container:: sphx-glr-download sphx-glr-download-jupyter
-
-      :download:`Download Jupyter notebook: plot_darcy_flow_spectrum.ipynb <plot_darcy_flow_spectrum.ipynb>`
 
 
 .. only:: html

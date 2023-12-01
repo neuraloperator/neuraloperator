@@ -30,7 +30,7 @@ We first import our `neuralop` library and required dependencies.
 
 .. GENERATED FROM PYTHON SOURCE LINES 11-15
 
-.. code-block:: default
+.. code-block:: Python
 
 
     import matplotlib.pyplot as plt
@@ -52,7 +52,7 @@ Training samples are 16x16 and we load testing samples at both
 
 .. GENERATED FROM PYTHON SOURCE LINES 20-28
 
-.. code-block:: default
+.. code-block:: Python
 
 
     train_loader, test_loaders, data_processor = load_darcy_flow_small(
@@ -82,7 +82,7 @@ Visualizing the data
 
 .. GENERATED FROM PYTHON SOURCE LINES 31-72
 
-.. code-block:: default
+.. code-block:: Python
 
 
 
@@ -150,7 +150,7 @@ Visualizing the data
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.395 seconds)
+   **Total running time of the script:** (0 minutes 0.394 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_darcy_flow.py:
@@ -159,16 +159,13 @@ Visualizing the data
 
   .. container:: sphx-glr-footer sphx-glr-footer-example
 
+    .. container:: sphx-glr-download sphx-glr-download-jupyter
 
-
+      :download:`Download Jupyter notebook: plot_darcy_flow.ipynb <plot_darcy_flow.ipynb>`
 
     .. container:: sphx-glr-download sphx-glr-download-python
 
       :download:`Download Python source code: plot_darcy_flow.py <plot_darcy_flow.py>`
-
-    .. container:: sphx-glr-download sphx-glr-download-jupyter
-
-      :download:`Download Jupyter notebook: plot_darcy_flow.ipynb <plot_darcy_flow.ipynb>`
 
 
 .. only:: html
