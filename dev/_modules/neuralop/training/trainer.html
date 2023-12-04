@@ -241,7 +241,9 @@
 
         <span class="k">if</span> <span class="n">eval_losses</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># By default just evaluate on the training loss</span>
             <span class="n">eval_losses</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">l2</span><span class="o">=</span><span class="n">training_loss</span><span class="p">)</span>
-        
+
+        <span class="n">errors</span> <span class="o">=</span> <span class="kc">None</span>
+
         <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_epochs</span><span class="p">):</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
