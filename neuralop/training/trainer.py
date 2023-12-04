@@ -122,7 +122,9 @@ class Trainer:
 
         if eval_losses is None: # By default just evaluate on the training loss
             eval_losses = dict(l2=training_loss)
-        
+
+        errors = None
+
         for epoch in range(self.n_epochs):
 
             if self.callbacks:
