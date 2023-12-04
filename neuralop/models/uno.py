@@ -174,9 +174,9 @@ class UNO(nn.Module):
             for i in range(
                 n_layers // 2,
                 0,
-            ):
+                -1,
+            ):  
                 self.horizontal_skips_map[n_layers - i - 1] = i
-
         # self.uno_scalings may be a 1d list specifying uniform scaling factor at each layer
         # or a 2d list, where each row specifies scaling factors along each dimention.
         # To get the final (end to end) scaling factors we need to multiply
