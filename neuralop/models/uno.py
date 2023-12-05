@@ -172,10 +172,10 @@ class UNO(nn.Module):
         if self.horizontal_skips_map is None:
             self.horizontal_skips_map = {}
             for i in range(
-                n_layers // 2,
                 0,
-                -1,
+                n_layers // 2,
             ):  
+                # example, if n_layers = 5, then 4:0, 3:1
                 self.horizontal_skips_map[n_layers - i - 1] = i
         # self.uno_scalings may be a 1d list specifying uniform scaling factor at each layer
         # or a 2d list, where each row specifies scaling factors along each dimention.
@@ -292,11 +292,6 @@ class UNO(nn.Module):
         cur_output = None
         for layer_idx in range(self.n_layers):
             
-            # this should come first
-            if layer_idx in self.horizontal_skips_map.values():
-                skip_outputs[layer_idx] = self.horizontal_skips[str(layer_idx)](x)
-
-            # this should come second (as key and values might be the same)
             if layer_idx in self.horizontal_skips_map.keys():
                 skip_val = skip_outputs[self.horizontal_skips_map[layer_idx]]
                 output_scaling_factors = [
@@ -311,6 +306,9 @@ class UNO(nn.Module):
             if layer_idx == self.n_layers - 1:
                 cur_output = output_shape
             x = self.fno_blocks[layer_idx](x, output_shape=cur_output)
+
+            if layer_idx in self.horizontal_skips_map.values():
+                skip_outputs[layer_idx] = self.horizontal_skips[str(layer_idx)](x)
 
         if self.domain_padding is not None:
             x = self.domain_padding.unpad(x)
