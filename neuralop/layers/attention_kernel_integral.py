@@ -9,10 +9,10 @@ class AttentionKernelIntegral(torch.nn.Module):
     Kernel integral transform with attention
     Computes \int_{Omega} k(x, y) * f(y) dy,
     where:
-          K(x, y) = \sum_{c=1}^d \q_c(x) * \k_c(y)
+          K(x, y) = \sum_{c=1}^d \q_c(x) * \k_c(y), q(x) = [q_1(x), ..., q_d(x)], k(y) = [k_1(y), ..., k_d(y)]
           f(y) = v(y)
     More specifically, this module supports using just one input function (self-attention) or
-    two input function (cross-attention) to compute the kernel integral transform.
+    two input functions (cross-attention) to compute the kernel integral transform.
 
     1. Self-attention:
         input function u(.), sampling grid D_x = {x_i}_{i=1}^N
