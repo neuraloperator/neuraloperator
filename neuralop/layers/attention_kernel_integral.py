@@ -11,6 +11,23 @@ class AttentionKernelIntegral(torch.nn.Module):
     where:
           K(x, y) = \sum_{c=1}^d \q_c(x) * \k_c(y)
           f(y) = v(y)
+    More specifically, this module supports using just one input function (self-attention) or
+    two input function (cross-attention) to compute the kernel integral transform.
+
+    1. Self-attention:
+        input function u(.), sampling grid D_x = {x_i}_{i=1}^N
+        query function: q(x_i) = a(x_i) W_q
+        key function: k(x_i) = a(x_i) W_k
+        value function: v(x_i) = a(x_i) W_v
+
+    2. Cross-attention:
+        first source of input function u_qry(.), sampling grid D_x = {x_i}_{i=1}^N
+        second source of input function u_src(.), sampling grid D_y = {y_j}_{j=1}^M, D_y can be different from D_x
+        query function: q(x_i) = u_qry(x_i) W_q
+        key function: k(y_j) = u_src(y_j) W_k
+        value function: v(y_j) = u_src(y_j) W_v
+
+    Self-attention can be considered as a special case of cross-attention, where u = u_qry = u_src and D_x = D_y.
 
     Parameters
     ----------
@@ -30,12 +47,9 @@ class AttentionKernelIntegral(torch.nn.Module):
                  out_channels,
                  n_heads,
                  head_n_channels,
-                 pos_dim,
-                 use_positional_encoding=True,    # use positional encoding
                  project_query=True,
                  ):
         super().__init__()
-        self.layers = nn.ModuleList([])
         self.n_heads = n_heads
         self.head_n_channels = head_n_channels
 
@@ -55,14 +69,11 @@ class AttentionKernelIntegral(torch.nn.Module):
         self.to_out = nn.Linear(head_n_channels * n_heads, out_channels) \
             if head_n_channels * n_heads != out_channels else nn.Identity()
 
-        self.use_positional_encoding = use_positional_encoding
-        self.pos_dim = pos_dim
-
         self.init_gain = 1 / math.sqrt(head_n_channels)
         self.diagonal_weight = self.init_gain
         self.initialize_qkv_weights()
 
-    def init_weight(self, weight, inif_fn):
+    def init_weight(self, weight, init_fn):
         """
         Initialization for the projection matrix
         basically initialize the weights for each heads with predefined initialization function and gain,
@@ -75,7 +86,7 @@ class AttentionKernelIntegral(torch.nn.Module):
         for param in weight.parameters():
             if param.ndim > 1:
                 for h in range(self.n_heads):
-                    inif_fn(param[h * self.head_n_channels:(h + 1) * self.head_n_channels, :], gain=self.init_gain)
+                    init_fn(param[h * self.head_n_channels:(h + 1) * self.head_n_channels, :], gain=self.init_gain)
                     if self.head_n_channels == self.channels:
                         diagonal_bias = self.diagonal_weight * torch.diag(torch.ones(param.size(-1), dtype=torch.float32))
                         param.data[h * self.head_n_channels:(h + 1) * self.head_n_channels, :] += diagonal_bias
@@ -106,11 +117,11 @@ class AttentionKernelIntegral(torch.nn.Module):
         return u.view(batch_size, self.n_heads, -1, self.head_n_channels)
 
     def forward(self,
-                u_x,
-                pos_x,
+                u_src,
+                pos_src,
                 positional_embedding_module=None,    # positional encoding module for encoding q/k
-                u_y=None,
-                pos_y=None,
+                u_qry=None,
+                pos_qry=None,
                 weights=None,
                 associative=True,   # can be much faster if num_grid_points is larger than the channel number c
                 return_kernel=False):
@@ -119,82 +130,87 @@ class AttentionKernelIntegral(torch.nn.Module):
 
         Parameters
         ----------
-        u_x: input (query) function of shape [batch_size, num_grid_points, channels]
-        pos_x: coordinate of input function's grid points [batch_size, num_grid_points, pos_dim]
-        positional_embedding_module: positional embedding module for encoding query/key (q/k), a torch.nn.Module
-        u_y: the second source of function (key and value), if not provided, u_y = u_x
-        pos_y: coordinate of the second source of function's grid points, if not provided, assume pos_y = pos_x
-        weights : tensor of shape [batch_size, num_grid_points], if not provided assume to be 1/num_grid_points
-                  Weights for each point y proportional to the
-                  volume around f(y)=u_y W_v being integrated.
+        u_src: input function (used to compute key and value in attention),
+                tensor of shape [batch_size, num_grid_points_src, channels]
+        pos_src: coordinate of the second source of function's sampling points y,
+                tensor of shape [batch_size, num_grid_points_src, pos_dim]
+        positional_embedding_module: positional embedding module for encoding query/key (q/k),
+                a torch.nn.Module
+        u_qry: query function,
+                tensor of shape [batch_size, num_grid_points_query, channels], if not provided, u_qry = u_src
+        pos_qry: coordinate of query points x,
+                tensor of shape [batch_size, num_grid_points_query, pos_dim], if not provided, pos_qry = pos_src
+        weights : tensor of shape [batch_size, num_grid_points_src], if not provided assume to be 1/num_grid_points_src
+                Weights for each point y proportional to the volume around v(y) = u_src(y) W_v being integrated,
+                where W_v is the learnable linear projection for value in attention.
         associative: if True, use associativity of matrix multiplication, first multiply K^T V, then multiply Q,
-                   much faster when num_grid_points is larger than the channel number (which is usually the case)
+                much faster when num_grid_points is larger than the channel number (which is usually the case)
         return_kernel: if True, return the kernel matrix (for analyzing the kernel)
 
         Output
         ----------
-        out_features: Output function given on the points x.
+        u: Output function given on the query points x.
         """
 
-        if u_y is None:
-            u_y = u_x   # go back to self attention
+        if u_qry is None:
+            u_qry = u_src   # go back to self attention
+        else:
+            assert pos_qry is not None, 'query coordinates are required if query function is provided'
 
         if return_kernel and associative:
             raise Exception('Cannot get kernel matrix when associative is set to True')
 
-        batch_size, num_grid_points = u_y.shape[:2]   # batch size and number of grid points
+        batch_size, num_grid_points = u_src.shape[:2]   # batch size and number of grid points
+        pos_dim = pos_src.shape[-1]   # position dimension
 
-        q = self.to_q(u_x)
-        k = self.to_k(u_y)
-        v = self.to_v(u_y)
+        q = self.to_q(u_qry)
+        k = self.to_k(u_src)
+        v = self.to_v(u_src)
         q = q.view(batch_size, -1, self.n_heads, self.head_n_channels).permute(0, 2, 1, 3).contiguous()
         k = k.view(batch_size, -1, self.n_heads, self.head_n_channels).permute(0, 2, 1, 3).contiguous()
         v = v.view(batch_size, -1, self.n_heads, self.head_n_channels).permute(0, 2, 1, 3).contiguous()
 
-        if weights is None:
-            weights = torch.ones((u_y.shape[0], 1, u_y.shape[1], 1), device=u_y.device) / num_grid_points   # uniform weights
-        else:
-            weights = weights.view(batch_size, 1, num_grid_points, 1)
-
-        # q = self.q_norm(q)
         k = self.normalize_wrt_domain(k, self.k_norm)
         v = self.normalize_wrt_domain(v, self.v_norm)
 
         if positional_embedding_module is not None:
-            if self.pos_dim == 2:
-                assert pos_x.shape[-1] == 2
-                q_freqs_x = positional_embedding_module.forward(pos_x[..., 0], q.device)
-                q_freqs_y = positional_embedding_module.forward(pos_x[..., 1], q.device)
-                q_freqs_x = q_freqs_x.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
-                q_freqs_y = q_freqs_y.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
+            if pos_dim == 2:
+                k_freqs_1 = positional_embedding_module.forward(pos_src[..., 0], k.device)
+                k_freqs_2 = positional_embedding_module.forward(pos_src[..., 1], k.device)
+                k_freqs_1 = k_freqs_1.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
+                k_freqs_2 = k_freqs_2.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
 
-                if pos_y is None:
-                    k_freqs_x = q_freqs_x
-                    k_freqs_y = q_freqs_y
+                if pos_qry is None:
+                    q_freqs_1 = k_freqs_1
+                    q_freqs_2 = k_freqs_2
                 else:
-                    k_freqs_x = positional_embedding_module.forward(pos_y[..., 0], k.device)
-                    k_freqs_y = positional_embedding_module.forward(pos_y[..., 1], k.device)
-                    k_freqs_x = k_freqs_x.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
-                    k_freqs_y = k_freqs_y.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
+                    q_freqs_1 = positional_embedding_module.forward(pos_qry[..., 0], q.device)
+                    q_freqs_2 = positional_embedding_module.forward(pos_qry[..., 1], q.device)
+                    q_freqs_1 = q_freqs_1.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
+                    q_freqs_2 = q_freqs_2.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
 
-                q = positional_embedding_module.apply_2d_rotary_positional_embedding_module(q, q_freqs_x, q_freqs_y)
-                k = positional_embedding_module.apply_2d_rotary_positional_embedding_module(k, k_freqs_x, k_freqs_y)
-            elif self.pos_dim == 1:
-                assert pos_x.shape[-1] == 1
+                q = positional_embedding_module.apply_2d_rotary_positional_embedding_module(q, q_freqs_1, q_freqs_2)
+                k = positional_embedding_module.apply_2d_rotary_positional_embedding_module(k, k_freqs_1, k_freqs_2)
+            elif pos_dim == 1:
 
-                q_freqs = positional_embedding_module.forward(pos_x[..., 0], q.device)
-                q_freqs = q_freqs.unsqueeze(1).repeat([batch_size, self.n_heads, 1, 1])
+                k_freqs = positional_embedding_module.forward(pos_src[..., 0], k.device)
+                k_freqs = k_freqs.unsqueeze(1).repeat([batch_size, self.n_heads, 1, 1])
 
-                if pos_y is None:
-                    k_freqs = q_freqs
+                if pos_qry is None:
+                    q_freqs = k_freqs
                 else:
-                    k_freqs = positional_embedding_module.forward(pos_y[..., 0], k.device)
-                    k_freqs = k_freqs.unsqueeze(1).repeat([batch_size, self.n_heads, 1, 1])
+                    q_freqs = positional_embedding_module.forward(pos_qry[..., 0], q.device)
+                    q_freqs = q_freqs.unsqueeze(1).repeat([batch_size, self.n_heads, 1, 1])
 
                 q = positional_embedding_module.apply_rotary_pos_emb(q, q_freqs)
                 k = positional_embedding_module.apply_rotary_pos_emb(k, k_freqs)
             else:
                 raise Exception('Currently doesnt support relative embedding >= 3 dimensions')
+
+        if weights is not None:
+            weights = weights.view(batch_size, 1, num_grid_points, 1)
+        else:
+            weights = 1.0 / num_grid_points
 
         if associative:
             dots = torch.matmul(k.transpose(-1, -2), v)
