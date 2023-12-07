@@ -307,8 +307,6 @@ class UNO(nn.Module):
                 cur_output = output_shape
             x = self.fno_blocks[layer_idx](x, output_shape=cur_output)
 
-            print("layer", layer_idx, x.shape)
-
             if layer_idx in self.horizontal_skips_map.values():
                 skip_outputs[layer_idx] = self.horizontal_skips[str(layer_idx)](x)
 
