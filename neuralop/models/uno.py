@@ -239,7 +239,7 @@ class UNO(nn.Module):
                     use_mlp=use_mlp,
                     mlp_dropout=mlp_dropout,
                     mlp_expansion=mlp_expansion,
-                    output_scaling_factor=[self.uno_scalings[i]],
+                    output_scaling_factor=self.uno_scalings[i],
                     non_linearity=non_linearity,
                     norm=norm,
                     preactivation=preactivation,
@@ -307,11 +307,15 @@ class UNO(nn.Module):
                 cur_output = output_shape
             x = self.fno_blocks[layer_idx](x, output_shape=cur_output)
 
+            print("layer", layer_idx, x.shape)
+
             if layer_idx in self.horizontal_skips_map.values():
                 skip_outputs[layer_idx] = self.horizontal_skips[str(layer_idx)](x)
 
+
         if self.domain_padding is not None:
             x = self.domain_padding.unpad(x)
+        
 
         x = self.projection(x)
         return x
