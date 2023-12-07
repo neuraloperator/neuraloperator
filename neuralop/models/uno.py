@@ -239,7 +239,7 @@ class UNO(nn.Module):
                     use_mlp=use_mlp,
                     mlp_dropout=mlp_dropout,
                     mlp_expansion=mlp_expansion,
-                    output_scaling_factor=self.uno_scalings[i],
+                    output_scaling_factor=[self.uno_scalings[i]],
                     non_linearity=non_linearity,
                     norm=norm,
                     preactivation=preactivation,
