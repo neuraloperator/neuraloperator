@@ -1,5 +1,6 @@
 import os
-import pytest
+import shutil
+
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
@@ -68,8 +69,10 @@ def test_model_checkpoint_saves():
                   eval_losses=None,
                   )
     
-    assert sorted(os.listdir('./checkpoints')) == sorted(['model_state_dict.pt', 'model_metadata.pkl', 'optimizer.pt', 'scheduler.pt'])
+    assert sorted(os.listdir('./test_checkpoints')) == sorted(['model_state_dict.pt', 'model_metadata.pkl', 'optimizer.pt', 'scheduler.pt'])
 
+    # clean up dummy checkpoint directory after testing
+    shutil.rmtree('./test_checkpoints')
 
 def test_model_checkpoint_and_resume():
     model = DummyModel(50)
@@ -127,6 +130,9 @@ def test_model_checkpoint_and_resume():
                   eval_losses=eval_losses,
                   )
     
+    # clean up dummy checkpoint directory after testing
+    shutil.rmtree('./full_states')
+
     
 # ensure that model accuracy after loading from checkpoint
 # is comparable to accuracy at time of save
@@ -177,4 +183,7 @@ def test_load_from_checkpoint():
 
     # log prefix is empty except for default underscore
     assert orig_model_eval_errors['_h1'] - loaded_model_eval_errors['_h1'] < 0.1
+
+    # clean up dummy checkpoint directory after testing
+    shutil.rmtree('./full_states')
     
