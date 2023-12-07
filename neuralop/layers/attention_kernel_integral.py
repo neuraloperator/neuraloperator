@@ -9,7 +9,7 @@ class AttentionKernelIntegral(torch.nn.Module):
     Kernel integral transform with attention
     Computes \int_{Omega} k(x, y) * f(y) dy,
     where:
-          K(x, y) = \sum_{c=1}^d \q_c(x) * \k_c(y), q(x) = [q_1(x), ..., q_d(x)], k(y) = [k_1(y), ..., k_d(y)]
+          K(x, y) = \sum_{c=1}^d q_c(x) * k_c(y), q(x) = [q_1(x); ...; q_d(x)], k(y) = [k_1(y); ...; k_d(y)]
           f(y) = v(y)
     More specifically, this module supports using just one input function (self-attention) or
     two input functions (cross-attention) to compute the kernel integral transform.
@@ -21,8 +21,8 @@ class AttentionKernelIntegral(torch.nn.Module):
         value function: v(x_i) = a(x_i) W_v
 
     2. Cross-attention:
-        first source of input function u_qry(.), sampling grid D_x = {x_i}_{i=1}^N
-        second source of input function u_src(.), sampling grid D_y = {y_j}_{j=1}^M, D_y can be different from D_x
+        first input function u_qry(.), sampling grid D_x = {x_i}_{i=1}^N
+        second input function u_src(.), sampling grid D_y = {y_j}_{j=1}^M, D_y can be different from D_x
         query function: q(x_i) = u_qry(x_i) W_q
         key function: k(y_j) = u_src(y_j) W_k
         value function: v(y_j) = u_src(y_j) W_v
