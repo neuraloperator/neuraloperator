@@ -209,8 +209,8 @@ class AttentionKernelIntegral(torch.nn.Module):
                     q_freqs = positional_embedding_module.forward(pos_qry[..., 0], q.device)
                     q_freqs = q_freqs.unsqueeze(1).repeat([batch_size, self.n_heads, 1, 1])
 
-                q = positional_embedding_module.apply_rotary_pos_emb(q, q_freqs)
-                k = positional_embedding_module.apply_rotary_pos_emb(k, k_freqs)
+                q = positional_embedding_module.apply_1d_rotary_pos_emb(q, q_freqs)
+                k = positional_embedding_module.apply_1d_rotary_pos_emb(k, k_freqs)
             else:
                 raise ValueError('Currently doesnt support relative embedding >= 3 dimensions')
 
