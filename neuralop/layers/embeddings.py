@@ -66,7 +66,7 @@ class RotaryEmbedding(nn.Module):
 
     @staticmethod
     def apply_2d_rotary_pos_emb(t, freqs_x, freqs_y):
-        """Split the last dimension of coordinates into two equal halves
+        """Split the last dimension of features into two equal halves
            and apply 1d rotary positional embedding to each half."""
         d = t.shape[-1]
         t_x, t_y = t[..., :d//2], t[..., d//2:]
