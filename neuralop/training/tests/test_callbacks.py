@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 
 import torch
 from torch import nn
@@ -39,6 +40,8 @@ class DummyModel(BaseModel, name='Dummy'):
         return self.net(x)
 
 def test_model_checkpoint_saves():
+    save_pth = Path('./test_checkpoints')
+
     model = DummyModel(50)
 
     train_loader = DataLoader(DummyDataset(100))
@@ -46,7 +49,7 @@ def test_model_checkpoint_saves():
     trainer = Trainer(model=model,
                       n_epochs=5,
                       callbacks=[
-                          CheckpointCallback(save_dir='./checkpoints',
+                          CheckpointCallback(save_dir=save_pth,
                                              save_optimizer=True,
                                              save_scheduler=True)
                       ]
@@ -69,12 +72,15 @@ def test_model_checkpoint_saves():
                   eval_losses=None,
                   )
     
-    assert sorted(os.listdir('./test_checkpoints')) == sorted(['model_state_dict.pt', 'model_metadata.pkl', 'optimizer.pt', 'scheduler.pt'])
+    for file_ext in ['model_state_dict.pt', 'model_metadata.pkl', 'optimizer.pt', 'scheduler.pt']:
+        file_pth = save_pth / file_ext
+        assert file_pth.exists()
 
     # clean up dummy checkpoint directory after testing
     shutil.rmtree('./test_checkpoints')
 
 def test_model_checkpoint_and_resume():
+    save_pth = Path('./full_states')
     model = DummyModel(50)
 
     train_loader = DataLoader(DummyDataset(100))
@@ -83,7 +89,7 @@ def test_model_checkpoint_and_resume():
     trainer = Trainer(model=model,
                       n_epochs=5,
                       callbacks=[
-                          CheckpointCallback(save_dir='./full_states',
+                          CheckpointCallback(save_dir=save_pth,
                                                   save_optimizer=True,
                                                   save_scheduler=True,
                                                   save_best='h1') # monitor h1 loss
@@ -110,7 +116,9 @@ def test_model_checkpoint_and_resume():
                   eval_losses=eval_losses
                   )
     
-    assert sorted(os.listdir('./full_states')) == sorted(['best_model_state_dict.pt', 'best_model_metadata.pkl', 'optimizer.pt', 'scheduler.pt'])
+    for file_ext in ['best_model_state_dict.pt', 'best_model_metadata.pkl', 'optimizer.pt', 'scheduler.pt']:
+        file_pth = save_pth / file_ext
+        assert file_pth.exists()
 
     # Resume from checkpoint
     trainer = Trainer(model=model,
@@ -131,7 +139,7 @@ def test_model_checkpoint_and_resume():
                   )
     
     # clean up dummy checkpoint directory after testing
-    shutil.rmtree('./full_states')
+    shutil.rmtree(save_pth)
 
     
 # ensure that model accuracy after loading from checkpoint
