@@ -85,7 +85,7 @@ Loading the Darcy Flow dataset
 
     Loading test db at resolution 32 with 50 samples and batch-size=32
 
-    Our model has 2033089 parameters.
+    Our model has 2665921 parameters.
 
 
 
@@ -187,7 +187,7 @@ Creating the losses
             (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
           )
         )
-        (2-3): 2 x FNOBlocks(
+        (2): FNOBlocks(
           (convs): SpectralConv(
             (weight): ModuleList(
               (0): ComplexDenseTensor(shape=torch.Size([64, 64, 8, 5]), rank=None)
@@ -197,18 +197,31 @@ Creating the losses
             (0): Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
           )
         )
-        (4): FNOBlocks(
+        (3): FNOBlocks(
           (convs): SpectralConv(
             (weight): ModuleList(
-              (0): ComplexDenseTensor(shape=torch.Size([64, 32, 16, 9]), rank=None)
+              (0): ComplexDenseTensor(shape=torch.Size([128, 64, 8, 5]), rank=None)
             )
           )
           (fno_skips): ModuleList(
-            (0): Conv2d(64, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (0): Conv2d(128, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          )
+        )
+        (4): FNOBlocks(
+          (convs): SpectralConv(
+            (weight): ModuleList(
+              (0): ComplexDenseTensor(shape=torch.Size([96, 32, 16, 9]), rank=None)
+            )
+          )
+          (fno_skips): ModuleList(
+            (0): Conv2d(96, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
           )
         )
       )
-      (horizontal_skips): ModuleDict()
+      (horizontal_skips): ModuleDict(
+        (0): Conv2d(32, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      )
       (projection): MLP(
         (fcs): ModuleList(
           (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1))
@@ -234,13 +247,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7efd8b53ebe0>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fb9aba70a60>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7efd8b53ed90>
+     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7fb9aba709d0>
 
-     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7efd8b53ed90>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7efd8b53e460>}
+     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7fb9aba709d0>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fb9aba70c40>}
 
 
 
@@ -304,7 +317,7 @@ Actually train the model on our small Darcy-Flow dataset
  .. code-block:: none
 
 
-    {'32_h1': 1.0935259246826172, '32_l2': 1.1464350509643555}
+    {'32_h1': 0.8505846786499024, '32_l2': 0.8828242683410644}
 
 
 
@@ -378,7 +391,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 31.002 seconds)
+   **Total running time of the script:** (1 minutes 58.253 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_UNO_darcy.py:

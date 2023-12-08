@@ -289,11 +289,11 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span>
-                <span class="n">n_layers</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span>
                 <span class="mi">0</span><span class="p">,</span>
-            <span class="p">):</span>
+                <span class="n">n_layers</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="p">):</span>  
+                <span class="c1"># example, if n_layers = 5, then 4:0, 3:1</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span><span class="p">[</span><span class="n">n_layers</span> <span class="o">-</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
-
         <span class="c1"># self.uno_scalings may be a 1d list specifying uniform scaling factor at each layer</span>
         <span class="c1"># or a 2d list, where each row specifies scaling factors along each dimention.</span>
         <span class="c1"># To get the final (end to end) scaling factors we need to multiply</span>
@@ -410,6 +410,7 @@
         <span class="n">skip_outputs</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">cur_output</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">for</span> <span class="n">layer_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">):</span>
+            
             <span class="k">if</span> <span class="n">layer_idx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
                 <span class="n">skip_val</span> <span class="o">=</span> <span class="n">skip_outputs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span><span class="p">[</span><span class="n">layer_idx</span><span class="p">]]</span>
                 <span class="n">output_scaling_factors</span> <span class="o">=</span> <span class="p">[</span>
@@ -428,8 +429,10 @@
             <span class="k">if</span> <span class="n">layer_idx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
                 <span class="n">skip_outputs</span><span class="p">[</span><span class="n">layer_idx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">layer_idx</span><span class="p">)](</span><span class="n">x</span><span class="p">)</span>
 
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span><span class="o">.</span><span class="n">unpad</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        
 
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">x</span></div>

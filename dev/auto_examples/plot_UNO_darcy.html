@@ -203,7 +203,7 @@ the small Darcy-Flow example we ship with the package</p>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Loading test db at resolution 32 with 50 samples and batch-size=32
 
-Our model has 2033089 parameters.
+Our model has 2665921 parameters.
 </pre></div>
 </div>
 <p>Create the optimizer</p>
@@ -260,7 +260,7 @@ Our model has 2033089 parameters.
         (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
       )
     )
-    (2-3): 2 x FNOBlocks(
+    (2): FNOBlocks(
       (convs): SpectralConv(
         (weight): ModuleList(
           (0): ComplexDenseTensor(shape=torch.Size([64, 64, 8, 5]), rank=None)
@@ -270,18 +270,31 @@ Our model has 2033089 parameters.
         (0): Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
       )
     )
-    (4): FNOBlocks(
+    (3): FNOBlocks(
       (convs): SpectralConv(
         (weight): ModuleList(
-          (0): ComplexDenseTensor(shape=torch.Size([64, 32, 16, 9]), rank=None)
+          (0): ComplexDenseTensor(shape=torch.Size([128, 64, 8, 5]), rank=None)
         )
       )
       (fno_skips): ModuleList(
-        (0): Conv2d(64, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (0): Conv2d(128, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      )
+    )
+    (4): FNOBlocks(
+      (convs): SpectralConv(
+        (weight): ModuleList(
+          (0): ComplexDenseTensor(shape=torch.Size([96, 32, 16, 9]), rank=None)
+        )
+      )
+      (fno_skips): ModuleList(
+        (0): Conv2d(96, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
       )
     )
   )
-  (horizontal_skips): ModuleDict()
+  (horizontal_skips): ModuleDict(
+    (0): Conv2d(32, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+    (1): Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+  )
   (projection): MLP(
     (fcs): ModuleList(
       (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1))
@@ -307,13 +320,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7efd8b53ebe0&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fb9aba70a60&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7efd8b53ed90&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fb9aba709d0&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7efd8b53ed90&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7efd8b53e460&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fb9aba709d0&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fb9aba70c40&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -341,7 +354,7 @@ self.overrides_loss=False
               <span class="n">eval_losses</span><span class="o">=</span><span class="n">eval_losses</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{&#39;32_h1&#39;: 1.0935259246826172, &#39;32_l2&#39;: 1.1464350509643555}
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{&#39;32_h1&#39;: 0.8505846786499024, &#39;32_l2&#39;: 0.8828242683410644}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -391,7 +404,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 31.002 seconds)</p>
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 58.253 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/ecc34f03fb30bee651bda959149422c4/plot_UNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_UNO_darcy.ipynb</span></code></a></p>
