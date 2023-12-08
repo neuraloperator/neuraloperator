@@ -16,9 +16,9 @@ class AttentionKernelIntegral(torch.nn.Module):
 
     1. Self-attention:
         input function u(.), sampling grid D_x = {x_i}_{i=1}^N
-        query function: q(x_i) = a(x_i) W_q
-        key function: k(x_i) = a(x_i) W_k
-        value function: v(x_i) = a(x_i) W_v
+        query function: q(x_i) = u(x_i) W_q
+        key function: k(x_i) = u(x_i) W_k
+        value function: v(x_i) = u(x_i) W_v
 
     2. Cross-attention:
         first input function u_qry(.), sampling grid D_x = {x_i}_{i=1}^N
@@ -28,6 +28,11 @@ class AttentionKernelIntegral(torch.nn.Module):
         value function: v(y_j) = u_src(y_j) W_v
 
     Self-attention can be considered as a special case of cross-attention, where u = u_qry = u_src and D_x = D_y.
+
+    The kernel integral transform will be numerically computed as:
+        \int_{Omega} k(x, y) * f(y) dy \appox \sum_{j=1}^M * k(x, y_j) * f(y_j) * w(y_j)
+    For uniform quadrature, the weights w(y_j) = 1/M.
+    For non-uniform quadrature, the weights w(y_j) is specified as an input to the forward function.
 
     Parameters
     ----------
@@ -140,9 +145,8 @@ class AttentionKernelIntegral(torch.nn.Module):
                 tensor of shape [batch_size, num_grid_points_query, channels], if not provided, u_qry = u_src
         pos_qry: coordinate of query points x,
                 tensor of shape [batch_size, num_grid_points_query, pos_dim], if not provided, pos_qry = pos_src
-        weights : tensor of shape [batch_size, num_grid_points_src], if not provided assume to be 1/num_grid_points_src
-                Weights for each point y proportional to the volume around v(y) = u_src(y) W_v being integrated,
-                where W_v is the learnable linear projection for value in attention.
+        weights : quadrature weight w(y_j) for the kernel integral: u(x_i) = sum_{j} k(x_i, y_j) f(y_i) w(y_j),
+                tensor of shape [batch_size, num_grid_points_src], if not provided assume to be 1/num_grid_points_src
         associative: if True, use associativity of matrix multiplication, first multiply K^T V, then multiply Q,
                 much faster when num_grid_points is larger than the channel number (which is usually the case)
         return_kernel: if True, return the kernel matrix (for analyzing the kernel)
@@ -154,11 +158,14 @@ class AttentionKernelIntegral(torch.nn.Module):
 
         if u_qry is None:
             u_qry = u_src   # go back to self attention
+            if pos_qry is not None:
+                raise ValueError('Query coordinates are provided but query function is not provided')
         else:
-            assert pos_qry is not None, 'query coordinates are required if query function is provided'
+            if pos_qry is None:
+                raise ValueError('Query coordinates are required if query function is provided')
 
         if return_kernel and associative:
-            raise Exception('Cannot get kernel matrix when associative is set to True')
+            raise ValueError('Cannot get kernel matrix when associative is set to True')
 
         batch_size, num_grid_points = u_src.shape[:2]   # batch size and number of grid points
         pos_dim = pos_src.shape[-1]   # position dimension
@@ -205,7 +212,7 @@ class AttentionKernelIntegral(torch.nn.Module):
                 q = positional_embedding_module.apply_rotary_pos_emb(q, q_freqs)
                 k = positional_embedding_module.apply_rotary_pos_emb(k, k_freqs)
             else:
-                raise Exception('Currently doesnt support relative embedding >= 3 dimensions')
+                raise ValueError('Currently doesnt support relative embedding >= 3 dimensions')
 
         if weights is not None:
             weights = weights.view(batch_size, 1, num_grid_points, 1)
