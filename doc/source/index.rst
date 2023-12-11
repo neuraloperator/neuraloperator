@@ -86,7 +86,7 @@ To import the data:
 Similar to the API provided by ``torchvision``, this dataset includes training and test data for use in standard PyTorch training loops,
 as well as a ``preprocessor`` object that automates the transforms to convert the data into the form best understood by the model. 
 
-We provide a ``Trainer`` object that automates the logic of a basic neural operator training loop to speed up experimentation (see :doc: `training` for more information).
+We provide a ``Trainer`` object that automates the logic of a basic neural operator training loop to speed up experimentation (see :doc: `auto_examples` for more information).
 
 .. code-block:: python
    from neuralop.training import Trainer
