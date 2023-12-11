@@ -44,17 +44,85 @@ so your trained operator can be applied on data of any resolution.
 Quickstart
 ==========
 
-Just import install neural operator and import a FNO to get started!
+This guide will walk you through the standard ML workflow of loading data, creating a neural operator, training it on your data and saving the trained model for later use.
 
 First install the library ``pip install neuraloperator`` (see :doc:`install` for more options).
 
+To create a Fourier Neural Operator model:
+
 
 .. code-block:: python
-
    from neuralop.models import FNO
 
    operator = FNO(n_modes=(16, 16), hidden_channels=64,
                    in_channels=3, out_channels=1)
+
+``neuraloperator`` comes prepackaged with an example dataset of flows governed by the Darcy flow equation. 
+
+To import the data:
+
+.. code-block:: python
+   import torch
+   from neuralop.datasets import load_darcy_flow_small
+
+   train_loader, test_loaders, data_processor = load_darcy_flow_small(
+        n_train=1000, batch_size=32, 
+        test_resolutions=[32], n_tests=[100],
+        test_batch_sizes=[32],
+        positional_encoding=True
+)
+
+Similar to the API provided by ``torchvision``, this dataset includes training and test data for use in standard PyTorch training loops,
+as well as a ``preprocessor`` object that automates the transforms to convert the data into the form best understood by the model. 
+
+Before we train the model, we need training and evaluation objectives, an optimizer and a learning-rate scheduler:
+
+.. code-block:: python
+   l2loss = LpLoss(d=2, p=2) # absolute L2 loss
+   h1loss = H1Loss(d=2) # 2d Hinge loss w/parameter 1
+
+   train_loss = h1loss
+   eval_losses={'h1': h1loss, 'l2': l2loss} 
+
+   optimizer = torch.optim.Adam(model.parameters(), 
+                                lr=8e-3, 
+                                weight_decay=1e-4)
+   scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
+
+)
+
+We provide a ``Trainer`` object that automates the logic of a basic neural operator training loop to speed up experimentation (see :doc: `training` for more information).
+
+.. code-block:: python
+   from neuralop.training import Trainer
+
+   # Create the trainer
+   trainer = Trainer(model=model, n_epochs=20,
+                     data_processor=data_processor,
+                     wandb_log=False,
+                     log_test_interval=3,
+                     use_distributed=False,
+                     verbose=True)
+
+   # train the model
+   trainer.train(train_loader=train_loader,
+              test_loaders=test_loaders,
+              optimizer=optimizer,
+              scheduler=scheduler, 
+              regularizer=False, 
+              training_loss=train_loss,
+              eval_losses=eval_losses)
+
+After training, to save the weights of the trained model:
+
+.. code-block:: python
+   model.save_checkpoint(save_folder='./checkpoints/', save_name='example_fno')
+
+And to load the weights later:
+
+.. code-block:: python
+   from neuralop.models import FNO
+   model = FNO.from_checkpoint(save_folder='./checkpoints/', save_name='example_fno')
 
 Tensorization is also provided out of the box: you can improve the previous models
 by simply using a Tucker Tensorized FNO with just a few parameters:
