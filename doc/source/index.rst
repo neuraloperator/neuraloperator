@@ -57,6 +57,17 @@ To create a Fourier Neural Operator model:
    operator = FNO(n_modes=(16, 16), hidden_channels=64,
                    in_channels=3, out_channels=1)
 
+To save the weights of the trained model:
+
+.. code-block:: python
+   model.save_checkpoint(save_folder='./checkpoints/', save_name='example_fno')
+
+And to load the weights later:
+
+.. code-block:: python
+   from neuralop.models import FNO
+   model = FNO.from_checkpoint(save_folder='./checkpoints/', save_name='example_fno')
+
 ``neuraloperator`` comes prepackaged with an example dataset of flows governed by the Darcy flow equation. 
 
 To import the data:
@@ -74,22 +85,6 @@ To import the data:
 
 Similar to the API provided by ``torchvision``, this dataset includes training and test data for use in standard PyTorch training loops,
 as well as a ``preprocessor`` object that automates the transforms to convert the data into the form best understood by the model. 
-
-Before we train the model, we need training and evaluation objectives, an optimizer and a learning-rate scheduler:
-
-.. code-block:: python
-   l2loss = LpLoss(d=2, p=2) # absolute L2 loss
-   h1loss = H1Loss(d=2) # 2d Hinge loss w/parameter 1
-
-   train_loss = h1loss
-   eval_losses={'h1': h1loss, 'l2': l2loss} 
-
-   optimizer = torch.optim.Adam(model.parameters(), 
-                                lr=8e-3, 
-                                weight_decay=1e-4)
-   scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
-
-)
 
 We provide a ``Trainer`` object that automates the logic of a basic neural operator training loop to speed up experimentation (see :doc: `training` for more information).
 
@@ -112,17 +107,6 @@ We provide a ``Trainer`` object that automates the logic of a basic neural opera
               regularizer=False, 
               training_loss=train_loss,
               eval_losses=eval_losses)
-
-After training, to save the weights of the trained model:
-
-.. code-block:: python
-   model.save_checkpoint(save_folder='./checkpoints/', save_name='example_fno')
-
-And to load the weights later:
-
-.. code-block:: python
-   from neuralop.models import FNO
-   model = FNO.from_checkpoint(save_folder='./checkpoints/', save_name='example_fno')
 
 Tensorization is also provided out of the box: you can improve the previous models
 by simply using a Tucker Tensorized FNO with just a few parameters:
