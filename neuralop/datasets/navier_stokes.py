@@ -1,70 +1,70 @@
 import torch
 from pathlib import Path
-from torchvision import transforms
 
 from .output_encoder import UnitGaussianNormalizer
-from .hdf5_dataset import H5pyDataset
 from .tensor_dataset import TensorDataset
-from .transforms import Normalizer, PositionalEmbedding2D
+from .transforms import PositionalEmbedding2D
 from .data_transforms import DefaultDataProcessor
 
-def load_navier_stokes_hdf5(data_path, n_train, batch_size,
-                            train_resolution=128,
-                            test_resolutions=[128, 256, 512, 1024],
-                            n_tests=[2000, 500, 500, 500],
-                            test_batch_sizes=[8, 4, 1],
-                            positional_encoding=True,
-                            grid_boundaries=[[0,1],[0,1]],
-                            encode_input=True,
-                            encode_output=True,
-                            num_workers=0, pin_memory=True, persistent_workers=False):
-    data_path = Path(data_path)
+# from .hdf5_dataset import H5pyDataset
 
-    training_db = H5pyDataset(data_path / 'navier_stokes_1024_train.hdf5', n_samples=n_train, resolution=train_resolution)
-    in_normalizer = None
-    out_normalizer = None
-    pos_encoding = None
+# def load_navier_stokes_hdf5(data_path, n_train, batch_size,
+#                             train_resolution=128,
+#                             test_resolutions=[128, 256, 512, 1024],
+#                             n_tests=[2000, 500, 500, 500],
+#                             test_batch_sizes=[8, 4, 1],
+#                             positional_encoding=True,
+#                             grid_boundaries=[[0,1],[0,1]],
+#                             encode_input=True,
+#                             encode_output=True,
+#                             num_workers=0, pin_memory=True, persistent_workers=False):
+#     data_path = Path(data_path)
 
-    if encode_input:
-        x_mean = training_db._attribute('x', 'mean')
-        x_std = training_db._attribute('x', 'std')
+#     training_db = H5pyDataset(data_path / 'navier_stokes_1024_train.hdf5', n_samples=n_train, resolution=train_resolution)
+#     in_normalizer = None
+#     out_normalizer = None
+#     pos_encoding = None
+
+#     if encode_input:
+#         x_mean = training_db._attribute('x', 'mean')
+#         x_std = training_db._attribute('x', 'std')
         
-        in_normalizer = Normalizer(x_mean, x_std)
+#         in_normalizer = Normalizer(x_mean, x_std)
     
-    if positional_encoding:
-        pos_encoding = PositionalEmbedding2D(grid_boundaries)
+#     if positional_encoding:
+#         pos_encoding = PositionalEmbedding2D(grid_boundaries)
     
-    if encode_output:
-        y_mean = training_db._attribute('y', 'mean')
-        y_std = training_db._attribute('y', 'std')
+#     if encode_output:
+#         y_mean = training_db._attribute('y', 'mean')
+#         y_std = training_db._attribute('y', 'std')
         
-        out_normalizer = Normalizer(y_mean, y_std)
+#         out_normalizer = Normalizer(y_mean, y_std)
 
-    data_processor = DefaultDataProcessor(in_normalizer=in_normalizer,
-                                          out_normalizer=out_normalizer,
-                                          positional_encoding=pos_encoding)
+#     data_processor = DefaultDataProcessor(in_normalizer=in_normalizer,
+#                                           out_normalizer=out_normalizer,
+#                                           positional_encoding=pos_encoding)
     
-    train_loader = torch.utils.data.DataLoader(training_db,
-                                               batch_size=batch_size, 
-                                               shuffle=True,
-                                               num_workers=num_workers,
-                                               pin_memory=pin_memory,
-                                               persistent_workers=persistent_workers)
+#     train_loader = torch.utils.data.DataLoader(training_db,
+#                                                batch_size=batch_size, 
+#                                                shuffle=True,
+#                                                num_workers=num_workers,
+#                                                pin_memory=pin_memory,
+#                                                persistent_workers=persistent_workers)
 
-    test_loaders = dict()
-    for (res, n_test, test_batch_size) in zip(test_resolutions, n_tests, test_batch_sizes):
-        print(f'Loading test db at resolution {res} with {n_test} samples and batch-size={test_batch_size}')
+#     test_loaders = dict()
+#     for (res, n_test, test_batch_size) in zip(test_resolutions, n_tests, test_batch_sizes):
+#         print(f'Loading test db at resolution {res} with {n_test} samples and batch-size={test_batch_size}')
 
-        test_db = H5pyDataset(data_path / 'navier_stokes_1024_test.hdf5', n_samples=n_test, resolution=res)
+#         test_db = H5pyDataset(data_path / 'navier_stokes_1024_test.hdf5', n_samples=n_test, resolution=res)
     
-        test_loaders[res] = torch.utils.data.DataLoader(test_db, 
-                                                        batch_size=test_batch_size,
-                                                        shuffle=False,
-                                                        num_workers=num_workers, 
-                                                        pin_memory=pin_memory, 
-                                                        persistent_workers=persistent_workers)
+#         test_loaders[res] = torch.utils.data.DataLoader(test_db, 
+#                                                         batch_size=test_batch_size,
+#                                                         shuffle=False,
+#                                                         num_workers=num_workers, 
+#                                                         pin_memory=pin_memory, 
+#                                                         persistent_workers=persistent_workers)
 
-    return train_loader, test_loaders, data_processor
+#     return train_loader, test_loaders, data_processor
 
 
 def load_navier_stokes_pt(data_path, train_resolution,
