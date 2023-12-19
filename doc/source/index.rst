@@ -56,7 +56,7 @@ First install the library ``pip install neuraloperator`` (see :doc:`install` for
    operator = FNO(n_modes=(16, 16), hidden_channels=64,
                    in_channels=3, out_channels=1)
 
-Tensorization is also provided out of the box: you can improve the previous models
+Tensorization (Read more here at `Tensorly https://tensorly.org/stable/index.html`) is also provided out of the box: you can improve the previous models
 by simply using a Tucker Tensorized FNO with just a few parameters:
 
 .. code-block:: python

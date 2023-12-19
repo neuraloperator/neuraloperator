@@ -7,9 +7,7 @@ This page (which takes about 10 minutes to read), introduces the Fourier neural 
 It the first work that can learn resolution-invariant solution operators on Navier-Stokes equation,
 achieving state-of-the-art accuracy among all existing deep learning methods and
 up to 1000x faster than traditional solvers.
-Also check out the paper https://arxiv.org/abs/2010.08895 and article
-https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/
-
+Also check out the paper [1]_ and article [2]_.
 
 Operator learning
 =================
@@ -401,3 +399,6 @@ References
 .. [1] Fourier Neural Operator for Parametric Partial Differential Equations,
        Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli 
        and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar, 2020.
+
+.. [2] Hao, K. (2021, October 20). Ai has cracked a key mathematical puzzle for understanding our world. 
+       MIT Technology Review. https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/
