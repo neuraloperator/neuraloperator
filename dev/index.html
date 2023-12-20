@@ -129,14 +129,17 @@ provides all of the tools to do so on your own data.</p>
 so your trained operator can be applied on data of any resolution.</p>
 <section id="quickstart">
 <h1>Quickstart<a class="headerlink" href="#quickstart" title="Link to this heading"></a></h1>
-<p>Just import install neural operator and import a FNO to get started!</p>
+<p>This guide will walk you through the standard ML workflow of loading data, creating a neural operator, training it on your data and saving the trained model for later use.</p>
 <p>First install the library <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">neuraloperator</span></code> (see <a class="reference internal" href="install.html"><span class="doc">Installing NeuralOperator</span></a> for more options).</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">FNO</span>
-
-<span class="n">operator</span> <span class="o">=</span> <span class="n">FNO</span><span class="p">(</span><span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
-                <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-</pre></div>
-</div>
+<p>To create a Fourier Neural Operator model:</p>
+<p>To save the weights of the trained model:</p>
+<p>And to load the weights later:</p>
+<p><code class="docutils literal notranslate"><span class="pre">neuraloperator</span></code> comes prepackaged with an example dataset of flows governed by the Darcy flow equation.</p>
+<p>To import the data:</p>
+<p>)</p>
+<p>Similar to the API provided by <code class="docutils literal notranslate"><span class="pre">torchvision</span></code>, this dataset includes training and test data for use in standard PyTorch training loops,
+as well as a <code class="docutils literal notranslate"><span class="pre">preprocessor</span></code> object that automates the transforms to convert the data into the form best understood by the model.</p>
+<p>We provide a <code class="docutils literal notranslate"><span class="pre">Trainer</span></code> object that automates the logic of a basic neural operator training loop to speed up experimentation (see :doc: <cite>auto_examples</cite> for more information).</p>
 <p>Tensorization is also provided out of the box: you can improve the previous models
 by simply using a Tucker Tensorized FNO with just a few parameters:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">TFNO</span>
