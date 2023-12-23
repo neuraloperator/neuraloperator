@@ -20,7 +20,9 @@ class Trainer:
                  log_test_interval=1, 
                  log_output=False, 
                  use_distributed=False, 
-                 verbose=False):
+                 verbose=False, 
+                 incremental_resolution=False
+                 ):
         """
         A general Trainer class to train neural-operators on given datasets
 
@@ -79,7 +81,9 @@ class Trainer:
         self.device = device
         self.amp_autocast = amp_autocast
         self.data_processor = data_processor
-
+        
+        self.incremental_resolution = incremental_resolution
+        
         if self.callbacks:
             self.callbacks.on_init_end(model=model, 
                  n_epochs=n_epochs, 

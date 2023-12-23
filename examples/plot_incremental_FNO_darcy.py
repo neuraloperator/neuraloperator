@@ -13,8 +13,9 @@ import sys
 from neuralop.models import FNO
 from neuralop import Trainer
 from neuralop.datasets import load_darcy_flow_small
-from neuralop.utils import count_params
+from neuralop.utils import count_model_params
 from neuralop.training import OutputEncoderCallback, SimpleWandBLoggerCallback, IncrementalCallback
+from neuralop.datasets import data_transforms
 from neuralop import LpLoss, H1Loss
 device = 'cpu'
 
@@ -42,12 +43,13 @@ incremental = True
 # set up model
 model = FNO(max_n_modes=(32, 32), n_modes=starting_modes, hidden_channels=32, projection_channels=64)
 model = model.to(device)
-n_params = count_params(model)
+n_params = count_model_params(model)
 
 # %%
 # Set up the optimizer and scheduler
 optimizer = torch.optim.Adam(model.parameters(), lr=8e-3, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
+data_transform = data_transforms.IncrementalDataProcessor(in_normalizer=None, out_normalizer=None, positional_encoding=None, dataset_sublist=[1], dataset_resolution=16, dataset_indices=[0])
 
 # %%
 # Set up the losses
@@ -87,8 +89,9 @@ sys.stdout.flush()
 #    uses the dataset_indices parameter - a list of indices of the dataset to slice to regularize the input resolution
 #    uses the dataset_resolution parameter - the resolution of the input
 
-trainer = Trainer(model, callbacks=[SimpleWandBLoggerCallback()], n_epochs=100, device=device, mg_patching_levels=0,     wandb_log=False, log_test_interval=3,       use_distributed=False, verbose=True,
-                  incremental = incremental, incremental_eps=0.001, incremental_buffer=5, incremental_max_iter=1, incremental_grad_max_iter=10)
+callbacks = [IncrementalCallback(incremental_grad_eps=0.001, incremental_buffer=5, incremental_max_iter=1, incremental_grad_max_iter=10, incremental_loss_eps=0.001, incremental_res_gap=0.001)]
+trainer = Trainer(model, data_processor= data_transform, callbacks=callbacks, n_epochs=10, device=device, mg_patching_levels=0, wandb_log=False, log_test_interval=3,      
+                  use_distributed=False, verbose=True, incremental = incremental, incremental_eps=0.001, incremental_buffer=5, incremental_max_iter=1, incremental_grad_max_iter=10)
 
 # %% 
 # Train the model
@@ -96,7 +99,7 @@ trainer.train(train_loader, test_loaders, output_encoder, model, optimizer, sche
 
 # %%
 # Check that the number of modes has dynamically increased (Atleast for these settings on this dataset it should increase)
-assert model.fno_blocks.convs.incremental_n_modes > starting_modes
+assert model.fno_blocks.convs.n_modes > starting_modes
 
 # %%
 # Plot the prediction, and compare with the ground-truth 
@@ -110,7 +113,7 @@ assert model.fno_blocks.convs.incremental_n_modes > starting_modes
 #
 # In practice we would train a Neural Operator on one or multiple GPUs
 
-test_samples = test_loaders[32].dataset
+"""test_samples = test_loaders[32].dataset
 
 fig = plt.figure(figsize=(7, 7))
 for index in range(3):
@@ -145,4 +148,4 @@ for index in range(3):
 
 fig.suptitle('Inputs, ground-truth output and prediction.', y=0.98)
 plt.tight_layout()
-fig.show()
+fig.show()"""

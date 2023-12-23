@@ -67,7 +67,7 @@ class DefaultDataProcessor(torch.nn.Module):
 class IncrementalDataProcessor(torch.nn.Module):
     def __init__(self, 
                  in_normalizer=None, out_normalizer=None, 
-                 positional_encoding=None, sub_list=None):
+                 positional_encoding=None, dataset_sublist=[1], dataset_resolution=16, dataset_indices=[0]):
         """A simple processor to pre/post process data before training/inferencing a model
 
         Parameters
@@ -84,7 +84,10 @@ class IncrementalDataProcessor(torch.nn.Module):
         self.out_normalizer = out_normalizer
         self.positional_encoding = positional_encoding
         self.device = 'cpu'
-    
+        self.sub_list = dataset_sublist
+        self.dataset_resolution = dataset_resolution
+        self.dataset_indices = dataset_indices
+            
     def wrap(self, model):
         self.model = model
         return self
@@ -145,7 +148,7 @@ class IncrementalDataProcessor(torch.nn.Module):
         if self.out_normalizer is not None and self.train:
             y = self.out_normalizer.transform(y)
         
-        x, y = self.step(x=x,y=y)
+        x, y = self.step(epoch=epoch, x=x, y=y)
         
         data_dict['x'] = x
         data_dict['y'] = y
