@@ -237,14 +237,20 @@ def validate_scaling_factor(
         isinstance(scaling_factor, list)
         and len(scaling_factor) > 0
         and all([isinstance(s, (list)) for s in scaling_factor])
-    ):
+    ):  
+        flag_if_all_one = True # this is to save computation if scaling is 1.
         s_sub_pass = True
         for s in scaling_factor:
+            for s_sub in s:
+                if abs(s_sub - 1) > 1e-3:
+                    flag_if_all_one = False
             if all([isinstance(s_sub, (int, float)) for s_sub in s]):
                 pass
             else:
                 s_sub_pass = False
             if s_sub_pass:
+                if flag_if_all_one:
+                    scaling_factor = None
                 return scaling_factor
 
     return None
