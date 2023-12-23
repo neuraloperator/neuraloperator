@@ -29,12 +29,12 @@ train_dataset = train_loader.dataset
 # Visualizing the data
 # --------------------
 
-
 for res, test_loader in test_loaders.items():
-    print('res')
-    test_data = train_dataset[0]
-    x = test_data['x']
-    y = test_data['y']
+    print(res)
+    # Get first batch
+    batch = next(iter(test_loader))
+    x = batch['x']
+    y = batch['y']
 
     print(f'Testing samples for res {res} have shape {x.shape[1:]}')
 
