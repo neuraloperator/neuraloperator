@@ -146,7 +146,10 @@ class Trainer:
                     regularizer.reset()
 
                 if self.data_processor is not None:
-                    sample = self.data_processor.preprocess(sample)
+                    if self.incremental is None:
+                        sample = self.data_processor.preprocess(sample)
+                    else:
+                        sample = self.data_processor.preprocess(sample, epoch)
                 else:
                     # load data to device if no preprocessor exists
                     sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}

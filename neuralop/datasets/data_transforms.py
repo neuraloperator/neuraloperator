@@ -64,6 +64,108 @@ class DefaultDataProcessor(torch.nn.Module):
         output = self.postprocess(output)
         return output, data_dict
 
+class IncrementalDataProcessor(torch.nn.Module):
+    def __init__(self, 
+                 in_normalizer=None, out_normalizer=None, 
+                 positional_encoding=None, sub_list=None):
+        """A simple processor to pre/post process data before training/inferencing a model
+
+        Parameters
+        ----------
+        in_normalizer : Transform, optional, default is None
+            normalizer (e.g. StandardScaler) for the input samples
+        out_normalizer : Transform, optional, default is None
+            normalizer (e.g. StandardScaler) for the target and predicted samples
+        positional_encoding : Processor, optional, default is None
+            class that appends a positional encoding to the input
+        """
+        super().__init__()
+        self.in_normalizer = in_normalizer
+        self.out_normalizer = out_normalizer
+        self.positional_encoding = positional_encoding
+        self.device = 'cpu'
+    
+    def wrap(self, model):
+        self.model = model
+        return self
+
+    def to(self, device):
+        if self.in_normalizer is not None:
+            self.in_normalizer = self.in_normalizer.to(device)
+        if self.out_normalizer is not None:
+            self.out_normalizer = self.out_normalizer.to(device)
+        self.device = device
+        return self
+
+    def sub_to_res(self, sub):
+        # Convert sub to resolution based
+        return int(self.resolution / sub)
+
+    def epoch_wise_res_increase(self, epoch):
+        # Update the current_sub and current_res values based on the epoch
+        if epoch % self.epoch_gap == 0 and epoch != 0 and (
+                self.current_logged_epoch != epoch):
+            self.current_index += 1
+            self.current_sub = self.index_to_sub_from_table(self.current_index)
+            self.current_res = self.sub_to_res(self.current_sub)
+            self.current_logged_epoch = epoch
+
+            if self.verbose:
+                print(f'Incre Res Update: change index to {self.current_index}')
+                print(f'Incre Res Update: change sub to {self.current_sub}')
+                print(f'Incre Res Update: change res to {self.current_res}')
+
+    def index_to_sub_from_table(self, index):
+        # Get the sub value from the sub_list based on the index
+        if index >= len(self.sub_list):
+            return self.sub_list[-1]
+        else:
+            return self.sub_list[index]
+
+    def regularize_input_res(self, x, y):
+        # Regularize the input data based on the current_sub and dataset_name
+        indices = torch.tensor(self.indices, device=x.device)
+        x = torch.index_select(x, 0, index=indices)
+        y = torch.index_select(y, 0, index=indices)
+        return x, y
+    
+    def step(self, loss=None, epoch=None, x=None, y=None):
+        if self.incremental_resolution and x is not None and y is not None:
+            self.epoch_wise_res_increase(epoch)
+            return self.regularize_input_res(x, y)
+        
+    def preprocess(self, data_dict, epoch, batched=True):
+        x = data_dict['x'].to(self.device)
+        y = data_dict['y'].to(self.device)
+
+        if self.in_normalizer is not None:
+            x = self.in_normalizer.transform(x)
+        if self.positional_encoding is not None:
+            x = self.positional_encoding(x, batched=batched)
+        if self.out_normalizer is not None and self.train:
+            y = self.out_normalizer.transform(y)
+        
+        x, y = self.step(x=x,y=y)
+        
+        data_dict['x'] = x
+        data_dict['y'] = y
+
+        return data_dict
+
+    def postprocess(self, output, data_dict):
+        y = data_dict['y']
+        if self.out_normalizer and not self.train:
+            output = self.out_normalizer.inverse_transform(output)
+            y = self.out_normalizer.inverse_transform(y)
+        data_dict['y'] = y
+        return output, data_dict
+    
+    def forward(self, **data_dict):
+        data_dict = self.preprocess(data_dict)
+        output = self.model(data_dict['x'])
+        output = self.postprocess(output)
+        return output, data_dict
+    
 class MGPatchingDataProcessor(torch.nn.Module):
     def __init__(self, model: torch.nn.Module, levels: int, 
                  padding_fraction: float, stitching: float, 
