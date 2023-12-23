@@ -14,6 +14,7 @@ from neuralop.models import FNO
 from neuralop import Trainer
 from neuralop.datasets import load_darcy_flow_small
 from neuralop.utils import count_params
+from neuralop.training import OutputEncoderCallback, SimpleWandBLoggerCallback, IncrementalCallback
 from neuralop import LpLoss, H1Loss
 device = 'cpu'
 
