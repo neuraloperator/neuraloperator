@@ -21,7 +21,6 @@ class Trainer:
                  log_output=False, 
                  use_distributed=False, 
                  verbose=False, 
-                 incremental_resolution=False
                  ):
         """
         A general Trainer class to train neural-operators on given datasets
@@ -82,7 +81,9 @@ class Trainer:
         self.amp_autocast = amp_autocast
         self.data_processor = data_processor
         
-        self.incremental_resolution = incremental_resolution
+        # If the data_processor is an IncrementalDataProcessor, then we need to do curriculum learning - Increase the resolution of the samples incrementally
+        if type(self.data_processor).__name__ == "IncrementalDataProcessor":
+            self.incremental_resolution = True
         
         if self.callbacks:
             self.callbacks.on_init_end(model=model, 
@@ -150,10 +151,10 @@ class Trainer:
                     regularizer.reset()
 
                 if self.data_processor is not None:
-                    if self.incremental is None:
+                    if not self.incremental_resolution:
                         sample = self.data_processor.preprocess(sample)
                     else:
-                        sample = self.data_processor.preprocess(sample, epoch)
+                        sample = self.data_processor.preprocess(sample, epoch=epoch, mode = "Train")
                 else:
                     # load data to device if no preprocessor exists
                     sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
@@ -270,7 +271,10 @@ class Trainer:
                     self.callbacks.on_val_batch_start(idx=idx, sample=sample)
 
                 if self.data_processor is not None:
-                    sample = self.data_processor.preprocess(sample)
+                    if not self.incremental_resolution:
+                        sample = self.data_processor.preprocess(sample)
+                    else:
+                        sample = self.data_processor.preprocess(sample, mode = "Val")
                 else:
                     # load data to device if no preprocessor exists
                     sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}

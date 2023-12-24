@@ -457,8 +457,7 @@ class CheckpointCallback(Callback):
 
 class IncrementalCallback(Callback):
     """
-    Callback that implements the Incremental Algorithm 
-    expected when passing verbose to a Trainer
+    Callback that implements the Incremental Algorithm - Both the Gradient explained and Loss Gap versions
     
     incremental : bool, default is False
         if True, use the base incremental algorithm which is based on gradient variance
@@ -492,6 +491,7 @@ class IncrementalCallback(Callback):
         self.incremental_max_iter = incremental_max_iter
         self.incremental_grad_max_iter = incremental_grad_max_iter
         self.incremental_loss_eps = incremental_loss_eps
+        self.loss_list = []
     
     def on_init_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
@@ -534,7 +534,7 @@ class IncrementalCallback(Callback):
         # track training err and val losses to print at interval epochs
         msg = f'[{epoch}] time={time:.2f}, avg_loss={avg_loss:.4f}, train_err={train_err:.4f}'
 
-        self.incremental_scheduler.step(avg_loss)
+        self.step(avg_loss)
         
         self._update_state_dict(msg=msg)
         self._update_state_dict(avg_lasso_loss=avg_lasso_loss)
@@ -546,7 +546,6 @@ class IncrementalCallback(Callback):
             else:
                 loss_value = {i:e.item() for (i, e) in enumerate(loss_value)}
                 self.state_dict['msg'] += f', {loss_name}={loss_value}'
-            self.state_dict['values_to_log'][loss_name] = loss_value
     
     def on_val_end(self, *args, **kwargs):
         if self.state_dict.get('regularizer', False):
@@ -567,33 +566,35 @@ class IncrementalCallback(Callback):
     # Algorithm 1: Incremental
     def loss_gap(self, loss):
         self.loss_list.append(loss)
+        self.ndim = len(self.state_dict['model'].fno_blocks.convs.n_modes)
         # method 1: loss_gap
-        incremental_modes = self.model.fno_blocks.convs.n_modes[0]
-        max_modes = self.model.fno_blocks.convs.max_n_modes[0]
+        incremental_modes = self.state_dict['model'].fno_blocks.convs.n_modes[0]
+        max_modes = self.state_dict['model'].fno_blocks.convs.max_n_modes[0]
         if len(self.loss_list) > 1:
             if abs(self.loss_list[-1] - self.loss_list[-2]) <= 1:
                 if incremental_modes < max_modes:
                     incremental_modes += 1
         modes_list = tuple([incremental_modes] * self.ndim)
-        self.model.fno_blocks.convs.n_modes = modes_list
+        self.state_dict['model'].fno_blocks.convs.n_modes = modes_list
 
     # Algorithm 2: Gradient based explained ratio
     def grad_explained(self):
         # for mode 1
         if not hasattr(self, 'accumulated_grad'):
             self.accumulated_grad = torch.zeros_like(
-                self.model.fno_blocks.convs.weight[0])
+                self.state_dict['model'].fno_blocks.convs.weight[0])
         if not hasattr(self, 'grad_iter'):
             self.grad_iter = 1
-
-        if self.grad_iter <= self.grad_max_iter:
+            
+        self.ndim = len(self.state_dict['model'].fno_blocks.convs.n_modes)
+        if self.grad_iter <= self.incremental_grad_max_iter:
             self.grad_iter += 1
-            self.accumulated_grad += self.model.fno_blocks.convs.weight[0]
+            self.accumulated_grad += self.state_dict['model'].fno_blocks.convs.weight[0]
         else:
             incremental_final = []
             for i in range(self.ndim):
-                max_modes = self.model.fno_blocks.convs.max_n_modes[i]
-                incremental_modes = self.model.fno_blocks.convs.n_modes[i]
+                max_modes = self.state_dict['model'].fno_blocks.convs.max_n_modes[i]
+                incremental_modes = self.state_dict['model'].fno_blocks.convs.n_modes[i]
                 weight = self.accumulated_grad
                 strength_vector = []
                 for mode_index in range(
@@ -602,8 +603,8 @@ class IncrementalCallback(Callback):
                         weight[:, mode_index, :], p='fro').cpu()
                     strength_vector.append(strength)
                 expained_ratio = self.compute_explained_variance(
-                    incremental_modes - self.buffer, torch.Tensor(strength_vector))
-                if expained_ratio < self.grad_explained_ratio_threshold:
+                    incremental_modes - self.incremental_buffer, torch.Tensor(strength_vector))
+                if expained_ratio < self.incremental_grad_eps:
                     if incremental_modes < max_modes:
                         incremental_modes += 1
                 incremental_final.append(incremental_modes)
@@ -611,8 +612,10 @@ class IncrementalCallback(Callback):
             # update the modes and frequency dimensions
             self.grad_iter = 1
             self.accumulated_grad = torch.zeros_like(
-                self.model.fno_blocks.convs.weight[0])
-            self.model.fno_blocks.convs.n_modes = tuple(incremental_final)
+                self.state_dict['model'].fno_blocks.convs.weight[0])
+            main_modes = incremental_final[0]
+            modes_list = tuple([main_modes] * self.ndim)
+            self.state_dict['model'].fno_blocks.convs.n_modes = tuple(modes_list)
     
     def compute_rank(self, tensor):
         # Compute the matrix rank of a tensor

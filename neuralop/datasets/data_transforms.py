@@ -67,8 +67,9 @@ class DefaultDataProcessor(torch.nn.Module):
 class IncrementalDataProcessor(torch.nn.Module):
     def __init__(self, 
                  in_normalizer=None, out_normalizer=None, 
-                 positional_encoding=None, dataset_sublist=[1], dataset_resolution=16, dataset_indices=[0]):
-        """A simple processor to pre/post process data before training/inferencing a model
+                 positional_encoding=None, device = 'cpu',
+                 dataset_sublist=[2, 1], dataset_resolution=16, dataset_indices=[2,3], epoch_gap=10, verbose=False):
+        """An incremental processor to pre/post process data before training/inferencing a model
 
         Parameters
         ----------
@@ -78,15 +79,39 @@ class IncrementalDataProcessor(torch.nn.Module):
             normalizer (e.g. StandardScaler) for the target and predicted samples
         positional_encoding : Processor, optional, default is None
             class that appends a positional encoding to the input
+        device : str, optional, default is 'cpu'
+            device 'cuda' or 'cpu' where computations are performed
+        dataset_sublist : list, optional, default is [2, 1]
+            list of subsampling rates to use
+        dataset_resolution : int, optional, default is 16
+            resolution of the input data
+        dataset_indices : list, optional, default is [2, 3]
+            list of indices of the dataset to slice to regularize the input resolution - Spatial Dimensions
+        epoch_gap : int, optional, default is 10
+            number of epochs to wait before increasing the resolution
+        verbose : bool, optional, default is False
+            if True, print the current resolution
         """
         super().__init__()
         self.in_normalizer = in_normalizer
         self.out_normalizer = out_normalizer
         self.positional_encoding = positional_encoding
-        self.device = 'cpu'
+        self.device = device
         self.sub_list = dataset_sublist
         self.dataset_resolution = dataset_resolution
         self.dataset_indices = dataset_indices
+        self.epoch_gap = epoch_gap
+        self.verbose = verbose
+        
+        self.subsammpling_rate = 1
+        self.current_index = 0
+        self.current_logged_epoch = 0
+        self.current_sub = self.index_to_sub_from_table(self.current_index)
+        self.current_res = self.sub_to_res(self.current_sub)           
+        
+        print(f'Original Incre Res: change index to {self.current_index}')
+        print(f'Original Incre Res: change sub to {self.current_sub}')
+        print(f'Original Incre Res: change res to {self.current_res}')
             
     def wrap(self, model):
         self.model = model
@@ -102,7 +127,7 @@ class IncrementalDataProcessor(torch.nn.Module):
 
     def sub_to_res(self, sub):
         # Convert sub to resolution based
-        return int(self.resolution / sub)
+        return int(self.dataset_resolution / sub)
 
     def epoch_wise_res_increase(self, epoch):
         # Update the current_sub and current_res values based on the epoch
@@ -127,17 +152,18 @@ class IncrementalDataProcessor(torch.nn.Module):
 
     def regularize_input_res(self, x, y):
         # Regularize the input data based on the current_sub and dataset_name
-        indices = torch.tensor(self.indices, device=x.device)
-        x = torch.index_select(x, 0, index=indices)
-        y = torch.index_select(y, 0, index=indices)
+        for idx in self.dataset_indices:
+            indexes = torch.arange(0, x.size(idx), self.current_sub, device=self.device)
+            x = x.index_select(dim=idx, index=indexes)
+            y = y.index_select(dim=idx, index=indexes)
         return x, y
     
     def step(self, loss=None, epoch=None, x=None, y=None):
-        if self.incremental_resolution and x is not None and y is not None:
+        if x is not None and y is not None:
             self.epoch_wise_res_increase(epoch)
             return self.regularize_input_res(x, y)
         
-    def preprocess(self, data_dict, epoch, batched=True):
+    def preprocess(self, data_dict, epoch=None, mode = "Train", batched=True):
         x = data_dict['x'].to(self.device)
         y = data_dict['y'].to(self.device)
 
@@ -148,7 +174,8 @@ class IncrementalDataProcessor(torch.nn.Module):
         if self.out_normalizer is not None and self.train:
             y = self.out_normalizer.transform(y)
         
-        x, y = self.step(epoch=epoch, x=x, y=y)
+        if mode == "Train":
+            x, y = self.step(epoch=epoch, x=x, y=y)
         
         data_dict['x'] = x
         data_dict['y'] = y
