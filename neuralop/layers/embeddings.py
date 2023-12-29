@@ -51,13 +51,12 @@ class RotaryEmbedding(nn.Module):
         inv_freq = 1. / (10000 ** (torch.arange(0, dim, 2).float() / dim))
         self.max_freq = max_freq
         self.scale = scale
-        self.register_buffer('inv_freq', inv_freq)
+        self.register_buffer('inv_freq', inv_freq, persistent=False)
 
-    def forward(self, coordinates, device):
+    def forward(self, coordinates):
         """coordinates is tensor of [batch_size, num_points]"""
-        t = coordinates.to(device).type_as(self.inv_freq)
-        t = t * (self.scale / self.min_freq)
-        freqs = torch.einsum('... i , j -> ... i j', t, self.inv_freq)  # [b, n, d//2]
+        coordinates = coordinates * (self.scale / self.min_freq)
+        freqs = torch.einsum('... i , j -> ... i j', coordinates, self.inv_freq)  # [b, n, d//2]
         return torch.cat((freqs, freqs), dim=-1)  # [b, n, d]
 
     @staticmethod
