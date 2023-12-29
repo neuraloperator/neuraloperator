@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import math
+
 
 class PositionalEmbedding(nn.Module):
     def __init__(self, num_channels, max_positions=10000, endpoint=False):
@@ -42,14 +44,14 @@ def apply_rotary_pos_emb(t, freqs):
 
 
 class RotaryEmbedding(nn.Module):
-    def __init__(self, dim, max_freq=1/64, scale=1.):
+    def __init__(self, dim, min_freq=1/64, scale=1.):
         """
         Applying rotary positional embedding (https://arxiv.org/abs/2104.09864) to the input feature tensor.
         The crux is the dot product of two rotation matrices R(theta1) and R(theta2) is equal to R(theta2 - theta1).
         """
         super().__init__()
         inv_freq = 1. / (10000 ** (torch.arange(0, dim, 2).float() / dim))
-        self.max_freq = max_freq
+        self.min_freq = min_freq
         self.scale = scale
         self.register_buffer('inv_freq', inv_freq, persistent=False)
 

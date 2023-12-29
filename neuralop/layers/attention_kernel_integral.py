@@ -42,7 +42,6 @@ class AttentionKernelIntegral(torch.nn.Module):
     head_n_channels : int, dimension of each attention head, determines how many function bases to use for the kernel
                       k(x, y) = \sum_{c=1}^d \q_c(x) * \k_c(y), head_n_channels controls the d
     pos_dim : int, dimension of the domain, determines the dimension of coordinates
-    use_positional_encoding : bool, whether to use positional encoding to encode query and key
     project_query : bool, whether to project the query function with pointwise linear layer
                    (this is sometimes not needed when using cross-attention)
     """
@@ -57,6 +56,8 @@ class AttentionKernelIntegral(torch.nn.Module):
         super().__init__()
         self.n_heads = n_heads
         self.head_n_channels = head_n_channels
+        self.in_channels = in_channels
+        self.out_channels = out_channels
 
         self.project_query = project_query
         if project_query:
@@ -92,7 +93,7 @@ class AttentionKernelIntegral(torch.nn.Module):
             if param.ndim > 1:
                 for h in range(self.n_heads):
                     init_fn(param[h * self.head_n_channels:(h + 1) * self.head_n_channels, :], gain=self.init_gain)
-                    if self.head_n_channels == self.channels:
+                    if self.head_n_channels == self.in_channels:
                         diagonal_bias = self.diagonal_weight * torch.diag(torch.ones(param.size(-1), dtype=torch.float32))
                         param.data[h * self.head_n_channels:(h + 1) * self.head_n_channels, :] += diagonal_bias
 
@@ -182,8 +183,8 @@ class AttentionKernelIntegral(torch.nn.Module):
 
         if positional_embedding_module is not None:
             if pos_dim == 2:
-                k_freqs_1 = positional_embedding_module.forward(pos_src[..., 0], k.device)
-                k_freqs_2 = positional_embedding_module.forward(pos_src[..., 1], k.device)
+                k_freqs_1 = positional_embedding_module.forward(pos_src[..., 0])
+                k_freqs_2 = positional_embedding_module.forward(pos_src[..., 1])
                 k_freqs_1 = k_freqs_1.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
                 k_freqs_2 = k_freqs_2.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
 
@@ -191,22 +192,22 @@ class AttentionKernelIntegral(torch.nn.Module):
                     q_freqs_1 = k_freqs_1
                     q_freqs_2 = k_freqs_2
                 else:
-                    q_freqs_1 = positional_embedding_module.forward(pos_qry[..., 0], q.device)
-                    q_freqs_2 = positional_embedding_module.forward(pos_qry[..., 1], q.device)
+                    q_freqs_1 = positional_embedding_module.forward(pos_qry[..., 0])
+                    q_freqs_2 = positional_embedding_module.forward(pos_qry[..., 1])
                     q_freqs_1 = q_freqs_1.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
                     q_freqs_2 = q_freqs_2.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
 
-                q = positional_embedding_module.apply_2d_rotary_positional_embedding_module(q, q_freqs_1, q_freqs_2)
-                k = positional_embedding_module.apply_2d_rotary_positional_embedding_module(k, k_freqs_1, k_freqs_2)
+                q = positional_embedding_module.apply_2d_rotary_pos_emb(q, q_freqs_1, q_freqs_2)
+                k = positional_embedding_module.apply_2d_rotary_pos_emb(k, k_freqs_1, k_freqs_2)
             elif pos_dim == 1:
 
-                k_freqs = positional_embedding_module.forward(pos_src[..., 0], k.device)
+                k_freqs = positional_embedding_module.forward(pos_src[..., 0])
                 k_freqs = k_freqs.unsqueeze(1).repeat([batch_size, self.n_heads, 1, 1])
 
                 if pos_qry is None:
                     q_freqs = k_freqs
                 else:
-                    q_freqs = positional_embedding_module.forward(pos_qry[..., 0], q.device)
+                    q_freqs = positional_embedding_module.forward(pos_qry[..., 0])
                     q_freqs = q_freqs.unsqueeze(1).repeat([batch_size, self.n_heads, 1, 1])
 
                 q = positional_embedding_module.apply_1d_rotary_pos_emb(q, q_freqs)
