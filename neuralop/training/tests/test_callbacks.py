@@ -5,8 +5,10 @@ from pathlib import Path
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
+from neuralop.models import FNO
+from neuralop.datasets import load_darcy_flow_small
 
-from neuralop import Trainer, LpLoss, H1Loss, CheckpointCallback
+from neuralop import Trainer, LpLoss, H1Loss, CheckpointCallback, IncrementalCallback
 from neuralop.models.base_model import BaseModel
 
 class DummyDataset(Dataset):
@@ -194,4 +196,69 @@ def test_load_from_checkpoint():
 
     # clean up dummy checkpoint directory after testing
     shutil.rmtree('./full_states')
+    
+    
+# enure that the model incrementally increases in frequency modes
+def test_incremental():
+    # Loading the Darcy flow dataset
+    train_loader, test_loaders, output_encoder = load_darcy_flow_small(
+        n_train=100,
+        batch_size=16,
+        test_resolutions=[16, 32],
+        n_tests=[100, 50],
+        test_batch_sizes=[32, 32],
+    )
+    callbacks = [
+        IncrementalCallback(
+            incremental_loss_gap=True,
+            incremental_grad=False,
+            incremental_grad_eps=0.9999,
+            incremental_buffer=5,
+            incremental_max_iter=1,
+            incremental_grad_max_iter=2,
+        )
+    ]
+
+    initial_n_modes = (2, 2)
+    initial_max_modes = (16, 16)
+    
+    model = FNO(
+        n_modes = initial_n_modes,
+        max_n_modes = initial_max_modes,
+        hidden_channels=32,
+        in_channels=1,
+        out_channels=1,
+    )
+    
+    trainer = Trainer(model=model,
+                      n_epochs=10,
+                      callbacks=callbacks)
+
+    optimizer = torch.optim.Adam(model.parameters(), 
+                                lr=8e-3, 
+                                weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
+
+    # Creating the losses
+    l2loss = LpLoss(d=2, p=2)
+    h1loss = H1Loss(d=2)
+
+    eval_losses={'h1': h1loss, 'l2': l2loss}
+
+    trainer.train(train_loader=train_loader, 
+                  test_loaders=test_loaders, 
+                  optimizer=optimizer,
+                  scheduler=scheduler,
+                  regularizer=None,
+                  training_loss=l2loss,
+                  eval_losses=eval_losses
+                  )
+    
+    # assert that the model has increased in frequency modes
+    for i in range(len(initial_n_modes)):
+        assert model.fno_blocks.convs.n_modes[i] > initial_n_modes[i]
+    
+    # assert that the model has not changed the max modes
+    for i in range(len(initial_max_modes)):
+        assert model.fno_blocks.convs.max_n_modes[i] == initial_max_modes[i]
     
