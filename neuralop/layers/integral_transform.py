@@ -102,7 +102,7 @@ class IntegralTransform(nn.Module):
 
         Parameters
         ----------
-        y : torch.Tensor of shape [n, d1]
+        y : torch.Tensor of shape [batch, n, d1]
             n points of dimension d1 specifying
             the space to integrate over.
         neighbors : dict
@@ -110,16 +110,18 @@ class IntegralTransform(nn.Module):
             dict must contain the keys "neighbors_index"
             and "neighbors_row_splits." For descriptions
             of the two, see NeighborSearch.
-        x : torch.Tensor of shape [m, d2], default None
+            If batch > 1, the neighbors must be constant
+            across the entire batch. 
+        x : torch.Tensor of shape [batch, m, d2], default None
             m points of dimension d2 over which the
             output function is defined. If None,
             x = y.
-        f_y : torch.Tensor of shape [n, d3], default None
+        f_y : torch.Tensor of shape [batch, n, d3], default None
             Function to integrate the kernel against defined
             on the points y. The kernel is assumed diagonal
             hence its output shape must be d3 for the transforms
             (b) or (d). If None, (a) is computed.
-        weights : torch.Tensor of shape [n,], default None
+        weights : torch.Tensor of shape [batch, n], default None
             Weights for each point y proprtional to the
             volume around f(y) being integrated. For example,
             suppose d1=1 and let y_1 < y_2 < ... < y_{n+1}
@@ -129,30 +131,44 @@ class IntegralTransform(nn.Module):
 
         Output
         ----------
-        out_features : torch.Tensor of shape [m, d4]
+        out_features : torch.Tensor of shape [batch, m, d4]
             Output function given on the points x.
             d4 is the output size of the kernel k.
         """
-
+        
         if x is None:
             x = y
-
-        rep_features = y[neighbors["neighbors_index"]]
+        
+        # add a batch dimension to inputs of shape (n, d) 
+        # for backwards compatibility
+        
+        if y.ndim == 2:
+            y = y.unsqueeze(0)
+        if x.ndim == 2:
+            x = x.unsqueeze(0)
         if f_y is not None:
-            in_features = f_y[neighbors["neighbors_index"]]
+            if f_y.ndim == 2:
+                f_y = f_y.unsqueeze(0)
+        if weights.ndim == 1:
+            weights = weights.unsqueeze(0)
+        
+        rep_features = y[:, neighbors["neighbors_index"], :]
+        if f_y is not None:
+            in_features = f_y[:, neighbors["neighbors_index"], :]
 
         num_reps = (
             neighbors["neighbors_row_splits"][1:]
             - neighbors["neighbors_row_splits"][:-1]
         )
+        # TODO: figure out how to do this with a batching dimension
         self_features = torch.repeat_interleave(x, num_reps, dim=0)
 
-        agg_features = torch.cat([rep_features, self_features], dim=1)
+        agg_features = torch.cat([rep_features, self_features], dim=-1)
         if f_y is not None and (
             self.transform_type == "nonlinear_kernelonly"
             or self.transform_type == "nonlinear"
         ):
-            agg_features = torch.cat([agg_features, in_features], dim=1)
+            agg_features = torch.cat([agg_features, in_features], dim=-1)
 
         rep_features = self.mlp(agg_features)
 
@@ -160,7 +176,7 @@ class IntegralTransform(nn.Module):
             rep_features = rep_features * in_features
 
         if weights is not None:
-            rep_features = weights[neighbors["neighbors_index"]] * rep_features
+            rep_features = weights[:,neighbors["neighbors_index"]] * rep_features
             reduction = "sum"
         else:
             reduction = "mean"
