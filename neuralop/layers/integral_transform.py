@@ -148,17 +148,13 @@ class IntegralTransform(nn.Module):
         if f_y is not None:
             if f_y.ndim == 2:
                 f_y = f_y.unsqueeze(0)
-        if weights.ndim == 1:
-            weights = weights.unsqueeze(0)
 
         batch_size = y.shape[0]
         n_out = x.shape[1]
 
-        rep_features = y[:, neighbors["neighbors_index"], :].squeeze(
-            0
-        )  # indexing via mix of slices and list creates a sequence
+        rep_features = y[:, neighbors["neighbors_index"], :]
         if f_y is not None:
-            in_features = f_y[:, neighbors["neighbors_index"], :].squeeze(0)
+            in_features = f_y[:, neighbors["neighbors_index"], :]
 
         num_reps = (
             neighbors["neighbors_row_splits"][1:]
@@ -175,13 +171,15 @@ class IntegralTransform(nn.Module):
             agg_features = torch.cat([agg_features, in_features], dim=-1)
 
         rep_features = self.mlp(agg_features)
+        print(f"{rep_features.shape=}")
 
         if f_y is not None and self.transform_type != "nonlinear_kernelonly":
             rep_features = rep_features * in_features
 
         if weights is not None:
             rep_features = (
-                weights[:, neighbors["neighbors_index"]].squeeze(0) * rep_features
+                weights[neighbors["neighbors_index"]]
+                * rep_features  # weights come from norm, which are part of neighbors
             )
             reduction = "sum"
         else:
@@ -195,4 +193,7 @@ class IntegralTransform(nn.Module):
             outs.append(out_features)
 
         batch_out_features = torch.stack(outs, dim=0)
+
+        if batch_out_features.shape[0] == 1:
+            return batch_out_features.squeeze(0)
         return batch_out_features
