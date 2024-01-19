@@ -392,7 +392,7 @@
     <span class="k">def</span> <span class="nf">on_before_val</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">train_err</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">avg_loss</span><span class="p">,</span> <span class="n">avg_lasso_loss</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="c1"># track training err and val losses to print at interval epochs</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;[</span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s1">] time=</span><span class="si">{</span><span class="n">time</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">, avg_loss=</span><span class="si">{</span><span class="n">avg_loss</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">, train_err=</span><span class="si">{</span><span class="n">train_err</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span>
-        <span class="n">values_to_log</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">train_err</span><span class="o">=</span><span class="n">train_err</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;n_train&#39;</span><span class="p">],</span> <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">avg_loss</span><span class="o">=</span><span class="n">avg_loss</span><span class="p">)</span>
+        <span class="n">values_to_log</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">train_err</span><span class="o">=</span><span class="n">train_err</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">avg_loss</span><span class="o">=</span><span class="n">avg_loss</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_update_state_dict</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span> <span class="n">values_to_log</span><span class="o">=</span><span class="n">values_to_log</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_update_state_dict</span><span class="p">(</span><span class="n">avg_lasso_loss</span><span class="o">=</span><span class="n">avg_lasso_loss</span><span class="p">)</span>
@@ -594,7 +594,7 @@
         <footer class="footer">
     <div class="content has-text-centered">
         <div class="block">
-          &copy; Copyright 2023, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
         </div>
     </div>
   </footer>
