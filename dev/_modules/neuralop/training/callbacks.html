@@ -129,7 +129,7 @@
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">wandb</span>
 
-<span class="kn">from</span> <span class="nn">neuralop.training.patching</span> <span class="kn">import</span> <span class="n">MultigridPatching2D</span>
+<span class="kn">from</span> <span class="nn">.training_state</span> <span class="kn">import</span> <span class="n">save_training_state</span>
 
 <div class="viewcode-block" id="Callback">
 <a class="viewcode-back" href="../../../modules/generated/neuralop.training.callbacks.Callback.html#neuralop.training.callbacks.Callback">[docs]</a>
@@ -563,25 +563,14 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">model_name</span> <span class="o">=</span> <span class="s1">&#39;model&#39;</span>
 
-            <span class="n">save_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">.pt&quot;</span>
-            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">],</span> <span class="s1">&#39;save_checkpoint&#39;</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">save_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="n">save_path</span><span class="p">)</span>
-
-            <span class="c1"># save optimizer, scheduler, regularizer according to flags</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_optimizer</span><span class="p">:</span>
-                <span class="n">save_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span> <span class="o">/</span> <span class="s2">&quot;optimizer.pt&quot;</span>
-                <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;optimizer&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="n">save_path</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_scheduler</span><span class="p">:</span>
-                <span class="n">save_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span> <span class="o">/</span> <span class="s2">&quot;scheduler.pt&quot;</span>
-                <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;scheduler&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="n">save_path</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_regularizer</span><span class="p">:</span>
-                <span class="n">save_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span> <span class="o">/</span> <span class="s2">&quot;regularizer.pt&quot;</span>
-                <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;regularizer&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="n">save_path</span><span class="p">)</span>
+            <span class="n">save_training_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span>
+                                <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">],</span>
+                                <span class="n">optimizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;optimizer&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">),</span>
+                                <span class="n">regularizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;regularizer&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">),</span>
+                                <span class="n">scheduler</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scheduler&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">))</span>
             
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;verbose&#39;</span><span class="p">]:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saved training state to </span><span class="si">{</span><span class="n">save_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saved training state to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 </div>
 
 

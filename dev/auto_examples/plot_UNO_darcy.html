@@ -320,13 +320,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fabc541bac0&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f5f3558e3a0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fabc541b040&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f5f3558e760&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fabc541b040&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fabc541bfd0&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f5f3558e760&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f5f3558e280&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -354,7 +354,7 @@ self.overrides_loss=False
               <span class="n">eval_losses</span><span class="o">=</span><span class="n">eval_losses</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{&#39;32_h1&#39;: 0.8377019691467286, &#39;32_l2&#39;: 0.8682723045349121}
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{&#39;32_h1&#39;: 0.8343351745605468, &#39;32_l2&#39;: 0.8622113227844238}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -404,7 +404,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 55.305 seconds)</p>
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 54.330 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/ecc34f03fb30bee651bda959149422c4/plot_UNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_UNO_darcy.ipynb</span></code></a></p>
