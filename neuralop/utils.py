@@ -238,7 +238,7 @@ def validate_scaling_factor(
         and len(scaling_factor) > 0
         and all([isinstance(s, (list)) for s in scaling_factor])
     ):  
-        flag_if_all_one = True # this is to save computation if scaling is 1.
+        flag_all_ones = True # this is to save computation if scaling is 1.
         s_sub_pass = True
         for s in scaling_factor:
             for s_sub in s:
