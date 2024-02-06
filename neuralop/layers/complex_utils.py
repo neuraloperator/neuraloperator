@@ -12,8 +12,9 @@ import torch.nn.functional as F
 def CGELU(x: torch.Tensor):
     """Complex GELU activation function
     Follows the formulation of CReLU from Deep Complex Networks (https://openreview.net/pdf?id=H1T2hmZAb)
+    apply GELU is real and imag part of the input separately, then combine as complex number
     Args:
-        x: tensor
+        x: complex tensor
     """
 
     return F.gelu(x.real).type(torch.cfloat) + 1j * F.gelu(x.imag).type(
@@ -22,7 +23,11 @@ def CGELU(x: torch.Tensor):
 
 
 def ctanh(x: torch.Tensor):
-    """Complex-valued tanh stabilizer"""
+    """Complex-valued tanh stabilizer
+    Apply ctanh is real and imag part of the input separately, then combine as complex number
+    Args:
+        x: complex tensor
+    """
     return torch.tanh(x.real).type(torch.cfloat) + 1j * torch.tanh(x.imag).type(
         torch.cfloat()
     )
