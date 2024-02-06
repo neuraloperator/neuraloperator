@@ -14,7 +14,7 @@ from typing import List, Union, Literal
 import torch
 import wandb
 
-from neuralop.training.patching import MultigridPatching2D
+from .training_state import save_training_state
 
 class Callback(object):
     """
@@ -435,23 +435,12 @@ class CheckpointCallback(Callback):
             else:
                 model_name = 'model'
 
-            save_path = self.save_dir / f"{model_name}.pt"
-            if hasattr(self.state_dict['model'], 'save_checkpoint'):
-                self.state_dict['model'].save_checkpoint(self.save_dir, model_name)
-            else:
-                torch.save(self.state_dict['model'].state_dict(), save_path)
-
-            # save optimizer, scheduler, regularizer according to flags
-            if self.save_optimizer:
-                save_path = self.save_dir / "optimizer.pt"
-                torch.save(self.state_dict['optimizer'].state_dict(), save_path)
-            if self.save_scheduler:
-                save_path = self.save_dir / "scheduler.pt"
-                torch.save(self.state_dict['scheduler'].state_dict(), save_path)
-            if self.save_regularizer:
-                save_path = self.save_dir / "regularizer.pt"
-                torch.save(self.state_dict['regularizer'].state_dict(), save_path)
+            save_training_state(self.save_dir, model_name,
+                                model=self.state_dict['model'],
+                                optimizer=self.state_dict.get('optimizer',None),
+                                regularizer=self.state_dict.get('regularizer',None),
+                                scheduler=self.state_dict.get('scheduler',None))
             
             if self.state_dict['verbose']:
-                print(f"Saved training state to {save_path}")
+                print(f"Saved training state to {self.save_dir}")
 
