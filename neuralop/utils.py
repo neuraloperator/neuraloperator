@@ -243,13 +243,13 @@ def validate_scaling_factor(
         for s in scaling_factor:
             for s_sub in s:
                 if abs(s_sub - 1) > 1e-3:
-                    flag_if_all_one = False
+                    flag_all_ones = False
             if all([isinstance(s_sub, (int, float)) for s_sub in s]):
                 pass
             else:
                 s_sub_pass = False
             if s_sub_pass:
-                if flag_if_all_one:
+                if flag_all_ones:
                     scaling_factor = None
                 return scaling_factor
 
