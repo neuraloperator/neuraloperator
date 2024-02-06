@@ -9,6 +9,8 @@ from .normalization_layers import AdaIN
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
 from ..utils import validate_scaling_factor
+from .complex_utils import ComplexValued, CGELU, ctanh
+
 
 
 Number = Union[int, float]
@@ -20,6 +22,7 @@ class FNOBlocks(nn.Module):
         in_channels,
         out_channels,
         n_modes,
+        spatial_domain="real",
         output_scaling_factor: Optional[Union[Number, List[Number]]] = None,
         n_layers=1,
         max_n_modes=None,
@@ -50,6 +53,7 @@ class FNOBlocks(nn.Module):
             n_modes = [n_modes]
         self._n_modes = n_modes
         self.n_dim = len(n_modes)
+        self.spatial_domain = spatial_domain
 
         self.output_scaling_factor: Union[
             None, List[List[float]]
@@ -61,7 +65,11 @@ class FNOBlocks(nn.Module):
         self.out_channels = out_channels
         self.n_layers = n_layers
         self.joint_factorization = joint_factorization
-        self.non_linearity = non_linearity
+        # Complex-valued nonlinearity
+        if spatial_domain == "real":
+            self.non_linearity = non_linearity
+        elif spatial_domain == "complex":
+            self.non_linearity = CGELU
         self.stabilizer = stabilizer
         self.rank = rank
         self.factorization = factorization
@@ -78,10 +86,13 @@ class FNOBlocks(nn.Module):
         self.preactivation = preactivation
         self.ada_in_features = ada_in_features
 
+
+        
         self.convs = SpectralConv(
             self.in_channels,
             self.out_channels,
             self.n_modes,
+            spatial_domain=spatial_domain,
             output_scaling_factor=output_scaling_factor,
             max_n_modes=max_n_modes,
             rank=rank,
@@ -94,6 +105,7 @@ class FNOBlocks(nn.Module):
             n_layers=n_layers,
         )
 
+        # real-valued FNO skip connections
         self.fno_skips = nn.ModuleList(
             [
                 skip_connection(
@@ -105,6 +117,11 @@ class FNOBlocks(nn.Module):
                 for _ in range(n_layers)
             ]
         )
+
+        if self.spatial_domain == "complex":
+            self.fno_skips = nn.ModuleList(
+                [ComplexValued(x) for x in self.fno_skips]
+            )
 
         if use_mlp:
             self.mlp = nn.ModuleList(
@@ -129,6 +146,20 @@ class FNOBlocks(nn.Module):
                     for _ in range(n_layers)
                 ]
             )
+
+            if self.spatial_domain == "complex":
+                self.mlp = nn.ModuleList(
+                    [
+                        ComplexValued(x)
+                        for x in self.mlp
+                    ]
+                )
+                self.mlp_skips = nn.ModuleList(
+                    [
+                        ComplexValued(x)
+                        for x in self.mlp_skips
+                    ]
+                )
         else:
             self.mlp = None
 
@@ -189,6 +220,10 @@ class FNOBlocks(nn.Module):
                 norm.set_embedding(embedding)
 
     def forward(self, x, index=0, output_shape=None):
+
+       # Handle case of complex-valued x
+        cplx = x.is_complex()
+
         if self.preactivation:
             return self.forward_with_preactivation(x, index, output_shape)
         else:
@@ -203,7 +238,10 @@ class FNOBlocks(nn.Module):
             x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
-            x = torch.tanh(x)
+            if cplx:
+                x = ctanh(x)
+            else:
+                x = torch.tanh(x)
 
         x_fno = self.convs(x, index, output_shape=output_shape)
 

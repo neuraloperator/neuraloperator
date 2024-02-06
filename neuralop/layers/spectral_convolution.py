@@ -191,6 +191,8 @@ class SpectralConv(BaseSpectralConv):
         Number of input channels
     out_channels : int, optional
         Number of output channels
+    spatial_domain : string {"real", "complex"}
+        whether data takes on real or complex values in the spatial domain, defaults to "real"
     max_n_modes : None or int tuple, default is None
         Number of modes to use for contraction in Fourier domain during training.
  
@@ -252,6 +254,7 @@ class SpectralConv(BaseSpectralConv):
         in_channels,
         out_channels,
         n_modes,
+        spatial_domain="real",
         max_n_modes=None,
         bias=True,
         n_layers=1,
@@ -350,7 +353,7 @@ class SpectralConv(BaseSpectralConv):
                 ]
             )
             for w in self.weight:
-                w.normal_(0, init_std)
+                w.normal_(0, init_std)  
         self._contract = get_contract_fun(
             self.weight[0], implementation=implementation, separable=separable
         )
@@ -422,16 +425,31 @@ class SpectralConv(BaseSpectralConv):
         -------
         tensorized_spectral_conv(x)
         """
+
+        cplx = x.is_complex()
+
         batchsize, channels, *mode_sizes = x.shape
 
         fft_size = list(mode_sizes)
-        fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient
+        # If the data is real-valued, its FFT will be skew-symmetric
+        # along one axis, so we only need to take the first half (plus one)
+        # of the last dimension of the transformed data
+        if not cplx:
+            fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient
+
         fft_dims = list(range(-self.order, 0))
 
         if self.fno_block_precision == "half":
             x = x.half()
 
-        x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
+        # If x takes complex values, compute the full N-dim FFT
+        if cplx:
+            x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
+        else:
+            # Otherwise compute the real-valued fft.
+            x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
+
+
         if self.order > 1:
             x = torch.fft.fftshift(x, dim=fft_dims[:-1])
 
