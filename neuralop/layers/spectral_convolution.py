@@ -539,15 +539,29 @@ class SpectralConv1d(SpectralConv):
     """
 
     def forward(self, x, indices=0):
+
+        cplx = x.is_complex()
+
         batchsize, channels, width = x.shape
 
-        x = torch.fft.rfft(x, norm=self.fft_norm)
 
-        out_fft = torch.zeros(
-            [batchsize, self.out_channels, width // 2 + 1],
-            device=x.device,
-            dtype=torch.cfloat,
-        )
+        # If x takes complex values, compute the full N-dim FFT
+        if cplx:
+            x = torch.fft.fft(x, norm=self.fft_norm)
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, width],
+                device=x.device,
+                dtype=torch.cfloat,
+            )
+        else:
+            # Otherwise compute the real-valued fft.
+            x = torch.fft.rfft(x, norm=self.fft_norm)
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, width // 2 + 1],
+                device=x.device,
+                dtype=torch.cfloat,
+            )
+
         slices = (
             slice(None),  # Equivalent to: [:,
             slice(None),  # ............... :,
@@ -560,7 +574,10 @@ class SpectralConv1d(SpectralConv):
         if self.output_scaling_factor is not None:
             width = round(width * self.output_scaling_factor[0])
 
-        x = torch.fft.irfft(out_fft, n=width, norm=self.fft_norm)
+        if cplx:
+            x = torch.fft.ifft(out_fft, n=width, norm=self.fft_norm)
+        else:
+            x = torch.fft.irfft(out_fft, n=width, norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
@@ -576,17 +593,28 @@ class SpectralConv2d(SpectralConv):
     """
 
     def forward(self, x, indices=0):
+
+        cplx = x.is_complex()
+
         batchsize, channels, height, width = x.shape
 
-        x = torch.fft.rfft2(x.float(), norm=self.fft_norm, dim=(-2, -1))
+        if cplx:
+            x = torch.fft.fft2(x.float(), norm=self.fft_norm, dim=(-2, -1))
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, height, width],
+                dtype=x.dtype,
+                device=x.device,
+            )
+        else:
+            x = torch.fft.rfft2(x.float(), norm=self.fft_norm, dim=(-2, -1))
 
-        # The output will be of size (batch_size, self.out_channels,
-        # x.size(-2), x.size(-1)//2 + 1)
-        out_fft = torch.zeros(
-            [batchsize, self.out_channels, height, width // 2 + 1],
-            dtype=x.dtype,
-            device=x.device,
-        )
+            # The output will be of size (batch_size, self.out_channels,
+            # x.size(-2), x.size(-1)//2 + 1)
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, height, width // 2 + 1],
+                dtype=x.dtype,
+                device=x.device,
+            )
 
         slices0 = (
             slice(None),  # Equivalent to: [:,
@@ -616,9 +644,14 @@ class SpectralConv2d(SpectralConv):
             width = round(width * self.output_scaling_factor[indices][0])
             height = round(height * self.output_scaling_factor[indices][1])
 
-        x = torch.fft.irfft2(
+        if cplx:
+            x = torch.fft.ifft2(
             out_fft, s=(height, width), dim=(-2, -1), norm=self.fft_norm
-        )
+            )
+        else:
+            x = torch.fft.irfft2(
+                out_fft, s=(height, width), dim=(-2, -1), norm=self.fft_norm
+            )
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
@@ -634,15 +667,26 @@ class SpectralConv3d(SpectralConv):
     """
 
     def forward(self, x, indices=0):
+
+        cplx = x.is_complex()
+
         batchsize, channels, height, width, depth = x.shape
 
-        x = torch.fft.rfftn(x.float(), norm=self.fft_norm, dim=[-3, -2, -1])
+        if cplx:
+            x = torch.fft.fftn(x.float(), norm=self.fft_norm, dim=[-3, -2, -1])
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, height, width, depth],
+                device=x.device,
+                dtype=torch.cfloat,
+            )
+        else:
+            x = torch.fft.rfftn(x.float(), norm=self.fft_norm, dim=[-3, -2, -1])
 
-        out_fft = torch.zeros(
-            [batchsize, self.out_channels, height, width, depth // 2 + 1],
-            device=x.device,
-            dtype=torch.cfloat,
-        )
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, height, width, depth // 2 + 1],
+                device=x.device,
+                dtype=torch.cfloat,
+            )
 
         slices0 = (
             slice(None),  # Equivalent to: [:,
@@ -699,7 +743,10 @@ class SpectralConv3d(SpectralConv):
             height = round(height * self.output_scaling_factor[1])
             depth = round(depth * self.output_scaling_factor[2])
 
-        x = torch.fft.irfftn(out_fft, s=(height, width, depth), dim=[-3, -2, -1], norm=self.fft_norm)
+        if cplx:
+            x = torch.fft.ifftn(out_fft, s=(height, width, depth), dim=[-3, -2, -1], norm=self.fft_norm)
+        else:
+            x = torch.fft.irfftn(out_fft, s=(height, width, depth), dim=[-3, -2, -1], norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
