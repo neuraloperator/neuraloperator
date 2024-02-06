@@ -34,6 +34,11 @@ def ctanh(x: torch.Tensor):
 
 
 def apply_complex(fr, fi, x, dtype=torch.cfloat):
+    """
+    fr: a function (e.g., conv) to be applied on real part of x
+    fi: a function (e.g., conv) to be applied on imag part of x
+    x: complex input.
+    """
     return (fr(x.real) - fi(x.imag)).type(dtype) + 1j * (fr(x.imag) + fi(x.real)).type(
         dtype
     )
@@ -45,10 +50,10 @@ class ComplexValued(nn.Module):
     into a module that operates on complex-valued spatial data.
     """
 
-    def __init__(self, mod):
+    def __init__(self, module):
         super(ComplexValued, self).__init__()
-        self.fr = deepcopy(mod)
-        self.fi = deepcopy(mod)
+        self.fr = deepcopy(module)
+        self.fi = deepcopy(module)
 
     def forward(self, x):
         return apply_complex(self.fr, self.fi, x) 
