@@ -411,3 +411,55 @@ class WeightedL2DragLoss(object):
         loss = (1.0/len(self.mappings) + 1)*loss
 
         return loss
+
+class PointwiseQuantileLoss(object):
+    def __init__(self, quantile, reduce_dims = 0, reductions='sum'):
+        # for now only support 1d as in output function's codomain is R
+        super().__init__()
+
+        self.quantile = quantile
+
+        if isinstance(reduce_dims, int):
+            self.reduce_dims = [reduce_dims]
+        else:
+            self.reduce_dims = reduce_dims
+        
+        if self.reduce_dims is not None:
+            if isinstance(reductions, str):
+                assert reductions == 'sum' or reductions == 'mean'
+                self.reductions = [reductions]*len(self.reduce_dims)
+            else:
+                for j in range(len(reductions)):
+                    assert reductions[j] == 'sum' or reductions[j] == 'mean'
+                self.reductions = reductions
+    
+    def reduce_all(self, x):
+        for j in range(len(self.reduce_dims)):
+            if self.reductions[j] == 'sum':
+                x = torch.sum(x, dim=self.reduce_dims[j], keepdim=True)
+            else:
+                x = torch.mean(x, dim=self.reduce_dims[j], keepdim=True)
+        
+        return x
+        
+    def rel(self, x, y):
+        # y is the pointwise diff value (pred by fixed model - ytrue)
+        # since we want a ball around prediction, we take abs value of y
+        # note this quantile is something like 0.9 or 0.95, normally
+        y_abs = torch.abs(y)
+        diff = y_abs - x
+        yscale,_ = torch.max(y_abs, dim=0)
+        yscale = yscale + 0.00000001
+        ptwise_loss = torch.max(self.quantile * diff, -(1-self.quantile) * diff)
+        # scale this, above with prob 1-q it's weighed by q and q weighed by 1-q
+        ptwise_loss_scaled = ptwise_loss/2/self.quantile/(1-self.quantile)
+        ptavg_loss = ptwise_loss_scaled.view(ptwise_loss_scaled.shape[0], -1).mean(1, keepdim=True)
+
+        if self.reduce_dims is not None:
+            loss_batch = self.reduce_all(ptavg_loss).squeeze()
+            
+        return loss_batch
+
+
+    def __call__(self, x, y):
+        return self.rel(x, y)
