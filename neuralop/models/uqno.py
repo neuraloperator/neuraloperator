@@ -1,16 +1,12 @@
 from functools import partialmethod
-
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from ..losses import PointwiseQuantileLoss
-from ..layers.spectral_convolution import SpectralConv
-from ..layers.spherical_convolution import SphericalConv
-from ..layers.padding import DomainPadding
-from ..layers.fno_block import FNOBlocks
-from ..layers.mlp import MLP
 from .base_model import BaseModel
+import numpy as np
 
-class UQNO(name='UQNO'):
+class UQNO():
     """a (alpha,delta) Risk-Controlling Neural Operator based on https://arxiv.org/abs/2402.01960
 
     Parameters
@@ -73,7 +69,7 @@ class UQNO(name='UQNO'):
         torch.save(model_new.state_dict(), save_path)
         return model_new
 
-    def get_residual(self, model, encoder, loader):
+    def get_residual(self, model, encoder, loader, device="cuda"):
         error_list = []
         x_list = []
         model = model.to(device)
@@ -84,7 +80,8 @@ class UQNO(name='UQNO'):
                 x, y = sample['x'], sample['y']
                 x = x.to(device)
                 y = y.to(device)
-                pred = encoder.decode(model(x))
+                pred_unscaled = model(x)
+                pred = encoder.inverse_transform(pred_unscaled)
                 error = (pred-y).detach().to("cpu") # detach, otherwise residual carries gradient of model weight
                 error_list.append(error)
                 x_list.append(x.to("cpu"))
@@ -120,14 +117,14 @@ class UQNO(name='UQNO'):
         print(f"function index: {function_idx}'th lagrest of {n_samples}")
         return domain_idx, function_idx
 
-    def _calibrate_quantile_model(self, model, model_encoder, calib_loader, domain_idx, function_idx):
+    def _calibrate_quantile_model(self, model, model_encoder, calib_loader, domain_idx, function_idx, device="cuda"):
         val_ratio_list = []
         model = model.to(device)
         model_encoder = model_encoder.to(device)
         with torch.no_grad():
             for idx, sample in enumerate(calib_loader):
                 x, y = sample['x'].to(device), sample['y'].to(device)
-                pred = model_encoder.decode(model(x))#.squeeze()
+                pred = model_encoder.inverse_transform(model(x))#.squeeze()
                 ratio = torch.abs(y)/pred
                 val_ratio_list.append(ratio.squeeze().to("cpu"))
                 del x,y, pred
@@ -144,8 +141,8 @@ class UQNO(name='UQNO'):
             self.quantile_model = quantile_model
         scale_factor = self._calibrate_quantile_model(self.quantile_model, residual_encoder, calib_residual_loader, domain_idx, func_idx)
         self.scale_factor = scale_factor
-        self.quantile_model_encoder = residual_decoder
-        return quantile_model, scale_factor
+        self.quantile_model_encoder = residual_encoder
+        return self.quantile_model, scale_factor
 
     def predict_with_uncertainty(self, test_loader, device="cuda"):
         point_preds = []
@@ -155,8 +152,8 @@ class UQNO(name='UQNO'):
                 x, y = sample['x'], sample['y']
                 x = x.to(device)
                 y = y.to(device)
-                point_pred = self.base_model_encoder.decode(self.base_model(x))
-                quantile_model_pred = self.quantile_model_encoder.decode(self.quantile_model(x))
+                point_pred = self.base_model_encoder.inverse_transform(self.base_model(x))
+                quantile_model_pred = self.quantile_model_encoder.inverse_transform(self.quantile_model(x))
                 uncertainty_pred = quantile_model_pred * self.scale_factor
                 point_preds.append(point_pred)
                 uq_preds.append(uncertainty_pred)
@@ -165,7 +162,7 @@ class UQNO(name='UQNO'):
         uq_pred = torch.cat(uq_preds, axis=0)
         return point_pred, uq_pred
 
-    def eval_coverage_bandwidth(test_loader):
+    def eval_coverage_bandwidth(self, test_loader, device="cuda"):
         """
         Get percentage of instances hitting target-percentage pointwise coverage
         (e.g. percenetage of instances with >1-alpha points being covered by quantile model)
@@ -183,9 +180,9 @@ class UQNO(name='UQNO'):
                 x, y = sample['x'], sample['y']
                 x = x.to(device)
                 y = y.to(device)
-                point_pred = self.base_model_encoder.decode(self.base_model(x))
+                point_pred = self.base_model_encoder.inverse_transform(self.base_model(x))
                 pointwise_true_err = point_pred - y
-                quantile_model_pred = self.quantile_model_encoder.decode(self.quantile_model(x))
+                quantile_model_pred = self.quantile_model_encoder.inverse_transform(self.quantile_model(x))
                 uncertainty_pred = quantile_model_pred * self.scale_factor
 
                 in_pred = (torch.abs(pointwise_true_err) < uncertainty_pred).float().squeeze()
@@ -193,7 +190,7 @@ class UQNO(name='UQNO'):
                 avg_interval_list.append(avg_interval.to("cpu"))
 
                 in_pred_flattened = in_pred.view(in_pred.shape[0], -1)
-                in_pred_instancewise = torch.mean(in_pred_flattened,dim=1) >= target_point_percentage # expected shape (batchsize, 1)
+                in_pred_instancewise = torch.mean(in_pred_flattened,dim=1) >= 1-self.alpha # expected shape (batchsize, 1)
                 in_pred_list.append(in_pred_instancewise.float().to("cpu"))
                 #del x, y, pred, point_pred, in_pred_flattened
                 #torch.cuda.empty_cache()
@@ -202,7 +199,7 @@ class UQNO(name='UQNO'):
         intervals = torch.cat(avg_interval_list, axis=0)
         mean_interval = torch.mean(intervals, dim=0)
         in_pred_percentage = torch.mean(in_pred, dim=0)
-        print(f"{in_pred_percentage} of instances satisfy that >= {target_point_percentage} pts drawn are inside the predicted quantile")
+        print(f"{in_pred_percentage} of instances satisfy that >= {1-self.alpha} pts drawn are inside the predicted quantile")
         print(f"Mean interval width is {mean_interval}")
         return mean_interval, in_pred_percentage
 

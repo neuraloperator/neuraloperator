@@ -9,12 +9,13 @@ In this example, we demonstrate how to train a UQNO for uncertainty quantificati
 import torch
 import matplotlib.pyplot as plt
 import sys
-from neuralop.models import TFNO
+from neuralop.models import TFNO, UQNO
 from neuralop import Trainer
 from neuralop.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
-import utils
+from utils import *
+import numpy as np
 
 device = 'cuda'
 quantile_model_config = {
@@ -29,8 +30,8 @@ quantile_model_config = {
 main_model_config = quantile_model_config # for simplicity, assume main model has the same config
 
 # load trained base model
-base_model = load_base_model("https://drive.google.com/file/d/1xGy1rvmR4w3_bwWGfiA9A3v6nrb5fEq9/view?usp=drive_link", "main_model", main_model_config)
-quantile_model = load_quantile_model("https://drive.google.com/file/d/1G9NX2TiyNhkoSHmw8wK3yVbtZsGVeNYZ/view?usp=drive_link", "quantile_model", quantile_model_config)
+base_model = load_fno_model("https://drive.google.com/uc?export=download&id=1xGy1rvmR4w3_bwWGfiA9A3v6nrb5fEq9", "main_model", main_model_config)
+quantile_model = load_fno_model("https://drive.google.com/uc?export=download&id=1G9NX2TiyNhkoSHmw8wK3yVbtZsGVeNYZ", "quantile_model", quantile_model_config)
 
 # load data, note this training model is reserved for UQNO, and it should be
 # separate from the training set of base model
@@ -40,15 +41,15 @@ calib_loader, test_loader = get_calib_test_loaders("darcy_x.mat", "darcy_y.mat",
 
 # initialize a (0.05, 0.10) UQNO
 alpha = 0.05 
-delta = 0.10
+delta = 0.05
 uqno = UQNO(alpha, delta, base_model, main_y_encoder, quantile_model_config)
 
 # get residual of base model
 #x_train, residual_train = uqno.get_residual(main_model, main_y_encoder, train_loader)
-x_val, residual_val = uqno.get_residual(main_model, main_y_encoder, calib_loader)
-x_test, residual_test = uqno.get_residual(main_model, main_y_encoder, test_loader)
+x_val, residual_val = uqno.get_residual(base_model, main_y_encoder, calib_loader)
+x_test, residual_test = uqno.get_residual(base_model, main_y_encoder, test_loader)
 residual_encoder = load_residual_model_encoder()
-calib_residual_loader, _ = uqno.get_darcy_loader_data(x_val, residual_val, quantile_model_config["batch_size"], positional_encoding=False, shuffle=False, encode_output=False)
+calib_residual_loader, _ = get_darcy_loader_data(x_val, residual_val, quantile_model_config["batch_size"], positional_encoding=False, shuffle=False, encode_output=False)
 
 # train calibrated uqno
 n_calib_samples = x_val.shape[0]
@@ -65,4 +66,5 @@ uqno.train_calibrated_uqno(train_residual_loader, calib_residual_loader, residua
 # point_pred, uq_pred = uqno.predict_with_uncertainty(test_loader)
 # for large samples (where the full batch cannot fit in memory), eval_coverage_bandwidth
 # evaluates coverage and bandwidth in a streaming manner
+# note that our method is conservative when the size of validation set is small
 calibrated_percentage, avg_bandwidth = uqno.eval_coverage_bandwidth(test_loader)

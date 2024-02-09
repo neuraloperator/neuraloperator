@@ -6,6 +6,7 @@ import torch.nn.functional as F
 
 from .mlp import MLP
 from .normalization_layers import AdaIN
+from .resample import resample
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
 from ..utils import validate_scaling_factor
@@ -22,7 +23,7 @@ class FNOBlocks(nn.Module):
         n_modes,
         output_scaling_factor: Optional[Union[Number, List[Number]]] = None,
         n_layers=1,
-        max_n_modes=None,
+        incremental_n_modes=None,
         fno_block_precision="full",
         use_mlp=False,
         mlp_dropout=0,
@@ -48,14 +49,14 @@ class FNOBlocks(nn.Module):
         super().__init__()
         if isinstance(n_modes, int):
             n_modes = [n_modes]
-        self._n_modes = n_modes
+        self.n_modes = n_modes
         self.n_dim = len(n_modes)
 
         self.output_scaling_factor: Union[
             None, List[List[float]]
         ] = validate_scaling_factor(output_scaling_factor, self.n_dim, n_layers)
 
-        self.max_n_modes = max_n_modes
+        self._incremental_n_modes = incremental_n_modes
         self.fno_block_precision = fno_block_precision
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -83,8 +84,10 @@ class FNOBlocks(nn.Module):
             self.out_channels,
             self.n_modes,
             output_scaling_factor=output_scaling_factor,
-            max_n_modes=max_n_modes,
+            incremental_n_modes=incremental_n_modes,
+            fno_block_precision=fno_block_precision,
             rank=rank,
+            fft_norm=fft_norm,
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
             separable=separable,
@@ -196,11 +199,11 @@ class FNOBlocks(nn.Module):
 
     def forward_with_postactivation(self, x, index=0, output_shape=None):
         x_skip_fno = self.fno_skips[index](x)
-        x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
+        x_skip_fno = self.resample(x_skip_fno, index, output_shape)
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
-            x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
+            x_skip_mlp = self.resample(x_skip_mlp, index, output_shape)
 
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
@@ -235,11 +238,11 @@ class FNOBlocks(nn.Module):
             x = self.norm[self.n_norms * index](x)
 
         x_skip_fno = self.fno_skips[index](x)
-        x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
+        x_skip_fno = self.resample(x_skip_fno, index, output_shape)
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
-            x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
+            x_skip_mlp = self.resample(x_skip_mlp, index, output_shape)
 
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
@@ -258,14 +261,30 @@ class FNOBlocks(nn.Module):
 
         return x
 
-    @property
-    def n_modes(self):
-        return self._n_modes
+    def resample(self, x, index, output_shape=None):
+        """Resamples input if scaling factors are available for this block."""
+        if self.output_scaling_factor is None and output_shape is None:
+            return x
 
-    @n_modes.setter
-    def n_modes(self, n_modes):
-        self.convs.n_modes = n_modes
-        self._n_modes = n_modes
+        if output_shape is not None:
+            return resample(x, res_scale=1, axis=None, output_shape=output_shape)
+
+        # output_shape is None and self.output_scaling_factor is not None
+        scaling_factor = self.output_scaling_factor[index]
+        return resample(
+            x,
+            scaling_factor,
+            list(range(-len(scaling_factor), 0)),
+            output_shape=output_shape,
+        )
+
+    @property
+    def incremental_n_modes(self):
+        return self._incremental_n_modes
+
+    @incremental_n_modes.setter
+    def incremental_n_modes(self, incremental_n_modes):
+        self.convs.incremental_n_modes = incremental_n_modes
 
     def get_block(self, indices):
         """Returns a sub-FNO Block layer from the jointly parametrized main block

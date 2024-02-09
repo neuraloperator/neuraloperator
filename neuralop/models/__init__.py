@@ -3,4 +3,5 @@ from .fno import FNO, FNO1d, FNO2d, FNO3d
 from .fno import SFNO
 from .uno import UNO
 # from .fnogno import FNOGNO
+from .uqno import UQNO
 from .base_model import get_model
