@@ -102,6 +102,8 @@ class IncrementalDataProcessor(torch.nn.Module):
         self.dataset_indices = dataset_indices
         self.epoch_gap = epoch_gap
         self.verbose = verbose
+        self.mode_data = "Train"
+        self.epoch = 0
         
         self.subsammpling_rate = 1
         self.current_index = 0
@@ -163,7 +165,7 @@ class IncrementalDataProcessor(torch.nn.Module):
             self.epoch_wise_res_increase(epoch)
             return self.regularize_input_res(x, y)
         
-    def preprocess(self, data_dict, epoch=None, mode = "Train", batched=True):
+    def preprocess(self, data_dict, batched=True):
         x = data_dict['x'].to(self.device)
         y = data_dict['y'].to(self.device)
 
@@ -174,8 +176,8 @@ class IncrementalDataProcessor(torch.nn.Module):
         if self.out_normalizer is not None and self.train:
             y = self.out_normalizer.transform(y)
         
-        if mode == "Train":
-            x, y = self.step(epoch=epoch, x=x, y=y)
+        if self.mode_data == "Train":
+            x, y = self.step(epoch=self.epoch, x=x, y=y)
         
         data_dict['x'] = x
         data_dict['y'] = y

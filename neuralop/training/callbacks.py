@@ -481,6 +481,7 @@ class IncrementalCallback(Callback):
         self.incremental_grad_max_iter = incremental_grad_max_iter
         self.incremental_loss_eps = incremental_loss_eps
         self.loss_list = []
+        self.mode = "Train"
     
     def on_init_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
@@ -513,7 +514,11 @@ class IncrementalCallback(Callback):
     
     def on_batch_start(self, idx, **kwargs):
         self._update_state_dict(idx=idx)
-
+        self.mode = "Training"
+        self.data = kwargs['data_processor']
+        self.data.mode_data = self.mode
+        self.data.epoch = self.epoch 
+        
     def on_before_loss(self, out, **kwargs):
         if self.state_dict['epoch'] == 0 and self.state_dict['idx'] == 0 \
             and self.state_dict['verbose']:
@@ -560,7 +565,7 @@ class IncrementalCallback(Callback):
         incremental_modes = self.state_dict['model'].fno_blocks.convs.n_modes[0]
         max_modes = self.state_dict['model'].fno_blocks.convs.max_n_modes[0]
         if len(self.loss_list) > 1:
-            if abs(self.loss_list[-1] - self.loss_list[-2]) <= 1:
+            if abs(self.loss_list[-1] - self.loss_list[-2]) <= self.incremental_loss_eps:
                 if incremental_modes < max_modes:
                     incremental_modes += 1
         modes_list = tuple([incremental_modes] * self.ndim)
