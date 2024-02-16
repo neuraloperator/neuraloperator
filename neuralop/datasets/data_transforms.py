@@ -109,7 +109,7 @@ class IncrementalDataProcessor(torch.nn.Module):
         self.current_index = 0
         self.current_logged_epoch = 0
         self.current_sub = self.index_to_sub_from_table(self.current_index)
-        self.current_res = self.sub_to_res(self.current_sub)           
+        self.current_res = int(self.dataset_resolution / self.current_sub)   
         
         print(f'Original Incre Res: change index to {self.current_index}')
         print(f'Original Incre Res: change sub to {self.current_sub}')
@@ -126,18 +126,14 @@ class IncrementalDataProcessor(torch.nn.Module):
             self.out_normalizer = self.out_normalizer.to(device)
         self.device = device
         return self
-
-    def sub_to_res(self, sub):
-        # Convert sub to resolution based
-        return int(self.dataset_resolution / sub)
-
+    
     def epoch_wise_res_increase(self, epoch):
         # Update the current_sub and current_res values based on the epoch
         if epoch % self.epoch_gap == 0 and epoch != 0 and (
                 self.current_logged_epoch != epoch):
             self.current_index += 1
             self.current_sub = self.index_to_sub_from_table(self.current_index)
-            self.current_res = self.sub_to_res(self.current_sub)
+            self.current_res = int(self.dataset_resolution / self.current_sub)
             self.current_logged_epoch = epoch
 
             if self.verbose:

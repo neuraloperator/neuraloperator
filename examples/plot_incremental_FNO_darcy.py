@@ -37,8 +37,11 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Set up the incremental FNO model
 # We start with 2 modes in each dimension
 # We choose to update the modes by the incremental gradient explained algorithm
-starting_modes = (2, 2)
 incremental = True
+if incremental:
+    starting_modes = (2, 2)
+else:
+    starting_modes = (16, 16)
 
 # %%
 # set up model
@@ -117,6 +120,7 @@ callbacks = [
         incremental_loss_gap=False,
         incremental_grad=True,
         incremental_grad_eps=0.9999,
+        incremental_loss_eps = 0.001,
         incremental_buffer=5,
         incremental_max_iter=1,
         incremental_grad_max_iter=2,

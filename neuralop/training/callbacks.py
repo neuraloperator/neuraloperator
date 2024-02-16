@@ -15,6 +15,7 @@ import torch
 import wandb
 
 from .training_state import save_training_state
+from neuralop.utils import compute_rank, compute_stable_rank, compute_explained_variance
 
 class Callback(object):
     """
@@ -514,10 +515,11 @@ class IncrementalCallback(Callback):
     
     def on_batch_start(self, idx, **kwargs):
         self._update_state_dict(idx=idx)
-        self.mode = "Training"
+        self.mode = "Train"
         self.data = kwargs['data_processor']
-        self.data.mode_data = self.mode
-        self.data.epoch = self.epoch 
+        if self.data is not None:
+            self.data.mode_data = self.mode
+            self.data.epoch = self.state_dict['epoch']
         
     def on_before_loss(self, out, **kwargs):
         if self.state_dict['epoch'] == 0 and self.state_dict['idx'] == 0 \
@@ -541,6 +543,12 @@ class IncrementalCallback(Callback):
                 loss_value = {i:e.item() for (i, e) in enumerate(loss_value)}
                 self.state_dict['msg'] += f', {loss_name}={loss_value}'
     
+    def on_val_batch_start(self, *args, **kwargs):
+        self.mode = "Validation"
+        if self.data is not None:
+            self.data.mode_data = self.mode
+            self.data.epoch = self.state_dict['epoch']
+
     def on_val_end(self, *args, **kwargs):
         if self.state_dict.get('regularizer', False):
             avg_lasso = self.state_dict.get('avg_lasso_loss', 0.)
@@ -596,7 +604,7 @@ class IncrementalCallback(Callback):
                     strength = torch.norm(
                         weight[:, mode_index, :], p='fro').cpu()
                     strength_vector.append(strength)
-                expained_ratio = self.compute_explained_variance(
+                expained_ratio = compute_explained_variance(
                     incremental_modes - self.incremental_buffer, torch.Tensor(strength_vector))
                 if expained_ratio < self.incremental_grad_eps:
                     if incremental_modes < max_modes:
@@ -610,24 +618,3 @@ class IncrementalCallback(Callback):
             main_modes = incremental_final[0]
             modes_list = tuple([main_modes] * self.ndim)
             self.state_dict['model'].fno_blocks.convs.n_modes = tuple(modes_list)
-    
-    def compute_rank(self, tensor):
-        # Compute the matrix rank of a tensor
-        rank = torch.matrix_rank(tensor).cpu()
-        return rank
-
-    def compute_stable_rank(self, tensor):
-        # Compute the stable rank of a tensor
-        tensor = tensor.detach()
-        fro_norm = torch.linalg.norm(tensor, ord='fro')**2
-        l2_norm = torch.linalg.norm(tensor, ord=2)**2
-        rank = fro_norm / l2_norm
-        rank = rank.cpu()
-        return rank
-
-    def compute_explained_variance(self, frequency_max, s):
-        # Compute the explained variance based on frequency_max and singular
-        # values (s)
-        s_current = s.clone()
-        s_current[frequency_max:] = 0
-        return 1 - torch.var(s - s_current) / torch.var(s)
