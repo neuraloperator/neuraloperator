@@ -210,8 +210,8 @@ def test_incremental():
     )
     callbacks = [
         IncrementalCallback(
-            incremental_loss_gap=True,
-            incremental_grad=False,
+            incremental_loss_gap=False,
+            incremental_grad=True,
             incremental_grad_eps=0.9999,
             incremental_buffer=5,
             incremental_max_iter=1,
@@ -231,7 +231,7 @@ def test_incremental():
     )
     
     trainer = Trainer(model=model,
-                      n_epochs=10,
+                      n_epochs=20,
                       callbacks=callbacks)
 
     optimizer = torch.optim.Adam(model.parameters(), 
