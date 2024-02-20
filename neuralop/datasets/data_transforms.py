@@ -70,6 +70,10 @@ class IncrementalDataProcessor(torch.nn.Module):
                  positional_encoding=None, device = 'cpu',
                  dataset_sublist=[2, 1], dataset_resolution=16, dataset_indices=[2,3], epoch_gap=10, verbose=False):
         """An incremental processor to pre/post process data before training/inferencing a model
+        In particular this processor first regularizes the input resolution based on the sub_list and dataset_indices
+        in the spatial domain based on a fixed number of epochs. We incrementally increase the resolution like done 
+        in curriculum learning to train the model. This is useful for training models on large datasets with high
+        resolution data.
 
         Parameters
         ----------
@@ -102,10 +106,9 @@ class IncrementalDataProcessor(torch.nn.Module):
         self.dataset_indices = dataset_indices
         self.epoch_gap = epoch_gap
         self.verbose = verbose
-        self.mode_data = "Train"
+        self.mode = "Train"
         self.epoch = 0
         
-        self.subsammpling_rate = 1
         self.current_index = 0
         self.current_logged_epoch = 0
         self.current_sub = self.index_to_sub_from_table(self.current_index)
@@ -172,13 +175,13 @@ class IncrementalDataProcessor(torch.nn.Module):
         if self.out_normalizer is not None and self.train:
             y = self.out_normalizer.transform(y)
         
-        if self.mode_data == "Train":
+        if self.mode == "Train":
             x, y = self.step(epoch=self.epoch, x=x, y=y)
         
         data_dict['x'] = x
         data_dict['y'] = y
 
-        return data_dict
+        return data_dict 
 
     def postprocess(self, output, data_dict):
         y = data_dict['y']

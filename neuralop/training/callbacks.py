@@ -516,9 +516,9 @@ class IncrementalCallback(Callback):
     def on_batch_start(self, idx, **kwargs):
         self._update_state_dict(idx=idx)
         self.mode = "Train"
-        self.data = kwargs['data_processor']
+        self.data = self.state_dict['data_processor']
         if self.data is not None:
-            self.data.mode_data = self.mode
+            self.data.mode = self.mode
             self.data.epoch = self.state_dict['epoch']
         
     def on_before_loss(self, out, **kwargs):
@@ -546,7 +546,7 @@ class IncrementalCallback(Callback):
     def on_val_batch_start(self, *args, **kwargs):
         self.mode = "Validation"
         if self.data is not None:
-            self.data.mode_data = self.mode
+            self.data.mode = self.mode
             self.data.epoch = self.state_dict['epoch']
 
     def on_val_end(self, *args, **kwargs):
