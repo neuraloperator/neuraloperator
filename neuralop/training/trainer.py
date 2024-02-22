@@ -186,7 +186,7 @@ class Trainer:
                 if regularizer:
                     loss += regularizer.loss
                 
-                loss.backward()
+                loss.sum().backward()
                 del out
 
                 optimizer.step()
