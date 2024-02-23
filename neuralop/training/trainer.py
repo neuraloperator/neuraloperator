@@ -190,10 +190,10 @@ class Trainer:
                 del out
 
                 optimizer.step()
-                train_err += loss.item()
+                train_err += loss.sum().item()
         
                 with torch.no_grad():
-                    avg_loss += loss.item()
+                    avg_loss += loss.sum().item()
                     if regularizer:
                         avg_lasso_loss += regularizer.loss
 
