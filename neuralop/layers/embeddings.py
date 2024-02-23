@@ -74,3 +74,138 @@ class RotaryEmbedding(nn.Module):
 
         return torch.cat((apply_rotary_pos_emb(t_x, freqs_x),
                           apply_rotary_pos_emb(t_y, freqs_y)), dim=-1)
+
+
+# Gaussian random Fourier features
+# code modified from: https://github.com/ndahlquist/pytorch-fourier-feature-networks
+class GaussianFourierFeatureTransform(nn.Module):
+    def __init__(self,
+                 in_channels,
+                 mapping_size=256,
+                 scale=10,
+                 learnable=False):
+        """
+        An implementation of Gaussian Fourier feature mapping.
+        "Fourier Features Let Networks Learn High Frequency Functions in Low Dimensional Domains":
+           https://arxiv.org/abs/2006.10739
+           https://people.eecs.berkeley.edu/~bmild/fourfeat/index.html
+        Given an input of size [batches, n, num_input_channels],
+         returns a tensor of size [batches, n, mapping_size*2].
+        """
+        super().__init__()
+
+        self._B = nn.Parameter(torch.randn((in_channels, mapping_size)) * scale,
+                               requires_grad=learnable)
+
+    def forward(self, x):
+        if len(x.shape) == 2:
+            x = x.unsqueeze(0)
+        batches, num_of_points, channels = x.shape
+
+        # Make shape compatible for matmul with _B.
+        # From [B, N, C] to [(B*N), C].
+        x = x.view(-1, channels)
+
+        x = x @ self._B.to(x.device)
+
+        # From [(B*N), C] to [B, N, C]
+        x = x.view(batches, num_of_points, -1)
+
+        x = 2 * torch.pi * x
+
+        return torch.cat([torch.sin(x), torch.cos(x)], dim=-1)
+
+
+# SirenNet
+# code modified from: https://github.com/lucidrains/siren-pytorch/blob/master/siren_pytorch/siren_pytorch.py
+# sin activation
+class Sine(nn.Module):
+    def __init__(self, w0=1.):
+        super().__init__()
+        self.w0 = w0
+
+    def forward(self, x):
+        return torch.sin(self.w0 * x)
+
+
+# siren layer
+class Siren(nn.Module):
+    def __init__(self,
+                 dim_in,
+                 dim_out,
+                 w0=1.,
+                 c=6.,
+                 is_first=False,
+                 use_bias=True,
+                 activation=None):
+        super().__init__()
+        self.dim_in = dim_in
+        self.is_first = is_first
+
+        weight = torch.zeros(dim_out, dim_in)
+        bias = torch.zeros(dim_out) if use_bias else None
+        self.init_(weight, bias, c=c, w0=w0)
+
+        self.weight = nn.Parameter(weight)
+        self.bias = nn.Parameter(bias) if use_bias else None
+        self.activation = Sine(w0) if activation is None else activation
+
+    def init_(self, weight, bias, c, w0):
+        dim = self.dim_in
+
+        w_std = (1 / dim) if self.is_first else (math.sqrt(c / dim) / w0)
+        weight.uniform_(-w_std, w_std)
+
+        if bias is not None:
+            bias.uniform_(-w_std, w_std)
+
+    def forward(self, x):
+        out = torch.nn.functional.linear(x, self.weight, self.bias)
+        out = self.activation(out)
+        return out
+
+
+# siren network
+class SirenNet(nn.Module):
+    def __init__(self,
+                 dim_in,
+                 dim_hidden,
+                 dim_out,
+                 num_layers,
+                 w0=1.,
+                 w0_initial=30.,
+                 use_bias=True,
+                 final_activation=None):
+        super().__init__()
+        self.num_layers = num_layers
+        self.dim_hidden = dim_hidden
+
+        self.layers = nn.ModuleList([])
+        for ind in range(num_layers):
+            is_first = ind == 0
+            layer_w0 = w0_initial if is_first else w0
+            layer_dim_in = dim_in if is_first else dim_hidden
+
+            self.layers.append(Siren(
+                dim_in=layer_dim_in,
+                dim_out=dim_hidden,
+                w0=layer_w0,
+                use_bias=use_bias,
+                is_first=is_first,
+            ))
+
+        self.final_activation = nn.Identity() if final_activation is None else final_activation
+        self.last_layer = Siren(dim_in=dim_hidden,
+                                dim_out=dim_out,
+                                w0=w0,
+                                use_bias=use_bias,
+                                activation=final_activation)
+
+    def forward(self, x):
+
+        for layer in self.layers:
+            x = layer(x)
+
+        x = self.last_layer(x)
+        x = self.final_activation(x)
+        return x

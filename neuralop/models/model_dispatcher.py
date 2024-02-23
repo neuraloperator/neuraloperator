@@ -5,6 +5,7 @@ from .fno import FNO, FNO1d, FNO2d, FNO3d
 from .fno import SFNO
 from .uno import UNO
 # from .fnogno import FNOGNO
+from .transformer_no import TransformerNO
 
 
 MODEL_ZOO = {
@@ -18,6 +19,7 @@ MODEL_ZOO = {
     "fno2d": FNO2d,
     "fno3d": FNO3d,
     "uno": UNO,
+    'transformer_no': TransformerNO,
     # "fnogno": FNOGNO
 }
 
