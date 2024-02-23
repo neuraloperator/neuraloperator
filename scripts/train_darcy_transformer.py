@@ -39,12 +39,11 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.transformer_no.n_layers,
-                config.transformer_no.hidden_channels,
-                config.transformer_no.n_modes_width,
-                config.transformer_no.n_modes_height,
-                config.transformer_no.factorization,
-                config.transformer_no.rank,
+                config.transformer_no.encoder_n_layers,
+                config.transformer_no.encoder_hidden_channels,
+                config.transformer_no.decoder_hidden_channels,
+                config.transformer_no.encoder_num_heads,
+                config.transformer_no.decoder_num_heads,
                 config.patching.levels,
                 config.patching.padding,
             ]
