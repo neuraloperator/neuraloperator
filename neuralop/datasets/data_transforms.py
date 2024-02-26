@@ -1,11 +1,55 @@
+from abc import ABCMeta, abstractmethod
+
 import torch
 from neuralop.training.patching import MultigridPatching2D
 
-class DefaultDataProcessor(torch.nn.Module):
+class DataProcessor(torch.nn.Module, metaclass=ABCMeta):
+    def __init__(self):
+        """DataProcessor exposes functionality for pre-
+        and post-processing data during training or inference.
+
+        To be a valid DataProcessor within the Trainer requires
+        that the following methods are implemented:
+
+        - to(device): load necessary information to device, in keeping
+            with PyTorch convention
+        - preprocess(data): processes data from a new batch before being 
+            put through a model's forward pass
+        - postprocess(out): processes the outputs of a model's forward pass 
+            before loss and backward pass
+        - wrap(self, model):
+            wraps a model in preprocess and postprocess steps to create one forward pass
+        - forward(self, x):
+            forward pass providing that a model has been wrapped
+        """
+        super().__init__()
+
+
+    @abstractmethod
+    def to(self,device):
+        pass
+    
+    @abstractmethod
+    def preprocess(self, x):
+        pass
+
+    @abstractmethod
+    def postprocess(self, x):
+        pass
+
+    @abstractmethod
+    def wrap(self,model):
+        pass
+
+    @abstractmethod
+    def forward(self, x):
+        pass
+
+class DefaultDataProcessor(DataProcessor):
     def __init__(self, 
                  in_normalizer=None, out_normalizer=None, 
                  positional_encoding=None):
-        """A simple processor to pre/post process data before training/inferencing a model
+        """A simple processor to pre/post process data before training/inferencing a model.
 
         Parameters
         ----------
@@ -64,7 +108,7 @@ class DefaultDataProcessor(torch.nn.Module):
         output = self.postprocess(output)
         return output, data_dict
 
-class MGPatchingDataProcessor(torch.nn.Module):
+class MGPatchingDataProcessor(DataProcessor):
     def __init__(self, model: torch.nn.Module, levels: int, 
                  padding_fraction: float, stitching: float, 
                  device: str='cpu', in_normalizer=None, out_normalizer=None,
