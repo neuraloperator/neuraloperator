@@ -121,11 +121,10 @@ class CFDDataProcessor(DataProcessor):
     to train an FNOGNO on the CFD car-pressure dataset
     """
 
-    def __init__(self,device='cuda'):
+    def __init__(self, normalizer, device='cuda'):
         super().__init__()
+        self.normalizer = normalizer
         self.device = device
-
-
 
     def preprocess(self, sample):
         # Turn a data dictionary returned by MeshDataModule's DictDataset
@@ -150,7 +149,6 @@ class CFDDataProcessor(DataProcessor):
 
         truth = truth.to(device)
 
-
         inward_normals = -sample['triangle_normals'].squeeze(0).to(self.device)
         flow_normals = torch.zeros((sample['triangle_areas'].shape[1], 3)).to(self.device)
         flow_normals[:,0] = -1.0
@@ -167,22 +165,22 @@ class CFDDataProcessor(DataProcessor):
         sample.update(batch_dict)
         return sample
     
-    def postprocess(self,sample):
-        return sample
+    def postprocess(self, out, sample):
+        out = self.normalizer.decode(out)
+        y = self.normalizer.decode(sample['y'])
+        sample['y'] = y
+
+        return out, sample
 
     def compute_training_loss(self, *args, **kwargs):
         loss_fn = self.state_dict['training_loss']
         self._update_state_dict(**kwargs)
         return loss_fn(x = self.state_dict['out'], y = self.state_dict['sample']['y'], z=None)
 
-    def on_val_batch_start(self, *args, **kwargs):
-        return self.on_batch_start(*args, **kwargs)
-
-    def compute_val_loss(self, *args, **kwargs):
-        return self.compute_training_loss(self, *args, **kwargs)
 
 trainer = Trainer(model=model, 
                   n_epochs=config.opt.n_epochs,
+                  data_processor=CFDDataProcessor,
                   device=device,
                   callbacks=[
                       SimpleWandBLoggerCallback(**wandb_init_args)
@@ -195,7 +193,6 @@ if config.wandb.log:
 trainer.train(
               train_loader=train_loader,
               test_loaders={'':test_loader},
-              output_encoder=output_encoder,
               optimizer=optimizer,
               scheduler=scheduler,
               training_loss=train_loss_fn,
