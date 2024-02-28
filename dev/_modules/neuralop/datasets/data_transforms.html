@@ -113,16 +113,61 @@
       <div class="container content main-content">
         
   <h1>Source code for neuralop.datasets.data_transforms</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span></span><span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">neuralop.training.patching</span> <span class="kn">import</span> <span class="n">MultigridPatching2D</span>
+
+
+<span class="k">class</span> <span class="nc">DataProcessor</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;DataProcessor exposes functionality for pre-</span>
+<span class="sd">        and post-processing data during training or inference.</span>
+
+<span class="sd">        To be a valid DataProcessor within the Trainer requires</span>
+<span class="sd">        that the following methods are implemented:</span>
+
+<span class="sd">        - to(device): load necessary information to device, in keeping</span>
+<span class="sd">            with PyTorch convention</span>
+<span class="sd">        - preprocess(data): processes data from a new batch before being</span>
+<span class="sd">            put through a model&#39;s forward pass</span>
+<span class="sd">        - postprocess(out): processes the outputs of a model&#39;s forward pass</span>
+<span class="sd">            before loss and backward pass</span>
+<span class="sd">        - wrap(self, model):</span>
+<span class="sd">            wraps a model in preprocess and postprocess steps to create one forward pass</span>
+<span class="sd">        - forward(self, x):</span>
+<span class="sd">            forward pass providing that a model has been wrapped</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">postprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">wrap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">pass</span>
+
 
 <div class="viewcode-block" id="DefaultDataProcessor">
 <a class="viewcode-back" href="../../../modules/generated/neuralop.datasets.data_transforms.DefaultDataProcessor.html#neuralop.datasets.data_transforms.DefaultDataProcessor">[docs]</a>
-<span class="k">class</span> <span class="nc">DefaultDataProcessor</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
-                 <span class="n">in_normalizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">out_normalizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
-                 <span class="n">positional_encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;A simple processor to pre/post process data before training/inferencing a model</span>
+<span class="k">class</span> <span class="nc">DefaultDataProcessor</span><span class="p">(</span><span class="n">DataProcessor</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">in_normalizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">out_normalizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">positional_encoding</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A simple processor to pre/post process data before training/inferencing a model.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -137,8 +182,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">in_normalizer</span> <span class="o">=</span> <span class="n">in_normalizer</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span> <span class="o">=</span> <span class="n">out_normalizer</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">positional_encoding</span> <span class="o">=</span> <span class="n">positional_encoding</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="s1">&#39;cpu&#39;</span>
-    
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
+
     <span class="k">def</span> <span class="nf">wrap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="k">return</span> <span class="bp">self</span>
@@ -155,8 +200,8 @@
 
 
     <span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_dict</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_normalizer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_normalizer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
@@ -165,38 +210,46 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">train</span><span class="p">:</span>
             <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
 
-        <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
-        <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
 
         <span class="k">return</span> <span class="n">data_dict</span>
 
     <span class="k">def</span> <span class="nf">postprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">data_dict</span><span class="p">):</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">train</span><span class="p">:</span>
             <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
             <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-        <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
         <span class="k">return</span> <span class="n">output</span><span class="p">,</span> <span class="n">data_dict</span>
-    
+
 <div class="viewcode-block" id="DefaultDataProcessor.forward">
 <a class="viewcode-back" href="../../../modules/generated/neuralop.datasets.data_transforms.DefaultDataProcessor.html#neuralop.datasets.data_transforms.DefaultDataProcessor.forward">[docs]</a>
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">data_dict</span><span class="p">):</span>
         <span class="n">data_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess</span><span class="p">(</span><span class="n">data_dict</span><span class="p">)</span>
-        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">])</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">])</span>
         <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">postprocess</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">output</span><span class="p">,</span> <span class="n">data_dict</span></div>
 </div>
 
 
+
 <div class="viewcode-block" id="MGPatchingDataProcessor">
 <a class="viewcode-back" href="../../../modules/generated/neuralop.datasets.data_transforms.MGPatchingDataProcessor.html#neuralop.datasets.data_transforms.MGPatchingDataProcessor">[docs]</a>
-<span class="k">class</span> <span class="nc">MGPatchingDataProcessor</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">levels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
-                 <span class="n">padding_fraction</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">stitching</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> 
-                 <span class="n">device</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">,</span> <span class="n">in_normalizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">out_normalizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="n">positional_encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">MGPatchingDataProcessor</span><span class="p">(</span><span class="n">DataProcessor</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+        <span class="n">levels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">padding_fraction</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">stitching</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+        <span class="n">in_normalizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">out_normalizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">positional_encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;MGPatchingDataProcessor</span>
-<span class="sd">        Applies multigrid patching to inputs out-of-place </span>
+<span class="sd">        Applies multigrid patching to inputs out-of-place</span>
 <span class="sd">        with an optional output encoder/other data transform</span>
 
 <span class="sd">        Parameters</span>
@@ -223,11 +276,14 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">levels</span> <span class="o">=</span> <span class="n">levels</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">padding_fraction</span> <span class="o">=</span> <span class="n">padding_fraction</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stitching</span> <span class="o">=</span> <span class="n">stitching</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">patcher</span> <span class="o">=</span> <span class="n">MultigridPatching2D</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">levels</span><span class="p">,</span> 
-                                      <span class="n">padding_fraction</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">padding_fraction</span><span class="p">,</span>
-                                      <span class="n">stitching</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stitching</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patcher</span> <span class="o">=</span> <span class="n">MultigridPatching2D</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">levels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">levels</span><span class="p">,</span>
+            <span class="n">padding_fraction</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">padding_fraction</span><span class="p">,</span>
+            <span class="n">stitching</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stitching</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
-        
+
         <span class="c1"># set normalizers to none by default</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">in_normalizer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">in_normalizer</span><span class="p">:</span>
@@ -236,7 +292,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span> <span class="o">=</span> <span class="n">out_normalizer</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">positional_encoding</span> <span class="o">=</span> <span class="n">positional_encoding</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
-    
+
 <div class="viewcode-block" id="MGPatchingDataProcessor.to">
 <a class="viewcode-back" href="../../../modules/generated/neuralop.datasets.data_transforms.MGPatchingDataProcessor.html#neuralop.datasets.data_transforms.MGPatchingDataProcessor.to">[docs]</a>
     <span class="k">def</span> <span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device</span><span class="p">):</span>
@@ -246,18 +302,18 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span></div>
 
-    
+
     <span class="k">def</span> <span class="nf">wrap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="k">return</span> <span class="bp">self</span>
-    
+
 <div class="viewcode-block" id="MGPatchingDataProcessor.preprocess">
 <a class="viewcode-back" href="../../../modules/generated/neuralop.datasets.data_transforms.MGPatchingDataProcessor.html#neuralop.datasets.data_transforms.MGPatchingDataProcessor.preprocess">[docs]</a>
     <span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_dict</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Preprocess data assuming that if encoder exists, it has </span>
+<span class="sd">        Preprocess data assuming that if encoder exists, it has</span>
 <span class="sd">        encoded all data during data loading</span>
-<span class="sd">        </span>
+
 <span class="sd">        Params</span>
 <span class="sd">        ------</span>
 
@@ -267,41 +323,43 @@
 <span class="sd">        batched: bool</span>
 <span class="sd">            whether the first dimension of &#39;x&#39;, &#39;y&#39; represents batching</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">data_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">data_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">v</span><span class="p">)}</span>
-        <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+        <span class="n">data_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">],</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_normalizer</span><span class="p">:</span>
             <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_normalizer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
             <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">positional_encoding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positional_encoding</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="n">batched</span><span class="p">)</span>
-        <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patcher</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">],</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patcher</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">data_dict</span></div>
 
-    
+
 <div class="viewcode-block" id="MGPatchingDataProcessor.postprocess">
 <a class="viewcode-back" href="../../../modules/generated/neuralop.datasets.data_transforms.MGPatchingDataProcessor.html#neuralop.datasets.data_transforms.MGPatchingDataProcessor.postprocess">[docs]</a>
     <span class="k">def</span> <span class="nf">postprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out</span><span class="p">,</span> <span class="n">data_dict</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Postprocess model outputs, including decoding</span>
 <span class="sd">        if an encoder exists.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Params</span>
 <span class="sd">        ------</span>
 
 <span class="sd">        data_dict: dict</span>
 <span class="sd">            dictionary keyed with &#39;x&#39;, &#39;y&#39; etc</span>
 <span class="sd">            represents one batch of data input to a model</span>
-<span class="sd">        out: torch.Tensor </span>
+<span class="sd">        out: torch.Tensor</span>
 <span class="sd">            model output predictions</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
-        <span class="n">out</span><span class="p">,</span><span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patcher</span><span class="o">.</span><span class="n">unpatch</span><span class="p">(</span><span class="n">out</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span>
+        <span class="n">out</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patcher</span><span class="o">.</span><span class="n">unpatch</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span><span class="p">:</span>
             <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
             <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
-        
-        <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+
+        <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
 
         <span class="k">return</span> <span class="n">out</span><span class="p">,</span> <span class="n">data_dict</span></div>
 
