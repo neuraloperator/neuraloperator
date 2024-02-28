@@ -47,8 +47,8 @@ class Trainer:
         """
 
         if callbacks:
-            assert (
-                isinstance(callbacks, list)
+            assert isinstance(
+                callbacks, list
             ), "Callbacks must be a list of Callback objects"
             self.callbacks = PipelineCallback(callbacks=callbacks)
             self.override_load_to_device = (
@@ -166,8 +166,8 @@ class Trainer:
                     self.callbacks.on_batch_start(
                         idx=idx, sample=sample, data_processor=self.data_processor
                     )
-                
-                n_samples +=  sample['y'].shape(0)
+
+                n_samples += sample["y"].shape(0)
 
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
@@ -325,9 +325,7 @@ class Trainer:
 
                 for loss_name, loss in loss_dict.items():
                     if self.overrides_loss:
-                        val_loss = self.callbacks.compute_training_loss(
-                            out, **sample
-                        )
+                        val_loss = self.callbacks.compute_training_loss(out, **sample)
                     else:
                         val_loss = loss(out, **sample)
                         if val_loss.shape == ():
