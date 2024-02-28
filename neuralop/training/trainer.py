@@ -167,7 +167,7 @@ class Trainer:
                         idx=idx, sample=sample, data_processor=self.data_processor
                     )
 
-                n_samples += sample["y"].shape(0)
+                n_samples += sample["y"].shape[0]
 
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
