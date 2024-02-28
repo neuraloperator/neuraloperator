@@ -5,14 +5,14 @@ from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from neuralop.training import setup
 from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
-from neuralop.losses import IregularLpqLoss, WeightedL2DragLoss
-from neuralop.losses.meta_losses import SumAggregatorLoss, FieldwiseAggregatorLoss
+from neuralop.losses.data_losses import IregularLpqLoss, WeightedL2DragLoss
+from neuralop.losses.meta_losses import WeightedSumLoss
 from neuralop.training.trainer import Trainer
 from neuralop.datasets import MeshDataModule
-from neuralop.datasets.data_transforms import DataProcessor
+#from neuralop.datasets.data_transforms import DataProcessor
 from neuralop.datasets.output_encoder import MultipleFieldOutputEncoder
 from copy import deepcopy
-from neuralop.training.callbacks import Callback, SimpleWandBLoggerCallback
+from neuralop.training.callbacks import BasicLoggerCallback
 
 # query points is [sdf_query_resolution] * 3 (taken from config ahmed)
 
@@ -61,7 +61,7 @@ if config.wandb.log and is_logger:
 #Load CFD body data
 data_module = MeshDataModule(config.data.path, 
                              config.data.entity_name, 
-                             query_points=[config.data.sdf_query_resolution]*3, 
+                             query_res=[config.data.sdf_query_resolution]*3, 
                              n_train=config.data.n_train, 
                              n_test=config.data.n_test, 
                              attributes=config.data.load_attributes,
@@ -99,7 +99,7 @@ elif config.opt.training_loss == 'weightedl2' or config.opt.training_loss == 'we
     output_encoder = MultipleFieldOutputEncoder(encoder_dict=deepcopy(data_module.normalizers),
                                                 input_mappings=data_field_mappings).to(device)
     drag_loss = WeightedL2DragLoss(device=device, mappings=data_field_mappings)
-    train_loss_fn = SumAggregatorLoss(drag_loss, IregularLpqLoss())
+    train_loss_fn = WeightedSumLoss(drag_loss, IregularLpqLoss())
 else:
     raise ValueError(f'Got {config.opt.training_loss=}')
 
@@ -115,7 +115,7 @@ else:
 
 # Handle data preprocessing to FNOGNO 
 
-class CFDDataProcessor(DataProcessor):
+class CFDDataProcessor(torch.nn.Module):
     """
     Implements logic to preprocess data/handle model outputs
     to train an FNOGNO on the CFD car-pressure dataset
