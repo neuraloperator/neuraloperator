@@ -1,11 +1,57 @@
 from pathlib import Path
+from typing import List, Union
+
 import torch
 
 from .output_encoder import UnitGaussianNormalizer
 from .tensor_dataset import TensorDataset
 from .transforms import PositionalEmbedding2D
 from .data_transforms import DefaultDataProcessor
+from .pde_dataset import PDEDataset
 
+class DarcyFlow(PDEDataset):
+    def __init__(self,
+                 root_dir: Union[Path, str],
+                 n_train: int,
+                 n_tests: List[int],
+                 batch_size: int,
+                 test_batch_sizes: List[int],
+                 train_resolution: int,
+                 test_resolutions: int=[16,32],
+                 grid_boundaries: List[int]=[[0,1],[0,1]],
+                 positional_encoding: bool=True,
+                 encode_input: bool=False, 
+                 encode_output: bool=True, 
+                 encoding="channel-wise",
+                 channel_dim=1,
+                 download: bool=True):
+        if isinstance(root_dir, str):
+            root_dir = Path(root_dir)
+        
+        self.root_dir = root_dir
+
+        # Download data if it isn't already downloaded
+        if download:
+            if not root_dir.exists():
+                root_dir.mkdir(parents=True)
+
+            # create separate folders for train and test data files
+            for suffix in ['train', 'test']:
+                suffix_path = root_dir / suffix
+                if not suffix_path.exists():
+                    suffix_path.mkdir()
+            
+            
+
+
+        self.n_train = n_train
+        self.n_tests = n_tests
+        self.train_batch_size = batch_size
+        self.test_batch_sizes = test_batch_sizes
+        self.train_res = train_resolution
+        self.test_res = test_resolutions
+
+        i
 
 def load_darcy_flow_small(
     n_train,
