@@ -7,6 +7,8 @@ class UQNO(BaseModel, name="UQNO"):
     """General N-dim (alpha, delta) Risk-Controlling Neural Operator
     Source: https://arxiv.org/abs/2402.01960
 
+    The UQNO must be trained on 
+
     Parameters
     ----------
     model : BaseModel
@@ -24,9 +26,14 @@ class UQNO(BaseModel, name="UQNO"):
             otherwise the residual model will be initialized from the config
     """
     def __init__(self,
-                 model: BaseModel,
+                 base_model: BaseModel,
                  alpha: float,
                  delta: float,
                  residual_model_config: dict = None
                  ):
         super().__init__()
+
+        self.alpha = alpha
+        self.delta = delta
+        self.base_model = base_model
+        if residual_model_config is not None:
