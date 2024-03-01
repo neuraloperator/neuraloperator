@@ -1,22 +1,21 @@
+from functools import partial
 from pathlib import Path
 from typing import Dict, List, Union
 
 import torch
 from torch.utils.data import DataLoader
 
-from neuralop.datasets import DataProcessor
-
 from .output_encoder import UnitGaussianNormalizer
 from .tensor_dataset import TensorDataset
 from .transforms import PositionalEmbedding2D
-from .data_transforms import DefaultDataProcessor
+from .data_transforms import DataProcessor, DefaultDataProcessor
 from .pde_dataset import PDEDataset
 
 def boilerplate_download_fn(pth: str):
     # print fname for now, later will be a real function
     return pth
 
-class DarcyFlow(PDEDataset):
+class DarcyFlowDataset(PDEDataset):
     def __init__(self,
                  root_dir: Union[Path, str],
                  n_train: int,
@@ -159,70 +158,5 @@ class DarcyFlow(PDEDataset):
             test_loaders[res] = loader
         return test_loaders        
 
-
-        
-
-def load_darcy_flow_small(
-    n_train,
-    n_tests,
-    batch_size,
-    test_batch_sizes,
-    test_resolutions=[16, 32],
-    grid_boundaries=[[0, 1], [0, 1]],
-    positional_encoding=True,
-    encode_input=False,
-    encode_output=True,
-    encoding="channel-wise",
-    channel_dim=1,
-):
-    """Loads a small Darcy-Flow dataset
-
-    Training contains 1000 samples in resolution 16x16.
-    Testing contains 100 samples at resolution 16x16 and
-    50 samples at resolution 32x32.
-
-    Parameters
-    ----------
-    n_train : int
-    n_tests : int
-    batch_size : int
-    test_batch_sizes : int list
-    test_resolutions : int list, default is [16, 32],
-    grid_boundaries : int list, default is [[0,1],[0,1]],
-    positional_encoding : bool, default is True
-    encode_input : bool, default is False
-    encode_output : bool, default is True
-    encoding : 'channel-wise'
-    channel_dim : int, default is 1
-        where to put the channel dimension, defaults size is 1
-        i.e: batch, channel, height, width
-
-    Returns
-    -------
-    training_dataloader, testing_dataloaders
-
-    training_dataloader : torch DataLoader
-    testing_dataloaders : dict (key: DataLoader)
-    """
-    for res in test_resolutions:
-        if res not in [16, 32]:
-            raise ValueError(
-                f"Only 32 and 64 are supported for test resolution, "
-                f"but got test_resolutions={test_resolutions}"
-            )
-    path = Path(__file__).resolve().parent.joinpath("data")
-    return load_darcy_pt(
-        str(path),
-        n_train=n_train,
-        n_tests=n_tests,
-        batch_size=batch_size,
-        test_batch_sizes=test_batch_sizes,
-        test_resolutions=test_resolutions,
-        train_resolution=16,
-        grid_boundaries=grid_boundaries,
-        positional_encoding=positional_encoding,
-        encode_input=encode_input,
-        encode_output=encode_output,
-        encoding=encoding,
-        channel_dim=channel_dim,
-    )
+# Load small darcy flow as a partial class of DarcyFlowDataset
+SmallDarcyFlow = partial(DarcyFlowDataset, train_resolution=16)
