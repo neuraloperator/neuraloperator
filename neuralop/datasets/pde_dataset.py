@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 from torch.utils.data import DataLoader
-from neuralop.datasets import DataProcessor
+from .data_transforms import DataProcessor
 
 class PDEDataset(ABCMeta):
     def __init__(self):
