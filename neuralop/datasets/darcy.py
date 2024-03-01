@@ -9,11 +9,7 @@ from .output_encoder import UnitGaussianNormalizer
 from .tensor_dataset import TensorDataset
 from .transforms import PositionalEmbedding2D
 from .data_transforms import DataProcessor, DefaultDataProcessor
-from .pde_dataset import PDEDataset
-
-def boilerplate_download_fn(pth: str):
-    # print fname for now, later will be a real function
-    return pth
+from .pde_dataset import PDEDataset, download_fn
 
 class DarcyFlowDataset(PDEDataset):
     def __init__(self,
@@ -53,7 +49,7 @@ class DarcyFlowDataset(PDEDataset):
             for fname in required_fnames:
                 fpath = root_dir / fname
                 if not fpath.exists():
-                    boilerplate_download_fn(fname)
+                    download_fn(fname)
         
         # Load train data
         data = torch.load(
@@ -159,4 +155,4 @@ class DarcyFlowDataset(PDEDataset):
         return test_loaders        
 
 # Load small darcy flow as a partial class of DarcyFlowDataset
-SmallDarcyFlow = partial(DarcyFlowDataset, train_resolution=16)
+SmallDarcyFlowDataset = partial(DarcyFlowDataset, train_resolution=16)

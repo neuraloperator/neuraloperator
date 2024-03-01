@@ -1,7 +1,6 @@
-from abc import ABCMeta, abstractproperty
+from abc import ABCMeta, abstractmethod
 
-import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from neuralop.datasets import DataProcessor
 
 class PDEDataset(ABCMeta):
@@ -26,19 +25,11 @@ class PDEDataset(ABCMeta):
         """
         pass
     
-    @abstractproperty
-    def train_db(self) -> Dataset:
-        pass
-    
-    @abstractproperty
-    def test_db(self) -> Dataset:
-        pass
-    
-    @abstractproperty
+    @abstractmethod
     def train_loader(self) -> DataLoader:
         pass
     
-    @abstractproperty
+    @abstractmethod
     def test_loaders(self) -> DataLoader:
         pass
     
@@ -46,14 +37,6 @@ class PDEDataset(ABCMeta):
         # Optional: provides a DataProcessor if overriden
         return None
     
-def to_PDEDataset(train_db, test_db, data_processor=None) -> PDEDataset:
-    """to_PDEDataset provides a simple way to turn torch datasets 
-        into the format of a PDEDataset
-
-    Parameters
-    ----------
-    train_db : torch.utils.data.Dataset
-    test_db : torch.utils.data.Dataset
-    data_processor : neuralop.datasets.DataProcessor, optional
-        default is None
-    """
+def download_fn(pth: str):
+    # print fname for now, later will be a real function
+    return pth
