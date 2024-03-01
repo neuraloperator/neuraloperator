@@ -1,4 +1,4 @@
-from functools import partial
+from functools import partialclass
 from pathlib import Path
 from typing import Dict, List, Union
 
@@ -155,4 +155,4 @@ class DarcyFlowDataset(PDEDataset):
         return test_loaders        
 
 # Load small darcy flow as a partial class of DarcyFlowDataset
-SmallDarcyFlowDataset = partial(DarcyFlowDataset, train_resolution=16)
+#SmallDarcyFlowDataset = partialclass(DarcyFlowDataset, train_resolution=16)
