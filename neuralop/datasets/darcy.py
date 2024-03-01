@@ -1,13 +1,20 @@
 from pathlib import Path
-from typing import List, Union
+from typing import Dict, List, Union
 
 import torch
+from torch.utils.data import DataLoader
+
+from neuralop.datasets import DataProcessor
 
 from .output_encoder import UnitGaussianNormalizer
 from .tensor_dataset import TensorDataset
 from .transforms import PositionalEmbedding2D
 from .data_transforms import DefaultDataProcessor
 from .pde_dataset import PDEDataset
+
+def boilerplate_download_fn(pth: str):
+    # print fname for now, later will be a real function
+    return pth
 
 class DarcyFlow(PDEDataset):
     def __init__(self,
@@ -30,28 +37,130 @@ class DarcyFlow(PDEDataset):
         
         self.root_dir = root_dir
 
+        # save dataloader properties for later
+        self.batch_size = batch_size
+        self.test_resolutions = test_resolutions
+        self.test_batch_sizes = test_batch_sizes
+
         # Download data if it isn't already downloaded
         if download:
             if not root_dir.exists():
                 root_dir.mkdir(parents=True)
 
-            # create separate folders for train and test data files
-            for suffix in ['train', 'test']:
-                suffix_path = root_dir / suffix
-                if not suffix_path.exists():
-                    suffix_path.mkdir()
-            
-            
+            # iterate through all required filenames and download
+            # if the files need to be downloaded
+            required_fnames = [f"darcy_train_{train_resolution}"] + \
+                    [f"darcy_test_{res}.pt" for res in test_resolutions]
+            for fname in required_fnames:
+                fpath = root_dir / fname
+                if not fpath.exists():
+                    boilerplate_download_fn(fname)
+        
+        # Load train data
+        data = torch.load(
+        Path(root_dir).joinpath(f"darcy_train_{train_resolution}.pt").as_posix()
+        )
+        x_train = (
+        data["x"][0:n_train, :, :].unsqueeze(channel_dim).type(torch.float32).clone()
+        )
+        y_train = data["y"][0:n_train, :, :].unsqueeze(channel_dim).clone()
+        del data
+
+        # Fit optional encoders to train data
+        # Actual encoding happens within DataProcessor
+        if encode_input:
+            if encoding == "channel-wise":
+                reduce_dims = list(range(x_train.ndim))
+            elif encoding == "pixel-wise":
+                reduce_dims = [0]
+
+            input_encoder = UnitGaussianNormalizer(dim=reduce_dims)
+            input_encoder.fit(x_train)
+        else:
+            input_encoder = None
+
+        if encode_output:
+            if encoding == "channel-wise":
+                reduce_dims = list(range(y_train.ndim))
+            elif encoding == "pixel-wise":
+                reduce_dims = [0]
+
+            output_encoder = UnitGaussianNormalizer(dim=reduce_dims)
+            output_encoder.fit(y_train)
+        else:
+            output_encoder = None
+
+        # Save train dataset
+        self.train_db = TensorDataset( 
+            x_train,
+            y_train,
+        )
+
+        # create pos encoder and DataProcessor
+        if positional_encoding:
+            pos_encoding = PositionalEmbedding2D(grid_boundaries=grid_boundaries)
+        else:
+            pos_encoding = None
+
+        self._data_processor = DefaultDataProcessor(in_normalizer=input_encoder,
+                                                   out_normalizer=output_encoder,
+                                                   positional_encoding=pos_encoding)
+
+        # load test data
+        self.test_dbs = {}
+        for (res, n_test, test_batch_size) in zip(
+        test_resolutions, n_tests, test_batch_sizes
+        ):
+            print(
+                f"Loading test db at resolution {res} with {n_test} samples "
+            )
+            data = torch.load(Path(root_dir).joinpath(f"darcy_test_{res}.pt").as_posix())
+            x_test = (
+                data["x"][:n_test, :, :].unsqueeze(channel_dim).type(torch.float32).clone()
+            )
+            y_test = data["y"][:n_test, :, :].unsqueeze(channel_dim).clone()
+            del data
+
+            test_db = TensorDataset(
+                x_test,
+                y_test,
+            )
+            self.test_dbs[res] = test_db
+
+    def data_processor(self) -> DataProcessor:
+        return self._data_processor
+    
+    def train_loader(self, 
+                     num_workers: int=None, 
+                     pin_memory: bool=True,
+                     persistent_workers: bool=False) -> DataLoader:
+        
+        return DataLoader(dataset=self.train_db,
+                            batch_size=self.batch_size,
+                            shuffle=True,
+                            num_workers=num_workers,
+                            pin_memory=pin_memory,
+                            persistent_workers=persistent_workers,
+                            )
+    
+    def test_loaders(self, 
+                     num_workers: int=None, 
+                     pin_memory: bool=True,
+                     persistent_workers: bool=False) -> Dict[DataLoader]:
+        test_loaders = {}
+        for (res, batch_size) in zip(self.test_resolutions, self.test_batch_sizes):
+            loader = DataLoader(dataset=self.test_dbs[res],
+                                batch_size=batch_size,
+                                shuffle=False,
+                                num_workers=num_workers,
+                                pin_memory=pin_memory,
+                                persistent_workers=persistent_workers,
+                                )
+            test_loaders[res] = loader
+        return test_loaders        
 
 
-        self.n_train = n_train
-        self.n_tests = n_tests
-        self.train_batch_size = batch_size
-        self.test_batch_sizes = test_batch_sizes
-        self.train_res = train_resolution
-        self.test_res = test_resolutions
-
-        i
+        
 
 def load_darcy_flow_small(
     n_train,
@@ -117,134 +226,3 @@ def load_darcy_flow_small(
         encoding=encoding,
         channel_dim=channel_dim,
     )
-
-
-def load_darcy_pt(
-    data_path,
-    n_train,
-    n_tests,
-    batch_size,
-    test_batch_sizes,
-    test_resolutions=[32],
-    train_resolution=32,
-    grid_boundaries=[[0, 1], [0, 1]],
-    positional_encoding=True,
-    encode_input=False,
-    encode_output=True,
-    encoding="channel-wise",
-    channel_dim=1,
-):
-    """Load the Navier-Stokes dataset"""
-    data = torch.load(
-        Path(data_path).joinpath(f"darcy_train_{train_resolution}.pt").as_posix()
-    )
-    x_train = (
-        data["x"][0:n_train, :, :].unsqueeze(channel_dim).type(torch.float32).clone()
-    )
-    y_train = data["y"][0:n_train, :, :].unsqueeze(channel_dim).clone()
-    del data
-
-    idx = test_resolutions.index(train_resolution)
-    test_resolutions.pop(idx)
-    n_test = n_tests.pop(idx)
-    test_batch_size = test_batch_sizes.pop(idx)
-
-    data = torch.load(
-        Path(data_path).joinpath(f"darcy_test_{train_resolution}.pt").as_posix()
-    )
-    x_test = data["x"][:n_test, :, :].unsqueeze(channel_dim).type(torch.float32).clone()
-    y_test = data["y"][:n_test, :, :].unsqueeze(channel_dim).clone()
-    del data
-
-    if encode_input:
-        if encoding == "channel-wise":
-            reduce_dims = list(range(x_train.ndim))
-        elif encoding == "pixel-wise":
-            reduce_dims = [0]
-
-        input_encoder = UnitGaussianNormalizer(dim=reduce_dims)
-        input_encoder.fit(x_train)
-        #x_train = input_encoder.transform(x_train)
-        #x_test = input_encoder.transform(x_test.contiguous())
-    else:
-        input_encoder = None
-
-    if encode_output:
-        if encoding == "channel-wise":
-            reduce_dims = list(range(y_train.ndim))
-        elif encoding == "pixel-wise":
-            reduce_dims = [0]
-
-        output_encoder = UnitGaussianNormalizer(dim=reduce_dims)
-        output_encoder.fit(y_train)
-        #y_train = output_encoder.transform(y_train)
-    else:
-        output_encoder = None
-
-    train_db = TensorDataset(
-        x_train,
-        y_train,
-    )
-    train_loader = torch.utils.data.DataLoader(
-        train_db,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=0,
-        pin_memory=True,
-        persistent_workers=False,
-    )
-
-    test_db = TensorDataset(
-        x_test,
-        y_test,
-    )
-    test_loader = torch.utils.data.DataLoader(
-        test_db,
-        batch_size=test_batch_size,
-        shuffle=False,
-        num_workers=0,
-        pin_memory=True,
-        persistent_workers=False,
-    )
-    test_loaders = {train_resolution: test_loader}
-    for (res, n_test, test_batch_size) in zip(
-        test_resolutions, n_tests, test_batch_sizes
-    ):
-        print(
-            f"Loading test db at resolution {res} with {n_test} samples "
-            f"and batch-size={test_batch_size}"
-        )
-        data = torch.load(Path(data_path).joinpath(f"darcy_test_{res}.pt").as_posix())
-        x_test = (
-            data["x"][:n_test, :, :].unsqueeze(channel_dim).type(torch.float32).clone()
-        )
-        y_test = data["y"][:n_test, :, :].unsqueeze(channel_dim).clone()
-        del data
-        #if input_encoder is not None:
-            #x_test = input_encoder.transform(x_test)
-
-        test_db = TensorDataset(
-            x_test,
-            y_test,
-        )
-        test_loader = torch.utils.data.DataLoader(
-            test_db,
-            batch_size=test_batch_size,
-            shuffle=False,
-            num_workers=0,
-            pin_memory=True,
-            persistent_workers=False,
-        )
-        test_loaders[res] = test_loader 
-
-    
-    if positional_encoding:
-        pos_encoding = PositionalEmbedding2D(grid_boundaries=grid_boundaries)
-    else:
-        pos_encoding = None
-    data_processor = DefaultDataProcessor(
-        in_normalizer=input_encoder,
-        out_normalizer=output_encoder,
-        positional_encoding=pos_encoding
-    )
-    return train_loader, test_loaders, data_processor
