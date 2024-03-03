@@ -18,7 +18,7 @@ from neuralop.datasets import load_darcy_flow_small
 # Training samples are 16x16 and we load testing samples at both 
 # 16x16 and 32x32 (to test resolution invariance).
 
-train_loader, test_loaders, output_encoder = load_darcy_flow_small(
+train_loader, test_loaders, data_processor = load_darcy_flow_small(
         n_train=100, batch_size=4, 
         test_resolutions=[16, 32], n_tests=[50, 50], test_batch_sizes=[4, 2],
         )
@@ -29,12 +29,12 @@ train_dataset = train_loader.dataset
 # Visualizing the data
 # --------------------
 
-
 for res, test_loader in test_loaders.items():
-    print('res')
-    test_data = train_dataset[0]
-    x = test_data['x']
-    y = test_data['y']
+    print(res)
+    # Get first batch
+    batch = next(iter(test_loader))
+    x = batch['x']
+    y = batch['y']
 
     print(f'Testing samples for res {res} have shape {x.shape[1:]}')
 
@@ -50,6 +50,7 @@ print(f'Training sample have shape {x.shape[1:]}')
 index = 0
 
 data = train_dataset[index]
+data = data_processor.preprocess(data, batched=False)
 x = data['x']
 y = data['y']
 fig = plt.figure(figsize=(7, 7))
