@@ -26,7 +26,11 @@ class RNO(BaseModel, name='RNO'):
     where * is element-wise, the b_i's are bias functions, and W_i, U_i are
     linear Fourier layers.
 
-    Paper: https://arxiv.org/abs/2308.08794 
+    Paper:
+    .. [RNO] Liu-Schiaffini, M., Singer, C. E., Kovachki, N., Schneider, T., 
+        Azizzadenesheli, K., & Anandkumar, A. (2023). Tipping point forecasting 
+        in non-stationary dynamics on function spaces. arXiv preprint 
+        arXiv:2308.08794.
 
     Parameters
     ----------
@@ -157,7 +161,7 @@ class RNO(BaseModel, name='RNO'):
         if self.domain_padding:
             h = h.unsqueeze(1) # add dim for padding compatibility
             h = self.domain_padding.unpad(h)
-            h = h[:,0] # remove extraneous dim
+            h = h.squeeze(1) # remove extraneous dim
 
         pred = self.projection(h)
 

@@ -42,12 +42,12 @@ class RNO_cell(nn.Module):
 
         # Some output_scaling_factors are None to super-resolution purposes. We use the hidden representation in the scaled size always (it's initialized that way),
         # so we only need to scale the dimensions of f1, f3, and f5, which act on x (original dimensionality).
-        self.f1 = FNOBlocks(width, width, n_modes, output_scaling_factor=scaling_factor, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
-        self.f2 = FNOBlocks(width, width, n_modes, output_scaling_factor=None, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
-        self.f3 = FNOBlocks(width, width, n_modes, output_scaling_factor=scaling_factor, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
-        self.f4 = FNOBlocks(width, width, n_modes, output_scaling_factor=None, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
-        self.f5 = FNOBlocks(width, width, n_modes, output_scaling_factor=scaling_factor, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
-        self.f6 = FNOBlocks(width, width, n_modes, output_scaling_factor=None, fno_skip='linear', fft_norm=fft_norm, factorization=factorization, separable=separable)
+        self.f1 = FNOBlocks(width, width, n_modes, output_scaling_factor=scaling_factor, fno_skip=skip, fft_norm=fft_norm, factorization=factorization, separable=separable)
+        self.f2 = FNOBlocks(width, width, n_modes, output_scaling_factor=None, fno_skip=skip, fft_norm=fft_norm, factorization=factorization, separable=separable)
+        self.f3 = FNOBlocks(width, width, n_modes, output_scaling_factor=scaling_factor, fno_skip=skip, fft_norm=fft_norm, factorization=factorization, separable=separable)
+        self.f4 = FNOBlocks(width, width, n_modes, output_scaling_factor=None, fno_skip=skip, fft_norm=fft_norm, factorization=factorization, separable=separable)
+        self.f5 = FNOBlocks(width, width, n_modes, output_scaling_factor=scaling_factor, fno_skip=skip, fft_norm=fft_norm, factorization=factorization, separable=separable)
+        self.f6 = FNOBlocks(width, width, n_modes, output_scaling_factor=None, fno_skip=skip, fft_norm=fft_norm, factorization=factorization, separable=separable)
 
         self.b1 = nn.Parameter(torch.normal(torch.tensor(0.),torch.tensor(1.))) # constant bias terms
         self.b2 = nn.Parameter(torch.normal(torch.tensor(0.),torch.tensor(1.)))
