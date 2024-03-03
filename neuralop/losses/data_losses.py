@@ -289,70 +289,96 @@ class H1Loss(object):
 class DissipativeLoss(object):
     """Dissipative loss is used to avoid model blow-up and to encourage the model
     to learn dissipative dynamics (particularly in chaotic systems). The dissipative
-    loss samples points uniformly and randomly in a spherical shell around the
-    attractor of a chaotic system (at user-specified radii) and encourages
-    that a learned model's predictions on this shell scale inwards by some
-    user-specified dissipative rule.
+    loss samples points uniformly and randomly in a spherical shell far from the
+    data (between two user-specified radii: inner_radius and outer_radius) and 
+    encourages that a learned model's predictions on this shell scale inwards by 
+    some user-specified rule, such as linear scaling by some factor 0 < b < 1.
+
+    Usage example: Given `model`, input `x`, and ground truth `y`.
+        loss = DissipativeLoss(data_loss, loss_weight, inner_radius, outer_radius, out_channels)
+        y_pred = model(x)
+        x_diss = loss.sample_uniform_spherical_shell(y.shape)
+        diss_pred = model(x_diss)
+        print(loss(y_pred, y, pred_diss, x_diss))
+        
     
     Introduced in "Learning Dissipative Dynamics in Chaotic Systems," NeurIPS 2022. 
-    Paper: https://arxiv.org/abs/2106.06898
+    .. [MNO] Li, Z., Liu-Schiaffini, M., Kovachki, N., Azizzadenesheli, K., Liu, 
+        B., Bhattacharya, K., ... & Anandkumar, A. (2022). Learning chaotic 
+        dynamics in dissipative systems. Advances in Neural Information Processing 
+        Systems, 35, 16768-16781.
+
 
     Parameters
     ----------
     data_loss : function of inputs and outputs
-        Loss function to use for data (e.g., L2 loss)
-    diss_y_rule : function
-        Maps input x on a spherical shell to a desired dissipative y values
-        * E.g., linear scaling: lambda x : b * x for some b
+        Loss function to use for data (e.g., L2 loss). First argument is input; 
+        second argument is target.
     loss_weight : float
         Weighting between the dissipative loss and data loss
-    diss_radii : float tuple
-        Inner and outer radii of shell to sample from
-    out_dim : int
+    inner_radius : float
+        Inner radius (in L2 function norm) of shell to sample from
+    outer_radius : float
+        Outer radius (in L2 function norm) of shell to sample from
+    out_channels : int
         Dimension of input/output space (i.e., channels)
-    domain_shape : int tuple
-        Shape of PDE domain (resolution)
+    diss_y_rule : function (default: None)
+        Maps input x on a spherical shell to a desired dissipative y values. By 
+        default this is a linear scaling by a factor of 1/2: x -> 0.5 * x.
     """
-    def __init__(self, data_loss, diss_y_rule, loss_weight: float, diss_radii: tuple, out_dim: int, domain_shape: tuple):
+    def __init__(self, data_loss, loss_weight: float, inner_radius: float, outer_radius: float, out_channels: int, diss_y_rule = None):
         self.data_loss = data_loss
         self.reduce_dims = data_loss.reduce_dims
         self.reductions = data_loss.reductions
 
         self.y_rule = diss_y_rule # callable, maps x on spherical shell to desired dissipative y values
         self.loss_weight = loss_weight
-        self.radii = diss_radii
-        self.out_dim = out_dim
-        self.dissloss = LpLoss(d=out_dim, reduce_dims=self.reduce_dims, reductions=self.reductions)
+        self.inner_radius = inner_radius
+        self.outer_radius = outer_radius
+        self.out_channels = out_channels
+        self.dissloss = LpLoss(d=out_channels, reduce_dims=self.reduce_dims, reductions=self.reductions)
 
-        if domain_shape is not None:
-            self.domain_shape = torch.tensor(domain_shape) # for PDE problems, this is a tuple of the domain size (dim1, ..., dimk)
-            self.domain_ndims = torch.prod(self.domain_shape)
-        else:
-            self.domain_shape = None
+        if diss_y_rule is None:
+            self.diss_y_rule = lambda x : 0.5 * x
     
-    def sample_uniform_spherical_shell(self, shape: tuple): # shape is (batch_size, dim1, ..., dimk, out_dim)
-        npoints = shape[0]
-        shape = shape[1:]
+    def sample_uniform_spherical_shell(self, shape: tuple):
+        """
+        The input shape is (batch_size, dim1, ..., dimk, out_channels). For each of
+        `batch_size` points, a function on domain of size dim1, ...., dimk is 
+        sampled with norm uniformly within (inner_radius, outer_radius).
 
-        ndim = torch.prod(torch.tensor(shape))
-        inner_radius, outer_radius = self.radii
+        `out_channels` is the dimension of the vector space over which the functions
+        are defined.
+        """
+        batch_size, *spatial_shape, out_channels = shape
+
+        n_elements = math.prod(spatial_shape)
         
-        samp_radii = torch.zeros(npoints, 1).uniform_(inner_radius, outer_radius)
-        vec = torch.randn(npoints, ndim) # ref: https://mathworld.wolfram.com/SpherePointPicking.html
+        radius_correction_factor = math.sqrt(n_elements) # accounts for discretization of function space
+
+        # Each element in batch is a function with a different radius
+        sampled_radii = radius_correction_factor * torch.zeros(batch_size, 1).uniform_(self.inner_radius, self.outer_radius)
+        vec = torch.randn(batch_size, n_elements) # ref: https://mathworld.wolfram.com/SpherePointPicking.html
         vec = torch.nn.functional.normalize(vec, p=2.0, dim=1)
-        samp_radii = torch.broadcast_to(samp_radii, vec.shape)
+        bcast_sampled_radii = torch.broadcast_to(sampled_radii, vec.shape) # broadcast for multiplication below
 
-        return (samp_radii * vec).reshape((npoints, *shape))
+        return (bcast_sampled_radii * vec).reshape((batch_size, *spatial_shape))
 
-    def __call__(self, x, y, x_diss, pred_diss, **kwargs):
-        data_loss = self.data_loss(x,y)
+    def __call__(self, y_pred, y, pred_diss, x_diss):
+        """
+        Arguments:
+            y_pred is the model's prediction on data
+            y is the ground truth data
+            pred_diss is the model's prediction on x_diss
+            x_diss is sampled via `sample_uniform_spherical_shell` by the user
         
-        y_diss = diss_y_rule(x_diss)
+        See usage details for more information.
+        """
+        data_loss = self.data_loss(y_pred, y)
+        
+        y_diss = self.diss_y_rule(x_diss)
         pred_diss = pred_diss.reshape(y_diss.shape)
-        diss_loss = dissloss(out_diss.reshape(-1, self.out_dim), y_diss.reshape(-1, self.out_dim))
-
-        if self.domain_shape is not None:
-            diss_loss *= (1 / self.domain_ndims) # discretization normalization
+        diss_loss = self.dissloss(pred_diss.reshape(-1, self.out_channels), y_diss.reshape(-1, self.out_channels))
 
         return data_loss + self.loss_weight * diss_loss
 
