@@ -5,7 +5,7 @@ from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from neuralop.training import setup
 from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
-from neuralop.losses.data_losses import IregularLpqLoss, WeightedL2DragLoss
+from neuralop.losses.data_losses import LpLoss, IregularLpqLoss, WeightedL2DragLoss
 from neuralop.losses.meta_losses import WeightedSumLoss
 from neuralop.training.trainer import Trainer
 from neuralop.datasets import MeshDataModule
