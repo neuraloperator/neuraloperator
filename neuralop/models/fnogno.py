@@ -1,8 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from torch import nn
-
+from .base_model import  BaseModel
 from .fno import FNO
 
 from ..layers.mlp import MLP
@@ -12,7 +11,7 @@ from ..layers.integral_transform import IntegralTransform
 from ..layers.neighbor_search import NeighborSearch
 
 
-class FNOGNO(nn.Module):
+class FNOGNO(BaseModel, name='FNOGNO'):
     """FNOGNO: Fourier/Geometry Neural Operator 
 
         Parameters

@@ -323,8 +323,10 @@ class UnitGaussianNormalizer(Transform):
             if not i:
                 if not keys:
                     keys = data_dict.keys()
-                instances = {key: cls(dim=dim, mask=mask) for key in keys}
+        instances = {key: cls(dim=dim, mask=mask) for key in keys}
+        for i, data_dict in enumerate(dataset): 
             for key, sample in data_dict.items():
-                instances[key].partial_fit(sample.unsqueeze(0))
+                if key in keys:
+                    instances[key].partial_fit(sample.unsqueeze(0))
         return instances
              

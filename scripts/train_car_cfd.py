@@ -127,6 +127,7 @@ class CFDDataProcessor(torch.nn.Module):
         self.device = device
 
     def preprocess(self, sample):
+        print(sample.keys())
         # Turn a data dictionary returned by MeshDataModule's DictDataset
         # into the form expected by the FNOGNO
         
@@ -166,24 +167,24 @@ class CFDDataProcessor(torch.nn.Module):
         return sample
     
     def postprocess(self, out, sample):
-        out = self.normalizer.decode(out)
-        y = self.normalizer.decode(sample['y'])
+        out = self.normalizer.inverse_transform(out)
+        y = self.normalizer.inverse_transform(sample['y'])
         sample['y'] = y
 
         return out, sample
 
-    def compute_training_loss(self, *args, **kwargs):
+''' def compute_training_loss(self, *args, **kwargs):
         loss_fn = self.state_dict['training_loss']
         self._update_state_dict(**kwargs)
-        return loss_fn(x = self.state_dict['out'], y = self.state_dict['sample']['y'], z=None)
+        return loss_fn(x = self.state_dict['out'], y = self.state_dict['sample']['y'], z=None)'''
 
-
+data_processor = CFDDataProcessor(normalizer=output_encoder, device=device)
 trainer = Trainer(model=model, 
                   n_epochs=config.opt.n_epochs,
-                  data_processor=CFDDataProcessor,
+                  data_processor=data_processor,
                   device=device,
                   callbacks=[
-                      SimpleWandBLoggerCallback(**wandb_init_args)
+                      BasicLoggerCallback(**wandb_init_args)
                   ]
                   )
 
