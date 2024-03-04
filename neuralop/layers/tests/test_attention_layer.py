@@ -22,11 +22,8 @@ def test_AttentionWithRoPE():
     x = torch.randn(batch_size, num_points, channels)
     pos = torch.randn(batch_size, num_points, n_dim)
 
-    freqs_0 = pos_emb_module(pos[..., 0])
-    assert freqs_0.shape == (batch_size, num_points, head_n_channels//n_dim)
-
-    freqs_1 = pos_emb_module(pos[..., 1])
-    assert freqs_1.shape == (batch_size, num_points, head_n_channels//n_dim)
+    freqs = pos_emb_module(pos)
+    assert freqs.shape == (batch_size, num_points, head_n_channels)
 
     res = attn_layer(x, pos, positional_embedding_module=pos_emb_module)
     assert res.shape == (batch_size, num_points, channels)
