@@ -1,11 +1,56 @@
+from abc import ABCMeta, abstractmethod
+
 import torch
 from neuralop.training.patching import MultigridPatching2D
 
-class DefaultDataProcessor(torch.nn.Module):
-    def __init__(self, 
-                 in_normalizer=None, out_normalizer=None, 
-                 positional_encoding=None):
-        """A simple processor to pre/post process data before training/inferencing a model
+
+class DataProcessor(torch.nn.Module, metaclass=ABCMeta):
+    def __init__(self):
+        """DataProcessor exposes functionality for pre-
+        and post-processing data during training or inference.
+
+        To be a valid DataProcessor within the Trainer requires
+        that the following methods are implemented:
+
+        - to(device): load necessary information to device, in keeping
+            with PyTorch convention
+        - preprocess(data): processes data from a new batch before being
+            put through a model's forward pass
+        - postprocess(out): processes the outputs of a model's forward pass
+            before loss and backward pass
+        - wrap(self, model):
+            wraps a model in preprocess and postprocess steps to create one forward pass
+        - forward(self, x):
+            forward pass providing that a model has been wrapped
+        """
+        super().__init__()
+
+    @abstractmethod
+    def to(self, device):
+        pass
+
+    @abstractmethod
+    def preprocess(self, x):
+        pass
+
+    @abstractmethod
+    def postprocess(self, x):
+        pass
+
+    @abstractmethod
+    def wrap(self, model):
+        pass
+
+    @abstractmethod
+    def forward(self, x):
+        pass
+
+
+class DefaultDataProcessor(DataProcessor):
+    def __init__(
+        self, in_normalizer=None, out_normalizer=None, positional_encoding=None
+    ):
+        """A simple processor to pre/post process data before training/inferencing a model.
 
         Parameters
         ----------
@@ -20,8 +65,8 @@ class DefaultDataProcessor(torch.nn.Module):
         self.in_normalizer = in_normalizer
         self.out_normalizer = out_normalizer
         self.positional_encoding = positional_encoding
-        self.device = 'cpu'
-    
+        self.device = "cpu"
+
     def wrap(self, model):
         self.model = model
         return self
@@ -35,8 +80,8 @@ class DefaultDataProcessor(torch.nn.Module):
         return self
 
     def preprocess(self, data_dict, batched=True):
-        x = data_dict['x'].to(self.device)
-        y = data_dict['y'].to(self.device)
+        x = data_dict["x"].to(self.device)
+        y = data_dict["y"].to(self.device)
 
         if self.in_normalizer is not None:
             x = self.in_normalizer.transform(x)
@@ -45,32 +90,40 @@ class DefaultDataProcessor(torch.nn.Module):
         if self.out_normalizer is not None and self.train:
             y = self.out_normalizer.transform(y)
 
-        data_dict['x'] = x
-        data_dict['y'] = y
+        data_dict["x"] = x
+        data_dict["y"] = y
 
         return data_dict
 
     def postprocess(self, output, data_dict):
-        y = data_dict['y']
+        y = data_dict["y"]
         if self.out_normalizer and not self.train:
             output = self.out_normalizer.inverse_transform(output)
             y = self.out_normalizer.inverse_transform(y)
-        data_dict['y'] = y
+        data_dict["y"] = y
         return output, data_dict
-    
+
     def forward(self, **data_dict):
         data_dict = self.preprocess(data_dict)
-        output = self.model(data_dict['x'])
+        output = self.model(data_dict["x"])
         output = self.postprocess(output)
         return output, data_dict
 
-class MGPatchingDataProcessor(torch.nn.Module):
-    def __init__(self, model: torch.nn.Module, levels: int, 
-                 padding_fraction: float, stitching: float, 
-                 device: str='cpu', in_normalizer=None, out_normalizer=None,
-                 positional_encoding=None):
+
+class MGPatchingDataProcessor(DataProcessor):
+    def __init__(
+        self,
+        model: torch.nn.Module,
+        levels: int,
+        padding_fraction: float,
+        stitching: float,
+        device: str = "cpu",
+        in_normalizer=None,
+        out_normalizer=None,
+        positional_encoding=None,
+    ):
         """MGPatchingDataProcessor
-        Applies multigrid patching to inputs out-of-place 
+        Applies multigrid patching to inputs out-of-place
         with an optional output encoder/other data transform
 
         Parameters
@@ -97,11 +150,14 @@ class MGPatchingDataProcessor(torch.nn.Module):
         self.levels = levels
         self.padding_fraction = padding_fraction
         self.stitching = stitching
-        self.patcher = MultigridPatching2D(model=model, levels=self.levels, 
-                                      padding_fraction=self.padding_fraction,
-                                      stitching=self.stitching)
+        self.patcher = MultigridPatching2D(
+            model=model,
+            levels=self.levels,
+            padding_fraction=self.padding_fraction,
+            stitching=self.stitching,
+        )
         self.device = device
-        
+
         # set normalizers to none by default
         self.in_normalizer, self.out_normalizer = None, None
         if in_normalizer:
@@ -110,23 +166,23 @@ class MGPatchingDataProcessor(torch.nn.Module):
             self.out_normalizer = out_normalizer.to(self.device)
         self.positional_encoding = positional_encoding
         self.model = None
-    
+
     def to(self, device):
         self.device = device
         if self.in_normalizer:
             self.in_normalizer = self.in_normalizer.to(self.device)
         if self.out_normalizer:
             self.out_normalizer = self.out_normalizer.to(self.device)
-    
+
     def wrap(self, model):
         self.model = model
         return self
-    
+
     def preprocess(self, data_dict, batched=True):
         """
-        Preprocess data assuming that if encoder exists, it has 
+        Preprocess data assuming that if encoder exists, it has
         encoded all data during data loading
-        
+
         Params
         ------
 
@@ -136,38 +192,40 @@ class MGPatchingDataProcessor(torch.nn.Module):
         batched: bool
             whether the first dimension of 'x', 'y' represents batching
         """
-        data_dict = {k:v.to(self.device) for k,v in data_dict.items() if torch.is_tensor(v)}
-        x,y = data_dict['x'], data_dict['y']
+        data_dict = {
+            k: v.to(self.device) for k, v in data_dict.items() if torch.is_tensor(v)
+        }
+        x, y = data_dict["x"], data_dict["y"]
         if self.in_normalizer:
             x = self.in_normalizer.transform(x)
             y = self.out_normalizer.transform(y)
         if self.positional_encoding is not None:
             x = self.positional_encoding(x, batched=batched)
-        data_dict['x'],data_dict['y'] = self.patcher.patch(x,y)
+        data_dict["x"], data_dict["y"] = self.patcher.patch(x, y)
         return data_dict
-    
+
     def postprocess(self, out, data_dict):
         """
         Postprocess model outputs, including decoding
         if an encoder exists.
-        
+
         Params
         ------
 
         data_dict: dict
             dictionary keyed with 'x', 'y' etc
             represents one batch of data input to a model
-        out: torch.Tensor 
+        out: torch.Tensor
             model output predictions
         """
-        y = data_dict['y']
-        out,y = self.patcher.unpatch(out,y)
+        y = data_dict["y"]
+        out, y = self.patcher.unpatch(out, y)
 
         if self.out_normalizer:
             y = self.out_normalizer.inverse_transform(y)
             out = self.out_normalizer.inverse_transform(out)
-        
-        data_dict['y'] = y
+
+        data_dict["y"] = y
 
         return out, data_dict
 
