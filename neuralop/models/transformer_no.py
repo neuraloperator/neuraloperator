@@ -114,26 +114,22 @@ class TransformerNO(nn.Module):
             self.enc_pos_emb_module = None
             self.dec_pos_emb_module = None
 
-        self.encoder = nn.ModuleList(
-            [
-                TransformerEncoderBlock(
-                    in_channels=self.encoder_hidden_channels if layer > 0 else self.in_channels,
-                    out_channels=self.encoder_hidden_channels if layer < self.encoder_n_layers - 1 else self.decoder_hidden_channels,
-                    hidden_channels=self.encoder_hidden_channels,
-                    num_heads=self.encoder_num_heads,
-                    head_n_channels=self.encoder_head_n_channels,
-                    query_basis=self.query_basis,
-                    use_mlp=self.use_mlp,
-                    mlp_dropout=self.mlp_dropout,
-                    mlp_expansion=self.mlp_expansion,
-                    non_linearity=self.non_linearity,
-                    query_siren_layers=self.query_siren_layers,
-                    query_fourier_scale=self.query_fourier_scale,
-                    norm=self.norm,
-                )
-                for layer in range(self.encoder_n_layers)
-            ]
-        )
+        self.encoder = TransformerEncoderBlock(
+                            in_channels=self.in_channels,
+                            out_channels=self.decoder_hidden_channels,
+                            hidden_channels=self.encoder_hidden_channels,
+                            num_heads=self.encoder_num_heads,
+                            head_n_channels=self.encoder_head_n_channels,
+                            n_layers=self.encoder_n_layers,
+                            query_basis=self.query_basis,
+                            use_mlp=self.use_mlp,
+                            mlp_dropout=self.mlp_dropout,
+                            mlp_expansion=self.mlp_expansion,
+                            non_linearity=self.non_linearity,
+                            query_siren_layers=self.query_siren_layers,
+                            query_fourier_scale=self.query_fourier_scale,
+                            norm=self.norm,
+                        )
 
         self.decoder = TransformerDecoderBlock(
             n_dim=self.n_dim,
@@ -161,8 +157,7 @@ class TransformerNO(nn.Module):
            please note that coordinates must be normalized to [-1, 1] interval when using siren"""
 
         # encoder part, use self-attention to process input function
-        for layer in self.encoder:
-            u = layer(u, pos_src, self.enc_pos_emb_module, **kwargs)
+        u = self.encoder(u, pos_src, self.enc_pos_emb_module, **kwargs)
 
         # decoder part, use cross-attention to query the solution function
         u_out = self.decoder(u, pos_src, self.dec_pos_emb_module, pos_qry, **kwargs)

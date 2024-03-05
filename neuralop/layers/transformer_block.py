@@ -19,7 +19,7 @@ def get_normalization(norm, channels):
         norm_fn = nn.LayerNorm(channels)
     else:
         raise ValueError(
-            f"Got norm={norm} but expected None or one of "
+            f"Got norm={norm} but expected none or one of "
             "[instance_norm, group_norm, layer_norm]"
         )
     return norm_fn
@@ -38,7 +38,7 @@ def normalize(u, norm_fn):
 
 class TransformerEncoderBlock(nn.Module):
     """
-    Transformer Encoder Block with self-attention and FFN,
+    Transformer Encoder Block with n_layers of self-attention + feedforward network (FFN).
     use pre-normalization.
     """
     def __init__(
@@ -48,6 +48,7 @@ class TransformerEncoderBlock(nn.Module):
             hidden_channels,
             num_heads,
             head_n_channels,
+            n_layers,
             use_mlp=True,
             mlp_dropout=0,
             mlp_expansion=2.0,
@@ -61,6 +62,7 @@ class TransformerEncoderBlock(nn.Module):
         self.hidden_channels = hidden_channels
         self.num_heads = num_heads
         self.head_n_channels = head_n_channels
+        self.n_layers = n_layers
         self.use_mlp = use_mlp
         self.mlp_dropout = mlp_dropout
         self.mlp_expansion = mlp_expansion
@@ -73,20 +75,24 @@ class TransformerEncoderBlock(nn.Module):
         self.to_out = nn.Linear(self.hidden_channels, self.out_channels) \
             if self.hidden_channels != self.out_channels else nn.Identity()
 
-        self.attention_norm = get_normalization(self.norm, self.hidden_channels)
-        self.attention_layer = AttentionKernelIntegral(
-                                    in_channels=self.hidden_channels,
-                                    out_channels=self.hidden_channels,
-                                    n_heads=self.num_heads,
-                                    head_n_channels=self.head_n_channels,
-                                    project_query=True)
+        self.attention_norms = nn.ModuleList([get_normalization(self.norm, self.hidden_channels) for _ in range(self.n_layers)])
+        self.attention_layers = nn.ModuleList([
+                                    AttentionKernelIntegral(
+                                        in_channels=self.hidden_channels,
+                                        out_channels=self.hidden_channels,
+                                        n_heads=self.num_heads,
+                                        head_n_channels=self.head_n_channels,
+                                        project_query=True)
+                                    for _ in range(self.n_layers)])
 
         if self.use_mlp:
-            self.mlp_norm = get_normalization(self.norm, self.hidden_channels)
-            self.mlp_layer = MLPLinear([self.hidden_channels,
+            self.mlp_norms = nn.ModuleList([get_normalization(self.norm, self.hidden_channels) for _ in range(self.n_layers)])
+            self.mlp_layers = nn.ModuleList([
+                                    MLPLinear([self.hidden_channels,
                                        int(self.hidden_channels * self.mlp_expansion),
                                        self.hidden_channels],
-                                      dropout=self.mlp_dropout)
+                                       dropout=self.mlp_dropout)
+                                for _ in range(self.n_layers)])
 
     def forward(self,
                 u,
@@ -94,16 +100,17 @@ class TransformerEncoderBlock(nn.Module):
                 pos_emb_module=None,
                 **kwargs):
         u = self.lifting(u)
-        u_attention_skip = u
-        u = self.attention_layer(u_src=normalize(u, self.attention_norm),
-                                 pos_src=pos,
-                                 positional_embedding_module=pos_emb_module,
-                                 **kwargs)
-        u = u + u_attention_skip
-        if self.use_mlp:
-            u_mlp_skip = u
-            u = self.mlp_layer(normalize(u, self.mlp_norm))
-            u = u + u_mlp_skip
+        for l in range(self.n_layers):
+            u_attention_skip = u
+            u = self.attention_layers[l](u_src=normalize(u, self.attention_norms[l]),
+                                     pos_src=pos,
+                                     positional_embedding_module=pos_emb_module,
+                                     **kwargs)
+            u = u + u_attention_skip
+            if self.use_mlp:
+                u_mlp_skip = u
+                u = self.mlp_layers[l](normalize(u, self.mlp_norms[l]))
+                u = u + u_mlp_skip
         u = self.to_out(u)
         return u
 
@@ -111,6 +118,7 @@ class TransformerEncoderBlock(nn.Module):
 # Note: this is not a causal-attention-based Transformer decoder as in language models
 # but rather a "decoder" that maps from the latent grid to the output grid.
 class TransformerDecoderBlock(nn.Module):
+    """Transformer Decoder Block using cross-attention to map input grid to output grid."""
     def __init__(
             self,
             n_dim,

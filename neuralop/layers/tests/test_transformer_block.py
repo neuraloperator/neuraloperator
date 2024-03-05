@@ -15,7 +15,7 @@ def test_TransformerEncoderBlock_output():
     for ndim in [1, 2]:   # currently only 1D and 2D are supported
         block = TransformerEncoderBlock(
             3, 4, 16,
-            num_heads=4, head_n_channels=16,
+            num_heads=4, head_n_channels=16, n_layers=3,
             use_mlp=True, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion)
         pos_emb_module = RotaryEmbedding(16 // ndim)
         flattened_size = math.prod(size[:ndim])
@@ -41,7 +41,7 @@ def test_TransformerEncoderBlock_norm(norm):
 
     block = TransformerEncoderBlock(
         3, 4, 16,
-        num_heads=4, head_n_channels=16,
+        num_heads=4, head_n_channels=16, n_layers=3,
         use_mlp=True, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion, norm=norm)
     pos_emb_module = RotaryEmbedding(16 // 2)
     flattened_size = math.prod(size)
@@ -67,7 +67,7 @@ def test_TransformerEncoderBlock_norm(norm):
 
     block = TransformerEncoderBlock(
         3, 4, 16,
-        num_heads=4, head_n_channels=16,
+        num_heads=4, head_n_channels=16, n_layers=3,
         use_mlp=True, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion, norm=norm)
     pos_emb_module = RotaryEmbedding(16 // 2)
     flattened_size = math.prod(size)
