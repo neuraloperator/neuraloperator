@@ -91,8 +91,11 @@ else:
     raise ValueError(f'Got {config.opt.scheduler=}')
 
 
+l2loss = LpLoss(d=2,p=2)
+
 if config.opt.training_loss == 'l2':
-    train_loss_fn = lambda x, y, z : torch.sqrt(torch.sum((x - y)**2) / torch.sum(y**2))
+    #train_loss_fn = lambda x, y, z : torch.sqrt(torch.sum((x - y)**2) / torch.sum(y**2))
+    train_loss_fn = l2loss
     output_encoder = deepcopy(data_module.normalizers['press']).to(device)
 
 elif config.opt.training_loss == 'weightedl2' or config.opt.training_loss == 'weightedl2drag':
@@ -107,7 +110,8 @@ else:
 DragLoss = WeightedL2DragLoss(mappings = data_field_mappings, device=device)
 
 if config.opt.testing_loss == 'l2':
-    test_loss_fn = lambda x, y, z : torch.sqrt(torch.sum((x - y)**2) / torch.sum(y**2))
+    #test_loss_fn = lambda x, y, z : torch.sqrt(torch.sum((x - y)**2) / torch.sum(y**2))
+    test_loss_fn = l2loss
 elif config.opt.testing_loss == 'weightedl2':
     test_loss_fn = IregularLpqLoss()
 else:
@@ -127,7 +131,6 @@ class CFDDataProcessor(torch.nn.Module):
         self.device = device
 
     def preprocess(self, sample):
-        print(sample.keys())
         # Turn a data dictionary returned by MeshDataModule's DictDataset
         # into the form expected by the FNOGNO
         
@@ -173,10 +176,6 @@ class CFDDataProcessor(torch.nn.Module):
 
         return out, sample
 
-''' def compute_training_loss(self, *args, **kwargs):
-        loss_fn = self.state_dict['training_loss']
-        self._update_state_dict(**kwargs)
-        return loss_fn(x = self.state_dict['out'], y = self.state_dict['sample']['y'], z=None)'''
 
 data_processor = CFDDataProcessor(normalizer=output_encoder, device=device)
 trainer = Trainer(model=model, 
@@ -184,8 +183,9 @@ trainer = Trainer(model=model,
                   data_processor=data_processor,
                   device=device,
                   callbacks=[
-                      BasicLoggerCallback(**wandb_init_args)
-                  ]
+                      BasicLoggerCallback(wandb_kwargs=wandb_init_args)
+                  ],
+                  wandb_log=config.wandb.log
                   )
 
 if config.wandb.log:

@@ -4,13 +4,15 @@ from abc import abstractmethod
 from collections.abc import Iterable
 import torch
 
+
 class OutputEncoder(torch.nn.Module):
     """OutputEncoder: converts the output of a model
-        into a form usable by some cost function.
+    into a form usable by some cost function.
     """
+
     def __init__(self):
         super().__init__()
-    
+
     @abstractmethod
     def encode(self):
         pass
@@ -33,9 +35,9 @@ class OutputEncoder(torch.nn.Module):
 
 
 class MultipleFieldOutputEncoder(OutputEncoder):
-    """When a model has multiple output fields, 
-        apply a different output encoder to each field. 
-    
+    """When a model has multiple output fields,
+        apply a different output encoder to each field.
+
     Parameters
     -----------
 
@@ -49,6 +51,7 @@ class MultipleFieldOutputEncoder(OutputEncoder):
         same as above. if only certain indices
         of encoder output are important, this indexes those.
     """
+
     def __init__(self, encoder_dict, input_mappings, return_mappings=None):
         self.encoders = encoder_dict
         self.output_fields = encoder_dict.keys()
@@ -67,8 +70,8 @@ class MultipleFieldOutputEncoder(OutputEncoder):
             model output, indexed according to self.mappings
         """
         out = torch.zeros_like(x)
-        
-        for field,indices in self.input_mappings.items():
+
+        for field, indices in self.input_mappings.items():
             encoded = self.encoders[field].encode(x[indices])
             if self.return_mappings:
                 encoded = encoded[self.return_mappings[field]]
@@ -84,30 +87,30 @@ class MultipleFieldOutputEncoder(OutputEncoder):
             model output, indexed according to self.mappings
         """
         out = torch.zeros_like(x)
-        
-        for field,indices in self.input_mappings.items():
+
+        for field, indices in self.input_mappings.items():
             decoded = self.encoders[field].decode(x[indices])
             if self.return_mappings:
                 decoded = decoded[self.return_mappings[field]]
             out[indices] = decoded
-            
+
         return out
-    
+
     def cpu(self):
-        self.encoders = {k:v.cpu() for k,v in self.encoders.items()}
+        self.encoders = {k: v.cpu() for k, v in self.encoders.items()}
 
     def cuda(self):
-        self.encoders = {k:v.cuda() for k,v in self.encoders.items()}
+        self.encoders = {k: v.cuda() for k, v in self.encoders.items()}
 
     def to(self, device):
-        self.encoders = {k:v.to(device) for k,v in self.encoders.items()}
+        self.encoders = {k: v.to(device) for k, v in self.encoders.items()}
 
 
 class DictTransform(Transform):
-    """When a model has multiple input and output fields, 
-        apply a different transform to each field, 
+    """When a model has multiple input and output fields,
+        apply a different transform to each field,
         tries to apply the inverse_transform to each output
-    
+
     Parameters
     -----------
 
@@ -121,6 +124,7 @@ class DictTransform(Transform):
         same as above. if only certain indices
         of encoder output are important, this indexes those.
     """
+
     def __init__(self, transform_dict, input_mappings, return_mappings=None):
         self.transforms = transform_dict
         self.output_fields = transform_dict.keys()
@@ -139,8 +143,8 @@ class DictTransform(Transform):
             model output, indexed according to self.mappings
         """
         out = torch.zeros_like(tensor_dict)
-        
-        for field,indices in self.input_mappings.items():
+
+        for field, indices in self.input_mappings.items():
             encoded = self.transforms[field].transform(tensor_dict[indices])
             if self.return_mappings:
                 encoded = encoded[self.return_mappings[field]]
@@ -156,29 +160,30 @@ class DictTransform(Transform):
             model output, indexed according to self.mappings
         """
         out = torch.zeros_like(x)
-        
-        for field,indices in self.input_mappings.items():
+
+        for field, indices in self.input_mappings.items():
             decoded = self.transforms[field].inverse_transform(x[indices])
             if self.return_mappings:
                 decoded = decoded[self.return_mappings[field]]
             out[indices] = decoded
-            
+
         return out
-    
+
     def cpu(self):
-        self.encoders = {k:v.cpu() for k,v in self.encoders.items()}
+        self.encoders = {k: v.cpu() for k, v in self.encoders.items()}
 
     def cuda(self):
-        self.encoders = {k:v.cuda() for k,v in self.encoders.items()}
+        self.encoders = {k: v.cuda() for k, v in self.encoders.items()}
 
     def to(self, device):
-        self.encoders = {k:v.to(device) for k,v in self.encoders.items()}
+        self.encoders = {k: v.to(device) for k, v in self.encoders.items()}
 
 
 class UnitGaussianNormalizer(Transform):
     """
-    UnitGaussianNormalizer normalizes data to be zero mean and unit std. 
+    UnitGaussianNormalizer normalizes data to be zero mean and unit std.
     """
+
     def __init__(self, mean=None, std=None, eps=1e-7, dim=None, mask=None):
         """
         mean : torch.tensor or None
@@ -190,15 +195,15 @@ class UnitGaussianNormalizer(Transform):
             for safe division by the std
         dim : int list, default is None
             if not None, dimensions of the data to reduce over to compute the mean and std.
-            
-            .. important:: 
+
+            .. important::
 
                 Has to include the batch-size (typically 0).
                 For instance, to normalize data of shape ``(batch_size, channels, height, width)``
                 along batch-size, height and width, pass ``dim=[0, 2, 3]``
-        
+
         mask : torch.Tensor or None, default is None
-            If not None, a tensor with the same size as a sample, 
+            If not None, a tensor with the same size as a sample,
             with value 0 where the data should be ignored and 1 everywhere else
 
         Notes
@@ -212,9 +217,9 @@ class UnitGaussianNormalizer(Transform):
         """
         super().__init__()
 
-        self.register_buffer('mean', mean)
-        self.register_buffer('std', std)
-        self.register_buffer('mask', mask)
+        self.register_buffer("mean", mean)
+        self.register_buffer("std", std)
+        self.register_buffer("mask", mask)
 
         self.eps = eps
         if mean is not None:
@@ -223,7 +228,7 @@ class UnitGaussianNormalizer(Transform):
             dim = [dim]
         self.dim = dim
         self.n_elements = 0
-    
+
     def fit(self, data_batch):
         self.update_mean_std(data_batch)
 
@@ -233,7 +238,7 @@ class UnitGaussianNormalizer(Transform):
         count = 0
         n_samples = len(data_batch)
         while count < n_samples:
-            samples = data_batch[count:count+batch_size]
+            samples = data_batch[count : count + batch_size]
             # print(samples.shape)
             # if batch_size == 1:
             #     samples = samples.unsqueeze(0)
@@ -254,13 +259,17 @@ class UnitGaussianNormalizer(Transform):
             batch_size = data_batch.shape[0]
             dim = [i - 1 for i in self.dim if i]
             shape = [s for i, s in enumerate(self.mask.shape) if i not in dim]
-            self.n_elements = torch.count_nonzero(self.mask, dim=dim)*batch_size
+            self.n_elements = torch.count_nonzero(self.mask, dim=dim) * batch_size
             self.mean = torch.zeros(shape)
             self.std = torch.zeros(shape)
             self.squared_mean = torch.zeros(shape)
-            data_batch[:, self.mask==1] = 0
-            self.mean[self.mask == 1] = torch.sum(data_batch, dim=dim, keepdim=True) / self.n_elements
-            self.squared_mean = torch.sum(data_batch**2, dim=dim, keepdim=True) / self.n_elements
+            data_batch[:, self.mask == 1] = 0
+            self.mean[self.mask == 1] = (
+                torch.sum(data_batch, dim=dim, keepdim=True) / self.n_elements
+            )
+            self.squared_mean = (
+                torch.sum(data_batch**2, dim=dim, keepdim=True) / self.n_elements
+            )
             self.std = torch.sqrt(self.squared_mean - self.mean**2)
 
     def incremental_update_mean_std(self, data_batch):
@@ -269,26 +278,29 @@ class UnitGaussianNormalizer(Transform):
             dim = self.dim
         else:
             dim = [i - 1 for i in self.dim if i]
-            n_elements = torch.count_nonzero(self.mask, dim=dim)*data_batch.shape[0]
+            n_elements = torch.count_nonzero(self.mask, dim=dim) * data_batch.shape[0]
             data_batch[:, self.mask == 1] = 0
 
-        self.mean = (1.0/(self.n_elements + n_elements))*(
-            self.n_elements*self.mean + torch.sum(data_batch, dim=dim, keepdim=True))
-        self.squared_mean = (1.0/(self.n_elements + n_elements - 1))*(
-            self.n_elements*self.squared_mean + torch.sum(data_batch**2, dim=dim, keepdim=True))
+        self.mean = (1.0 / (self.n_elements + n_elements)) * (
+            self.n_elements * self.mean + torch.sum(data_batch, dim=dim, keepdim=True)
+        )
+        self.squared_mean = (1.0 / (self.n_elements + n_elements - 1)) * (
+            self.n_elements * self.squared_mean
+            + torch.sum(data_batch**2, dim=dim, keepdim=True)
+        )
         self.n_elements += n_elements
 
         self.std = torch.sqrt(self.squared_mean - self.mean**2)
 
     def transform(self, x):
-        return (x - self.mean)/(self.std + self.eps)
-    
+        return (x - self.mean) / (self.std + self.eps)
+
     def inverse_transform(self, x):
-        return (x*(self.std + self.eps) + self.mean)
-    
+        return x * (self.std + self.eps) + self.mean
+
     def forward(self, x):
         return self.transform(x)
-    
+
     def cuda(self):
         self.mean = self.mean.cuda()
         self.std = self.std.cuda()
@@ -298,16 +310,16 @@ class UnitGaussianNormalizer(Transform):
         self.mean = self.mean.cpu()
         self.std = self.std.cpu()
         return self
-    
+
     def to(self, device):
         self.mean = self.mean.to(device)
         self.std = self.std.to(device)
         return self
-    
+
     @classmethod
     def from_dataset(cls, dataset, dim=None, keys=None, mask=None):
         """Return a dictionary of normalizer instances, fitted on the given dataset
-        
+
         Parameters
         ----------
         dataset : pytorch dataset
@@ -324,9 +336,8 @@ class UnitGaussianNormalizer(Transform):
                 if not keys:
                     keys = data_dict.keys()
         instances = {key: cls(dim=dim, mask=mask) for key in keys}
-        for i, data_dict in enumerate(dataset): 
+        for i, data_dict in enumerate(dataset):
             for key, sample in data_dict.items():
                 if key in keys:
                     instances[key].partial_fit(sample.unsqueeze(0))
         return instances
-             
