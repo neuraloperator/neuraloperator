@@ -104,6 +104,7 @@ class MultipleFieldOutputEncoder(OutputEncoder):
 
     def to(self, device):
         self.encoders = {k: v.to(device) for k, v in self.encoders.items()}
+        return self
 
 
 class DictTransform(Transform):
