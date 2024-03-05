@@ -175,7 +175,7 @@ trainer = Trainer(
                                   padding_fraction=config.patching.padding,
                                   stitching=config.patching.stitching,
                                   encoder=output_encoder),
-        SimpleWandBLoggerCallback(**wandb_args)
+        # SimpleWandBLoggerCallback(**wandb_args)
               ]
               )
 
