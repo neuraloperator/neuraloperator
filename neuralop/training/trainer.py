@@ -167,8 +167,6 @@ class Trainer:
                         idx=idx, sample=sample, data_processor=self.data_processor
                     )
 
-                n_samples += sample["y"].shape[0]
-
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
                     regularizer.reset()
@@ -182,6 +180,8 @@ class Trainer:
                         for k, v in sample.items()
                         if torch.is_tensor(v)
                     }
+                
+                n_samples += sample["y"].shape[0]
 
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
@@ -299,7 +299,6 @@ class Trainer:
         n_samples = 0
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
-                n_samples += sample["y"].size(0)
                 if self.callbacks:
                     self.callbacks.on_val_batch_start(
                         idx=idx, sample=sample, data_processor=self.data_processor
@@ -314,6 +313,7 @@ class Trainer:
                         for k, v in sample.items()
                         if torch.is_tensor(v)
                     }
+                n_samples += sample["y"].size(0)
 
                 out = self.model(**sample)
 
