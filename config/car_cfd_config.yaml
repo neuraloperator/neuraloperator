@@ -14,7 +14,7 @@ cfd: &CFD
 
   # Dataset related
   data:
-    path: '/home/ubuntu/data/cfd/car-pressure-data'
+    path: '/home/dpitt/work/data/car-pressure-data'
     entity_name: ''
     load_attributes: ['press']
     sdf_query_resolution: 32
