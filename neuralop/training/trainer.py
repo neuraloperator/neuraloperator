@@ -209,15 +209,9 @@ class Trainer:
                 else:
                     if self.amp_autocast:
                         with amp.autocast(enabled=True):
-                            if isinstance(out, torch.Tensor):
-                                loss = training_loss(out, **sample)
-                            elif isinstance(out, dict):
-                                loss += training_loss(**out, **sample)
-                    else:
-                        if isinstance(out, torch.Tensor):
                             loss = training_loss(out, **sample)
-                        elif isinstance(out, dict):
-                            loss += training_loss(**out, **sample)
+                    else:
+                        loss = training_loss(out, **sample)
 
                 if regularizer:
                     loss += regularizer.loss
