@@ -4,109 +4,6 @@ from abc import abstractmethod
 from collections.abc import Iterable
 import torch
 
-
-class OutputEncoder(torch.nn.Module):
-    """OutputEncoder: converts the output of a model
-    into a form usable by some cost function.
-    """
-
-    def __init__(self):
-        super().__init__()
-
-    @abstractmethod
-    def encode(self):
-        pass
-
-    @abstractmethod
-    def decode(self):
-        pass
-
-    @abstractmethod
-    def cuda(self):
-        pass
-
-    @abstractmethod
-    def cpu(self):
-        pass
-
-    @abstractmethod
-    def to(self, device):
-        pass
-
-
-class MultipleFieldOutputEncoder(OutputEncoder):
-    """When a model has multiple output fields,
-        apply a different output encoder to each field.
-
-    Parameters
-    -----------
-
-    encoder_dict: dict
-        dictionary of output encoders
-    input_mappings: dict[tuple(Slice)]
-        indices of an output tensor x to use for
-        each field, such that x[mappings[field]]
-        returns the correct slice of x.
-    return_mappings: dict[tuple(Slice)]
-        same as above. if only certain indices
-        of encoder output are important, this indexes those.
-    """
-
-    def __init__(self, encoder_dict, input_mappings, return_mappings=None):
-        self.encoders = encoder_dict
-        self.output_fields = encoder_dict.keys()
-        self.input_mappings = input_mappings
-        self.return_mappings = return_mappings
-
-        assert encoder_dict.keys() == input_mappings.keys()
-        if self.return_mappings:
-            assert encoder_dict.keys() == return_mappings.keys()
-
-    def encode(self, x):
-        """
-        Parameters
-        ----------
-        x : Torch.tensor
-            model output, indexed according to self.mappings
-        """
-        out = torch.zeros_like(x)
-
-        for field, indices in self.input_mappings.items():
-            encoded = self.encoders[field].encode(x[indices])
-            if self.return_mappings:
-                encoded = encoded[self.return_mappings[field]]
-            out[indices] = encoded
-
-        return out
-
-    def decode(self, x):
-        """
-        Parameters
-        ----------
-        x : Torch.tensor
-            model output, indexed according to self.mappings
-        """
-        out = torch.zeros_like(x)
-
-        for field, indices in self.input_mappings.items():
-            decoded = self.encoders[field].decode(x[indices])
-            if self.return_mappings:
-                decoded = decoded[self.return_mappings[field]]
-            out[indices] = decoded
-
-        return out
-
-    def cpu(self):
-        self.encoders = {k: v.cpu() for k, v in self.encoders.items()}
-
-    def cuda(self):
-        self.encoders = {k: v.cuda() for k, v in self.encoders.items()}
-
-    def to(self, device):
-        self.encoders = {k: v.to(device) for k, v in self.encoders.items()}
-        return self
-
-
 class DictTransform(Transform):
     """When a model has multiple input and output fields,
         apply a different transform to each field,
@@ -161,9 +58,9 @@ class DictTransform(Transform):
             model output, indexed according to self.mappings
         """
         out = torch.zeros_like(x)
-
         for field, indices in self.input_mappings.items():
             decoded = self.transforms[field].inverse_transform(x[indices])
+            print(f"{decoded.shape=}")
             if self.return_mappings:
                 decoded = decoded[self.return_mappings[field]]
             out[indices] = decoded
@@ -171,14 +68,14 @@ class DictTransform(Transform):
         return out
 
     def cpu(self):
-        self.encoders = {k: v.cpu() for k, v in self.encoders.items()}
+        self.encoders = {k: v.cpu() for k, v in self.transforms.items()}
 
     def cuda(self):
-        self.encoders = {k: v.cuda() for k, v in self.encoders.items()}
+        self.encoders = {k: v.cuda() for k, v in self.transforms.items()}
 
     def to(self, device):
-        self.encoders = {k: v.to(device) for k, v in self.encoders.items()}
-
+        self.encoders = {k: v.to(device) for k, v in self.transforms.items()}
+        return self
 
 class UnitGaussianNormalizer(Transform):
     """
