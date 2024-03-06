@@ -14,7 +14,6 @@ cfd: &CFD
 
   # Dataset related
   data:
-    path: '/home/dpitt/work/data/car-pressure-data'
     entity_name: ''
     load_attributes: ['press']
     sdf_query_resolution: 32
@@ -28,7 +27,7 @@ cfd: &CFD
     # key : start, stop, none in each dim
     data_field_mappings: 
       press:
-        - - None
+        - -
         - - 0
           - 1
     weights: 'triangle_areas'
@@ -54,8 +53,8 @@ cfd: &CFD
   opt:
     n_epochs: 301
     learning_rate: 1e-3
-    training_loss: 'l2' # weightedl2drag not working yet
-    testing_loss: 'l2' # ^
+    training_loss: 'l2' 
+    testing_loss: 'l2' 
     weight_decay: 1e-4
     amp_autocast: False
 
