@@ -47,8 +47,8 @@ class Trainer:
         """
 
         if callbacks:
-            assert (
-                type(callbacks) == list
+            assert isinstance(
+                callbacks, list
             ), "Callbacks must be a list of Callback objects"
             self.callbacks = PipelineCallback(callbacks=callbacks)
             self.override_load_to_device = (
@@ -157,12 +157,17 @@ class Trainer:
             self.model.train()
             t1 = default_timer()
             train_err = 0.0
+            
+            # track number of training examples in batch
+            n_samples = 0
 
             for idx, sample in enumerate(train_loader):
                 if self.callbacks:
                     self.callbacks.on_batch_start(
                         idx=idx, sample=sample, data_processor=self.data_processor
                     )
+
+                n_samples += sample["y"].shape[0]
 
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
@@ -195,7 +200,7 @@ class Trainer:
                 if self.overrides_loss:
                     if isinstance(out, torch.Tensor):
                         loss += self.callbacks.compute_training_loss(
-                            out=out.float(), **sample, amp_autocast=self.amp_autocast
+                            out=out, **sample, amp_autocast=self.amp_autocast
                         )
                     elif isinstance(out, dict):
                         loss += self.callbacks.compute_training_loss(
@@ -205,12 +210,12 @@ class Trainer:
                     if self.amp_autocast:
                         with amp.autocast(enabled=True):
                             if isinstance(out, torch.Tensor):
-                                loss = training_loss(out.float(), **sample)
+                                loss = training_loss(out, **sample)
                             elif isinstance(out, dict):
                                 loss += training_loss(**out, **sample)
                     else:
                         if isinstance(out, torch.Tensor):
-                            loss = training_loss(out.float(), **sample)
+                            loss = training_loss(out, **sample)
                         elif isinstance(out, dict):
                             loss += training_loss(**out, **sample)
 
@@ -239,7 +244,7 @@ class Trainer:
             epoch_train_time = default_timer() - t1
 
             train_err /= len(train_loader)
-            avg_loss /= self.n_epochs
+            avg_loss /= n_samples
 
             if epoch % self.log_test_interval == 0:
                 if self.callbacks:
@@ -320,19 +325,9 @@ class Trainer:
 
                 for loss_name, loss in loss_dict.items():
                     if self.overrides_loss:
-                        if isinstance(out, torch.Tensor):
-                            val_loss = self.callbacks.compute_training_loss(
-                                out.float(), **sample
-                            )
-                        elif isinstance(out, dict):
-                            val_loss = self.callbacks.compute_training_loss(
-                                **out, **sample
-                            )
+                        val_loss = self.callbacks.compute_training_loss(out, **sample)
                     else:
-                        if isinstance(out, torch.Tensor):
-                            val_loss = loss(out, **sample)
-                        elif isinstance(out, dict):
-                            val_loss = loss(out, **sample)
+                        val_loss = loss(out, **sample)
                         if val_loss.shape == ():
                             val_loss = val_loss.item()
 
