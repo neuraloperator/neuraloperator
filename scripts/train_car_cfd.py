@@ -5,12 +5,11 @@ from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from neuralop.training import setup
 from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
-from neuralop.losses.data_losses import LpLoss, IregularLpqLoss, WeightedL2DragLoss
+from neuralop.losses.data_losses import LpLoss, IrregularLpqLoss
 from neuralop.losses.meta_losses import WeightedSumLoss
 from neuralop.training.trainer import Trainer
 from neuralop.datasets import MeshDataModule
-#from neuralop.datasets.data_transforms import DataProcessor
-from neuralop.datasets.output_encoder import MultipleFieldOutputEncoder
+from neuralop.datasets.data_transforms import DataProcessor
 from copy import deepcopy
 from neuralop.training.callbacks import BasicLoggerCallback
 
@@ -94,32 +93,20 @@ else:
 l2loss = LpLoss(d=2,p=2)
 
 if config.opt.training_loss == 'l2':
-    #train_loss_fn = lambda x, y, z : torch.sqrt(torch.sum((x - y)**2) / torch.sum(y**2))
     train_loss_fn = l2loss
-    output_encoder = deepcopy(data_module.normalizers['press']).to(device)
-
-elif config.opt.training_loss == 'weightedl2' or config.opt.training_loss == 'weightedl2drag':
-    output_encoder = MultipleFieldOutputEncoder(encoder_dict=deepcopy(data_module.normalizers),
-                                                input_mappings=data_field_mappings).to(device)
-    drag_loss = WeightedL2DragLoss(device=device, mappings=data_field_mappings)
-    train_loss_fn = WeightedSumLoss(drag_loss, IregularLpqLoss())
-else:
+else: 
     raise ValueError(f'Got {config.opt.training_loss=}')
 
-# Handle Drag Error in validation separately for now
-DragLoss = WeightedL2DragLoss(mappings = data_field_mappings, device=device)
-
 if config.opt.testing_loss == 'l2':
-    #test_loss_fn = lambda x, y, z : torch.sqrt(torch.sum((x - y)**2) / torch.sum(y**2))
     test_loss_fn = l2loss
 elif config.opt.testing_loss == 'weightedl2':
-    test_loss_fn = IregularLpqLoss()
+    test_loss_fn = IrregularLpqLoss()
 else:
     raise ValueError(f'Got {config.opt.testing_loss=}')
 
 # Handle data preprocessing to FNOGNO 
 
-class CFDDataProcessor(torch.nn.Module):
+class CFDDataProcessor(DataProcessor):
     """
     Implements logic to preprocess data/handle model outputs
     to train an FNOGNO on the CFD car-pressure dataset
@@ -142,12 +129,10 @@ class CFDDataProcessor(torch.nn.Module):
         weights = sample['triangle_areas'].squeeze(0).to(self.device)
 
         #Output data
-        truth = sample['press'].squeeze(0)
-        if len(truth.shape) == 1:
-            truth = truth.unsqueeze(-1)
+        truth = sample['press'].squeeze(0).unsqueeze(-1)
 
-        # for now, grab the first 3682 vertices of the output mesh to correspond to pressure
-        output_vertices = truth.shape[0]
+        # Take the first 3682 vertices of the output mesh to correspond to pressure
+        output_vertices = truth.shape[1]
         if out_p.shape[0] > output_vertices:
             out_p = out_p[:output_vertices,:]
 
@@ -171,13 +156,14 @@ class CFDDataProcessor(torch.nn.Module):
     
     def postprocess(self, out, sample):
         out = self.normalizer.inverse_transform(out)
-        y = self.normalizer.inverse_transform(sample['y'])
+        y = self.normalizer.inverse_transform(sample['y'].squeeze(0))
         sample['y'] = y
 
         return out, sample
 
-
+output_encoder = deepcopy(data_module.normalizers['press']).to(device)
 data_processor = CFDDataProcessor(normalizer=output_encoder, device=device)
+
 trainer = Trainer(model=model, 
                   n_epochs=config.opt.n_epochs,
                   data_processor=data_processor,
