@@ -34,7 +34,7 @@ def test_DefaultDataProcessor():
     assert_close(inv_xform_data['y'].cpu(), data['y'])
     
 
-# enure that the data processor incrementally increases the resolution
+# ensure that the data processor incrementally increases the resolution
 def test_incremental_resolution():
     if torch.backends.cuda.is_built():
         device = 'cuda'
@@ -50,7 +50,7 @@ def test_incremental_resolution():
         out_normalizer=None,
         positional_encoding=None,
         device=device,
-        dataset_sublist=[2],
+        subsampling_rates=[2],
         dataset_resolution=16,
         dataset_indices=indice_list,
         epoch_gap=10,

@@ -1,5 +1,5 @@
 """
-Training a neural operator on Darcy-Flow - Author Robert Joseph
+Training a neural operator on Darcy-Flow - Author Robert Joseph George
 ========================================
 In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package on Incremental FNO and Incremental Resolution
 """
@@ -65,7 +65,7 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 # Incremental_resolution : bool, default is False
 #    if True, increase the resolution of the input incrementally
 #    uses the incremental_res_gap parameter
-#    uses the dataset_sublist parameter - a list of resolutions to use
+#    uses the subsampling_rates parameter - a list of resolutions to use
 #    uses the dataset_indices parameter - a list of indices of the dataset to slice to regularize the input resolution
 #    uses the dataset_resolution parameter - the resolution of the input
 #    uses the epoch_gap parameter - the number of epochs to wait before increasing the resolution
@@ -75,7 +75,7 @@ data_transform = data_transforms.IncrementalDataProcessor(
     out_normalizer=None,
     positional_encoding=None,
     device=device,
-    dataset_sublist=[2, 1],
+    subsampling_rates=[2, 1],
     dataset_resolution=16,
     dataset_indices=[2, 3],
     epoch_gap=10,

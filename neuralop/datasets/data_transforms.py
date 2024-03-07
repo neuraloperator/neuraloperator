@@ -113,7 +113,7 @@ class IncrementalDataProcessor(torch.nn.Module):
     def __init__(self, 
                  in_normalizer=None, out_normalizer=None, 
                  positional_encoding=None, device = 'cpu',
-                 dataset_sublist=[2, 1], dataset_resolution=16, dataset_indices=[2,3], epoch_gap=10, verbose=False):
+                 subsampling_rates=[2, 1], dataset_resolution=16, dataset_indices=[2,3], epoch_gap=10, verbose=False):
         """An incremental processor to pre/post process data before training/inferencing a model
         In particular this processor first regularizes the input resolution based on the sub_list and dataset_indices
         in the spatial domain based on a fixed number of epochs. We incrementally increase the resolution like done 
@@ -130,7 +130,7 @@ class IncrementalDataProcessor(torch.nn.Module):
             class that appends a positional encoding to the input
         device : str, optional, default is 'cpu'
             device 'cuda' or 'cpu' where computations are performed
-        dataset_sublist : list, optional, default is [2, 1]
+        subsampling_rates : list, optional, default is [2, 1]
             list of subsampling rates to use
         dataset_resolution : int, optional, default is 16
             resolution of the input data
@@ -146,7 +146,7 @@ class IncrementalDataProcessor(torch.nn.Module):
         self.out_normalizer = out_normalizer
         self.positional_encoding = positional_encoding
         self.device = device
-        self.sub_list = dataset_sublist
+        self.sub_list = subsampling_rates
         self.dataset_resolution = dataset_resolution
         self.dataset_indices = dataset_indices
         self.epoch_gap = epoch_gap
