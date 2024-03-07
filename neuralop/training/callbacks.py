@@ -642,7 +642,7 @@ class IncrementalCallback(Callback):
                 for mode_index in range(
                         min(weight.shape[1], incremental_modes)):
                     strength = torch.norm(
-                        weight[:, mode_index, :], p='fro').cpu()
+                        weight[:, mode_index, :], p='fro')
                     strength_vector.append(strength)
                 expained_ratio = compute_explained_variance(
                     incremental_modes - self.incremental_buffer, torch.Tensor(strength_vector))

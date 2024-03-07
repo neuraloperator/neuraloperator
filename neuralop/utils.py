@@ -251,7 +251,7 @@ def validate_scaling_factor(
 
 def compute_rank(tensor):
     # Compute the matrix rank of a tensor
-    rank = torch.matrix_rank(tensor).cpu()
+    rank = torch.matrix_rank(tensor)
     return rank
 
 def compute_stable_rank(tensor):
@@ -260,7 +260,7 @@ def compute_stable_rank(tensor):
     fro_norm = torch.linalg.norm(tensor, ord='fro')**2
     l2_norm = torch.linalg.norm(tensor, ord=2)**2
     rank = fro_norm / l2_norm
-    rank = rank.cpu()
+    rank = rank
     return rank
 
 def compute_explained_variance(frequency_max, s):

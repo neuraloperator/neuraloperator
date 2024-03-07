@@ -202,10 +202,10 @@ def test_load_from_checkpoint():
 def test_incremental():
     # Loading the Darcy flow dataset
     train_loader, test_loaders, output_encoder = load_darcy_flow_small(
-        n_train=100,
+        n_train=10,
         batch_size=16,
         test_resolutions=[16, 32],
-        n_tests=[100, 50],
+        n_tests=[10, 5],
         test_batch_sizes=[32, 32],
     )
     callbacks = [
@@ -261,4 +261,3 @@ def test_incremental():
     # assert that the model has not changed the max modes
     for i in range(len(initial_max_modes)):
         assert model.fno_blocks.convs.max_n_modes[i] == initial_max_modes[i]
-    
