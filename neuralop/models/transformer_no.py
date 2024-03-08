@@ -3,11 +3,12 @@ from functools import partialmethod
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .base_model import BaseModel
 from ..layers.transformer_block import TransformerEncoderBlock, TransformerDecoderBlock
 from ..layers.embeddings import RotaryEmbedding
 
 
-class TransformerNO(nn.Module):
+class TransformerNO(BaseModel, name='transformer_no'):
     """N-Dimensional Transformer-based Neural Operator (currently does not support N>2)
         using softmax-free attention to compute the kernel integral.
 
@@ -57,7 +58,7 @@ class TransformerNO(nn.Module):
         non_linearity : nn.Module, optional
             Non-Linearity module to use, by default F.gelu
         norm: string, optional
-            Normalization module to use, by default layernorm
+            Normalization module to modeluse, by default layernorm
 
         """
     def __init__(self,

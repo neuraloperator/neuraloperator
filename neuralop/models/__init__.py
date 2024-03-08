@@ -4,4 +4,4 @@ from .fno import SFNO
 from .uno import UNO
 from .transformer_no import TransformerNO
 # from .fnogno import FNOGNO
-from .model_dispatcher import get_model
+from .base_model import get_model
