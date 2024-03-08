@@ -178,7 +178,6 @@ class TransformerDecoderBlock(nn.Module):
         else:
             raise ValueError(f'query_basis must be one of ["siren", "fourier", "linear"], got {self.query_basis}')
 
-        self.attention_norm = get_normalization(self.norm, self.hidden_channels)
         self.attention_layer = AttentionKernelIntegral(in_channels=self.hidden_channels,
                                                         out_channels=self.hidden_channels,
                                                         n_heads=self.num_heads,
@@ -199,6 +198,7 @@ class TransformerDecoderBlock(nn.Module):
         query_emb = query_emb.view(pos_qry.shape[0], -1, self.num_heads * self.head_n_channels)
         if query_emb.shape[0] != u.shape[0]:
             query_emb = query_emb.expand(u.shape[0], -1, -1)
+
         u_out = self.attention_layer(u_src=u,
                                      pos_src=pos_src,
                                      u_qry=query_emb,
