@@ -306,7 +306,6 @@ class FNOGNO(BaseModel, name='FNOGNO'):
         # Project pointwise to out channels
         #(n_in, out_channels)
         out = self.projection(out).squeeze(0).permute(1, 0)  
-        
         return out
 
 

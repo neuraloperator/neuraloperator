@@ -206,13 +206,16 @@ class MeshDataModule:
                     normalizer_keys.append(attr)
             # returns keyed dict of UnitGaussianNormalizer instances
             self.normalizers = UnitGaussianNormalizer.from_dataset(
-                data, dim=0, keys=normalizer_keys
+                data, dim=[1], keys=normalizer_keys
             )
 
             # Encode all data
             for attr in normalizer_keys:
                 for j in range(len(data)):
-                    data[j][attr] = self.normalizers[attr].transform(data[j][attr])
+                    data_elem = data[j][attr]
+                    if data_elem.shape[0] != 1:
+                        data_elem = data_elem.unsqueeze(0)
+                    data[j][attr] = self.normalizers[attr].transform(data_elem)
 
             if not bool(self.normalizers):
                 self.normalizers = None
