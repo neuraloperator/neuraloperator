@@ -81,7 +81,7 @@ train_loader, test_loaders, output_encoder = load_darcy_flow_small(
 
 model = get_model(config)
 
-
+### The following wrapper is to maintain a consistent input format with other FNO-based model
 class ModelWrapper(torch.nn.Module):
     def __init__(self, model):
         super().__init__()
