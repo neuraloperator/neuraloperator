@@ -1,15 +1,14 @@
 import sys
-
-from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 import torch
-from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
+from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
+from torch.nn.parallel import DistributedDataParallel as DDP
+import torch.nn.functional as F
 
-from neuralop import H1Loss, LpLoss, Trainer, get_model
-from neuralop.datasets import load_darcy_flow_small
+from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Trainer, get_model
+from neuralop.datasets import load_burgers_1dtime
 from neuralop.datasets.data_transforms import MGPatchingDataProcessor
-from neuralop.training import setup
-from neuralop.training.callbacks import BasicLoggerCallback
+from neuralop.training import setup, BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -18,7 +17,7 @@ config_name = "default"
 pipe = ConfigPipeline(
     [
         YamlConfig(
-            "./darcy_config.yaml", config_name="default", config_folder="../config"
+            "./burgers_config.yaml", config_name="default", config_folder="../config"
         ),
         ArgparseConfig(infer_types=True, config_name=None, config_file=None),
         YamlConfig(config_folder="../config"),
@@ -31,7 +30,6 @@ config_name = pipe.steps[-1].config_name
 device, is_logger = setup(config)
 
 # Set up WandB logging
-wandb_args = None
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
     if config.wandb.name:
@@ -41,17 +39,17 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.tfno2d.n_layers,
-                config.tfno2d.hidden_channels,
-                config.tfno2d.n_modes_width,
-                config.tfno2d.n_modes_height,
-                config.tfno2d.factorization,
-                config.tfno2d.rank,
+                config.fno2d.n_layers,
+                config.fno2d.n_modes_width,
+                config.fno2d.n_modes_height,
+                config.fno2d.hidden_channels,
+                config.fno2d.factorization,
+                config.fno2d.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
         )
-    wandb_args =  dict(
+    wandb_init_args = dict(
         config=config,
         name=wandb_name,
         group=config.wandb.group,
@@ -62,34 +60,24 @@ if config.wandb.log and is_logger:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
 
+else: 
+    wandb_init_args = None
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
 
 # Print config to screen
-if config.verbose and is_logger:
+if config.verbose:
     pipe.log()
     sys.stdout.flush()
 
-# Loading the Darcy flow dataset
-train_loader, test_loaders, data_processor = load_darcy_flow_small(
-    n_train=config.data.n_train,
-    batch_size=config.data.batch_size,
-    positional_encoding=config.data.positional_encoding,
-    test_resolutions=config.data.test_resolutions,
-    n_tests=config.data.n_tests,
-    test_batch_sizes=config.data.test_batch_sizes,
-    encode_input=False,
-    encode_output=False,
-)
-# convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
-if config.patching.levels > 0:
-    data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
-                                             out_normalizer=data_processor.out_normalizer,
-                                             positional_encoding=data_processor.positional_encoding,
-                                             padding_fraction=config.patching.padding,
-                                             stitching=config.patching.stitching,
-                                             levels=config.patching.levels)
-data_processor = data_processor.to(device)
+# Load the Burgers dataset
+train_loader, test_loaders, output_encoder = load_burgers_1dtime(data_path=config.data.folder,
+        n_train=config.data.n_train, batch_size=config.data.batch_size, 
+        n_test=config.data.n_tests[0], batch_size_test=config.data.test_batch_sizes[0],
+        temporal_length=config.data.temporal_length, spatial_length=config.data.spatial_length,
+        pad=config.data.get("pad", 0), temporal_subsample=config.data.get("temporal_subsample", 1),
+        spatial_subsample=config.data.get("spatial_subsample", 1),
+        )
 
 model = get_model(config)
 model = model.to(device)
@@ -129,18 +117,39 @@ else:
 # Creating the losses
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
-if config.opt.training_loss == "l2":
-    train_loss = l2loss
-elif config.opt.training_loss == "h1":
-    train_loss = h1loss
-else:
-    raise ValueError(
-        f'Got training_loss={config.opt.training_loss} '
-        f'but expected one of ["l2", "h1"]'
-    )
+ic_loss = ICLoss()
+equation_loss = BurgersEqnLoss(method=config.opt.get('pino_method', None), 
+                               visc=0.01, loss=F.mse_loss)
+
+training_loss = config.opt.training_loss
+if not isinstance(training_loss, (tuple, list)):
+    training_loss = [training_loss]
+
+losses = []
+weights = []
+for loss in training_loss:
+    # Append loss
+    if loss == 'l2':
+        losses.append(l2loss)
+    elif loss == 'h1':
+        losses.append(h1loss)
+    elif loss == 'equation':
+        losses.append(equation_loss)
+    elif loss == 'ic':
+        losses.append(ic_loss)
+    else:
+        raise ValueError(f'Training_loss={loss} is not supported.')
+
+    # Append loss weight
+    if "loss_weights" in config.opt:
+        weights.append(config.opt.loss_weights.get(loss, 1.))
+    else:
+        weights.append(1.)
+
+train_loss = WeightedSumLoss(losses=losses, weights=weights)
 eval_losses = {"h1": h1loss, "l2": l2loss}
 
-if config.verbose and is_logger:
+if config.verbose:
     print("\n### MODEL ###\n", model)
     print("\n### OPTIMIZER ###\n", optimizer)
     print("\n### SCHEDULER ###\n", scheduler)
@@ -150,21 +159,32 @@ if config.verbose and is_logger:
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
 
+# only perform MG patching if config patching levels > 0
+
+callbacks = [
+    BasicLoggerCallback(wandb_init_args)
+]
+
+data_processor = MGPatchingDataProcessor(model=model,
+                                       levels=config.patching.levels,
+                                       padding_fraction=config.patching.padding,
+                                       stitching=config.patching.stitching,
+                                       device=device,
+                                       in_normalizer=output_encoder,
+                                       out_normalizer=output_encoder)
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
-    device=device,
     data_processor=data_processor,
+    device=device,
     amp_autocast=config.opt.amp_autocast,
-    wandb_log=config.wandb.log,
+    callbacks=callbacks,
     log_test_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
-    verbose=config.verbose and is_logger,
-    callbacks=[
-        BasicLoggerCallback(wandb_args)
-              ]
-              )
+    verbose=config.verbose,
+    wandb_log = config.wandb.log
+)
 
 # Log parameter count
 if is_logger:
@@ -183,11 +203,12 @@ if is_logger:
         wandb.log(to_log)
         wandb.watch(model)
 
+
 trainer.train(
-    train_loader=train_loader,
-    test_loaders=test_loaders,
-    optimizer=optimizer,
-    scheduler=scheduler,
+    train_loader,
+    test_loaders,
+    optimizer,
+    scheduler,
     regularizer=False,
     training_loss=train_loss,
     eval_losses=eval_losses,

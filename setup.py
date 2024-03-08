@@ -57,7 +57,7 @@ config = {
         {'name': "Zongyi Li", 'email': "zongyili@caltech.edu"}
         ],
     'version': VERSION,
-    'install_requires': ['numpy', 'configmypy', 'pytest', 'black'],
+    'install_requires': ['numpy', 'configmypy', 'pytest', 'black', 'tensorly', 'tensorly-torch', 'opt-einsum'],
     'license': 'Modified BSD',
     'scripts': [],
     'include_package_data': True,

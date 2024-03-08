@@ -44,7 +44,7 @@ dataset_name = "Darcy Flow"
 
 # %%
 # Loading the Navier-Stokes dataset in 128x128 resolution
-train_loader, test_loaders, output_encoder = load_darcy_flow_small(
+train_loader, test_loaders, data_processor = load_darcy_flow_small(
         n_train=50, batch_size=50, 
         test_resolutions=[16, 32], n_tests=[50],
         test_batch_sizes=[32], positional_encoding=False, 

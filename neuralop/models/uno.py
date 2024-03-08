@@ -172,11 +172,11 @@ class UNO(nn.Module):
         if self.horizontal_skips_map is None:
             self.horizontal_skips_map = {}
             for i in range(
-                n_layers // 2,
                 0,
-            ):
+                n_layers // 2,
+            ):  
+                # example, if n_layers = 5, then 4:0, 3:1
                 self.horizontal_skips_map[n_layers - i - 1] = i
-
         # self.uno_scalings may be a 1d list specifying uniform scaling factor at each layer
         # or a 2d list, where each row specifies scaling factors along each dimention.
         # To get the final (end to end) scaling factors we need to multiply
@@ -201,7 +201,10 @@ class UNO(nn.Module):
         if verbose:
             print("calculated out factor", self.end_to_end_scaling_factor)
 
-        if domain_padding is not None and domain_padding > 0:
+        if domain_padding is not None and (
+            (isinstance(domain_padding, list) and sum(domain_padding) > 0)
+            or (isinstance(domain_padding, (float, int)) and domain_padding > 0)
+        ):
             self.domain_padding = DomainPadding(
                 domain_padding=domain_padding,
                 padding_mode=domain_padding_mode,
@@ -288,6 +291,7 @@ class UNO(nn.Module):
         skip_outputs = {}
         cur_output = None
         for layer_idx in range(self.n_layers):
+            
             if layer_idx in self.horizontal_skips_map.keys():
                 skip_val = skip_outputs[self.horizontal_skips_map[layer_idx]]
                 output_scaling_factors = [
@@ -306,8 +310,10 @@ class UNO(nn.Module):
             if layer_idx in self.horizontal_skips_map.values():
                 skip_outputs[layer_idx] = self.horizontal_skips[str(layer_idx)](x)
 
+
         if self.domain_padding is not None:
             x = self.domain_padding.unpad(x)
+        
 
         x = self.projection(x)
         return x
