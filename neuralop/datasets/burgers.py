@@ -115,5 +115,3 @@ def load_burgers_1dtime(
     test_loaders = {'test':test_loader}
 
     return train_loader, test_loaders, output_encoder
-
-    return train_loader, test_loader
