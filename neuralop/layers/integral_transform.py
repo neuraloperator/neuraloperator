@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from .mlp import MLPLinear
 from .segment_csr import segment_csr
 
+
 class IntegralTransform(nn.Module):
     """Integral Kernel Transform (GNO)
     Computes one of the following:
@@ -56,7 +57,6 @@ class IntegralTransform(nn.Module):
         mlp_non_linearity=F.gelu,
         transform_type="linear",
     ):
-
         super().__init__()
 
         assert mlp is not None or mlp_layers is not None
@@ -69,7 +69,6 @@ class IntegralTransform(nn.Module):
             and self.transform_type != "nonlinear_kernelonly"
             and self.transform_type != "nonlinear"
         ):
-
             raise ValueError(
                 f"Got transform_type={transform_type} but expected one of "
                 "[linear_kernelonly, linear, nonlinear_kernelonly, nonlinear]"
@@ -111,7 +110,7 @@ class IntegralTransform(nn.Module):
             and "neighbors_row_splits." For descriptions
             of the two, see NeighborSearch.
             If batch > 1, the neighbors must be constant
-            across the entire batch. 
+            across the entire batch.
         x : torch.Tensor of shape [batch, m, d2], default None
             m points of dimension d2 over which the
             output function is defined. If None,
@@ -135,13 +134,13 @@ class IntegralTransform(nn.Module):
             Output function given on the points x.
             d4 is the output size of the kernel k.
         """
-        
+
         if x is None:
             x = y
-        
-        # add a batch dimension to inputs of shape (n, d) 
+
+        # add a batch dimension to inputs of shape (n, d)
         # for backwards compatibility
-        
+
         if y.ndim == 2:
             y = y.unsqueeze(0)
         if x.ndim == 2:
@@ -149,9 +148,10 @@ class IntegralTransform(nn.Module):
         if f_y is not None:
             if f_y.ndim == 2:
                 f_y = f_y.unsqueeze(0)
-        if weights.ndim == 1:
-            weights = weights.unsqueeze(0)
-        
+
+        batch_size = y.shape[0]
+        n_out = x.shape[1]
+
         rep_features = y[:, neighbors["neighbors_index"], :]
         if f_y is not None:
             in_features = f_y[:, neighbors["neighbors_index"], :]
@@ -161,7 +161,7 @@ class IntegralTransform(nn.Module):
             - neighbors["neighbors_row_splits"][:-1]
         )
         # TODO: figure out how to do this with a batching dimension
-        self_features = torch.repeat_interleave(x, num_reps, dim=0)
+        self_features = torch.repeat_interleave(x, num_reps, dim=1)  # dim=0 is legacy
 
         agg_features = torch.cat([rep_features, self_features], dim=-1)
         if f_y is not None and (
@@ -171,17 +171,29 @@ class IntegralTransform(nn.Module):
             agg_features = torch.cat([agg_features, in_features], dim=-1)
 
         rep_features = self.mlp(agg_features)
+        print(f"{rep_features.shape=}")
 
         if f_y is not None and self.transform_type != "nonlinear_kernelonly":
             rep_features = rep_features * in_features
 
         if weights is not None:
-            rep_features = weights[:,neighbors["neighbors_index"]] * rep_features
+            rep_features = (
+                weights[neighbors["neighbors_index"]]
+                * rep_features  # weights come from norm, which are part of neighbors
+            )
             reduction = "sum"
         else:
             reduction = "mean"
 
-        out_features = segment_csr(
-            rep_features, neighbors["neighbors_row_splits"], reduce=reduction
-        )
-        return out_features
+        outs = []
+        for i in range(batch_size):
+            out_features = segment_csr(
+                rep_features[i], neighbors["neighbors_row_splits"], reduce=reduction
+            )
+            outs.append(out_features)
+
+        batch_out_features = torch.stack(outs, dim=0)
+
+        if batch_out_features.shape[0] == 1:
+            return batch_out_features.squeeze(0)
+        return batch_out_features
