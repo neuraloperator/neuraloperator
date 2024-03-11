@@ -54,3 +54,41 @@ def load_training_state(save_dir: Union[str, Path], save_name: str,
             print(f"Warning: requested to load regularizer state, but no saved regularizer state exists in {save_dir}.")
     
     return training_state
+
+
+def save_training_state(save_dir: Union[str, Path], save_name: str,
+                        model: nn.Module,
+                        optimizer: nn.Module = None,
+                        scheduler: nn.Module = None,
+                        regularizer: nn.Module = None) -> None:
+    """save_training_state returns model and optional other training modules
+    saved from prior training for downstream use
+
+    Parameters
+    ----------
+    save_dir : Union[str, Path]
+        directory from which to load training state (model, optional optimizer, scheduler, regularizer)
+    save_name : str
+        name of model to load
+    """
+    training_state = {}
+
+    if isinstance(save_dir, str):
+        save_dir = Path(save_dir)
+    
+    training_state['model'] = model.save_checkpoint(save_dir, save_name)
+    
+    # load optimizer if state exists
+    if optimizer is not None:
+        optimizer_pth = save_dir / "optimizer.pt"
+        torch.save(optimizer.state_dict(), optimizer_pth)
+    
+    if scheduler is not None:
+        scheduler_pth = save_dir / "scheduler.pt"
+        torch.save(scheduler.state_dict(), scheduler_pth)
+    
+    if regularizer is not None:
+        regularizer_pth = save_dir / "regularizer.pt"
+        torch.save(regularizer.state_dict(), regularizer_pth)
+    
+    print(f"Successfully saved training state to {save_dir}")
