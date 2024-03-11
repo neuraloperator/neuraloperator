@@ -42,6 +42,7 @@ class UQNO(BaseModel, name="UQNO"):
         self.base_model.eval() # base-model weights are frozen
         # another way to handle this would be to use LoRA, or similar
         # ie freeze the  weights, and train a low-rank matrix of weight perturbations
-        solution = self.base_model(*args, **kwargs)
+        with torch.no_grad():
+            solution = self.base_model(*args, **kwargs)
         quantile = self.residual_model(*args, **kwargs)
         return (solution, quantile)
