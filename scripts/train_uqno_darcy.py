@@ -198,9 +198,19 @@ trainer.train(
 # UQ #
 ######
 
+## TODO
+# compute quantile loss as follows:
+# y = solution(x) - y_true
+# x = residual(x)
+
+# quantile(x,y) is pointwise quantile loss
+
+# pass this into UQNO callback on compute training loss
+
+
 class UQNOCallback(Callback):
     def __init__(self):
-        
+        pass
 
 
 uqno = UQNO(base_model=solution_model,
