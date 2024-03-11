@@ -7,7 +7,8 @@ import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.datasets import load_darcy_flow_small
-from neuralop.datasets.data_transforms import MGPatchingDataProcessor
+from neuralop.datasets.data_transforms import DataProcessor, MGPatchingDataProcessor
+from neuralop.losses import PointwiseQuantileLoss
 from neuralop.models import UQNO
 from neuralop.training import setup
 from neuralop.training.callbacks import BasicLoggerCallback, Callback
@@ -103,7 +104,7 @@ if config.distributed.use_distributed:
 
 # Create the optimizer
 optimizer = torch.optim.Adam(
-    model.parameters(),
+    solution_model.parameters(),
     lr=config.opt.learning_rate,
     weight_decay=config.opt.weight_decay,
 )
@@ -205,19 +206,102 @@ trainer.train(
 
 # quantile(x,y) is pointwise quantile loss
 
-# pass this into UQNO callback on compute training loss
+# compute via data processor
 
 
-class UQNOCallback(Callback):
-    def __init__(self):
-        pass
+class QuantileLossDataProcessor(DataProcessor):
+    def __init__(self, base_data_processor: DataProcessor,
+                 device: str="cpu"):
+        """QuantileLossDataProcessor converts tuple (G_hat(a,x), E(a,x)) and 
+        sample['y'] = G_true(a,x) into the form expected by PointwiseQuantileLoss
 
+        y_pred = E(a,x)
+        y_true = abs(G_hat(a,x) - G_true(a,x))
 
-uqno = UQNO(base_model=solution_model,
-            alpha=config.opt.alpha,
-            delta=config.opt.delta,)
+        It also preserves any transformations that need to be performed
+        on inputs/outputs from the solution model. 
 
+        Parameters
+        ----------
+        base_data_processor : DataProcessor
+            transforms required for base solution_model input/output
+        device: str
+            "cpu" or "cuda" 
+        """
+        super().__init__()
+        self.base_data_processor = base_data_processor
+        self.device = device
+    
+    def wrap(self, model):
+        self.model = model
+        return self
 
+    def to(self, device):
+        self.device = device
+        self.base_data_processor = self.base_data_processor.to(device)
+        return self
+
+    def preprocess(self, *args, **kwargs):
+        """
+        nothing required at preprocessing - just wrap the base DataProcessor
+        """
+        return self.base_data_processor.preprocess(*args, **kwargs)
+    
+    def postprocess(self, out, sample):
+        """
+        wrap the base_data_processor's outputs and transform
+        """
+        out, sample = self.base_data_processor.postprocess(out, sample)
+        g_true = sample['y']
+        g_hat, pred_uncertainty_ball = out # UQNO returns a tuple
+        sample['y'] = g_true - g_hat
+        sample.pop('x') # remove x arg to avoid overloading loss args
+        return pred_uncertainty_ball, sample
+
+    def forward(self, **sample):
+        # combine pre and postprocess for wrap
+        sample = self.preprocess(sample)
+        out = self.model(**sample)
+        out, sample = self.postprocess(out, sample)
+        return out, sample
+
+uqno = UQNO(base_model=solution_model)
+quantile_loss = PointwiseQuantileLoss(alpha=config.opt.alpha)
+quantile_data_proc = QuantileLossDataProcessor(base_data_processor=data_processor,
+                                               device=device)
+
+# Create the quantile model's optimizer
+quantile_optimizer = torch.optim.Adam(
+    uqno.residual_model.parameters(),
+    lr=config.opt.learning_rate,
+    weight_decay=config.opt.weight_decay,
+)
+
+# reuse scheduler
+
+quantile_trainer = Trainer(model=uqno,
+                           n_epochs=config.opt.n_epochs,
+                           data_processor=quantile_data_proc,
+                           wandb_log=config.wandb.log,
+                           device=device,
+                           amp_autocast=config.opt.amp_autocast,
+                           log_test_interval=config.wandb.log_test_interval,
+                           log_output=config.wandb.log_output,
+                           use_distributed=config.distributed.use_distributed,
+                           verbose=config.verbose and is_logger,
+                           callbacks=[
+                                BasicLoggerCallback(wandb_args)
+                                    ]
+                           )
+
+quantile_trainer.train(train_loader=quantile_train_loader, # add this later
+                       test_loaders={}, # no eval on quantile train
+                       optimizer=quantile_optimizer,
+                       scheduler=scheduler,
+                       training_loss=quantile_loss,
+                       )
+
+### TODO:  calibrate trained quantile model
 
 if config.wandb.log and is_logger:
     wandb.finish()

@@ -413,11 +413,11 @@ class WeightedL2DragLoss(object):
         return loss
 
 class PointwiseQuantileLoss(object):
-    def __init__(self, quantile, reduce_dims = 0, reductions='sum'):
+    def __init__(self, alpha, reduce_dims = 0, reductions='sum'):
         # for now only support 1d as in output function's codomain is R
         super().__init__()
 
-        self.quantile = quantile
+        self.alpha = alpha
 
         if isinstance(reduce_dims, int):
             self.reduce_dims = [reduce_dims]
@@ -442,17 +442,19 @@ class PointwiseQuantileLoss(object):
 
         return x
 
-    def rel(self, x, y):
+    def rel(self, x, y, eps=1e-7):
         # y is the pointwise diff value (pred by fixed model - ytrue)
         # since we want a ball around prediction, we take abs value of y
         # note this quantile is something like 0.9 or 0.95, normally
+
+        #quantile = 1 - self.alpha
         y_abs = torch.abs(y)
         diff = y_abs - x
-        yscale,_ = torch.max(y_abs, dim=0)
-        yscale = yscale + 0.00000001
-        ptwise_loss = torch.max(self.quantile * diff, -(1-self.quantile) * diff)
+        #yscale,_ = torch.max(y_abs, dim=0)
+        #yscale = yscale + eps
+        ptwise_loss = torch.max(self.alpha * diff, -(1-self.alpha) * diff)
         # scale this, above with prob 1-q it's weighed by q and q weighed by 1-q
-        ptwise_loss_scaled = ptwise_loss/2/self.quantile/(1-self.quantile)
+        ptwise_loss_scaled = ptwise_loss/2/self.alpha/(1-self.alpha)
         ptavg_loss = ptwise_loss_scaled.view(ptwise_loss_scaled.shape[0], -1).mean(1, keepdim=True)
 
         if self.reduce_dims is not None:
@@ -461,5 +463,5 @@ class PointwiseQuantileLoss(object):
         return loss_batch
 
 
-    def __call__(self, x, y):
+    def __call__(self, x, y, **kwargs):
         return self.rel(x, y)

@@ -16,12 +16,6 @@ class UQNO(BaseModel, name="UQNO"):
     ----------
     base_model : nn.Module
         pre-trained solution operator
-    alpha : float
-        fraction of points excluded from codomain coverage,
-        i.e. target codomain coverage rate is 1-alpha
-    delta : float
-        1 - delta controls the expected proportion of functions 
-        that predict an overall coverage of 1-alpha within a given band
     residual_model : nn.Module, optional
         architecture to train as the UQNO's 
         quantile model
@@ -34,8 +28,6 @@ class UQNO(BaseModel, name="UQNO"):
                  ):
         super().__init__()
 
-        self.alpha = alpha
-        self.delta = delta
         self.base_model = base_model
         if residual_model is None:
             residual_model = deepcopy(base_model)
@@ -47,7 +39,9 @@ class UQNO(BaseModel, name="UQNO"):
         and the uncertainty ball E(a,x) as a pair
         for pointwise quantile loss
         """
-        self.base_model.eval()
+        self.base_model.eval() # base-model weights are frozen
+        # another way to handle this would be to use LoRA, or similar
+        # ie freeze the  weights, and train a low-rank matrix of weight perturbations
         solution = self.base_model(*args, **kwargs)
         quantile = self.residual_model(*args, **kwargs)
         return (solution, quantile)
