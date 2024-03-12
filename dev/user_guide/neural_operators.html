@@ -211,7 +211,7 @@ In other words, the differentiation and integration are mappings from function s
 <span class="math notranslate nohighlight">\(\mathcal{L}\)</span> is some differential operator that maps
 the function <span class="math notranslate nohighlight">\(u\)</span> to the function <span class="math notranslate nohighlight">\(f\)</span>.
 Usually, <span class="math notranslate nohighlight">\(\mathcal{L}\)</span> and <span class="math notranslate nohighlight">\(f\)</span> are given. The task is to solve for <span class="math notranslate nohighlight">\(u\)</span>.
-That is, we want to learn an operator like the inverse of <span class="math notranslate nohighlight">\(\mathcal{D}\)</span> that
+That is, we want to learn an operator like the inverse of <span class="math notranslate nohighlight">\(\mathcal{L}\)</span> that
 maps the function <span class="math notranslate nohighlight">\(f\)</span> to the function <span class="math notranslate nohighlight">\(u\)</span>.
 So the problem of PDE is indeed an operator learning problem.</p>
 <p>The classical development of neural networks has been primarily
@@ -246,9 +246,8 @@ These traditional numerical solvers are awesome, but they have some drawbacks:</
 <ul class="simple">
 <li><p>The error scales steeply with the resolution. We need a high resolution to get good approximations.</p></li>
 <li><p>The computation and storage steeply scale with the resolution (i.e. the size of the grid).</p></li>
-<li><p>When the equation is solved on one discretization,</p></li>
+<li><p>When the equation is solved on one discretization, we cannot change the discretization anymore.</p></li>
 </ul>
-<p>we cannot change the discretization anymore.</p>
 <p><em>.PNG</em> and <em>.JPG</em> formats are good.
 But sometimes maybe we want to save the images as vector images in <em>.EPS</em> or <em>.SVG</em> formats,
 so that it can be used and displayed in any context.

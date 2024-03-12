@@ -166,8 +166,7 @@
 It the first work that can learn resolution-invariant solution operators on Navier-Stokes equation,
 achieving state-of-the-art accuracy among all existing deep learning methods and
 up to 1000x faster than traditional solvers.
-Also check out the paper <a class="reference external" href="https://arxiv.org/abs/2010.08895">https://arxiv.org/abs/2010.08895</a> and article
-<a class="reference external" href="https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/">https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/</a></p>
+Also check out the paper <a class="footnote-reference brackets" href="#id3" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> and article <a class="footnote-reference brackets" href="#id4" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>.</p>
 <section id="operator-learning">
 <h2>Operator learning<a class="headerlink" href="#operator-learning" title="Link to this heading"></a></h2>
 <p>Thinking in continuum gives us an advantage when dealing with PDE.
@@ -323,10 +322,10 @@ Therefore it’s necessary to the Fourier transform and its inverse at each laye
         <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;bixy,ioxy-&gt;boxy&quot;</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">weights</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>where the input <code class="code docutils literal notranslate"><span class="pre">v_</span> <span class="pre">has</span> <span class="pre">the</span> <span class="pre">shape</span> <span class="pre">(N,C,H,W),</span>
-<span class="pre">:code:`self.weights1</span></code> and <code class="code docutils literal notranslate"><span class="pre">self.weights2</span></code> are the weight matrices;
-<code class="code docutils literal notranslate"><span class="pre">self.mode1</span></code> and _self.mode2` truncate the lower frequency modes;
-and :code:<a href="#id1"><span class="problematic" id="id2">`</span></a>compl_mul2d()1 is the matrix multiplication for complex numbers.</p>
+<p>where the input <code class="code docutils literal notranslate"><span class="pre">x</span></code> has the shape (N,C,H,W),
+<code class="code docutils literal notranslate"><span class="pre">self.weights1</span></code> and <code class="code docutils literal notranslate"><span class="pre">self.weights2</span></code> are the weight matrices;
+<code class="code docutils literal notranslate"><span class="pre">self.mode1</span></code> and <code class="code docutils literal notranslate"><span class="pre">self.mode2</span></code> truncate the lower frequency modes;
+and <code class="code docutils literal notranslate"><span class="pre">compl_mul2d()</span></code> is the matrix multiplication for complex numbers.</p>
 <a class="reference internal image-reference" href="../_images/filters.jpg"><img alt="../_images/filters.jpg" src="../_images/filters.jpg" style="width: 800px;" /></a>
 <p>Filters in convolution neural networks are usually local.
 They are good to capture local patterns such as edges and shapes.
@@ -628,10 +627,15 @@ compared to the <span class="math notranslate nohighlight">\(2.2s\)</span> of th
 <h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
 <aside class="footnote-list brackets">
 <aside class="footnote brackets" id="id3" role="doc-footnote">
-<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
 <p>Fourier Neural Operator for Parametric Partial Differential Equations,
 Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli
 and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar, 2020.</p>
+</aside>
+<aside class="footnote brackets" id="id4" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">2</a><span class="fn-bracket">]</span></span>
+<p>Hao, K. (2021, October 20). Ai has cracked a key mathematical puzzle for understanding our world.
+MIT Technology Review. <a class="reference external" href="https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/">https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/</a></p>
 </aside>
 </aside>
 </section>

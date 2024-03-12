@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Training a neural operator on Darcy-Flow - Author Robert Joseph George &#8212; neuraloperator 0.3.0 documentation</title> 
+<link rel="stylesheet" href="../_static/tensorly_style.css">
+<link rel="apple-touch-icon" sizes="180x180" href="../_static/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../_static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../_static/favicon/favicon-16x16.png">
+<link rel="manifest" href="../_static/favicon/site.webmanifest">
+<link rel="mask-icon" href="../_static/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="../_static/favicon/favicon.ico">
+<meta name="theme-color" content="#ffffff">
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/tensorly_style.css?v=a02e9698" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=61a4c737" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+    <script src="../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+ <script src="../_static/navbar_burger.js"></script>
+ <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+ 
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="A simple Darcy-Flow spectrum analysis" href="plot_darcy_flow_spectrum.html" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  </head>
+<body  class="has-navbar-fixed-top">
+
+  <header>
+    <navbar>
+      <nav class="navbar top-navbar is-fixed-top has-shadow is-flex-wrap-wrap" role="navigation" aria-label="main top navigation">
+        <div class="navbar-brand">
+        
+
+          <a class="navbar-item" href="../index.html">
+            <img src="../_static/neuraloperator_logo.png" height="28">
+          </a>
+          <a class="navbar-item is-hidden-desktop" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon"><i class="fab fa-github"></i></span>
+          </a>
+
+          <a role="button" class="navbar-burger" data-target="top-nav-menu" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+
+        </div>
+        
+        <div class="navbar-menu" id="top-nav-menu">
+        
+
+          <div class="navbar-start">
+            
+              <a class="navbar-item" href="../install.html">
+              Install
+            </a>
+              <a class="navbar-item" href="../user_guide/index.html">
+              User Guide
+            </a>
+              <a class="navbar-item" href="../modules/api.html">
+              API
+            </a>
+              <a class="navbar-item" href="index.html">
+              Examples
+            </a>
+          </div>
+        
+          <div class="navbar-end">
+            <div class="navbar-item">
+            
+            <a class="button is-hidden-touch is-dark" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon-text">
+                <span class="icon is-large">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>Github</span>
+              </span>
+            </a>
+
+            </div> 
+          </div> 
+        </div> 
+
+      </nav>
+      
+    </navbar>
+  </header>
+
+
+  <div id="column-container">
+  <div class="columns is-mobile is-centered">
+	
+  
+      <div class="column is-10-mobile is-one-third-tablet is-3-desktop is-hidden-mobile" id="sidebar">
+    
+    <aside class="sticky-nav sidebar-menu">
+<div class="sidebar-search">
+  <form class="field" id="searchbox" role="search" action="../search.html" method="get">
+    <!-- <label class="label" id="searchlabel">Quick search</label> -->
+    <div class="field has-addons">
+      <div class="control is-expanded">
+        <input class="input" type="text" placeholder="Search the doc" name="q" aria-labelledby="searchlabel autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      </div>
+      <div class="control">
+        <input class="button is-info" type="submit" value="Go" />
+      </div>
+    </div>
+  </form>
+  <script>document.getElementById('searchbox').style.display = "block"</script>
+
+</div>
+      
+      <div class="sidebar-menu-toc">
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installing NeuralOperator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide/index.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/api.html">API reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Gallery of examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_SFNO_swe.html">Training a SFNO on the spherical Shallow Water equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_UNO_darcy.html">U-NO on Darcy-Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow_spectrum.html">A simple Darcy-Flow spectrum analysis</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Training a neural operator on Darcy-Flow - Author Robert Joseph George</a></li>
+</ul>
+</li>
+</ul>
+ 
+      </div>
+    </aside>
+  </div>
+  
+
+  <div class="column main-column">
+
+    
+    <div class="main-section">
+
+      
+      
+      <div class="side-menu-toggle">
+        <button class="button" id="toggle-sidebar" onclick="toggle_sidebar()">
+          <span class="icon"><i class="fa fa-bars" aria-hidden="true"></i></span>
+          <span>menu</span> 
+        </button>
+      </div>
+      
+
+      <div class="container content main-content">
+        
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-examples-plot-incremental-fno-darcy-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code</p>
+</div>
+<section class="sphx-glr-example-title" id="training-a-neural-operator-on-darcy-flow-author-robert-joseph-george">
+<span id="sphx-glr-auto-examples-plot-incremental-fno-darcy-py"></span><h1>Training a neural operator on Darcy-Flow - Author Robert Joseph George<a class="headerlink" href="#training-a-neural-operator-on-darcy-flow-author-robert-joseph-george" title="Link to this heading"></a></h1>
+<p>In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package on Incremental FNO and Incremental Resolution</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">FNO</span>
+<span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">Trainer</span>
+<span class="kn">from</span> <span class="nn">neuralop.datasets</span> <span class="kn">import</span> <span class="n">load_darcy_flow_small</span>
+<span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">count_model_params</span>
+<span class="kn">from</span> <span class="nn">neuralop.training.callbacks</span> <span class="kn">import</span> <span class="n">IncrementalCallback</span>
+<span class="kn">from</span> <span class="nn">neuralop.datasets</span> <span class="kn">import</span> <span class="n">data_transforms</span>
+<span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">LpLoss</span><span class="p">,</span> <span class="n">H1Loss</span>
+</pre></div>
+</div>
+<p>Loading the Darcy flow dataset</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">output_encoder</span> <span class="o">=</span> <span class="n">load_darcy_flow_small</span><span class="p">(</span>
+    <span class="n">n_train</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+    <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span>
+    <span class="n">n_tests</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
+    <span class="n">test_batch_sizes</span><span class="o">=</span><span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Loading test db at resolution 32 with 50 samples and batch-size=32
+</pre></div>
+</div>
+<p>Choose device</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Set up the incremental FNO model
+We start with 2 modes in each dimension
+We choose to update the modes by the incremental gradient explained algorithm</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">incremental</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">if</span> <span class="n">incremental</span><span class="p">:</span>
+    <span class="n">starting_modes</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">starting_modes</span> <span class="o">=</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>set up model</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">FNO</span><span class="p">(</span>
+    <span class="n">max_n_modes</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span>
+    <span class="n">n_modes</span><span class="o">=</span><span class="n">starting_modes</span><span class="p">,</span>
+    <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="n">in_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">n_params</span> <span class="o">=</span> <span class="n">count_model_params</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Set up the optimizer and scheduler</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">8e-3</span><span class="p">,</span> <span class="n">weight_decay</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
+<span class="n">scheduler</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">CosineAnnealingLR</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">T_max</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+
+
+<span class="c1"># If one wants to use Incremental Resolution, one should use the IncrementalDataProcessor - When passed to the trainer, the trainer will automatically update the resolution</span>
+<span class="c1"># Incremental_resolution : bool, default is False</span>
+<span class="c1">#    if True, increase the resolution of the input incrementally</span>
+<span class="c1">#    uses the incremental_res_gap parameter</span>
+<span class="c1">#    uses the subsampling_rates parameter - a list of resolutions to use</span>
+<span class="c1">#    uses the dataset_indices parameter - a list of indices of the dataset to slice to regularize the input resolution</span>
+<span class="c1">#    uses the dataset_resolution parameter - the resolution of the input</span>
+<span class="c1">#    uses the epoch_gap parameter - the number of epochs to wait before increasing the resolution</span>
+<span class="c1">#    uses the verbose parameter - if True, print the resolution and the number of modes</span>
+<span class="n">data_transform</span> <span class="o">=</span> <span class="n">data_transforms</span><span class="o">.</span><span class="n">IncrementalDataProcessor</span><span class="p">(</span>
+    <span class="n">in_normalizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">out_normalizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">positional_encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
+    <span class="n">subsampling_rates</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="n">dataset_resolution</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+    <span class="n">dataset_indices</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+    <span class="n">epoch_gap</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">data_transform</span> <span class="o">=</span> <span class="n">data_transform</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Original Incre Res: change index to 0
+Original Incre Res: change sub to 2
+Original Incre Res: change res to 8
+</pre></div>
+</div>
+<p>Set up the losses</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">l2loss</span> <span class="o">=</span> <span class="n">LpLoss</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">h1loss</span> <span class="o">=</span> <span class="n">H1Loss</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">train_loss</span> <span class="o">=</span> <span class="n">h1loss</span>
+<span class="n">eval_losses</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="n">h1loss</span><span class="p">,</span> <span class="s2">&quot;l2&quot;</span><span class="p">:</span> <span class="n">l2loss</span><span class="p">}</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### N PARAMS ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">n_params</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### OPTIMIZER ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### SCHEDULER ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### LOSSES ###&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### INCREMENTAL RESOLUTION + GRADIENT EXPLAINED ###&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> * Train: </span><span class="si">{</span><span class="n">train_loss</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> * Test: </span><span class="si">{</span><span class="n">eval_losses</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>### N PARAMS ###
+ 2118817
+
+### OPTIMIZER ###
+ Adam (
+Parameter Group 0
+    amsgrad: False
+    betas: (0.9, 0.999)
+    capturable: False
+    differentiable: False
+    eps: 1e-08
+    foreach: None
+    fused: None
+    initial_lr: 0.008
+    lr: 0.008
+    maximize: False
+    weight_decay: 0.0001
+)
+
+### SCHEDULER ###
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fde0e2785b0&gt;
+
+### LOSSES ###
+
+### INCREMENTAL RESOLUTION + GRADIENT EXPLAINED ###
+
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fde0e244b20&gt;
+
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fde0e244b20&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fde0e278dc0&gt;}
+</pre></div>
+</div>
+<p>Set up the IncrementalCallback
+other options include setting incremental_loss_gap = True
+If one wants to use incremental resolution set it to True
+In this example we only update the modes and not the resolution
+When using the incremental resolution one should keep in mind that the numnber of modes initially set should be strictly less than the resolution
+Again these are the various paramaters for the various incremental settings
+incremental_grad : bool, default is False</p>
+<blockquote>
+<div><p>if True, use the base incremental algorithm which is based on gradient variance
+uses the incremental_grad_eps parameter - set the threshold for gradient variance
+uses the incremental_buffer paramater - sets the number of buffer modes to calculate the gradient variance
+uses the incremental_max_iter parameter - sets the initial number of iterations
+uses the incremental_grad_max_iter parameter - sets the maximum number of iterations to accumulate the gradients</p>
+</div></blockquote>
+<dl class="simple">
+<dt>incremental_loss_gap<span class="classifier">bool, default is False</span></dt><dd><p>if True, use the incremental algorithm based on loss gap
+uses the incremental_loss_eps parameter</p>
+</dd>
+</dl>
+<p>One can use multiple Callbacks as well</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">callbacks</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">IncrementalCallback</span><span class="p">(</span>
+        <span class="n">incremental_loss_gap</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">incremental_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">incremental_grad_eps</span><span class="o">=</span><span class="mf">0.9999</span><span class="p">,</span>
+        <span class="n">incremental_loss_eps</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
+        <span class="n">incremental_buffer</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">incremental_max_iter</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">incremental_grad_max_iter</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="p">]</span>
+
+<span class="c1"># Finally pass all of these to the Trainer</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">data_processor</span><span class="o">=</span><span class="n">data_transform</span><span class="p">,</span>
+    <span class="n">callbacks</span><span class="o">=</span><span class="n">callbacks</span><span class="p">,</span>
+    <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>using standard method to load data to device.
+using standard method to compute loss.
+self.override_load_to_device=False
+self.overrides_loss=False
+</pre></div>
+</div>
+<p>Train the model</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span>
+    <span class="n">train_loader</span><span class="p">,</span>
+    <span class="n">test_loaders</span><span class="p">,</span>
+    <span class="n">optimizer</span><span class="p">,</span>
+    <span class="n">scheduler</span><span class="p">,</span>
+    <span class="n">regularizer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">training_loss</span><span class="o">=</span><span class="n">train_loss</span><span class="p">,</span>
+    <span class="n">eval_losses</span><span class="o">=</span><span class="n">eval_losses</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 100 samples
+Testing on [50, 50] samples         on resolutions [16, 32].
+Raw outputs of size out.shape=torch.Size([16, 1, 8, 8])
+[0] time=0.13, avg_loss=0.8211, train_err=11.7296, 16_h1=0.7480, 16_l2=0.5862, 32_h1=0.7621, 32_l2=0.5737
+Currently the model is using incremental_n_modes = [2, 2]
+[1] time=0.12, avg_loss=0.7347, train_err=10.4951, 16_h1=0.7281, 16_l2=0.5719, 32_h1=0.7540, 32_l2=0.5608
+Currently the model is using incremental_n_modes = [2, 2]
+[2] time=0.12, avg_loss=0.7136, train_err=10.1937, 16_h1=0.7130, 16_l2=0.5539, 32_h1=0.7425, 32_l2=0.5420
+Currently the model is using incremental_n_modes = [3, 2]
+[3] time=0.12, avg_loss=0.7364, train_err=10.5200, 16_h1=0.7717, 16_l2=0.6129, 32_h1=0.7877, 32_l2=0.6047
+Currently the model is using incremental_n_modes = [3, 2]
+[4] time=0.12, avg_loss=0.7374, train_err=10.5348, 16_h1=0.7355, 16_l2=0.5831, 32_h1=0.7632, 32_l2=0.5739
+Currently the model is using incremental_n_modes = [3, 2]
+[5] time=0.12, avg_loss=0.7139, train_err=10.1984, 16_h1=0.7260, 16_l2=0.5667, 32_h1=0.7564, 32_l2=0.5557
+Currently the model is using incremental_n_modes = [4, 3]
+[6] time=0.13, avg_loss=0.7017, train_err=10.0248, 16_h1=0.7278, 16_l2=0.5762, 32_h1=0.7471, 32_l2=0.5678
+Currently the model is using incremental_n_modes = [4, 3]
+[7] time=0.13, avg_loss=0.7082, train_err=10.1179, 16_h1=0.7770, 16_l2=0.6087, 32_h1=0.8044, 32_l2=0.5931
+Currently the model is using incremental_n_modes = [4, 3]
+[8] time=0.13, avg_loss=0.6999, train_err=9.9988, 16_h1=0.6970, 16_l2=0.5474, 32_h1=0.7220, 32_l2=0.5381
+Currently the model is using incremental_n_modes = [5, 3]
+[9] time=0.13, avg_loss=0.6500, train_err=9.2861, 16_h1=0.7129, 16_l2=0.5535, 32_h1=0.7449, 32_l2=0.5409
+Currently the model is using incremental_n_modes = [5, 3]
+Incre Res Update: change index to 1
+Incre Res Update: change sub to 1
+Incre Res Update: change res to 16
+[10] time=0.20, avg_loss=0.6308, train_err=9.0117, 16_h1=0.6834, 16_l2=0.5390, 32_h1=0.6974, 32_l2=0.5196
+Currently the model is using incremental_n_modes = [5, 3]
+[11] time=0.19, avg_loss=0.6035, train_err=8.6221, 16_h1=0.6983, 16_l2=0.5524, 32_h1=0.7139, 32_l2=0.5383
+Currently the model is using incremental_n_modes = [6, 4]
+[12] time=0.20, avg_loss=0.5728, train_err=8.1834, 16_h1=0.7086, 16_l2=0.5551, 32_h1=0.7218, 32_l2=0.5382
+Currently the model is using incremental_n_modes = [6, 4]
+[13] time=0.20, avg_loss=0.5435, train_err=7.7644, 16_h1=0.7011, 16_l2=0.5599, 32_h1=0.7118, 32_l2=0.5452
+Currently the model is using incremental_n_modes = [6, 4]
+[14] time=0.20, avg_loss=0.4986, train_err=7.1235, 16_h1=0.7174, 16_l2=0.5682, 32_h1=0.7241, 32_l2=0.5493
+Currently the model is using incremental_n_modes = [7, 4]
+[15] time=0.21, avg_loss=0.4516, train_err=6.4507, 16_h1=0.6799, 16_l2=0.5357, 32_h1=0.6936, 32_l2=0.5225
+Currently the model is using incremental_n_modes = [7, 4]
+[16] time=0.21, avg_loss=0.4067, train_err=5.8103, 16_h1=0.7179, 16_l2=0.5686, 32_h1=0.7232, 32_l2=0.5507
+Currently the model is using incremental_n_modes = [7, 4]
+[17] time=0.21, avg_loss=0.3629, train_err=5.1848, 16_h1=0.6999, 16_l2=0.5490, 32_h1=0.7134, 32_l2=0.5342
+Currently the model is using incremental_n_modes = [8, 5]
+[18] time=0.21, avg_loss=0.3323, train_err=4.7469, 16_h1=0.7163, 16_l2=0.5630, 32_h1=0.7246, 32_l2=0.5479
+Currently the model is using incremental_n_modes = [8, 5]
+[19] time=0.21, avg_loss=0.3028, train_err=4.3255, 16_h1=0.7108, 16_l2=0.5589, 32_h1=0.7230, 32_l2=0.5450
+Currently the model is using incremental_n_modes = [8, 5]
+
+{&#39;32_h1&#39;: 0.722979679107666, &#39;32_l2&#39;: 0.5449663162231445}
+</pre></div>
+</div>
+<p>Plot the prediction, and compare with the ground-truth
+Note that we trained on a very small resolution for
+a very small number of epochs
+In practice, we would train at larger resolution, on many more samples.</p>
+<p>However, for practicity, we created a minimal example that
+i) fits in just a few Mb of memory
+ii) can be trained quickly on CPU</p>
+<p>In practice we would train a Neural Operator on one or multiple GPUs</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">test_samples</span> <span class="o">=</span> <span class="n">test_loaders</span><span class="p">[</span><span class="mi">32</span><span class="p">]</span><span class="o">.</span><span class="n">dataset</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">test_samples</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+    <span class="c1"># Input x</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="c1"># Ground-truth</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="c1"># Model prediction</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">index</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Input x&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">([],</span> <span class="p">[])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">([],</span> <span class="p">[])</span>
+
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">index</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">squeeze</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Ground-truth y&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">([],</span> <span class="p">[])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">([],</span> <span class="p">[])</span>
+
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">index</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Model prediction&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">([],</span> <span class="p">[])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">([],</span> <span class="p">[])</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Inputs, ground-truth output and prediction.&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">0.98</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 5.554 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-incremental-fno-darcy-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/082e73328a5caf8c1fe9ad7fe05cf68f/plot_incremental_FNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_incremental_FNO_darcy.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/e0c6b93bc273399c7d7bc6ab62761730/plot_incremental_FNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_incremental_FNO_darcy.py</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+
+
+      </div>
+
+      
+        <nav class="pagination" role="navigation" aria-label="pagination">
+    
+    <a class="button pagination-previous" href="plot_darcy_flow_spectrum.html" title="previous page" accesskey="p">
+        <span class="icon">
+            <i class="fa fa-arrow-circle-left"></i>
+        </span>
+        <span>A simple Darcy-Flow spectrum analysis</span>
+    </a>
+    
+    
+</nav>
+
+      
+
+        <footer class="footer">
+    <div class="content has-text-centered">
+        <div class="block">
+          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+        </div>
+    </div>
+  </footer>
+
+    </div>
+
+  </div>  
+
+	
+    
+
+  
+
+  </div>  
+  </div> 
+
+  
+  <script>
+    function toggle_sidebar() {
+        var element = document.getElementById("sidebar");
+        var container = document.getElementById("column-container");
+        var localtoccolumn = document.getElementById("localtoc-column");
+        element.classList.toggle("hide-tablet");
+        element.classList.toggle("is-hidden-mobile");
+        container.classList.toggle("sidemenu-hidden");
+        localtoccolumn.classList.toggle("is-one-fifth-widescreen");
+        localtoccolumn.classList.toggle("is-2-desktop");
+        localtoccolumn.classList.toggle("is-3-desktop");
+    }
+  </script> 
+
+
+
+  </body>
+</html>

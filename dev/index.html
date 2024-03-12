@@ -132,14 +132,57 @@ so your trained operator can be applied on data of any resolution.</p>
 <p>This guide will walk you through the standard ML workflow of loading data, creating a neural operator, training it on your data and saving the trained model for later use.</p>
 <p>First install the library <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">neuraloperator</span></code> (see <a class="reference internal" href="install.html"><span class="doc">Installing NeuralOperator</span></a> for more options).</p>
 <p>To create a Fourier Neural Operator model:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">FNO</span>
+
+<span class="n">operator</span> <span class="o">=</span> <span class="n">FNO</span><span class="p">(</span><span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+                <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>To save the weights of the trained model:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">save_checkpoint</span><span class="p">(</span><span class="n">save_folder</span><span class="o">=</span><span class="s1">&#39;./checkpoints/&#39;</span><span class="p">,</span> <span class="n">save_name</span><span class="o">=</span><span class="s1">&#39;example_fno&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>And to load the weights later:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">FNO</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">FNO</span><span class="o">.</span><span class="n">from_checkpoint</span><span class="p">(</span><span class="n">save_folder</span><span class="o">=</span><span class="s1">&#39;./checkpoints/&#39;</span><span class="p">,</span> <span class="n">save_name</span><span class="o">=</span><span class="s1">&#39;example_fno&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
 <p><code class="docutils literal notranslate"><span class="pre">neuraloperator</span></code> comes prepackaged with an example dataset of flows governed by the Darcy flow equation.</p>
 <p>To import the data:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">neuralop.datasets</span> <span class="kn">import</span> <span class="n">load_darcy_flow_small</span>
+
+<span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loaders</span><span class="p">,</span> <span class="n">data_processor</span> <span class="o">=</span> <span class="n">load_darcy_flow_small</span><span class="p">(</span>
+     <span class="n">n_train</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+     <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">32</span><span class="p">],</span> <span class="n">n_tests</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">],</span>
+     <span class="n">test_batch_sizes</span><span class="o">=</span><span class="p">[</span><span class="mi">32</span><span class="p">],</span>
+     <span class="n">positional_encoding</span><span class="o">=</span><span class="kc">True</span>
+</pre></div>
+</div>
 <p>)</p>
 <p>Similar to the API provided by <code class="docutils literal notranslate"><span class="pre">torchvision</span></code>, this dataset includes training and test data for use in standard PyTorch training loops,
 as well as a <code class="docutils literal notranslate"><span class="pre">preprocessor</span></code> object that automates the transforms to convert the data into the form best understood by the model.</p>
 <p>We provide a <code class="docutils literal notranslate"><span class="pre">Trainer</span></code> object that automates the logic of a basic neural operator training loop to speed up experimentation (see :doc: <cite>auto_examples</cite> for more information).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralop.training</span> <span class="kn">import</span> <span class="n">Trainer</span>
+
+<span class="c1"># Create the trainer</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+                  <span class="n">data_processor</span><span class="o">=</span><span class="n">data_processor</span><span class="p">,</span>
+                  <span class="n">wandb_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="n">log_test_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                  <span class="n">use_distributed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># train the model</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">train_loader</span><span class="o">=</span><span class="n">train_loader</span><span class="p">,</span>
+           <span class="n">test_loaders</span><span class="o">=</span><span class="n">test_loaders</span><span class="p">,</span>
+           <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+           <span class="n">scheduler</span><span class="o">=</span><span class="n">scheduler</span><span class="p">,</span>
+           <span class="n">regularizer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+           <span class="n">training_loss</span><span class="o">=</span><span class="n">train_loss</span><span class="p">,</span>
+           <span class="n">eval_losses</span><span class="o">=</span><span class="n">eval_losses</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>Tensorization is also provided out of the box: you can improve the previous models
 by simply using a Tucker Tensorized FNO with just a few parameters:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">TFNO</span>
