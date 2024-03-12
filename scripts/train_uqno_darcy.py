@@ -1,8 +1,10 @@
 import sys
 
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
+import numpy as np
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import DataLoader
 import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
@@ -74,7 +76,7 @@ if config.verbose and is_logger:
 
 # Loading the Darcy flow dataset for training the base model
 train_loader, test_loaders, data_processor = load_darcy_flow_small(
-    n_train=config.data.n_train_solution,
+    n_train=config.data.n_train_total,
     batch_size=config.data.batch_size,
     positional_encoding=config.data.positional_encoding,
     test_resolutions=config.data.test_resolutions,
@@ -83,6 +85,16 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
     encode_input=False,
     encode_output=False,
 )
+
+# split the training set up into train, residual_train, residual_calibration
+train_list = list(train_loader)
+
+solution_train_list = train_list[:config.data.n_train_solution]
+residual_train_list = train_list[config.data.n_train_solution:config.data.n_train_solution +\
+                                  config.data.n_train_residual]
+residual_calib_list = train_list[config.data.n_train_solution:config.data.n_train_residual +\
+                                  config.data.n_calib_residual]
+
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:
     data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
@@ -186,7 +198,7 @@ if is_logger:
         wandb.watch(model)
 
 trainer.train(
-    train_loader=train_loader,
+    train_loader=DataLoader(solution_train_list),
     test_loaders=test_loaders,
     optimizer=optimizer,
     scheduler=scheduler,
@@ -294,7 +306,7 @@ quantile_trainer = Trainer(model=uqno,
                                     ]
                            )
 
-quantile_trainer.train(train_loader=quantile_train_loader, # add this later
+quantile_trainer.train(train_loader=DataLoader(residual_train_list), # add this later
                        test_loaders=test_loaders, # no eval on quantile train
                        optimizer=quantile_optimizer,
                        scheduler=scheduler,
@@ -303,50 +315,53 @@ quantile_trainer.train(train_loader=quantile_train_loader, # add this later
                        )
 
 ### TODO:  calibrate trained quantile model
+def get_coeff_quantile_idx(alpha, delta, n_samples, n_gridpts):
+    """
+    get the index of (ranked) sigma's for given delta and t
+    we take the min alpha for given delta
+    delta is percentage of functions that satisfy alpha threshold in domain
+    alpha is percentage of points in ball on domain
+    return 2 idxs
+    domain_idx is the k for which kth (ranked descending by ptwise |err|/quantile_model_pred_err)
+    value we take per function
+    func_idx is the j for which jth (ranked descending) value we take among n_sample functions
+    Note: there is a min alpha we can take based on number of gridpoints, n and delta, we specify lower bounds lb1 and lb2
+    t needs to be between the lower bound and alpha
+    """
+    lb = np.sqrt(-np.log(delta)/2/n_gridpts)
+    t = (alpha-lb)/3+lb # if t too small, will make the in-domain estimate conservative
+    # too large will make the across-function estimate conservative. so we find a moderate t value
+    print(f"we set alpha (on domain): {alpha}, t={t}")
+    percentile = alpha-t
+    domain_idx = int(np.ceil(percentile*n_gridpts))
+    print(f"domain index: {domain_idx}'th largest of {n_gridpts}")
 
-def _calibrate_quantile_model(self, model, model_encoder, calib_loader, domain_idx, function_idx, device="cuda"):
-        val_ratio_list = []
-        model = model.to(device)
-        model_encoder = model_encoder.to(device)
-        with torch.no_grad():
-            for idx, sample in enumerate(calib_loader):
-                x, y = sample['x'].to(device), sample['y'].to(device)
-                pred = model_encoder.inverse_transform(model(x))#.squeeze()
-                ratio = torch.abs(y)/pred
-                val_ratio_list.append(ratio.squeeze().to("cpu"))
-                del x,y, pred
-        val_ratios = torch.cat(val_ratio_list, axis=0)
-        val_ratios_pointwise_quantile = torch.topk(val_ratios.view(val_ratios.shape[0], -1),domain_idx+1, dim=1).values[:,-1]
-        scale_factor = torch.topk(val_ratios_pointwise_quantile, function_idx+1, dim=0).values[-1]
-        print(f"scale factor: {scale_factor}")
-        return scale_factor
+    # get function idx
+    function_percentile= np.ceil((n_samples+1)*(delta-np.exp(-2*n_gridpts*t*t)))/n_samples
+    function_idx = int(np.ceil(function_percentile*n_samples))
+    print(f"function index: {function_idx}'th lagrest of {n_samples}")
+    return domain_idx, function_idx
 
-def _get_coeff_quantile_idx(self, delta, n_samples, n_gridpts, alpha):
-        """
-        get the index of (ranked) sigma's for given delta and t
-        we take the min alpha for given delta
-        delta is proportion of functions that satisfy alpha threshold in domain
-        alpha is proportion of points in ball on domain
-        return 2 idxs
-        domain_idx is the k for which kth (ranked descending by ptwise |err|/quantile_model_pred_err)
-        value we take per function
-        func_idx is the j for which jth (ranked descending) value we take among n_sample functions
-        Note: there is a min alpha we can take based on number of gridpoints, n and delta, we specify lower bounds lb1 and lb2
-        t needs to be between the lower bound and alpha
-        """
-        lb = np.sqrt(-np.log(delta)/2/n_gridpts)
-        t = (alpha-lb)/3+lb # if t too small, will make the in-domain estimate conservative
-        # too large will make the across-function estimate conservative. so we find a moderate t value
-        print(f"we set alpha (on domain): {alpha}, t={t}")
-        percentile = alpha-t
-        domain_idx = int(np.ceil(percentile*n_gridpts))
-        print(f"domain index: {domain_idx}'th largest of {n_gridpts}")
+# list of y_true / uncertainty band
+val_ratio_list = []
+calib_loader = DataLoader(residual_calib_list)
+with torch.no_grad():
+    for idx, sample in enumerate(calib_loader):
+        sample['x'], sample['y'] = sample['x'].to(device), sample['y'].to(device)
+        out = model(sample['x'])
+        out, sample = data_processor.base_data_processor.postprocess(out, sample)#.squeeze()
+        ratio = torch.abs(sample['y'])/out
+        val_ratio_list.append(ratio.squeeze().to("cpu"))
+        del sample, out
+val_ratios = torch.cat(val_ratio_list, axis=0)
 
-        # get function idx
-        function_percentile= np.ceil((n_samples+1)*(delta-np.exp(-2*n_gridpts*t*t)))/n_samples
-        function_idx = int(np.ceil(function_percentile*n_samples))
-        print(f"function index: {function_idx}'th lagrest of {n_samples}")
-        return domain_idx, function_idx
+# get quantile of domain gridpoints and quantile of function samples
+darcy_discretization = config.data.train_resolution ** 2
+domain_idx, function_idx = get_coeff_quantile_idx(config.data.alpha, config.data.delta, n_samples=len(calib_loader), n_gridpts=darcy_discretization)
+
+val_ratios_pointwise_quantile = torch.topk(val_ratios.view(val_ratios.shape[0], -1),domain_idx+1, dim=1).values[:,-1]
+uncertainty_scaling_factor = torch.topk(val_ratios_pointwise_quantile, function_idx+1, dim=0).values[-1]
+print(f"scale factor: {uncertainty_scaling_factor}")
 
 if config.wandb.log and is_logger:
     wandb.finish()
