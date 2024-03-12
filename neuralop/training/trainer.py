@@ -157,7 +157,7 @@ class Trainer:
             self.model.train()
             t1 = default_timer()
             train_err = 0.0
-
+            
             # track number of training examples in batch
             n_samples = 0
 

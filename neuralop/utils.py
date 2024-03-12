@@ -248,3 +248,24 @@ def validate_scaling_factor(
                 return scaling_factor
 
     return None
+
+def compute_rank(tensor):
+    # Compute the matrix rank of a tensor
+    rank = torch.matrix_rank(tensor)
+    return rank
+
+def compute_stable_rank(tensor):
+    # Compute the stable rank of a tensor
+    tensor = tensor.detach()
+    fro_norm = torch.linalg.norm(tensor, ord='fro')**2
+    l2_norm = torch.linalg.norm(tensor, ord=2)**2
+    rank = fro_norm / l2_norm
+    rank = rank
+    return rank
+
+def compute_explained_variance(frequency_max, s):
+    # Compute the explained variance based on frequency_max and singular
+    # values (s)
+    s_current = s.clone()
+    s_current[frequency_max:] = 0
+    return 1 - torch.var(s - s_current) / torch.var(s)
