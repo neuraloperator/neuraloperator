@@ -8,7 +8,7 @@ from .fno import FNO
 from ..layers.mlp import MLP
 from ..layers.embeddings import PositionalEmbedding
 from ..layers.spectral_convolution import SpectralConv
-from ..layers.integral_transform import IntegralTransform
+from ..layers.integral_transform import BatchedIntegralTransform
 from ..layers.neighbor_search import NeighborSearch
 
 
@@ -230,7 +230,7 @@ class FNOGNO(nn.Module):
         gno_mlp_hidden_layers.insert(0, kernel_in_dim)
         gno_mlp_hidden_layers.append(fno_hidden_channels)
 
-        self.gno = IntegralTransform(
+        self.gno = BatchedIntegralTransform(
                     mlp_layers=gno_mlp_hidden_layers,
                     mlp_non_linearity=gno_mlp_non_linearity,
                     transform_type=gno_transform_type 
@@ -301,8 +301,10 @@ class FNOGNO(nn.Module):
                        neighbors=in_to_out_nb,
                        x=out_p_embed,
                        f_y=latent_embed)
-        
-        out = out.unsqueeze(0).permute(0, 2, 1)
+        # if self.gno is variable and not batched
+        if out.ndim == 2:
+            out = out.unsqueeze(0)
+        out = out.permute(0, 2, 1)
 
         # Project pointwise to out channels
         #(n_in, out_channels)
