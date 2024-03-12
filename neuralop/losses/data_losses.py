@@ -281,35 +281,5 @@ class H1Loss(object):
             
         return diff
 
-
     def __call__(self, y_pred, y, h=None, **kwargs):
         return self.rel(y_pred, y, h=h)
-
-
-class IrregularLpqLoss(torch.nn.Module):
-    def __init__(self, p=2.0, q=2.0):
-        super().__init__()
-
-        self.p = 2.0
-        self.q = 2.0
-    
-    #x, y are (n, c) or (n,)
-    #vol_elm is (n,)
-
-    def norm(self, x, vol_elm):
-        if len(x.shape) > 1:
-            s = torch.sum(torch.abs(x)**self.q, dim=1, keepdim=False)**(self.p/self.q)
-        else:
-            s = torch.abs(x)**self.p
-        
-        return torch.sum(s*vol_elm)**(1.0/self.p)
-
-    def abs(self, x, y, vol_elm):
-        return self.norm(x - y, vol_elm)
-    
-    #y is assumed y
-    def rel(self, x, y, vol_elm):
-        return self.abs(x, y, vol_elm)/self.norm(y, vol_elm)
-    
-    def forward(self, y_pred, y, vol_elm, **kwargs):
-        return self.rel(y_pred, y, vol_elm)

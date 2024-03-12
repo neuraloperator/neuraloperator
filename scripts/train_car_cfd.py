@@ -5,8 +5,7 @@ from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from neuralop.training import setup
 from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
-from neuralop.losses.data_losses import LpLoss, IrregularLpqLoss
-from neuralop.losses.meta_losses import WeightedSumLoss
+from neuralop.losses.data_losses import LpLoss
 from neuralop.training.trainer import Trainer
 from neuralop.datasets import MeshDataModule
 from neuralop.datasets.data_transforms import DataProcessor
@@ -38,7 +37,7 @@ data_field_mappings = {k:tuple([slice(*tuple(x)) for x in v]) for k,v in config.
 
 #Set up WandB logging
 wandb_init_args = {}
-config_name = 'dragloss'
+config_name = 'car-pressure'
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
     if config.wandb.name:
@@ -99,8 +98,6 @@ else:
 
 if config.opt.testing_loss == 'l2':
     test_loss_fn = l2loss
-elif config.opt.testing_loss == 'weightedl2':
-    test_loss_fn = IrregularLpqLoss()
 else:
     raise ValueError(f'Got {config.opt.testing_loss=}')
 
