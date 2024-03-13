@@ -76,6 +76,16 @@ class BaseModel(torch.nn.Module):
         instance._init_kwargs = kwargs
 
         return instance
+
+    def __deepcopy__(self, memo):
+        """
+        Custom deepcopy method returns model arch and copies the state
+        """
+        cls_init_kwargs = self._init_kwargs
+        new_instance = self.__class__(**cls_init_kwargs)
+        new_instance.load_state_dict(self.state_dict())
+        return new_instance
+
     
     def save_checkpoint(self, save_folder, save_name):
         """Saves the model state and init param in the given folder under the given name
