@@ -1,26 +1,31 @@
+import sys
+
+from timeit import default_timer
+import wandb
 import torch
 from torch.cuda import amp
-from timeit import default_timer
-import pathlib
 
-from .callbacks import PipelineCallback
 import neuralop.mpu.comm as comm
-from neuralop.losses import LpLoss
+from .patching import MultigridPatching2D
+from .losses import LpLoss, PointwiseQuantileLoss
 
 
 class Trainer:
-    def __init__(self, *, 
-                 model, 
-                 n_epochs, 
-                 wandb_log=True, 
-                 device=None, 
-                 amp_autocast=False,
-                 data_processor=None,
-                 callbacks = None,
-                 log_test_interval=1, 
-                 log_output=False, 
-                 use_distributed=False, 
-                 verbose=False):
+    def __init__(
+        self,
+        model,
+        n_epochs,
+        wandb_log=True,
+        device=None,
+        amp_autocast=False,
+        mg_patching_levels=0,
+        mg_patching_padding=0,
+        mg_patching_stitching=True,
+        log_test_interval=1,
+        log_output=False,
+        use_distributed=False,
+        verbose=True,
+    ):
         """
         A general Trainer class to train neural-operators on given datasets
 
@@ -31,213 +36,237 @@ class Trainer:
         wandb_log : bool, default is True
         device : torch.device
         amp_autocast : bool, default is False
-        data_processor : class to transform data, default is None
-            if not None, data from the loaders is transform first with data_processor.preprocess,
-            then after getting an output from the model, that is transformed with data_processor.postprocess.
+        mg_patching_levels : int, default is 0
+            if 0, no multi-grid domain decomposition is used
+            if > 0, indicates the number of levels to use
+        mg_patching_padding : float, default is 0
+            value between 0 and 1, indicates the fraction of size to use as
+            padding on each side. E.g. for an image of size 64, padding=0.25
+            will use 16 pixels of padding on each side
+        mg_patching_stitching : bool, default is True
+            if False, the patches are not stitched back together and the loss is
+            instead computed per patch
         log_test_interval : int, default is 1
             how frequently to print updates
         log_output : bool, default is False
             if True, and if wandb_log is also True, log output images to wandb
         use_distributed : bool, default is False
             whether to use DDP
-        verbose : bool, default is False
+        verbose : bool, default is True
         """
-
-        if callbacks:
-            assert type(callbacks) == list, "Callbacks must be a list of Callback objects"
-            self.callbacks = PipelineCallback(callbacks=callbacks)
-            self.override_load_to_device = (self.callbacks.device_load_callback_idx is not None)
-            self.overrides_loss = self.callbacks.overrides_loss
-        else:
-            self.callbacks = []
-            self.override_load_to_device = False
-            self.overrides_loss = False
-        
-        if verbose:
-            print(f"{self.override_load_to_device=}")
-            print(f"{self.overrides_loss=}")
-
-        if self.callbacks:
-            self.callbacks.on_init_start(model=model, 
-                 n_epochs=n_epochs, 
-                 wandb_log=wandb_log, 
-                 device=device, 
-                 amp_autocast=amp_autocast, 
-                 log_test_interval=log_test_interval, 
-                 log_output=log_output, 
-                 use_distributed=use_distributed, 
-                 verbose=verbose)
-
-        self.model = model
         self.n_epochs = n_epochs
-
         self.wandb_log = wandb_log
         self.log_test_interval = log_test_interval
         self.log_output = log_output
         self.verbose = verbose
+        self.mg_patching_levels = mg_patching_levels
+        self.mg_patching_stitching = mg_patching_stitching
         self.use_distributed = use_distributed
         self.device = device
         self.amp_autocast = amp_autocast
-        self.data_processor = data_processor
 
-        if self.callbacks:
-            self.callbacks.on_init_end(model=model, 
-                 n_epochs=n_epochs, 
-                 wandb_log=wandb_log, 
-                 device=device, 
-                 amp_autocast=amp_autocast, 
-                 log_test_interval=log_test_interval, 
-                 log_output=log_output, 
-                 use_distributed=use_distributed, 
-                 verbose=verbose)
-        
-    def train(self, train_loader, test_loaders,
-            optimizer, scheduler, regularizer,
-              training_loss=None, eval_losses=None):
-        
-        """Trains the given model on the given datasets.
-        params:
-        train_loader: torch.utils.data.DataLoader
-            training dataloader
-        test_loaders: dict[torch.utils.data.DataLoader]
-            testing dataloaders
-        optimizer: torch.optim.Optimizer
-            optimizer to use during training
-        optimizer: torch.optim.lr_scheduler
-            learning rate scheduler to use during training
-        training_loss: training.losses function
-            cost function to minimize
-        eval_losses: dict[Loss]
-            dict of losses to use in self.eval()
-        """
+        if mg_patching_levels > 0:
+            self.mg_n_patches = 2**mg_patching_levels
+            if verbose:
+                print(f"Training on {self.mg_n_patches**2} multi-grid patches.")
+                sys.stdout.flush()
+        else:
+            self.mg_n_patches = 1
+            mg_patching_padding = 0
+            if verbose:
+                print(f"Training on regular inputs (no multi-grid patching).")
+                sys.stdout.flush()
 
-        if self.callbacks:
-            self.callbacks.on_train_start(train_loader=train_loader, test_loaders=test_loaders,
-                                    optimizer=optimizer, scheduler=scheduler, 
-                                    regularizer=regularizer, training_loss=training_loss, 
-                                    eval_losses=eval_losses)
-            
+        self.mg_patching_padding = mg_patching_padding
+        self.patcher = MultigridPatching2D(
+            model,
+            levels=mg_patching_levels,
+            padding_fraction=mg_patching_padding,
+            use_distributed=use_distributed,
+            stitching=mg_patching_stitching,
+        )
+
+    def train(
+        self,
+        train_loader,
+        test_loaders,
+        output_encoder,
+        model,
+        optimizer,
+        scheduler,
+        regularizer,
+        training_loss=None,
+        eval_losses=None,
+    ):
+        """Trains the given model on the given datasets"""
+        n_train = len(train_loader.dataset)
+
+        if not isinstance(test_loaders, dict):
+            test_loaders = dict(test=test_loaders)
+
+        if self.verbose:
+            print(f"Training on {n_train} samples")
+            print(
+                f"Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples"
+                f"         on resolutions {[name for name in test_loaders]}."
+            )
+            sys.stdout.flush()
+
         if training_loss is None:
             training_loss = LpLoss(d=2)
 
-        if eval_losses is None: # By default just evaluate on the training loss
+        if eval_losses is None:  # By default, just evaluate on the training loss
             eval_losses = dict(l2=training_loss)
 
-        errors = None
+        if output_encoder is not None:
+            output_encoder.to(self.device)
+
+        if self.use_distributed:
+            is_logger = comm.get_world_rank() == 0
+        else:
+            is_logger = True
 
         for epoch in range(self.n_epochs):
-
-            if self.callbacks:
-                self.callbacks.on_epoch_start(epoch=epoch)
-
             avg_loss = 0
             avg_lasso_loss = 0
-            self.model.train()
+            model.train()
             t1 = default_timer()
             train_err = 0.0
 
             for idx, sample in enumerate(train_loader):
+                x, y = sample["x"], sample["y"]
 
-                if self.callbacks:
-                    self.callbacks.on_batch_start(idx=idx, sample=sample)
+                if epoch == 0 and idx == 0 and self.verbose and is_logger:
+                    print(
+                        "Training on raw inputs of size "
+                        f"x.shape={x.shape}, y.shape={y.shape}"
+                    )
+
+                x, y = self.patcher.patch(x, y)
+
+                if epoch == 0 and idx == 0 and self.verbose and is_logger:
+                    print(
+                        ".. patched inputs of size "
+                        f"x.shape={x.shape}, y.shape={y.shape}"
+                    )
+
+                x = x.to(self.device)
+                y = y.to(self.device)
 
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
                     regularizer.reset()
 
-                if self.data_processor is not None:
-                    sample = self.data_processor.preprocess(sample)
+                if self.amp_autocast:
+                    with amp.autocast(enabled=True):
+                        out = model(x)
                 else:
-                    # load data to device if no preprocessor exists
-                    sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
+                    out = model(x)
+                if epoch == 0 and idx == 0 and self.verbose and is_logger:
+                    print(f"Raw outputs of size out.shape={out.shape}")
+
+                out, y = self.patcher.unpatch(out, y)
+                # Output encoding only works if output is stitched
+                if output_encoder is not None and self.mg_patching_stitching:
+                    out = output_encoder.decode(out)
+                    y = output_encoder.decode(y)
+                if epoch == 0 and idx == 0 and self.verbose and is_logger:
+                    print(
+                        ".. Processed (unpatched) outputs of size"
+                        f" out.shape={out.shape}"
+                    )
 
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
-                        out  = self.model(**sample)
+                        loss = training_loss(out.float(), y)
                 else:
-                    out  = self.model(**sample)
+                    loss = training_loss(out.float(), y)
 
-                if self.data_processor is not None:
-                    out, sample = self.data_processor.postprocess(out, sample)
-
-                if self.callbacks:
-                    self.callbacks.on_before_loss(out=out)
-
-                loss = 0.
-
-                if self.overrides_loss:
-                    if isinstance(out, torch.Tensor):
-                        loss += self.callbacks.compute_training_loss(out=out.float(), **sample, amp_autocast=self.amp_autocast)
-                    elif isinstance(out, dict):
-                        loss += self.callbacks.compute_training_loss(**out, **sample, amp_autocast=self.amp_autocast)
-                else:
-                    if self.amp_autocast:
-                        with amp.autocast(enabled=True):
-                            if isinstance(out, torch.Tensor):
-                                loss = training_loss(out.float(), **sample)
-                            elif isinstance(out, dict):
-                                loss += training_loss(**out, **sample)
-                    else:
-                        if isinstance(out, torch.Tensor):
-                            loss = training_loss(out.float(), **sample)
-                        elif isinstance(out, dict):
-                            loss += training_loss(**out, **sample)
-                
                 if regularizer:
                     loss += regularizer.loss
-                
+
                 loss.backward()
-                del out
 
                 optimizer.step()
                 train_err += loss.item()
-        
+
                 with torch.no_grad():
                     avg_loss += loss.item()
                     if regularizer:
                         avg_lasso_loss += regularizer.loss
-
-                if self.callbacks:
-                    self.callbacks.on_batch_end()
 
             if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler.step(train_err)
             else:
                 scheduler.step()
 
-            epoch_train_time = default_timer() - t1            
+            epoch_train_time = default_timer() - t1
+            del x, y
 
-            train_err /= len(train_loader)
-            avg_loss  /= self.n_epochs
-            
-            if epoch % self.log_test_interval == 0: 
+            train_err /= n_train
+            avg_loss /= self.n_epochs
 
-                if self.callbacks:
-                    self.callbacks.on_before_val(epoch=epoch, train_err=train_err, time=epoch_train_time, \
-                                           avg_loss=avg_loss, avg_lasso_loss=avg_lasso_loss)
-                
+            if epoch % self.log_test_interval == 0:
+
+                msg = f"[{epoch}] " \
+                      f"time={epoch_train_time:.2f}, " \
+                      f"train_err={train_err:.4f}"
+
+                values_to_log = dict(
+                    train_err=train_err, time=epoch_train_time#, avg_loss=avg_loss
+                )
 
                 for loader_name, loader in test_loaders.items():
-                    errors = self.evaluate(eval_losses, loader, log_prefix=loader_name)
+                    if epoch == self.n_epochs - 1 and self.log_output:
+                        to_log_output = True
+                    else:
+                        to_log_output = False
 
-                if self.callbacks:
-                    self.callbacks.on_val_end()
-            
-            if self.callbacks:
-                self.callbacks.on_epoch_end(epoch=epoch, train_err=train_err, avg_loss=avg_loss)
+                    errors = self.evaluate(
+                        model,
+                        eval_losses,
+                        loader,
+                        output_encoder,
+                        log_prefix=loader_name,
+                    )
 
-        return errors
+                    for loss_name, loss_value in errors.items():
+                        msg += f", {loss_name}={loss_value:.4f}"
+                        values_to_log[loss_name] = loss_value
 
-    def evaluate(self, loss_dict, data_loader,
-                 log_prefix=''):
+                if regularizer:
+                    avg_lasso_loss /= self.n_epochs
+                    msg += f", avg_lasso={avg_lasso_loss:.5f}"
+
+                if self.verbose and is_logger:
+                    print(msg)
+                    sys.stdout.flush()
+
+                # Wandb loging
+                if self.wandb_log and is_logger:
+                    for pg in optimizer.param_groups:
+                        lr = pg["lr"]
+                        values_to_log["lr"] = lr
+                    wandb.log(values_to_log, step=epoch, commit=True)
+
+            if epoch % 2*self.log_test_interval == 0:
+                torch.save(model.state_dict(), "model-checkpoint")
+                if self.wandb_log:
+                    wandb.save("model-checkpoint")
+
+    def evaluate(
+        self, model, loss_dict, data_loader, output_encoder=None, log_prefix=""
+    ):
         """Evaluates the model on a dictionary of losses
-        
+
         Parameters
         ----------
-        loss_dict : dict of functions 
+        model : model to evaluate
+        loss_dict : dict of functions
           each function takes as input a tuple (prediction, ground_truth)
           and returns the corresponding loss
         data_loader : data_loader to evaluate on
+        output_encoder : used to decode outputs if not None
         log_prefix : str, default is ''
             if not '', used as prefix in output dictionary
 
@@ -246,62 +275,197 @@ class Trainer:
         errors : dict
             dict[f'{log_prefix}_{loss_name}] = loss for loss in loss_dict
         """
+        model.eval()
 
-        if self.callbacks:
-            self.callbacks.on_val_epoch_start(log_prefix=log_prefix, loss_dict = loss_dict, data_loader=data_loader)
+        if self.use_distributed:
+            is_logger = comm.get_world_rank() == 0
+        else:
+            is_logger = True
 
-        self.model.eval()
-
-        errors = {f'{log_prefix}_{loss_name}':0 for loss_name in loss_dict.keys()}
+        errors = {f"{log_prefix}_{loss_name}": 0 for loss_name in loss_dict.keys()}
 
         n_samples = 0
         with torch.no_grad():
-            for idx, sample in enumerate(data_loader):
+            for it, sample in enumerate(data_loader):
+                x, y = sample["x"], sample["y"]
 
-                n_samples += sample['y'].size(0)
-                if self.callbacks:
-                    self.callbacks.on_val_batch_start(idx=idx, sample=sample)
+                n_samples += x.size(0)
 
-                if self.data_processor is not None:
-                    sample = self.data_processor.preprocess(sample)
-                else:
-                    # load data to device if no preprocessor exists
-                    sample = {k:v.to(self.device) for k,v in sample.items() if torch.is_tensor(v)}
-                    
-                out = self.model(**sample)
+                x, y = self.patcher.patch(x, y)
+                y = y.to(self.device)
+                x = x.to(self.device)
 
-                if self.data_processor is not None:
-                    out, sample = self.data_processor.postprocess(out, sample)
+                out = model(x)
 
-                if self.callbacks:
-                    self.callbacks.on_before_val_loss(out=out)
-                
-                for loss_name, loss in loss_dict.items():
-                    if self.overrides_loss:
-                        if isinstance(out, torch.Tensor):
-                            val_loss = self.callbacks.compute_training_loss(out.float(), **sample)
-                        elif isinstance(out, dict):
-                            val_loss = self.callbacks.compute_training_loss(**out, **sample)
+                out, y = self.patcher.unpatch(out, y, evaluation=True)
+
+                if output_encoder is not None:
+                    out = output_encoder.decode(out)
+
+                if (it == 0) and self.log_output and self.wandb_log and is_logger:
+                    if out.ndim == 2:
+                        img = out
                     else:
-                        if isinstance(out, torch.Tensor):
-                            val_loss = loss(out, **sample)
-                        elif isinstance(out, dict):
-                            val_loss = loss(out, **sample)
-                        if val_loss.shape == ():
-                            val_loss = val_loss.item()
+                        img = out.squeeze()[0]
+                    wandb.log(
+                        {
+                            f"image_{log_prefix}": wandb.Image(
+                                img.unsqueeze(-1).cpu().numpy()
+                            )
+                        },
+                        commit=False,
+                    )
 
-                    errors[f'{log_prefix}_{loss_name}'] += val_loss
+                for loss_name, loss in loss_dict.items():
+                    errors[f"{log_prefix}_{loss_name}"] += loss(out, y).item()
 
-                if self.callbacks:
-                    self.callbacks.on_val_batch_end()
-    
+        del x, y, out
+
         for key in errors.keys():
             errors[key] /= n_samples
-        
-        if self.callbacks:
-            self.callbacks.on_val_epoch_end(errors=errors, sample=sample, out=out)
-        
-        del out
 
         return errors
+
+    def train_pointwise_err(self, train_loader, test_loaders, output_encoder,
+              model, optimizer, scheduler, regularizer, quantile=0.9,
+              training_loss=None, eval_losses=None):
+        """Trains the given model on the given datasets"""
+        n_train = len(train_loader.dataset)
+
+        if not isinstance(test_loaders, dict):
+            test_loaders = dict(test=test_loaders)
+
+        if self.verbose:
+            print(f'Training on {n_train} samples')
+            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
+                  f'         on resolutions {[name for name in test_loaders]}.')
+            sys.stdout.flush()
+
+        if training_loss is None:
+            training_loss = PointwiseQuantileLoss(quantile=quantile)
+
+        if eval_losses is None: # By default just evaluate on the training loss
+            eval_losses = PointwiseQuantileLoss(quantile=quantile)
+
+        if output_encoder is not None:
+            output_encoder.to(self.device)
+        
+        if self.use_distributed:
+            is_logger = (comm.get_world_rank() == 0)
+        else:
+            is_logger = True 
+        
+        for epoch in range(self.n_epochs):
+            avg_loss = 0
+            avg_lasso_loss = 0
+            model.train()
+            t1 = default_timer()
+            train_err = 0.0
+
+            for idx, sample in enumerate(train_loader):
+                x, y = sample['x'], sample['y']
+                
+                if epoch == 0 and idx == 0 and self.verbose and is_logger:
+                    print(f'Training on raw inputs of size {x.shape=}, {y.shape=}')
+
+                x, y = self.patcher.patch(x, y)
+
+                if epoch == 0 and idx == 0 and self.verbose and is_logger:
+                    print(f'.. patched inputs of size {x.shape=}, {y.shape=}')
+
+                x = x.to(self.device)
+                y = y.to(self.device)
+
+                optimizer.zero_grad(set_to_none=True)
+                if regularizer:
+                    regularizer.reset()
+
+                if self.amp_autocast:
+                    with amp.autocast(enabled=True):
+                        out = model(x)
+                else:
+                    out = model(x)
+                if epoch == 0 and idx == 0 and self.verbose and is_logger:
+                    print(f'Raw outputs of size {out.shape=}')
+
+                out, y = self.patcher.unpatch(out, y)
+                #Output encoding only works if output is stiched
+
+                # comment out since residual is generally very small, we train on normalized scale
+                
+                if output_encoder is not None and self.mg_patching_stitching:
+                    out = output_encoder.decode(out)
+                    y = output_encoder.decode(y)
+                
+                if epoch == 0 and idx == 0 and self.verbose and is_logger:
+                    print(f'.. Processed (unpatched) outputs of size {out.shape=}')
+
+                if self.amp_autocast:
+                    with amp.autocast(enabled=True):
+                        loss = training_loss(out.float(), y)
+                else:
+                    loss = training_loss(out.float(), y)
+
+                if regularizer:
+                    loss += regularizer.loss
+
+                loss.backward()
+                
+                optimizer.step()
+                train_err += loss.item()
+        
+                with torch.no_grad():
+                    avg_loss += loss.item()
+                    if regularizer:
+                        avg_lasso_loss += regularizer.loss
+
+            if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                scheduler.step(train_err)
+            else:
+                scheduler.step()
+
+            epoch_train_time = default_timer() - t1
+            del x, y
+
+            train_err/= n_train
+            avg_loss /= self.n_epochs
+            
+            if epoch % self.log_test_interval == 0: 
+                
+                msg = f'[{epoch}] time={epoch_train_time:.2f}, train_err={train_err:.4f}'
+
+                values_to_log = dict(train_err=train_err, time=epoch_train_time)
+
+                for loader_name, loader in test_loaders.items():
+                    if epoch == self.n_epochs - 1 and self.log_output:
+                        to_log_output = True
+                    else:
+                        to_log_output = False
+
+                    errors = self.evaluate(model, eval_losses, loader, output_encoder, log_prefix=loader_name)
+
+                    for loss_name, loss_value in errors.items():
+                        msg += f', {loss_name}={loss_value:.4f}'
+                        values_to_log[loss_name] = loss_value
+
+                if regularizer:
+                    avg_lasso_loss /= self.n_epochs
+                    msg += f', avg_lasso={avg_lasso_loss:.5f}'
+
+                if self.verbose and is_logger:
+                    print(msg)
+                    sys.stdout.flush()
+
+                # Wandb loging
+                if self.wandb_log and is_logger:
+                    for pg in optimizer.param_groups:
+                        lr = pg['lr']
+                        values_to_log['lr'] = lr
+                    wandb.log(values_to_log, step=epoch, commit=True)
+
+            if epoch % 2*self.log_test_interval == 0:
+                torch.save(model.state_dict(), "models/quantile-model-checkpoint")
+                if self.wandb_log:
+                    wandb.save("models/quantile-model-checkpoint")
+
 
