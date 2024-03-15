@@ -1,163 +1,159 @@
-import torch
+from typing import List, Union
 from pathlib import Path
+
+import torch
+from torch.utils.data import DataLoader
 
 from .output_encoder import UnitGaussianNormalizer
 from .tensor_dataset import TensorDataset
 from .transforms import PositionalEmbedding2D
-from .data_transforms import DefaultDataProcessor
+from .data_transforms import DataProcessor, DefaultDataProcessor
+from .pde_dataset import PDEDataset, download_fn
 
-# from .hdf5_dataset import H5pyDataset
-
-# def load_navier_stokes_hdf5(data_path, n_train, batch_size,
-#                             train_resolution=128,
-#                             test_resolutions=[128, 256, 512, 1024],
-#                             n_tests=[2000, 500, 500, 500],
-#                             test_batch_sizes=[8, 4, 1],
-#                             positional_encoding=True,
-#                             grid_boundaries=[[0,1],[0,1]],
-#                             encode_input=True,
-#                             encode_output=True,
-#                             num_workers=0, pin_memory=True, persistent_workers=False):
-#     data_path = Path(data_path)
-
-#     training_db = H5pyDataset(data_path / 'navier_stokes_1024_train.hdf5', n_samples=n_train, resolution=train_resolution)
-#     in_normalizer = None
-#     out_normalizer = None
-#     pos_encoding = None
-
-#     if encode_input:
-#         x_mean = training_db._attribute('x', 'mean')
-#         x_std = training_db._attribute('x', 'std')
+class NavierStokesDataset(PDEDataset):
+    def __init__(self,
+                 root_dir: Union[Path, str],
+                 n_train: int,
+                 n_tests: List[int],
+                 batch_size: int,
+                 test_batch_sizes: List[int],
+                 train_resolution: int,
+                 test_resolutions: int=[16,32],
+                 grid_boundaries: List[int]=[[0,1],[0,1]],
+                 positional_encoding: bool=True,
+                 encode_input: bool=False, 
+                 encode_output: bool=True, 
+                 encoding="channel-wise",
+                 channel_dim=1,
+                 download: bool=True):
+        if isinstance(root_dir, str):
+            root_dir = Path(root_dir)
         
-#         in_normalizer = Normalizer(x_mean, x_std)
-    
-#     if positional_encoding:
-#         pos_encoding = PositionalEmbedding2D(grid_boundaries)
-    
-#     if encode_output:
-#         y_mean = training_db._attribute('y', 'mean')
-#         y_std = training_db._attribute('y', 'std')
+        self.root_dir = root_dir
+
+        # save dataloader properties for later
+        self.batch_size = batch_size
+        self.test_resolutions = test_resolutions
+        self.test_batch_sizes = test_batch_sizes
+
+        # Download data if it isn't already downloaded
+        if download:
+            if not root_dir.exists():
+                root_dir.mkdir(parents=True)
+
+            # iterate through all required filenames and download
+            # if the files need to be downloaded
+            required_fnames = [f"nsforcing_train_{train_resolution}"] + \
+                    [f"nsforcing_test_{res}.pt" for res in test_resolutions]
+            for fname in required_fnames:
+                fpath = root_dir / fname
+                if not fpath.exists():
+                    download_fn(fname)
         
-#         out_normalizer = Normalizer(y_mean, y_std)
+        # Load train data
+        data = torch.load(
+        Path(root_dir).joinpath(f"nsforcing_train_{train_resolution}.pt").as_posix()
+        )
+        x_train = (
+        data["x"][0:n_train, :, :].unsqueeze(channel_dim).type(torch.float32).clone()
+        )
+        y_train = data["y"][0:n_train, :, :].unsqueeze(channel_dim).clone()
+        del data
 
-#     data_processor = DefaultDataProcessor(in_normalizer=in_normalizer,
-#                                           out_normalizer=out_normalizer,
-#                                           positional_encoding=pos_encoding)
+        # Fit optional encoders to train data
+        # Actual encoding happens within DataProcessor
+        if encode_input:
+            if encoding == "channel-wise":
+                reduce_dims = list(range(x_train.ndim))
+            elif encoding == "pixel-wise":
+                reduce_dims = [0]
+
+            input_encoder = UnitGaussianNormalizer(dim=reduce_dims)
+            input_encoder.fit(x_train)
+        else:
+            input_encoder = None
+
+        if encode_output:
+            if encoding == "channel-wise":
+                reduce_dims = list(range(y_train.ndim))
+            elif encoding == "pixel-wise":
+                reduce_dims = [0]
+
+            output_encoder = UnitGaussianNormalizer(dim=reduce_dims)
+            output_encoder.fit(y_train)
+        else:
+            output_encoder = None
+
+        # Save train dataset
+        self.train_db = TensorDataset( 
+            x_train,
+            y_train,
+        )
+
+        # create pos encoder and DataProcessor
+        if positional_encoding:
+            pos_encoding = PositionalEmbedding2D(grid_boundaries=grid_boundaries)
+        else:
+            pos_encoding = None
+
+        self._data_processor = DefaultDataProcessor(in_normalizer=input_encoder,
+                                                   out_normalizer=output_encoder,
+                                                   positional_encoding=pos_encoding)
+
+        # load test data
+        self.test_dbs = {}
+        for (res, n_test, test_batch_size) in zip(
+        test_resolutions, n_tests, test_batch_sizes
+        ):
+            print(
+                f"Loading test db at resolution {res} with {n_test} samples "
+            )
+            data = torch.load(Path(root_dir).joinpath(f"nsforcing_test_{res}.pt").as_posix())
+            x_test = (
+                data["x"][:n_test, :, :].unsqueeze(channel_dim).type(torch.float32).clone()
+            )
+            y_test = data["y"][:n_test, :, :].unsqueeze(channel_dim).clone()
+            del data
+
+            test_db = TensorDataset(
+                x_test,
+                y_test,
+            )
+            self.test_dbs[res] = test_db
+
+    def data_processor(self) -> DataProcessor:
+        return self._data_processor
     
-#     train_loader = torch.utils.data.DataLoader(training_db,
-#                                                batch_size=batch_size, 
-#                                                shuffle=True,
-#                                                num_workers=num_workers,
-#                                                pin_memory=pin_memory,
-#                                                persistent_workers=persistent_workers)
-
-#     test_loaders = dict()
-#     for (res, n_test, test_batch_size) in zip(test_resolutions, n_tests, test_batch_sizes):
-#         print(f'Loading test db at resolution {res} with {n_test} samples and batch-size={test_batch_size}')
-
-#         test_db = H5pyDataset(data_path / 'navier_stokes_1024_test.hdf5', n_samples=n_test, resolution=res)
+    def train_loader(self, 
+                     num_workers: int=None, 
+                     pin_memory: bool=True,
+                     persistent_workers: bool=False) -> DataLoader:
+        
+        return DataLoader(dataset=self.train_db,
+                            batch_size=self.batch_size,
+                            shuffle=True,
+                            num_workers=num_workers,
+                            pin_memory=pin_memory,
+                            persistent_workers=persistent_workers,
+                            )
     
-#         test_loaders[res] = torch.utils.data.DataLoader(test_db, 
-#                                                         batch_size=test_batch_size,
-#                                                         shuffle=False,
-#                                                         num_workers=num_workers, 
-#                                                         pin_memory=pin_memory, 
-#                                                         persistent_workers=persistent_workers)
+    def test_loaders(self, 
+                     num_workers: int=None, 
+                     pin_memory: bool=True,
+                     persistent_workers: bool=False) -> Dict[DataLoader]:
+        test_loaders = {}
+        for (res, batch_size) in zip(self.test_resolutions, self.test_batch_sizes):
+            loader = DataLoader(dataset=self.test_dbs[res],
+                                batch_size=batch_size,
+                                shuffle=False,
+                                num_workers=num_workers,
+                                pin_memory=pin_memory,
+                                persistent_workers=persistent_workers,
+                                )
+            test_loaders[res] = loader
+        return test_loaders        
 
-#     return train_loader, test_loaders, data_processor
-
-
-def load_navier_stokes_pt(data_path, train_resolution,
-                          n_train, n_tests,
-                          batch_size, test_batch_sizes,
-                          test_resolutions,
-                          grid_boundaries=[[0,1],[0,1]],
-                          positional_encoding=True,
-                          encode_input=True,
-                          encode_output=True,
-                          encoding='channel-wise',
-                          channel_dim=1,
-                          num_workers=2,
-                          pin_memory=True, 
-                          persistent_workers=True,
-                          ):
-    """Load the Navier-Stokes dataset
-    """
-    #assert train_resolution == 128, 'Loading from pt only supported for train_resolution of 128'
-
-    train_resolution_str = str(train_resolution)
-
-    data = torch.load(Path(data_path).joinpath('nsforcing_' + train_resolution_str + '_train.pt').as_posix())
-    x_train = data['x'][0:n_train, :, :].unsqueeze(channel_dim).clone()
-    y_train = data['y'][0:n_train, :, :].unsqueeze(channel_dim).clone()
-    del data
-
-    idx = test_resolutions.index(train_resolution)
-    test_resolutions.pop(idx)
-    n_test = n_tests.pop(idx)
-    test_batch_size = test_batch_sizes.pop(idx)
-
-    data = torch.load(Path(data_path).joinpath('nsforcing_' + train_resolution_str + '_test.pt').as_posix())
-    x_test = data['x'][:n_test, :, :].unsqueeze(channel_dim).clone()
-    y_test = data['y'][:n_test, :, :].unsqueeze(channel_dim).clone()
-    del data
-    
-    pos_encoding = None
-
-    if encode_input:
-        if encoding == 'channel-wise':
-            reduce_dims = list(range(x_train.ndim))
-        elif encoding == 'pixel-wise':
-            reduce_dims = [0]
-
-        input_encoder = UnitGaussianNormalizer(dim=reduce_dims)
-        input_encoder.fit(x_train)
-    else:
-        input_encoder = None
-
-    if encode_output:
-        if encoding == 'channel-wise':
-            reduce_dims = list(range(y_train.ndim))
-        elif encoding == 'pixel-wise':
-            reduce_dims = [0]
-
-        output_encoder = UnitGaussianNormalizer(dim=reduce_dims)
-        output_encoder.fit(y_train)
-    else:
-        output_encoder = None
-    
-    if positional_encoding:
-        pos_encoding = PositionalEmbedding2D(grid_boundaries)
-
-    data_processor = DefaultDataProcessor(in_normalizer=input_encoder,
-                                          out_normalizer=output_encoder,
-                                          positional_encoding=pos_encoding)
-    train_db = TensorDataset(x_train, y_train)
-    train_loader = torch.utils.data.DataLoader(train_db,
-                                               batch_size=batch_size, shuffle=True, drop_last=True,
-                                               num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
-
-    test_db = TensorDataset(x_test, y_test)
-    test_loader = torch.utils.data.DataLoader(test_db,
-                                              batch_size=test_batch_size, shuffle=False,
-                                              num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
-
-    test_loaders =  {train_resolution: test_loader}
-    for (res, n_test, test_batch_size) in zip(test_resolutions, n_tests, test_batch_sizes):
-        print(f'Loading test db at resolution {res} with {n_test} samples and batch-size={test_batch_size}')
-        x_test, y_test = _load_navier_stokes_test_HR(data_path, n_test, resolution=res, channel_dim=channel_dim)
-        if input_encoder is not None:
-            x_test = input_encoder.encode(x_test)
-
-        test_db = TensorDataset(x_test, y_test)
-        test_loader = torch.utils.data.DataLoader(test_db,
-                                                  batch_size=test_batch_size, shuffle=False,
-                                                  num_workers=num_workers, pin_memory=pin_memory, persistent_workers=persistent_workers)
-        test_loaders[res] = test_loader
-
-    return train_loader, test_loaders, data_processor
-
-
+# TODO: add high-res/downsample factor to the dataset
 def _load_navier_stokes_test_HR(data_path, n_test, resolution=256,
                                 channel_dim=1,
                                ):
