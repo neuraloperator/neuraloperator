@@ -198,20 +198,14 @@ class Trainer:
                 loss = 0.0
 
                 if self.overrides_loss:
-                    if isinstance(out, torch.Tensor):
-                        loss += self.callbacks.compute_training_loss(
-                            out=out, **sample, amp_autocast=self.amp_autocast
-                        )
-                    elif isinstance(out, dict):
-                        loss += self.callbacks.compute_training_loss(
-                            **out, **sample, amp_autocast=self.amp_autocast
-                        )
+                    loss += self.callbacks.compute_training_loss(
+                        out=out, **sample, amp_autocast=self.amp_autocast
                 else:
                     if self.amp_autocast:
                         with amp.autocast(enabled=True):
-                            loss = training_loss(out, **sample)
+                            loss += training_loss(out, **sample)
                     else:
-                        loss = training_loss(out, **sample)
+                        loss += training_loss(out, **sample)
 
                 if regularizer:
                     loss += regularizer.loss
