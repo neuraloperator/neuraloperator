@@ -28,7 +28,7 @@ def segment_csr(src: torch.Tensor, indptr: torch.Tensor, reduce: Literal['mean',
     if torch.backends.cuda.is_built() and importlib.find_loader('torch_scatter') and use_scatter:
         """only import torch_scatter when cuda is available"""
         import torch_scatter.segment_csr as scatter_segment_csr
-        return scatter_segment_csr(src, indptr, reduce)
+        return scatter_segment_csr(src, indptr, reduce=reduce)
 
     else:
         n_nbrs = indptr[1:] - indptr[:-1] # end indices - start indices

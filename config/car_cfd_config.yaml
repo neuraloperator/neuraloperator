@@ -14,6 +14,7 @@ cfd: &CFD
 
   # Dataset related
   data:
+    path: /home/YOUR_NAME_HERE/data/car-cfd/
     entity_name: ''
     load_attributes: ['press']
     sdf_query_resolution: 32
@@ -23,14 +24,7 @@ cfd: &CFD
     input_fields: ['distance']
     output_points: 'centroids'
     output_fields: ['press']
-
-    # key : start, stop, none in each dim
-    data_field_mappings: 
-      press:
-        - -
-        - - 0
-          - 1
-    weights: 'triangle_areas'
+    weights: 'triangle_areas' # unused with pressure only
 
   fnogno:
     data_channels: 1
