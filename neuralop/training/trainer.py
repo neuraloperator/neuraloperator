@@ -180,7 +180,7 @@ class Trainer:
                         for k, v in sample.items()
                         if torch.is_tensor(v)
                     }
-                
+
                 n_samples += sample["y"].shape[0]
 
                 if self.amp_autocast:
@@ -200,6 +200,7 @@ class Trainer:
                 if self.overrides_loss:
                     loss += self.callbacks.compute_training_loss(
                         out=out, **sample, amp_autocast=self.amp_autocast
+                    )
                 else:
                     if self.amp_autocast:
                         with amp.autocast(enabled=True):
