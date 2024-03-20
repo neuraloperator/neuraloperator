@@ -29,12 +29,6 @@ device, is_logger = setup(config)
 if config.data.sdf_query_resolution < config.fnogno.fno_n_modes[0]:
     config.fnogno.fno_n_modes = [config.data.sdf_query_resolution]*3
 
-# output indices follow form in train_ahmed
-data_field_mappings = {k:tuple([slice(*tuple(x)) for x in v]) for k,v in config.data.data_field_mappings.items()}
-
-# only some channels of output encoder's decoded data
-# are grabbed in train_ahmed original
-
 #Set up WandB logging
 wandb_init_args = {}
 config_name = 'car-pressure'
@@ -156,6 +150,19 @@ class CFDDataProcessor(DataProcessor):
         y = self.normalizer.inverse_transform(sample['y'].squeeze(0))
         sample['y'] = y
 
+        return out, sample
+    
+    def to(self, device):
+        self.device = device
+        self.normalizer = self.normalizer.to(device)
+    
+    def wrap(self, model):
+        self.model = model
+
+    def forward(self, sample):
+        sample = self.preprocess(sample)
+        out = self.model(sample)
+        out, sample = self.postprocess(out, sample)
         return out, sample
 
 output_encoder = deepcopy(data_module.normalizers['press']).to(device)
