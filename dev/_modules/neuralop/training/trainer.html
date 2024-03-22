@@ -286,8 +286,6 @@
                         <span class="n">idx</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span> <span class="n">sample</span><span class="o">=</span><span class="n">sample</span><span class="p">,</span> <span class="n">data_processor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span>
                     <span class="p">)</span>
 
-                <span class="n">n_samples</span> <span class="o">+=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
                 <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">(</span><span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">regularizer</span><span class="p">:</span>
                     <span class="n">regularizer</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
@@ -301,6 +299,8 @@
                         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">sample</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
                         <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
                     <span class="p">}</span>
+
+                <span class="n">n_samples</span> <span class="o">+=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">amp_autocast</span><span class="p">:</span>
                     <span class="k">with</span> <span class="n">amp</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -317,26 +317,15 @@
                 <span class="n">loss</span> <span class="o">=</span> <span class="mf">0.0</span>
 
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">overrides_loss</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-                        <span class="n">loss</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">compute_training_loss</span><span class="p">(</span>
-                            <span class="n">out</span><span class="o">=</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">sample</span><span class="p">,</span> <span class="n">amp_autocast</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">amp_autocast</span>
-                        <span class="p">)</span>
-                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-                        <span class="n">loss</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">compute_training_loss</span><span class="p">(</span>
-                            <span class="o">**</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">sample</span><span class="p">,</span> <span class="n">amp_autocast</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">amp_autocast</span>
-                        <span class="p">)</span>
+                    <span class="n">loss</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">compute_training_loss</span><span class="p">(</span>
+                        <span class="n">out</span><span class="o">=</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">sample</span><span class="p">,</span> <span class="n">amp_autocast</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">amp_autocast</span>
+                    <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">amp_autocast</span><span class="p">:</span>
                         <span class="k">with</span> <span class="n">amp</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-                            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-                                <span class="n">loss</span> <span class="o">=</span> <span class="n">training_loss</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">sample</span><span class="p">)</span>
-                            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-                                <span class="n">loss</span> <span class="o">+=</span> <span class="n">training_loss</span><span class="p">(</span><span class="o">**</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">sample</span><span class="p">)</span>
+                            <span class="n">loss</span> <span class="o">+=</span> <span class="n">training_loss</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">sample</span><span class="p">)</span>
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-                            <span class="n">loss</span> <span class="o">=</span> <span class="n">training_loss</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">sample</span><span class="p">)</span>
-                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-                            <span class="n">loss</span> <span class="o">+=</span> <span class="n">training_loss</span><span class="p">(</span><span class="o">**</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">sample</span><span class="p">)</span>
+                        <span class="n">loss</span> <span class="o">+=</span> <span class="n">training_loss</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">sample</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="n">regularizer</span><span class="p">:</span>
                     <span class="n">loss</span> <span class="o">+=</span> <span class="n">regularizer</span><span class="o">.</span><span class="n">loss</span>
@@ -421,7 +410,6 @@
         <span class="n">n_samples</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
             <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">sample</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_loader</span><span class="p">):</span>
-                <span class="n">n_samples</span> <span class="o">+=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">on_val_batch_start</span><span class="p">(</span>
                         <span class="n">idx</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span> <span class="n">sample</span><span class="o">=</span><span class="n">sample</span><span class="p">,</span> <span class="n">data_processor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span>
@@ -436,6 +424,7 @@
                         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">sample</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
                         <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
                     <span class="p">}</span>
+                <span class="n">n_samples</span> <span class="o">+=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
                 <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">sample</span><span class="p">)</span>
 
