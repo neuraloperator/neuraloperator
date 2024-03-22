@@ -28,3 +28,25 @@ class AdaIN(nn.Module):
         weight, bias = torch.split(self.mlp(self.embedding), self.in_channels, dim=0)
 
         return nn.functional.group_norm(x, self.in_channels, weight, bias, eps=self.eps)
+
+class FlattenedInstanceNorm3d(nn.Module):
+    def __init__(self, num_features: int):
+        """FlattenedInstanceNorm3d takes 4d or greater dim
+            tensors, flattens all dimensions past 3rd along the 3rd dim,
+            applies 3d instance norm and reshapes.
+
+
+        Parameters
+        ----------
+        num_features : int
+            number of channels in instance norm
+        """
+        self.norm = nn.InstanceNorm3d(num_features=num_features)
+    
+    def forward(self, x):
+        size = x.shape
+        x = x.view(*size[:4], -1) # flatten everything past 3rd dim
+        x = self.norm(x)
+        # un-flatten last dims
+        x = x.view(size[0], self.norm.num_features, size[2:])
+        return x
