@@ -45,6 +45,8 @@ class MLP(nn.Module):
             else None
         )
 
+        if n_dim > 3:
+            n_dim = 3
         Conv = getattr(nn, f"Conv{n_dim}d")
         self.fcs = nn.ModuleList()
         for i in range(n_layers):
@@ -58,13 +60,23 @@ class MLP(nn.Module):
                 self.fcs.append(Conv(self.hidden_channels, self.hidden_channels, 1))
 
     def forward(self, x):
+        # if x is 4D, reshape into 3d
+        reshaped = False
+        size = list(x.shape)
+        if x.ndim > 5: # batch, channels, x, y, z, ...
+            x = x.view(*size[:4], -1) # flatten last data dims
+            reshaped = True
+
         for i, fc in enumerate(self.fcs):
             x = fc(x)
             if i < self.n_layers - 1:
                 x = self.non_linearity(x)
             if self.dropout is not None:
                 x = self.dropout[i](x)
-
+        
+        # if x was an Nd tensor reshaped into 3d, undo the reshaping
+        if reshaped: 
+            x = x.view(size[0], self.out_channels, *size[2:])
         return x
 
 
@@ -88,7 +100,7 @@ class MLPLinear(torch.nn.Module):
         for j in range(self.n_layers):
             self.fcs.append(nn.Linear(layers[j], layers[j + 1]))
 
-    def forward(self, x):
+    def forward(self, x):            
         for i, fc in enumerate(self.fcs):
             x = fc(x)
             if i < self.n_layers - 1:
