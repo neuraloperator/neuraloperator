@@ -249,13 +249,20 @@ class FNOGNO(BaseModel, name='FNOGNO'):
 
     # out_p : (n_out, gno_coord_dim)
     # in_p : (n_1, n_2, ..., n_k, k)
+        # if batched, (b, n_1, n_2, ..., n_k, k)
     # f : (n_1, n_2, ..., n_k,  in_channels)
+        # if batched, (b, n_1, n_2, ..., n_k,  in_channels)
     # ada_in : (fno_ada_in_dim, )
 
     #returns: (fno_hidden_channels, n_1, n_2, ...)
     def latent_embedding(self, in_p, f, ada_in=None):
         in_p = torch.cat((f, in_p), dim=-1)
-        in_p = in_p.permute(self.in_coord_dim, *self.in_coord_dim_forward_order).unsqueeze(0)
+        if self.gno_batched:
+            in_p.permute(0, self.in_coord_dim, *self.in_coord_dim_forward_order)
+        else:
+            # unsqueeze to add batch dim of 1 if not batched
+            in_p = in_p.permute(self.in_coord_dim,\
+                                 *self.in_coord_dim_forward_order).unsqueeze(0)
 
         #Update Ada IN embedding
         if ada_in is not None:
