@@ -364,6 +364,7 @@ class SpectralConv(BaseSpectralConv):
             self.bias = None
 
     def _get_weight(self, index):
+        print(f"get weight {index=}")
         return self.weight[index]
 
     def transform(self, x, layer_index=0, output_shape=None):
@@ -450,6 +451,7 @@ class SpectralConv(BaseSpectralConv):
         slices_w =  [slice(None), slice(None)] # Batch_size, channels
         slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
         slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+        print(f"_get_weight {indices=} {slices_w=}")
         weight = self._get_weight(indices)[slices_w]
 
         starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[2:]))]
