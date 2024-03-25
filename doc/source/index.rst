@@ -52,6 +52,7 @@ To create a Fourier Neural Operator model:
 
 
 .. code-block:: python
+
    from neuralop.models import FNO
 
    operator = FNO(n_modes=(16, 16), hidden_channels=64,
@@ -60,11 +61,13 @@ To create a Fourier Neural Operator model:
 To save the weights of the trained model:
 
 .. code-block:: python
+
    model.save_checkpoint(save_folder='./checkpoints/', save_name='example_fno')
 
 And to load the weights later:
 
 .. code-block:: python
+   
    from neuralop.models import FNO
    model = FNO.from_checkpoint(save_folder='./checkpoints/', save_name='example_fno')
 
@@ -73,6 +76,7 @@ And to load the weights later:
 To import the data:
 
 .. code-block:: python
+
    import torch
    from neuralop.datasets import load_darcy_flow_small
 
@@ -89,6 +93,7 @@ as well as a ``preprocessor`` object that automates the transforms to convert th
 We provide a ``Trainer`` object that automates the logic of a basic neural operator training loop to speed up experimentation (see :doc: `auto_examples` for more information).
 
 .. code-block:: python
+
    from neuralop.training import Trainer
 
    # Create the trainer

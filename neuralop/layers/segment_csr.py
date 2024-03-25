@@ -38,7 +38,6 @@ def segment_csr(
     ):
         """only import torch_scatter when cuda is available"""
         import torch_scatter.segment_csr as scatter_segment_csr
-
         return scatter_segment_csr(src, indptr, reduce=reduce)
 
     else:

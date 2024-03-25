@@ -1,8 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from torch import nn
-
+from .base_model import  BaseModel
 from .fno import FNO
 
 from ..layers.mlp import MLP
@@ -12,7 +11,7 @@ from ..layers.integral_transform import BatchedIntegralTransform
 from ..layers.neighbor_search import NeighborSearch
 
 
-class FNOGNO(nn.Module):
+class FNOGNO(BaseModel, name='FNOGNO'):
     """FNOGNO: Fourier/Geometry Neural Operator 
 
         Parameters
@@ -309,7 +308,6 @@ class FNOGNO(nn.Module):
         # Project pointwise to out channels
         #(n_in, out_channels)
         out = self.projection(out).squeeze(0).permute(1, 0)  
-        
         return out
 
 
