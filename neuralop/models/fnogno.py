@@ -173,6 +173,8 @@ class FNOGNO(BaseModel, name='FNOGNO'):
         self.in_coord_dim_forward_order = list(range(self.in_coord_dim))
         self.in_coord_dim_reverse_order = [j + 1 for j in self.in_coord_dim_forward_order]
 
+        self.gno_batched = gno_batched # used in forward call to GNO
+
         # if batched, we must account for the extra batch dim
         # which causes previous dims to be incremented by 1
         if self.gno_batched:
@@ -241,7 +243,6 @@ class FNOGNO(BaseModel, name='FNOGNO'):
         gno_mlp_hidden_layers.insert(0, kernel_in_dim)
         gno_mlp_hidden_layers.append(fno_hidden_channels)
 
-        self.gno_batched = gno_batched # used in forward call to GNO
         self.gno = IntegralTransform(
                     mlp_layers=gno_mlp_hidden_layers,
                     mlp_non_linearity=gno_mlp_non_linearity,
