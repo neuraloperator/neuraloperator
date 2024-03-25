@@ -167,8 +167,6 @@ class Trainer:
                         idx=idx, sample=sample, data_processor=self.data_processor
                     )
 
-                n_samples += sample["y"].shape[0]
-
                 optimizer.zero_grad(set_to_none=True)
                 if regularizer:
                     regularizer.reset()
@@ -182,6 +180,8 @@ class Trainer:
                         for k, v in sample.items()
                         if torch.is_tensor(v)
                     }
+
+                n_samples += sample["y"].shape[0]
 
                 if self.amp_autocast:
                     with amp.autocast(enabled=True):
@@ -198,26 +198,15 @@ class Trainer:
                 loss = 0.0
 
                 if self.overrides_loss:
-                    if isinstance(out, torch.Tensor):
-                        loss += self.callbacks.compute_training_loss(
-                            out=out, **sample, amp_autocast=self.amp_autocast
-                        )
-                    elif isinstance(out, dict):
-                        loss += self.callbacks.compute_training_loss(
-                            **out, **sample, amp_autocast=self.amp_autocast
-                        )
+                    loss += self.callbacks.compute_training_loss(
+                        out=out, **sample, amp_autocast=self.amp_autocast
+                    )
                 else:
                     if self.amp_autocast:
                         with amp.autocast(enabled=True):
-                            if isinstance(out, torch.Tensor):
-                                loss = training_loss(out, **sample)
-                            elif isinstance(out, dict):
-                                loss += training_loss(**out, **sample)
+                            loss += training_loss(out, **sample)
                     else:
-                        if isinstance(out, torch.Tensor):
-                            loss = training_loss(out, **sample)
-                        elif isinstance(out, dict):
-                            loss += training_loss(**out, **sample)
+                        loss += training_loss(out, **sample)
 
                 if regularizer:
                     loss += regularizer.loss
@@ -299,7 +288,6 @@ class Trainer:
         n_samples = 0
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
-                n_samples += sample["y"].size(0)
                 if self.callbacks:
                     self.callbacks.on_val_batch_start(
                         idx=idx, sample=sample, data_processor=self.data_processor
@@ -314,6 +302,7 @@ class Trainer:
                         for k, v in sample.items()
                         if torch.is_tensor(v)
                     }
+                n_samples += sample["y"].size(0)
 
                 out = self.model(**sample)
 
