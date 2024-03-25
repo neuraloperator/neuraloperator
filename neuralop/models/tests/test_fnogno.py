@@ -7,7 +7,8 @@ tenalg.set_backend('einsum')
 
 @pytest.mark.parametrize('gno_transform_type', ['linear', 'nonlinear_kernelonly', 'nonlinear'])
 @pytest.mark.parametrize('fno_n_modes', [(8,), (8,8), (8,8,8)])
-def test_fnogno(gno_transform_type, fno_n_modes):
+@pytest.mark.parametrize('gno_batched', [False, True])
+def test_fnogno(gno_transform_type, fno_n_modes, gno_batched):
     if torch.has_cuda:
         device = torch.device('cuda:0')
     else:
@@ -15,12 +16,14 @@ def test_fnogno(gno_transform_type, fno_n_modes):
 
     in_channels = 3
     out_channels = 2
+    batch_size = 4
     n_dim = len(fno_n_modes)
     model = FNOGNO(in_channels=in_channels,
                    out_channels=out_channels,
                    gno_radius=0.2,
                    gno_coord_dim=n_dim,
                    gno_transform_type=gno_transform_type,
+                   gno_batched=gno_batched,
                    fno_n_modes=fno_n_modes,
                    fno_norm='ada_in',
                    fno_ada_in_features=4).to(device)
@@ -33,6 +36,9 @@ def test_fnogno(gno_transform_type, fno_n_modes):
     
     f_shape = [32,]*n_dim
     f_shape.append(in_channels)
+    if gno_batched:
+        # append batch dim to f and nowhere else
+        f_shape = [batch_size] + f_shape
     f = torch.randn(*f_shape).to(device)
 
     ada_in = torch.randn(1,).to(device)
