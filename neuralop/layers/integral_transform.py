@@ -148,13 +148,19 @@ class IntegralTransform(nn.Module):
 
         # y has a batch dim IFF batched=True
         if batched:
+            assert y.ndim == 3, "Error: y must be of shape [batch, n, d1]"
+            assert x.ndim == 3, "Error: x must be of shape [batch, n, d2]"
             rep_features = y[:, neighbors["neighbors_index"], :]
             if f_y is not None:
+                assert f_y.ndim == 3, "Error: y must be of shape [batch, n, d3]"
                 in_features = f_y[:, neighbors["neighbors_index"], :]
 
         else:
+            assert y.ndim == 2, "Error: y must be of shape [n, d1]"
+            assert x.ndim == 2, "Error: x must be of shape [n, d2]"
             rep_features = y[neighbors["neighbors_index"]]
             if f_y is not None:
+                assert f_y.ndim == 2, "Error: f_y must be of shape [n, d3]"
                 in_features = f_y[neighbors["neighbors_index"]]
 
         num_reps = (
@@ -169,7 +175,8 @@ class IntegralTransform(nn.Module):
             repeat_interleave_dim = 1
         else:
             repeat_interleave_dim = 0
-        self_features = torch.repeat_interleave(x, num_reps, dim=repeat_interleave_dim)
+        self_features = torch.repeat_interleave(x, num_reps,\
+                                                 dim=repeat_interleave_dim)
 
         agg_features = torch.cat([rep_features, self_features], dim=-1)
         if f_y is not None and (
