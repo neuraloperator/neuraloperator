@@ -7,7 +7,7 @@ from .fno import FNO
 from ..layers.mlp import MLP
 from ..layers.embeddings import PositionalEmbedding
 from ..layers.spectral_convolution import SpectralConv
-from ..layers.integral_transform import BatchedIntegralTransform
+from ..layers.integral_transform import IntegralTransform
 from ..layers.neighbor_search import NeighborSearch
 
 
@@ -42,6 +42,9 @@ class FNOGNO(BaseModel, name='FNOGNO'):
         gno_use_open3d : bool, defaults to False
             whether to use Open3D functionality
             if False, uses simple fallback neighbor search
+        gno_batched: bool, defaults to False
+            whether to use IntegralTransform/GNO layer in 
+            "batched" mode. If False, sets batched=False.
         fno_n_modes : tuple, defaults to (16, 16, 16)
             number of modes to keep along each spectral dimension of FNO block
         fno_hidden_channels : int, defaults to 64
@@ -121,6 +124,7 @@ class FNOGNO(BaseModel, name='FNOGNO'):
             gno_mlp_non_linearity=F.gelu, 
             gno_transform_type='linear',
             gno_use_open3d=False,
+            gno_batched=False,
             fno_n_modes=(16, 16, 16), 
             fno_hidden_channels=64,
             fno_lifting_channels=256,
@@ -229,7 +233,8 @@ class FNOGNO(BaseModel, name='FNOGNO'):
         gno_mlp_hidden_layers.insert(0, kernel_in_dim)
         gno_mlp_hidden_layers.append(fno_hidden_channels)
 
-        self.gno = BatchedIntegralTransform(
+        self.gno_batched = gno_batched # used in forward call to GNO
+        self.gno = IntegralTransform(
                     mlp_layers=gno_mlp_hidden_layers,
                     mlp_non_linearity=gno_mlp_non_linearity,
                     transform_type=gno_transform_type 
@@ -299,15 +304,21 @@ class FNOGNO(BaseModel, name='FNOGNO'):
         out = self.gno(y=in_p_embed, 
                        neighbors=in_to_out_nb,
                        x=out_p_embed,
-                       f_y=latent_embed)
+                       f_y=latent_embed,
+                       batched=self.gno_batched)
         # if self.gno is variable and not batched
         if out.ndim == 2:
             out = out.unsqueeze(0)
-        out = out.permute(0, 2, 1)
+        out = out.permute(0, 2, 1) # b, c, n_out
 
         # Project pointwise to out channels
-        #(n_in, out_channels)
-        out = self.projection(out).squeeze(0).permute(1, 0)  
+        out = self.projection(out)
+        
+        if self.gno_batched:
+            out = out.permute(0,2,1)
+        else:
+            out = out.squeeze(0).permute(1, 0)  
+        
         return out
 
 
