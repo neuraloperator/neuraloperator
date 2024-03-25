@@ -167,9 +167,17 @@ class FNOGNO(BaseModel, name='FNOGNO'):
         self.in_coord_dim = len(fno_n_modes)
         if self.in_coord_dim != self.gno_coord_dim:
             print(f'Warning: FNO expects {self.in_coord_dim}-d data while GNO expects {self.gno_coord_dim}-d data')
-
+            
+        # these lists contain the interior dimensions of the input 
+        # in order to reshape without explicitly providing dims
         self.in_coord_dim_forward_order = list(range(self.in_coord_dim))
         self.in_coord_dim_reverse_order = [j + 1 for j in self.in_coord_dim_forward_order]
+
+        # if batched, we must account for the extra batch dim
+        # which causes previous dims to be incremented by 1
+        if self.gno_batched:
+            self.in_coord_dim_forward_order = [j + 1 for j in self.in_coord_dim_forward_order]
+            self.in_coord_dim_reverse_order = [j + 1 for j in self.in_coord_dim_reverse_order]
 
         if fno_norm == "ada_in":
             if fno_ada_in_features is not None:
@@ -249,7 +257,8 @@ class FNOGNO(BaseModel, name='FNOGNO'):
 
     # out_p : (n_out, gno_coord_dim)
     # in_p : (n_1, n_2, ..., n_k, k)
-        # if batched, (b, n_1, n_2, ..., n_k, k)
+        # if batched shape is the same because this is just geometry
+        # that remains constant across the entire batch
     # f : (n_1, n_2, ..., n_k,  in_channels)
         # if batched, (b, n_1, n_2, ..., n_k,  in_channels)
     # ada_in : (fno_ada_in_dim, )
@@ -257,10 +266,16 @@ class FNOGNO(BaseModel, name='FNOGNO'):
     #returns: (fno_hidden_channels, n_1, n_2, ...)
     def latent_embedding(self, in_p, f, ada_in=None):
         in_p = torch.cat((f, in_p), dim=-1)
+
         if self.gno_batched:
-            in_p.permute(0, self.in_coord_dim, *self.in_coord_dim_forward_order)
+            batch_size = f.shape[0]
+            # repeat in_p along the batch dimension for latent embedding
+            in_p = in_p.repeat([batch_size] + [1] * (in_p.ndim))
+
+            # shape: (b, k, n_1, n_2, ... n_k)
+            in_p = in_p.permute(0, self.in_coord_dim,\
+                                 *self.in_coord_dim_forward_order)
         else:
-            # unsqueeze to add batch dim of 1 if not batched
             in_p = in_p.permute(self.in_coord_dim,\
                                  *self.in_coord_dim_forward_order).unsqueeze(0)
 
@@ -274,6 +289,7 @@ class FNOGNO(BaseModel, name='FNOGNO'):
             self.fno.fno_blocks.set_ada_in_embeddings(ada_in_embed)
 
         #Apply FNO blocks
+        
         in_p = self.fno.lifting(in_p)
         if self.fno.domain_padding is not None:
             in_p = self.fno.domain_padding.pad(in_p)
@@ -304,8 +320,14 @@ class FNOGNO(BaseModel, name='FNOGNO'):
         else:
             out_p_embed = out_p #.reshape((n_out, -1))
         
+        ## TODO: reshape after here
         #(n_1*n_2*..., fno_hidden_channels)
-        latent_embed = latent_embed.permute(*self.in_coord_dim_reverse_order, 0).reshape(-1, self.fno.hidden_channels)
+        # if batched, (b, n1*n2*..., fno_hidden_channels)
+
+        if self.gno_batched: 
+            latent_embed = latent_embed.permute(0, *self.in_coord_dim_reverse_order, 1).reshape(0, -1, self.fno.hidden_channels)
+        else:
+            latent_embed = latent_embed.permute(*self.in_coord_dim_reverse_order, 0).reshape(-1, self.fno.hidden_channels)
 
         #(n_out, fno_hidden_channels)
         out = self.gno(y=in_p_embed, 
