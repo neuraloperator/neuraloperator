@@ -3,12 +3,14 @@ import torch
 import warnings
 from pathlib import Path
 
+
 # Author: Jean Kossaifi
 
 class BaseModel(torch.nn.Module):
     """Based class for all Models
 
     This class has two main functionalities:
+
     * It monitors the creation of subclass, that are automatically registered 
       for users to use by name using the library's config system
     * When a new instance of this class is created, the init call is intercepted
@@ -18,6 +20,7 @@ class BaseModel(torch.nn.Module):
 
     Notes
     -----
+
     Model can be versioned using the _version class attribute. 
     This can be used for sanity check when loading models from checkpoints to verify the 
     model hasn't been updated since.
@@ -27,6 +30,7 @@ class BaseModel(torch.nn.Module):
 
     def __init_subclass__(cls, name=None, **kwargs):
         """When a subclass is created, register it in _models
+
         We look for an existing name attribute. 
         If not give, then we use the class' name.
         """
@@ -42,6 +46,7 @@ class BaseModel(torch.nn.Module):
     def __new__(cls, *args, **kwargs):
         """Verify arguments and save init kwargs for loading/saving
 
+
         We inspect the class' signature and check for unused parameters, or 
         parameters not passed. 
 
@@ -56,6 +61,7 @@ class BaseModel(torch.nn.Module):
             if key not in sig.parameters:
                 if verbose:
                     print(f"Given argument key={key} "
+
                         f"that is not in {model_name}'s signature.")
 
         # Check for model arguments not specified in the configuration
@@ -76,6 +82,7 @@ class BaseModel(torch.nn.Module):
         instance._init_kwargs = kwargs
 
         return instance
+
     
     def save_checkpoint(self, save_folder, save_name):
         """Saves the model state and init param in the given folder under the given name
@@ -94,6 +101,7 @@ class BaseModel(torch.nn.Module):
         save_folder = Path(save_folder)
         state_dict_filepath = save_folder.joinpath(f'{save_name}_state_dict.pt').as_posix()
         self.load_state_dict(torch.load(state_dict_filepath))
+
     
     @classmethod
     def from_checkpoint(cls, save_folder, save_name):
@@ -103,6 +111,7 @@ class BaseModel(torch.nn.Module):
         init_kwargs = torch.load(metadata_filepath)
         # with open(metadata_filepath, 'r') as f:
         #     init_kwargs = json.load(f)
+
         
         version = init_kwargs.pop('_version')
         if hasattr(cls, '_version') and version != cls._version:
