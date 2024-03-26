@@ -191,6 +191,8 @@ class SpectralConv(BaseSpectralConv):
         Number of input channels
     out_channels : int, optional
         Number of output channels
+    spatial_domain : string {"real", "complex"}
+        whether data takes on real or complex values in the spatial domain, defaults to "real"
     max_n_modes : None or int tuple, default is None
         Number of modes to use for contraction in Fourier domain during training.
  
@@ -252,6 +254,7 @@ class SpectralConv(BaseSpectralConv):
         in_channels,
         out_channels,
         n_modes,
+        spatial_domain="real",
         max_n_modes=None,
         bias=True,
         n_layers=1,
@@ -274,6 +277,8 @@ class SpectralConv(BaseSpectralConv):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.joint_factorization = joint_factorization
+
+        self.spatial_domain = spatial_domain
 
         # n_modes is the total number of modes kept along each dimension
         self.n_modes = n_modes
@@ -350,7 +355,7 @@ class SpectralConv(BaseSpectralConv):
                 ]
             )
             for w in self.weight:
-                w.normal_(0, init_std)
+                w.normal_(0, init_std)  
         self._contract = get_contract_fun(
             self.weight[0], implementation=implementation, separable=separable
         )
@@ -401,9 +406,11 @@ class SpectralConv(BaseSpectralConv):
             n_modes = [n_modes]
         else:
             n_modes = list(n_modes)
-        # The last mode has a redundacy as we use real FFT
-        # As a design choice we do the operation here to avoid users dealing with the +1
-        n_modes[-1] = n_modes[-1] // 2 + 1
+
+        if self.spatial_domain == "real":
+            # The last mode has a redundacy as we use real FFT
+            # As a design choice we do the operation here to avoid users dealing with the +1
+            n_modes[-1] = n_modes[-1] // 2 + 1
         self._n_modes = n_modes
 
     def forward(
@@ -422,16 +429,33 @@ class SpectralConv(BaseSpectralConv):
         -------
         tensorized_spectral_conv(x)
         """
+
+        cplx = x.is_complex()
+
+        print(cplx)
+
         batchsize, channels, *mode_sizes = x.shape
 
         fft_size = list(mode_sizes)
-        fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient
+        # If the data is real-valued, its FFT will be skew-symmetric
+        # along one axis, so we only need to take the first half (plus one)
+        # of the last dimension of the transformed data
+        if not cplx:
+            fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient
+
         fft_dims = list(range(-self.order, 0))
 
         if self.fno_block_precision == "half":
             x = x.half()
 
-        x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
+        # If x takes complex values, compute the full N-dim FFT
+        if cplx:
+            x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
+        else:
+            # Otherwise compute the real-valued fft.
+            x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
+
+
         if self.order > 1:
             x = torch.fft.fftshift(x, dim=fft_dims[:-1])
 
@@ -448,14 +472,24 @@ class SpectralConv(BaseSpectralConv):
                               device=x.device, dtype=out_dtype)
         starts = [(max_modes - min(size, n_mode)) for (size, n_mode, max_modes) in zip(fft_size, self.n_modes, self.max_n_modes)]
         slices_w =  [slice(None), slice(None)] # Batch_size, channels
-        slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
-        slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
-        weight = self._get_weight(indices)[slices_w]
 
-        starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[2:]))]
-        slices_x =  [slice(None), slice(None)] # Batch_size, channels
-        slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
-        slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+        if cplx:
+            slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
+            weight = self._get_weight(indices)[slices_w]
+
+            starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[2:]))]
+            slices_x =  [slice(None), slice(None)] # Batch_size, channels
+            slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
+        else:
+            slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
+            slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+            weight = self._get_weight(indices)[slices_w]
+
+            starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[2:]))]
+            slices_x =  [slice(None), slice(None)] # Batch_size, channels
+            slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
+            slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+
         out_fft[slices_x] = self._contract(x[slices_x], weight, separable=False)
 
         if self.output_scaling_factor is not None and output_shape is None:
@@ -464,9 +498,14 @@ class SpectralConv(BaseSpectralConv):
         if output_shape is not None:
             mode_sizes = output_shape
 
-        if self.order > 1:
-            out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
-        x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+        if cplx:
+            if self.order > 1:
+                out_fft = torch.fft.fftshift(out_fft, dim=fft_dims)
+            x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+        else:
+            if self.order > 1:
+                out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
+            x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
@@ -521,15 +560,29 @@ class SpectralConv1d(SpectralConv):
     """
 
     def forward(self, x, indices=0):
+
+        cplx = x.is_complex()
+
         batchsize, channels, width = x.shape
 
-        x = torch.fft.rfft(x, norm=self.fft_norm)
 
-        out_fft = torch.zeros(
-            [batchsize, self.out_channels, width // 2 + 1],
-            device=x.device,
-            dtype=torch.cfloat,
-        )
+        # If x takes complex values, compute the full N-dim FFT
+        if cplx:
+            x = torch.fft.fft(x, norm=self.fft_norm)
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, width],
+                device=x.device,
+                dtype=torch.cfloat,
+            )
+        else:
+            # Otherwise compute the real-valued fft.
+            x = torch.fft.rfft(x, norm=self.fft_norm)
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, width // 2 + 1],
+                device=x.device,
+                dtype=torch.cfloat,
+            )
+
         slices = (
             slice(None),  # Equivalent to: [:,
             slice(None),  # ............... :,
@@ -542,7 +595,10 @@ class SpectralConv1d(SpectralConv):
         if self.output_scaling_factor is not None:
             width = round(width * self.output_scaling_factor[0])
 
-        x = torch.fft.irfft(out_fft, n=width, norm=self.fft_norm)
+        if cplx:
+            x = torch.fft.ifft(out_fft, n=width, norm=self.fft_norm)
+        else:
+            x = torch.fft.irfft(out_fft, n=width, norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
@@ -558,17 +614,28 @@ class SpectralConv2d(SpectralConv):
     """
 
     def forward(self, x, indices=0):
+
+        cplx = x.is_complex()
+
         batchsize, channels, height, width = x.shape
 
-        x = torch.fft.rfft2(x.float(), norm=self.fft_norm, dim=(-2, -1))
+        if cplx:
+            x = torch.fft.fft2(x.float(), norm=self.fft_norm, dim=(-2, -1))
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, height, width],
+                dtype=x.dtype,
+                device=x.device,
+            )
+        else:
+            x = torch.fft.rfft2(x.float(), norm=self.fft_norm, dim=(-2, -1))
 
-        # The output will be of size (batch_size, self.out_channels,
-        # x.size(-2), x.size(-1)//2 + 1)
-        out_fft = torch.zeros(
-            [batchsize, self.out_channels, height, width // 2 + 1],
-            dtype=x.dtype,
-            device=x.device,
-        )
+            # The output will be of size (batch_size, self.out_channels,
+            # x.size(-2), x.size(-1)//2 + 1)
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, height, width // 2 + 1],
+                dtype=x.dtype,
+                device=x.device,
+            )
 
         slices0 = (
             slice(None),  # Equivalent to: [:,
@@ -598,9 +665,14 @@ class SpectralConv2d(SpectralConv):
             width = round(width * self.output_scaling_factor[indices][0])
             height = round(height * self.output_scaling_factor[indices][1])
 
-        x = torch.fft.irfft2(
+        if cplx:
+            x = torch.fft.ifft2(
             out_fft, s=(height, width), dim=(-2, -1), norm=self.fft_norm
-        )
+            )
+        else:
+            x = torch.fft.irfft2(
+                out_fft, s=(height, width), dim=(-2, -1), norm=self.fft_norm
+            )
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
@@ -616,15 +688,26 @@ class SpectralConv3d(SpectralConv):
     """
 
     def forward(self, x, indices=0):
+
+        cplx = x.is_complex()
+
         batchsize, channels, height, width, depth = x.shape
 
-        x = torch.fft.rfftn(x.float(), norm=self.fft_norm, dim=[-3, -2, -1])
+        if cplx:
+            x = torch.fft.fftn(x.float(), norm=self.fft_norm, dim=[-3, -2, -1])
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, height, width, depth],
+                device=x.device,
+                dtype=torch.cfloat,
+            )
+        else:
+            x = torch.fft.rfftn(x.float(), norm=self.fft_norm, dim=[-3, -2, -1])
 
-        out_fft = torch.zeros(
-            [batchsize, self.out_channels, height, width, depth // 2 + 1],
-            device=x.device,
-            dtype=torch.cfloat,
-        )
+            out_fft = torch.zeros(
+                [batchsize, self.out_channels, height, width, depth // 2 + 1],
+                device=x.device,
+                dtype=torch.cfloat,
+            )
 
         slices0 = (
             slice(None),  # Equivalent to: [:,
@@ -681,7 +764,10 @@ class SpectralConv3d(SpectralConv):
             height = round(height * self.output_scaling_factor[1])
             depth = round(depth * self.output_scaling_factor[2])
 
-        x = torch.fft.irfftn(out_fft, s=(height, width, depth), dim=[-3, -2, -1], norm=self.fft_norm)
+        if cplx:
+            x = torch.fft.ifftn(out_fft, s=(height, width, depth), dim=[-3, -2, -1], norm=self.fft_norm)
+        else:
+            x = torch.fft.irfftn(out_fft, s=(height, width, depth), dim=[-3, -2, -1], norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
