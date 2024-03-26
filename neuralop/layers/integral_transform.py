@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from .mlp import MLPLinear
 from .segment_csr import segment_csr
 
+
 class IntegralTransform(nn.Module):
     """Integral Kernel Transform (GNO)
     Computes one of the following:
@@ -56,7 +57,6 @@ class IntegralTransform(nn.Module):
         mlp_non_linearity=F.gelu,
         transform_type="linear",
     ):
-
         super().__init__()
 
         assert mlp is not None or mlp_layers is not None
@@ -69,7 +69,6 @@ class IntegralTransform(nn.Module):
             and self.transform_type != "nonlinear_kernelonly"
             and self.transform_type != "nonlinear"
         ):
-
             raise ValueError(
                 f"Got transform_type={transform_type} but expected one of "
                 "[linear_kernelonly, linear, nonlinear_kernelonly, nonlinear]"
@@ -90,14 +89,7 @@ class IntegralTransform(nn.Module):
     the same as the channels of f
     """
 
-    def forward(
-        self,
-        y,
-        neighbors,
-        x=None,
-        f_y=None,
-        weights=None,
-    ):
+    def forward(self, y, neighbors, x=None, f_y=None, weights=None, batched=False):
         """Compute a kernel integral transform
 
         Parameters
@@ -105,31 +97,41 @@ class IntegralTransform(nn.Module):
         y : torch.Tensor of shape [n, d1]
             n points of dimension d1 specifying
             the space to integrate over.
+            If batched, these must remain constant
+            over the whole batch so no batch dim is needed.
         neighbors : dict
             The sets A(x) given in CRS format. The
             dict must contain the keys "neighbors_index"
             and "neighbors_row_splits." For descriptions
             of the two, see NeighborSearch.
+            If batch > 1, the neighbors must be constant
+            across the entire batch.
         x : torch.Tensor of shape [m, d2], default None
             m points of dimension d2 over which the
             output function is defined. If None,
             x = y.
-        f_y : torch.Tensor of shape [n, d3], default None
+        f_y : torch.Tensor of shape [batch, n, d3] or [n, d3], default None
             Function to integrate the kernel against defined
             on the points y. The kernel is assumed diagonal
             hence its output shape must be d3 for the transforms
             (b) or (d). If None, (a) is computed.
-        weights : torch.Tensor of shape [n,], default None
+        weights : torch.Tensor of shape [batch, n] or [n,], default None
             Weights for each point y proprtional to the
             volume around f(y) being integrated. For example,
             suppose d1=1 and let y_1 < y_2 < ... < y_{n+1}
             be some points. Then, for a Riemann sum,
             the weights are y_{j+1} - y_j. If None,
             1/|A(x)| is used.
+        batched: bool, default True
+            if batched is true, the batch dim must exist in all inputs
+            where one is specified. Otherwise no batch dim must exist
+            If the input geometry stays the same across the entire batch,
+            it is much more efficient to compute the GNO across the entire batch
+            in parallel. Otherwise, the batch size is restricted to 1 example.
 
         Output
         ----------
-        out_features : torch.Tensor of shape [m, d4]
+        out_features : torch.Tensor of shape [batch, m, d4] or [m, d4]
             Output function given on the points x.
             d4 is the output size of the kernel k.
         """
@@ -138,21 +140,36 @@ class IntegralTransform(nn.Module):
             x = y
 
         rep_features = y[neighbors["neighbors_index"]]
+
+        # f_y has a batch dim IFF batched=True
         if f_y is not None:
-            in_features = f_y[neighbors["neighbors_index"]]
+            if batched:
+                assert f_y.ndim == 3, "Error: y must be of shape [batch, n, d3]"
+                batch_size = f_y.shape[0]
+                in_features = f_y[:, neighbors["neighbors_index"], :]
+
+            else:
+                assert f_y.ndim == 2, "Error: f_y must be of shape [n, d3]"
+                in_features = f_y[neighbors["neighbors_index"]]
 
         num_reps = (
             neighbors["neighbors_row_splits"][1:]
             - neighbors["neighbors_row_splits"][:-1]
         )
+
         self_features = torch.repeat_interleave(x, num_reps, dim=0)
 
-        agg_features = torch.cat([rep_features, self_features], dim=1)
+        agg_features = torch.cat([rep_features, self_features], dim=-1)
         if f_y is not None and (
             self.transform_type == "nonlinear_kernelonly"
             or self.transform_type == "nonlinear"
         ):
-            agg_features = torch.cat([agg_features, in_features], dim=1)
+            if batched:
+                # repeat agg features for every example in the batch
+                agg_features = agg_features.repeat(
+                    [batch_size] + [1] * agg_features.ndim
+                )
+            agg_features = torch.cat([agg_features, in_features], dim=-1)
 
         rep_features = self.mlp(agg_features)
 
@@ -165,7 +182,11 @@ class IntegralTransform(nn.Module):
         else:
             reduction = "mean"
 
-        out_features = segment_csr(
-            rep_features, neighbors["neighbors_row_splits"], reduce=reduction
-        )
+        splits = neighbors["neighbors_row_splits"]
+        if batched:
+            # splits = splits.view(1,-1) # expand along batch dim if batched
+            splits = splits.repeat([batch_size] + [1] * splits.ndim)
+
+        out_features = segment_csr(rep_features, splits, reduce=reduction)
+
         return out_features
