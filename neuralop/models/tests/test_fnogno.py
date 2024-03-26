@@ -47,7 +47,10 @@ def test_fnogno(gno_transform_type, fno_n_modes, gno_batched):
     out = model(in_p, out_p, f, ada_in)
 
     # Check output size
-    assert list(out.shape) == [100, out_channels]
+    if gno_batched:
+        assert list(out.shape) == [batch_size, 100, out_channels]
+    else:
+        assert list(out.shape) == [100, out_channels]
 
     # Check backward pass
     loss = out.sum()

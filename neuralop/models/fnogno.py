@@ -266,13 +266,14 @@ class FNOGNO(BaseModel, name='FNOGNO'):
 
     #returns: (fno_hidden_channels, n_1, n_2, ...)
     def latent_embedding(self, in_p, f, ada_in=None):
-        in_p = torch.cat((f, in_p), dim=-1)
-
         if self.gno_batched:
             batch_size = f.shape[0]
             # repeat in_p along the batch dimension for latent embedding
             in_p = in_p.repeat([batch_size] + [1] * (in_p.ndim))
+        in_p = torch.cat((f, in_p), dim=-1)
 
+        
+        if self.gno_batched:
             # shape: (b, k, n_1, n_2, ... n_k)
             in_p = in_p.permute(0, self.in_coord_dim,\
                                  *self.in_coord_dim_forward_order)
