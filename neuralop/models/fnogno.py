@@ -344,7 +344,6 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         else:
             out_p_embed = out_p  # .reshape((n_out, -1))
 
-        ## TODO: reshape after here
         # (n_1*n_2*..., fno_hidden_channels)
         # if batched, (b, n1*n2*..., fno_hidden_channels)
 
