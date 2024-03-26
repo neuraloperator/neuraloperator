@@ -33,7 +33,7 @@ def segment_csr(
 
     if (
         torch.backends.cuda.is_built()
-        and importlib.find_loader("torch_scatter")
+        and importlib.util.find_spec("torch_scatter") is not None
         and use_scatter
     ):
         """only import torch_scatter when cuda is available"""
