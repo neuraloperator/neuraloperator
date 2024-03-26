@@ -278,6 +278,8 @@ class SpectralConv(BaseSpectralConv):
         self.out_channels = out_channels
         self.joint_factorization = joint_factorization
 
+        self.spatial_domain = spatial_domain
+
         # n_modes is the total number of modes kept along each dimension
         self.n_modes = n_modes
         self.order = len(self.n_modes)
@@ -404,9 +406,11 @@ class SpectralConv(BaseSpectralConv):
             n_modes = [n_modes]
         else:
             n_modes = list(n_modes)
-        # The last mode has a redundacy as we use real FFT
-        # As a design choice we do the operation here to avoid users dealing with the +1
-        n_modes[-1] = n_modes[-1] // 2 + 1
+
+        if self.spatial_domain == "real":
+            # The last mode has a redundacy as we use real FFT
+            # As a design choice we do the operation here to avoid users dealing with the +1
+            n_modes[-1] = n_modes[-1] // 2 + 1
         self._n_modes = n_modes
 
     def forward(
@@ -427,6 +431,8 @@ class SpectralConv(BaseSpectralConv):
         """
 
         cplx = x.is_complex()
+
+        print(cplx)
 
         batchsize, channels, *mode_sizes = x.shape
 
@@ -466,14 +472,24 @@ class SpectralConv(BaseSpectralConv):
                               device=x.device, dtype=out_dtype)
         starts = [(max_modes - min(size, n_mode)) for (size, n_mode, max_modes) in zip(fft_size, self.n_modes, self.max_n_modes)]
         slices_w =  [slice(None), slice(None)] # Batch_size, channels
-        slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
-        slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
-        weight = self._get_weight(indices)[slices_w]
 
-        starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[2:]))]
-        slices_x =  [slice(None), slice(None)] # Batch_size, channels
-        slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
-        slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+        if cplx:
+            slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
+            weight = self._get_weight(indices)[slices_w]
+
+            starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[2:]))]
+            slices_x =  [slice(None), slice(None)] # Batch_size, channels
+            slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
+        else:
+            slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
+            slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+            weight = self._get_weight(indices)[slices_w]
+
+            starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[2:]))]
+            slices_x =  [slice(None), slice(None)] # Batch_size, channels
+            slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
+            slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+
         out_fft[slices_x] = self._contract(x[slices_x], weight, separable=False)
 
         if self.output_scaling_factor is not None and output_shape is None:
@@ -482,9 +498,14 @@ class SpectralConv(BaseSpectralConv):
         if output_shape is not None:
             mode_sizes = output_shape
 
-        if self.order > 1:
-            out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
-        x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+        if cplx:
+            if self.order > 1:
+                out_fft = torch.fft.fftshift(out_fft, dim=fft_dims)
+            x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+        else:
+            if self.order > 1:
+                out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
+            x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
