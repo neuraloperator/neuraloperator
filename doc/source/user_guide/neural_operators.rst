@@ -60,7 +60,7 @@ where  :math:`u` and :math:`f` are some functions on the physical domain, and
 :math:`\mathcal{L}` is some differential operator that maps
 the function :math:`u` to the function :math:`f`.
 Usually, :math:`\mathcal{L}` and :math:`f` are given. The task is to solve for :math:`u`.
-That is, we want to learn an operator like the inverse of :math:`\mathcal{D}` that
+That is, we want to learn an operator like the inverse of :math:`\mathcal{L}` that
 maps the function :math:`f` to the function :math:`u`.
 So the problem of PDE is indeed an operator learning problem.
 
@@ -103,8 +103,7 @@ These traditional numerical solvers are awesome, but they have some drawbacks:
 
 - The error scales steeply with the resolution. We need a high resolution to get good approximations.
 - The computation and storage steeply scale with the resolution (i.e. the size of the grid).
-- When the equation is solved on one discretization,
-we cannot change the discretization anymore.
+- When the equation is solved on one discretization, we cannot change the discretization anymore.
 
 
 *.PNG* and *.JPG* formats are good.
