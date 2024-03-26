@@ -157,18 +157,7 @@ class IntegralTransform(nn.Module):
             - neighbors["neighbors_row_splits"][:-1]
         )
 
-        # if batched, dim=0 will be the batch dim
-        # and dim=1 is the point dim. Otherwise, dim=0
-        # indexes the point dim of one example
-        if batched:
-            repeat_interleave_dim = 1
-        else:
-            repeat_interleave_dim = 0
-
-        # not sure if i want this logic. for now hardcoding
-        repeat_interleave_dim = 0
-
-        self_features = torch.repeat_interleave(x, num_reps, dim=repeat_interleave_dim)
+        self_features = torch.repeat_interleave(x, num_reps, dim=0)
 
         agg_features = torch.cat([rep_features, self_features], dim=-1)
         if f_y is not None and (
