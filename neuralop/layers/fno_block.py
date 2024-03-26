@@ -230,6 +230,9 @@ class FNOBlocks(nn.Module):
             return self.forward_with_postactivation(x, index, output_shape)
 
     def forward_with_postactivation(self, x, index=0, output_shape=None):
+
+        cplx = x.is_complex()
+
         x_skip_fno = self.fno_skips[index](x)
         x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
 
@@ -265,6 +268,10 @@ class FNOBlocks(nn.Module):
         return x
 
     def forward_with_preactivation(self, x, index=0, output_shape=None):
+
+
+        cplx = x.is_complex()
+
         # Apply non-linear activation (and norm)
         # before this block's convolution/forward pass:
         x = self.non_linearity(x)
@@ -278,9 +285,12 @@ class FNOBlocks(nn.Module):
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
             x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
-
+                
         if self.stabilizer == "tanh":
-            x = torch.tanh(x)
+            if cplx:
+                x = ctanh(x)
+            else:
+                x = torch.tanh(x)
 
         x_fno = self.convs(x, index, output_shape=output_shape)
         x = x_fno + x_skip_fno
