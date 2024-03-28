@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import sys
 from neuralop.models import TFNO
 from neuralop import Trainer
-from neuralop.training import OutputEncoderCallback, CheckpointCallback
+from neuralop.training import CheckpointCallback
 from neuralop.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
@@ -23,7 +23,7 @@ device = 'cpu'
 
 # %%
 # Loading the Navier-Stokes dataset in 128x128 resolution
-train_loader, test_loaders, output_encoder = load_darcy_flow_small(
+train_loader, test_loaders, data_processor = load_darcy_flow_small(
         n_train=1000, batch_size=32, 
         test_resolutions=[16, 32], n_tests=[100, 50],
         test_batch_sizes=[32, 32],
@@ -75,12 +75,12 @@ sys.stdout.flush()
 trainer = Trainer(model=model, n_epochs=20,
                   device=device,
                   callbacks=[
-                    OutputEncoderCallback(output_encoder),
                     CheckpointCallback(save_dir='./checkpoints',
                                        save_interval=10,
                                             save_optimizer=True,
                                             save_scheduler=True)
-                        ],             
+                        ],
+                  data_processor=data_processor,
                   wandb_log=False,
                   log_test_interval=3,
                   use_distributed=False,
@@ -102,8 +102,8 @@ trainer.train(train_loader=train_loader,
 
 trainer = Trainer(model=model, n_epochs=20,
                   device=device,
+                  data_processor=data_processor,
                   callbacks=[
-                    OutputEncoderCallback(output_encoder),
                     CheckpointCallback(save_dir='./new_checkpoints',
                                             resume_from_dir='./checkpoints/ep_10')
                         ],             
@@ -118,51 +118,3 @@ trainer.train(train_loader=train_loader,
               scheduler=scheduler, 
               regularizer=False, 
               training_loss=train_loss)
-# %%
-# Plot the prediction, and compare with the ground-truth 
-# Note that we trained on a very small resolution for
-# a very small number of epochs
-# In practice, we would train at larger resolution, on many more samples.
-# 
-# However, for practicity, we created a minimal example that
-# i) fits in just a few Mb of memory
-# ii) can be trained quickly on CPU
-#
-# In practice we would train a Neural Operator on one or multiple GPUs
-
-test_samples = test_loaders[32].dataset
-
-fig = plt.figure(figsize=(7, 7))
-for index in range(3):
-    data = test_samples[index]
-    # Input x
-    x = data['x']
-    # Ground-truth
-    y = data['y']
-    # Model prediction
-    out = model(x.unsqueeze(0))
-
-    ax = fig.add_subplot(3, 3, index*3 + 1)
-    ax.imshow(x[0], cmap='gray')
-    if index == 0: 
-        ax.set_title('Input x')
-    plt.xticks([], [])
-    plt.yticks([], [])
-
-    ax = fig.add_subplot(3, 3, index*3 + 2)
-    ax.imshow(y.squeeze())
-    if index == 0: 
-        ax.set_title('Ground-truth y')
-    plt.xticks([], [])
-    plt.yticks([], [])
-
-    ax = fig.add_subplot(3, 3, index*3 + 3)
-    ax.imshow(out.squeeze().detach().numpy())
-    if index == 0: 
-        ax.set_title('Model prediction')
-    plt.xticks([], [])
-    plt.yticks([], [])
-
-fig.suptitle('Inputs, ground-truth output and prediction.', y=0.98)
-plt.tight_layout()
-fig.show()

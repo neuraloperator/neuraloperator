@@ -62,13 +62,28 @@ class FieldwiseAggregatorLoss(object):
         else:
             return loss
 
-class SumAggregatorLoss(object):
-    """General class to sum over a series of losses on the same input"""
-    def __init__(self, *losses):
-        self.losses = losses
-    
-    def __call__(self, **model_outputs):
-        loss = 0
-        for loss_fn in self.losses:
-            loss += loss_fn(**model_outputs)
-        return loss
+
+class WeightedSumLoss(object):
+    """
+    Computes an average or weighted sum of given losses.
+    """
+
+    def __init__(self, losses, weights=None):
+        super().__init__()
+        if weights is None:
+            weights = [1.0 / len(losses)] * len(losses)
+        if not len(weights) == len(losses):
+            raise ValueError("Each loss must have a weight.")
+        self.losses = list(zip(losses, weights))
+
+    def __call__(self, *args, **kwargs):
+        weighted_loss = 0.0
+        for loss, weight in self.losses:
+            weighted_loss += weight * loss(*args, **kwargs)
+        return weighted_loss
+
+    def __str__(self):
+        description = "Combined loss: "
+        for loss, weight in self.losses:
+            description += f"{loss} (weight: {weight}) "
+        return description
