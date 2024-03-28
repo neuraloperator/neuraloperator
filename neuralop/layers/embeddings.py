@@ -81,7 +81,7 @@ class RotaryEmbedding(nn.Module):
 class GaussianFourierFeatureTransform(nn.Module):
     def __init__(self,
                  in_channels,
-                 mapping_size=256,
+                 mapping_size,
                  scale=10,
                  learnable=False):
         """
@@ -89,8 +89,15 @@ class GaussianFourierFeatureTransform(nn.Module):
         "Fourier Features Let Networks Learn High Frequency Functions in Low Dimensional Domains":
            https://arxiv.org/abs/2006.10739
            https://people.eecs.berkeley.edu/~bmild/fourfeat/index.html
-        Given an input of size [batches, n, num_input_channels],
-         returns a tensor of size [batches, n, mapping_size*2].
+        Given an input of size [batches, n_points, num_input_channels],
+           returns a tensor of size [batches, n_points, mapping_size*2].
+
+        Parameters:
+            in_channels: int, Number of input channels.
+            mapping_size: int, Number of output channels for sin/cos part.
+            scale: float, Scale (variance) of the Gaussian Fourier Feature Transform, by default 10.
+            learnable: bool, Whether the Gaussian projection matrix is learnable or not, by default False.
+
         """
         super().__init__()
 
@@ -118,7 +125,6 @@ class GaussianFourierFeatureTransform(nn.Module):
 
 # SirenNet
 # code modified from: https://github.com/lucidrains/siren-pytorch/blob/master/siren_pytorch/siren_pytorch.py
-# sin activation
 class Sine(nn.Module):
     def __init__(self, w0=1.):
         super().__init__()
@@ -138,6 +144,21 @@ class Siren(nn.Module):
                  is_first=False,
                  use_bias=True,
                  activation=None):
+        """
+            SIREN: https://arxiv.org/abs/2006.09661
+            The Siren layer is a linear layer followed by a sine activation function.
+
+            Parameters:
+                dim_in: int, Number of input channels.
+                dim_out: int, Number of output channels.
+                w0: float, scaling factor (denominator) used to initialize the weights, by default 6.
+                c: float, scaling factor (numerator) used to initialize the weights, by default 6.
+                is_first: bool, Whether this is the first layer of the network, by default False.
+                use_bias: bool, Whether to use bias or not, by default True.
+                activation: nn.Module, Activation function to use, by default None (which uses Sine activation).
+
+        """
+
         super().__init__()
         self.dim_in = dim_in
         self.is_first = is_first
@@ -176,6 +197,19 @@ class SirenNet(nn.Module):
                  w0_initial=30.,
                  use_bias=True,
                  final_activation=None):
+        """
+            A MLP network with Siren layers.
+
+            Parameters:
+                dim_in: int, Number of input channels.
+                dim_hidden: int, Number of hidden channels.
+                dim_out: int, Number of output channels.
+                num_layers: int, Number of layers in the network.
+                w0: float, scaling factor (denominator) used to initialize the weights, by default 6.
+                w0_initial: float, scaling factor (denominator) used to initialize the weights for the first layer, by default 30.
+                use_bias: bool, Whether to use bias or not, by default True.
+                final_activation: nn.Module, Activation function to use in the final layer, by default None.
+        """
         super().__init__()
         self.num_layers = num_layers
         self.dim_hidden = dim_hidden

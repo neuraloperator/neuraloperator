@@ -38,8 +38,24 @@ def normalize(u, norm_fn):
 
 class TransformerEncoderBlock(nn.Module):
     """
-    Transformer Encoder Block with n_layers of self-attention + feedforward network (FFN).
-    use pre-normalization.
+    Transformer Encoder Block with n_layers of self-attention + feedforward network (FFN),
+            uses pre-normalization layout.
+
+    For the detail definition of attention-based kernel integral, see `attention_kernel_integral.py`.
+
+    Parameters:
+        in_channels : int, input channels
+        out_channels : int, output channels
+        hidden_channels : int, hidden channels in the attention layers and MLP layers
+        num_heads : int, number of attention heads
+        head_n_channels : int, dimension of each attention head
+        n_layers : int, number of (attention + FFN) layers
+        use_mlp : bool, whether to use FFN after each attention layer, by default True
+        mlp_dropout : float, dropout rate of the FFN, by default 0
+        mlp_expansion : float, expansion factor of the FFN's hidden layer width, by default 2.0
+        non_linearity : nn.Module, non-linearity module to use, by default F.gelu
+        norm : string, normalization module to use, by default 'layer_norm', other available options are
+            ['instance_norm', 'group_norm', 'none']
     """
     def __init__(
             self,
@@ -99,6 +115,15 @@ class TransformerEncoderBlock(nn.Module):
                 pos,
                 pos_emb_module=None,
                 **kwargs):
+        """
+        Encode the input function u using the Transformer Encoder Block.
+
+        Parameters:
+            u: torch.Tensor, input tensor of shape [batch_size, num_grid_points, channels]
+            pos: torch.Tensor, grid point coordinates of shape [batch_size, num_grid_points, channels]
+            pos_emb_module: nn.Module, positional embedding module, by default None
+
+        """
         u = self.lifting(u)
         for l in range(self.n_layers):
             u_attention_skip = u
@@ -118,7 +143,32 @@ class TransformerEncoderBlock(nn.Module):
 # Note: this is not a causal-attention-based Transformer decoder as in language models
 # but rather a "decoder" that maps from the latent grid to the output grid.
 class TransformerDecoderBlock(nn.Module):
-    """Transformer Decoder Block using cross-attention to map input grid to output grid."""
+    """Transformer Decoder Block using cross-attention to map input grid to output grid.
+
+    For details regarding attention-based decoding, see:
+    Transformer for Partial Differential Equations' Operator Learning: https://arxiv.org/abs/2205.13671
+    Perceiver IO: A General Architecture for Structured Inputs & Outputs: https://arxiv.org/abs/2107.14795
+
+
+    Parameters:
+        n_dim: int, number of dimensions of the target domain
+        in_channels : int, input channels
+        out_channels : int, output channels
+        hidden_channels : int, hidden channels in the attention layers and MLP layers
+        num_heads : int, number of attention heads
+        head_n_channels : int, dimension of each attention head
+        query_basis: string, type of coordinate-based network to compute query basis function in the decoder,
+            by default 'siren', other options are ['fourier', 'linear']
+        use_mlp : bool, whether to use FFN after the cross-attention layer, by default True
+        mlp_dropout : float, dropout rate of the FFN, by default 0
+        mlp_expansion : float, expansion factor of the FFN's hidden layer width, by default 2.0
+        non_linearity : nn.Module, non-linearity module to use, by default F.gelu
+        norm : string, normalization module to use, by default 'layer_norm', other available options are
+            ['instance_norm', 'group_norm', 'none']
+        query_siren_layers: int, number of layers in SirenNet, by default 3
+        query_fourier_scale: float, scale (variance) of the Gaussian Fourier Feature Transform, by default 2.0
+    """
+
     def __init__(
             self,
             n_dim,
@@ -132,9 +182,9 @@ class TransformerDecoderBlock(nn.Module):
             mlp_dropout=0,
             mlp_expansion=2.0,
             non_linearity=F.gelu,
+            norm='layer_norm',
             query_siren_layers=3,
             query_fourier_scale=2.0,
-            norm='layer_norm',
             **kwargs,
     ):
         super().__init__()
@@ -191,6 +241,16 @@ class TransformerDecoderBlock(nn.Module):
                 pos_qry=None,
                 **kwargs
                 ):
+        """
+           Project the input function u from the source grid to the query grid using the Transformer Decoder Block.
+
+          Parameters:
+                u: torch.Tensor, input tensor of shape [batch_size, num_src_grid_points, channels]
+                pos_src: torch.Tensor, grid point coordinates of shape [batch_size, num_src_grid_points, channels]
+                pos_emb_module: nn.Module, positional embedding module, by default None
+                pos_qry: torch.Tensor, grid point coordinates of shape [batch_size, num_sry_grid_points, channels],
+                         by default None and is set to pos_src
+        """
         u = self.lifting(u)
         if pos_qry is None:
             pos_qry = pos_src  # assume that the query points are the same as the source points
