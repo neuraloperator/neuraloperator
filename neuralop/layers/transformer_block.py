@@ -249,7 +249,12 @@ class TransformerDecoderBlock(nn.Module):
                 pos_src: torch.Tensor, grid point coordinates of shape [batch_size, num_src_grid_points, channels]
                 pos_emb_module: nn.Module, positional embedding module, by default None
                 pos_qry: torch.Tensor, grid point coordinates of shape [batch_size, num_sry_grid_points, channels],
-                         by default None and is set to pos_src
+                         by default None and is set to pos_src, where input and output function will be sampled on
+                         the same grid (the input grid specified by pos_src).
+                         If pos_qry is provided, the output function will be sampled on query grid whose coordinates
+                         are specified by pos_qry. This allows the output function to be sampled on arbitrary
+                         discretization.
+
         """
         u = self.lifting(u)
         if pos_qry is None:
