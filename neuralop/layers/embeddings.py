@@ -21,7 +21,6 @@ class PositionalEmbedding(nn.Module):
         return x
 
 
-# modified from https://github.com/lucidrains/x-transformers/blob/main/x_transformers/x_transformers.py
 def rotate_half(x):
     """
     Split x's channels into two equal halves.
@@ -47,6 +46,8 @@ class RotaryEmbedding(nn.Module):
     def __init__(self, dim, min_freq=1/64, scale=1.):
         """
         Applying rotary positional embedding (https://arxiv.org/abs/2104.09864) to the input feature tensor.
+        Code modified from https://github.com/lucidrains/x-transformers/blob/main/x_transformers/x_transformers.py
+
         The crux is the dot product of two rotation matrices R(theta1) and R(theta2) is equal to R(theta2 - theta1).
         """
         super().__init__()
@@ -76,8 +77,6 @@ class RotaryEmbedding(nn.Module):
                           apply_rotary_pos_emb(t_y, freqs_y)), dim=-1)
 
 
-# Gaussian random Fourier features
-# code modified from: https://github.com/ndahlquist/pytorch-fourier-feature-networks
 class GaussianFourierFeatureTransform(nn.Module):
     def __init__(self,
                  in_channels,
@@ -85,10 +84,11 @@ class GaussianFourierFeatureTransform(nn.Module):
                  scale=10,
                  learnable=False):
         """
-        An implementation of Gaussian Fourier feature mapping.
+        An implementation of Gaussian Fourier feature mapping,
+            code modified from: https://github.com/ndahlquist/pytorch-fourier-feature-networks
         "Fourier Features Let Networks Learn High Frequency Functions in Low Dimensional Domains":
-           https://arxiv.org/abs/2006.10739
-           https://people.eecs.berkeley.edu/~bmild/fourfeat/index.html
+            https://arxiv.org/abs/2006.10739
+            https://people.eecs.berkeley.edu/~bmild/fourfeat/index.html
         Given an input of size [batches, n_points, num_input_channels],
            returns a tensor of size [batches, n_points, mapping_size*2].
 
@@ -123,8 +123,6 @@ class GaussianFourierFeatureTransform(nn.Module):
         return torch.cat([torch.sin(x), torch.cos(x)], dim=-1)
 
 
-# SirenNet
-# code modified from: https://github.com/lucidrains/siren-pytorch/blob/master/siren_pytorch/siren_pytorch.py
 class Sine(nn.Module):
     def __init__(self, w0=1.):
         super().__init__()
@@ -134,7 +132,6 @@ class Sine(nn.Module):
         return torch.sin(self.w0 * x)
 
 
-# siren layer
 class Siren(nn.Module):
     def __init__(self,
                  dim_in,
@@ -145,7 +142,9 @@ class Siren(nn.Module):
                  use_bias=True,
                  activation=None):
         """
-            SIREN: https://arxiv.org/abs/2006.09661
+            code modified from:
+                 https://github.com/lucidrains/siren-pytorch/blob/master/siren_pytorch/siren_pytorch.py
+            SIREN paper: https://arxiv.org/abs/2006.09661
             The Siren layer is a linear layer followed by a sine activation function.
 
             Parameters:
@@ -186,7 +185,6 @@ class Siren(nn.Module):
         return out
 
 
-# siren network
 class SirenNet(nn.Module):
     def __init__(self,
                  dim_in,
