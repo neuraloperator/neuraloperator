@@ -16,6 +16,13 @@ def segment_csr(
     Used to reduce features over neighborhoods
     in neuralop.layers.IntegralTransform
 
+    If use_scatter is set to False or torch_scatter is not
+    properly built, segment_csr falls back to a naive PyTorch implementation
+
+    Note: the native version is mainly intended for running tests on 
+    CPU-only GitHub CI runners to get around a versioning issue. 
+    torch_scatter should be installed and built if possible. 
+
     Parameters
     ----------
     src : torch.Tensor
@@ -42,6 +49,9 @@ def segment_csr(
         return scatter_segment_csr(src, indptr, reduce=reduce)
 
     else:
+        if use_scatter:
+            print("Warning: use_scatter is True but torch_scatter is not properly built. \
+                  Defaulting to naive PyTorch implementation")
         # if batched, shape [b, n_reps, channels]
         if src.ndim == 3:
             batched = True
