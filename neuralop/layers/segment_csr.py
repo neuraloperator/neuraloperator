@@ -39,8 +39,7 @@ def segment_csr(
         raise ValueError("reduce must be one of 'mean', 'sum'")
 
     if (
-        torch.backends.cuda.is_built()
-        and importlib.util.find_spec("torch_scatter") is not None
+        importlib.util.find_spec("torch_scatter") is not None
         and use_scatter
     ):
         """only import torch_scatter when cuda is available"""
