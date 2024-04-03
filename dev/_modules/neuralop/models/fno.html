@@ -198,8 +198,11 @@
 <span class="sd">          the decomposition</span>
 <span class="sd">    decomposition_kwargs : dict, optional, default is {}</span>
 <span class="sd">        Optionaly additional parameters to pass to the tensor decomposition</span>
-<span class="sd">    domain_padding : None or float, optional</span>
+<span class="sd">    domain_padding : None, float, or List[float], optional</span>
 <span class="sd">        If not None, percentage of padding to use, by default None</span>
+<span class="sd">        To vary the percentage of padding used along each input dimension,</span>
+<span class="sd">        pass in a list of percentages e.g. [p1, p2, ..., pN] such that</span>
+<span class="sd">        p1 corresponds to the percentage of padding along dim 1, etc.</span>
 <span class="sd">    domain_padding_mode : {&#39;symmetric&#39;, &#39;one-sided&#39;}, optional</span>
 <span class="sd">        How to perform domain padding, by default &#39;one-sided&#39;</span>
 <span class="sd">    fft_norm : str, optional</span>

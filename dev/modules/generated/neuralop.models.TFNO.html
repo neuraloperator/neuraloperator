@@ -239,7 +239,10 @@ the decomposition</p></li>
 </dd>
 <dt><strong>decomposition_kwargs</strong><span class="classifier">dict, optional, default is {}</span></dt><dd><p>Optionaly additional parameters to pass to the tensor decomposition</p>
 </dd>
-<dt><strong>domain_padding</strong><span class="classifier">None or float, optional</span></dt><dd><p>If not None, percentage of padding to use, by default None</p>
+<dt><strong>domain_padding</strong><span class="classifier">None, float, or List[float], optional</span></dt><dd><p>If not None, percentage of padding to use, by default None
+To vary the percentage of padding used along each input dimension,
+pass in a list of percentages e.g. [p1, p2, …, pN] such that
+p1 corresponds to the percentage of padding along dim 1, etc.</p>
 </dd>
 <dt><strong>domain_padding_mode</strong><span class="classifier">{‘symmetric’, ‘one-sided’}, optional</span></dt><dd><p>How to perform domain padding, by default ‘one-sided’</p>
 </dd>
