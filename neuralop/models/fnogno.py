@@ -363,7 +363,6 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             neighbors=in_to_out_nb,
             x=out_p_embed,
             f_y=latent_embed,
-            batched=self.gno_batched,
         )
         # if self.gno is variable and not batched
         if out.ndim == 2:

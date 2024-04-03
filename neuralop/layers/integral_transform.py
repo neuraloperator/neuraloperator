@@ -89,7 +89,7 @@ class IntegralTransform(nn.Module):
     the same as the channels of f
     """
 
-    def forward(self, y, neighbors, x=None, f_y=None, weights=None, batched=False):
+    def forward(self, y, neighbors, x=None, f_y=None, weights=None):
         """Compute a kernel integral transform
 
         Parameters
@@ -122,12 +122,6 @@ class IntegralTransform(nn.Module):
             be some points. Then, for a Riemann sum,
             the weights are y_{j+1} - y_j. If None,
             1/|A(x)| is used.
-        batched: bool, default True
-            if batched is true, the batch dim must exist in all inputs
-            where one is specified. Otherwise no batch dim must exist
-            If the input geometry stays the same across the entire batch,
-            it is much more efficient to compute the GNO across the entire batch
-            in parallel. Otherwise, the batch size is restricted to 1 example.
 
         Output
         ----------
@@ -141,15 +135,16 @@ class IntegralTransform(nn.Module):
 
         rep_features = y[neighbors["neighbors_index"]]
 
+        # batching only matters if latent embedding values are provided
+        batched = False
         # f_y has a batch dim IFF batched=True
         if f_y is not None:
-            if batched:
-                assert f_y.ndim == 3, "Error: y must be of shape [batch, n, d3]"
+            if f_y.ndim == 3:
+                batched = True
                 batch_size = f_y.shape[0]
                 in_features = f_y[:, neighbors["neighbors_index"], :]
-
-            else:
-                assert f_y.ndim == 2, "Error: f_y must be of shape [n, d3]"
+            elif f_y.ndim == 2:
+                batched = False
                 in_features = f_y[neighbors["neighbors_index"]]
 
         num_reps = (
@@ -184,7 +179,6 @@ class IntegralTransform(nn.Module):
 
         splits = neighbors["neighbors_row_splits"]
         if batched:
-            # splits = splits.view(1,-1) # expand along batch dim if batched
             splits = splits.repeat([batch_size] + [1] * splits.ndim)
 
         out_features = segment_csr(rep_features, splits, reduce=reduction)
