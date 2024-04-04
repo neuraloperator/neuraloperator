@@ -8,6 +8,7 @@ from ..layers.spherical_convolution import SphericalConv
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
 from ..layers.mlp import MLP
+from ..layers.complex_utils import ComplexValued
 from .base_model import BaseModel
 
 class FNO(BaseModel, name='FNO'):
@@ -20,6 +21,8 @@ class FNO(BaseModel, name='FNO'):
         The dimensionality of the TFNO is inferred from ``len(n_modes)``
     hidden_channels : int
         width of the FNO (i.e. number of channels)
+    spatial_domain : str
+            "real" or "complex" data, by default = "real
     in_channels : int, optional
         Number of input channels, by default 3
     out_channels : int, optional
@@ -93,6 +96,7 @@ class FNO(BaseModel, name='FNO'):
         self,
         n_modes,
         hidden_channels,
+        spatial_domain="real",
         in_channels=3,
         out_channels=1,
         lifting_channels=256,
@@ -130,6 +134,7 @@ class FNO(BaseModel, name='FNO'):
         # When updated, change should be reflected in fno blocks
         self._n_modes = n_modes
         self.hidden_channels = hidden_channels
+        self.spatial_domain = spatial_domain
         self.lifting_channels = lifting_channels
         self.projection_channels = projection_channels
         self.in_channels = in_channels
@@ -172,6 +177,7 @@ class FNO(BaseModel, name='FNO'):
             in_channels=hidden_channels,
             out_channels=hidden_channels,
             n_modes=self.n_modes,
+            spatial_domain=self.spatial_domain,
             output_scaling_factor=output_scaling_factor,
             use_mlp=use_mlp,
             mlp_dropout=mlp_dropout,
@@ -200,30 +206,64 @@ class FNO(BaseModel, name='FNO'):
         # if lifting_channels is passed, make lifting an MLP
         # with a hidden layer of size lifting_channels
         if self.lifting_channels:
-            self.lifting = MLP(
-                in_channels=in_channels,
-                out_channels=self.hidden_channels,
-                hidden_channels=self.lifting_channels,
-                n_layers=2,
-                n_dim=self.n_dim,
-            )
+            if self.spatial_domain == "complex":
+                self.lifting = ComplexValued(
+                    MLP(
+                    in_channels=in_channels,
+                    out_channels=self.hidden_channels,
+                    hidden_channels=self.lifting_channels,
+                    n_layers=2,
+                    n_dim=self.n_dim,
+                )
+                )
+            else:
+                self.lifting = MLP(
+                    in_channels=in_channels,
+                    out_channels=self.hidden_channels,
+                    hidden_channels=self.lifting_channels,
+                    n_layers=2,
+                    n_dim=self.n_dim,
+                )
         # otherwise, make it a linear layer
         else:
-            self.lifting = MLP(
-                in_channels=in_channels,
-                out_channels=self.hidden_channels,
-                hidden_channels=self.hidden_channels,
-                n_layers=1,
+            if self.spatial_domain == "complex":
+                self.lifting = ComplexValued(
+                    MLP(
+                    in_channels=in_channels,
+                    out_channels=self.hidden_channels,
+                    hidden_channels=self.hidden_channels,
+                    n_layers=1,
+                    n_dim=self.n_dim,
+                )
+                )
+            else:
+                self.lifting = MLP(
+                    in_channels=in_channels,
+                    out_channels=self.hidden_channels,
+                    hidden_channels=self.hidden_channels,
+                    n_layers=1,
+                    n_dim=self.n_dim,
+                )
+        if self.spatial_domain == "complex":
+            self.projection = ComplexValued(
+                MLP(
+                in_channels=self.hidden_channels,
+                out_channels=out_channels,
+                hidden_channels=self.projection_channels,
+                n_layers=2,
                 n_dim=self.n_dim,
+                non_linearity=non_linearity,
+                )
             )
-        self.projection = MLP(
-            in_channels=self.hidden_channels,
-            out_channels=out_channels,
-            hidden_channels=self.projection_channels,
-            n_layers=2,
-            n_dim=self.n_dim,
-            non_linearity=non_linearity,
-        )
+        else:
+            self.projection = MLP(
+                in_channels=self.hidden_channels,
+                out_channels=out_channels,
+                hidden_channels=self.projection_channels,
+                n_layers=2,
+                n_dim=self.n_dim,
+                non_linearity=non_linearity,
+            )
 
     def forward(self, x, output_shape=None, **kwargs):
         """TFNO's forward pass

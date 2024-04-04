@@ -137,3 +137,44 @@ def test_fno_superresolution(output_scaling_factor):
     factor = prod(output_scaling_factor)
 
     assert list(out.shape) == [batch_size, 1] + [int(round(factor * s)) for s in size]
+
+@pytest.mark.parametrize('spatial_domain', ["real", "complex"])
+def test_fno_real_and_complex(spatial_domain):
+    device = "cpu"
+    s = 16
+    modes = 5
+    hidden_channels = 15
+    fc_channels = 32
+    batch_size = 3
+    n_layers = 3
+    use_mlp = False
+    n_dim = 2
+    rank = 0.2
+    size = (s,) * n_dim
+    n_modes = (modes,) * n_dim
+
+    model = FNO(
+        n_modes,
+        hidden_channels,
+        in_channels=3,
+        out_channels=1,
+        factorization="cp",
+        implementation="reconstructed",
+        rank=rank,
+        n_layers=n_layers,
+        use_mlp=use_mlp,
+        fc_channels=fc_channels,
+        spatial_domain=spatial_domain,
+    ).to(device)
+
+    if spatial_domain == "real":
+        input_type = torch.float
+    elif spatial_domain == "complex":
+        input_type = torch.cfloat
+
+    in_data = torch.randn(batch_size, 3, *size, dtype=input_type).to(device)
+    # Test forward pass
+    out = model(in_data)
+
+    assert in_data.dtype == input_type
+    assert out.dtype == input_type
