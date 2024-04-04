@@ -115,7 +115,7 @@ class IntegralTransform(nn.Module):
             on the points y. The kernel is assumed diagonal
             hence its output shape must be d3 for the transforms
             (b) or (d). If None, (a) is computed.
-        weights : torch.Tensor of shape [batch, n] or [n,], default None
+        weights : torch.Tensor of shape [n,], default None
             Weights for each point y proprtional to the
             volume around f(y) being integrated. For example,
             suppose d1=1 and let y_1 < y_2 < ... < y_{n+1}
@@ -135,7 +135,7 @@ class IntegralTransform(nn.Module):
 
         rep_features = y[neighbors["neighbors_index"]]
 
-        # batching only matters if latent embedding values are provided
+        # batching only matters if f_y (latent embedding) values are provided
         batched = False
         # f_y has a batch dim IFF batched=True
         if f_y is not None:
@@ -172,7 +172,13 @@ class IntegralTransform(nn.Module):
             rep_features = rep_features * in_features
 
         if weights is not None:
-            rep_features = weights[neighbors["neighbors_index"]] * rep_features
+            nbr_weights = weights[neighbors["neighbors_index"]]
+            # repeat weights along batch dim if batched
+            if batched:
+                nbr_weights = nbr_weights.repeat(
+                    [batch_size] + [1] * nbr_weights.ndim
+                )
+            rep_features = nbr_weights * rep_features
             reduction = "sum"
         else:
             reduction = "mean"
