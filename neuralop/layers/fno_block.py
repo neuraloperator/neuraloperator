@@ -222,7 +222,7 @@ class FNOBlocks(nn.Module):
     def forward(self, x, index=0, output_shape=None):
 
        # Handle case of complex-valued x
-        cplx = x.is_complex()
+        complex_valued = x.is_complex()
 
         if self.preactivation:
             return self.forward_with_preactivation(x, index, output_shape)
@@ -231,7 +231,7 @@ class FNOBlocks(nn.Module):
 
     def forward_with_postactivation(self, x, index=0, output_shape=None):
 
-        cplx = x.is_complex()
+        complex_valued = x.is_complex()
 
         x_skip_fno = self.fno_skips[index](x)
         x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
@@ -241,7 +241,7 @@ class FNOBlocks(nn.Module):
             x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
-            if cplx:
+            if complex_valued:
                 x = ctanh(x)
             else:
                 x = torch.tanh(x)
@@ -270,7 +270,7 @@ class FNOBlocks(nn.Module):
     def forward_with_preactivation(self, x, index=0, output_shape=None):
 
 
-        cplx = x.is_complex()
+        complex_valued = x.is_complex()
 
         # Apply non-linear activation (and norm)
         # before this block's convolution/forward pass:
@@ -287,7 +287,7 @@ class FNOBlocks(nn.Module):
             x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
                 
         if self.stabilizer == "tanh":
-            if cplx:
+            if complex_valued:
                 x = ctanh(x)
             else:
                 x = torch.tanh(x)

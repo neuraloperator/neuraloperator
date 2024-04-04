@@ -430,9 +430,7 @@ class SpectralConv(BaseSpectralConv):
         tensorized_spectral_conv(x)
         """
 
-        cplx = x.is_complex()
-
-        print(cplx)
+        complex_valued = x.is_complex()
 
         batchsize, channels, *mode_sizes = x.shape
 
@@ -440,7 +438,7 @@ class SpectralConv(BaseSpectralConv):
         # If the data is real-valued, its FFT will be skew-symmetric
         # along one axis, so we only need to take the first half (plus one)
         # of the last dimension of the transformed data
-        if not cplx:
+        if not complex_valued:
             fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient
 
         fft_dims = list(range(-self.order, 0))
@@ -449,7 +447,7 @@ class SpectralConv(BaseSpectralConv):
             x = x.half()
 
         # If x takes complex values, compute the full N-dim FFT
-        if cplx:
+        if complex_valued:
             x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
         else:
             # Otherwise compute the real-valued fft.
@@ -473,7 +471,7 @@ class SpectralConv(BaseSpectralConv):
         starts = [(max_modes - min(size, n_mode)) for (size, n_mode, max_modes) in zip(fft_size, self.n_modes, self.max_n_modes)]
         slices_w =  [slice(None), slice(None)] # Batch_size, channels
 
-        if cplx:
+        if complex_valued:
             slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
             weight = self._get_weight(indices)[slices_w]
 
@@ -498,7 +496,7 @@ class SpectralConv(BaseSpectralConv):
         if output_shape is not None:
             mode_sizes = output_shape
 
-        if cplx:
+        if complex_valued:
             if self.order > 1:
                 out_fft = torch.fft.fftshift(out_fft, dim=fft_dims)
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
@@ -561,13 +559,13 @@ class SpectralConv1d(SpectralConv):
 
     def forward(self, x, indices=0):
 
-        cplx = x.is_complex()
+        complex_valued = x.is_complex()
 
         batchsize, channels, width = x.shape
 
 
         # If x takes complex values, compute the full N-dim FFT
-        if cplx:
+        if complex_valued:
             x = torch.fft.fft(x, norm=self.fft_norm)
             out_fft = torch.zeros(
                 [batchsize, self.out_channels, width],
@@ -595,7 +593,7 @@ class SpectralConv1d(SpectralConv):
         if self.output_scaling_factor is not None:
             width = round(width * self.output_scaling_factor[0])
 
-        if cplx:
+        if complex_valued:
             x = torch.fft.ifft(out_fft, n=width, norm=self.fft_norm)
         else:
             x = torch.fft.irfft(out_fft, n=width, norm=self.fft_norm)
@@ -615,11 +613,11 @@ class SpectralConv2d(SpectralConv):
 
     def forward(self, x, indices=0):
 
-        cplx = x.is_complex()
+        complex_valued = x.is_complex()
 
         batchsize, channels, height, width = x.shape
 
-        if cplx:
+        if complex_valued:
             x = torch.fft.fft2(x.float(), norm=self.fft_norm, dim=(-2, -1))
             out_fft = torch.zeros(
                 [batchsize, self.out_channels, height, width],
@@ -665,7 +663,7 @@ class SpectralConv2d(SpectralConv):
             width = round(width * self.output_scaling_factor[indices][0])
             height = round(height * self.output_scaling_factor[indices][1])
 
-        if cplx:
+        if complex_valued:
             x = torch.fft.ifft2(
             out_fft, s=(height, width), dim=(-2, -1), norm=self.fft_norm
             )
@@ -689,11 +687,11 @@ class SpectralConv3d(SpectralConv):
 
     def forward(self, x, indices=0):
 
-        cplx = x.is_complex()
+        complex_valued = x.is_complex()
 
         batchsize, channels, height, width, depth = x.shape
 
-        if cplx:
+        if complex_valued:
             x = torch.fft.fftn(x.float(), norm=self.fft_norm, dim=[-3, -2, -1])
             out_fft = torch.zeros(
                 [batchsize, self.out_channels, height, width, depth],
@@ -764,7 +762,7 @@ class SpectralConv3d(SpectralConv):
             height = round(height * self.output_scaling_factor[1])
             depth = round(depth * self.output_scaling_factor[2])
 
-        if cplx:
+        if complex_valued:
             x = torch.fft.ifftn(out_fft, s=(height, width, depth), dim=[-3, -2, -1], norm=self.fft_norm)
         else:
             x = torch.fft.irfftn(out_fft, s=(height, width, depth), dim=[-3, -2, -1], norm=self.fft_norm)
