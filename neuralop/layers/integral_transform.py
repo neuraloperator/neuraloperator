@@ -172,6 +172,7 @@ class IntegralTransform(nn.Module):
             rep_features = rep_features * in_features
 
         if weights is not None:
+            assert weights.ndim == 1, "Weights must be of dimension 1 in all cases"
             nbr_weights = weights[neighbors["neighbors_index"]]
             # repeat weights along batch dim if batched
             if batched:
