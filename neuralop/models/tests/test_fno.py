@@ -147,7 +147,7 @@ def test_fno_real_and_complex(spatial_domain):
     fc_channels = 32
     batch_size = 3
     n_layers = 3
-    use_mlp = False
+    use_mlp = True
     n_dim = 2
     rank = 0.2
     size = (s,) * n_dim
