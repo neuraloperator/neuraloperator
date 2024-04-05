@@ -5,6 +5,7 @@ import torch
 from tensorly import tenalg
 from configmypy import Bunch
 
+import neuralop
 from neuralop import TFNO
 from neuralop.models import FNO
 
@@ -139,7 +140,8 @@ def test_fno_superresolution(output_scaling_factor):
     assert list(out.shape) == [batch_size, 1] + [int(round(factor * s)) for s in size]
 
 @pytest.mark.parametrize('spatial_domain', ["real", "complex"])
-def test_fno_real_and_complex(spatial_domain):
+@pytest.mark.parametrize('n_dim', [1, 2, 3])
+def test_fno_real_and_complex(spatial_domain, n_dim):
     device = "cpu"
     s = 16
     modes = 5
@@ -148,7 +150,6 @@ def test_fno_real_and_complex(spatial_domain):
     batch_size = 3
     n_layers = 3
     use_mlp = True
-    n_dim = 2
     rank = 0.2
     size = (s,) * n_dim
     n_modes = (modes,) * n_dim
@@ -178,3 +179,64 @@ def test_fno_real_and_complex(spatial_domain):
 
     assert in_data.dtype == input_type
     assert out.dtype == input_type
+
+
+    FNO_model = getattr(neuralop.models, f"FNO{n_dim}d")
+    if n_dim == 1:
+        model = FNO_model(
+            modes,
+            hidden_channels,
+            in_channels=3,
+            out_channels=1,
+            factorization="cp",
+            implementation="reconstructed",
+            rank=rank,
+            n_layers=n_layers,
+            use_mlp=use_mlp,
+            fc_channels=fc_channels,
+            spatial_domain=spatial_domain,
+        ).to(device)
+    elif n_dim == 2:
+         model = FNO_model(
+            modes,
+            modes,
+            hidden_channels,
+            in_channels=3,
+            out_channels=1,
+            factorization="cp",
+            implementation="reconstructed",
+            rank=rank,
+            n_layers=n_layers,
+            use_mlp=use_mlp,
+            fc_channels=fc_channels,
+            spatial_domain=spatial_domain,
+        ).to(device)
+    elif n_dim == 3:
+         model = FNO_model(
+            modes,
+            modes,
+            modes,
+            hidden_channels,
+            in_channels=3,
+            out_channels=1,
+            factorization="cp",
+            implementation="reconstructed",
+            rank=rank,
+            n_layers=n_layers,
+            use_mlp=use_mlp,
+            fc_channels=fc_channels,
+            spatial_domain=spatial_domain,
+        ).to(device)
+
+    if spatial_domain == "real":
+        input_type = torch.float
+    elif spatial_domain == "complex":
+        input_type = torch.cfloat
+
+    in_data = torch.randn(batch_size, 3, *size, dtype=input_type).to(device)
+    # Test forward pass
+    out = model(in_data)
+
+    assert in_data.dtype == input_type
+    assert out.dtype == input_type
+

@@ -359,6 +359,7 @@ class FNO1d(FNO):
         super().__init__(
             n_modes=(n_modes_height,),
             hidden_channels=hidden_channels,
+            spatial_domain=spatial_domain,
             in_channels=in_channels,
             out_channels=out_channels,
             lifting_channels=lifting_channels,
@@ -439,6 +440,7 @@ class FNO2d(FNO):
         super().__init__(
             n_modes=(n_modes_height, n_modes_width),
             hidden_channels=hidden_channels,
+            spatial_domain=spatial_domain,
             in_channels=in_channels,
             out_channels=out_channels,
             lifting_channels=lifting_channels,
@@ -523,6 +525,7 @@ class FNO3d(FNO):
         super().__init__(
             n_modes=(n_modes_height, n_modes_width, n_modes_depth),
             hidden_channels=hidden_channels,
+            spatial_domain=spatial_domain,
             in_channels=in_channels,
             out_channels=out_channels,
             lifting_channels=lifting_channels,
