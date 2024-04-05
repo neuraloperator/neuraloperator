@@ -26,6 +26,9 @@ def test_UNO(input_shape):
     print(f"Gradient Calculated in {t}.")
     n_unused_params = 0
 
+    # test horizontal_skips_map
+    assert model.horizontal_skips_map == horizontal_skips_map
+
     for name, param in model.named_parameters():
         if param.grad is None:
             n_unused_params += 1
@@ -55,6 +58,9 @@ def test_UNO(input_shape):
     t = time.time() - t1
     print(f"Gradient Calculated in {t}.")
     n_unused_params = 0
+
+    # test horizontal_skips_map
+    assert model.horizontal_skips_map == {4:0,3:1}
 
     for name, param in model.named_parameters():
         if param.grad is None:

@@ -88,6 +88,28 @@ def test_SpectralConv_output_scaling_factor():
         assert(list(res.shape[2:]) == [m*2 for m in size[:dim]])
 
 
+@pytest.mark.parametrize('spatial_domain', ["real", "complex"])
+def test_SpectralConv_complex(spatial_domain):
+    """Test SpectralConv when input is real or complex
+    """
+    modes = (4, 4, 4, 4)
+    size = [6]*4
+    for dim in [1, 2, 3, 4]:
+        conv = SpectralConv(3, 3, modes[:dim], n_layers=1, spatial_domain=spatial_domain)
+    
+        if spatial_domain == "real":
+            input_type = torch.float
+        elif spatial_domain == "complex":
+            input_type = torch.cfloat
+
+        x = torch.randn(2, 3, *size[:dim], dtype=input_type)
+        res = conv(x)
+
+        assert x.dtype == input_type
+        assert res.dtype == input_type
+        assert x.shape == res.shape
+
+
 @pytest.mark.parametrize('factorization', ['ComplexCP', 'ComplexTucker'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
 def test_SpectralConv3D(factorization, implementation):
