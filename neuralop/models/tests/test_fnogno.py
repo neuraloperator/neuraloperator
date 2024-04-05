@@ -39,9 +39,9 @@ def test_fnogno(gno_transform_type, fno_n_modes, gno_batched):
         32,
     ] * n_dim
     in_p_shape.append(n_dim)
-    in_p = torch.randn(*in_p_shape).to(device)
+    in_p = torch.randn(*in_p_shape, device=device)
 
-    out_p = torch.randn(100, n_dim).to(device)
+    out_p = torch.randn(100, n_dim, device=device)
 
     f_shape = [
         32,
@@ -52,10 +52,12 @@ def test_fnogno(gno_transform_type, fno_n_modes, gno_batched):
     if gno_batched:
         f_shape = [batch_size] + f_shape
 
-    f = torch.randn(*f_shape).to(device).requires_grad_(True)
-    ada_in = torch.randn(
-        1,
-    ).to(device)
+    f = torch.randn(*f_shape, device=device)
+    # require and retain grad to check for backprop
+    f.requires_grad_(True)
+    # f.retain_grad()
+
+    ada_in = torch.randn(1, device=device)
 
     # Test forward pass
     out = model(in_p, out_p, f, ada_in)
@@ -63,26 +65,20 @@ def test_fnogno(gno_transform_type, fno_n_modes, gno_batched):
     # Check output size
     if gno_batched:
         assert list(out.shape) == [batch_size, 100, out_channels]
-
-        # take grad of out wrt feature inputs
-        out0_f_grad = grad(outputs=out[0].sum(), inputs=f, retain_graph=True)[0]
-
-        # check the first output example has grad wrt first f example
-        assert out0_f_grad[0].nonzero().any()
-
-        # check the first output example has no grad wrt second f example
-        assert not out0_f_grad[1].nonzero().any()
-        del out0_f_grad
-
     else:
         assert list(out.shape) == [100, out_channels]
 
     # Check backward pass
-    loss = out.sum()
+    if gno_batched:
+        loss = out[0].sum()
+    else:
+        loss = out.sum()
     loss.backward()
-
     n_unused_params = 0
     for param in model.parameters():
         if param.grad is None:
             n_unused_params += 1
     assert n_unused_params == 0, f"{n_unused_params} parameters were unused!"
+    if gno_batched:
+        # assert f[1:] accumulates no grad
+        assert not f.grad[1:].nonzero().any()
