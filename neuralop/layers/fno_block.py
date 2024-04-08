@@ -149,9 +149,7 @@ class FNOBlocks(nn.Module):
             else:
                 self.norm = nn.ModuleList(
                     [
-                        FlattenedInstanceNorm3d(
-                            num_features=self.out_channels
-                        )
+                        FlattenedInstanceNorm3d(num_features=self.out_channels)
                         for _ in range(n_layers * self.n_norms)
                     ]
                 )
@@ -210,7 +208,9 @@ class FNOBlocks(nn.Module):
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
-            x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
+            x_skip_mlp = self.convs[index].transform(
+                x_skip_mlp, output_shape=output_shape
+            )
 
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
@@ -249,7 +249,9 @@ class FNOBlocks(nn.Module):
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
-            x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
+            x_skip_mlp = self.convs[index].transform(
+                x_skip_mlp, output_shape=output_shape
+            )
 
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
