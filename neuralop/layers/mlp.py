@@ -58,11 +58,16 @@ class MLP(nn.Module):
                 self.fcs.append(nn.Conv1d(self.hidden_channels, self.hidden_channels, 1))
 
     def forward(self, x):
-        # if x is 4D, reshape into 3d
+        # if x's data is >1d, reshape into 1d b, c, x
         reshaped = False
         size = list(x.shape)
-        if x.ndim > 3:  # batch, channels, x, ... extra dims
-            x = x.view(*size[:2], -1)  # flatten last data dims
+        if x.ndim > 3:  # batch, channels, x1, x2... extra dims
+            # flatten last data dims
+            if x.is_contiguous():
+                # view only works on contiguous tensors but is better
+                x = x.view(*size[:2], -1) 
+            else:
+                x = x.reshape((*size[:2], -1)) 
             reshaped = True
 
         for i, fc in enumerate(self.fcs):
@@ -74,7 +79,12 @@ class MLP(nn.Module):
 
         # if x was an Nd tensor reshaped into 3d, undo the reshaping
         if reshaped:
-            x = x.view(size[0], self.out_channels, *size[2:])
+            # same logic as above: only contiguous tensors can call .view()
+            if x.is_contiguous:
+                x = x.view(size[0], self.out_channels, *size[2:])
+            else:
+                x = x.reshape((size[0], self.out_channels, *size[2:]))
+
         return x
 
 

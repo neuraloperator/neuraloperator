@@ -112,11 +112,10 @@ class Flattened1dConv(nn.Module):
                               kernel_size=kernel_size,
                               bias=bias)
     def forward(self, x):
-        # x.shape: b, c, x1, x2, x3, ..., x_ndim > 3
-        ndim = x.ndim
+        # x.shape: b, c, x1, ..., xn x_ndim > 1
         size = list(x.shape)
-        # flatten everything past 3rd dimension
-        x = x.view(*size[:4], -1)
+        # flatten everything past 1st data dim
+        x = x.view(*size[:2], -1)
         x = self.conv(x)
         # reshape x into an Nd tensor b, c, x1, x2, ...
         x = x.view(size[0], self.conv.out_channels, *size[2:])
