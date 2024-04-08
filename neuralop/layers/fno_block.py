@@ -5,7 +5,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from .mlp import MLP
-from .normalization_layers import AdaIN, FlattenedInstanceNorm3d
+from .normalization_layers import AdaIN, FlattenedInstanceNorm1d
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
 from ..utils import validate_scaling_factor
@@ -137,19 +137,11 @@ class FNOBlocks(nn.Module):
         if norm is None:
             self.norm = None
         elif norm == "instance_norm":
-            if self.n_dim <= 3:
-                self.norm = nn.ModuleList(
+            self.norm = nn.ModuleList(
                     [
-                        getattr(nn, f"InstanceNorm{self.n_dim}d")(
+                        FlattenedInstanceNorm1d(
                             num_features=self.out_channels
                         )
-                        for _ in range(n_layers * self.n_norms)
-                    ]
-                )
-            else:
-                self.norm = nn.ModuleList(
-                    [
-                        FlattenedInstanceNorm3d(num_features=self.out_channels)
                         for _ in range(n_layers * self.n_norms)
                     ]
                 )
@@ -208,9 +200,7 @@ class FNOBlocks(nn.Module):
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
-            x_skip_mlp = self.convs[index].transform(
-                x_skip_mlp, output_shape=output_shape
-            )
+            x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
@@ -249,9 +239,7 @@ class FNOBlocks(nn.Module):
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
-            x_skip_mlp = self.convs[index].transform(
-                x_skip_mlp, output_shape=output_shape
-            )
+            x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
             x = torch.tanh(x)

@@ -35,18 +35,10 @@ def skip_connection(
             n_dim=n_dim,
         )
     elif skip_type.lower() == "linear":
-        if n_dim <= 3:
-            return getattr(nn, f"Conv{n_dim}d")(
-                in_channels=in_features,
-                out_channels=out_features,
-                kernel_size=1,
-                bias=bias,
-            )
-        else:
-            return Flattened3dConv(in_channels=in_features,
-                                   out_channels=out_features,
-                                   kernel_size=1,
-                                   bias=bias,)
+        return Flattened1dConv(in_channels=in_features,
+                               out_channels=out_features,
+                               kernel_size=1,
+                               bias=bias,)
     elif skip_type.lower() == "identity":
         return nn.Identity()
     else:
@@ -96,26 +88,26 @@ class SoftGating(nn.Module):
         else:
             return self.weight * x
 
-class Flattened3dConv(nn.Module):
+class Flattened1dConv(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, kernel_size, bias=False):
         """Flattened3dConv is a Conv-based skip layer for
-        input tensors of ndim > 3 that flattens all dimensions 
-        past the second into the third dimension, applies a 3d conv 
+        input tensors of ndim > 3 (batch, channels, d1, ...) that flattens all dimensions 
+        past the batch and channel dims into one dimension, applies the Conv,
         and un-flattens.
 
         Parameters
         ----------
         in_channels : int
-            in_channels of Conv3d
+            in_channels of Conv1d
         out_channels : int
-            out_channels of Conv3d
+            out_channels of Conv1d
         kernel_size : int
-            kernel_size of Conv3d
+            kernel_size of Conv1d
         bias : bool, optional
             bias of Conv3d, by default False
         """
         super().__init__()
-        self.conv = nn.Conv3d(in_channels=in_channels,
+        self.conv = nn.Conv1d(in_channels=in_channels,
                               out_channels=out_channels,
                               kernel_size=kernel_size,
                               bias=bias)

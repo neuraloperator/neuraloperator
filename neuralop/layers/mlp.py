@@ -44,27 +44,25 @@ class MLP(nn.Module):
             if dropout > 0.0
             else None
         )
-
-        if n_dim > 3:
-            n_dim = 3
-        Conv = getattr(nn, f"Conv{n_dim}d")
+        
+        # use nn.Conv1d for everything and roll data along the 1st data dim
         self.fcs = nn.ModuleList()
         for i in range(n_layers):
             if i == 0 and i == (n_layers - 1):
-                self.fcs.append(Conv(self.in_channels, self.out_channels, 1))
+                self.fcs.append(nn.Conv1d(self.in_channels, self.out_channels, 1))
             elif i == 0:
-                self.fcs.append(Conv(self.in_channels, self.hidden_channels, 1))
+                self.fcs.append(nn.Conv1d(self.in_channels, self.hidden_channels, 1))
             elif i == (n_layers - 1):
-                self.fcs.append(Conv(self.hidden_channels, self.out_channels, 1))
+                self.fcs.append(nn.Conv1d(self.hidden_channels, self.out_channels, 1))
             else:
-                self.fcs.append(Conv(self.hidden_channels, self.hidden_channels, 1))
+                self.fcs.append(nn.Conv1d(self.hidden_channels, self.hidden_channels, 1))
 
     def forward(self, x):
         # if x is 4D, reshape into 3d
         reshaped = False
         size = list(x.shape)
-        if x.ndim > 5:  # batch, channels, x, y, z, ...
-            x = x.view(*size[:4], -1)  # flatten last data dims
+        if x.ndim > 3:  # batch, channels, x, ... extra dims
+            x = x.view(*size[:2], -1)  # flatten last data dims
             reshaped = True
 
         for i, fc in enumerate(self.fcs):
