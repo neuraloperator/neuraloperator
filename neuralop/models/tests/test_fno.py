@@ -15,7 +15,7 @@ tenalg.set_backend("einsum")
     "factorization", ["ComplexDense", "ComplexTucker", "ComplexCP", "ComplexTT"]
 )
 @pytest.mark.parametrize("implementation", ["factorized", "reconstructed"])
-@pytest.mark.parametrize("n_dim", [4]) # change back to 1,2,3,4
+@pytest.mark.parametrize("n_dim", [1, 2, 3, 4])
 @pytest.mark.parametrize("fno_block_precision", ["full", "half", "mixed"])
 @pytest.mark.parametrize("stabilizer", [None, "tanh"])
 @pytest.mark.parametrize("lifting_channels", [None, 256])
