@@ -29,25 +29,19 @@ class AdaIN(nn.Module):
 
         return nn.functional.group_norm(x, self.in_channels, weight, bias, eps=self.eps)
 
-class FlattenedInstanceNorm1d(nn.Module):
-    def __init__(self, num_features: int, **kwargs):
-        """FlattenedInstanceNorm1d takes 2d or greater dim
-            tensors, flattens all data dimensions past 1st along the 1st data dim,
-            applies 1d instance norm and reshapes.
+class InstanceNorm(nn.Module):
+    def __init__(self, **kwargs):
+        """InstanceNorm applies dim-agnostic instance normalization
+        to data as an nn.Module. 
 
-
-        Parameters
-        ----------
-        num_features : int
-            number of channels in instance norm
+        kwargs: additional parameters to pass to instance_norm() for use as a module
+        e.g. eps, affine
         """
         super().__init__()
-        self.norm = nn.InstanceNorm1d(num_features=num_features, **kwargs)
+        self.kwargs = kwargs
     
     def forward(self, x):
         size = x.shape
-        x = x.view(*size[:2], -1) # flatten everything past 3rd dim
-        x = self.norm(x)
-        # un-flatten last dims
-        x = x.view(size[0], self.norm.num_features, *size[2:])
+        x = torch.nn.functional.instance_norm(x, **self.kwargs)
+        assert x.shape == size
         return x

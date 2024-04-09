@@ -5,7 +5,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from .mlp import MLP
-from .normalization_layers import AdaIN, FlattenedInstanceNorm1d
+from .normalization_layers import AdaIN, InstanceNorm
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
 from ..utils import validate_scaling_factor
@@ -139,7 +139,7 @@ class FNOBlocks(nn.Module):
         elif norm == "instance_norm":
             self.norm = nn.ModuleList(
                     [
-                        FlattenedInstanceNorm1d(num_features=self.out_channels)
+                        InstanceNorm()
                         for _ in range(n_layers * self.n_norms)
                     ]
                 )
