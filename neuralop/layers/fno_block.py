@@ -139,9 +139,7 @@ class FNOBlocks(nn.Module):
         elif norm == "instance_norm":
             self.norm = nn.ModuleList(
                     [
-                        FlattenedInstanceNorm1d(
-                            num_features=self.out_channels
-                        )
+                        FlattenedInstanceNorm1d(num_features=self.out_channels)
                         for _ in range(n_layers * self.n_norms)
                     ]
                 )

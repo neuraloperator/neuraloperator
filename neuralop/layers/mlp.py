@@ -45,7 +45,7 @@ class MLP(nn.Module):
             else None
         )
         
-        # use nn.Conv1d for everything and roll data along the 1st data dim
+        # we use nn.Conv1d for everything and roll data along the 1st data dim
         self.fcs = nn.ModuleList()
         for i in range(n_layers):
             if i == 0 and i == (n_layers - 1):
@@ -58,16 +58,13 @@ class MLP(nn.Module):
                 self.fcs.append(nn.Conv1d(self.hidden_channels, self.hidden_channels, 1))
 
     def forward(self, x):
-        # if x's data is >1d, reshape into 1d b, c, x
         reshaped = False
         size = list(x.shape)
-        if x.ndim > 3:  # batch, channels, x1, x2... extra dims
-            # flatten last data dims
-            if x.is_contiguous():
-                # view only works on contiguous tensors but is better
-                x = x.view(*size[:2], -1) 
-            else:
-                x = x.reshape((*size[:2], -1)) 
+        if x.ndim > 3:  
+            # batch, channels, x1, x2... extra dims
+            # .reshape() is preferable but .view()
+            # cannot be called on non-contiguous tensors
+            x = x.reshape((*size[:2], -1)) 
             reshaped = True
 
         for i, fc in enumerate(self.fcs):
@@ -77,13 +74,10 @@ class MLP(nn.Module):
             if self.dropout is not None:
                 x = self.dropout[i](x)
 
-        # if x was an Nd tensor reshaped into 3d, undo the reshaping
+        # if x was an N-d tensor reshaped into 1d, undo the reshaping
+        # same logic as above: .reshape() handles contiguous tensors as well
         if reshaped:
-            # same logic as above: only contiguous tensors can call .view()
-            if x.is_contiguous:
-                x = x.view(size[0], self.out_channels, *size[2:])
-            else:
-                x = x.reshape((size[0], self.out_channels, *size[2:]))
+            x = x.reshape((size[0], self.out_channels, *size[2:]))
 
         return x
 

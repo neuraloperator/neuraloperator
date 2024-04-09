@@ -30,7 +30,7 @@ class AdaIN(nn.Module):
         return nn.functional.group_norm(x, self.in_channels, weight, bias, eps=self.eps)
 
 class FlattenedInstanceNorm1d(nn.Module):
-    def __init__(self, num_features: int):
+    def __init__(self, num_features: int, **kwargs):
         """FlattenedInstanceNorm1d takes 2d or greater dim
             tensors, flattens all data dimensions past 1st along the 1st data dim,
             applies 1d instance norm and reshapes.
@@ -42,7 +42,7 @@ class FlattenedInstanceNorm1d(nn.Module):
             number of channels in instance norm
         """
         super().__init__()
-        self.norm = nn.InstanceNorm1d(num_features=num_features)
+        self.norm = nn.InstanceNorm1d(num_features=num_features, **kwargs)
     
     def forward(self, x):
         size = x.shape
