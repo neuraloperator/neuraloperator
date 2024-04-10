@@ -5,14 +5,14 @@ from ..fno_block import FNOBlocks
 def test_FNOBlock_output_scaling_factor():
     """Test FNOBlocks with upsampled or downsampled outputs
     """
-    max_n_modes = [8, 8, 8]
-    n_modes = [4, 4, 4]
+    max_n_modes = [8, 8, 8, 8]
+    n_modes = [4, 4, 4, 4]
     
-    size = [10]*3
+    size = [10]*4
     mlp_dropout=0
     mlp_expansion=0.5
     mlp_skip='linear'
-    for dim in [1, 2, 3]:
+    for dim in [1, 2, 3, 4]:
         block = FNOBlocks(
             3, 4, max_n_modes[:dim], max_n_modes=max_n_modes[:dim], n_layers=1)
         

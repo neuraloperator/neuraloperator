@@ -28,3 +28,20 @@ class AdaIN(nn.Module):
         weight, bias = torch.split(self.mlp(self.embedding), self.in_channels, dim=0)
 
         return nn.functional.group_norm(x, self.in_channels, weight, bias, eps=self.eps)
+
+class InstanceNorm(nn.Module):
+    def __init__(self, **kwargs):
+        """InstanceNorm applies dim-agnostic instance normalization
+        to data as an nn.Module. 
+
+        kwargs: additional parameters to pass to instance_norm() for use as a module
+        e.g. eps, affine
+        """
+        super().__init__()
+        self.kwargs = kwargs
+    
+    def forward(self, x):
+        size = x.shape
+        x = torch.nn.functional.instance_norm(x, **self.kwargs)
+        assert x.shape == size
+        return x
