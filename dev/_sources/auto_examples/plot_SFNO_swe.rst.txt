@@ -186,19 +186,21 @@ Creating the losses
           )
         )
         (fno_skips): ModuleList(
-          (0-3): 4 x Conv2d(32, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (0-3): 4 x Flattened1dConv(
+            (conv): Conv1d(32, 32, kernel_size=(1,), stride=(1,), bias=False)
+          )
         )
       )
       (lifting): MLP(
         (fcs): ModuleList(
-          (0): Conv2d(3, 256, kernel_size=(1, 1), stride=(1, 1))
-          (1): Conv2d(256, 32, kernel_size=(1, 1), stride=(1, 1))
+          (0): Conv1d(3, 256, kernel_size=(1,), stride=(1,))
+          (1): Conv1d(256, 32, kernel_size=(1,), stride=(1,))
         )
       )
       (projection): MLP(
         (fcs): ModuleList(
-          (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1))
-          (1): Conv2d(64, 3, kernel_size=(1, 1), stride=(1, 1))
+          (0): Conv1d(32, 64, kernel_size=(1,), stride=(1,))
+          (1): Conv1d(64, 3, kernel_size=(1,), stride=(1,))
         )
       )
     )
@@ -220,13 +222,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fd2d078a0d0>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f1cd6201040>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.LpLoss object at 0x7fd2d078afd0>
+     * Train: <neuralop.losses.data_losses.LpLoss object at 0x7f1cfb91d970>
 
-     * Test: {'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fd2d078afd0>}
+     * Test: {'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f1cfb91d970>}
 
 
 
@@ -288,7 +290,7 @@ Actually train the model on our small Darcy-Flow dataset
  .. code-block:: none
 
 
-    {'(64, 128)_l2': 2.399967727661133}
+    {'(64, 128)_l2': 2.4053470993041994}
 
 
 
@@ -359,7 +361,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 23.186 seconds)
+   **Total running time of the script:** (1 minutes 21.667 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_SFNO_swe.py:

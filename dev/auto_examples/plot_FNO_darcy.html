@@ -241,19 +241,21 @@ to train a Tensorized Fourier-Neural Operator</p>
       )
     )
     (fno_skips): ModuleList(
-      (0-3): 4 x Conv2d(32, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (0-3): 4 x Flattened1dConv(
+        (conv): Conv1d(32, 32, kernel_size=(1,), stride=(1,), bias=False)
+      )
     )
   )
   (lifting): MLP(
     (fcs): ModuleList(
-      (0): Conv2d(3, 256, kernel_size=(1, 1), stride=(1, 1))
-      (1): Conv2d(256, 32, kernel_size=(1, 1), stride=(1, 1))
+      (0): Conv1d(3, 256, kernel_size=(1,), stride=(1,))
+      (1): Conv1d(256, 32, kernel_size=(1,), stride=(1,))
     )
   )
   (projection): MLP(
     (fcs): ModuleList(
-      (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1))
-      (1): Conv2d(64, 1, kernel_size=(1, 1), stride=(1, 1))
+      (0): Conv1d(32, 64, kernel_size=(1,), stride=(1,))
+      (1): Conv1d(64, 1, kernel_size=(1,), stride=(1,))
     )
   )
 )
@@ -275,13 +277,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fd2d8ca7490&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f1cfb90f250&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fd2f5d19f10&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f1ce0715d90&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fd2f5d19f10&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fd2d8cb17c0&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f1ce0715d90&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f1ce0715a90&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -308,7 +310,7 @@ self.overrides_loss=False
               <span class="n">eval_losses</span><span class="o">=</span><span class="n">eval_losses</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{&#39;32_h1&#39;: 0.2922632598876953, &#39;32_l2&#39;: 0.18597671508789063}
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{&#39;32_h1&#39;: 0.36936196327209475, &#39;32_l2&#39;: 0.22821089267730713}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -358,7 +360,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 52.525 seconds)</p>
+<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 50.351 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-fno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/e81e8f640b2a3cda84c542bbc8f36a54/plot_FNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_FNO_darcy.ipynb</span></code></a></p>

@@ -152,12 +152,10 @@
             <span class="n">n_dim</span><span class="o">=</span><span class="n">n_dim</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">elif</span> <span class="n">skip_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Conv</span><span class="si">{</span><span class="n">n_dim</span><span class="si">}</span><span class="s2">d&quot;</span><span class="p">)(</span>
-            <span class="n">in_channels</span><span class="o">=</span><span class="n">in_features</span><span class="p">,</span>
-            <span class="n">out_channels</span><span class="o">=</span><span class="n">out_features</span><span class="p">,</span>
-            <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-            <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Flattened1dConv</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_features</span><span class="p">,</span>
+                               <span class="n">out_channels</span><span class="o">=</span><span class="n">out_features</span><span class="p">,</span>
+                               <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                               <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,)</span>
     <span class="k">elif</span> <span class="n">skip_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;identity&quot;</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
@@ -213,6 +211,40 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">*</span> <span class="n">x</span></div>
 </div>
 
+
+<span class="k">class</span> <span class="nc">Flattened1dConv</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Flattened3dConv is a Conv-based skip layer for</span>
+<span class="sd">        input tensors of ndim &gt; 3 (batch, channels, d1, ...) that flattens all dimensions </span>
+<span class="sd">        past the batch and channel dims into one dimension, applies the Conv,</span>
+<span class="sd">        and un-flattens.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        in_channels : int</span>
+<span class="sd">            in_channels of Conv1d</span>
+<span class="sd">        out_channels : int</span>
+<span class="sd">            out_channels of Conv1d</span>
+<span class="sd">        kernel_size : int</span>
+<span class="sd">            kernel_size of Conv1d</span>
+<span class="sd">        bias : bool, optional</span>
+<span class="sd">            bias of Conv3d, by default False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                              <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
+                              <span class="n">kernel_size</span><span class="o">=</span><span class="n">kernel_size</span><span class="p">,</span>
+                              <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="c1"># x.shape: b, c, x1, ..., xn x_ndim &gt; 1</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="c1"># flatten everything past 1st data dim</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="n">size</span><span class="p">[:</span><span class="mi">2</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="c1"># reshape x into an Nd tensor b, c, x1, x2, ...</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="o">.</span><span class="n">out_channels</span><span class="p">,</span> <span class="o">*</span><span class="n">size</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span>
+        <span class="k">return</span> <span class="n">x</span>
+        
 </pre></div>
 
       </div>

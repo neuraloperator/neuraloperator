@@ -289,15 +289,15 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fd2f49b97c0&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f1cd634d2e0&gt;
 
 ### LOSSES ###
 
 ### INCREMENTAL RESOLUTION + GRADIENT EXPLAINED ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fd2f6009250&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f1cd62d39a0&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fd2f6009250&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fd2f6009280&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f1cd62d39a0&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f1cfbed64c0&gt;}
 </pre></div>
 </div>
 <p>Set up the IncrementalCallback
@@ -366,46 +366,46 @@ Testing on [50, 50] samples         on resolutions [16, 32].
 Raw outputs of size out.shape=torch.Size([16, 1, 8, 8])
 [0] time=0.13, avg_loss=0.8211, train_err=11.7296, 16_h1=0.7480, 16_l2=0.5862, 32_h1=0.7621, 32_l2=0.5737
 Currently the model is using incremental_n_modes = [2, 2]
-[1] time=0.13, avg_loss=0.7347, train_err=10.4951, 16_h1=0.7281, 16_l2=0.5719, 32_h1=0.7540, 32_l2=0.5608
+[1] time=0.12, avg_loss=0.7347, train_err=10.4951, 16_h1=0.7281, 16_l2=0.5719, 32_h1=0.7540, 32_l2=0.5608
 Currently the model is using incremental_n_modes = [2, 2]
-[2] time=0.12, avg_loss=0.7136, train_err=10.1937, 16_h1=0.7130, 16_l2=0.5539, 32_h1=0.7425, 32_l2=0.5420
+[2] time=0.13, avg_loss=0.7136, train_err=10.1937, 16_h1=0.7130, 16_l2=0.5539, 32_h1=0.7425, 32_l2=0.5420
 Currently the model is using incremental_n_modes = [3, 2]
 [3] time=0.13, avg_loss=0.7364, train_err=10.5200, 16_h1=0.7717, 16_l2=0.6129, 32_h1=0.7877, 32_l2=0.6047
 Currently the model is using incremental_n_modes = [3, 2]
 [4] time=0.13, avg_loss=0.7374, train_err=10.5348, 16_h1=0.7355, 16_l2=0.5831, 32_h1=0.7632, 32_l2=0.5739
 Currently the model is using incremental_n_modes = [3, 2]
-[5] time=0.12, avg_loss=0.7139, train_err=10.1984, 16_h1=0.7260, 16_l2=0.5667, 32_h1=0.7564, 32_l2=0.5557
+[5] time=0.13, avg_loss=0.7139, train_err=10.1984, 16_h1=0.7260, 16_l2=0.5667, 32_h1=0.7564, 32_l2=0.5557
 Currently the model is using incremental_n_modes = [4, 3]
-[6] time=0.13, avg_loss=0.7017, train_err=10.0248, 16_h1=0.7278, 16_l2=0.5762, 32_h1=0.7471, 32_l2=0.5678
+[6] time=0.14, avg_loss=0.7017, train_err=10.0248, 16_h1=0.7278, 16_l2=0.5762, 32_h1=0.7471, 32_l2=0.5678
 Currently the model is using incremental_n_modes = [4, 3]
 [7] time=0.14, avg_loss=0.7082, train_err=10.1179, 16_h1=0.7770, 16_l2=0.6087, 32_h1=0.8044, 32_l2=0.5931
 Currently the model is using incremental_n_modes = [4, 3]
-[8] time=0.13, avg_loss=0.6999, train_err=9.9988, 16_h1=0.6970, 16_l2=0.5474, 32_h1=0.7220, 32_l2=0.5381
+[8] time=0.14, avg_loss=0.6999, train_err=9.9988, 16_h1=0.6970, 16_l2=0.5474, 32_h1=0.7220, 32_l2=0.5381
 Currently the model is using incremental_n_modes = [5, 3]
-[9] time=0.14, avg_loss=0.6500, train_err=9.2861, 16_h1=0.7129, 16_l2=0.5535, 32_h1=0.7449, 32_l2=0.5409
+[9] time=0.15, avg_loss=0.6500, train_err=9.2861, 16_h1=0.7129, 16_l2=0.5535, 32_h1=0.7449, 32_l2=0.5409
 Currently the model is using incremental_n_modes = [5, 3]
 Incre Res Update: change index to 1
 Incre Res Update: change sub to 1
 Incre Res Update: change res to 16
-[10] time=0.21, avg_loss=0.6308, train_err=9.0117, 16_h1=0.6834, 16_l2=0.5390, 32_h1=0.6974, 32_l2=0.5196
+[10] time=0.22, avg_loss=0.6308, train_err=9.0117, 16_h1=0.6834, 16_l2=0.5390, 32_h1=0.6974, 32_l2=0.5196
 Currently the model is using incremental_n_modes = [5, 3]
-[11] time=0.20, avg_loss=0.6035, train_err=8.6221, 16_h1=0.6983, 16_l2=0.5524, 32_h1=0.7139, 32_l2=0.5383
+[11] time=0.21, avg_loss=0.6035, train_err=8.6221, 16_h1=0.6983, 16_l2=0.5524, 32_h1=0.7139, 32_l2=0.5383
 Currently the model is using incremental_n_modes = [6, 4]
-[12] time=0.21, avg_loss=0.5728, train_err=8.1834, 16_h1=0.7086, 16_l2=0.5551, 32_h1=0.7218, 32_l2=0.5382
+[12] time=0.23, avg_loss=0.5728, train_err=8.1834, 16_h1=0.7086, 16_l2=0.5551, 32_h1=0.7218, 32_l2=0.5382
 Currently the model is using incremental_n_modes = [6, 4]
-[13] time=0.21, avg_loss=0.5435, train_err=7.7644, 16_h1=0.7011, 16_l2=0.5599, 32_h1=0.7118, 32_l2=0.5452
+[13] time=0.23, avg_loss=0.5435, train_err=7.7644, 16_h1=0.7011, 16_l2=0.5599, 32_h1=0.7118, 32_l2=0.5452
 Currently the model is using incremental_n_modes = [6, 4]
-[14] time=0.22, avg_loss=0.4986, train_err=7.1235, 16_h1=0.7174, 16_l2=0.5682, 32_h1=0.7241, 32_l2=0.5493
+[14] time=0.23, avg_loss=0.4986, train_err=7.1235, 16_h1=0.7174, 16_l2=0.5682, 32_h1=0.7241, 32_l2=0.5493
 Currently the model is using incremental_n_modes = [7, 4]
-[15] time=0.22, avg_loss=0.4516, train_err=6.4507, 16_h1=0.6799, 16_l2=0.5357, 32_h1=0.6936, 32_l2=0.5225
+[15] time=0.23, avg_loss=0.4516, train_err=6.4507, 16_h1=0.6799, 16_l2=0.5357, 32_h1=0.6936, 32_l2=0.5225
 Currently the model is using incremental_n_modes = [7, 4]
-[16] time=0.22, avg_loss=0.4067, train_err=5.8103, 16_h1=0.7179, 16_l2=0.5686, 32_h1=0.7232, 32_l2=0.5507
+[16] time=0.24, avg_loss=0.4067, train_err=5.8103, 16_h1=0.7179, 16_l2=0.5686, 32_h1=0.7232, 32_l2=0.5507
 Currently the model is using incremental_n_modes = [7, 4]
 [17] time=0.23, avg_loss=0.3629, train_err=5.1848, 16_h1=0.6999, 16_l2=0.5490, 32_h1=0.7134, 32_l2=0.5342
 Currently the model is using incremental_n_modes = [8, 5]
-[18] time=0.23, avg_loss=0.3323, train_err=4.7469, 16_h1=0.7163, 16_l2=0.5630, 32_h1=0.7246, 32_l2=0.5479
+[18] time=0.24, avg_loss=0.3323, train_err=4.7469, 16_h1=0.7163, 16_l2=0.5630, 32_h1=0.7246, 32_l2=0.5479
 Currently the model is using incremental_n_modes = [8, 5]
-[19] time=0.22, avg_loss=0.3028, train_err=4.3255, 16_h1=0.7108, 16_l2=0.5589, 32_h1=0.7230, 32_l2=0.5450
+[19] time=0.23, avg_loss=0.3028, train_err=4.3255, 16_h1=0.7108, 16_l2=0.5589, 32_h1=0.7230, 32_l2=0.5450
 Currently the model is using incremental_n_modes = [8, 5]
 
 {&#39;32_h1&#39;: 0.722979679107666, &#39;32_l2&#39;: 0.5449663162231445}
@@ -458,7 +458,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 5.879 seconds)</p>
+<img src="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 6.446 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-incremental-fno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/082e73328a5caf8c1fe9ad7fe05cf68f/plot_incremental_FNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_incremental_FNO_darcy.ipynb</span></code></a></p>

@@ -162,8 +162,8 @@ Creating the losses
       (domain_padding): DomainPadding()
       (lifting): MLP(
         (fcs): ModuleList(
-          (0): Conv2d(3, 256, kernel_size=(1, 1), stride=(1, 1))
-          (1): Conv2d(256, 64, kernel_size=(1, 1), stride=(1, 1))
+          (0): Conv1d(3, 256, kernel_size=(1,), stride=(1,))
+          (1): Conv1d(256, 64, kernel_size=(1,), stride=(1,))
         )
       )
       (fno_blocks): ModuleList(
@@ -174,7 +174,9 @@ Creating the losses
             )
           )
           (fno_skips): ModuleList(
-            (0): Conv2d(64, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (0): Flattened1dConv(
+              (conv): Conv1d(64, 32, kernel_size=(1,), stride=(1,), bias=False)
+            )
           )
         )
         (1): FNOBlocks(
@@ -184,7 +186,9 @@ Creating the losses
             )
           )
           (fno_skips): ModuleList(
-            (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (0): Flattened1dConv(
+              (conv): Conv1d(32, 64, kernel_size=(1,), stride=(1,), bias=False)
+            )
           )
         )
         (2): FNOBlocks(
@@ -194,7 +198,9 @@ Creating the losses
             )
           )
           (fno_skips): ModuleList(
-            (0): Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (0): Flattened1dConv(
+              (conv): Conv1d(64, 64, kernel_size=(1,), stride=(1,), bias=False)
+            )
           )
         )
         (3): FNOBlocks(
@@ -204,7 +210,9 @@ Creating the losses
             )
           )
           (fno_skips): ModuleList(
-            (0): Conv2d(128, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (0): Flattened1dConv(
+              (conv): Conv1d(128, 64, kernel_size=(1,), stride=(1,), bias=False)
+            )
           )
         )
         (4): FNOBlocks(
@@ -214,18 +222,24 @@ Creating the losses
             )
           )
           (fno_skips): ModuleList(
-            (0): Conv2d(96, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (0): Flattened1dConv(
+              (conv): Conv1d(96, 32, kernel_size=(1,), stride=(1,), bias=False)
+            )
           )
         )
       )
       (horizontal_skips): ModuleDict(
-        (0): Conv2d(32, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
-        (1): Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (0): Flattened1dConv(
+          (conv): Conv1d(32, 32, kernel_size=(1,), stride=(1,), bias=False)
+        )
+        (1): Flattened1dConv(
+          (conv): Conv1d(64, 64, kernel_size=(1,), stride=(1,), bias=False)
+        )
       )
       (projection): MLP(
         (fcs): ModuleList(
-          (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1))
-          (1): Conv2d(64, 1, kernel_size=(1, 1), stride=(1, 1))
+          (0): Conv1d(32, 64, kernel_size=(1,), stride=(1,))
+          (1): Conv1d(64, 1, kernel_size=(1,), stride=(1,))
         )
       )
     )
@@ -247,13 +261,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fd2d89664f0>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f1cd6270c40>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7fd2d8966460>
+     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7f1cd62700d0>
 
-     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7fd2d8966460>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fd2d8966790>}
+     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7f1cd62700d0>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f1cd6270be0>}
 
 
 
@@ -317,7 +331,7 @@ Actually train the model on our small Darcy-Flow dataset
  .. code-block:: none
 
 
-    {'32_h1': 0.8506903076171874, '32_l2': 0.8693762969970703}
+    {'32_h1': 0.8166693496704102, '32_l2': 0.839678955078125}
 
 
 
@@ -391,7 +405,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 56.167 seconds)
+   **Total running time of the script:** (1 minutes 56.484 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_UNO_darcy.py:
