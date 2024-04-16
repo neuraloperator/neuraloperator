@@ -17,7 +17,7 @@ fno_n_modes = (8,8,8)
 # data parameters
 n_in = 100
 n_out = 100
-latent_density = 32
+latent_density = 16
 
 
 @pytest.mark.parametrize(
@@ -34,6 +34,7 @@ def test_fnogno(gno_transform_type, gno_coord_dim, batch_size):
     model = GINO(
         in_channels=in_channels,
         out_channels=out_channels,
+        gno_radius=0.06,
         projection_channels=projection_channels,
         gno_coord_dim=gno_coord_dim,
         in_gno_mlp_hidden_layers=[16,16],
@@ -58,9 +59,7 @@ def test_fnogno(gno_transform_type, gno_coord_dim, batch_size):
     output_queries = torch.randn(*output_queries_shape, device=device)
 
     # create data and features
-    x_shape = [batch_size, n_in, in_channels]
-    x = torch.randn(*x_shape, device=device)
-    f_shape = [batch_size] + [latent_density] * gno_coord_dim + [in_channels]
+    f_shape = [batch_size, n_in, in_channels]
     f = torch.randn(*f_shape, device=device)
     # require and retain grad to check for backprop
     f.requires_grad_(True)
@@ -68,10 +67,9 @@ def test_fnogno(gno_transform_type, gno_coord_dim, batch_size):
     ada_in = torch.randn(1, device=device)
 
     # Test forward pass
-    out = model(x=x,
+    out = model(f=f,
                 input_geom=input_geom,
                 latent_queries=latent_geom,
-                f=f,
                 output_queries=output_queries,
                 ada_in=ada_in)
 

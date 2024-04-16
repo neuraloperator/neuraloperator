@@ -287,14 +287,10 @@ class GINO(nn.Module):
     # out_p : (n_out, gno_coord_dim)
 
     #returns: (fno_hidden_channels, n_1, n_2, ...)
-    def latent_embedding(self, in_p, f, ada_in=None):
+    def latent_embedding(self, in_p, ada_in=None):
 
         # in_p : (batch, n_1 , ... , n_k, in_channels + k)
-        # f : (batch, n_1, n_2, ..., n_k, f_dim)
         # ada_in : (fno_ada_in_dim, )
-
-        if f is not None:
-            in_p = torch.cat((f, in_p), dim=-1)
 
         # permute (b, n_1, ..., n_k, c) -> (b,c, n_1,...n_k)
         in_p = in_p.permute(0, len(in_p.shape)-1, *list(range(1,len(in_p.shape)-1)))
@@ -343,7 +339,9 @@ class GINO(nn.Module):
             out_p_embed = self.pos_embed(out_p.reshape(-1, )).reshape((n_out, -1))
         else:
             out_p_embed = out_p #.reshape((n_out, -1))
-                
+        
+        print(f"{latent_embed.shape=}")
+        # the problem here is the batch dim. Watch out for this
         latent_embed = latent_embed.permute(*self.in_coord_dim_reverse_order, 0).reshape(-1, self.fno.hidden_channels)
         
         if self.out_gno_tanh in ['latent_embed', 'both']:
@@ -361,34 +359,31 @@ class GINO(nn.Module):
 
         return out
     
-    def forward(self,  x, input_geom, latent_queries, output_queries, f=None, ada_in=None, **kwargs):
+    def forward(self,  f, input_geom, latent_queries, output_queries, ada_in=None, **kwargs):
         """forward pass of GNO --> latent embedding w/FNO --> GNO out
 
         Parameters
         ----------
-        x : torch.Tensor
-            shape (batch, n_out, d_x_features) 
+        f : torch.Tensor
+            shape (batch, n_in, in_channels) 
             solution at a time t
         input_geom : torch.Tensor
-            shape (1, n_out, d_x_geom)
-            coordinates of mesh on which x is defined
+            shape (1, n_in, gno_coord_dim)
+            coordinates of mesh on which f is defined
             x,y,t
         latent_queries : torch.Tensor
             just the latent geometry, a grid on [0,1] X [0,1] X ....
-            shape (batch, n_gridpts_1, .... n_gridpts_n, d_x_geom)
+            shape (batch, n_gridpts_1, .... n_gridpts_n, gno_coord_dim)
         output_queries : torch.Tensor
-            shape (batch, n_out, d_x_geom)
+            shape (batch, n_out, gno_coord_dim)
             points to query the final GNO layer to get output
-        f : torch.Tensor, optional
-            shape
-            tensor of additional features to concat onto x
         ada_in : torch.Tensor, optional
             scalar inlet velocity, defaults to None
         """
-        batch_size = x.shape[0]
+        batch_size = f.shape[0]
 
         if batch_size == 1:
-            x = x.squeeze(0)
+            f = f.squeeze(0)
             latent_queries = latent_queries.squeeze(0)
             input_geom = input_geom.squeeze(0)
             output_queries = output_queries.squeeze(0)
@@ -402,7 +397,7 @@ class GINO(nn.Module):
         
         in_p = self.gno_in(y=input_geom,
                            x=latent_queries.view((-1, latent_queries.shape[-1])),
-                           f_y=x,
+                           f_y=f,
                            neighbors=spatial_nbrs)
         
         grid_shape = latent_queries.shape[:-1] # disregard positional encoding dim
@@ -412,7 +407,6 @@ class GINO(nn.Module):
         
         # take apply fno in latent space
         latent_embed = self.latent_embedding(in_p=in_p, 
-                                             f=f, 
                                              ada_in=ada_in)
 
         # Integrate latent space to output queries
