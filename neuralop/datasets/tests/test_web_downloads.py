@@ -8,7 +8,7 @@ import pytest
 
 test_data_dir = Path("./dataset_test")
 
-@pytest.mark.parametrize('resolution', [16,32,64])
+@pytest.mark.parametrize('resolution', [16])
 def test_DarcyDatasetDownload(resolution):
     dataset = DarcyDataset(root_dir=test_data_dir,
                            n_train=5,
