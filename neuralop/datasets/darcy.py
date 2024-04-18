@@ -1,10 +1,12 @@
 
-import torch
+import logging
 from pathlib import Path
 from typing import Union, List
 
 from .pt_dataset import PTDataset
-from .web_utils import download_from_url
+from .web_utils import download_from_zenodo_record
+
+logger = logging.Logger(logging.root.level)
 
 class DarcyDataset(PTDataset):
     def __init__(self,
@@ -23,35 +25,20 @@ class DarcyDataset(PTDataset):
                  encoding="channel-wise",
                  channel_dim=1,
                  download: bool=True):
-
-        # url/md5 info for data hosted on Zenodo archive
-        dataset_info = {
-            16: {
-                'train': {
-                    "url": "https://zenodo.org/records/10982484/files/darcy_train_16.pt?download=1",
-                    "md5": "248e3c55c8c4b5a41ff2b972bf56c7d9"
-                },
-                'test': {
-                    "url": "https://zenodo.org/records/10982484/files/darcy_test_16.pt?download=1",
-                    "md5": "9f747d431dc5fd91b5bff2dd580ae452"
-                },
-            }
-        }
+        
+        zenodo_record_id = "10982484"
+        resolutions = set(test_resolutions + [train_resolution])
+        available_resolutions = [16, 32, 64, 128, 421]
+        for res in resolutions:
+            assert res in available_resolutions, f"Error: resolution {res} not available"
 
         # download darcy data from zenodo archive if passed
         if download:
-            train_info = dataset_info[train_resolution]["train"]
-            download_from_url(url=train_info["url"], 
-                              md5=train_info["md5"],
-                              root=root_dir,
-                              filename=f"darcy_train_{train_resolution}.pt")
-            for test_res in test_resolutions:
-                test_info = dataset_info[test_res]["test"]
-                download_from_url(url=test_info["url"], 
-                                md5=test_info["md5"],
-                                root=root_dir,
-                                filename=f"darcy_test_{test_res}.pt")
-        
+            files_to_download = [f"darcy_{res}.tgz" for res in resolutions]
+            download_from_zenodo_record(record_id=zenodo_record_id,
+                                        root=root_dir,
+                                        files_to_download=files_to_download)
+            
         # once downloaded/if files already exist, init PTDataset
         super.__init__(root_dir=root_dir,
                        dataset_name="darcy",
