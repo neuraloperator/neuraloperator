@@ -82,7 +82,7 @@ class TransformerNO(BaseModel, name='transformer_no'):
                  non_linearity=F.gelu,
                  norm='layer_norm',      # ['layer_norm', 'instance_norm', ''group_norm', 'none']
                  attention_skip="identity",
-                 mlp_skip="soft-gating",
+                 mlp_skip="identity",
                 ):
         super().__init__()
 

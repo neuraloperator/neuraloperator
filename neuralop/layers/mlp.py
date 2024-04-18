@@ -143,6 +143,7 @@ class Siren(nn.Module):
         super().__init__()
         self.dim_in = dim_in
         self.is_first = is_first
+        self.use_bias = use_bias
 
         self.linear = nn.Linear(dim_in, dim_out, bias=use_bias)
         self.init_(c=c, omega0=omega0)
@@ -166,7 +167,7 @@ class Siren(nn.Module):
             torch.nn.init.uniform_(self.linear.bias, -w_std, w_std)
 
     def forward(self, x):
-        out = torch.nn.functional.linear(x, self.weight, self.bias)
+        out = self.linear(x)
         out = self.activation(out)
         return out
 

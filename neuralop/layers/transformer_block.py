@@ -56,6 +56,8 @@ class TransformerEncoderBlock(nn.Module):
         non_linearity : nn.Module, non-linearity module to use, by default F.gelu
         norm : string, normalization module to use, by default 'layer_norm', other available options are
             ['instance_norm', 'group_norm', 'none']
+        attention_skip: string, type of skip connection to use in the attention layer, by default 'idenity'
+        mlp_skip: string, type of skip connection to use in the FFN layer, by default 'identity'
     """
     def __init__(
             self,
@@ -70,8 +72,8 @@ class TransformerEncoderBlock(nn.Module):
             mlp_expansion=2.0,
             non_linearity=F.gelu,
             norm='layer_norm',
-            attention_skip="linear",
-            mlp_skip="soft-gating",
+            attention_skip="identity",
+            mlp_skip="identity",
             **kwargs,
     ):
         super().__init__()
@@ -139,8 +141,10 @@ class TransformerEncoderBlock(nn.Module):
 
     def compute_skip(self, u, skip_type, skip_module):
         if skip_type == 'soft-gating':
+            # channel first
             u = u.permute(0, 2, 1).contiguous()
             u = skip_module(u)
+            # channel second to spatial dimension
             u = u.permute(0, 2, 1).contiguous()
         else:
             u = skip_module(u)
