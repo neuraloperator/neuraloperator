@@ -27,6 +27,8 @@ default: &DEFAULT
     encoder_n_layers: 3
     norm: 'layer_norm'
     query_basis: siren
+    attention_skip: identity
+    mlp_skip: identity
 
   # Optimizer
   opt:

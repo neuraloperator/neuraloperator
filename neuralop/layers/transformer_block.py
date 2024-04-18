@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .attention_kernel_integral import AttentionKernelIntegral
-from .mlp import MLPLinear
-from .embeddings import SirenNet, GaussianFourierFeatureTransform
+from .mlp import MLPLinear, SirenMLP
+from .embeddings import GaussianFourierEmbedding
 from .skip_connections import skip_connection
 
 
@@ -70,6 +70,8 @@ class TransformerEncoderBlock(nn.Module):
             mlp_expansion=2.0,
             non_linearity=F.gelu,
             norm='layer_norm',
+            attention_skip="linear",
+            mlp_skip="soft-gating",
             **kwargs,
     ):
         super().__init__()
@@ -100,6 +102,18 @@ class TransformerEncoderBlock(nn.Module):
                                         head_n_channels=self.head_n_channels,
                                         project_query=True)
                                     for _ in range(self.n_layers)])
+        self.attention_skips = nn.ModuleList(
+                                        [
+                                            skip_connection(
+                                                self.hidden_channels,
+                                                self.hidden_channels,
+                                                skip_type=attention_skip,
+                                                n_dim=1,   # in transformer every spatial dimension got flattened
+                                            )
+                                            for _ in range(n_layers)
+                                        ]
+                                        )
+        self.attention_skip_type = attention_skip
 
         if self.use_mlp:
             self.mlp_norms = nn.ModuleList([get_normalization(self.norm, self.hidden_channels) for _ in range(self.n_layers)])
@@ -109,6 +123,28 @@ class TransformerEncoderBlock(nn.Module):
                                        self.hidden_channels],
                                        dropout=self.mlp_dropout)
                                 for _ in range(self.n_layers)])
+
+            self.mlp_skips = nn.ModuleList(
+                                        [
+                                            skip_connection(
+                                                self.hidden_channels,
+                                                self.hidden_channels,
+                                                skip_type=mlp_skip,
+                                                n_dim=1,
+                                            )
+                                            for _ in range(n_layers)
+                                        ])
+
+            self.mlp_skip_type = mlp_skip
+
+    def compute_skip(self, u, skip_type, skip_module):
+        if skip_type == 'soft-gating':
+            u = u.permute(0, 2, 1).contiguous()
+            u = skip_module(u)
+            u = u.permute(0, 2, 1).contiguous()
+        else:
+            u = skip_module(u)
+        return u
 
     def forward(self,
                 u,
@@ -126,14 +162,14 @@ class TransformerEncoderBlock(nn.Module):
         """
         u = self.lifting(u)
         for l in range(self.n_layers):
-            u_attention_skip = u
+            u_attention_skip = self.compute_skip(u, self.attention_skip_type, self.attention_skips[l])
             u = self.attention_layers[l](u_src=normalize(u, self.attention_norms[l]),
-                                     pos_src=pos,
-                                     positional_embedding_module=pos_emb_module,
-                                     **kwargs)
+                                        pos_src=pos,
+                                        positional_embedding_module=pos_emb_module,
+                                        **kwargs)
             u = u + u_attention_skip
             if self.use_mlp:
-                u_mlp_skip = u
+                u_mlp_skip = self.compute_skip(u, self.mlp_skip_type, self.mlp_skips[l])
                 u = self.mlp_layers[l](normalize(u, self.mlp_norms[l]))
                 u = u + u_mlp_skip
         u = self.to_out(u)
@@ -165,7 +201,7 @@ class TransformerDecoderBlock(nn.Module):
         non_linearity : nn.Module, non-linearity module to use, by default F.gelu
         norm : string, normalization module to use, by default 'layer_norm', other available options are
             ['instance_norm', 'group_norm', 'none']
-        query_siren_layers: int, number of layers in SirenNet, by default 3
+        query_siren_layers: int, number of layers in SirenMLP, by default 3
         query_fourier_scale: float, scale (variance) of the Gaussian Fourier Feature Transform, by default 2.0
     """
 
@@ -213,15 +249,15 @@ class TransformerDecoderBlock(nn.Module):
 
         # build basis for decoder
         if self.query_basis == 'siren':
-            self.query_basis_fn = SirenNet(dim_in=self.n_dim,
+            self.query_basis_fn = SirenMLP(dim_in=self.n_dim,
                                            dim_hidden=self.hidden_channels,
                                            dim_out=self.num_heads * self.head_n_channels,
                                            num_layers=self.query_siren_layers)
         elif self.query_basis == 'fourier':
             self.query_basis_fn = nn.Sequential(
-                GaussianFourierFeatureTransform(self.n_dim,
-                                                mapping_size=self.head_n_channels,
-                                                scale=self.query_fourier_scale),
+                GaussianFourierEmbedding(self.n_dim,
+                                        mapping_size=self.head_n_channels,
+                                        scale=self.query_fourier_scale),
                 nn.Linear(self.head_n_channels * 2, self.num_heads * self.head_n_channels))
         elif self.query_basis == 'linear':
             self.query_basis_fn = nn.Linear(self.n_dim, num_heads * self.head_n_channels)

@@ -81,6 +81,8 @@ class TransformerNO(BaseModel, name='transformer_no'):
                  mlp_expansion=2.0,
                  non_linearity=F.gelu,
                  norm='layer_norm',      # ['layer_norm', 'instance_norm', ''group_norm', 'none']
+                 attention_skip="identity",
+                 mlp_skip="soft-gating",
                 ):
         super().__init__()
 
@@ -104,6 +106,8 @@ class TransformerNO(BaseModel, name='transformer_no'):
         self.mlp_expansion = mlp_expansion
         self.non_linearity = non_linearity
         self.norm = norm
+        self.attention_skip = attention_skip
+        self.mlp_skip = mlp_skip
 
         if self.pos_emb not in ['rotary', 'none']:
             raise ValueError(f'pos_emb must be one of ["rotary", "none"], got {self.pos_emb}')
@@ -122,14 +126,14 @@ class TransformerNO(BaseModel, name='transformer_no'):
                             num_heads=self.encoder_num_heads,
                             head_n_channels=self.encoder_head_n_channels,
                             n_layers=self.encoder_n_layers,
-                            query_basis=self.query_basis,
                             use_mlp=self.use_mlp,
                             mlp_dropout=self.mlp_dropout,
                             mlp_expansion=self.mlp_expansion,
                             non_linearity=self.non_linearity,
-                            query_siren_layers=self.query_siren_layers,
-                            query_fourier_scale=self.query_fourier_scale,
                             norm=self.norm,
+                            attention_skip=self.attention_skip,
+                            mlp_skip=self.mlp_skip,
+
                         )
 
         self.decoder = TransformerDecoderBlock(
