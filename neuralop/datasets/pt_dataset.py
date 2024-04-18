@@ -9,8 +9,9 @@ from .tensor_dataset import TensorDataset
 from .transforms import PositionalEmbedding2D
 from .data_transforms import DefaultDataProcessor
 
-from .web_utils import download_from_url
-
+# TODO  @Jean: do you think there's a better name for this base class?
+# i/o pairs of 'x', 'y' stored as .pt files, but the distinguishing feature of this dataset 
+# isn't the file format, it's the attributes in its data batches
 class PTDataset:
     """PTDataset is a base Dataset class for our library.
             PTDatasets contain input-output pairs a(x), u(x) and may also

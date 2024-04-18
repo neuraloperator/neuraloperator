@@ -25,6 +25,11 @@ class DarcyDataset(PTDataset):
                  encoding="channel-wise",
                  channel_dim=1,
                  download: bool=True):
+        
+        """
+        Darcy Flow dataset
+        Data source: https://zenodo.org/records/10994262
+        """
         # convert root dir to Path
         if isinstance(root_dir, str):
             root_dir = Path(root_dir)
