@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from typing import Union, List
 
+from torch.utils.data import DataLoader
+
 from .pt_dataset import PTDataset
 from .web_utils import download_from_zenodo_record
 
@@ -74,3 +76,50 @@ class DarcyDataset(PTDataset):
                        encode_output=encode_output,
                        encoding=encoding,
                        channel_dim=channel_dim,)
+        
+# legacy Small Darcy Flow example
+def load_darcy_flow_small(n_train,
+    n_tests,
+    batch_size,
+    test_batch_sizes,
+    data_root = "./neuralop/datasets/data",
+    test_resolutions=[16, 32],
+    grid_boundaries=[[0, 1], [0, 1]],
+    positional_encoding=True,
+    encode_input=False,
+    encode_output=True,
+    encoding="channel-wise",
+    channel_dim=1,):
+
+    dataset = DarcyDataset(root_dir = data_root,
+                           n_train=n_train,
+                           n_tests=n_tests,
+                           batch_size=batch_size,
+                           test_batch_sizes=test_batch_sizes,
+                           train_resolution=16,
+                           test_resolutions=test_resolutions,
+                           grid_boundaries=grid_boundaries,
+                           positional_encoding=positional_encoding,
+                           encode_input=encode_input,
+                           encode_output=encode_output,
+                           encoding=encoding,
+                           channel_dim=channel_dim)
+    
+    # return dataloaders for backwards compat
+    train_loader = DataLoader(dataset.train_db,
+                              batch_size=batch_size,
+                              num_workers=0,
+                              pin_memory=True,
+                              persistent_workers=False,)
+    
+    test_loaders = {}
+    for res,test_bsize in zip(test_resolutions, test_batch_sizes):
+        test_loaders[res] = DataLoader(dataset.test_dbs[res],
+                                       batch_size=test_bsize,
+                                       shuffle=False,
+                                       num_workers=0,
+                                       pin_memory=True,
+                                       persistent_workers=False,)
+    
+    return train_loader, test_loaders, dataset.data_processor
+    
