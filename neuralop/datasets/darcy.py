@@ -1,5 +1,6 @@
 
 import logging
+import os
 from pathlib import Path
 from typing import Union, List
 
@@ -11,7 +12,6 @@ logger = logging.Logger(logging.root.level)
 class DarcyDataset(PTDataset):
     def __init__(self,
                  root_dir: Union[Path, str],
-                 dataset_name: str,
                  n_train: int,
                  n_tests: List[int],
                  batch_size: int,
@@ -25,22 +25,37 @@ class DarcyDataset(PTDataset):
                  encoding="channel-wise",
                  channel_dim=1,
                  download: bool=True):
-        
-        zenodo_record_id = "10982484"
+        # convert root dir to Path
+        if isinstance(root_dir, str):
+            root_dir = Path(root_dir)
+        if not root_dir.exists():
+            root_dir.mkdir(parents=True)
+
+        # Zenodo record ID for Darcy-Flow dataset
+        zenodo_record_id = "10994262"
+
+        # List of resolutions needed for dataset object
         resolutions = set(test_resolutions + [train_resolution])
+
+        # We store data at these resolutions on the Zenodo archive
         available_resolutions = [16, 32, 64, 128, 421]
         for res in resolutions:
             assert res in available_resolutions, f"Error: resolution {res} not available"
 
         # download darcy data from zenodo archive if passed
         if download:
-            files_to_download = [f"darcy_{res}.tgz" for res in resolutions]
+            files_to_download = []
+            already_downloaded_files = os.listdir(root_dir)
+            for res in resolutions:
+                if f"darcy_train_{res}.pt" not in already_downloaded_files or \
+                f"darcy_test_{res}.pt" not in already_downloaded_files:    
+                    files_to_download.append(f"darcy_{res}.tgz")
             download_from_zenodo_record(record_id=zenodo_record_id,
                                         root=root_dir,
                                         files_to_download=files_to_download)
             
         # once downloaded/if files already exist, init PTDataset
-        super.__init__(root_dir=root_dir,
+        super().__init__(root_dir=root_dir,
                        dataset_name="darcy",
                        n_train=n_train,
                        n_tests=n_tests,

@@ -46,11 +46,14 @@ def download_from_url(
     root: Union[str, Path],
     filename: Optional[Union[str, Path]] = None,
     md5: Optional[str] = None,
-    chunk_size: Optional[int] = 256 * 32,
+    size: Optional[int] = None,
+    chunk_size: Optional[int] = 256 * 64,
     extract_tars: bool = True
 ) -> None:
     """download_from_url downloads a file from a url with 
-    an optional md5 checksum.
+    an optional md5 checksum. 
+    
+    If the file is a tarball, optionally extract.
 
     Parameters
     ----------
@@ -62,11 +65,14 @@ def download_from_url(
         name into which to download, by default None
     md5 : Optional[str], optional
         md5 checksum to verify file correctness, by default None
+    size: Optional[int], optional
+        size of the file expected in bytes, to check
     chunk_size : int, optional
         size of chunks to use when streaming files
     extract_tars: bool, optional
         whether to extract .tgz archives, by default True
     """
+
     root = os.path.expanduser(root)
     if not filename:
         filename = os.path.basename(url)
@@ -83,8 +89,19 @@ def download_from_url(
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
         with open(fpath, 'wb') as f:
+            curr_size = 0
             for chunk in r.iter_content(chunk_size=chunk_size):
-                f.write(chunk)
+                if chunk:
+                    # write file, flush and fsync to prevent memory bloat
+                    f.write(chunk)
+                    f.flush()
+                    os.fsync(f.fileno())
+                    # print progress dynamically
+                    curr_size += chunk_size
+                    prog = curr_size / size
+                    print(f"Download in progress: {prog:.2%}", end='\r')
+
+            assert os.path.getsize(fpath) == size
 
     # check integrity of downloaded file
     if not check_integrity(fpath, md5):
@@ -95,14 +112,15 @@ def download_from_url(
         if extract_tars:
             logger.info("Extracting {fpath}...")
             archive = tarfile.open(fpath)
-            archive.extractall(fpath=root)
+            archive.extractall(path=root)
             name_str = ", ".join(archive.getnames())
             logger.info(f"Extracted {name_str}")
 
 def download_from_zenodo_record(record_id: str, 
                                 root: Union[str, Path], 
                                 files_to_download: Optional[List[str]] = None):
-    """download_from_zenodo_record _summary_
+    """download_from_zenodo_record downloads files in "files_to_download"
+    from zenodo record with ID record_id
 
     Parameters
     ----------
@@ -122,7 +140,8 @@ def download_from_zenodo_record(record_id: str,
         fname = file_record['key']
         if fname in files_to_download:
             download_from_url(url=file_record['links']['self'],
-                              md5=file_record['checksum'],
+                              md5=file_record['checksum'][4:], # md5 stored as 'md5:xxxxx'
+                              size=file_record['size'],
                               root=root,
                               filename=fname,
                               extract_tars=True)
