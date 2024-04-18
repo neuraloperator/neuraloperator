@@ -1,6 +1,6 @@
 from .spherical_swe import load_spherical_swe
 from .pt_dataset import PTDataset
-from .darcy import DarcyDataset
+from .darcy import DarcyDataset, load_darcy_flow_small
 from .burgers import load_burgers_1dtime
 from .dict_dataset import DictDataset
 from .data_transforms import DataProcessor
