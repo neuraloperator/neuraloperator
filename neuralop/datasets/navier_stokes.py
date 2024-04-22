@@ -1,16 +1,16 @@
-from typing import List, Union
+import logging
+import os
 from pathlib import Path
+from typing import Union, List
 
-import torch
 from torch.utils.data import DataLoader
 
-from .output_encoder import UnitGaussianNormalizer
-from .tensor_dataset import TensorDataset
-from .transforms import PositionalEmbedding2D
-from .data_transforms import DataProcessor, DefaultDataProcessor
-from .pde_dataset import PDEDataset, download_fn
+from .pt_dataset import PTDataset
+from .web_utils import download_from_zenodo_record
 
-class NavierStokesDataset(PDEDataset):
+logger = logging.Logger(logging.root.level)
+
+class DarcyDataset(PTDataset):
     def __init__(self,
                  root_dir: Union[Path, str],
                  n_train: int,
@@ -26,159 +26,52 @@ class NavierStokesDataset(PDEDataset):
                  encoding="channel-wise",
                  channel_dim=1,
                  download: bool=True):
+        
+        """
+        Navier-Stokes Dataset
+
+        """
+        # convert root dir to Path
         if isinstance(root_dir, str):
             root_dir = Path(root_dir)
-        
-        self.root_dir = root_dir
+        if not root_dir.exists():
+            root_dir.mkdir(parents=True)
 
-        # save dataloader properties for later
-        self.batch_size = batch_size
-        self.test_resolutions = test_resolutions
-        self.test_batch_sizes = test_batch_sizes
+        # Zenodo record ID for Darcy-Flow dataset
+        zenodo_record_id = "NA"
 
-        # Download data if it isn't already downloaded
+        # List of resolutions needed for dataset object
+        resolutions = set(test_resolutions + [train_resolution])
+
+        # We store data at these resolutions on the Zenodo archive
+        available_resolutions = [128]
+        for res in resolutions:
+            assert res in available_resolutions, f"Error: resolution {res} not available"
+
+        # download darcy data from zenodo archive if passed
         if download:
-            if not root_dir.exists():
-                root_dir.mkdir(parents=True)
-
-            # iterate through all required filenames and download
-            # if the files need to be downloaded
-            required_fnames = [f"nsforcing_train_{train_resolution}"] + \
-                    [f"nsforcing_test_{res}.pt" for res in test_resolutions]
-            for fname in required_fnames:
-                fpath = root_dir / fname
-                if not fpath.exists():
-                    download_fn(fname)
+            files_to_download = []
+            already_downloaded_files = os.listdir(root_dir)
+            for res in resolutions:
+                if f"nsforcing_train_{res}.pt" not in already_downloaded_files or \
+                f"nsforcing_test_{res}.pt" not in already_downloaded_files:    
+                    files_to_download.append(f"nsforcing_{res}.tgz")
+            download_from_zenodo_record(record_id=zenodo_record_id,
+                                        root=root_dir,
+                                        files_to_download=files_to_download)
+            
+        # once downloaded/if files already exist, init PTDataset
+        super().__init__(root_dir=root_dir,
+                       n_train=n_train,
+                       n_tests=n_tests,
+                       batch_size=batch_size,
+                       test_batch_sizes=test_batch_sizes,
+                       train_resolution=train_resolution,
+                       test_resolutions=test_resolutions,
+                       grid_boundaries=grid_boundaries,
+                       positional_encoding=positional_encoding,
+                       encode_input=encode_input,
+                       encode_output=encode_output,
+                       encoding=encoding,
+                       channel_dim=channel_dim,)
         
-        # Load train data
-        data = torch.load(
-        Path(root_dir).joinpath(f"nsforcing_train_{train_resolution}.pt").as_posix()
-        )
-        x_train = (
-        data["x"][0:n_train, :, :].unsqueeze(channel_dim).type(torch.float32).clone()
-        )
-        y_train = data["y"][0:n_train, :, :].unsqueeze(channel_dim).clone()
-        del data
-
-        # Fit optional encoders to train data
-        # Actual encoding happens within DataProcessor
-        if encode_input:
-            if encoding == "channel-wise":
-                reduce_dims = list(range(x_train.ndim))
-            elif encoding == "pixel-wise":
-                reduce_dims = [0]
-
-            input_encoder = UnitGaussianNormalizer(dim=reduce_dims)
-            input_encoder.fit(x_train)
-        else:
-            input_encoder = None
-
-        if encode_output:
-            if encoding == "channel-wise":
-                reduce_dims = list(range(y_train.ndim))
-            elif encoding == "pixel-wise":
-                reduce_dims = [0]
-
-            output_encoder = UnitGaussianNormalizer(dim=reduce_dims)
-            output_encoder.fit(y_train)
-        else:
-            output_encoder = None
-
-        # Save train dataset
-        self.train_db = TensorDataset( 
-            x_train,
-            y_train,
-        )
-
-        # create pos encoder and DataProcessor
-        if positional_encoding:
-            pos_encoding = PositionalEmbedding2D(grid_boundaries=grid_boundaries)
-        else:
-            pos_encoding = None
-
-        self._data_processor = DefaultDataProcessor(in_normalizer=input_encoder,
-                                                   out_normalizer=output_encoder,
-                                                   positional_encoding=pos_encoding)
-
-        # load test data
-        self.test_dbs = {}
-        for (res, n_test, test_batch_size) in zip(
-        test_resolutions, n_tests, test_batch_sizes
-        ):
-            print(
-                f"Loading test db at resolution {res} with {n_test} samples "
-            )
-            data = torch.load(Path(root_dir).joinpath(f"nsforcing_test_{res}.pt").as_posix())
-            x_test = (
-                data["x"][:n_test, :, :].unsqueeze(channel_dim).type(torch.float32).clone()
-            )
-            y_test = data["y"][:n_test, :, :].unsqueeze(channel_dim).clone()
-            del data
-
-            test_db = TensorDataset(
-                x_test,
-                y_test,
-            )
-            self.test_dbs[res] = test_db
-
-    def data_processor(self) -> DataProcessor:
-        return self._data_processor
-    
-    def train_loader(self, 
-                     num_workers: int=None, 
-                     pin_memory: bool=True,
-                     persistent_workers: bool=False) -> DataLoader:
-        
-        return DataLoader(dataset=self.train_db,
-                            batch_size=self.batch_size,
-                            shuffle=True,
-                            num_workers=num_workers,
-                            pin_memory=pin_memory,
-                            persistent_workers=persistent_workers,
-                            )
-    
-    def test_loaders(self, 
-                     num_workers: int=None, 
-                     pin_memory: bool=True,
-                     persistent_workers: bool=False) -> Dict[DataLoader]:
-        test_loaders = {}
-        for (res, batch_size) in zip(self.test_resolutions, self.test_batch_sizes):
-            loader = DataLoader(dataset=self.test_dbs[res],
-                                batch_size=batch_size,
-                                shuffle=False,
-                                num_workers=num_workers,
-                                pin_memory=pin_memory,
-                                persistent_workers=persistent_workers,
-                                )
-            test_loaders[res] = loader
-        return test_loaders        
-
-# TODO: add high-res/downsample factor to the dataset
-def _load_navier_stokes_test_HR(data_path, n_test, resolution=256,
-                                channel_dim=1,
-                               ):
-    """Load the Navier-Stokes dataset
-    """
-    if resolution == 128:
-        downsample_factor = 8
-    elif resolution == 256:
-        downsample_factor = 4
-    elif resolution == 512:
-        downsample_factor = 2
-    elif resolution == 1024:
-        downsample_factor = 1
-    else:
-        raise ValueError(f'Invalid resolution, got {resolution}, expected one of [128, 256, 512, 1024].')
-    
-    data = torch.load(Path(data_path).joinpath('nsforcing_1024_test1.pt').as_posix())
-
-    if not isinstance(n_test, int):
-        n_samples = data['x'].shape[0]
-        n_test = int(n_samples*n_test)
-        
-    x_test = data['x'][:n_test, ::downsample_factor, ::downsample_factor].unsqueeze(channel_dim).clone()
-    y_test = data['y'][:n_test, ::downsample_factor, ::downsample_factor].unsqueeze(channel_dim).clone()
-    del data
-
-    return x_test, y_test
-
