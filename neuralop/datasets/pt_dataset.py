@@ -1,6 +1,6 @@
 from functools import partialmethod
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, Optional
 
 import torch
 
@@ -38,13 +38,48 @@ class PTDataset:
                  test_batch_sizes: List[int],
                  train_resolution: int,
                  test_resolutions: List[int]=[16,32],
-                 grid_boundaries: List[int]=[[0,1],[0,1]],
+                 grid_boundaries: List[List[int]]=[[0,1],[0,1]],
                  positional_encoding: bool=True,
                  encode_input: bool=False, 
                  encode_output: bool=True, 
                  encoding="channel-wise",
-                 subsampling_rate=None,
+                 subsampling_rate: Optional[Union[List[int],int]]=None,
                  channel_dim=1,):
+        """PTDataset _summary_
+
+        Parameters
+        ----------
+        root_dir : Union[Path, str]
+            _description_
+        dataset_name : str
+            _description_
+        n_train : int
+            _description_
+        n_tests : List[int]
+            _description_
+        batch_size : int
+            _description_
+        test_batch_sizes : List[int]
+            _description_
+        train_resolution : int
+            _description_
+        test_resolutions : List[int], optional
+            _description_, by default [16,32]
+        grid_boundaries : List[List[int]], optional
+            _description_, by default [[0,1],[0,1]]
+        positional_encoding : bool, optional
+            _description_, by default True
+        encode_input : bool, optional
+            _description_, by default False
+        encode_output : bool, optional
+            _description_, by default True
+        encoding : str, optional
+            _description_, by default "channel-wise"
+        subsampling_rate : Optional[Union[List[int],int]], optional
+            _description_, by default None
+        channel_dim : int, optional
+            _description_, by default 1
+        """
         
         if isinstance(root_dir, str):
             root_dir = Path(root_dir)
@@ -57,13 +92,23 @@ class PTDataset:
         self.test_batch_sizes = test_batch_sizes
             
         # Load train data
+        
         data = torch.load(
         Path(root_dir).joinpath(f"{dataset_name}_train_{train_resolution}.pt").as_posix()
         )
+        # optionally subsample along data indices
+        data_dims = data["x"].ndim - 1
+        if not isinstance(subsampling_rate, list):
+            # expand subsampling rate along dims if one per dim is not provided
+            subsampling_rate = [subsampling_rate] * data_dims
+        # make sure there is one subsampling rate per data dim
+        assert len(subsampling_rate) == data_dims
+        
+        train_indices = [slice(0, n_train, None)] + [slice(None, None, rate) for rate in subsampling_rate]
         x_train = (
-        data["x"][0:n_train, ...].unsqueeze(channel_dim).type(torch.float32).clone()
+        data["x"][train_indices].unsqueeze(channel_dim).type(torch.float32).clone()
         )
-        y_train = data["y"][0:n_train, ...].unsqueeze(channel_dim).clone()
+        y_train = data["y"][train_indices].unsqueeze(channel_dim).clone()
         del data
 
         # Fit optional encoders to train data
@@ -113,10 +158,13 @@ class PTDataset:
                 f"Loading test db at resolution {res} with {n_test} samples "
             )
             data = torch.load(Path(root_dir).joinpath(f"{dataset_name}_test_{res}.pt").as_posix())
+
+            # optionally subsample along data indices
+            test_indices = [slice(0, n_test, None)] + [slice(None, None, subsampling_rate) for _ in range(data_dims)] 
             x_test = (
-                data["x"][:n_test, ...].unsqueeze(channel_dim).type(torch.float32).clone()
+                data["x"][test_indices].unsqueeze(channel_dim).type(torch.float32).clone()
             )
-            y_test = data["y"][:n_test, ...].unsqueeze(channel_dim).clone()
+            y_test = data["y"][test_indices].unsqueeze(channel_dim).clone()
             del data
 
             test_db = TensorDataset(

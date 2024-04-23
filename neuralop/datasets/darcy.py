@@ -25,6 +25,7 @@ class DarcyDataset(PTDataset):
                  encode_output: bool=True, 
                  encoding="channel-wise",
                  channel_dim=1,
+                 subsampling_rate=None,
                  download: bool=True):
         
         """
@@ -51,7 +52,7 @@ class DarcyDataset(PTDataset):
         # download darcy data from zenodo archive if passed
         if download:
             files_to_download = []
-            already_downloaded_files = os.listdir(root_dir)
+            already_downloaded_files = [x for x in root_dir.iterdir()]
             for res in resolutions:
                 if f"darcy_train_{res}.pt" not in already_downloaded_files or \
                 f"darcy_test_{res}.pt" not in already_downloaded_files:    
@@ -74,7 +75,8 @@ class DarcyDataset(PTDataset):
                        encode_input=encode_input,
                        encode_output=encode_output,
                        encoding=encoding,
-                       channel_dim=channel_dim,)
+                       channel_dim=channel_dim,
+                       subsampling_rate=subsampling_rate)
         
 # legacy Small Darcy Flow example
 def load_darcy_flow_small(n_train,
@@ -102,7 +104,7 @@ def load_darcy_flow_small(n_train,
                            encode_input=encode_input,
                            encode_output=encode_output,
                            encoding=encoding,
-                           channel_dim=channel_dim)
+                           channel_dim=channel_dim,)
     
     # return dataloaders for backwards compat
     train_loader = DataLoader(dataset.train_db,

@@ -25,11 +25,11 @@ class NavierStokesDataset(PTDataset):
                  encode_output: bool=True, 
                  encoding="channel-wise",
                  channel_dim=1,
+                 subsampling_rate=None,
                  download: bool=True):
         
-        """
-        Navier-Stokes Dataset
-
+        
+        """ _summary_
         """
         # convert root dir to Path
         if isinstance(root_dir, str):
@@ -51,7 +51,7 @@ class NavierStokesDataset(PTDataset):
         # download darcy data from zenodo archive if passed
         if download:
             files_to_download = []
-            already_downloaded_files = root_dir.iterdir()
+            already_downloaded_files = [x for x in root_dir.iterdir()]
             for res in resolutions:
                 if f"nsforcing_train_{res}.pt" not in already_downloaded_files or \
                 f"nsforcing_test_{res}.pt" not in already_downloaded_files:    
@@ -73,7 +73,8 @@ class NavierStokesDataset(PTDataset):
                        encode_input=encode_input,
                        encode_output=encode_output,
                        encoding=encoding,
-                       channel_dim=channel_dim,)
+                       channel_dim=channel_dim,
+                       subsampling_rate=subsampling_rate)
 
 # load navier stokes pt for backwards compatibility
 def load_navier_stokes_pt(n_train,
@@ -88,7 +89,8 @@ def load_navier_stokes_pt(n_train,
     encode_input=False,
     encode_output=True,
     encoding="channel-wise",
-    channel_dim=1,):
+    channel_dim=1,
+    subsampling_rate=None,):
 
     dataset = NavierStokesDataset(root_dir = data_root,
                            n_train=n_train,
@@ -102,7 +104,8 @@ def load_navier_stokes_pt(n_train,
                            encode_input=encode_input,
                            encode_output=encode_output,
                            encoding=encoding,
-                           channel_dim=channel_dim)
+                           channel_dim=channel_dim,
+                           subsampling_rate=subsampling_rate)
     
     # return dataloaders for backwards compat
     train_loader = DataLoader(dataset.train_db,
