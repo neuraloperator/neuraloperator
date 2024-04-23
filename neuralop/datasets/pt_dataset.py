@@ -98,6 +98,9 @@ class PTDataset:
         )
         # optionally subsample along data indices
         data_dims = data["x"].ndim - 1
+        # convert None and 0 to 1
+        if not subsampling_rate:
+            subsampling_rate = 1
         if not isinstance(subsampling_rate, list):
             # expand subsampling rate along dims if one per dim is not provided
             subsampling_rate = [subsampling_rate] * data_dims
@@ -155,12 +158,12 @@ class PTDataset:
         self._test_dbs = {}
         for (res, n_test) in zip(test_resolutions, n_tests):
             print(
-                f"Loading test db at resolution {res} with {n_test} samples "
+                f"Loading test db for resolution {res} with {n_test} samples "
             )
             data = torch.load(Path(root_dir).joinpath(f"{dataset_name}_test_{res}.pt").as_posix())
 
             # optionally subsample along data indices
-            test_indices = [slice(0, n_test, None)] + [slice(None, None, subsampling_rate) for _ in range(data_dims)] 
+            test_indices = [slice(0, n_test, None)] + [slice(None, None, rate) for rate in subsampling_rate] 
             x_test = (
                 data["x"][test_indices].unsqueeze(channel_dim).type(torch.float32).clone()
             )
