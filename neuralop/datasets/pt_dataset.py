@@ -37,7 +37,7 @@ class PTDataset:
                  batch_size: int,
                  test_batch_sizes: List[int],
                  train_resolution: int,
-                 test_resolutions: int=[16,32],
+                 test_resolutions: List[int]=[16,32],
                  grid_boundaries: List[int]=[[0,1],[0,1]],
                  positional_encoding: bool=True,
                  encode_input: bool=False, 
@@ -108,9 +108,7 @@ class PTDataset:
 
         # load test data
         self._test_dbs = {}
-        for (res, n_test) in zip(
-        test_resolutions, n_tests
-        ):
+        for (res, n_test) in zip(test_resolutions, n_tests):
             print(
                 f"Loading test db at resolution {res} with {n_test} samples "
             )

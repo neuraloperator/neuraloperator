@@ -10,7 +10,7 @@ from .web_utils import download_from_zenodo_record
 
 logger = logging.Logger(logging.root.level)
 
-class DarcyDataset(PTDataset):
+class NavierStokesDataset(PTDataset):
     def __init__(self,
                  root_dir: Union[Path, str],
                  n_train: int,
@@ -51,7 +51,7 @@ class DarcyDataset(PTDataset):
         # download darcy data from zenodo archive if passed
         if download:
             files_to_download = []
-            already_downloaded_files = os.listdir(root_dir)
+            already_downloaded_files = root_dir.iterdir()
             for res in resolutions:
                 if f"nsforcing_train_{res}.pt" not in already_downloaded_files or \
                 f"nsforcing_test_{res}.pt" not in already_downloaded_files:    
@@ -74,4 +74,50 @@ class DarcyDataset(PTDataset):
                        encode_output=encode_output,
                        encoding=encoding,
                        channel_dim=channel_dim,)
-        
+
+# load navier stokes pt for backwards compatibility
+def load_navier_stokes_pt(n_train,
+    n_tests,
+    batch_size,
+    test_batch_sizes,
+    data_root = "./neuralop/datasets/data",
+    train_resolution=128,
+    test_resolutions=[128],
+    grid_boundaries=[[0, 1], [0, 1]],
+    positional_encoding=True,
+    encode_input=False,
+    encode_output=True,
+    encoding="channel-wise",
+    channel_dim=1,):
+
+    dataset = NavierStokesDataset(root_dir = data_root,
+                           n_train=n_train,
+                           n_tests=n_tests,
+                           batch_size=batch_size,
+                           test_batch_sizes=test_batch_sizes,
+                           train_resolution=train_resolution,
+                           test_resolutions=test_resolutions,
+                           grid_boundaries=grid_boundaries,
+                           positional_encoding=positional_encoding,
+                           encode_input=encode_input,
+                           encode_output=encode_output,
+                           encoding=encoding,
+                           channel_dim=channel_dim)
+    
+    # return dataloaders for backwards compat
+    train_loader = DataLoader(dataset.train_db,
+                              batch_size=batch_size,
+                              num_workers=0,
+                              pin_memory=True,
+                              persistent_workers=False,)
+    
+    test_loaders = {}
+    for res,test_bsize in zip(test_resolutions, test_batch_sizes):
+        test_loaders[res] = DataLoader(dataset.test_dbs[res],
+                                       batch_size=test_bsize,
+                                       shuffle=False,
+                                       num_workers=0,
+                                       pin_memory=True,
+                                       persistent_workers=False,)
+    
+    return train_loader, test_loaders, dataset.data_processor
