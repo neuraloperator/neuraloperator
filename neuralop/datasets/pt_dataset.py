@@ -43,6 +43,7 @@ class PTDataset:
                  encode_input: bool=False, 
                  encode_output: bool=True, 
                  encoding="channel-wise",
+                 subsampling_rate=None,
                  channel_dim=1,):
         
         if isinstance(root_dir, str):

@@ -35,7 +35,9 @@ def check_md5(fpath: Union[str, Path], md5: str, **kwargs: Any) -> bool:
     return md5 == calculate_md5(fpath, **kwargs)
 
 def check_integrity(fpath: Union[str, Path], md5: Optional[str] = None) -> bool:
-    if not os.path.isfile(fpath):
+    if isinstance(fpath, str):
+        fpath = Path(fpath)
+    if not fpath.is_file():
         return False
     if md5 is None:
         return True
@@ -72,13 +74,16 @@ def download_from_url(
     extract_tars: bool, optional
         whether to extract .tgz archives, by default True
     """
-
-    root = os.path.expanduser(root)
+    if isinstance(root, str):
+        root = Path(str)
+    
+    root = root.expanduser()
     if not filename:
-        filename = os.path.basename(url)
-    fpath = os.fspath(os.path.join(root, filename))
+        # grab file ext from basename
+        filename = url.split('/')[-1] 
+    fpath = root / filename
 
-    os.makedirs(root, exist_ok=True)
+    root.mkdir(parents=True, exist_ok=True)
 
     # check if file is already present locally
     if check_integrity(fpath, md5):
@@ -101,7 +106,7 @@ def download_from_url(
                     prog = curr_size / size
                     print(f"Download in progress: {prog:.2%}", end='\r')
 
-            assert os.path.getsize(fpath) == size
+            assert fpath.stat().st_size == size
 
     # check integrity of downloaded file
     if not check_integrity(fpath, md5):
