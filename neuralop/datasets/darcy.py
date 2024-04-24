@@ -88,7 +88,7 @@ def load_darcy_pt(
     encoding="channel-wise",
     channel_dim=1,
 ):
-    """Load the Navier-Stokes dataset"""
+    """Load small darcy dataset"""
     data = torch.load(
         Path(data_path).joinpath(f"darcy_train_{train_resolution}.pt").as_posix()
     )
