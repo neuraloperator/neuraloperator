@@ -17,16 +17,16 @@ fno_n_modes = (8,8,8)
 # data parameters
 n_in = 100
 n_out = 100
-latent_density = 16
+latent_density = 8
 
 
+@pytest.mark.parametrize("batch_size", [1,4])
+@pytest.mark.parametrize("gno_coord_dim", [2,3])
 @pytest.mark.parametrize(
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
 )
-@pytest.mark.parametrize("gno_coord_dim", [2,3])
-@pytest.mark.parametrize("batch_size", [1,4])
 def test_fnogno(gno_transform_type, gno_coord_dim, batch_size):
-    if torch.has_cuda:
+    if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")
     else:
         device = torch.device("cpu:0")
@@ -34,7 +34,7 @@ def test_fnogno(gno_transform_type, gno_coord_dim, batch_size):
     model = GINO(
         in_channels=in_channels,
         out_channels=out_channels,
-        gno_radius=0.06,
+        gno_radius=0.3,# make this large to ensure neighborhoods fit
         projection_channels=projection_channels,
         gno_coord_dim=gno_coord_dim,
         in_gno_mlp_hidden_layers=[16,16],

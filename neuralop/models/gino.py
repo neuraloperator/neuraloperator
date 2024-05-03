@@ -31,7 +31,7 @@ class GINO(nn.Module):
             gno_use_open3d=False,
             in_gno_tanh=False,
             out_gno_tanh=None,
-            fno_in_channels=26,
+            fno_in_channels=3,
             fno_n_modes=(16, 16, 16), 
             fno_hidden_channels=64,
             fno_lifting_channels=256,
@@ -176,7 +176,7 @@ class GINO(nn.Module):
         self.fno_hidden_channels = fno_hidden_channels
 
         # TODO: make sure this makes sense in all contexts
-        fno_in_channels = gno_coord_dim
+        fno_in_channels = self.in_channels
         self.fno_in_channels = fno_in_channels
 
         if self.gno_coord_dim != 3 and gno_use_open3d:
@@ -188,7 +188,8 @@ class GINO(nn.Module):
             print(f'Warning: FNO expects {self.in_coord_dim}-d data while input GNO expects {self.gno_coord_dim}-d data')
 
         self.in_coord_dim_forward_order = list(range(self.in_coord_dim))
-        self.in_coord_dim_reverse_order = [j + 1 for j in self.in_coord_dim_forward_order]
+        # channels starting at 2 to permute everything after channel and batch dims
+        self.in_coord_dim_reverse_order = [j + 2 for j in self.in_coord_dim_forward_order]
 
         if fno_norm == "ada_in":
             if fno_ada_in_features is not None:
@@ -317,7 +318,8 @@ class GINO(nn.Module):
         return in_p 
 
     def integrate_latent(self, in_p, out_p, latent_embed):
-        
+        batch_size = latent_embed.shape[0]
+
         # output shape: (batch, n_out, out_channels) or (n_out, out_channels)
         in_to_out_nb = self.nb_search_out(
             in_p.view(-1, in_p.shape[-1]), 
@@ -325,7 +327,6 @@ class GINO(nn.Module):
             self.gno_radius,
             )
     
-       
         #Embed input points
         n_in = in_p.view(-1, in_p.shape[-1]).shape[0]
         if self.pos_embed is not None:
@@ -341,21 +342,25 @@ class GINO(nn.Module):
             out_p_embed = out_p #.reshape((n_out, -1))
         
         print(f"{latent_embed.shape=}")
-        # the problem here is the batch dim. Watch out for this
-        latent_embed = latent_embed.permute(*self.in_coord_dim_reverse_order, 0).reshape(-1, self.fno.hidden_channels)
         
+        #latent_embed shape b, c, n_1, n_2, ..., n_k
+        latent_embed = latent_embed.permute(0, *self.in_coord_dim_reverse_order, 1).reshape(batch_size, -1, self.fno.hidden_channels)
+        # shape b, n_out, channels
+        print(f"{latent_embed.shape=} after permute")
         if self.out_gno_tanh in ['latent_embed', 'both']:
             latent_embed = torch.tanh(latent_embed)
         #(n_out, fno_hidden_channels)
+        print("---going into output GNO---")
         out = self.gno_out(y=in_p_embed, 
                     neighbors=in_to_out_nb,
                     x=out_p_embed,
-                    f_y=latent_embed,
-                    weighting_fn=self.gno_weighting_fn)
-        out = out.unsqueeze(0).permute(0, 2, 1)
+                    f_y=latent_embed,)
+                    #weighting_fn=self.gno_weighting_fn)
+        print(f"{out.shape=}")
+        out = out.permute(0, 2, 1)
         # Project pointwise to out channels
-        #(n_in, out_channels)
-        out = self.projection(out).squeeze(0).permute(1, 0)  
+        #(b, n_in, out_channels)
+        out = self.projection(out).permute(0, 2, 1)  
 
         return out
     
@@ -368,12 +373,12 @@ class GINO(nn.Module):
             shape (batch, n_in, in_channels) 
             solution at a time t
         input_geom : torch.Tensor
-            shape (1, n_in, gno_coord_dim)
+            shape (1, n_in, gno_coord_dim) - torch automatically adds a batch dim of 1
             coordinates of mesh on which f is defined
-            x,y,t
         latent_queries : torch.Tensor
             just the latent geometry, a grid on [0,1] X [0,1] X ....
-            shape (batch, n_gridpts_1, .... n_gridpts_n, gno_coord_dim)
+            independent of batch
+            shape (1, n_gridpts_1, .... n_gridpts_n, gno_coord_dim)  - torch automatically adds a batch dim of 1
         output_queries : torch.Tensor
             shape (batch, n_out, gno_coord_dim)
             points to query the final GNO layer to get output
@@ -382,14 +387,8 @@ class GINO(nn.Module):
         """
         batch_size = f.shape[0]
 
-        if batch_size == 1:
-            f = f.squeeze(0)
-            latent_queries = latent_queries.squeeze(0)
-            input_geom = input_geom.squeeze(0)
-            output_queries = output_queries.squeeze(0)
-            if ada_in is not None:
-                ada_in = ada_in.squeeze(0)
-        
+        input_geom = input_geom.squeeze(0) 
+        latent_queries = latent_queries.squeeze(0)
     
         spatial_nbrs = self.nb_search_out(input_geom, 
                                           latent_queries.view((-1, latent_queries.shape[-1])), 
