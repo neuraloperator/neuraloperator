@@ -2,7 +2,7 @@ from typing import Literal
 import importlib
 
 import torch
-
+from torch import einsum
 
 def segment_csr(
     src: torch.Tensor,
@@ -52,39 +52,42 @@ def segment_csr(
             print("Warning: use_scatter is True but torch_scatter is not properly built. \
                   Defaulting to naive PyTorch implementation")
         # if batched, shape [b, n_reps, channels]
+        # otherwise shape [n_reps, channels]
         if src.ndim == 3:
             batched = True
             point_dim = 1
-            indices = indptr[0]  # full shape is needed for CUDA but not CPU-only
         else:
             batched = False
             point_dim = 0
-            indices = indptr
 
-        # end indices - start indices
-        n_nbrs = indices[1:] - indices[:-1]
-
+        # if batched, shape [b, n_out, channels]
+        # otherwise shape [n_out, channels]
         output_shape = list(src.shape)
-        output_shape[point_dim] = indices.shape[0] - 1
+        n_out = indptr.shape[point_dim] - 1
+        output_shape[point_dim] = n_out
 
         out = torch.zeros(output_shape, device=src.device)
 
-        for i, start in enumerate(indices[:-1]):
+        for i in range(n_out):
+            # reduce all indices pointed to in indptr from src into out
             if batched:
-                out_idx = (slice(None), slice(i, i + 1))  # grab all batch elements
+                from_idx = (slice(None), slice(indptr[0,i], indptr[0,i+1]))
+                ein_str = 'bio->bo'
+                start = indptr[0,i]
+                n_nbrs = indptr[0,i+1] - start
+                to_idx = (slice(None), i)
             else:
-                out_idx = i  # no batching dim
-
-            if (
-                start == src.shape[point_dim]
-            ):  # if the last neighborhoods are empty, skip
+                from_idx = slice(indptr[i], indptr[i+1])
+                ein_str = 'io->o'
+                start = indptr[i]
+                n_nbrs = indptr[i+1] - start
+                to_idx = i
+            if start == n_out:
                 break
-            for j in range(n_nbrs[i]):
-                if batched:
-                    src_idx = (slice(None), slice(start + j, start + j + 1))
-                else:
-                    src_idx = start = j
-                out[out_idx] += src[src_idx]
-            if reduce == "mean":
-                out[out_idx] /= n_nbrs[i]
+            src_from = src[from_idx]
+            if n_nbrs > 0:
+                to_reduce = einsum(ein_str, src_from)
+                if reduce == "mean":
+                    to_reduce /= n_nbrs
+                out[to_idx] += to_reduce
         return out
