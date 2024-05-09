@@ -77,6 +77,7 @@ def test_gino(gno_transform_type, gno_coord_dim, batch_size):
     assert list(out.shape) == [batch_size, n_out, out_channels]
 
     # Check backward pass
+    assert out.isfinite().all()
     if batch_size > 1:
         loss = out[0].sum()
     else:
