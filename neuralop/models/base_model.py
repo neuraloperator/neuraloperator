@@ -90,10 +90,10 @@ class BaseModel(torch.nn.Module):
         # with open(metadata_filepath, 'w') as f:
         #     json.dump(self._init_kwargs, f)
 
-    def load_checkpoint(self, save_folder, save_name):
+    def load_checkpoint(self, save_folder, save_name, map_location=None):
         save_folder = Path(save_folder)
         state_dict_filepath = save_folder.joinpath(f'{save_name}_state_dict.pt').as_posix()
-        self.load_state_dict(torch.load(state_dict_filepath))
+        self.load_state_dict(torch.load(state_dict_filepath), map_location=map_location)
     
     @classmethod
     def from_checkpoint(cls, save_folder, save_name):

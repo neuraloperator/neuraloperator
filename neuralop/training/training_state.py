@@ -7,6 +7,7 @@ from pathlib import Path
 
 import torch
 from torch import nn
+import torch.distributed as dist
 
 
 def load_training_state(save_dir: Union[str, Path], save_name: str,
@@ -24,12 +25,16 @@ def load_training_state(save_dir: Union[str, Path], save_name: str,
     save_name : str
         name of model to load
     """
+    map_location = None
+    if dist.is_initialized():
+        map_location = {"cuda:0" : f"cuda:{dist.get_rank}"}
+
     training_state = {}
 
     if isinstance(save_dir, str):
         save_dir = Path(save_dir)
     
-    training_state['model'] = model.from_checkpoint(save_dir, save_name)
+    training_state['model'] = model.from_checkpoint(save_dir, save_name, map_location=map_location)
     
     # load optimizer if state exists
     if optimizer is not None:
@@ -71,6 +76,10 @@ def save_training_state(save_dir: Union[str, Path], save_name: str,
     save_name : str
         name of model to load
     """
+    # if running in DDP, only save state on rank 0
+    if dist.is_initialized():
+        if dist.get_rank != 0:
+            return None
     training_state = {}
 
     if isinstance(save_dir, str):
