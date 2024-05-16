@@ -14,7 +14,6 @@ from neuralop.datasets.tensor_dataset import TensorDataset
 from neuralop.datasets.data_transforms import DataProcessor, MGPatchingDataProcessor
 from neuralop.losses import PointwiseQuantileLoss
 from neuralop.models import UQNO
-from neuralop.models.lorafno import LoRAFNO
 from neuralop.training import setup
 from neuralop.training.callbacks import BasicLoggerCallback, Callback, CheckpointCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
@@ -339,8 +338,7 @@ class UQNODataProcessor(DataProcessor):
         out, sample = self.postprocess(out, sample)
         return out, sample
 
-#residual_model = copy.deepcopy(solution_model)
-residual_model = LoRAFNO(solution_model)
+residual_model = copy.deepcopy(solution_model)
 
 if config.load_resid_model:
     residual_model = residual_model.from_checkpoint(save_folder='./ckpt/residual-savebest', save_name=config.resid_checkpoint)
@@ -380,19 +378,7 @@ residual_train_loader_unprocessed = DataLoader(residual_train_db,
 # return dataset of x: a(x), y: G_hat(a,x) - u(x)
 processed_residual_train_db, processed_residual_val_db, residual_data_processor =\
         loader_to_residual_db(solution_model, data_processor, residual_train_loader_unprocessed, device)
-'''data = processed_residual_train_db[0]
 
-import matplotlib.pyplot as plt
-fig = plt.figure(figsize=(7, 7))
-ax = fig.add_subplot(2, 2, 1)
-ax2 = fig.add_subplot(2, 3, 1)
-ax.imshow(data['y'][0])
-ax2.imshow(data['x'][0])
-
-plt.savefig("residvis.png")
-raise ValueError()'''
-
-print(f"{len(processed_residual_train_db)=}")
 residual_data_processor = residual_data_processor.to(device)
 
 if not config.load_resid_model:
@@ -411,7 +397,7 @@ if not config.load_resid_model:
                                         pin_memory=True,
                                         persistent_workers=False,
                                     )
-    print(f"{len(residual_train_loader)=}")
+
     # config residual scheduler
     if config.opt.residual.scheduler == "ReduceLROnPlateau":
         resid_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -512,10 +498,8 @@ with torch.no_grad():
         val_ratio_list.append(ratio.squeeze().to("cpu"))
         del sample, out
 val_ratios = torch.stack(val_ratio_list)
-print(f"{val_ratios.shape=}")
 
 vr_view = val_ratios.view(val_ratios.shape[0], -1)
-print(f"{vr_view.shape=}")
 
 
 def eval_coverage_bandwidth(test_loader, alpha, device="cuda"):
