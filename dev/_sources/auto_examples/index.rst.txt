@@ -14,6 +14,7 @@ Gallery of examples
 
     <div class="sphx-glr-thumbnails">
 
+.. thumbnail-parent-div-open
 
 .. raw:: html
 
@@ -133,6 +134,8 @@ Gallery of examples
       <div class="sphx-glr-thumbnail-title">Training a neural operator on Darcy-Flow - Author Robert Joseph George</div>
     </div>
 
+
+.. thumbnail-parent-div-close
 
 .. raw:: html
 

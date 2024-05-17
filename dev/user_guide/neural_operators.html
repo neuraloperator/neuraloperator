@@ -24,7 +24,7 @@
 
   
     <script src="../_static/documentation_options.js?v=e259d695"></script>
-    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
  <script src="../_static/navbar_burger.js"></script>
@@ -234,7 +234,8 @@ Instead of learning the operator, people usually discretize the physical domain
 and cast the problem in finite-dimensional Euclidean space.
 Indeed, hundred years of effort has been made to develop numerical solvers
 such as the finite element method and finite difference method.</p>
-<a class="reference internal image-reference" href="../_images/grids.jpg"><img alt="../_images/grids.jpg" src="../_images/grids.jpg" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="../_images/grids.jpg"><img alt="../_images/grids.jpg" src="../_images/grids.jpg" style="width: 800px;" />
+</a>
 <p>Three examples of discretization.
 The left one is a regular grid used in the finite difference method;
 the middle one is a triangulated grid used in the finite element method;
@@ -370,7 +371,8 @@ and a graph <span class="math notranslate nohighlight">\(G\)</span>, the message
 taking as input edge features and as output
 a matrix in <span class="math notranslate nohighlight">\(\mathbb{R}^{n \times n}\)</span>.
 Relating to our kernel formulation, <span class="math notranslate nohighlight">\(e(x,y) = (x,y,a(x),a(y))\)</span>.</p>
-<a class="reference internal image-reference" href="../_images/graph.jpg"><img alt="../_images/graph.jpg" src="../_images/graph.jpg" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="../_images/graph.jpg"><img alt="../_images/graph.jpg" src="../_images/graph.jpg" style="width: 800px;" />
+</a>
 </section>
 <section id="nystrom-approximation">
 <h2>Nystrom Approximation<a class="headerlink" href="#nystrom-approximation" title="Link to this heading"></a></h2>
@@ -399,7 +401,8 @@ and add more nodes to the difficult and singularity areas in the PDEs.</p>
 to learn the operator <span class="math notranslate nohighlight">\(\mathcal{F}: f \mapsto u\)</span>.</p>
 <section id="poisson-equation">
 <h3>poisson equation<a class="headerlink" href="#poisson-equation" title="Link to this heading"></a></h3>
-<a class="reference internal image-reference" href="../_images/nik_kernel.jpg"><img alt="../_images/nik_kernel.jpg" src="../_images/nik_kernel.jpg" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="../_images/nik_kernel.jpg"><img alt="../_images/nik_kernel.jpg" src="../_images/nik_kernel.jpg" style="width: 800px;" />
+</a>
 <p>As shown in the figure above, we compare the true analytic Green function <span class="math notranslate nohighlight">\(G(x,y)\)</span> (left)
 with the learned kernel <span class="math notranslate nohighlight">\(\kappa_{\phi}(x,y)\)</span>  (right).
 The learned kernel is almost the same as the true kernel,
@@ -407,7 +410,8 @@ which means are neural network formulation does match the Green function express
 </section>
 <section id="d-poisson-equation">
 <h3>2D poisson equation<a class="headerlink" href="#d-poisson-equation" title="Link to this heading"></a></h3>
-<a class="reference internal image-reference" href="../_images/GKN_compare.jpg"><img alt="../_images/GKN_compare.jpg" src="../_images/GKN_compare.jpg" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="../_images/GKN_compare.jpg"><img alt="../_images/GKN_compare.jpg" src="../_images/GKN_compare.jpg" style="width: 800px;" />
+</a>
 <p>By assuming the kernel structure,
 graph kernel networks need only a few training examples to learn the shape of solution <span class="math notranslate nohighlight">\(u\)</span>.
 As shown in the figure above, the graph kernel network can roughly learn <span class="math notranslate nohighlight">\(u\)</span> with <span class="math notranslate nohighlight">\(5\)</span> training pairs,
@@ -430,7 +434,8 @@ the test errors on different resolutions are about the same,
 which means the graph kernel network can
 also generalize in the semi-supervised setting.
 An figure for <span class="math notranslate nohighlight">\(s=16, s'=241\)</span> is following (where error is absolute squared error):</p>
-<a class="reference internal image-reference" href="../_images/uai_16to241.jpg"><img alt="../_images/uai_16to241.jpg" src="../_images/uai_16to241.jpg" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="../_images/uai_16to241.jpg"><img alt="../_images/uai_16to241.jpg" src="../_images/uai_16to241.jpg" style="width: 800px;" />
+</a>
 </section>
 <section id="conclusion">
 <h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading"></a></h2>
