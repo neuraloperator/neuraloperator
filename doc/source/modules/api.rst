@@ -126,6 +126,34 @@ Neural operator Layers
 
     SphericalConv
 
+**Kernel integration**
+
+.. automodule:: neuralop.layers.integral_transform
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    IntegralTransform
+
+.. automodule:: neuralop.layers
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: function.rst
+
+    simple_neighbor_search
+
+.. autosummary::
+    :toctree: generated
+    :template: function.rst
+
+    segment_csr
+
 
 Other resolution invariant operations
 +++++++++++++++++++++++++++++++++++++
