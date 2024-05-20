@@ -10,7 +10,10 @@ def simple_neighbor_search(data: torch.Tensor, queries: torch.Tensor, radius: fl
 
     Parameters
     ----------
-    Density-Based Spatial Clustering of Applications with Noise
+    Native PyTorch implementation of a neighborhood search between two arbitrary coordinate meshes.
+    For each point `x` in `queries`, returns a list of the indices of all points `y` in `data` 
+    within the neighborhood of radius r `B_r(x)`
+
     data : torch.Tensor
         vector of data points from which to find neighbors
     queries : torch.Tensor
@@ -18,7 +21,8 @@ def simple_neighbor_search(data: torch.Tensor, queries: torch.Tensor, radius: fl
     radius : float
         size of each neighborhood
     """
-
+    
+    # compute pairwise distances
     dists = torch.cdist(queries, data).to(queries.device) # shaped num query points x num data points
     in_nbr = torch.where(dists <= radius, 1., 0.) # i,j is one if j is i's neighbor
     nbr_indices = in_nbr.nonzero()[:,1:].reshape(-1,) # only keep the column indices
