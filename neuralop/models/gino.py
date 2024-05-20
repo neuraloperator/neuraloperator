@@ -14,57 +14,7 @@ from ..layers.integral_transform import IntegralTransform
 from ..layers.neighbor_search import NeighborSearch
 
 class GINO(nn.Module):
-    def __init__(
-            self,
-            in_channels,
-            out_channels,
-            projection_channels=256,
-            gno_coord_dim=3,
-            gno_coord_embed_dim=None,
-            gno_embed_max_positions=None,
-            gno_radius=0.033,
-            in_gno_mlp_hidden_layers=[80, 80, 80],
-            out_gno_mlp_hidden_layers=[512, 256],
-            gno_mlp_non_linearity=F.gelu, 
-            in_gno_transform_type='linear',
-            out_gno_transform_type='linear',
-            gno_use_open3d=False,
-            in_gno_tanh=False,
-            out_gno_tanh=None,
-            fno_in_channels=3,
-            fno_n_modes=(16, 16, 16), 
-            fno_hidden_channels=64,
-            fno_lifting_channels=256,
-            fno_projection_channels=256,
-            fno_n_layers=4,
-            fno_output_scaling_factor=None,
-            fno_incremental_n_modes=None,
-            fno_block_precision='full',
-            fno_use_mlp=False, 
-            fno_mlp_dropout=0, 
-            fno_mlp_expansion=0.5,
-            fno_non_linearity=F.gelu,
-            fno_stabilizer=None, 
-            fno_norm=None,
-            fno_ada_in_features=None,
-            fno_ada_in_dim=1,
-            fno_preactivation=False,
-            fno_skip='linear',
-            fno_mlp_skip='soft-gating',
-            fno_separable=False,
-            fno_factorization=None,
-            fno_rank=1.0,
-            fno_joint_factorization=False, 
-            fno_fixed_rank_modes=False,
-            fno_implementation='factorized',
-            fno_decomposition_kwargs=dict(),
-            fno_domain_padding=None,
-            fno_domain_padding_mode='one-sided',
-            fno_fft_norm='forward',
-            fno_SpectralConv=SpectralConv,
-            **kwargs
-        ):
-        """GINO: Geometry-informed Neural Operator
+    """GINO: Geometry-informed Neural Operator
 
         Parameters
         ----------
@@ -168,6 +118,56 @@ class GINO(nn.Module):
         fno_SpectralConv : nn.Module, defaults to SpectralConv
             Spectral Convolution module to use.
         """
+    def __init__(
+            self,
+            in_channels,
+            out_channels,
+            projection_channels=256,
+            gno_coord_dim=3,
+            gno_coord_embed_dim=None,
+            gno_embed_max_positions=None,
+            gno_radius=0.033,
+            in_gno_mlp_hidden_layers=[80, 80, 80],
+            out_gno_mlp_hidden_layers=[512, 256],
+            gno_mlp_non_linearity=F.gelu, 
+            in_gno_transform_type='linear',
+            out_gno_transform_type='linear',
+            gno_use_open3d=False,
+            in_gno_tanh=False,
+            out_gno_tanh=None,
+            fno_in_channels=3,
+            fno_n_modes=(16, 16, 16), 
+            fno_hidden_channels=64,
+            fno_lifting_channels=256,
+            fno_projection_channels=256,
+            fno_n_layers=4,
+            fno_output_scaling_factor=None,
+            fno_incremental_n_modes=None,
+            fno_block_precision='full',
+            fno_use_mlp=False, 
+            fno_mlp_dropout=0, 
+            fno_mlp_expansion=0.5,
+            fno_non_linearity=F.gelu,
+            fno_stabilizer=None, 
+            fno_norm=None,
+            fno_ada_in_features=None,
+            fno_ada_in_dim=1,
+            fno_preactivation=False,
+            fno_skip='linear',
+            fno_mlp_skip='soft-gating',
+            fno_separable=False,
+            fno_factorization=None,
+            fno_rank=1.0,
+            fno_joint_factorization=False, 
+            fno_fixed_rank_modes=False,
+            fno_implementation='factorized',
+            fno_decomposition_kwargs=dict(),
+            fno_domain_padding=None,
+            fno_domain_padding_mode='one-sided',
+            fno_fft_norm='forward',
+            fno_SpectralConv=SpectralConv,
+            **kwargs
+        ):
         
         super().__init__()
         self.in_channels = in_channels
@@ -370,20 +370,20 @@ class GINO(nn.Module):
         Parameters
         ----------
         f : torch.Tensor
+            input function a defined on the input domain `input_geom`
             shape (batch, n_in, in_channels) 
-            solution at a time t
         input_geom : torch.Tensor
-            shape (1, n_in, gno_coord_dim) - torch automatically adds a batch dim of 1
-            coordinates of mesh on which f is defined
+            input domain coordinate mesh
+            shape (1, n_in, gno_coord_dim)
         latent_queries : torch.Tensor
-            just the latent geometry, a grid on [0,1] X [0,1] X ....
-            independent of batch
-            shape (1, n_gridpts_1, .... n_gridpts_n, gno_coord_dim)  - torch automatically adds a batch dim of 1
+            latent geometry on which to compute FNO latent embeddings
+            a grid on [0,1] x [0,1] x ....
+            shape (1, n_gridpts_1, .... n_gridpts_n, gno_coord_dim)
         output_queries : torch.Tensor
+            points at which to query the final GNO layer to get output
             shape (batch, n_out, gno_coord_dim)
-            points to query the final GNO layer to get output
         ada_in : torch.Tensor, optional
-            scalar inlet velocity, defaults to None
+            adaptive scalar instance parameter, defaults to None
         """
         batch_size = f.shape[0]
 
