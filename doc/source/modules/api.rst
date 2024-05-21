@@ -70,6 +70,14 @@ Spherical Fourier Neural Operators (SFNO)
 
     SFNO
 
+Geometry-Informed Neural Operators (GINO)
+-----------------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    GINO
 
 U-shaped Neural Operators (U-NO)
 --------------------------------
@@ -126,7 +134,9 @@ Neural operator Layers
 
     SphericalConv
 
-**Kernel integration**
+To support geometry-informed (GINO) models, we also offer the ability to integrate kernels in the spatial domain, which we formulate as mappings between arbitrary coordinate meshes.
+
+**Graph convolutions and kernel integration**:
 
 .. automodule:: neuralop.layers.integral_transform
     :no-members:
@@ -138,15 +148,31 @@ Neural operator Layers
 
     IntegralTransform
 
-.. automodule:: neuralop.layers
+**Neighbor search and neighborhood reduction**
+
+Find neighborhoods on arbitrary coordinate meshes:
+
+.. automodule:: neuralop.layers.neighbor_search
     :no-members:
     :no-inherited-members:
 
 .. autosummary::
     :toctree: generated
+    :template: class.rst
+
+    NeighborSearch
+
+.. autosummary::
+    :toctree: generated
     :template: function.rst
 
-    simple_neighbor_search
+    native_neighbor_search
+
+Given a CSR-formatted matrix, reduce data associated with index entries:
+
+.. automodule:: neuralop.layers.segment_csr
+    :no-members:
+    :no-inherited-members:
 
 .. autosummary::
     :toctree: generated

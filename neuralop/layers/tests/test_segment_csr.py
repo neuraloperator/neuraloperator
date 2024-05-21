@@ -30,7 +30,7 @@ def test_native_segcsr_shapes(batch_size):
         assert out.shape == (batch_size, indptr.shape[1] - 1, n_channels)
 
 def test_native_segcsr_reductions():
-    src = torch.ones([10,3])
+    src = torch.ones([10, 3])
     indptr = torch.tensor([0,3,8,10], dtype=torch.long)
 
     out_sum = segment_csr(src, indptr, reduce='sum', use_scatter=False)
@@ -42,8 +42,4 @@ def test_native_segcsr_reductions():
     assert out_mean.shape == (3,3)
     diff = out_mean - torch.ones([3,3])
     assert not diff.nonzero().any()
-
-
-
-
-
+    
