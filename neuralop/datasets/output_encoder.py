@@ -182,7 +182,7 @@ class UnitGaussianNormalizer(Transform):
         self.mean = (1.0 / (self.n_elements + n_elements)) * (
             self.n_elements * self.mean + torch.sum(data_batch, dim=dim, keepdim=True)
         )
-        self.squared_mean = (1.0 / (self.n_elements + n_elements - 1)) * (
+        self.squared_mean = (1.0 / (self.n_elements + n_elements)) * (
             self.n_elements * self.squared_mean
             + torch.sum(data_batch**2, dim=dim, keepdim=True)
         )
