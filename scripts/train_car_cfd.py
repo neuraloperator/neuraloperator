@@ -7,8 +7,8 @@ from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
 from neuralop.losses.data_losses import LpLoss
 from neuralop.training.trainer import Trainer
-from neuralop.datasets import MeshDataModule
-from neuralop.datasets.data_transforms import DataProcessor
+from neuralop.data.datasets import MeshDataModule
+from neuralop.data.transforms.data_processors import DataProcessor
 from copy import deepcopy
 from neuralop.training.callbacks import BasicLoggerCallback
 
