@@ -152,7 +152,7 @@ class UnitGaussianNormalizer(Transform):
             self.n_elements = count_tensor_params(data_batch, self.dim)
             self.mean = torch.mean(data_batch, dim=self.dim, keepdim=True)
             self.squared_mean = torch.mean(data_batch**2, dim=self.dim, keepdim=True)
-            self.std = torch.sqrt(self.squared_mean - self.mean**2)
+            self.std = torch.std(data_batch, dim=self.dim, keepdim=True)
         else:
             batch_size = data_batch.shape[0]
             dim = [i - 1 for i in self.dim if i]
@@ -168,7 +168,7 @@ class UnitGaussianNormalizer(Transform):
             self.squared_mean = (
                 torch.sum(data_batch**2, dim=dim, keepdim=True) / self.n_elements
             )
-            self.std = torch.sqrt(self.squared_mean - self.mean**2)
+            self.std = torch.std(data_batch, dim=self.dim, keepdim=True)
 
     def incremental_update_mean_std(self, data_batch):
         if self.mask is None:
@@ -188,7 +188,10 @@ class UnitGaussianNormalizer(Transform):
         )
         self.n_elements += n_elements
 
-        self.std = torch.sqrt(self.squared_mean - self.mean**2)
+        # 1/(n_i + n_j) * (n_i * sum(x_i^2)/n_i + sum(x_j^2) - (n_i*sum(x_i)/n_i + sum(x_j))^2)
+        # = 1/(n_i + n_j)  * (sum(x_i^2) + sum(x_j^2) - sum(x_i)^2 - 2sum(x_i)sum(x_j) - sum(x_j)^2))
+        # multiply by (n_i + n_j) / (n_i + n_j + 1) for unbiased estimator
+        self.std = torch.sqrt(self.squared_mean - self.mean**2) * self.n_elements / (self.n_elements - 1)
 
     def transform(self, x):
         return (x - self.mean) / (self.std + self.eps)
