@@ -207,11 +207,13 @@ Trainer, we provide a Callback class and several examples of common domain-speci
     CheckpointCallback
 
 
-Datasets
+Data
 ========
-We ship a small dataset for testing:
+In `neuralop.data`, we provide APIs for standardizing PDE datasets (`.datasets`) and transforming raw data into model inputs (`.transforms`).
 
-.. automodule:: neuralop.datasets
+We also ship a small dataset for testing:
+
+.. automodule:: neuralop.data.datasets
     :no-members:
     :no-inherited-members:
 
@@ -221,11 +223,11 @@ We ship a small dataset for testing:
 
     load_darcy_flow_small
 
-Much like PyTorch's `Torchvision.Datasets` module, our Datasets module also includes
+Much like PyTorch's `Torchvision.Datasets` module, our `data` module also includes
 utilities to transform data from its raw form into the form expected by models and 
 loss functions:
 
-.. automodule:: neuralop.datasets.data_transforms
+.. automodule:: neuralop.data.transforms.data_transforms
     :no-members:
     :no-inherited-members:
 
