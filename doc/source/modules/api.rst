@@ -227,7 +227,7 @@ Much like PyTorch's `Torchvision.Datasets` module, our `data` module also includ
 utilities to transform data from its raw form into the form expected by models and 
 loss functions:
 
-.. automodule:: neuralop.data.transforms.data_transforms
+.. automodule:: neuralop.data.transforms.data_processors
     :no-members:
     :no-inherited-members:
 
