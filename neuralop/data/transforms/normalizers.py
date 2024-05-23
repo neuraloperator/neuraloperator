@@ -1,5 +1,5 @@
 from ...utils import count_tensor_params
-from .transforms import Transform
+from .base_transforms import Transform
 import torch
 
 class Normalizer(Transform):

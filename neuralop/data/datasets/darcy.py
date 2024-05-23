@@ -3,7 +3,7 @@ import torch
 
 from ..transforms.normalizers import UnitGaussianNormalizer
 from .tensor_dataset import TensorDataset
-from ..transforms.transforms import PositionalEmbedding2D
+from ..transforms.grid_transforms import PositionalEmbedding2D
 from ..transforms.data_processors import DefaultDataProcessor
 
 
