@@ -18,7 +18,6 @@ class FNOBlocks(nn.Module):
     """FNOBlocks implements a sequence of Fourier layers
     as described in "Fourier Neural Operator for Parametric
     Partial Differential Equations (Li et al., 2021).
-
     Parameters
     ----------
     Parameters
@@ -52,7 +51,7 @@ class FNOBlocks(nn.Module):
             stabilizing module to use between certain layers, by default None
             if "tanh", use tanh
         norm : Literal["ada_in", "group_norm", "instance_norm"], optional
-        Normalization layer to use, by default None
+            Normalization layer to use, by default None
         ada_in_features : int, optional
             number of features for adaptive instance norm above, by default None
         preactivation : bool, optional
@@ -65,7 +64,6 @@ class FNOBlocks(nn.Module):
         mlp_skip : str, optional
             module to use for MLP skip connections, by default "soft-gating"
             see layers.skip_connections for more details
-
         SpectralConv Params
         -------------------
         separable : bool, optional
@@ -93,7 +91,7 @@ class FNOBlocks(nn.Module):
         in_channels,
         out_channels,
         n_modes,
-        output_scaling_factor: Optional[Union[Number, List[Number]]] = None,
+        output_scaling_factor=None,
         n_layers=1,
         max_n_modes=None,
         fno_block_precision="full",
@@ -167,7 +165,6 @@ class FNOBlocks(nn.Module):
             n_layers=n_layers,
         )
 
-        # FNO
         self.fno_skips = nn.ModuleList(
             [
                 skip_connection(
@@ -267,12 +264,9 @@ class FNOBlocks(nn.Module):
             return self.forward_with_postactivation(x, index, output_shape)
 
     def forward_with_postactivation(self, x, index=0, output_shape=None):
-
-        # W(v(x)) from Fig.2 (b) of Li et al., 2021
         x_skip_fno = self.fno_skips[index](x)
         x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
 
-        # MLP parameterization of W(v(x)) Fig.2 (b) of Li et al., 2021
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
             x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
@@ -280,17 +274,13 @@ class FNOBlocks(nn.Module):
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
 
-        # F^{-1} (R * F(v(x))) from Fig.2 (b) of Li et al., 2021
-        # for more details see layers.spectral_convolution.py
         x_fno = self.convs(x, index, output_shape=output_shape)
 
         if self.norm is not None:
             x_fno = self.norm[self.n_norms * index](x_fno)
 
-        # W(v(x)) + F^{-1} (R * F(v(x)))
         x = x_fno + x_skip_fno
 
-        # σ(x) from Li et al., 2021
         if (self.mlp is not None) or (index < (self.n_layers - 1)):
             x = self.non_linearity(x)
 
@@ -312,27 +302,20 @@ class FNOBlocks(nn.Module):
 
         if self.norm is not None:
             x = self.norm[self.n_norms * index](x)
-        
-        # W(v(x)) from Fig.2 (b) of Li et al., 2021
+
         x_skip_fno = self.fno_skips[index](x)
         x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
-        
-        # MLP parameterization of W(v(x)) from Fig.2 (b) of Li et al., 2021
+
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
             x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
-        
-        # F^{-1} (R * F(v(x))) from Fig.2 (b) of Li et al., 2021
-        # for more details see layers.spectral_convolution.py
-        x_fno = self.convs(x, index, output_shape=output_shape)
 
-        # W(v(x)) + F^{-1} (R * F(v(x)))
+        x_fno = self.convs(x, index, output_shape=output_shape)
         x = x_fno + x_skip_fno
-        
-        # σ(x) from Li et al., 2021
+
         if self.mlp is not None:
             if index < (self.n_layers - 1):
                 x = self.non_linearity(x)
