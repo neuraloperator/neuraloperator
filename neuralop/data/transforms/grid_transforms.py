@@ -1,3 +1,5 @@
+from typing import List
+
 import torch
 from torch.utils.data import Dataset
 
