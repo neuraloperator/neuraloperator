@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import sys
 from neuralop.models import TFNO, UNO
 from neuralop import Trainer
-from neuralop.datasets import load_darcy_flow_small
+from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
 
