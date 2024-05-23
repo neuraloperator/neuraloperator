@@ -167,7 +167,7 @@ class FNOBlocks(nn.Module):
         else:
             raise ValueError(
                 f"Got norm={norm} but expected None or one of "
-                "[instance_norm, group_norm, layer_norm]"
+                "[instance_norm, group_norm, ada_in]"
             )
 
     def set_ada_in_embeddings(self, *embeddings):

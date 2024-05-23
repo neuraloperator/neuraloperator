@@ -52,7 +52,7 @@ class FNO(BaseModel, name='FNO'):
         expansion parameter of MLP layer, by default 0.5
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
-    norm : F.module, optional
+    norm : Literal["ada_in", "group_norm", "instance_norm"], optional
         Normalization layer to use, by default None
     preactivation : bool, default is False
         if True, use resnet-style preactivation
