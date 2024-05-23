@@ -1,10 +1,10 @@
 from pathlib import Path
 import torch
 
-from ..data.transforms.normalizers import UnitGaussianNormalizer
+from ..transforms.normalizers import UnitGaussianNormalizer
 from .tensor_dataset import TensorDataset
-from ..data.transforms.transforms import PositionalEmbedding2D
-from ..data.transforms.data_processors import DefaultDataProcessor
+from ..transforms.transforms import PositionalEmbedding2D
+from ..transforms.data_processors import DefaultDataProcessor
 
 
 def load_darcy_flow_small(

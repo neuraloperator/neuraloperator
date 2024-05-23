@@ -1,10 +1,10 @@
 import torch
 from pathlib import Path
 
-from ..data.transforms.normalizers import UnitGaussianNormalizer
 from .tensor_dataset import TensorDataset
-from ..data.transforms.transforms import PositionalEmbedding2D
-from ..data.transforms.data_processors import DefaultDataProcessor
+from ..transforms.normalizers import UnitGaussianNormalizer
+from ..transforms.transforms import PositionalEmbedding2D
+from ..transforms.data_processors import DefaultDataProcessor
 
 # from .hdf5_dataset import H5pyDataset
 

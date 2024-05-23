@@ -8,7 +8,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from .dict_dataset import DictDataset
-from ..data.transforms.normalizers import UnitGaussianNormalizer
+from ..transforms.normalizers import UnitGaussianNormalizer
 
 
 class MeshDataModule:
