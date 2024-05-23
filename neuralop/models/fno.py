@@ -52,7 +52,7 @@ class FNO(BaseModel, name='FNO'):
         expansion parameter of MLP layer, by default 0.5
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
-    norm : F.module, optional
+    norm : Literal["ada_in", "group_norm", "instance_norm"], optional
         Normalization layer to use, by default None
     preactivation : bool, default is False
         if True, use resnet-style preactivation
@@ -229,7 +229,9 @@ class FNO(BaseModel, name='FNO'):
         )
 
     def forward(self, x, output_shape=None, **kwargs):
-        """TFNO's forward pass
+        """FNO's forward pass. Documentation here will correspond to
+        operations outlined in Fig. 2 of "Fourier Neural Operator for
+        Parametric Partial Differential Equations" (Li et al., 2021).
 
         Parameters
         ----------
@@ -247,17 +249,21 @@ class FNO(BaseModel, name='FNO'):
         elif isinstance(output_shape, tuple):
             output_shape = [None]*(self.n_layers - 1) + [output_shape]
 
+        # P(a(x)) from Fig.2 (a) of Li et al., 2021
         x = self.lifting(x)
 
         if self.domain_padding is not None:
             x = self.domain_padding.pad(x)
 
+        # Block architecture outlined in Fig.2 (b) of Li et al., 2021
+        # for more detailed documentation see neuralop.layers.fno_block.py
         for layer_idx in range(self.n_layers):
             x = self.fno_blocks(x, layer_idx, output_shape=output_shape[layer_idx])
 
         if self.domain_padding is not None:
             x = self.domain_padding.unpad(x)
-
+        
+        # Q(v(x)) from Fig.2 (a) of Li et al., 2021
         x = self.projection(x)
 
         return x
