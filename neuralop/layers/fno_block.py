@@ -91,7 +91,7 @@ class FNOBlocks(nn.Module):
         in_channels,
         out_channels,
         n_modes,
-        output_scaling_factor: Optional[Union[Number, List[Number]]] = None,
+        output_scaling_factor=None,
         n_layers=1,
         max_n_modes=None,
         fno_block_precision="full",
@@ -238,7 +238,7 @@ class FNOBlocks(nn.Module):
         else:
             raise ValueError(
                 f"Got norm={norm} but expected None or one of "
-                "[instance_norm, group_norm, layer_norm]"
+                "[instance_norm, group_norm, ada_in]"
             )
 
     def set_ada_in_embeddings(self, *embeddings):
