@@ -206,7 +206,7 @@ if ‘mixed’, the contraction and inverse FFT run in half precision</p>
 </dd>
 <dt><strong>non_linearity</strong><span class="classifier">nn.Module, optional</span></dt><dd><p>Non-Linearity module to use, by default F.gelu</p>
 </dd>
-<dt><strong>norm</strong><span class="classifier">F.module, optional</span></dt><dd><p>Normalization layer to use, by default None</p>
+<dt><strong>norm</strong><span class="classifier">Literal[“ada_in”, “group_norm”, “instance_norm”], optional</span></dt><dd><p>Normalization layer to use, by default None</p>
 </dd>
 <dt><strong>preactivation</strong><span class="classifier">bool, default is False</span></dt><dd><p>if True, use resnet-style preactivation</p>
 </dd>
@@ -255,14 +255,16 @@ p1 corresponds to the percentage of padding along dim 1, etc.</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.models.TFNO.forward" title="neuralop.models.TFNO.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x[, output_shape])</p></td>
-<td><p>TFNO's forward pass</p></td>
+<td><p>FNO's forward pass.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="neuralop.models.TFNO.forward">
 <span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#neuralop.models.TFNO.forward" title="Link to this definition"></a></dt>
-<dd><p>TFNO’s forward pass</p>
+<dd><p>FNO’s forward pass. Documentation here will correspond to
+operations outlined in Fig. 2 of “Fourier Neural Operator for
+Parametric Partial Differential Equations” (Li et al., 2021).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
