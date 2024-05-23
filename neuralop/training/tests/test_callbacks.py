@@ -6,7 +6,7 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from neuralop.models import FNO
-from neuralop.datasets import load_darcy_flow_small
+from neuralop.data.datasets import load_darcy_flow_small
 
 from neuralop import Trainer, LpLoss, H1Loss, CheckpointCallback, IncrementalCallback
 from neuralop.models.base_model import BaseModel
