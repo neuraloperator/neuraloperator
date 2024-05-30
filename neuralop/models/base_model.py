@@ -81,6 +81,8 @@ class BaseModel(torch.nn.Module):
         """Saves the model state and init param in the given folder under the given name
         """
         save_folder = Path(save_folder)
+        if not save_folder.exists():
+            save_folder.mkdir(parents=True)
 
         state_dict_filepath = save_folder.joinpath(f'{save_name}_state_dict.pt').as_posix()
         torch.save(self.state_dict(), state_dict_filepath)
