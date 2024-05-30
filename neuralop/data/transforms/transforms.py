@@ -93,17 +93,17 @@ class DictTransform(Transform):
         if self.return_mappings:
             assert transform_dict.keys() == return_mappings.keys()
 
-    def transform(self, tensor_dict):
+    def transform(self, x):
         """
         Parameters
         ----------
-        tensor_dict : Torch.tensor dict
-            model output, indexed according to self.mappings
+        x : Torch.tensor
+            model input, indexed according to self.mappings
         """
-        out = torch.zeros_like(tensor_dict)
+        out = torch.zeros_like(x)
 
         for field, indices in self.input_mappings.items():
-            encoded = self.transforms[field].transform(tensor_dict[indices])
+            encoded = self.transforms[field].transform(x[indices])
             if self.return_mappings:
                 encoded = encoded[self.return_mappings[field]]
             out[indices] = encoded
