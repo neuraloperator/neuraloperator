@@ -1,5 +1,7 @@
+from typing import Dict
+
 from ...utils import count_tensor_params
-from .base_transforms import Transform
+from .base_transforms import Transform, DictTransform
 import torch
 
 class Normalizer(Transform):
@@ -163,6 +165,60 @@ class UnitGaussianNormalizer(Transform):
         self.std = self.std.to(device)
         return self
 
+    @classmethod
+    def from_dataset(cls, dataset, dim=None, keys=None, mask=None):
+        """Return a dictionary of normalizer instances, fitted on the given dataset
+
+        Parameters
+        ----------
+        dataset : pytorch dataset
+            each element must be a dict {key: sample}
+            e.g. {'x': input_samples, 'y': target_labels}
+        dim : int list, default is None
+            * If None, reduce over all dims (scalar mean and std)
+            * Otherwise, must include batch-dimensions and all over dims to reduce over
+        keys : str list or None
+            if not None, a normalizer is instanciated only for the given keys
+        """
+        for i, data_dict in enumerate(dataset):
+            if not i:
+                if not keys:
+                    keys = data_dict.keys()
+        instances = {key: cls(dim=dim, mask=mask) for key in keys}
+        for i, data_dict in enumerate(dataset):
+            for key, sample in data_dict.items():
+                if key in keys:
+                    instances[key].partial_fit(sample.unsqueeze(0))
+        return instances
+
+class MultipleFieldUnitGaussianNormalizer(DictTransform):
+    """MultipleFieldUnitGaussianNormalizer composes
+    DictTransform and UnitGaussianNormalizer to normalize different
+    fields of a model output tensor to Gaussian distributions w/
+    mean 0 and unit variance.
+
+        Parameters
+        ----------
+        normalizer_dict : Dict[UnitGaussianNormalizer]
+            dictionary of normalizers, keyed to fields
+        input_mappings : Dict[slice]
+            slices of input tensor to grab per field, must share keys with above
+        return_mappings : Dict[slice]
+            _description_
+        """
+    def __init__(self, 
+                 normalizer_dict: Dict[UnitGaussianNormalizer],
+                 input_mappings: Dict[slice],
+                 return_mappings: Dict[slice]):
+        assert set(normalizer_dict.keys()) == set(input_mappings.keys()), \
+            "Error: normalizers and model input fields must be keyed identically"
+        assert set(normalizer_dict.keys()) == set(return_mappings.keys()), \
+            "Error: normalizers and model output fields must be keyed identically"
+
+        super().__init__(transform_dict=normalizer_dict,
+                         input_mappings=input_mappings,
+                         return_mappings=return_mappings)
+    
     @classmethod
     def from_dataset(cls, dataset, dim=None, keys=None, mask=None):
         """Return a dictionary of normalizer instances, fitted on the given dataset
