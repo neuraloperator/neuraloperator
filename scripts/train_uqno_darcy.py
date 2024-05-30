@@ -9,10 +9,10 @@ from torch.utils.data import DataLoader
 import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
-from neuralop.datasets.darcy import load_darcy_421_1k, load_darcy_421_5k, loader_to_residual_db
+from neuralop.datasets.darcy import load_darcy_421_5k, loader_to_residual_db
 from neuralop.datasets.tensor_dataset import TensorDataset
 from neuralop.datasets.data_transforms import DataProcessor, MGPatchingDataProcessor
-from neuralop.losses import PointwiseQuantileLoss
+from neuralop.losses.data_losses import PointwiseQuantileLoss
 from neuralop.models import UQNO
 from neuralop.training import setup
 from neuralop.training.callbacks import BasicLoggerCallback, Callback, CheckpointCallback
@@ -78,7 +78,7 @@ if config.verbose and is_logger:
 
 # Loading the Darcy flow dataset for training the base model
 train_loader, train_db, test_loaders, data_processor = load_darcy_421_5k(
-    data_root=config.data.train_data_path,
+    data_root=config.data.data_root,
     n_train=config.data.n_train_total,
     n_test=config.data.n_test,
     sub=config.data.sub,
@@ -98,9 +98,6 @@ residual_train_db = TensorDataset(**train_db[config.data.n_train_solution:config
 residual_calib_db = TensorDataset(**train_db[config.data.n_train_solution + config.data.n_train_residual:\
                                   config.data.n_train_solution + config.data.n_train_residual +\
                                   config.data.n_calib_residual])
-print(len(solution_train_db))
-print(len(residual_train_db))
-print(len(residual_calib_db))
 
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:
@@ -239,16 +236,6 @@ if not config.load_soln_model:
 # UQ #
 ######
 
-## TODO
-# compute quantile loss as follows:
-# y = solution(x) - y_true
-# x = residual(x)
-
-# quantile(x,y) is pointwise quantile loss
-
-# compute via data processor
-
-
 class UQNODataProcessor(DataProcessor):
     def __init__(self, base_data_processor: DataProcessor, resid_data_processor: DataProcessor,
                  device: str="cpu"):
@@ -308,22 +295,14 @@ class UQNODataProcessor(DataProcessor):
         """
         self.base_data_processor.train = False
         g_hat, pred_uncertainty = out # UQNO returns a tuple
-        #print(f"{torch.mean(pred_uncertainty)=}")
-        #if not self.train
-        #print(f"{torch.mean(pred_uncertainty)=}") 
+       
         pred_uncertainty = self.residual_normalizer.inverse_transform(pred_uncertainty)
         # this is normalized
-        #print(f"WARNING: no inverse xform, {torch.mean(pred_uncertainty)=}")
 
         g_hat, sample = self.base_data_processor.postprocess(g_hat, sample) #unnormalize g_hat
 
         g_true = sample['y'] # this is unnormalized in eval mode
-        #print(f"{g_true.mean()=}")
-        #print(f"{g_hat.mean()=}")
         sample['y'] = g_true - g_hat # both unnormalized
-        # trying with normalized outs
-        #print(f"{sample['y'].mean()=}")
-
 
         sample.pop('x') # remove x arg to avoid overloading loss args
 
@@ -343,10 +322,7 @@ residual_model = copy.deepcopy(solution_model)
 if config.load_resid_model:
     residual_model = residual_model.from_checkpoint(save_folder='./ckpt/residual-savebest', save_name=config.resid_checkpoint)
 residual_model = residual_model.to(device)
-'''
-if not config.load_resid_model:
-    for resid_param, solution_param in zip(residual_model.parameters(), solution_model.parameters()):
-        assert torch.isclose(resid_param,solution_param).all()'''
+
 quantile_loss = PointwiseQuantileLoss(alpha = 1 - config.opt.alpha)
 
 
@@ -530,8 +506,6 @@ def eval_coverage_bandwidth(test_loader, alpha, device="cuda"):
             in_pred_flattened = in_pred.view(in_pred.shape[0], -1)
             in_pred_instancewise = torch.mean(in_pred_flattened,dim=1) >= 1-alpha # expected shape (batchsize, 1)
             in_pred_list.append(in_pred_instancewise.float().to("cpu"))
-            #del x, y, pred, point_pred, in_pred_flattened
-            #torch.cuda.empty_cache()
 
     in_pred = torch.cat(in_pred_list, axis=0)
     intervals = torch.cat(avg_interval_list, axis=0)
@@ -540,10 +514,6 @@ def eval_coverage_bandwidth(test_loader, alpha, device="cuda"):
     print(f"{in_pred_percentage} of instances satisfy that >= {1-alpha} pts drawn are inside the predicted quantile")
     print(f"Mean interval width is {mean_interval}")
     return mean_interval, in_pred_percentage
-
-'''
-if config.wandb.log and is_logger:
-    wandb.log(interval, percentage)'''
 
 for alpha in [0.02, 0.05, 0.1]:
     for delta in [0.02, 0.05, 0.1]:
@@ -560,6 +530,8 @@ for alpha in [0.02, 0.05, 0.1]:
         uqno_data_proc.eval()
         print(f"------- for values {alpha=} {delta=} ----------")
         interval, percentage = eval_coverage_bandwidth(test_loader=test_loaders[train_db[0]['x'].shape[-1]], alpha=alpha, device=device)
-
+        if config.wandb.log and is_logger:
+            wandb.log(interval, percentage)
+            
 if config.wandb.log and is_logger:
     wandb.finish()
