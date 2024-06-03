@@ -364,12 +364,12 @@ class GINO(nn.Module):
 
         return out
     
-    def forward(self,  f, input_geom, latent_queries, output_queries, ada_in=None, **kwargs):
+    def forward(self,  x, input_geom, latent_queries, output_queries, ada_in=None, **kwargs):
         """forward pass of GNO --> latent embedding w/FNO --> GNO out
 
         Parameters
         ----------
-        f : torch.Tensor
+        x : torch.Tensor
             input function a defined on the input domain `input_geom`
             shape (batch, n_in, in_channels) 
         input_geom : torch.Tensor
@@ -385,7 +385,7 @@ class GINO(nn.Module):
         ada_in : torch.Tensor, optional
             adaptive scalar instance parameter, defaults to None
         """
-        batch_size = f.shape[0]
+        batch_size = x.shape[0]
 
         input_geom = input_geom.squeeze(0) 
         latent_queries = latent_queries.squeeze(0)
@@ -396,7 +396,7 @@ class GINO(nn.Module):
         
         in_p = self.gno_in(y=input_geom,
                            x=latent_queries.view((-1, latent_queries.shape[-1])),
-                           f_y=f,
+                           f_y=x,
                            neighbors=spatial_nbrs)
         
         grid_shape = latent_queries.shape[:-1] # disregard positional encoding dim
