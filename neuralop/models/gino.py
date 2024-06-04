@@ -280,7 +280,7 @@ class GINO(nn.Module):
                     mlp_layers=out_gno_mlp_hidden_layers,
                     mlp_non_linearity=gno_mlp_non_linearity,
                     transform_type=out_gno_transform_type,
-                    use_torch_scatter=gno_use_torch_scattergit a
+                    use_torch_scatter=gno_use_torch_scatter
         )
 
         self.projection = MLP(in_channels=fno_hidden_channels, 
