@@ -47,6 +47,10 @@ class GINO(nn.Module):
         gno_use_open3d : bool, optional
             whether to use open3d neighbor search, by default False
             if False, uses pure-PyTorch fallback neighbor search
+        gno_use_torch_scatter : bool, optional
+            whether to use torch_scatter's neighborhood reduction function
+            or the native PyTorch implementation in IntegralTransform layers.
+            If False, uses the fallback PyTorch version.
         out_gno_tanh : bool, optional
             whether to use tanh to stabilize outputs of the output GNO, by default False
         fno_in_channels : int, optional
@@ -133,7 +137,7 @@ class GINO(nn.Module):
             in_gno_transform_type='linear',
             out_gno_transform_type='linear',
             gno_use_open3d=False,
-            in_gno_tanh=False,
+            gno_use_torch_scatter=True,
             out_gno_tanh=None,
             fno_in_channels=3,
             fno_n_modes=(16, 16, 16), 
@@ -264,6 +268,7 @@ class GINO(nn.Module):
                     mlp_layers=in_gno_mlp_hidden_layers,
                     mlp_non_linearity=gno_mlp_non_linearity,
                     transform_type=in_gno_transform_type,
+                    use_torch_scatter=gno_use_torch_scatter
         )
 
         ### output GNO
@@ -275,6 +280,7 @@ class GINO(nn.Module):
                     mlp_layers=out_gno_mlp_hidden_layers,
                     mlp_non_linearity=gno_mlp_non_linearity,
                     transform_type=out_gno_transform_type,
+                    use_torch_scatter=gno_use_torch_scattergit a
         )
 
         self.projection = MLP(in_channels=fno_hidden_channels, 
