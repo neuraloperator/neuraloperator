@@ -199,7 +199,7 @@ class MultipleFieldUnitGaussianNormalizer(DictTransform):
 
         Parameters
         ----------
-        normalizer_dict : Dict[UnitGaussianNormalizer]
+        normalizer_dict : Dict[str, UnitGaussianNormalizer]
             dictionary of normalizers, keyed to fields
         input_mappings : Dict[slice]
             slices of input tensor to grab per field, must share keys with above
@@ -207,9 +207,9 @@ class MultipleFieldUnitGaussianNormalizer(DictTransform):
             _description_
         """
     def __init__(self, 
-                 normalizer_dict: Dict[UnitGaussianNormalizer],
-                 input_mappings: Dict[slice],
-                 return_mappings: Dict[slice]):
+                 normalizer_dict: Dict[str, UnitGaussianNormalizer],
+                 input_mappings: Dict[str, slice],
+                 return_mappings: Dict[str, slice]):
         assert set(normalizer_dict.keys()) == set(input_mappings.keys()), \
             "Error: normalizers and model input fields must be keyed identically"
         assert set(normalizer_dict.keys()) == set(return_mappings.keys()), \
