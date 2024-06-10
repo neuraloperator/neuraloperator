@@ -71,6 +71,7 @@ class DefaultDataProcessor(DataProcessor):
         self.out_normalizer = out_normalizer
         self.positional_encoding = positional_encoding
         self.device = "cpu"
+        self._train = True
 
     def wrap(self, model):
         self.model = model
