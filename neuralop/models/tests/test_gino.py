@@ -59,15 +59,15 @@ def test_gino(gno_transform_type, gno_coord_dim, batch_size):
     output_queries = torch.randn(*output_queries_shape, device=device)
 
     # create data and features
-    f_shape = [batch_size, n_in, in_channels]
-    f = torch.randn(*f_shape, device=device)
+    x_shape = [batch_size, n_in, in_channels]
+    x = torch.randn(*x_shape, device=device)
     # require and retain grad to check for backprop
-    f.requires_grad_(True)
+    x.requires_grad_(True)
 
     ada_in = torch.randn(1, device=device)
 
     # Test forward pass
-    out = model(f=f,
+    out = model(x=x,
                 input_geom=input_geom,
                 latent_queries=latent_geom,
                 output_queries=output_queries,
@@ -90,4 +90,4 @@ def test_gino(gno_transform_type, gno_coord_dim, batch_size):
     assert n_unused_params == 0, f"{n_unused_params} parameters were unused!"
     if batch_size > 1:
         # assert f[1:] accumulates no grad
-        assert not f.grad[1:].nonzero().any()
+        assert not x.grad[1:].nonzero().any()
