@@ -3,7 +3,7 @@ import torch
 
 from ..transforms.normalizers import UnitGaussianNormalizer
 from .tensor_dataset import TensorDataset
-from ..transforms.grid_transforms import PositionalEmbedding2D
+from ..transforms.positional_embeddings import Euclidean2D
 from ..transforms.data_processors import DefaultDataProcessor
 
 
@@ -193,7 +193,7 @@ def load_darcy_pt(
 
     
     if positional_encoding:
-        pos_encoding = PositionalEmbedding2D(grid_boundaries=grid_boundaries)
+        pos_encoding = Euclidean2D(grid_boundaries=grid_boundaries)
     else:
         pos_encoding = None
     data_processor = DefaultDataProcessor(

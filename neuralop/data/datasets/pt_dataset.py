@@ -2,8 +2,7 @@ import torch
 
 from .tensor_dataset import GeneralTensorDataset
 from ..transforms.normalizers import UnitGaussianNormalizer
-from ..transforms.grid_transforms import PositionalEmbedding2D
-
+from ..transforms.positional_embeddings import Euclidean2D
 
 def load_pt_traintestsplit(data_path, 
                         n_train, n_test,
@@ -107,7 +106,7 @@ def load_pt_traintestsplit(data_path,
             
             train_data.append(current_data.contiguous())
 
-            transform = PositionalEmbedding2D(grid_boundaries) if positional_encoding[j] else None
+            transform = Euclidean2D(grid_boundaries) if positional_encoding[j] else None
             train_transforms.append(transform)
 
     test_data = None
@@ -131,7 +130,7 @@ def load_pt_traintestsplit(data_path,
             
             test_data.append(current_data.contiguous())
 
-            transform = PositionalEmbedding2D(grid_boundaries) if positional_encoding[j] else None
+            transform = Euclidean2D(grid_boundaries) if positional_encoding[j] else None
             test_transforms.append(transform)
 
     del data

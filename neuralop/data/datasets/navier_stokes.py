@@ -3,7 +3,7 @@ from pathlib import Path
 
 from .tensor_dataset import TensorDataset
 from ..transforms.normalizers import UnitGaussianNormalizer
-from ..transforms.grid_transforms import PositionalEmbedding2D
+from ..transforms.positional_embeddings import Euclidean2D
 from ..transforms.data_processors import DefaultDataProcessor
 
 # from .hdf5_dataset import H5pyDataset
@@ -32,7 +32,7 @@ from ..transforms.data_processors import DefaultDataProcessor
 #         in_normalizer = Normalizer(x_mean, x_std)
     
 #     if positional_encoding:
-#         pos_encoding = PositionalEmbedding2D(grid_boundaries)
+#         pos_encoding = Euclidean2D(grid_boundaries)
     
 #     if encode_output:
 #         y_mean = training_db._attribute('y', 'mean')
@@ -127,7 +127,7 @@ def load_navier_stokes_pt(data_path, train_resolution,
         output_encoder = None
     
     if positional_encoding:
-        pos_encoding = PositionalEmbedding2D(grid_boundaries)
+        pos_encoding = Euclidean2D(grid_boundaries)
 
     data_processor = DefaultDataProcessor(in_normalizer=input_encoder,
                                           out_normalizer=output_encoder,
