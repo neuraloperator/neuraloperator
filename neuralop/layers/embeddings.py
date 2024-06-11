@@ -21,7 +21,6 @@ class PositionalEmbedding(nn.Module):
         return x
 
 
-# modified from https://github.com/lucidrains/x-transformers/blob/main/x_transformers/x_transformers.py
 def rotate_half(x):
     """
     Split x's channels into two equal halves.
@@ -47,6 +46,8 @@ class RotaryEmbedding(nn.Module):
     def __init__(self, dim, min_freq=1/64, scale=1.):
         """
         Applying rotary positional embedding (https://arxiv.org/abs/2104.09864) to the input feature tensor.
+        Code modified from https://github.com/lucidrains/x-transformers/blob/main/x_transformers/x_transformers.py
+
         The crux is the dot product of two rotation matrices R(theta1) and R(theta2) is equal to R(theta2 - theta1).
         """
         super().__init__()
@@ -74,3 +75,49 @@ class RotaryEmbedding(nn.Module):
 
         return torch.cat((apply_rotary_pos_emb(t_x, freqs_x),
                           apply_rotary_pos_emb(t_y, freqs_y)), dim=-1)
+
+
+class GaussianFourierEmbedding(nn.Module):
+    def __init__(self,
+                 in_channels,
+                 mapping_size,
+                 scale=10,
+                 learnable=False):
+        """
+        An implementation of Gaussian Fourier feature mapping,
+            code modified from: https://github.com/ndahlquist/pytorch-fourier-feature-networks
+        "Fourier Features Let Networks Learn High Frequency Functions in Low Dimensional Domains":
+            https://arxiv.org/abs/2006.10739
+            https://people.eecs.berkeley.edu/~bmild/fourfeat/index.html
+        Given an input of size [batches, n_points, num_input_channels],
+           returns a tensor of size [batches, n_points, mapping_size*2].
+
+        Parameters:
+            in_channels: int, Number of input channels.
+            mapping_size: int, Number of output channels for sin/cos part.
+            scale: float, Scale (variance) of the Gaussian Fourier Feature Transform, by default 10.
+            learnable: bool, Whether the Gaussian projection matrix is learnable or not, by default False.
+
+        """
+        super().__init__()
+
+        self._B = nn.Parameter(torch.randn((in_channels, mapping_size)) * scale,
+                               requires_grad=learnable)
+
+    def forward(self, x):
+        if len(x.shape) == 2:
+            x = x.unsqueeze(0)
+        batches, num_of_points, channels = x.shape
+
+        # Make shape compatible for matmul with _B.
+        # From [B, N, C] to [(B*N), C].
+        x = x.view(-1, channels)
+
+        x = x @ self._B.to(x.device)
+
+        # From [(B*N), C] to [B, N, C]
+        x = x.view(batches, num_of_points, -1)
+
+        x = 2 * torch.pi * x
+
+        return torch.cat([torch.sin(x), torch.cos(x)], dim=-1)
