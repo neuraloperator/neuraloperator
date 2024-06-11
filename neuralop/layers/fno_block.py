@@ -15,12 +15,83 @@ Number = Union[int, float]
 
 
 class FNOBlocks(nn.Module):
+    """FNOBlocks implements a sequence of Fourier layers
+    as described in "Fourier Neural Operator for Parametric
+    Partial Differential Equations (Li et al., 2021).
+    Parameters
+    ----------
+    Parameters
+        ----------
+        in_channels : int
+            input channels to Fourier layers
+        out_channels : int
+            output channels after Fourier layers
+        n_modes : int, List[int]
+            number of modes to keep along each dimension 
+            in frequency space. Can either be specified as
+            an int (for all dimensions) or an iterable with one
+            number per dimension
+        output_scaling_factor : Optional[Union[Number, List[Number]]], optional
+            factor by which to scale outputs for super-resolution, by default None
+        n_layers : int, optional
+            number of Fourier layers to apply in sequence, by default 1
+        max_n_modes : int, List[int], optional
+            maximum number of modes to keep along each dimension, by default None
+        fno_block_precision : str, optional
+            floating point precision to use for computations, by default "full"
+        use_mlp : bool, optional
+            whether to use mlp layers to parameterize skip connections, by default False
+        mlp_dropout : int, optional
+            dropout parameter for self.mlp, by default 0
+        mlp_expansion : float, optional
+            expansion parameter for self.mlp, by default 0.5
+        non_linearity : torch.nn.F module, optional
+            nonlinear activation function to use between layers, by default F.gelu
+        stabilizer : Literal["tanh"], optional
+            stabilizing module to use between certain layers, by default None
+            if "tanh", use tanh
+        norm : Literal["ada_in", "group_norm", "instance_norm"], optional
+            Normalization layer to use, by default None
+        ada_in_features : int, optional
+            number of features for adaptive instance norm above, by default None
+        preactivation : bool, optional
+            whether to call forward pass with pre-activation, by default False
+            if True, call nonlinear activation and norm before Fourier convolution
+            if False, call activation and norms after Fourier convolutions
+        fno_skip : str, optional
+            module to use for FNO skip connections, by default "linear"
+            see layers.skip_connections for more details
+        mlp_skip : str, optional
+            module to use for MLP skip connections, by default "soft-gating"
+            see layers.skip_connections for more details
+        SpectralConv Params
+        -------------------
+        separable : bool, optional
+            separable parameter for SpectralConv, by default False
+        factorization : str, optional
+            factorization parameter for SpectralConv, by default None
+        rank : float, optional
+            rank parameter for SpectralConv, by default 1.0
+        SpectralConv : BaseConv, optional
+            module to use for SpectralConv, by default SpectralConv
+        joint_factorization : bool, optional
+            whether to factorize all spectralConv weights as one tensor, by default False
+        fixed_rank_modes : bool, optional
+            fixed_rank_modes parameter for SpectralConv, by default False
+        implementation : str, optional
+            implementation parameter for SpectralConv, by default "factorized"
+        decomposition_kwargs : _type_, optional
+            kwargs for tensor decomposition in SpectralConv, by default dict()
+        fft_norm : str, optional
+            how to normalize discrete fast Fourier transform, by default "forward"
+            if "forward", normalize just the forward direction F(v(x)) by 1/n (number of total modes)
+    """
     def __init__(
         self,
         in_channels,
         out_channels,
         n_modes,
-        output_scaling_factor: Optional[Union[Number, List[Number]]] = None,
+        output_scaling_factor=None,
         n_layers=1,
         max_n_modes=None,
         fno_block_precision="full",
@@ -167,7 +238,7 @@ class FNOBlocks(nn.Module):
         else:
             raise ValueError(
                 f"Got norm={norm} but expected None or one of "
-                "[instance_norm, group_norm, layer_norm]"
+                "[instance_norm, group_norm, ada_in]"
             )
 
     def set_ada_in_embeddings(self, *embeddings):

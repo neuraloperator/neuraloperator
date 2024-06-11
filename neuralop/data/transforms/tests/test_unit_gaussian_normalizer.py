@@ -26,13 +26,17 @@ def test_UnitGaussianNormalizer_from_data(eps=1e-6):
     # Init by fitting whole data at once
     normalizer = UnitGaussianNormalizer(dim=[0, 2, 3, 4], eps=eps)
     normalizer.fit(x)
+    
+    assert_close(normalizer.mean, mean)
+    assert_close(normalizer.std, std, rtol=eps, atol=eps)
+
     x_normalized = normalizer.transform(x)
     x_unnormalized = normalizer.inverse_transform(x_normalized)
 
     assert_close(x_unnormalized, x)
     assert torch.mean(x_normalized) <= eps
     assert (torch.std(x_normalized) - 1) <= eps
-
+    
     assert_close(normalizer.mean, mean)
     assert_close(normalizer.std, std, rtol=eps, atol=eps)
 
@@ -44,6 +48,7 @@ def test_UnitGaussianNormalizer_incremental_update(eps=1e-6):
     # Incrementally compute mean and var
     normalizer = UnitGaussianNormalizer(dim=[0, 2, 3, 4], eps=eps)
     normalizer.partial_fit(x, batch_size=2)
+
     x_normalized = normalizer.transform(x)
     x_unnormalized = normalizer.inverse_transform(x_normalized)
 
@@ -52,6 +57,5 @@ def test_UnitGaussianNormalizer_incremental_update(eps=1e-6):
     assert (torch.std(x_normalized) - 1) <= eps
 
     assert_close(normalizer.mean, mean)
-    print(normalizer.std, std)
     assert_close(normalizer.std, std, rtol=eps, atol=eps)
 
