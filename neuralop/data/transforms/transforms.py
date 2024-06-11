@@ -263,11 +263,11 @@ def regular_grid(spatial_dims, grid_boundaries=[[0, 1], [0, 1]]):
 
     return grid_x, grid_y
 
-class PositionalEmbedding2D():
+class Euclidean2D():
     """A simple positional embedding as a regular 2D grid
     """
     def __init__(self, grid_boundaries=[[0, 1], [0, 1]]):
-        """PositionalEmbedding2D applies a simple positional 
+        """Euclidean2D applies a simple positional 
         embedding as a regular 2D grid
 
         Parameters

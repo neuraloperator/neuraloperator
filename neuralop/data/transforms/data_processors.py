@@ -272,7 +272,7 @@ class MGPatchingDataProcessor(DataProcessor):
             OutputEncoder to decode model inputs, by default None
         in_normalizer : neuralop.datasets.transforms.Transform, optional
             OutputEncoder to decode model outputs, by default None
-        positional_encoding : neuralop.datasets.transforms.PositionalEmbedding2D, optional
+        positional_encoding : neuralop.datasets.transforms.Euclidean2D, optional
             appends pos encoding to x if used
         device : str, optional
             device 'cuda' or 'cpu' where computations are performed
