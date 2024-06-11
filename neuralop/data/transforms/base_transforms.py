@@ -31,7 +31,7 @@ class Transform(torch.nn.Module):
     def to(self, device):
         pass
 
-class Composite(Transform):
+class CompositeTransform(Transform):
     def __init__(self, transforms: List[Transform]):
         """Composite transform composes a list of
         Transforms into one Transform object.
