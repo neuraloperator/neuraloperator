@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.models`.GINO
+==================================
+
+.. currentmodule:: neuralop.models
+
+.. autoclass:: GINO
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

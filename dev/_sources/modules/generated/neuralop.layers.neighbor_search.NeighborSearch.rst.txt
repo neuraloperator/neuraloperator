@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.layers.neighbor_search`.NeighborSearch
+============================================================
+
+.. currentmodule:: neuralop.layers.neighbor_search
+
+.. autoclass:: NeighborSearch
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

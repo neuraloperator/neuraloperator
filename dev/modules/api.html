@@ -228,6 +228,16 @@
 </tbody>
 </table>
 </section>
+<section id="geometry-informed-neural-operators-gino">
+<h3>Geometry-Informed Neural Operators (GINO)<a class="headerlink" href="#geometry-informed-neural-operators-gino" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.GINO.html#neuralop.models.GINO" title="neuralop.models.GINO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GINO</span></code></a>(in_channels, out_channels[, ...])</p></td>
+<td><p>GINO: Geometry-informed Neural Operator</p></td>
+</tr>
+</tbody>
+</table>
+</section>
 <section id="u-shaped-neural-operators-u-no">
 <h3>U-shaped Neural Operators (U-NO)<a class="headerlink" href="#u-shaped-neural-operators-u-no" title="Link to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
@@ -266,6 +276,43 @@ in the form of PyTorch layers, that you can use to build your own models:</p>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.spherical_convolution.SphericalConv.html#neuralop.layers.spherical_convolution.SphericalConv" title="neuralop.layers.spherical_convolution.SphericalConv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SphericalConv</span></code></a>(in_channels, out_channels, n_modes)</p></td>
 <td><p>Spherical Convolution, base class for the SFNO <a class="reference internal" href="generated/neuralop.layers.spherical_convolution.SphericalConv.html#radd7fd10dc7a-1" id="id2"><span>[Radd7fd10dc7a-1]</span></a></p></td>
+</tr>
+</tbody>
+</table>
+<p>To support geometry-informed (GINO) models, we also offer the ability to integrate kernels in the spatial domain, which we formulate as mappings between arbitrary coordinate meshes.</p>
+<p><strong>Graph convolutions and kernel integration</strong>:</p>
+<span class="target" id="module-neuralop.layers.integral_transform"></span><table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.integral_transform.IntegralTransform.html#neuralop.layers.integral_transform.IntegralTransform" title="neuralop.layers.integral_transform.IntegralTransform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IntegralTransform</span></code></a>([mlp, mlp_layers, ...])</p></td>
+<td><p>Integral Kernel Transform (GNO) Computes one of the following:     (a) int_{A(x)} k(x, y) dy     (b) int_{A(x)} k(x, y) * f(y) dy     (c) int_{A(x)} k(x, y, f(y)) dy     (d) int_{A(x)} k(x, y, f(y)) * f(y) dy</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Neighbor search and neighborhood reduction</strong></p>
+<p>Find neighborhoods on arbitrary coordinate meshes:</p>
+<span class="target" id="module-neuralop.layers.neighbor_search"></span><table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.neighbor_search.NeighborSearch.html#neuralop.layers.neighbor_search.NeighborSearch" title="neuralop.layers.neighbor_search.NeighborSearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NeighborSearch</span></code></a>([use_open3d])</p></td>
+<td><p>eighborhood search between two arbitrary coordinate meshes.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.neighbor_search.native_neighbor_search.html#neuralop.layers.neighbor_search.native_neighbor_search" title="neuralop.layers.neighbor_search.native_neighbor_search"><code class="xref py py-obj docutils literal notranslate"><span class="pre">native_neighbor_search</span></code></a>(data, queries, radius)</p></td>
+<td><p><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+</p></td>
+</tr>
+</tbody>
+</table>
+<p>Given a CSR-formatted matrix, reduce data associated with index entries:</p>
+<span class="target" id="module-neuralop.layers.segment_csr"></span><table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.segment_csr.segment_csr.html#neuralop.layers.segment_csr.segment_csr" title="neuralop.layers.segment_csr.segment_csr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">segment_csr</span></code></a>(src, indptr, reduce[, use_scatter])</p></td>
+<td><p>segment_csr reduces all entries of a CSR-formatted matrix by summing or averaging over neighbors.</p></td>
 </tr>
 </tbody>
 </table>
@@ -429,6 +476,7 @@ loss functions:</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#spherical-fourier-neural-operators-sfno">Spherical Fourier Neural Operators (SFNO)</a></li>
+<li><a class="reference internal" href="#geometry-informed-neural-operators-gino">Geometry-Informed Neural Operators (GINO)</a></li>
 <li><a class="reference internal" href="#u-shaped-neural-operators-u-no">U-shaped Neural Operators (U-NO)</a></li>
 </ul>
 </li>

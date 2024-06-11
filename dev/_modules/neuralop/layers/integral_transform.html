@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>neuralop.layers.integral_transform &#8212; neuraloperator 0.3.0 documentation</title> 
+<link rel="stylesheet" href="../../../_static/tensorly_style.css">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../_static/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../_static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../../_static/favicon/favicon-16x16.png">
+<link rel="manifest" href="../../../_static/favicon/site.webmanifest">
+<link rel="mask-icon" href="../../../_static/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="../../../_static/favicon/favicon.ico">
+<meta name="theme-color" content="#ffffff">
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/tensorly_style.css?v=a02e9698" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css?v=61a4c737" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+    <script src="../../../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+ <script src="../../../_static/navbar_burger.js"></script>
+ <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+ 
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  </head>
+<body  class="has-navbar-fixed-top">
+
+  <header>
+    <navbar>
+      <nav class="navbar top-navbar is-fixed-top has-shadow is-flex-wrap-wrap" role="navigation" aria-label="main top navigation">
+        <div class="navbar-brand">
+        
+
+          <a class="navbar-item" href="../../../index.html">
+            <img src="../../../_static/neuraloperator_logo.png" height="28">
+          </a>
+          <a class="navbar-item is-hidden-desktop" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon"><i class="fab fa-github"></i></span>
+          </a>
+
+          <a role="button" class="navbar-burger" data-target="top-nav-menu" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+
+        </div>
+        
+        <div class="navbar-menu" id="top-nav-menu">
+        
+
+          <div class="navbar-start">
+            
+              <a class="navbar-item" href="../../../install.html">
+              Install
+            </a>
+              <a class="navbar-item" href="../../../user_guide/index.html">
+              User Guide
+            </a>
+              <a class="navbar-item" href="../../../modules/api.html">
+              API
+            </a>
+              <a class="navbar-item" href="../../../auto_examples/index.html">
+              Examples
+            </a>
+          </div>
+        
+          <div class="navbar-end">
+            <div class="navbar-item">
+            
+            <a class="button is-hidden-touch is-dark" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon-text">
+                <span class="icon is-large">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>Github</span>
+              </span>
+            </a>
+
+            </div> 
+          </div> 
+        </div> 
+
+      </nav>
+      
+    </navbar>
+  </header>
+
+
+  <div id="column-container">
+  <div class="columns is-mobile is-centered">
+	
+  
+
+  <div class="column main-column">
+
+    
+    <div class="main-section">
+
+      
+      
+
+      <div class="container content main-content">
+        
+  <h1>Source code for neuralop.layers.integral_transform</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+
+<span class="kn">from</span> <span class="nn">.mlp</span> <span class="kn">import</span> <span class="n">MLPLinear</span>
+<span class="kn">from</span> <span class="nn">.segment_csr</span> <span class="kn">import</span> <span class="n">segment_csr</span>
+
+
+<div class="viewcode-block" id="IntegralTransform">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.layers.integral_transform.IntegralTransform.html#neuralop.layers.integral_transform.IntegralTransform">[docs]</a>
+<span class="k">class</span> <span class="nc">IntegralTransform</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Integral Kernel Transform (GNO)</span>
+<span class="sd">    Computes one of the following:</span>
+<span class="sd">        (a) \int_{A(x)} k(x, y) dy</span>
+<span class="sd">        (b) \int_{A(x)} k(x, y) * f(y) dy</span>
+<span class="sd">        (c) \int_{A(x)} k(x, y, f(y)) dy</span>
+<span class="sd">        (d) \int_{A(x)} k(x, y, f(y)) * f(y) dy</span>
+
+<span class="sd">    x : Points for which the output is defined</span>
+<span class="sd">    y : Points for which the input is defined</span>
+<span class="sd">    A(x) : A subset of all points y (depending on</span>
+<span class="sd">           each x) over which to integrate</span>
+<span class="sd">    k : A kernel parametrized as a MLP</span>
+<span class="sd">    f : Input function to integrate against given</span>
+<span class="sd">        on the points y</span>
+
+<span class="sd">    If f is not given, a transform of type (a)</span>
+<span class="sd">    is computed. Otherwise transforms (b), (c),</span>
+<span class="sd">    or (d) are computed. The sets A(x) are specified</span>
+<span class="sd">    as a graph in CRS format.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mlp : torch.nn.Module, default None</span>
+<span class="sd">        MLP parametrizing the kernel k. Input dimension</span>
+<span class="sd">        should be dim x + dim y or dim x + dim y + dim f</span>
+<span class="sd">    mlp_layers : list, default None</span>
+<span class="sd">        List of layers sizes speficing a MLP which</span>
+<span class="sd">        parametrizes the kernel k. The MLP will be</span>
+<span class="sd">        instansiated by the MLPLinear class</span>
+<span class="sd">    mlp_non_linearity : callable, default torch.nn.functional.gelu</span>
+<span class="sd">        Non-linear function used to be used by the</span>
+<span class="sd">        MLPLinear class. Only used if mlp_layers is</span>
+<span class="sd">        given and mlp is None</span>
+<span class="sd">    transform_type : str, default &#39;linear&#39;</span>
+<span class="sd">        Which integral transform to compute. The mapping is:</span>
+<span class="sd">        &#39;linear_kernelonly&#39; -&gt; (a)</span>
+<span class="sd">        &#39;linear&#39; -&gt; (b)</span>
+<span class="sd">        &#39;nonlinear_kernelonly&#39; -&gt; (c)</span>
+<span class="sd">        &#39;nonlinear&#39; -&gt; (d)</span>
+<span class="sd">        If the input f is not given then (a) is computed</span>
+<span class="sd">        by default independently of this parameter.</span>
+<span class="sd">    use_torch_scatter : bool, default &#39;True&#39;</span>
+<span class="sd">        Whether to use torch_scatter&#39;s implementation of </span>
+<span class="sd">        segment_csr or our native PyTorch version. torch_scatter </span>
+<span class="sd">        should be installed by default, but there are known versioning</span>
+<span class="sd">        issues on some linux builds of CPU-only PyTorch. Try setting</span>
+<span class="sd">        to False if you experience an error from torch_scatter.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">mlp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">mlp_layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">mlp_non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
+        <span class="n">transform_type</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span>
+        <span class="n">use_torch_scatter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="k">assert</span> <span class="n">mlp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">mlp_layers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">transform_type</span> <span class="o">=</span> <span class="n">transform_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_torch_scatter</span> <span class="o">=</span> <span class="n">use_torch_scatter</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">transform_type</span> <span class="o">!=</span> <span class="s2">&quot;linear_kernelonly&quot;</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_type</span> <span class="o">!=</span> <span class="s2">&quot;linear&quot;</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_type</span> <span class="o">!=</span> <span class="s2">&quot;nonlinear_kernelonly&quot;</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_type</span> <span class="o">!=</span> <span class="s2">&quot;nonlinear&quot;</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Got transform_type=</span><span class="si">{</span><span class="n">transform_type</span><span class="si">}</span><span class="s2"> but expected one of &quot;</span>
+                <span class="s2">&quot;[linear_kernelonly, linear, nonlinear_kernelonly, nonlinear]&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mlp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span> <span class="o">=</span> <span class="n">MLPLinear</span><span class="p">(</span><span class="n">layers</span><span class="o">=</span><span class="n">mlp_layers</span><span class="p">,</span> <span class="n">non_linearity</span><span class="o">=</span><span class="n">mlp_non_linearity</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span> <span class="o">=</span> <span class="n">mlp</span>
+<span class="w">            </span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+
+<span class="sd">    Assumes x=y if not specified</span>
+<span class="sd">    Integral is taken w.r.t. the neighbors</span>
+<span class="sd">    If no weights are given, a Monte-Carlo approximation is made</span>
+<span class="sd">    NOTE: For transforms of type 0 or 2, out channels must be</span>
+<span class="sd">    the same as the channels of f</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IntegralTransform.forward">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.layers.integral_transform.IntegralTransform.html#neuralop.layers.integral_transform.IntegralTransform.forward">[docs]</a>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">neighbors</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">f_y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute a kernel integral transform</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        y : torch.Tensor of shape [n, d1]</span>
+<span class="sd">            n points of dimension d1 specifying</span>
+<span class="sd">            the space to integrate over.</span>
+<span class="sd">            If batched, these must remain constant</span>
+<span class="sd">            over the whole batch so no batch dim is needed.</span>
+<span class="sd">        neighbors : dict</span>
+<span class="sd">            The sets A(x) given in CRS format. The</span>
+<span class="sd">            dict must contain the keys &quot;neighbors_index&quot;</span>
+<span class="sd">            and &quot;neighbors_row_splits.&quot; For descriptions</span>
+<span class="sd">            of the two, see NeighborSearch.</span>
+<span class="sd">            If batch &gt; 1, the neighbors must be constant</span>
+<span class="sd">            across the entire batch.</span>
+<span class="sd">        x : torch.Tensor of shape [m, d2], default None</span>
+<span class="sd">            m points of dimension d2 over which the</span>
+<span class="sd">            output function is defined. If None,</span>
+<span class="sd">            x = y.</span>
+<span class="sd">        f_y : torch.Tensor of shape [batch, n, d3] or [n, d3], default None</span>
+<span class="sd">            Function to integrate the kernel against defined</span>
+<span class="sd">            on the points y. The kernel is assumed diagonal</span>
+<span class="sd">            hence its output shape must be d3 for the transforms</span>
+<span class="sd">            (b) or (d). If None, (a) is computed.</span>
+<span class="sd">        weights : torch.Tensor of shape [n,], default None</span>
+<span class="sd">            Weights for each point y proprtional to the</span>
+<span class="sd">            volume around f(y) being integrated. For example,</span>
+<span class="sd">            suppose d1=1 and let y_1 &lt; y_2 &lt; ... &lt; y_{n+1}</span>
+<span class="sd">            be some points. Then, for a Riemann sum,</span>
+<span class="sd">            the weights are y_{j+1} - y_j. If None,</span>
+<span class="sd">            1/|A(x)| is used.</span>
+
+<span class="sd">        Output</span>
+<span class="sd">        ----------</span>
+<span class="sd">        out_features : torch.Tensor of shape [batch, m, d4] or [m, d4]</span>
+<span class="sd">            Output function given on the points x.</span>
+<span class="sd">            d4 is the output size of the kernel k.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">y</span>
+
+        <span class="n">rep_features</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="s2">&quot;neighbors_index&quot;</span><span class="p">]]</span>
+
+        <span class="c1"># batching only matters if f_y (latent embedding) values are provided</span>
+        <span class="n">batched</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># f_y has a batch dim IFF batched=True</span>
+        <span class="k">if</span> <span class="n">f_y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">f_y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">batched</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">batch_size</span> <span class="o">=</span> <span class="n">f_y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">in_features</span> <span class="o">=</span> <span class="n">f_y</span><span class="p">[:,</span> <span class="n">neighbors</span><span class="p">[</span><span class="s2">&quot;neighbors_index&quot;</span><span class="p">],</span> <span class="p">:]</span>
+            <span class="k">elif</span> <span class="n">f_y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">batched</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">in_features</span> <span class="o">=</span> <span class="n">f_y</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="s2">&quot;neighbors_index&quot;</span><span class="p">]]</span>
+
+        <span class="n">num_reps</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">neighbors</span><span class="p">[</span><span class="s2">&quot;neighbors_row_splits&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="o">-</span> <span class="n">neighbors</span><span class="p">[</span><span class="s2">&quot;neighbors_row_splits&quot;</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="n">self_features</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">repeat_interleave</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">num_reps</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">agg_features</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">rep_features</span><span class="p">,</span> <span class="n">self_features</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">f_y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">transform_type</span> <span class="o">==</span> <span class="s2">&quot;nonlinear_kernelonly&quot;</span>
+            <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_type</span> <span class="o">==</span> <span class="s2">&quot;nonlinear&quot;</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">batched</span><span class="p">:</span>
+                <span class="c1"># repeat agg features for every example in the batch</span>
+                <span class="n">agg_features</span> <span class="o">=</span> <span class="n">agg_features</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">batch_size</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">agg_features</span><span class="o">.</span><span class="n">ndim</span>
+                <span class="p">)</span>
+            <span class="n">agg_features</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">agg_features</span><span class="p">,</span> <span class="n">in_features</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">rep_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span><span class="p">(</span><span class="n">agg_features</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">f_y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_type</span> <span class="o">!=</span> <span class="s2">&quot;nonlinear_kernelonly&quot;</span><span class="p">:</span>
+            <span class="n">rep_features</span> <span class="o">=</span> <span class="n">rep_features</span> <span class="o">*</span> <span class="n">in_features</span>
+
+        <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">weights</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Weights must be of dimension 1 in all cases&quot;</span>
+            <span class="n">nbr_weights</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="s2">&quot;neighbors_index&quot;</span><span class="p">]]</span>
+            <span class="c1"># repeat weights along batch dim if batched</span>
+            <span class="k">if</span> <span class="n">batched</span><span class="p">:</span>
+                <span class="n">nbr_weights</span> <span class="o">=</span> <span class="n">nbr_weights</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">batch_size</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">nbr_weights</span><span class="o">.</span><span class="n">ndim</span>
+                <span class="p">)</span>
+            <span class="n">rep_features</span> <span class="o">=</span> <span class="n">nbr_weights</span> <span class="o">*</span> <span class="n">rep_features</span>
+            <span class="n">reduction</span> <span class="o">=</span> <span class="s2">&quot;sum&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">reduction</span> <span class="o">=</span> <span class="s2">&quot;mean&quot;</span>
+
+        <span class="n">splits</span> <span class="o">=</span> <span class="n">neighbors</span><span class="p">[</span><span class="s2">&quot;neighbors_row_splits&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">batched</span><span class="p">:</span>
+            <span class="n">splits</span> <span class="o">=</span> <span class="n">splits</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="n">batch_size</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">splits</span><span class="o">.</span><span class="n">ndim</span><span class="p">)</span>
+
+        <span class="n">out_features</span> <span class="o">=</span> <span class="n">segment_csr</span><span class="p">(</span><span class="n">rep_features</span><span class="p">,</span> <span class="n">splits</span><span class="p">,</span> <span class="n">reduce</span><span class="o">=</span><span class="n">reduction</span><span class="p">,</span> <span class="n">use_scatter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">use_torch_scatter</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">out_features</span></div>
+</div>
+
+</pre></div>
+
+      </div>
+
+      
+
+        <footer class="footer">
+    <div class="content has-text-centered">
+        <div class="block">
+          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+        </div>
+    </div>
+  </footer>
+
+    </div>
+
+  </div>  
+
+	
+
+  </div>  
+  </div> 
+
+  
+  <script>
+    function toggle_sidebar() {
+        var element = document.getElementById("sidebar");
+        var container = document.getElementById("column-container");
+        var localtoccolumn = document.getElementById("localtoc-column");
+        element.classList.toggle("hide-tablet");
+        element.classList.toggle("is-hidden-mobile");
+        container.classList.toggle("sidemenu-hidden");
+        localtoccolumn.classList.toggle("is-one-fifth-widescreen");
+        localtoccolumn.classList.toggle("is-2-desktop");
+        localtoccolumn.classList.toggle("is-3-desktop");
+    }
+  </script> 
+
+
+
+  </body>
+</html>

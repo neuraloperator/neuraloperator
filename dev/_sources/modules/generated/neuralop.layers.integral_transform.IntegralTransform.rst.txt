@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.layers.integral_transform`.IntegralTransform
+==================================================================
+
+.. currentmodule:: neuralop.layers.integral_transform
+
+.. autoclass:: IntegralTransform
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

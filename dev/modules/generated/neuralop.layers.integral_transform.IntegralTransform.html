@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>neuralop.layers.integral_transform.IntegralTransform &#8212; neuraloperator 0.3.0 documentation</title> 
+<link rel="stylesheet" href="../../_static/tensorly_style.css">
+<link rel="apple-touch-icon" sizes="180x180" href="../../_static/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../_static/favicon/favicon-16x16.png">
+<link rel="manifest" href="../../_static/favicon/site.webmanifest">
+<link rel="mask-icon" href="../../_static/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="../../_static/favicon/favicon.ico">
+<meta name="theme-color" content="#ffffff">
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/tensorly_style.css?v=a02e9698" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=61a4c737" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+    <script src="../../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+ <script src="../../_static/navbar_burger.js"></script>
+ <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+ 
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="neuralop.layers.neighbor_search.NeighborSearch" href="neuralop.layers.neighbor_search.NeighborSearch.html" />
+    <link rel="prev" title="neuralop.layers.spherical_convolution.SphericalConv" href="neuralop.layers.spherical_convolution.SphericalConv.html" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  </head>
+<body  class="has-navbar-fixed-top">
+
+  <header>
+    <navbar>
+      <nav class="navbar top-navbar is-fixed-top has-shadow is-flex-wrap-wrap" role="navigation" aria-label="main top navigation">
+        <div class="navbar-brand">
+        
+
+          <a class="navbar-item" href="../../index.html">
+            <img src="../../_static/neuraloperator_logo.png" height="28">
+          </a>
+          <a class="navbar-item is-hidden-desktop" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon"><i class="fab fa-github"></i></span>
+          </a>
+
+          <a role="button" class="navbar-burger" data-target="top-nav-menu" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+
+        </div>
+        
+        <div class="navbar-menu" id="top-nav-menu">
+        
+
+          <div class="navbar-start">
+            
+              <a class="navbar-item" href="../../install.html">
+              Install
+            </a>
+              <a class="navbar-item" href="../../user_guide/index.html">
+              User Guide
+            </a>
+              <a class="navbar-item" href="../api.html">
+              API
+            </a>
+              <a class="navbar-item" href="../../auto_examples/index.html">
+              Examples
+            </a>
+          </div>
+        
+          <div class="navbar-end">
+            <div class="navbar-item">
+            
+            <a class="button is-hidden-touch is-dark" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon-text">
+                <span class="icon is-large">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>Github</span>
+              </span>
+            </a>
+
+            </div> 
+          </div> 
+        </div> 
+
+      </nav>
+      
+    </navbar>
+  </header>
+
+
+  <div id="column-container">
+  <div class="columns is-mobile is-centered">
+	
+  
+      <div class="column is-10-mobile is-one-third-tablet is-3-desktop is-hidden-mobile" id="sidebar">
+    
+    <aside class="sticky-nav sidebar-menu">
+<div class="sidebar-search">
+  <form class="field" id="searchbox" role="search" action="../../search.html" method="get">
+    <!-- <label class="label" id="searchlabel">Quick search</label> -->
+    <div class="field has-addons">
+      <div class="control is-expanded">
+        <input class="input" type="text" placeholder="Search the doc" name="q" aria-labelledby="searchlabel autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      </div>
+      <div class="control">
+        <input class="button is-info" type="submit" value="Go" />
+      </div>
+    </div>
+  </form>
+  <script>document.getElementById('searchbox').style.display = "block"</script>
+
+</div>
+      
+      <div class="sidebar-menu-toc">
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installing NeuralOperator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/index.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../api.html#models">Models</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#module-neuralop.layers">Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#model-dispatching">Model Dispatching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#training">Training</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#datasets">Datasets</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_examples/index.html">Gallery of examples</a></li>
+</ul>
+ 
+      </div>
+    </aside>
+  </div>
+  
+
+  <div class="column main-column">
+
+    
+    <div class="main-section">
+
+      
+      
+      <div class="side-menu-toggle">
+        <button class="button" id="toggle-sidebar" onclick="toggle_sidebar()">
+          <span class="icon"><i class="fa fa-bars" aria-hidden="true"></i></span>
+          <span>menu</span> 
+        </button>
+      </div>
+      
+
+      <div class="container content main-content">
+        
+  <section id="neuralop-layers-integral-transform-integraltransform">
+<h1><a class="reference internal" href="../api.html#module-neuralop.layers.integral_transform" title="neuralop.layers.integral_transform"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.integral_transform</span></code></a>.IntegralTransform<a class="headerlink" href="#neuralop-layers-integral-transform-integraltransform" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="neuralop.layers.integral_transform.IntegralTransform">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.layers.integral_transform.</span></span><span class="sig-name descname"><span class="pre">IntegralTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mlp=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_layers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_non_linearity=&lt;built-in</span> <span class="pre">function</span> <span class="pre">gelu&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_type='linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_torch_scatter=True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/integral_transform.html#IntegralTransform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.integral_transform.IntegralTransform" title="Link to this definition"></a></dt>
+<dd><p>Integral Kernel Transform (GNO)
+Computes one of the following:</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li><p>int_{A(x)} k(x, y) dy</p></li>
+<li><p>int_{A(x)} k(x, y) * f(y) dy</p></li>
+<li><p>int_{A(x)} k(x, y, f(y)) dy</p></li>
+<li><p>int_{A(x)} k(x, y, f(y)) * f(y) dy</p></li>
+</ol>
+</div></blockquote>
+<p>x : Points for which the output is defined
+y : Points for which the input is defined
+A(x) : A subset of all points y (depending on</p>
+<blockquote>
+<div><p>each x) over which to integrate</p>
+</div></blockquote>
+<p>k : A kernel parametrized as a MLP
+f : Input function to integrate against given</p>
+<blockquote>
+<div><p>on the points y</p>
+</div></blockquote>
+<p>If f is not given, a transform of type (a)
+is computed. Otherwise transforms (b), (c),
+or (d) are computed. The sets A(x) are specified
+as a graph in CRS format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>mlp</strong><span class="classifier">torch.nn.Module, default None</span></dt><dd><p>MLP parametrizing the kernel k. Input dimension
+should be dim x + dim y or dim x + dim y + dim f</p>
+</dd>
+<dt><strong>mlp_layers</strong><span class="classifier">list, default None</span></dt><dd><p>List of layers sizes speficing a MLP which
+parametrizes the kernel k. The MLP will be
+instansiated by the MLPLinear class</p>
+</dd>
+<dt><strong>mlp_non_linearity</strong><span class="classifier">callable, default torch.nn.functional.gelu</span></dt><dd><p>Non-linear function used to be used by the
+MLPLinear class. Only used if mlp_layers is
+given and mlp is None</p>
+</dd>
+<dt><strong>transform_type</strong><span class="classifier">str, default ‘linear’</span></dt><dd><p>Which integral transform to compute. The mapping is:
+‘linear_kernelonly’ -&gt; (a)
+‘linear’ -&gt; (b)
+‘nonlinear_kernelonly’ -&gt; (c)
+‘nonlinear’ -&gt; (d)
+If the input f is not given then (a) is computed
+by default independently of this parameter.</p>
+</dd>
+<dt><strong>use_torch_scatter</strong><span class="classifier">bool, default ‘True’</span></dt><dd><p>Whether to use torch_scatter’s implementation of 
+segment_csr or our native PyTorch version. torch_scatter 
+should be installed by default, but there are known versioning
+issues on some linux builds of CPU-only PyTorch. Try setting
+to False if you experience an error from torch_scatter.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.layers.integral_transform.IntegralTransform.forward" title="neuralop.layers.integral_transform.IntegralTransform.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(y, neighbors[, x, f_y, weights])</p></td>
+<td><p>Compute a kernel integral transform</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="neuralop.layers.integral_transform.IntegralTransform.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/integral_transform.html#IntegralTransform.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.integral_transform.IntegralTransform.forward" title="Link to this definition"></a></dt>
+<dd><p>Compute a kernel integral transform</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>y</strong><span class="classifier">torch.Tensor of shape [n, d1]</span></dt><dd><p>n points of dimension d1 specifying
+the space to integrate over.
+If batched, these must remain constant
+over the whole batch so no batch dim is needed.</p>
+</dd>
+<dt><strong>neighbors</strong><span class="classifier">dict</span></dt><dd><p>The sets A(x) given in CRS format. The
+dict must contain the keys “neighbors_index”
+and “neighbors_row_splits.” For descriptions
+of the two, see NeighborSearch.
+If batch &gt; 1, the neighbors must be constant
+across the entire batch.</p>
+</dd>
+<dt><strong>x</strong><span class="classifier">torch.Tensor of shape [m, d2], default None</span></dt><dd><p>m points of dimension d2 over which the
+output function is defined. If None,
+x = y.</p>
+</dd>
+<dt><strong>f_y</strong><span class="classifier">torch.Tensor of shape [batch, n, d3] or [n, d3], default None</span></dt><dd><p>Function to integrate the kernel against defined
+on the points y. The kernel is assumed diagonal
+hence its output shape must be d3 for the transforms
+(b) or (d). If None, (a) is computed.</p>
+</dd>
+<dt><strong>weights</strong><span class="classifier">torch.Tensor of shape [n,], default None</span></dt><dd><p>Weights for each point y proprtional to the
+volume around f(y) being integrated. For example,
+suppose d1=1 and let y_1 &lt; y_2 &lt; … &lt; y_{n+1}
+be some points. Then, for a Riemann sum,
+the weights are y_{j+1} - y_j. If None,
+1/<a href="#id1"><span class="problematic" id="id2">|A(x)|</span></a> is used.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<div class="clearer"></div></section>
+
+
+      </div>
+
+      
+        <nav class="pagination" role="navigation" aria-label="pagination">
+    
+    <a class="button pagination-previous" href="neuralop.layers.spherical_convolution.SphericalConv.html" title="previous page" accesskey="p">
+        <span class="icon">
+            <i class="fa fa-arrow-circle-left"></i>
+        </span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.spherical_convolution</span></code>.SphericalConv</span>
+    </a>
+    
+    
+    <a class="button pagination-next" href="neuralop.layers.neighbor_search.NeighborSearch.html" title="next page" accesskey="n">
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.neighbor_search</span></code>.NeighborSearch </span>
+        <span class="icon">
+            <i class="fa fa-arrow-circle-right"></i>
+        </span>
+    </a>
+    
+</nav>
+
+      
+
+        <footer class="footer">
+    <div class="content has-text-centered">
+        <div class="block">
+          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+        </div>
+    </div>
+  </footer>
+
+    </div>
+
+  </div>  
+
+	
+    
+    <div class="column is-hidden-touch is-2-desktop is-one-fifth-widescreen" id="localtoc-column">
+
+    <aside class="sticky-nav localtoc"> 
+        <p class="menu-label"> 
+            <span class="icon-text">
+                <span class="icon"><i class="fas fa-duotone fa-list"></i></span>
+                <span> On this page </span>
+            </span>
+        </p>
+
+        <div class="menu menu-list localtoc-list">
+        <ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.integral_transform</span></code>.IntegralTransform</a><ul>
+<li><a class="reference internal" href="#neuralop.layers.integral_transform.IntegralTransform"><code class="docutils literal notranslate"><span class="pre">IntegralTransform</span></code></a><ul>
+<li><a class="reference internal" href="#neuralop.layers.integral_transform.IntegralTransform.forward"><code class="docutils literal notranslate"><span class="pre">IntegralTransform.forward()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+    </aside>
+    </div>
+
+  
+
+  </div>  
+  </div> 
+
+  
+  <script>
+    function toggle_sidebar() {
+        var element = document.getElementById("sidebar");
+        var container = document.getElementById("column-container");
+        var localtoccolumn = document.getElementById("localtoc-column");
+        element.classList.toggle("hide-tablet");
+        element.classList.toggle("is-hidden-mobile");
+        container.classList.toggle("sidemenu-hidden");
+        localtoccolumn.classList.toggle("is-one-fifth-widescreen");
+        localtoccolumn.classList.toggle("is-2-desktop");
+        localtoccolumn.classList.toggle("is-3-desktop");
+    }
+  </script> 
+
+
+
+  </body>
+</html>

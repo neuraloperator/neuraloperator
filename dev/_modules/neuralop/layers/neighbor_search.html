@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>neuralop.layers.neighbor_search &#8212; neuraloperator 0.3.0 documentation</title> 
+<link rel="stylesheet" href="../../../_static/tensorly_style.css">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../_static/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../_static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../../_static/favicon/favicon-16x16.png">
+<link rel="manifest" href="../../../_static/favicon/site.webmanifest">
+<link rel="mask-icon" href="../../../_static/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="../../../_static/favicon/favicon.ico">
+<meta name="theme-color" content="#ffffff">
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/tensorly_style.css?v=a02e9698" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css?v=61a4c737" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+    <script src="../../../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+ <script src="../../../_static/navbar_burger.js"></script>
+ <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+ 
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  </head>
+<body  class="has-navbar-fixed-top">
+
+  <header>
+    <navbar>
+      <nav class="navbar top-navbar is-fixed-top has-shadow is-flex-wrap-wrap" role="navigation" aria-label="main top navigation">
+        <div class="navbar-brand">
+        
+
+          <a class="navbar-item" href="../../../index.html">
+            <img src="../../../_static/neuraloperator_logo.png" height="28">
+          </a>
+          <a class="navbar-item is-hidden-desktop" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon"><i class="fab fa-github"></i></span>
+          </a>
+
+          <a role="button" class="navbar-burger" data-target="top-nav-menu" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+
+        </div>
+        
+        <div class="navbar-menu" id="top-nav-menu">
+        
+
+          <div class="navbar-start">
+            
+              <a class="navbar-item" href="../../../install.html">
+              Install
+            </a>
+              <a class="navbar-item" href="../../../user_guide/index.html">
+              User Guide
+            </a>
+              <a class="navbar-item" href="../../../modules/api.html">
+              API
+            </a>
+              <a class="navbar-item" href="../../../auto_examples/index.html">
+              Examples
+            </a>
+          </div>
+        
+          <div class="navbar-end">
+            <div class="navbar-item">
+            
+            <a class="button is-hidden-touch is-dark" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon-text">
+                <span class="icon is-large">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>Github</span>
+              </span>
+            </a>
+
+            </div> 
+          </div> 
+        </div> 
+
+      </nav>
+      
+    </navbar>
+  </header>
+
+
+  <div id="column-container">
+  <div class="columns is-mobile is-centered">
+	
+  
+
+  <div class="column main-column">
+
+    
+    <div class="main-section">
+
+      
+      
+
+      <div class="container content main-content">
+        
+  <h1>Source code for neuralop.layers.neighbor_search</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+
+<span class="c1">#Requires either open3d torch instalation or torch_cluster</span>
+<span class="c1">#Uses open3d by default which, as of 07/23/2023, requires torch 1.13.1</span>
+<div class="viewcode-block" id="NeighborSearch">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.layers.neighbor_search.NeighborSearch.html#neuralop.layers.neighbor_search.NeighborSearch">[docs]</a>
+<span class="k">class</span> <span class="nc">NeighborSearch</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    eighborhood search between two arbitrary coordinate meshes.</span>
+<span class="sd">    For each point `x` in `queries`, returns a set of the indices of all points `y` in `data` </span>
+<span class="sd">    within the ball of radius r `B_r(x)`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    use_open3d : bool</span>
+<span class="sd">        Whether to use open3d or native PyTorch implementation</span>
+<span class="sd">        NOTE: open3d implementation requires 3d data</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">use_open3d</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">use_open3d</span><span class="p">:</span> <span class="c1"># slightly faster, works on GPU in 3d only</span>
+            <span class="kn">from</span> <span class="nn">open3d.ml.torch.layers</span> <span class="kn">import</span> <span class="n">FixedRadiusSearch</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">search_fn</span> <span class="o">=</span> <span class="n">FixedRadiusSearch</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_open3d</span> <span class="o">=</span> <span class="n">use_open3d</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># slower fallback, works on GPU and CPU</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">search_fn</span> <span class="o">=</span> <span class="n">native_neighbor_search</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_open3d</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        
+<div class="viewcode-block" id="NeighborSearch.forward">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.layers.neighbor_search.NeighborSearch.html#neuralop.layers.neighbor_search.NeighborSearch.forward">[docs]</a>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">queries</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find the neighbors, in data, of each point in queries</span>
+<span class="sd">        within a ball of radius. Returns in CRS format.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        data : torch.Tensor of shape [n, d]</span>
+<span class="sd">            Search space of possible neighbors</span>
+<span class="sd">            NOTE: open3d requires d=3</span>
+<span class="sd">        queries : torch.Tensor of shape [m, d]</span>
+<span class="sd">            Points for which to find neighbors</span>
+<span class="sd">            NOTE: open3d requires d=3</span>
+<span class="sd">        radius : float</span>
+<span class="sd">            Radius of each ball: B(queries[j], radius)</span>
+<span class="sd">        </span>
+<span class="sd">        Output</span>
+<span class="sd">        ----------</span>
+<span class="sd">        return_dict : dict</span>
+<span class="sd">            Dictionary with keys: neighbors_index, neighbors_row_splits</span>
+<span class="sd">                neighbors_index: torch.Tensor with dtype=torch.int64</span>
+<span class="sd">                    Index of each neighbor in data for every point</span>
+<span class="sd">                    in queries. Neighbors are ordered in the same orderings</span>
+<span class="sd">                    as the points in queries. Open3d and torch_cluster</span>
+<span class="sd">                    implementations can differ by a permutation of the </span>
+<span class="sd">                    neighbors for every point.</span>
+<span class="sd">                neighbors_row_splits: torch.Tensor of shape [m+1] with dtype=torch.int64</span>
+<span class="sd">                    The value at index j is the sum of the number of</span>
+<span class="sd">                    neighbors up to query point j-1. First element is 0</span>
+<span class="sd">                    and last element is the total number of neighbors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">return_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_open3d</span><span class="p">:</span>
+            <span class="n">search_return</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">search_fn</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">queries</span><span class="p">,</span> <span class="n">radius</span><span class="p">)</span>
+            <span class="n">return_dict</span><span class="p">[</span><span class="s1">&#39;neighbors_index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">search_return</span><span class="o">.</span><span class="n">neighbors_index</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+            <span class="n">return_dict</span><span class="p">[</span><span class="s1">&#39;neighbors_row_splits&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">search_return</span><span class="o">.</span><span class="n">neighbors_row_splits</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">return_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">search_fn</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">queries</span><span class="p">,</span> <span class="n">radius</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">return_dict</span></div>
+</div>
+
+
+<div class="viewcode-block" id="native_neighbor_search">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.layers.neighbor_search.native_neighbor_search.html#neuralop.layers.neighbor_search.native_neighbor_search">[docs]</a>
+<span class="k">def</span> <span class="nf">native_neighbor_search</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">queries</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Native PyTorch implementation of a neighborhood search</span>
+<span class="sd">    between two arbitrary coordinate meshes.</span>
+
+<span class="sd">    data : torch.Tensor</span>
+<span class="sd">        vector of data points from which to find neighbors</span>
+<span class="sd">    queries : torch.Tensor</span>
+<span class="sd">        centers of neighborhoods</span>
+<span class="sd">    radius : float</span>
+<span class="sd">        size of each neighborhood</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># compute pairwise distances</span>
+    <span class="n">dists</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cdist</span><span class="p">(</span><span class="n">queries</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">queries</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="c1"># shaped num query points x num data points</span>
+    <span class="n">in_nbr</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dists</span> <span class="o">&lt;=</span> <span class="n">radius</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span> <span class="c1"># i,j is one if j is i&#39;s neighbor</span>
+    <span class="n">nbr_indices</span> <span class="o">=</span> <span class="n">in_nbr</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[:,</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,)</span> <span class="c1"># only keep the column indices</span>
+    <span class="n">nbrhd_sizes</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">in_nbr</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="c1"># num points in each neighborhood, summed cumulatively</span>
+    <span class="n">splits</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.</span><span class="p">])</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">queries</span><span class="o">.</span><span class="n">device</span><span class="p">),</span> <span class="n">nbrhd_sizes</span><span class="p">))</span>
+    <span class="n">nbr_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">nbr_dict</span><span class="p">[</span><span class="s1">&#39;neighbors_index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nbr_indices</span><span class="o">.</span><span class="n">long</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">queries</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">nbr_dict</span><span class="p">[</span><span class="s1">&#39;neighbors_row_splits&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">splits</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">nbr_dict</span></div>
+
+</pre></div>
+
+      </div>
+
+      
+
+        <footer class="footer">
+    <div class="content has-text-centered">
+        <div class="block">
+          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+        </div>
+    </div>
+  </footer>
+
+    </div>
+
+  </div>  
+
+	
+
+  </div>  
+  </div> 
+
+  
+  <script>
+    function toggle_sidebar() {
+        var element = document.getElementById("sidebar");
+        var container = document.getElementById("column-container");
+        var localtoccolumn = document.getElementById("localtoc-column");
+        element.classList.toggle("hide-tablet");
+        element.classList.toggle("is-hidden-mobile");
+        container.classList.toggle("sidemenu-hidden");
+        localtoccolumn.classList.toggle("is-one-fifth-widescreen");
+        localtoccolumn.classList.toggle("is-2-desktop");
+        localtoccolumn.classList.toggle("is-3-desktop");
+    }
+  </script> 
+
+
+
+  </body>
+</html>

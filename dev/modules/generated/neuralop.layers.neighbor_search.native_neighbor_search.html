@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>neuralop.layers.padding.DomainPadding &#8212; neuraloperator 0.3.0 documentation</title> 
+    <title>neuralop.layers.neighbor_search.native_neighbor_search &#8212; neuraloperator 0.3.0 documentation</title> 
 <link rel="stylesheet" href="../../_static/tensorly_style.css">
 <link rel="apple-touch-icon" sizes="180x180" href="../../_static/favicon/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon/favicon-32x32.png">
@@ -31,8 +31,8 @@
  
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="neuralop.layers.skip_connections.SoftGating" href="neuralop.layers.skip_connections.SoftGating.html" />
-    <link rel="prev" title="neuralop.layers.segment_csr.segment_csr" href="neuralop.layers.segment_csr.segment_csr.html" />
+    <link rel="next" title="neuralop.layers.segment_csr.segment_csr" href="neuralop.layers.segment_csr.segment_csr.html" />
+    <link rel="prev" title="neuralop.layers.neighbor_search.NeighborSearch" href="neuralop.layers.neighbor_search.NeighborSearch.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -160,60 +160,25 @@
 
       <div class="container content main-content">
         
-  <section id="neuralop-layers-padding-domainpadding">
-<h1><a class="reference internal" href="../api.html#module-neuralop.layers.padding" title="neuralop.layers.padding"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.padding</span></code></a>.DomainPadding<a class="headerlink" href="#neuralop-layers-padding-domainpadding" title="Link to this heading"></a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="neuralop.layers.padding.DomainPadding">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.layers.padding.</span></span><span class="sig-name descname"><span class="pre">DomainPadding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain_padding</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'one-sided'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_scaling_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/padding.html#DomainPadding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.padding.DomainPadding" title="Link to this definition"></a></dt>
-<dd><p>Applies domain padding scaled automatically to the input’s resolution</p>
-<dl class="field-list simple">
+  <section id="neuralop-layers-neighbor-search-native-neighbor-search">
+<h1><a class="reference internal" href="../api.html#module-neuralop.layers.neighbor_search" title="neuralop.layers.neighbor_search"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.neighbor_search</span></code></a>.native_neighbor_search<a class="headerlink" href="#neuralop-layers-neighbor-search-native-neighbor-search" title="Link to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="neuralop.layers.neighbor_search.native_neighbor_search">
+<span class="sig-prename descclassname"><span class="pre">neuralop.layers.neighbor_search.</span></span><span class="sig-name descname"><span class="pre">native_neighbor_search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">queries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/neighbor_search.html#native_neighbor_search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.neighbor_search.native_neighbor_search" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>domain_padding</strong><span class="classifier">float or list</span></dt><dd><p>typically, between zero and one, percentage of padding to use
-if a list, make sure if matches the dim of (d1, …, dN)</p>
+<dt><strong>Native PyTorch implementation of a neighborhood search</strong></dt><dd></dd>
+<dt><strong>between two arbitrary coordinate meshes.</strong></dt><dd></dd>
+<dt><strong>data</strong><span class="classifier">torch.Tensor</span></dt><dd><p>vector of data points from which to find neighbors</p>
 </dd>
-<dt><strong>padding_mode</strong><span class="classifier">{‘symmetric’, ‘one-sided’}, optional</span></dt><dd><p>whether to pad on both sides, by default ‘one-sided’</p>
+<dt><strong>queries</strong><span class="classifier">torch.Tensor</span></dt><dd><p>centers of neighborhoods</p>
 </dd>
-<dt><strong>output_scaling_factor</strong><span class="classifier">int ; default is 1</span></dt><dd></dd>
+<dt><strong>radius</strong><span class="classifier">float</span></dt><dd><p>size of each neighborhood</p>
+</dd>
 </dl>
 </dd>
 </dl>
-<p class="rubric">Notes</p>
-<p>This class works for any input resolution, as long as it is in the form
-<cite>(batch-size, channels, d1, …., dN)</cite></p>
-<p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.layers.padding.DomainPadding.forward" title="neuralop.layers.padding.DomainPadding.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x)</p></td>
-<td><p>forward pass: pad the input</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#neuralop.layers.padding.DomainPadding.pad" title="neuralop.layers.padding.DomainPadding.pad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pad</span></code></a>(x[, verbose])</p></td>
-<td><p>Take an input and pad it by the desired fraction</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.layers.padding.DomainPadding.unpad" title="neuralop.layers.padding.DomainPadding.unpad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unpad</span></code></a>(x)</p></td>
-<td><p>Remove the padding from padding inputs</p></td>
-</tr>
-</tbody>
-</table>
-<dl class="py method">
-<dt class="sig sig-object py" id="neuralop.layers.padding.DomainPadding.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/padding.html#DomainPadding.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.padding.DomainPadding.forward" title="Link to this definition"></a></dt>
-<dd><p>forward pass: pad the input</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="neuralop.layers.padding.DomainPadding.pad">
-<span class="sig-name descname"><span class="pre">pad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/padding.html#DomainPadding.pad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.padding.DomainPadding.pad" title="Link to this definition"></a></dt>
-<dd><p>Take an input and pad it by the desired fraction</p>
-<p>The amount of padding will be automatically scaled with the resolution</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="neuralop.layers.padding.DomainPadding.unpad">
-<span class="sig-name descname"><span class="pre">unpad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/padding.html#DomainPadding.unpad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.padding.DomainPadding.unpad" title="Link to this definition"></a></dt>
-<dd><p>Remove the padding from padding inputs</p>
-</dd></dl>
-
 </dd></dl>
 
 <div class="clearer"></div></section>
@@ -224,16 +189,16 @@ if a list, make sure if matches the dim of (d1, …, dN)</p>
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="neuralop.layers.segment_csr.segment_csr.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="neuralop.layers.neighbor_search.NeighborSearch.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.segment_csr</span></code>.segment_csr</span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.neighbor_search</span></code>.NeighborSearch</span>
     </a>
     
     
-    <a class="button pagination-next" href="neuralop.layers.skip_connections.SoftGating.html" title="next page" accesskey="n">
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.skip_connections</span></code>.SoftGating </span>
+    <a class="button pagination-next" href="neuralop.layers.segment_csr.segment_csr.html" title="next page" accesskey="n">
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.segment_csr</span></code>.segment_csr </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>
@@ -269,13 +234,8 @@ if a list, make sure if matches the dim of (d1, …, dN)</p>
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.padding</span></code>.DomainPadding</a><ul>
-<li><a class="reference internal" href="#neuralop.layers.padding.DomainPadding"><code class="docutils literal notranslate"><span class="pre">DomainPadding</span></code></a><ul>
-<li><a class="reference internal" href="#neuralop.layers.padding.DomainPadding.forward"><code class="docutils literal notranslate"><span class="pre">DomainPadding.forward()</span></code></a></li>
-<li><a class="reference internal" href="#neuralop.layers.padding.DomainPadding.pad"><code class="docutils literal notranslate"><span class="pre">DomainPadding.pad()</span></code></a></li>
-<li><a class="reference internal" href="#neuralop.layers.padding.DomainPadding.unpad"><code class="docutils literal notranslate"><span class="pre">DomainPadding.unpad()</span></code></a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.neighbor_search</span></code>.native_neighbor_search</a><ul>
+<li><a class="reference internal" href="#neuralop.layers.neighbor_search.native_neighbor_search"><code class="docutils literal notranslate"><span class="pre">native_neighbor_search()</span></code></a></li>
 </ul>
 </li>
 </ul>

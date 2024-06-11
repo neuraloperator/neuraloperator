@@ -1,0 +1,10 @@
+﻿:mod:`neuralop.layers.segment_csr`.segment_csr
+===========================================================
+
+.. currentmodule:: neuralop.layers.segment_csr
+
+.. autofunction:: segment_csr
+
+.. raw:: html
+
+    <div class="clearer"></div>
