@@ -48,6 +48,12 @@ class IntegralTransform(nn.Module):
         'nonlinear' -> (d)
         If the input f is not given then (a) is computed
         by default independently of this parameter.
+    use_torch_scatter : bool, default 'True'
+        Whether to use torch_scatter's implementation of 
+        segment_csr or our native PyTorch version. torch_scatter 
+        should be installed by default, but there are known versioning
+        issues on some linux builds of CPU-only PyTorch. Try setting
+        to False if you experience an error from torch_scatter.
     """
 
     def __init__(
@@ -56,12 +62,14 @@ class IntegralTransform(nn.Module):
         mlp_layers=None,
         mlp_non_linearity=F.gelu,
         transform_type="linear",
+        use_torch_scatter=True,
     ):
         super().__init__()
 
         assert mlp is not None or mlp_layers is not None
 
         self.transform_type = transform_type
+        self.use_torch_scatter = use_torch_scatter
 
         if (
             self.transform_type != "linear_kernelonly"
@@ -78,6 +86,7 @@ class IntegralTransform(nn.Module):
             self.mlp = MLPLinear(layers=mlp_layers, non_linearity=mlp_non_linearity)
         else:
             self.mlp = mlp
+            
 
     """"
     
@@ -188,6 +197,6 @@ class IntegralTransform(nn.Module):
         if batched:
             splits = splits.repeat([batch_size] + [1] * splits.ndim)
 
-        out_features = segment_csr(rep_features, splits, reduce=reduction)
+        out_features = segment_csr(rep_features, splits, reduce=reduction, use_scatter=self.use_torch_scatter)
 
         return out_features
