@@ -194,8 +194,8 @@ class UnitGaussianNormalizer(Transform):
                     instances[key].partial_fit(sample.unsqueeze(0))
         return instances
 
-class MultipleFieldUnitGaussianNormalizer(DictTransform):
-    """MultipleFieldUnitGaussianNormalizer composes
+class DictUnitGaussianNormalizer(DictTransform):
+    """DictUnitGaussianNormalizer composes
     DictTransform and UnitGaussianNormalizer to normalize different
     fields of a model output tensor to Gaussian distributions w/
     mean 0 and unit variance.
