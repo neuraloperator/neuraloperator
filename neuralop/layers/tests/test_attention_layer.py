@@ -1,7 +1,7 @@
 import pytest
 import torch
 from ..attention_kernel_integral import AttentionKernelIntegral
-from ...data.transforms.positional_embeddings import Rotary
+from ...data.transforms.positional_embeddings import RotaryEmbedding2D
 
 
 def test_AttentionWithRoPE():
@@ -17,7 +17,7 @@ def test_AttentionWithRoPE():
     batch_size = 4
 
     attn_layer = AttentionKernelIntegral(channels, channels, num_heads, head_n_channels)
-    pos_emb_module = Rotary(head_n_channels//n_dim)
+    pos_emb_module = RotaryEmbedding2D(head_n_channels//n_dim)
 
     x = torch.randn(batch_size, num_points, channels)
     pos = torch.randn(batch_size, num_points, n_dim)

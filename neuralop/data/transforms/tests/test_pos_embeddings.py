@@ -4,14 +4,14 @@ import torch
 from torch.testing import assert_close
 import pytest
 
-from ..positional_embeddings import Euclidean2D, EuclideanND
+from ..positional_embeddings import GridEmbedding2D, GridEmbeddingND
 
 # Testing grid-based pos encoding: choose a random grid 
 # point and assert the proper encoding is applied there
 
-def test_Euclidean2D():
+def test_GridEmbedding2D():
     grid_boundaries = [[0,1], [0,1]]
-    pos_embed = Euclidean2D(grid_boundaries=grid_boundaries)
+    pos_embed = GridEmbedding2D(grid_boundaries=grid_boundaries)
 
     input_res = (20,20)
     x = torch.randn(1,1,*input_res)
@@ -23,9 +23,9 @@ def test_Euclidean2D():
     assert_close(true_coords, expected_coords)
 
 @pytest.mark.parametrize('dim', [1,2,3,4])
-def test_EuclideanND(dim):
+def test_GridEmbeddingND(dim):
     grid_boundaries = [[0,1]] * dim
-    pos_embed = EuclideanND(dim=dim,
+    pos_embed = GridEmbeddingND(dim=dim,
                             grid_boundaries=grid_boundaries)
 
     input_res = [20] * dim
