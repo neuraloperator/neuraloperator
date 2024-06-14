@@ -45,12 +45,6 @@ class DataProcessor(torch.nn.Module, metaclass=ABCMeta):
     def forward(self, x):
         pass
 
-    def train(self):
-        pass
-    
-    def eval(self):
-        pass
-
 class DefaultDataProcessor(DataProcessor):
     def __init__(
         self, in_normalizer=None, out_normalizer=None, positional_encoding=None
@@ -71,7 +65,6 @@ class DefaultDataProcessor(DataProcessor):
         self.out_normalizer = out_normalizer
         self.positional_encoding = positional_encoding
         self.device = "cpu"
-        self._train = True
 
     def wrap(self, model):
         self.model = model
@@ -93,7 +86,7 @@ class DefaultDataProcessor(DataProcessor):
             x = self.in_normalizer.transform(x)
         if self.positional_encoding is not None:
             x = self.positional_encoding(x, batched=batched)
-        if self.out_normalizer is not None and self._train:
+        if self.out_normalizer is not None and self.training:
             y = self.out_normalizer.transform(y)
 
         data_dict["x"] = x
@@ -114,12 +107,6 @@ class DefaultDataProcessor(DataProcessor):
         output = self.model(data_dict["x"])
         output = self.postprocess(output)
         return output, data_dict
-    
-    def train(self):
-        self._train = True
-    
-    def train(self):
-        self._train = False
 
 class IncrementalDataProcessor(torch.nn.Module):
     def __init__(self, 
@@ -163,7 +150,6 @@ class IncrementalDataProcessor(torch.nn.Module):
         self.dataset_indices = dataset_indices
         self.epoch_gap = epoch_gap
         self.verbose = verbose
-        self.mode = "Train"
         self.epoch = 0
         
         self.current_index = 0
@@ -232,7 +218,7 @@ class IncrementalDataProcessor(torch.nn.Module):
         if self.out_normalizer is not None and self.train:
             y = self.out_normalizer.transform(y)
         
-        if self.mode == "Train":
+        if self.training:
             x, y = self.step(epoch=self.epoch, x=x, y=y)
         
         data_dict['x'] = x
