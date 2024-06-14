@@ -96,7 +96,7 @@ class DefaultDataProcessor(DataProcessor):
 
     def postprocess(self, output, data_dict):
         y = data_dict["y"]
-        if self.out_normalizer and not self._train:
+        if self.out_normalizer and not self.training:
             output = self.out_normalizer.inverse_transform(output)
             y = self.out_normalizer.inverse_transform(y)
         data_dict["y"] = y
