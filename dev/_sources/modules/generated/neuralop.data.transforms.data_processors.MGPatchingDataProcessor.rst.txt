@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.data.transforms.data_processors`.MGPatchingDataProcessor
+==============================================================================
+
+.. currentmodule:: neuralop.data.transforms.data_processors
+
+.. autoclass:: MGPatchingDataProcessor
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

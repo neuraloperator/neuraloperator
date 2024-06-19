@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.data.transforms.data_processors`.DefaultDataProcessor
+===========================================================================
+
+.. currentmodule:: neuralop.data.transforms.data_processors
+
+.. autoclass:: DefaultDataProcessor
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

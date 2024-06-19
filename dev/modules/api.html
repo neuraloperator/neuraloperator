@@ -132,7 +132,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#module-neuralop.layers">Layers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#model-dispatching">Model Dispatching</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#training">Training</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#datasets">Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#data">Data</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../auto_examples/index.html">Gallery of examples</a></li>
@@ -388,26 +388,27 @@ logic of callbacks in Pytorch-Lightning (<a class="reference external" href="htt
 </tbody>
 </table>
 </section>
-<section id="datasets">
-<h2>Datasets<a class="headerlink" href="#datasets" title="Link to this heading"></a></h2>
-<p>We ship a small dataset for testing:</p>
-<span class="target" id="module-neuralop.datasets"></span><table class="autosummary longtable docutils align-default">
+<section id="data">
+<h2>Data<a class="headerlink" href="#data" title="Link to this heading"></a></h2>
+<p>In <cite>neuralop.data</cite>, we provide APIs for standardizing PDE datasets (<cite>.datasets</cite>) and transforming raw data into model inputs (<cite>.transforms</cite>).</p>
+<p>We also ship a small dataset for testing:</p>
+<span class="target" id="module-neuralop.data.datasets"></span><table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.datasets.load_darcy_flow_small.html#neuralop.datasets.load_darcy_flow_small" title="neuralop.datasets.load_darcy_flow_small"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_darcy_flow_small</span></code></a>(n_train, n_tests, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.data.datasets.load_darcy_flow_small.html#neuralop.data.datasets.load_darcy_flow_small" title="neuralop.data.datasets.load_darcy_flow_small"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_darcy_flow_small</span></code></a>(n_train, n_tests, ...)</p></td>
 <td><p>Loads a small Darcy-Flow dataset</p></td>
 </tr>
 </tbody>
 </table>
-<p>Much like PyTorch’s <cite>Torchvision.Datasets</cite> module, our Datasets module also includes
+<p>Much like PyTorch’s <cite>Torchvision.Datasets</cite> module, our <cite>data</cite> module also includes
 utilities to transform data from its raw form into the form expected by models and
 loss functions:</p>
-<span class="target" id="module-neuralop.datasets.data_transforms"></span><table class="autosummary longtable docutils align-default">
+<span class="target" id="module-neuralop.data.transforms.data_processors"></span><table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.datasets.data_transforms.DefaultDataProcessor.html#neuralop.datasets.data_transforms.DefaultDataProcessor" title="neuralop.datasets.data_transforms.DefaultDataProcessor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DefaultDataProcessor</span></code></a>([in_normalizer, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.data.transforms.data_processors.DefaultDataProcessor.html#neuralop.data.transforms.data_processors.DefaultDataProcessor" title="neuralop.data.transforms.data_processors.DefaultDataProcessor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DefaultDataProcessor</span></code></a>([in_normalizer, ...])</p></td>
 <td><p><p class="rubric">Methods</p>
 </p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.datasets.data_transforms.MGPatchingDataProcessor.html#neuralop.datasets.data_transforms.MGPatchingDataProcessor" title="neuralop.datasets.data_transforms.MGPatchingDataProcessor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MGPatchingDataProcessor</span></code></a>(model, levels, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.data.transforms.data_processors.MGPatchingDataProcessor.html#neuralop.data.transforms.data_processors.MGPatchingDataProcessor" title="neuralop.data.transforms.data_processors.MGPatchingDataProcessor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MGPatchingDataProcessor</span></code></a>(model, levels, ...)</p></td>
 <td><p><p class="rubric">Methods</p>
 </p></td>
 </tr>
@@ -487,7 +488,7 @@ loss functions:</p>
 <li><a class="reference internal" href="#training">Training</a><ul>
 </ul>
 </li>
-<li><a class="reference internal" href="#datasets">Datasets</a><ul>
+<li><a class="reference internal" href="#data">Data</a><ul>
 </ul>
 </li>
 </ul>

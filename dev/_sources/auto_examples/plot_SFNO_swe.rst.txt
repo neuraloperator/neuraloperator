@@ -35,7 +35,7 @@ to train a Spherical Fourier-Neural Operator
     import sys
     from neuralop.models import SFNO
     from neuralop import Trainer
-    from neuralop.datasets import load_spherical_swe
+    from neuralop.data.datasets import load_spherical_swe
     from neuralop.utils import count_model_params
     from neuralop import LpLoss, H1Loss
 
@@ -222,13 +222,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f1f757b5400>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f5c120ca250>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.LpLoss object at 0x7f1f9b499040>
+     * Train: <neuralop.losses.data_losses.LpLoss object at 0x7f5c120fc220>
 
-     * Test: {'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f1f9b499040>}
+     * Test: {'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f5c120fc220>}
 
 
 
@@ -290,7 +290,7 @@ Actually train the model on our small Darcy-Flow dataset
  .. code-block:: none
 
 
-    {'(64, 128)_l2': 2.3894399642944335}
+    {'(64, 128)_l2': 2.394054985046387}
 
 
 
@@ -361,7 +361,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 22.447 seconds)
+   **Total running time of the script:** (1 minutes 24.039 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_SFNO_swe.py:

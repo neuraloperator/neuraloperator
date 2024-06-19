@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>neuralop.datasets.data_transforms.MGPatchingDataProcessor &#8212; neuraloperator 0.3.0 documentation</title> 
+    <title>neuralop.data.transforms.data_processors.MGPatchingDataProcessor &#8212; neuraloperator 0.3.0 documentation</title> 
 <link rel="stylesheet" href="../../_static/tensorly_style.css">
 <link rel="apple-touch-icon" sizes="180x180" href="../../_static/favicon/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon/favicon-32x32.png">
@@ -32,7 +32,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Gallery of examples" href="../../auto_examples/index.html" />
-    <link rel="prev" title="neuralop.datasets.data_transforms.DefaultDataProcessor" href="neuralop.datasets.data_transforms.DefaultDataProcessor.html" />
+    <link rel="prev" title="neuralop.data.transforms.data_processors.DefaultDataProcessor" href="neuralop.data.transforms.data_processors.DefaultDataProcessor.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -132,7 +132,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../api.html#module-neuralop.layers">Layers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api.html#model-dispatching">Model Dispatching</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api.html#training">Training</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="../api.html#datasets">Datasets</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#data">Data</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../auto_examples/index.html">Gallery of examples</a></li>
@@ -160,24 +160,24 @@
 
       <div class="container content main-content">
         
-  <section id="neuralop-datasets-data-transforms-mgpatchingdataprocessor">
-<h1><a class="reference internal" href="../api.html#module-neuralop.datasets.data_transforms" title="neuralop.datasets.data_transforms"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.datasets.data_transforms</span></code></a>.MGPatchingDataProcessor<a class="headerlink" href="#neuralop-datasets-data-transforms-mgpatchingdataprocessor" title="Link to this heading"></a></h1>
+  <section id="neuralop-data-transforms-data-processors-mgpatchingdataprocessor">
+<h1><a class="reference internal" href="../api.html#module-neuralop.data.transforms.data_processors" title="neuralop.data.transforms.data_processors"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.data.transforms.data_processors</span></code></a>.MGPatchingDataProcessor<a class="headerlink" href="#neuralop-data-transforms-data-processors-mgpatchingdataprocessor" title="Link to this heading"></a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="neuralop.datasets.data_transforms.MGPatchingDataProcessor">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.datasets.data_transforms.</span></span><span class="sig-name descname"><span class="pre">MGPatchingDataProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">levels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding_fraction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stitching</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'cpu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_normalizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_normalizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positional_encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/data_transforms.html#MGPatchingDataProcessor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="neuralop.data.transforms.data_processors.MGPatchingDataProcessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.data.transforms.data_processors.</span></span><span class="sig-name descname"><span class="pre">MGPatchingDataProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">levels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding_fraction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stitching</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'cpu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_normalizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_normalizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positional_encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#MGPatchingDataProcessor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor" title="Link to this definition"></a></dt>
 <dd><p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor.forward" title="neuralop.datasets.data_transforms.MGPatchingDataProcessor.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(**data_dict)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor.forward" title="neuralop.data.transforms.data_processors.MGPatchingDataProcessor.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(**data_dict)</p></td>
 <td><p>Define the computation performed at every call.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor.postprocess" title="neuralop.datasets.data_transforms.MGPatchingDataProcessor.postprocess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">postprocess</span></code></a>(out, data_dict)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor.postprocess" title="neuralop.data.transforms.data_processors.MGPatchingDataProcessor.postprocess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">postprocess</span></code></a>(out, data_dict)</p></td>
 <td><p>Postprocess model outputs, including decoding if an encoder exists.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor.preprocess" title="neuralop.datasets.data_transforms.MGPatchingDataProcessor.preprocess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">preprocess</span></code></a>(data_dict[, batched])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor.preprocess" title="neuralop.data.transforms.data_processors.MGPatchingDataProcessor.preprocess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">preprocess</span></code></a>(data_dict[, batched])</p></td>
 <td><p>Preprocess data assuming that if encoder exists, it has encoded all data during data loading</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor.to" title="neuralop.datasets.data_transforms.MGPatchingDataProcessor.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>(device)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor.to" title="neuralop.data.transforms.data_processors.MGPatchingDataProcessor.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>(device)</p></td>
 <td><p>Move and/or cast the parameters and buffers.</p></td>
 </tr>
 </tbody>
@@ -190,28 +190,28 @@
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="neuralop.datasets.data_transforms.MGPatchingDataProcessor.to">
-<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/data_transforms.html#MGPatchingDataProcessor.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor.to" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="neuralop.data.transforms.data_processors.MGPatchingDataProcessor.to">
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#MGPatchingDataProcessor.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor.to" title="Link to this definition"></a></dt>
 <dd><p>Move and/or cast the parameters and buffers.</p>
 <p>This can be called as</p>
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_blocking</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/data_transforms.html#MGPatchingDataProcessor.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_blocking</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#MGPatchingDataProcessor.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_blocking</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/data_transforms.html#MGPatchingDataProcessor.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_blocking</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#MGPatchingDataProcessor.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_blocking</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/data_transforms.html#MGPatchingDataProcessor.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_blocking</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#MGPatchingDataProcessor.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">memory_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">torch.channels_last</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/data_transforms.html#MGPatchingDataProcessor.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">memory_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">torch.channels_last</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#MGPatchingDataProcessor.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd></dd></dl>
 
 <p>Its signature is similar to <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.to()</span></code>, but only accepts
@@ -286,22 +286,22 @@ only argument)</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="neuralop.datasets.data_transforms.MGPatchingDataProcessor.preprocess">
-<span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batched</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/data_transforms.html#MGPatchingDataProcessor.preprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor.preprocess" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="neuralop.data.transforms.data_processors.MGPatchingDataProcessor.preprocess">
+<span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batched</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#MGPatchingDataProcessor.preprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor.preprocess" title="Link to this definition"></a></dt>
 <dd><p>Preprocess data assuming that if encoder exists, it has
 encoded all data during data loading</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="neuralop.datasets.data_transforms.MGPatchingDataProcessor.postprocess">
-<span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/data_transforms.html#MGPatchingDataProcessor.postprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor.postprocess" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="neuralop.data.transforms.data_processors.MGPatchingDataProcessor.postprocess">
+<span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#MGPatchingDataProcessor.postprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor.postprocess" title="Link to this definition"></a></dt>
 <dd><p>Postprocess model outputs, including decoding
 if an encoder exists.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="neuralop.datasets.data_transforms.MGPatchingDataProcessor.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/data_transforms.html#MGPatchingDataProcessor.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor.forward" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="neuralop.data.transforms.data_processors.MGPatchingDataProcessor.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#MGPatchingDataProcessor.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor.forward" title="Link to this definition"></a></dt>
 <dd><p>Define the computation performed at every call.</p>
 <p>Should be overridden by all subclasses.</p>
 <div class="admonition note">
@@ -323,11 +323,11 @@ registered hooks while the latter silently ignores them.</p>
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="neuralop.datasets.data_transforms.DefaultDataProcessor.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="neuralop.data.transforms.data_processors.DefaultDataProcessor.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.datasets.data_transforms</span></code>.DefaultDataProcessor</span>
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.data.transforms.data_processors</span></code>.DefaultDataProcessor</span>
     </a>
     
     
@@ -368,12 +368,12 @@ registered hooks while the latter silently ignores them.</p>
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.datasets.data_transforms</span></code>.MGPatchingDataProcessor</a><ul>
-<li><a class="reference internal" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor"><code class="docutils literal notranslate"><span class="pre">MGPatchingDataProcessor</span></code></a><ul>
-<li><a class="reference internal" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor.to"><code class="docutils literal notranslate"><span class="pre">MGPatchingDataProcessor.to()</span></code></a></li>
-<li><a class="reference internal" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor.preprocess"><code class="docutils literal notranslate"><span class="pre">MGPatchingDataProcessor.preprocess()</span></code></a></li>
-<li><a class="reference internal" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor.postprocess"><code class="docutils literal notranslate"><span class="pre">MGPatchingDataProcessor.postprocess()</span></code></a></li>
-<li><a class="reference internal" href="#neuralop.datasets.data_transforms.MGPatchingDataProcessor.forward"><code class="docutils literal notranslate"><span class="pre">MGPatchingDataProcessor.forward()</span></code></a></li>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.data.transforms.data_processors</span></code>.MGPatchingDataProcessor</a><ul>
+<li><a class="reference internal" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor"><code class="docutils literal notranslate"><span class="pre">MGPatchingDataProcessor</span></code></a><ul>
+<li><a class="reference internal" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor.to"><code class="docutils literal notranslate"><span class="pre">MGPatchingDataProcessor.to()</span></code></a></li>
+<li><a class="reference internal" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor.preprocess"><code class="docutils literal notranslate"><span class="pre">MGPatchingDataProcessor.preprocess()</span></code></a></li>
+<li><a class="reference internal" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor.postprocess"><code class="docutils literal notranslate"><span class="pre">MGPatchingDataProcessor.postprocess()</span></code></a></li>
+<li><a class="reference internal" href="#neuralop.data.transforms.data_processors.MGPatchingDataProcessor.forward"><code class="docutils literal notranslate"><span class="pre">MGPatchingDataProcessor.forward()</span></code></a></li>
 </ul>
 </li>
 </ul>

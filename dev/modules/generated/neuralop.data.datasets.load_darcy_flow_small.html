@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>neuralop.datasets.load_darcy_flow_small &#8212; neuraloperator 0.3.0 documentation</title> 
+    <title>neuralop.data.datasets.load_darcy_flow_small &#8212; neuraloperator 0.3.0 documentation</title> 
 <link rel="stylesheet" href="../../_static/tensorly_style.css">
 <link rel="apple-touch-icon" sizes="180x180" href="../../_static/favicon/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../../_static/favicon/favicon-32x32.png">
@@ -31,7 +31,7 @@
  
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="neuralop.datasets.data_transforms.DefaultDataProcessor" href="neuralop.datasets.data_transforms.DefaultDataProcessor.html" />
+    <link rel="next" title="neuralop.data.transforms.data_processors.DefaultDataProcessor" href="neuralop.data.transforms.data_processors.DefaultDataProcessor.html" />
     <link rel="prev" title="neuralop.training.callbacks.CheckpointCallback" href="neuralop.training.callbacks.CheckpointCallback.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
@@ -132,7 +132,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../api.html#module-neuralop.layers">Layers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api.html#model-dispatching">Model Dispatching</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api.html#training">Training</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="../api.html#datasets">Datasets</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#data">Data</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../auto_examples/index.html">Gallery of examples</a></li>
@@ -160,11 +160,11 @@
 
       <div class="container content main-content">
         
-  <section id="neuralop-datasets-load-darcy-flow-small">
-<h1><a class="reference internal" href="../api.html#module-neuralop.datasets" title="neuralop.datasets"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.datasets</span></code></a>.load_darcy_flow_small<a class="headerlink" href="#neuralop-datasets-load-darcy-flow-small" title="Link to this heading"></a></h1>
+  <section id="neuralop-data-datasets-load-darcy-flow-small">
+<h1><a class="reference internal" href="../api.html#module-neuralop.data.datasets" title="neuralop.data.datasets"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.data.datasets</span></code></a>.load_darcy_flow_small<a class="headerlink" href="#neuralop-data-datasets-load-darcy-flow-small" title="Link to this heading"></a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="neuralop.datasets.load_darcy_flow_small">
-<span class="sig-prename descclassname"><span class="pre">neuralop.datasets.</span></span><span class="sig-name descname"><span class="pre">load_darcy_flow_small</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_tests</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_batch_sizes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_resolutions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[16,</span> <span class="pre">32]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_boundaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[[0,</span> <span class="pre">1],</span> <span class="pre">[0,</span> <span class="pre">1]]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positional_encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'channel-wise'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/datasets/darcy.html#load_darcy_flow_small"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.datasets.load_darcy_flow_small" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="neuralop.data.datasets.load_darcy_flow_small">
+<span class="sig-prename descclassname"><span class="pre">neuralop.data.datasets.</span></span><span class="sig-name descname"><span class="pre">load_darcy_flow_small</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_tests</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_batch_sizes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_resolutions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[16,</span> <span class="pre">32]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_boundaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[[0,</span> <span class="pre">1],</span> <span class="pre">[0,</span> <span class="pre">1]]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positional_encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'channel-wise'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/datasets/darcy.html#load_darcy_flow_small"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.data.datasets.load_darcy_flow_small" title="Link to this definition"></a></dt>
 <dd><p>Loads a small Darcy-Flow dataset</p>
 <p>Training contains 1000 samples in resolution 16x16.
 Testing contains 100 samples at resolution 16x16 and
@@ -213,8 +213,8 @@ i.e: batch, channel, height, width</p>
     </a>
     
     
-    <a class="button pagination-next" href="neuralop.datasets.data_transforms.DefaultDataProcessor.html" title="next page" accesskey="n">
-        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.datasets.data_transforms</span></code>.DefaultDataProcessor </span>
+    <a class="button pagination-next" href="neuralop.data.transforms.data_processors.DefaultDataProcessor.html" title="next page" accesskey="n">
+        <span><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.data.transforms.data_processors</span></code>.DefaultDataProcessor </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>
@@ -250,8 +250,8 @@ i.e: batch, channel, height, width</p>
 
         <div class="menu menu-list localtoc-list">
         <ul>
-<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.datasets</span></code>.load_darcy_flow_small</a><ul>
-<li><a class="reference internal" href="#neuralop.datasets.load_darcy_flow_small"><code class="docutils literal notranslate"><span class="pre">load_darcy_flow_small()</span></code></a></li>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.data.datasets</span></code>.load_darcy_flow_small</a><ul>
+<li><a class="reference internal" href="#neuralop.data.datasets.load_darcy_flow_small"><code class="docutils literal notranslate"><span class="pre">load_darcy_flow_small()</span></code></a></li>
 </ul>
 </li>
 </ul>

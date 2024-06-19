@@ -123,7 +123,7 @@
 <span class="kn">from</span> <span class="nn">.fno</span> <span class="kn">import</span> <span class="n">FNO</span>
 
 <span class="kn">from</span> <span class="nn">..layers.mlp</span> <span class="kn">import</span> <span class="n">MLP</span>
-<span class="kn">from</span> <span class="nn">..layers.embeddings</span> <span class="kn">import</span> <span class="n">PositionalEmbedding</span>
+<span class="kn">from</span> <span class="nn">..data.transforms.positional_embeddings</span> <span class="kn">import</span> <span class="n">SinusoidalEmbedding2D</span>
 <span class="kn">from</span> <span class="nn">..layers.spectral_convolution</span> <span class="kn">import</span> <span class="n">SpectralConv</span>
 <span class="kn">from</span> <span class="nn">..layers.integral_transform</span> <span class="kn">import</span> <span class="n">IntegralTransform</span>
 <span class="kn">from</span> <span class="nn">..layers.neighbor_search</span> <span class="kn">import</span> <span class="n">NeighborSearch</span>
@@ -314,7 +314,7 @@
 
         <span class="k">if</span> <span class="n">fno_norm</span> <span class="o">==</span> <span class="s2">&quot;ada_in&quot;</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">fno_ada_in_features</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">adain_pos_embed</span> <span class="o">=</span> <span class="n">PositionalEmbedding</span><span class="p">(</span><span class="n">fno_ada_in_features</span><span class="p">,</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">adain_pos_embed</span> <span class="o">=</span> <span class="n">SinusoidalEmbedding2D</span><span class="p">(</span><span class="n">fno_ada_in_features</span><span class="p">,</span> 
                                                            <span class="n">max_positions</span><span class="o">=</span><span class="n">gno_embed_max_positions</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">ada_in_dim</span> <span class="o">=</span> <span class="n">fno_ada_in_dim</span><span class="o">*</span><span class="n">fno_ada_in_features</span>
             <span class="k">else</span><span class="p">:</span>
@@ -364,7 +364,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">out_gno_tanh</span> <span class="o">=</span> <span class="n">out_gno_tanh</span>
 
         <span class="k">if</span> <span class="n">gno_coord_embed_dim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span> <span class="o">=</span> <span class="n">PositionalEmbedding</span><span class="p">(</span><span class="n">gno_coord_embed_dim</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span> <span class="o">=</span> <span class="n">SinusoidalEmbedding2D</span><span class="p">(</span><span class="n">gno_coord_embed_dim</span><span class="p">,</span> 
                                                  <span class="n">max_positions</span><span class="o">=</span><span class="n">gno_embed_max_positions</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">gno_coord_dim_embed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gno_out_coord_dim</span><span class="o">*</span><span class="n">gno_coord_embed_dim</span> <span class="c1"># gno input and output may use separate dims</span>
         <span class="k">else</span><span class="p">:</span>
