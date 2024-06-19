@@ -8,7 +8,7 @@ from torch import nn
 from .fno import FNO
 
 from ..layers.mlp import MLP
-from ..layers.embeddings import PositionalEmbedding
+from ..data.transforms.positional_embeddings import SinusoidalEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.integral_transform import IntegralTransform
 from ..layers.neighbor_search import NeighborSearch
@@ -197,7 +197,7 @@ class GINO(nn.Module):
 
         if fno_norm == "ada_in":
             if fno_ada_in_features is not None:
-                self.adain_pos_embed = PositionalEmbedding(fno_ada_in_features, 
+                self.adain_pos_embed = SinusoidalEmbedding2D(fno_ada_in_features, 
                                                            max_positions=gno_embed_max_positions)
                 self.ada_in_dim = fno_ada_in_dim*fno_ada_in_features
             else:
@@ -247,7 +247,7 @@ class GINO(nn.Module):
         self.out_gno_tanh = out_gno_tanh
 
         if gno_coord_embed_dim is not None:
-            self.pos_embed = PositionalEmbedding(gno_coord_embed_dim, 
+            self.pos_embed = SinusoidalEmbedding2D(gno_coord_embed_dim, 
                                                  max_positions=gno_embed_max_positions)
             self.gno_coord_dim_embed = self.gno_out_coord_dim*gno_coord_embed_dim # gno input and output may use separate dims
         else:

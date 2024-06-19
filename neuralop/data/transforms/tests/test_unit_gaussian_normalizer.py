@@ -1,4 +1,4 @@
-from ..output_encoder import UnitGaussianNormalizer
+from ..normalizers import UnitGaussianNormalizer
 import torch
 from torch.testing import assert_close
 from flaky import flaky
