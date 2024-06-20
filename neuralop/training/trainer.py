@@ -146,7 +146,7 @@ class Trainer:
         if eval_losses is None:  # By default just evaluate on the training loss
             eval_losses = dict(l2=training_loss)
 
-        errors = None
+        errors = {}  # Results of the evaluation
 
         for epoch in range(self.n_epochs):
             if self.callbacks:
@@ -246,7 +246,10 @@ class Trainer:
                     )
 
                 for loader_name, loader in test_loaders.items():
-                    errors = self.evaluate(eval_losses, loader, log_prefix=loader_name)
+                    # Result of the single evaluation
+                    error = self.evaluate(eval_losses, loader, log_prefix=loader_name)
+                    errors.update(error)  
+
 
                 if self.callbacks:
                     self.callbacks.on_val_end()
