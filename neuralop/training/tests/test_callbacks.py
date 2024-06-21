@@ -174,7 +174,7 @@ def test_load_from_checkpoint():
     eval_losses={'h1': h1loss, 'l2': l2loss}
 
     orig_model_eval_errors = trainer.train(train_loader=train_loader, 
-                  test_loaders={'': test_loader}, 
+                  test_loaders={'orig': test_loader}, 
                   optimizer=optimizer,
                   scheduler=scheduler,
                   regularizer=None,
@@ -189,10 +189,11 @@ def test_load_from_checkpoint():
     )
 
     loaded_model_eval_errors = trainer.evaluate(loss_dict=eval_losses,
-                              data_loader=test_loader)
+                                                data_loader=test_loader,
+                                                log_prefix="ckpt")
 
     # log prefix is empty except for default underscore
-    assert orig_model_eval_errors['_h1'] - loaded_model_eval_errors['_h1'] < 0.1
+    assert orig_model_eval_errors['orig_h1'] - loaded_model_eval_errors['ckpt_h1'] < 0.1
 
     # clean up dummy checkpoint directory after testing
     shutil.rmtree('./full_states')
@@ -223,7 +224,8 @@ def test_logger():
     eval_losses={'h1': h1loss, 'l2': l2loss}
 
     pre_train_errors = trainer.evaluate(loss_dict=eval_losses,
-                                        data_loader=test_loader)
+                                        data_loader=test_loader, 
+                                        log_prefix="default")
 
 # enure that the model incrementally increases in frequency modes
 def test_incremental():

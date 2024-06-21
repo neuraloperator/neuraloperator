@@ -244,9 +244,9 @@ class Trainer:
                         avg_loss=avg_loss,
                         avg_lasso_loss=avg_lasso_loss,
                     )
-
+                errors = {}
                 for loader_name, loader in test_loaders.items():
-                    errors = self.evaluate(eval_losses, loader, log_prefix=loader_name)
+                    errors.update(**self.evaluate(eval_losses, loader, log_prefix=loader_name))
 
                 if self.callbacks:
                     self.callbacks.on_val_end()
@@ -284,7 +284,6 @@ class Trainer:
         self.model.eval()
 
         errors = {f"{log_prefix}_{loss_name}": 0 for loss_name in loss_dict.keys()}
-
         n_samples = 0
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
@@ -332,5 +331,4 @@ class Trainer:
             self.callbacks.on_val_epoch_end(errors=errors, sample=sample, out=out)
 
         del out
-
         return errors
