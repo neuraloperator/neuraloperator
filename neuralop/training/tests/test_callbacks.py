@@ -5,10 +5,11 @@ from pathlib import Path
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
+
+from neuralop import Trainer, LpLoss, H1Loss
 from neuralop.models import FNO
 from neuralop.data.datasets import load_darcy_flow_small
-
-from neuralop import Trainer, LpLoss, H1Loss, CheckpointCallback, IncrementalCallback
+from neuralop.training import BasicLoggerCallback, CheckpointCallback, IncrementalCallback
 from neuralop.models.base_model import BaseModel
 
 class DummyDataset(Dataset):
@@ -142,7 +143,6 @@ def test_model_checkpoint_and_resume():
     
     # clean up dummy checkpoint directory after testing
     shutil.rmtree(save_pth)
-
     
 # ensure that model accuracy after loading from checkpoint
 # is comparable to accuracy at time of save
@@ -197,7 +197,34 @@ def test_load_from_checkpoint():
     # clean up dummy checkpoint directory after testing
     shutil.rmtree('./full_states')
     
-    
+# verify the logger produces correct info
+def test_logger():
+    model = DummyModel(50)
+
+    train_loader = DataLoader(DummyDataset(100))
+    test_loader = DataLoader(DummyDataset(20))
+
+    trainer = Trainer(model=model,
+                      n_epochs=5,
+                      callbacks=[
+                          BasicLoggerCallback()
+                      ]
+    )
+
+    optimizer = torch.optim.Adam(model.parameters(), 
+                                lr=8e-3, 
+                                weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
+
+    # Creating the losses
+    l2loss = LpLoss(d=2, p=2)
+    h1loss = H1Loss(d=2)
+
+    eval_losses={'h1': h1loss, 'l2': l2loss}
+
+    pre_train_errors = trainer.evaluate(loss_dict=eval_losses,
+                                        data_loader=test_loader)
+
 # enure that the model incrementally increases in frequency modes
 def test_incremental():
     # Loading the Darcy flow dataset
