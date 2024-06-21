@@ -3,7 +3,7 @@ from torch.cuda import amp
 from timeit import default_timer
 import pathlib
 
-from .callbacks import PipelineCallback
+from .callbacks import BasicLoggerCallback, PipelineCallback
 import neuralop.mpu.comm as comm
 from neuralop.losses import LpLoss
 
@@ -46,6 +46,10 @@ class Trainer:
         verbose : bool, default is False
         """
 
+        if not callbacks and verbose:
+             # no wandb logging is performed unless wandb kwargs are explicitly passed
+             # into the BasicLoggerCallback created at trainer instantiation. 
+            callbacks = [BasicLoggerCallback()]
         if callbacks:
             assert isinstance(
                 callbacks, list
@@ -61,8 +65,8 @@ class Trainer:
             self.overrides_loss = False
 
         if verbose:
-            print(f"{self.override_load_to_device=}")
-            print(f"{self.overrides_loss=}")
+            print(f"Override default load_to_device method: {self.override_load_to_device}")
+            print(f"Override default loss computation: {self.overrides_loss}")
 
         if self.callbacks:
             self.callbacks.on_init_start(
@@ -244,9 +248,9 @@ class Trainer:
                         avg_loss=avg_loss,
                         avg_lasso_loss=avg_lasso_loss,
                     )
-
+                errors = {}
                 for loader_name, loader in test_loaders.items():
-                    errors = self.evaluate(eval_losses, loader, log_prefix=loader_name)
+                    errors.update(**self.evaluate(eval_losses, loader, log_prefix=loader_name))
 
                 if self.callbacks:
                     self.callbacks.on_val_end()
@@ -284,7 +288,6 @@ class Trainer:
         self.model.eval()
 
         errors = {f"{log_prefix}_{loss_name}": 0 for loss_name in loss_dict.keys()}
-
         n_samples = 0
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
@@ -332,5 +335,4 @@ class Trainer:
             self.callbacks.on_val_epoch_end(errors=errors, sample=sample, out=out)
 
         del out
-
         return errors

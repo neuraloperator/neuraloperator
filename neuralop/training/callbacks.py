@@ -293,16 +293,32 @@ class BasicLoggerCallback(Callback):
         self._update_state_dict(msg=msg, values_to_log=values_to_log)
         self._update_state_dict(avg_lasso_loss=avg_lasso_loss)
 
+    def on_val_epoch_start(self, log_prefix, loss_dict, data_loader, **kwargs):
+        # if inside an evaluation-only scheme, add 
+        if not self.state_dict.get("msg"):
+            self._update_state_dict(msg="Eval only",
+                                    print_on_val_epoch_end=True,
+                                    values_to_log={},
+                                    log_prefix=log_prefix)
+        
+    
     def on_val_epoch_end(self, errors, **kwargs):
         for loss_name, loss_value in errors.items():
+            prefix = self.state_dict.get("log_prefix")
+            if prefix not in loss_name:
+                loss_name = f"{prefix}_{loss_name}"
             if isinstance(loss_value, float):
                 self.state_dict["msg"] += f", {loss_name}={loss_value:.4f}"
             else:
                 loss_value = {i: e.item() for (i, e) in enumerate(loss_value)}
                 self.state_dict["msg"] += f", {loss_name}={loss_value}"
             self.state_dict["values_to_log"][loss_name] = loss_value
+        if self.state_dict.get("print_on_val_epoch_end"):
+            print(self.state_dict["msg"])
+            sys.stdout.flush()
+            self._update_state_dict(msg=None)
 
-    def on_val_end(self, *args, **kwargs):
+    def on_epoch_end(self, *args, **kwargs):
         if self.state_dict.get("regularizer", False):
             avg_lasso = self.state_dict.get("avg_lasso_loss", 0.0)
             avg_lasso /= self.state_dict.get("n_epochs")
@@ -310,6 +326,7 @@ class BasicLoggerCallback(Callback):
 
         print(self.state_dict["msg"])
         sys.stdout.flush()
+        self._update_state_dict(msg=None)
 
         if self.state_dict.get("wandb_log", False):
             for pg in self.state_dict["optimizer"].param_groups:
