@@ -46,7 +46,7 @@ class Trainer:
         verbose : bool, default is False
         """
 
-        if not callbacks and log_output:
+        if not callbacks and verbose:
              # no wandb logging is performed unless wandb kwargs are explicitly passed
              # into the BasicLoggerCallback created at trainer instantiation. 
             callbacks = [BasicLoggerCallback()]
