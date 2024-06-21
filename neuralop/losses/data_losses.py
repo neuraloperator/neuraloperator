@@ -290,18 +290,18 @@ class MSELoss(object):
     """
     def __init__(self):
         super().__init__()
-    def __call__(self, x: torch.Tensor, y: torch.Tensor, dim: List[int]=None, **kwargs):
+    def __call__(self, y_pred: torch.Tensor, y: torch.Tensor, dim: List[int]=None, **kwargs):
         """MSE loss call 
 
         Parameters
         ----------
-        x : torch.Tensor
-            predictions
+        y_pred : torch.Tensor
+            tensor of predictions
         y : torch.Tensor
             ground truth, must be same shape as x
         dim : List[int], optional
             dimensions across which to compute MSE, by default None
         """
         if dim is None:
-            dim = list(range(1, x.ndim)) # no reduction across batch dim
-        return torch.mean((x - y) ** 2, dim=dim).sum() # sum of MSEs for each element
+            dim = list(range(1, y_pred.ndim)) # no reduction across batch dim
+        return torch.mean((y_pred - y) ** 2, dim=dim).sum() # sum of MSEs for each element
