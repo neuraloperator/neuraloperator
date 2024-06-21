@@ -283,3 +283,25 @@ class H1Loss(object):
 
     def __call__(self, y_pred, y, h=None, **kwargs):
         return self.rel(y_pred, y, h=h)
+    
+class MSELoss(object):
+    """
+    MSELoss computes absolute mean-squared L2 error between two tensors.
+    """
+    def __init__(self):
+        super().__init__()
+    def __call__(self, x: torch.Tensor, y: torch.Tensor, dim: List[int]=None, **kwargs):
+        """MSE loss call 
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            predictions
+        y : torch.Tensor
+            ground truth, must be same shape as x
+        dim : List[int], optional
+            dimensions across which to compute MSE, by default None
+        """
+        if dim is None:
+            dim = list(range(1, x.ndim)) # no reduction across batch dim
+        return torch.mean((x - y) ** 2, dim=dim).sum() # sum of MSEs for each element
