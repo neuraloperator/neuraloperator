@@ -401,10 +401,10 @@ class CheckpointCallback(Callback):
         if self.resume_from_dir:
             saved_modules = [x.stem for x in self.resume_from_dir.glob("*.pt")]
 
-            # no need to handle exceptions if assertion that either model file exists passes
-            if "best_model_state_dict" in saved_modules:
+            # check for save model exists
+            if (self.resume_from_dir / "best_model_state_dict.pt").exists():
                 save_name = "best_model"
-            elif "model_state_dict" in saved_modules:
+            elif (self.resume_from_dir / "model_state_dict.pt").exists():
                 save_name = "model"
             else:
                 raise FileNotFoundError("Error: CheckpointCallback expects a model\
