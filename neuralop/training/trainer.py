@@ -3,7 +3,7 @@ from torch.cuda import amp
 from timeit import default_timer
 import pathlib
 
-from .callbacks import PipelineCallback
+from .callbacks import BasicLoggerCallback, PipelineCallback
 import neuralop.mpu.comm as comm
 from neuralop.losses import LpLoss
 
@@ -46,6 +46,10 @@ class Trainer:
         verbose : bool, default is False
         """
 
+        if not callbacks and log_output:
+             # no wandb logging is performed unless wandb kwargs are explicitly passed
+             # into the BasicLoggerCallback created at trainer instantiation. 
+            callbacks = [BasicLoggerCallback()]
         if callbacks:
             assert isinstance(
                 callbacks, list
@@ -61,8 +65,8 @@ class Trainer:
             self.overrides_loss = False
 
         if verbose:
-            print(f"{self.override_load_to_device=}")
-            print(f"{self.overrides_loss=}")
+            print(f"Override default load_to_device method: {self.override_load_to_device}")
+            print(f"Override default loss computation: {self.overrides_loss}")
 
         if self.callbacks:
             self.callbacks.on_init_start(
