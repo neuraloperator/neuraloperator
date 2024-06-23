@@ -82,8 +82,6 @@ def segment_csr(
                 start = indptr[i]
                 n_nbrs = indptr[i+1] - start
                 to_idx = i
-            if start == n_out:
-                break
             src_from = src[from_idx]
             if n_nbrs > 0:
                 to_reduce = einsum(ein_str, src_from)

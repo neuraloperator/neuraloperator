@@ -10,7 +10,7 @@ In this example, we demonstrate how to use the small Darcy-Flow example we ship 
 # We first import our `neuralop` library and required dependencies.
 
 import matplotlib.pyplot as plt
-from neuralop.datasets import load_darcy_flow_small
+from neuralop.data.datasets import load_darcy_flow_small
 
 # %%
 # Load the dataset
