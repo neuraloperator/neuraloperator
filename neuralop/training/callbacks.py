@@ -27,7 +27,52 @@ class Callback(object):
         update it throughout the lifetime of a Trainer class.
         Storing the state as a dict enables the Callback to keep track of
         references to underlying parts of the Trainer's process, such as
-        models, cost functions and output encoders
+        models, cost functions and output encoders.
+
+    Callbacks provide the following methods, each of which is triggered
+        at the corresponding point within the lifespan \
+        of a Trainer to which it is passed:
+    1. At the beginning of Trainer.__init__ (on_init_start)
+
+    2. At the end of Trainer.__init__ (on_init_end)
+
+    #### Inside Trainer.train() ####
+    3. At the beginning of the training loop (on_before_train, on_train_start)
+
+    4. At the beginning of each epoch loop (on_epoch_start)
+
+    5. At the beginning of each batch loop (on_batch_start)
+
+    6. Loading data to the proper device (on_load_to_device)
+
+    7. Before the model's forward call (on_before_forward)
+
+    8. Before computing training loss (on_before_loss)
+
+    9. Computing training loss (compute_training_loss)
+
+    10. At the end of the batch loop (on_batch_end)
+
+    11. At the end of the epoch loop (on_epoch_end)
+
+    12. At the end of the training loop (on_train_end)
+
+    #### Inside trainer.evaluate() ####
+    13. At the beginning of the eval loop (on_before_val)
+
+    14. At the beginning of the eval epoch loop (on_val_epoch_start)
+
+    15. At the beginning of the eval batch loop (on_val_batch_start)
+
+    16. Before computing eval loss (on_before_val_loss)
+
+    17. Computing eval loss (compute_val_loss)
+
+    18. At the end of the eval batch loop (on_val_batch_end)
+
+    19. At the end of the val epoch loop (on_val_epoch_end)
+
+    20. At the end of the val loop (on_val_end)
     """
 
     def __init__(self):
@@ -101,6 +146,7 @@ class Callback(object):
 
 
 class PipelineCallback(Callback):
+
     def __init__(self, callbacks: List[Callback]):
         """
         PipelineCallback handles logic for the case in which
