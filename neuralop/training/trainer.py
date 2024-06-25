@@ -54,15 +54,18 @@ class Trainer:
             self.override_load_to_device = (
                 self.callbacks.device_load_callback_idx is not None
             )
-            self.overrides_loss = self.callbacks.overrides_loss
+            self.overrides_training_loss = self.callbacks.overrides_training_loss
+            self.overrides_val_loss = self.callbacks.overrides_val_loss
         else:
             self.callbacks = []
             self.override_load_to_device = False
-            self.overrides_loss = False
+            self.overrides_training_loss = False
+            self.overrides_val_loss = False
 
         if verbose:
             print(f"{self.override_load_to_device=}")
-            print(f"{self.overrides_loss=}")
+            print(f"{self.overrides_training_loss=}")
+            print(f"{self.overrides_val_loss=}")
 
         if self.callbacks:
             self.callbacks.on_init_start(
@@ -197,7 +200,7 @@ class Trainer:
 
                 loss = 0.0
 
-                if self.overrides_loss:
+                if self.overrides_train_loss:
                     loss += self.callbacks.compute_training_loss(
                         out=out, **sample, amp_autocast=self.amp_autocast
                     )
@@ -313,8 +316,8 @@ class Trainer:
                     self.callbacks.on_before_val_loss(out=out)
 
                 for loss_name, loss in loss_dict.items():
-                    if self.overrides_loss:
-                        val_loss = self.callbacks.compute_training_loss(out, **sample)
+                    if self.overrides_val_loss:
+                        val_loss = self.callbacks.compute_val_loss(out, **sample)
                     else:
                         val_loss = loss(out, **sample)
                         if val_loss.shape == ():
