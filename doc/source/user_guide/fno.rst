@@ -186,7 +186,7 @@ of size `n` along each dim that indexes Fourier modes `0, 1, 2, ... n//2, -n//2,
 inputs are real-valued, we take the real-valued FFT, which is skew-symmetric, so information is repeated across 
 one axis. Therefore it is sufficient to keep only two of the four corners of the FFT matrix. 
 
-Equivalantly, we could also apply a periodic FFT-shift using `torch.fft.fftshift` to move the zero-frequency component 
+Equivalently, we could also apply a periodic FFT-shift using `torch.fft.fftshift` to move the zero-frequency component 
 to the center of the FFT matrix, such that the matrix would be indexed with modes `-n//2, -n//2 + 1, ...-1, 0, 1, ...` 
 as shown below:
 
