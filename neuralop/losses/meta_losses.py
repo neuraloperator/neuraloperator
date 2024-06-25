@@ -79,7 +79,7 @@ class WeightedSumLoss(object):
         if not len(weights) == len(losses):
             raise ValueError("Each loss must have a weight.")
         #self.losses = list(zip(losses, weights))
-        self.losses = {x.__name__: (x,y) for x,y in zip(losses,weights)}
+        self.losses = {x.__name__: [x,y] for x,y in zip(losses,weights)}
         self.compute_grads = compute_grads
 
         self.return_individual = return_individual
