@@ -1,10 +1,10 @@
 """
 Base Loss class for neuralop
 """
-from  abc import ABCMeta, abstractmethod
+from  abc import ABC, abstractmethod
 from torch import nn
 
-class Loss(nn.Module, ABCMeta):
+class Loss(nn.Module, ABC):
     def __init__(self):
         super().__init__()
     

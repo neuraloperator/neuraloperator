@@ -216,7 +216,7 @@ class Trainer:
 
                 loss = 0.0
 
-                if self.overrides_train_loss:
+                if self.overrides_training_loss:
                     loss += self.callbacks.compute_training_loss(
                         out=out, **sample, amp_autocast=self.amp_autocast
                     )
