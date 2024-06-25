@@ -187,11 +187,7 @@ inputs are real-valued, we take the real-valued FFT, which is skew-symmetric, so
 one axis. Therefore it is sufficient to keep only two of the four corners of the FFT matrix. 
 
 Equivalently, we could also apply a periodic FFT-shift using `torch.fft.fftshift` to move the zero-frequency component 
-to the center of the FFT matrix, such that the matrix would be indexed with modes `-n//2, -n//2 + 1, ...-1, 0, 1, ...` 
-as shown below:
-
-.. image:: /_static/images/fft_shift.jpg
-    :width: 800
+to the center of the FFT matrix, such that the matrix would be indexed with modes `-n//2, -n//2 + 1, ...-1, 0, 1, ...`.
 
 **Convolutional Filters in Fourier Space**
 .. image:: /_static/images/filters.jpg
