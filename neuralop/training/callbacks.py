@@ -72,7 +72,7 @@ class Callback(object):
 
     19. At the end of the val epoch loop (on_val_epoch_end)
 
-    20. At the end of the val loop (on_val_end)
+    20. At the end of the val loop gi(on_val_end)
     """
 
     def __init__(self):
