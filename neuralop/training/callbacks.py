@@ -88,7 +88,7 @@ class Callback(object):
         pass
 
     def compute_val_loss(self, *args, **kwargs):
-        pass
+        raise NotImplementedError
 
     def on_val_batch_end(self, *args, **kwargs):
         pass
@@ -128,16 +128,28 @@ class PipelineCallback(Callback):
             print("using standard method to load data to device.")
 
         # unless loss computation is overriden, call a basic loss function calculation
-        overrides_loss = [
+        overrides_training_loss = [
             "compute_training_loss" in c.__class__.__dict__.keys() for c in callbacks
         ]
 
-        if sum(overrides_loss) >= 1:
-            self.overrides_loss = True
-            print("using custom callback to compute loss.")
+        if sum(overrides_training_loss) >= 1:
+            self.overrides_training_loss = True
+            print("using custom callback to compute train loss.")
         else:
-            self.overrides_loss = False
-            print("using standard method to compute loss.")
+            self.overrides_training_loss = False
+            print("using standard method to compute train loss.")
+        
+        # override val loss separately
+        overrides_val_loss = [
+            "compute_val_loss" in c.__class__.__dict__.keys() for c in callbacks
+        ]
+
+        if sum(overrides_val_loss) >= 1:
+            self.overrides_val_loss = True
+            print("using custom callback to compute val loss.")
+        else:
+            self.overrides_val_loss = False
+            print("using standard method to compute val loss.")
 
     def _update_state_dict(self, **kwargs):
         for c in self.callbacks:
@@ -285,10 +297,17 @@ class BasicLoggerCallback(Callback):
         ):
             print(f"Raw outputs of size {out.shape=}")
 
-    def on_before_val(self, epoch, train_err, time, avg_loss, avg_lasso_loss, **kwargs):
+    def on_before_val(self, epoch, train_err, time, avg_loss, avg_lasso_loss, train_losses=None, train_grads=None, **kwargs):
         # track training err and val losses to print at interval epochs
         msg = f"[{epoch}] time={time:.2f}, avg_loss={avg_loss:.4f}, train_err={train_err:.4f}"
+        if train_losses and train_grads: 
+            for name, value in train_losses.items():
+                msg += f", {name}={value:.4f}"
+            for name, value in train_grads.items():
+                msg += f", {name}={value:.2e}"
         values_to_log = dict(train_err=train_err, time=time, avg_loss=avg_loss)
+        if train_grads and train_losses:
+            values_to_log.update(**train_grads, **train_losses)
 
         self._update_state_dict(msg=msg, values_to_log=values_to_log)
         self._update_state_dict(avg_lasso_loss=avg_lasso_loss)
