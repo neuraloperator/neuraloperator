@@ -301,13 +301,18 @@ class BasicLoggerCallback(Callback):
         # track training err and val losses to print at interval epochs
         msg = f"[{epoch}] time={time:.2f}, avg_loss={avg_loss:.4f}, train_err={train_err:.4f}"
         if train_losses and train_grads: 
+            grad_logs = {}
+            loss_logs = {}
             for name, value in train_losses.items():
-                msg += f", {name}={value:.4f}"
+                msg += f", train_{name}={value:.4f}"
+                loss_logs[f"train_{name}"] = value
             for name, value in train_grads.items():
-                msg += f", {name}={value:.2e}"
+                msg += f", train_grad_{name}={value:.2e}"
+                grad_logs[f"train_grad_{name}"] = value
+                
         values_to_log = dict(train_err=train_err, time=time, avg_loss=avg_loss)
         if train_grads and train_losses:
-            values_to_log.update(**train_grads, **train_losses)
+            values_to_log.update(**loss_logs, **grad_logs)
 
         self._update_state_dict(msg=msg, values_to_log=values_to_log)
         self._update_state_dict(avg_lasso_loss=avg_lasso_loss)

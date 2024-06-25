@@ -67,7 +67,7 @@ class FieldwiseAggregatorLoss(Loss):
         else:
             return loss
 
-class WeightedSumLoss(Loss):
+class WeightedSumLoss(object):
     """
     Computes an average or weighted sum of given losses.
     """
@@ -78,19 +78,19 @@ class WeightedSumLoss(Loss):
             weights = [1.0 / len(losses)] * len(losses)
         if not len(weights) == len(losses):
             raise ValueError("Each loss must have a weight.")
-        self.losses = list(zip(losses, weights))
-        self.labels = [getattr(x, 'name', x.__class__.__name__) for x in losses]
-        # this property is accessed within trainer
+        #self.losses = list(zip(losses, weights))
+        self.losses = {x.__name__: (x,y) for x,y in zip(losses,weights)}
         self.compute_grads = compute_grads
+
         self.return_individual = return_individual
 
-    def forward(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs):
         weighted_loss = 0.0
         wrapper = {}
-        for loss, weight in self.losses:
+        for name, (loss,weight) in self.losses.items():
             loss_value = loss(*args, **kwargs)
-            if self.return_wrapped:
-                wrapper[loss.__name__] = weight * loss_value
+            if self.return_individual:
+                wrapper[name] = weight * loss_value
             else:
                 weighted_loss += weight * loss_value
         if self.return_individual:
@@ -100,6 +100,6 @@ class WeightedSumLoss(Loss):
 
     def __str__(self):
         description = "Combined loss: "
-        for loss, weight in self.losses:
-            description += f"{loss} (weight: {weight}) "
+        for name, (loss, weight) in self.losses.items():
+            description += f"{name} (weight: {weight}) "
         return description

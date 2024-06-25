@@ -172,9 +172,9 @@ class Trainer:
             train_losses = None
             train_grads = None
             if self.monitor_individual_train_losses:
-                train_losses = {f"train_{name}": 0. for name in training_loss.labels}
+                train_losses = {name: 0. for name in training_loss.losses.keys()}
             if self.compute_train_grads:
-                train_grads = {f"train_grad_{name}": 0. for name in training_loss.labels}
+                train_grads = {name: 0. for name in training_loss.losses.keys()}
 
             
             # track number of training examples in batch
@@ -230,12 +230,12 @@ class Trainer:
 
                         for loss_name, loss_value in loss_outputs.items():
                             loss += loss_value
-                            train_losses[f"train_{loss_name}"] += loss_value
+                            train_losses[loss_name] += loss_value
                             # accumulate training gradients for each subloss over the epoch
                             if self.compute_train_grads:
                                 grad_norm = torch.norm(torch.autograd.grad(loss_value,\
                                                                             self.model.parameters(), retain_graph=True)[0],p=2)
-                                train_grads[f"train_grad_{loss_name}"] += grad_norm
+                                train_grads[loss_name] += grad_norm
                     else:
                         if self.amp_autocast:
                             with amp.autocast(enabled=True):
