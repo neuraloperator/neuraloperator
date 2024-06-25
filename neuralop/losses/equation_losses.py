@@ -1,10 +1,11 @@
 import torch
 import torch.nn.functional as F
 
-from .data_losses import central_diff_2d
+from .finite_diff import central_diff_2d
+from .loss import Loss
 
 
-class BurgersEqnLoss(object):
+class BurgersEqnLoss(Loss):
     """
     Computes loss for Burgers' equation.
     """
@@ -46,13 +47,13 @@ class BurgersEqnLoss(object):
         # compute the loss of the left and right hand sides of Burgers' equation
         return self.loss(dudt, right_hand_side)
 
-    def __call__(self, y_pred, **kwargs):
+    def forward(self, y_pred, **kwargs):
         if self.method == "fdm":
             return self.fdm(u=y_pred)
         raise NotImplementedError()
 
 
-class ICLoss(object):
+class ICLoss(Loss):
     """
     Computes loss for initial value problems.
     """
@@ -66,5 +67,5 @@ class ICLoss(object):
         boundary_pred = y_pred[:, 0, 0, :]
         return self.loss(boundary_pred, boundary_true)
 
-    def __call__(self, y_pred, x, **kwargs):
+    def forward(self, y_pred, x, **kwargs):
         return self.initial_condition_loss(y_pred, x)
