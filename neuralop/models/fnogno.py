@@ -5,7 +5,7 @@ from .base_model import BaseModel
 from .fno import FNO
 
 from ..layers.mlp import MLP
-from ..layers.positional_embeddings import SinusoidalEmbedding2D
+from ..layers.embeddings import SinusoidalEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.integral_transform import IntegralTransform
 from ..layers.neighbor_search import NeighborSearch
