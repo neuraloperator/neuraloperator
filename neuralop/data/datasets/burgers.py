@@ -14,8 +14,6 @@ class BurgersDataset(PTDataset):
             n_test: int, 
             batch_size: int=32, 
             test_batch_size: int=100,
-            spatial_length: int=128,
-            temporal_length: int=101,
             temporal_subsample: Optional[int]=None, 
             spatial_subsample: Optional[int]=None, 
             pad: int=0,
@@ -37,8 +35,8 @@ class BurgersDataset(PTDataset):
         if download:
             files_to_download = []
             already_downloaded_files = [x for x in root_dir.iterdir()]
-            if f"burgers_train_{spatial_length}.pt" not in already_downloaded_files or \
-            f"burgers_test_{spatial_length}.pt" not in already_downloaded_files:    
+            if f"burgers_train_128.pt" not in already_downloaded_files or \
+            f"burgers_test_128.pt" not in already_downloaded_files:    
                     files_to_download.append(f"burgers.tgz")
             download_from_zenodo_record(record_id=zenodo_record_id,
                                         root=root_dir,
@@ -49,8 +47,8 @@ class BurgersDataset(PTDataset):
                              n_tests=[n_test],
                              batch_size=batch_size,
                              test_batch_sizes=[test_batch_size],
-                             train_resolution=None, #TODO: figure out how to integrate
-                             test_resolutions=None, #TODO: ^
+                             train_resolution=128, #TODO: figure out how to integrate
+                             test_resolutions=128, #TODO: ^
                              grid_boundaries=grid_boundaries,
                              subsampling_rate=[temporal_subsample, spatial_subsample],
                              positional_encoding=True,
