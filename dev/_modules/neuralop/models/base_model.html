@@ -196,6 +196,8 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Saves the model state and init param in the given folder under the given name</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">save_folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">save_folder</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">save_folder</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="n">state_dict_filepath</span> <span class="o">=</span> <span class="n">save_folder</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">save_name</span><span class="si">}</span><span class="s1">_state_dict.pt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
         <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="n">state_dict_filepath</span><span class="p">)</span>
@@ -205,13 +207,13 @@
         <span class="c1"># with open(metadata_filepath, &#39;w&#39;) as f:</span>
         <span class="c1">#     json.dump(self._init_kwargs, f)</span>
 
-    <span class="k">def</span> <span class="nf">load_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">save_name</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">load_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">save_name</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">save_folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>
         <span class="n">state_dict_filepath</span> <span class="o">=</span> <span class="n">save_folder</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">save_name</span><span class="si">}</span><span class="s1">_state_dict.pt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">state_dict_filepath</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">state_dict_filepath</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="n">map_location</span><span class="p">))</span>
     
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_checkpoint</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">save_name</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">from_checkpoint</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">save_name</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">save_folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>
 
         <span class="n">metadata_filepath</span> <span class="o">=</span> <span class="n">save_folder</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">save_name</span><span class="si">}</span><span class="s1">_metadata.pkl&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
@@ -230,7 +232,7 @@
             <span class="n">init_args</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">*</span><span class="n">init_args</span><span class="p">,</span> <span class="o">**</span><span class="n">init_kwargs</span><span class="p">)</span>
 
-        <span class="n">instance</span><span class="o">.</span><span class="n">load_checkpoint</span><span class="p">(</span><span class="n">save_folder</span><span class="p">,</span> <span class="n">save_name</span><span class="p">)</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">load_checkpoint</span><span class="p">(</span><span class="n">save_folder</span><span class="p">,</span> <span class="n">save_name</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="n">map_location</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">instance</span>
 
 

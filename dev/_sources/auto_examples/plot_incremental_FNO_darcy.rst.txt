@@ -239,15 +239,15 @@ Set up the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f5c123d44f0>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7efd8ec15340>
 
     ### LOSSES ###
 
     ### INCREMENTAL RESOLUTION + GRADIENT EXPLAINED ###
 
-     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7f5c0b38a520>
+     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7efd8eb43580>
 
-     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7f5c0b38a520>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f5c0b38a640>}
+     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7efd8eb43580>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7efd8eb436a0>}
 
 
 
@@ -350,9 +350,9 @@ Train the model
     Currently the model is using incremental_n_modes = [3, 2]
     [3] time=0.13, avg_loss=0.7364, train_err=10.5200, 16_h1=0.7717, 16_l2=0.6129, 32_h1=0.7877, 32_l2=0.6047
     Currently the model is using incremental_n_modes = [3, 2]
-    [4] time=0.13, avg_loss=0.7374, train_err=10.5348, 16_h1=0.7355, 16_l2=0.5831, 32_h1=0.7632, 32_l2=0.5739
+    [4] time=0.12, avg_loss=0.7374, train_err=10.5348, 16_h1=0.7355, 16_l2=0.5831, 32_h1=0.7632, 32_l2=0.5739
     Currently the model is using incremental_n_modes = [3, 2]
-    [5] time=0.13, avg_loss=0.7139, train_err=10.1984, 16_h1=0.7260, 16_l2=0.5667, 32_h1=0.7564, 32_l2=0.5557
+    [5] time=0.12, avg_loss=0.7139, train_err=10.1984, 16_h1=0.7260, 16_l2=0.5667, 32_h1=0.7564, 32_l2=0.5557
     Currently the model is using incremental_n_modes = [4, 3]
     [6] time=0.14, avg_loss=0.7017, train_err=10.0248, 16_h1=0.7278, 16_l2=0.5762, 32_h1=0.7471, 32_l2=0.5678
     Currently the model is using incremental_n_modes = [4, 3]
@@ -360,7 +360,7 @@ Train the model
     Currently the model is using incremental_n_modes = [4, 3]
     [8] time=0.14, avg_loss=0.6999, train_err=9.9988, 16_h1=0.6970, 16_l2=0.5474, 32_h1=0.7220, 32_l2=0.5381
     Currently the model is using incremental_n_modes = [5, 3]
-    [9] time=0.15, avg_loss=0.6500, train_err=9.2861, 16_h1=0.7129, 16_l2=0.5535, 32_h1=0.7449, 32_l2=0.5409
+    [9] time=0.14, avg_loss=0.6500, train_err=9.2861, 16_h1=0.7129, 16_l2=0.5535, 32_h1=0.7449, 32_l2=0.5409
     Currently the model is using incremental_n_modes = [5, 3]
     Incre Res Update: change index to 1
     Incre Res Update: change sub to 1
@@ -373,7 +373,7 @@ Train the model
     Currently the model is using incremental_n_modes = [6, 4]
     [13] time=0.22, avg_loss=0.5435, train_err=7.7644, 16_h1=0.7011, 16_l2=0.5599, 32_h1=0.7118, 32_l2=0.5452
     Currently the model is using incremental_n_modes = [6, 4]
-    [14] time=0.23, avg_loss=0.4986, train_err=7.1235, 16_h1=0.7174, 16_l2=0.5682, 32_h1=0.7241, 32_l2=0.5493
+    [14] time=0.22, avg_loss=0.4986, train_err=7.1235, 16_h1=0.7174, 16_l2=0.5682, 32_h1=0.7241, 32_l2=0.5493
     Currently the model is using incremental_n_modes = [7, 4]
     [15] time=0.23, avg_loss=0.4516, train_err=6.4507, 16_h1=0.6799, 16_l2=0.5357, 32_h1=0.6936, 32_l2=0.5225
     Currently the model is using incremental_n_modes = [7, 4]
@@ -460,7 +460,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 6.480 seconds)
+   **Total running time of the script:** (0 minutes 6.313 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_incremental_FNO_darcy.py:

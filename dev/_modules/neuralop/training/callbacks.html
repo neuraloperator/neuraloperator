@@ -129,7 +129,7 @@
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">wandb</span>
 
-<span class="kn">from</span> <span class="nn">.training_state</span> <span class="kn">import</span> <span class="n">save_training_state</span>
+<span class="kn">from</span> <span class="nn">.training_state</span> <span class="kn">import</span> <span class="n">save_training_state</span><span class="p">,</span> <span class="n">load_training_state</span>
 <span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">compute_rank</span><span class="p">,</span> <span class="n">compute_stable_rank</span><span class="p">,</span> <span class="n">compute_explained_variance</span>
 
 
@@ -524,42 +524,23 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">resume_from_dir</span><span class="p">:</span>
             <span class="n">saved_modules</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">stem</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">resume_from_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*.pt&quot;</span><span class="p">)]</span>
 
-            <span class="k">assert</span> <span class="p">(</span>
-                <span class="s2">&quot;best_model_state_dict&quot;</span> <span class="ow">in</span> <span class="n">saved_modules</span>
-                <span class="ow">or</span> <span class="s2">&quot;model_state_dict&quot;</span> <span class="ow">in</span> <span class="n">saved_modules</span>
-            <span class="p">),</span> <span class="s2">&quot;Error: CheckpointCallback expects a model state dict named model.pt or best_model.pt.&quot;</span>
-
-            <span class="c1"># no need to handle exceptions if assertion that either model file exists passes</span>
-            <span class="k">if</span> <span class="s2">&quot;best_model_state_dict&quot;</span> <span class="ow">in</span> <span class="n">saved_modules</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">],</span> <span class="s2">&quot;load_checkpoint&quot;</span><span class="p">):</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">load_checkpoint</span><span class="p">(</span>
-                        <span class="n">save_folder</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">resume_from_dir</span><span class="p">,</span> <span class="n">save_name</span><span class="o">=</span><span class="s2">&quot;best_model&quot;</span>
-                    <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span>
-                        <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resume_from_dir</span> <span class="o">/</span> <span class="s2">&quot;best_model.pt&quot;</span><span class="p">)</span>
-                    <span class="p">)</span>
-                <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading model state from best_model_state_dict.pt&quot;</span><span class="p">)</span>
+            <span class="c1"># check for save model exists</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resume_from_dir</span> <span class="o">/</span> <span class="s2">&quot;best_model_state_dict.pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">save_name</span> <span class="o">=</span> <span class="s2">&quot;best_model&quot;</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resume_from_dir</span> <span class="o">/</span> <span class="s2">&quot;model_state_dict.pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">save_name</span> <span class="o">=</span> <span class="s2">&quot;model&quot;</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">],</span> <span class="s2">&quot;load_checkpoint&quot;</span><span class="p">):</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">load_checkpoint</span><span class="p">(</span>
-                        <span class="n">save_folder</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">resume_from_dir</span><span class="p">,</span> <span class="n">save_name</span><span class="o">=</span><span class="s2">&quot;model&quot;</span>
-                    <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span>
-                        <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resume_from_dir</span> <span class="o">/</span> <span class="s2">&quot;model.pt&quot;</span><span class="p">)</span>
-                    <span class="p">)</span>
-                <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading model state from model.pt&quot;</span><span class="p">)</span>
-
-            <span class="c1"># load all of optimizer, scheduler, regularizer if they exist</span>
-            <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;optimizer&quot;</span><span class="p">,</span> <span class="s2">&quot;scheduler&quot;</span><span class="p">,</span> <span class="s2">&quot;regularizer&quot;</span><span class="p">]:</span>
-                <span class="k">if</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">saved_modules</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="n">module</span><span class="p">]</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span>
-                        <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resume_from_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">.pt&quot;</span><span class="p">)</span>
-                    <span class="p">)</span>
-
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s2">&quot;Error: CheckpointCallback expects a model</span><span class="se">\</span>
+<span class="s2">                                         state dict named model.pt or best_model.pt.&quot;</span><span class="p">)</span>
+            <span class="c1"># returns key-value pairs &quot;model&quot;:model, &quot;optimizer&quot;:optimizer...</span>
+            <span class="n">training_state</span> <span class="o">=</span> <span class="n">load_training_state</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">resume_from_dir</span><span class="p">,</span> <span class="n">save_name</span><span class="o">=</span><span class="n">save_name</span><span class="p">,</span>
+                                                 <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">],</span>
+                                                 <span class="n">optimizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;optimizer&#39;</span><span class="p">),</span>
+                                                 <span class="n">regularizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;regularizer&#39;</span><span class="p">),</span>
+                                                 <span class="n">scheduler</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scheduler&#39;</span><span class="p">))</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_state_dict</span><span class="p">(</span><span class="o">**</span><span class="n">training_state</span><span class="p">)</span>
+            
     <span class="k">def</span> <span class="nf">on_epoch_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_update_state_dict</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
