@@ -1,177 +1,186 @@
+from functools import partialmethod
+from pathlib import Path
+from typing import List, Union, Optional
+
 import torch
 
-from .tensor_dataset import GeneralTensorDataset
+from .tensor_dataset import TensorDataset
+from ..transforms.data_processors import DefaultDataProcessor
 from ..transforms.normalizers import UnitGaussianNormalizer
-
 from neuralop.layers.embeddings import GridEmbedding2D
 
-def load_pt_traintestsplit(data_path, 
-                        n_train, n_test,
-                        batch_size, test_batch_size,
-                        labels='x',
-                        grid_boundaries=[[0,1],[0,1]],
-                        positional_encoding=True,
-                        gaussian_norm=False,
-                        norm_type='channel-wise', 
-                        channel_dim=1,
-                        subsample_fact=None,
-                        interp_res=None
-                        ):
-    """Create train-test split from a single file
-    containing any number of tensors. n_train or
-    n_test can be zero. First n_train
-    points are used for the training set and n_test of
-    the remaining points are used for the test set.
-    If subsampling or interpolation is used, all tensors 
-    are assumed to be of the same dimension and the 
-    operation will be applied to all.
+class PTDataset:
+    """PTDataset is a base Dataset class for our library.
+            PTDatasets contain input-output pairs a(x), u(x) and may also
+            contain additional information, e.g. function parameters,
+            input geometry or output query points.
 
-    Parameters
-    ----------
-    n_train : int
-    n_test : int
-    batch_size : int
-    test_batch_size : int
-    labels: str list, default is 'x'
-        tensor labels in the data file
-    grid_boundaries : int list, default is [[0,1],[0,1]],
-    positional_encoding : bool list, default is True
-    gaussian_norm : bool list, default is False
-    norm_type : str, default is 'channel-wise'
-    channel_dim : int list, default is 1
-        where to put the channel dimension, defaults size is batch, channel, height, width
-    subsample_fact : list, default is None
-    interp_res : list, default is None
+            datasets may implement a download flag at init, which provides
+            access to a number of premade datasets for sample problems provided
+            in our Zenodo archive. 
 
-    Returns
-    -------
-    train_loader, test_loader, encoders
+        All datasets are required to expose the following attributes after init:
 
-    train_loader : torch DataLoader None
-    test_loader : torch DataLoader None
-    encoders : UnitGaussianNormalizer List[UnitGaussianNormalizer] None
-    """
-    data = torch.load(data_path)
+        train_db: torch.utils.data.Dataset of training examples
+        test_db:  ""                       of test examples
+        data_processor: neuralop.datasets.DataProcessor to process data examples
+            optional, default is None
+        """
+    def __init__(self,
+                 root_dir: Union[Path, str],
+                 dataset_name: str,
+                 n_train: int,
+                 n_tests: List[int],
+                 batch_size: int,
+                 test_batch_sizes: List[int],
+                 train_resolution: int,
+                 test_resolutions: List[int]=[16,32],
+                 grid_boundaries: List[List[int]]=[[0,1],[0,1]],
+                 positional_encoding: bool=True,
+                 encode_input: bool=False, 
+                 encode_output: bool=True, 
+                 encoding="channel-wise",
+                 subsampling_rate: Optional[Union[List[int],int]]=None,
+                 channel_dim=1,):
+        """PTDataset _summary_
 
-    if type(labels) is not list and type(labels) is not tuple:
-        labels = [labels]
-        n_tensors = 1
-    else:
-        n_tensors = len(labels)
-    
-    if type(positional_encoding) is not list and type(positional_encoding) is not tuple:
-        positional_encoding = [positional_encoding]*n_tensors
-    
-    if type(channel_dim) is not list and type(channel_dim) is not tuple:
-        channel_dim = [channel_dim]*n_tensors
-    
-    if type(gaussian_norm) is not list and type(gaussian_norm) is not tuple:
-        gaussian_norm = [gaussian_norm]*n_tensors
-    
-    if type(norm_type) is not list and type(norm_type) is not tuple:
-        norm_type = [norm_type]*n_tensors
-    
-    if subsample_fact is not None:
-        assert len(subsample_fact) == 2 or len(subsample_fact) == 3, "Only 2D and 3D data supported for subsampling"
-    
-    if interp_res is not None:
-        assert len(interp_res) == 2 or len(interp_res) == 3, "Only 2D and 3D data supported for interpolation"
-        if len(interp_res) == 2:
-            interp_mode = 'bilinear'
-            antialias = True
-        else:
-            interp_mode = 'trilinear'
-            antialias = False
-     
-    if gaussian_norm[0]:
-        assert n_train > 0, "Cannot normalize test data without train data"
-
-    train_data = None
-    if n_train > 0:
-        train_data = []
-        train_transforms = []
-        for j in range(n_tensors):
-            current_data = data[labels[j]][0:n_train, ...].type(torch.float32).clone()
-
-            if channel_dim[j] is not None:
-                current_data = current_data.unsqueeze(channel_dim[j])
-
-            if subsample_fact is not None:
-                if len(subsample_fact) == 2:
-                    current_data = current_data[..., ::subsample_fact[0], ::subsample_fact[1]]
-                else:
-                    current_data = current_data[..., ::subsample_fact[0], ::subsample_fact[1], ::subsample_fact[2]]
-            
-            if interp_res is not None:
-                current_data = torch.nn.functional.interpolate(current_data, size=interp_res, mode=interp_mode, align_corners=False, antialias=antialias)
-            
-            train_data.append(current_data.contiguous())
-
-            transform = GridEmbedding2D(grid_boundaries) if positional_encoding[j] else None
-            train_transforms.append(transform)
-
-    test_data = None
-    if n_test > 0:
-        test_data = []
-        test_transforms = []
-        for j in range(n_tensors):
-            current_data = data[labels[j]][n_train:(n_train + n_test), ...].type(torch.float32).clone()
-
-            if channel_dim[j] is not None:
-                current_data = current_data.unsqueeze(channel_dim)
-
-            if subsample_fact is not None:
-                if len(subsample_fact) == 2:
-                    current_data = current_data[..., ::subsample_fact[0], ::subsample_fact[1]]
-                else:
-                    current_data = current_data[..., ::subsample_fact[0], ::subsample_fact[1], ::subsample_fact[2]]
-            
-            if interp_res is not None:
-                current_data = torch.nn.functional.interpolate(current_data, size=interp_res, mode=interp_mode, align_corners=False, antialias=antialias)
-            
-            test_data.append(current_data.contiguous())
-
-            transform = GridEmbedding2D(grid_boundaries) if positional_encoding[j] else None
-            test_transforms.append(transform)
-
-    del data
-
-    encoders = []
-    for j in range(n_tensors):
-        if gaussian_norm[j]:
-            if norm_type[j] == 'channel-wise':
-                reduce_dims = list(range(train_data[j].ndim))
-            else:
-                reduce_dims = [0]
-            
-            encoder = UnitGaussianNormalizer(train_data[j], reduce_dim=reduce_dims)
-            train_data[j] = encoder.encode(train_data[j].contiguous())
-            if test_data is not None:
-                test_data[j] = encoder.encode(test_data[j].contiguous())
-            
-            encoders.append(encoder)
-    
-    if len(encoders) == 0:
-        encoders = None
-    elif len(encoder) == 1:
-        encoders = encoders[0]
-
-
-    if train_data is not None:
-        train_db = GeneralTensorDataset(train_data, train_transforms)
-        train_loader = torch.utils.data.DataLoader(train_db,
-                                                batch_size=batch_size, shuffle=True,
-                                                num_workers=0, pin_memory=True, persistent_workers=False)
-    else:
-        train_loader = None
-
-    if test_data is not None:
-        test_db = GeneralTensorDataset(test_data, test_transforms)
-        test_loader = torch.utils.data.DataLoader(test_db,
-                                                batch_size=test_batch_size, shuffle=False,
-                                                num_workers=0, pin_memory=True, persistent_workers=False)
-    else:
-        test_loader = None
-
+        Parameters
+        ----------
+        root_dir : Union[Path, str]
+            _description_
+        dataset_name : str
+            _description_
+        n_train : int
+            _description_
+        n_tests : List[int]
+            _description_
+        batch_size : int
+            _description_
+        test_batch_sizes : List[int]
+            _description_
+        train_resolution : int
+            _description_
+        test_resolutions : List[int], optional
+            _description_, by default [16,32]
+        grid_boundaries : List[List[int]], optional
+            _description_, by default [[0,1],[0,1]]
+        positional_encoding : bool, optional
+            _description_, by default True
+        encode_input : bool, optional
+            _description_, by default False
+        encode_output : bool, optional
+            _description_, by default True
+        encoding : str, optional
+            _description_, by default "channel-wise"
+        subsampling_rate : Optional[Union[List[int],int]], optional
+            _description_, by default None
+        channel_dim : int, optional
+            _description_, by default 1
+        """
         
-    return train_loader, test_loader, encoders
+        if isinstance(root_dir, str):
+            root_dir = Path(root_dir)
+        
+        self.root_dir = root_dir
+
+        # save dataloader properties for later
+        self.batch_size = batch_size
+        self.test_resolutions = test_resolutions
+        self.test_batch_sizes = test_batch_sizes
+            
+        # Load train data
+        
+        data = torch.load(
+        Path(root_dir).joinpath(f"{dataset_name}_train_{train_resolution}.pt").as_posix()
+        )
+        # optionally subsample along data indices
+        data_dims = data["x"].ndim - 1
+        # convert None and 0 to 1
+        if not subsampling_rate:
+            subsampling_rate = 1
+        if not isinstance(subsampling_rate, list):
+            # expand subsampling rate along dims if one per dim is not provided
+            subsampling_rate = [subsampling_rate] * data_dims
+        # make sure there is one subsampling rate per data dim
+        assert len(subsampling_rate) == data_dims
+        
+        train_indices = [slice(0, n_train, None)] + [slice(None, None, rate) for rate in subsampling_rate]
+        x_train = (
+        data["x"][train_indices].unsqueeze(channel_dim).type(torch.float32).clone()
+        )
+        y_train = data["y"][train_indices].unsqueeze(channel_dim).clone()
+        del data
+
+        # Fit optional encoders to train data
+        # Actual encoding happens within DataProcessor
+        if encode_input:
+            if encoding == "channel-wise":
+                reduce_dims = list(range(x_train.ndim))
+            elif encoding == "pixel-wise":
+                reduce_dims = [0]
+
+            input_encoder = UnitGaussianNormalizer(dim=reduce_dims)
+            input_encoder.fit(x_train)
+        else:
+            input_encoder = None
+
+        if encode_output:
+            if encoding == "channel-wise":
+                reduce_dims = list(range(y_train.ndim))
+            elif encoding == "pixel-wise":
+                reduce_dims = [0]
+
+            output_encoder = UnitGaussianNormalizer(dim=reduce_dims)
+            output_encoder.fit(y_train)
+        else:
+            output_encoder = None
+
+        # Save train dataset
+        self._train_db = TensorDataset( 
+            x_train,
+            y_train,
+        )
+
+        # create pos encoder and DataProcessor
+        if positional_encoding:
+            pos_encoding = GridEmbedding2D(grid_boundaries=grid_boundaries)
+        else:
+            pos_encoding = None
+
+        self._data_processor = DefaultDataProcessor(in_normalizer=input_encoder,
+                                                   out_normalizer=output_encoder,
+                                                   positional_encoding=pos_encoding)
+
+        # load test data
+        self._test_dbs = {}
+        for (res, n_test) in zip(test_resolutions, n_tests):
+            print(
+                f"Loading test db for resolution {res} with {n_test} samples "
+            )
+            data = torch.load(Path(root_dir).joinpath(f"{dataset_name}_test_{res}.pt").as_posix())
+
+            # optionally subsample along data indices
+            test_indices = [slice(0, n_test, None)] + [slice(None, None, rate) for rate in subsampling_rate] 
+            x_test = (
+                data["x"][test_indices].unsqueeze(channel_dim).type(torch.float32).clone()
+            )
+            y_test = data["y"][test_indices].unsqueeze(channel_dim).clone()
+            del data
+
+            test_db = TensorDataset(
+                x_test,
+                y_test,
+            )
+            self._test_dbs[res] = test_db
+    
+    @property
+    def data_processor(self):
+        return self._data_processor
+    
+    @property
+    def train_db(self):
+        return self._train_db
+    
+    @property
+    def test_dbs(self):
+        return self._test_dbs
