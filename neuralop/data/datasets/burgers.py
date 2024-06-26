@@ -1,65 +1,8 @@
 from pathlib import Path
-from typing import List, Optional, Union
-
 import torch
 import numpy as np
-from .pt_dataset import PTDataset
 from .tensor_dataset import TensorDataset
-from .web_utils import download_from_zenodo_record
 
-class BurgersDataset(PTDataset):
-    def __init__(
-            root_dir: Union[Path, str], 
-            n_train: int, 
-            n_test: int, 
-            batch_size: int=32, 
-            test_batch_size: int=100,
-            temporal_subsample: Optional[int]=None, 
-            spatial_subsample: Optional[int]=None, 
-            pad: int=0,
-            grid_boundaries: List[List[int]]=[[0,1],[0,1]],
-            channel_dim: int=1,
-            download: bool=True,
-            ):
-        
-        # convert root dir to path
-        if isinstance(root_dir, str):
-            root_dir = Path(root_dir)
-        if not root_dir.exists():
-            root_dir.mkdir(parents=True)
-        
-        # Zenodo record ID for Burgers dataset
-        zenodo_record_id = "NA"
-
-        # download darcy data from zenodo archive if passed
-        if download:
-            files_to_download = []
-            already_downloaded_files = [x for x in root_dir.iterdir()]
-            if f"burgers_train_128.pt" not in already_downloaded_files or \
-            f"burgers_test_128.pt" not in already_downloaded_files:    
-                    files_to_download.append(f"burgers.tgz")
-            download_from_zenodo_record(record_id=zenodo_record_id,
-                                        root=root_dir,
-                                        files_to_download=files_to_download)
-            
-            super().__init__(root_dir=root_dir,
-                             n_train=n_train,
-                             n_tests=[n_test],
-                             batch_size=batch_size,
-                             test_batch_sizes=[test_batch_size],
-                             train_resolution=128, #TODO: figure out how to integrate
-                             test_resolutions=128, #TODO: ^
-                             grid_boundaries=grid_boundaries,
-                             subsampling_rate=[temporal_subsample, spatial_subsample],
-                             positional_encoding=True,
-                             encode_input=True,
-                             encode_output=True,
-                             encoding="channel-wise",
-                             channel_dim=1
-                             ) 
-            
-
-        
 
 def load_burgers_1d(
     data_path, n_train, n_test, batch_train=32, batch_test=100, time=1, grid=[0, 1]
