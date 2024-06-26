@@ -3,7 +3,7 @@ from pathlib import Path
 
 from .tensor_dataset import TensorDataset
 from ..transforms.normalizers import UnitGaussianNormalizer
-from ..transforms.positional_embeddings import GridEmbedding2D
+from ...layers.positional_embeddings import GridEmbedding2D
 from ..transforms.data_processors import DefaultDataProcessor
 
 # from .hdf5_dataset import H5pyDataset
