@@ -6,8 +6,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.nn.functional as F
 
 from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Trainer, get_model
-from neuralop.datasets import load_burgers_1dtime
-from neuralop.datasets.data_transforms import MGPatchingDataProcessor
+from neuralop.data.datasets import load_burgers_1dtime
+from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.training import setup, BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
