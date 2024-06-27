@@ -37,14 +37,14 @@ class NavierStokesDataset(PTDataset):
         if not root_dir.exists():
             root_dir.mkdir(parents=True)
 
-        # Zenodo record ID for Darcy-Flow dataset
-        zenodo_record_id = "NA"
+        # Zenodo record ID for Navier-Stokes dataset
+        zenodo_record_id = "11043303"
 
         # List of resolutions needed for dataset object
         resolutions = set(test_resolutions + [train_resolution])
 
         # We store data at these resolutions on the Zenodo archive
-        available_resolutions = [128]
+        available_resolutions = [128, 1024]
         for res in resolutions:
             assert res in available_resolutions, f"Error: resolution {res} not available"
 

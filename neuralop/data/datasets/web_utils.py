@@ -93,6 +93,10 @@ def download_from_url(
     # download and stream file in chunks
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
+        confirm = input("Confirm download [Y/n]: ")
+        if confirm.lower() != "y":
+            logger.info("Cancelling.")
+            return
         with open(fpath, 'wb') as f:
             curr_size = 0
             for chunk in r.iter_content(chunk_size=chunk_size):
