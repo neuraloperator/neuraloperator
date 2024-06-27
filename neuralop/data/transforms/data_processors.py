@@ -69,6 +69,7 @@ class DefaultDataProcessor(DataProcessor):
         self.out_normalizer = out_normalizer
         self.positional_encoding = positional_encoding
         self.device = "cpu"
+        self.model = None
 
     def wrap(self, model):
         self.model = model
@@ -111,6 +112,17 @@ class DefaultDataProcessor(DataProcessor):
         output = self.model(data_dict["x"])
         output = self.postprocess(output)
         return output, data_dict
+        
+    def train(self):
+        super().train()
+        if self.model:
+            self.model.train()
+    
+    def eval(self):
+        super().eval()
+        if self.model:
+            self.model.eval()
+
 
 class IncrementalDataProcessor(torch.nn.Module):
     def __init__(self, 
