@@ -113,8 +113,8 @@ class DefaultDataProcessor(DataProcessor):
         output = self.postprocess(output)
         return output, data_dict
         
-    def train(self):
-        super().train()
+    def train(self, val: bool=True):
+        super().train(val)
         if self.model:
             self.model.train()
     
