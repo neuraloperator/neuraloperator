@@ -54,9 +54,13 @@ def test_DefaultDataProcessor_train_eval():
     wrapped_model = pipeline.wrap(model).to(device)
 
     assert wrapped_model.device == device
+    
     wrapped_model.train()
+    assert wrapped_model.training
     assert wrapped_model.model.training
+
     wrapped_model.eval()
+    assert not wrapped_model.training
     assert not wrapped_model.model.training
 
     
