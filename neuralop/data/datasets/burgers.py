@@ -7,6 +7,12 @@ from .tensor_dataset import TensorDataset
 from .pt_dataset import PTDataset
 
 class Burgers1dTimeDataset(PTDataset):
+    """
+    Burgers1dTimeDataset wraps data from the viscous 
+    Burger's equation in 1 spatial dimension.
+    This dataset is not available for download online, but we
+    provide a low-res version on 16 spatial points
+    """
     def __init__(
             self,
             root_dir: Union[Path, str], 

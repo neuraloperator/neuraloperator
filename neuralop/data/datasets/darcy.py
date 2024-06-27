@@ -11,6 +11,10 @@ from .web_utils import download_from_zenodo_record
 logger = logging.Logger(logging.root.level)
 
 class DarcyDataset(PTDataset):
+    """
+    DarcyDataset stores data generated according to Darcy's Law.
+    Input is a coefficient function and outputs describe flow. 
+    """
     def __init__(self,
                  root_dir: Union[Path, str],
                  n_train: int,
