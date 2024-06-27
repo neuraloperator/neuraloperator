@@ -1,9 +1,57 @@
 from pathlib import Path
-import torch
+from typing import Optional, List, Union
+
 import numpy as np
+import torch
 from .tensor_dataset import TensorDataset
+from .pt_dataset import PTDataset
 
+class Burgers1dTimeDataset(PTDataset):
+    def __init__(
+            self,
+            root_dir: Union[Path, str], 
+            n_train: int, 
+            n_tests: list[int], 
+            train_resolution: int=16,
+            test_resolutions: List[int]=[16],
+            batch_size: int=32, 
+            test_batch_sizes: List[int]=32,
+            temporal_subsample: Optional[int]=None, 
+            spatial_subsample: Optional[int]=None, 
+            pad: int=0,
+            grid_boundaries: List[List[int]]=[[0,1],[0,1]],
+            channel_dim: int=1,
+            download: bool=True,
+            ):
+        # convert root dir to path
+        if isinstance(root_dir, str):
+            root_dir = Path(root_dir)
+        if not root_dir.exists():
+            root_dir.mkdir(parents=True)
+        
+        available_resolutions = [16, 128]
+        assert train_resolution in available_resolutions, f"Resolutions available: {available_resolutions}, got {train_resolution}"
+        for res in test_resolutions:
+            assert res in available_resolutions, f"Resolutions available: {available_resolutions}, got {res}"
 
+        super().__init__(root_dir=root_dir,
+                         n_train=n_train,
+                         n_tests=n_tests,
+                         batch_size=batch_size,
+                         test_batch_sizes=test_batch_sizes,
+                         train_resolution=train_resolution, #TODO: figure out how to integrate
+                         test_resolutions=test_resolutions, #TODO: ^
+                         grid_boundaries=grid_boundaries,
+                         input_subsampling_rate=spatial_subsample,
+                         output_subsampling_rate=[temporal_subsample, spatial_subsample],
+                         positional_encoding=False,
+                         encode_input=True,
+                         encode_output=True,
+                         encoding="channel-wise",
+                         channel_dim=channel_dim,
+                         dataset_name="burgers") 
+
+# Legacy dataset builders for compatibility
 def load_burgers_1d(
     data_path, n_train, n_test, batch_train=32, batch_test=100, time=1, grid=[0, 1]
 ):

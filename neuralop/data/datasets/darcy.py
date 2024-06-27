@@ -76,7 +76,8 @@ class DarcyDataset(PTDataset):
                        encode_output=encode_output,
                        encoding=encoding,
                        channel_dim=channel_dim,
-                       subsampling_rate=subsampling_rate)
+                       input_subsampling_rate=subsampling_rate,
+                       output_subsampling_rate=subsampling_rate)
         
 # legacy Small Darcy Flow example
 def load_darcy_flow_small(n_train,

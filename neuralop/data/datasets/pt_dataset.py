@@ -35,14 +35,15 @@ class PTDataset:
                  test_batch_sizes: List[int],
                  train_resolution: int,
                  test_resolutions: List[int]=[16,32],
-                 grid_boundaries: List[List[int]]=[[0,1],[0,1]],
+                 grid_boundaries: List=[[0,1],[0,1]],
                  positional_encoding: bool=True,
                  encode_input: bool=False, 
                  encode_output: bool=True, 
                  encoding="channel-wise",
-                 subsampling_rate: Optional[Union[List[int],int]]=None,
+                 input_subsampling_rate=None,
+                 output_subsampling_rate=None,
                  channel_dim=1,):
-        """PTDataset _summary_
+        """PTDataset 
 
         Parameters
         ----------
@@ -93,22 +94,36 @@ class PTDataset:
         data = torch.load(
         Path(root_dir).joinpath(f"{dataset_name}_train_{train_resolution}.pt").as_posix()
         )
+
         # optionally subsample along data indices
-        data_dims = data["x"].ndim - 1
+        ## Input subsampling 
+        input_data_dims = data["x"].ndim - 1
         # convert None and 0 to 1
-        if not subsampling_rate:
-            subsampling_rate = 1
-        if not isinstance(subsampling_rate, list):
+        if not input_subsampling_rate:
+            input_subsampling_rate = 1
+        if not isinstance(input_subsampling_rate, list):
             # expand subsampling rate along dims if one per dim is not provided
-            subsampling_rate = [subsampling_rate] * data_dims
+            input_subsampling_rate = [input_subsampling_rate] * input_data_dims
         # make sure there is one subsampling rate per data dim
-        assert len(subsampling_rate) == data_dims
+        assert len(input_subsampling_rate) == input_data_dims
         
-        train_indices = [slice(0, n_train, None)] + [slice(None, None, rate) for rate in subsampling_rate]
+        ## Output subsampling
+        output_data_dims = data["y"].ndim - 1
+        # convert None and 0 to 1
+        if not input_subsampling_rate:
+            output_subsampling_rate = 1
+        if not isinstance(output_subsampling_rate, list):
+            # expand subsampling rate along dims if one per dim is not provided
+            output_subsampling_rate = [output_subsampling_rate] * output_data_dims
+        # make sure there is one subsampling rate per data dim
+        assert len(output_subsampling_rate) == output_data_dims
+
+        train_input_indices = [slice(0, n_train, None)] + [slice(None, None, rate) for rate in input_subsampling_rate]
         x_train = (
-        data["x"][train_indices].unsqueeze(channel_dim).type(torch.float32).clone()
+        data["x"][train_input_indices].unsqueeze(channel_dim).type(torch.float32).clone()
         )
-        y_train = data["y"][train_indices].unsqueeze(channel_dim).clone()
+        train_output_indices = [slice(0, n_train, None)] + [slice(None, None, rate) for rate in output_subsampling_rate]
+        y_train = data["y"][train_output_indices].unsqueeze(channel_dim).clone()
         del data
 
         # Fit optional encoders to train data
@@ -160,11 +175,12 @@ class PTDataset:
             data = torch.load(Path(root_dir).joinpath(f"{dataset_name}_test_{res}.pt").as_posix())
 
             # optionally subsample along data indices
-            test_indices = [slice(0, n_test, None)] + [slice(None, None, rate) for rate in subsampling_rate] 
+            test_input_indices = [slice(0, n_test, None)] + [slice(None, None, rate) for rate in input_subsampling_rate] 
             x_test = (
-                data["x"][test_indices].unsqueeze(channel_dim).type(torch.float32).clone()
+                data["x"][test_input_indices].unsqueeze(channel_dim).type(torch.float32).clone()
             )
-            y_test = data["y"][test_indices].unsqueeze(channel_dim).clone()
+            test_output_indices = [slice(0, n_test, None)] + [slice(None, None, rate) for rate in output_subsampling_rate] 
+            y_test = data["y"][test_output_indices].unsqueeze(channel_dim).clone()
             del data
 
             test_db = TensorDataset(

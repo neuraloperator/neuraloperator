@@ -1,5 +1,5 @@
 from ..darcy import DarcyDataset
-from ..burgers import BurgersDataset
+from ..burgers import Burgers1dTimeDataset
 from pathlib import Path
 
 import os
@@ -30,4 +30,22 @@ def test_DarcyDatasetDownload(resolution, monkeypatch):
     assert dataset.test_dbs
     assert dataset.data_processor
     shutil.rmtree(test_data_dir)
+
+burgers_root = Path("./neuralop/data/datasets/data/").resolve()
+
+@pytest.mark.parametrize('resolution', [16])
+def test_BurgersDataset(resolution):
+    dataset = Burgers1dTimeDataset(
+                        root_dir=burgers_root,
+                        n_train=5,
+                        n_tests=[5],
+                        batch_size=1,
+                        test_batch_sizes=[1],
+                        train_resolution=resolution,
+                        test_resolutions=[resolution],
+                        download=False)
+    
+    assert dataset.train_db
+    assert dataset.test_dbs
+    assert dataset.data_processor
     
