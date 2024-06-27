@@ -1,10 +1,13 @@
 from ..data_processors import DefaultDataProcessor, IncrementalDataProcessor
 from ..normalizers import UnitGaussianNormalizer
 from ..positional_embeddings import GridEmbedding2D
+
 import torch
 from torch.testing import assert_close
 
-def test_DefaultDataProcessor():
+from neuralop.tests.test_utils import DummyModel
+
+def test_DefaultDataProcessor_pipeline():
     if torch.backends.cuda.is_built():
         device = 'cuda'
     else:
@@ -32,6 +35,31 @@ def test_DefaultDataProcessor():
     _, inv_xform_data = pipeline.postprocess(out, xform_data)
 
     assert_close(inv_xform_data['y'].cpu(), data['y'])
+
+
+def test_DefaultDataProcessor_train_eval():
+    if torch.backends.cuda.is_built():
+        device = 'cuda'
+    else:
+        device='cpu'
+
+    model = DummyModel(features=10)
+
+    normalizer = UnitGaussianNormalizer(mean=torch.zeros((1,2,1,1)),
+                                        std=torch.ones((1,2,1,1)),
+                                        eps=1e-5)
+
+    pipeline = DefaultDataProcessor(in_normalizer=normalizer,
+                           out_normalizer=normalizer)
+    wrapped_model = pipeline.wrap(model).to(device)
+
+    assert wrapped_model.device == device
+    wrapped_model.train()
+    assert wrapped_model.model.training
+    wrapped_model.eval()
+    assert not wrapped_model.model.training
+
+    
     
 
 # ensure that the data processor incrementally increases the resolution
