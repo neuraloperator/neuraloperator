@@ -43,40 +43,48 @@ class PTDataset:
                  input_subsampling_rate=None,
                  output_subsampling_rate=None,
                  channel_dim=1,):
-        """PTDataset 
+        """PTDataset.__init__
 
         Parameters
         ----------
         root_dir : Union[Path, str]
-            _description_
+            root at which to download data files
         dataset_name : str
-            _description_
+            prefix of pt data files to store/access
         n_train : int
-            _description_
+            number of train instances
         n_tests : List[int]
-            _description_
+            number of test instances per test dataset
         batch_size : int
-            _description_
+            batch size of training set
         test_batch_sizes : List[int]
-            _description_
+            batch size of test sets
         train_resolution : int
-            _description_
+            resolution of data for training set
         test_resolutions : List[int], optional
-            _description_, by default [16,32]
-        grid_boundaries : List[List[int]], optional
-            _description_, by default [[0,1],[0,1]]
+            resolution of data for testing sets, by default [16,32]
+        grid_boundaries : List, optional
+            boundaries of grid on which to append positional embedding,
+            by default [[0,1],[0,1]]
         positional_encoding : bool, optional
-            _description_, by default True
+            whether to append positional encoding in the provided DataProcessor,
+            by default True
         encode_input : bool, optional
-            _description_, by default False
+            whether to normalize inputs in provided DataProcessor,
+            by default False
         encode_output : bool, optional
-            _description_, by default True
+            whether to normalize outputs in provided DataProcessor,
+            by default True
         encoding : str, optional
-            _description_, by default "channel-wise"
-        subsampling_rate : Optional[Union[List[int],int]], optional
-            _description_, by default None
+            parameter for input/output normalization. Whether
+            to normalize by channel ("channel-wise") or 
+            by pixel ("pixel-wise"), default "channel-wise"
+        input_subsampling_rate : int or List[int], optional
+            rate at which to subsample each input dimension, by default None
+        output_subsampling_rate : int or List[int], optional
+            rate at which to subsample each output dimension, by default None
         channel_dim : int, optional
-            _description_, by default 1
+            dimension of saved tensors to index data channels, by default 1
         """
         
         if isinstance(root_dir, str):
