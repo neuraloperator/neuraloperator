@@ -1,7 +1,7 @@
 import pytest
 import torch
 from ..attention_kernel_integral import AttentionKernelIntegral
-from ...data.transforms.positional_embeddings import RotaryEmbedding2D
+from ..embeddings import RotaryEmbedding2D
 
 
 def test_AttentionWithRoPE():

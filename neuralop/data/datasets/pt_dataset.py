@@ -2,7 +2,7 @@ import torch
 
 from .tensor_dataset import GeneralTensorDataset
 from ..transforms.normalizers import UnitGaussianNormalizer
-from ..transforms.positional_embeddings import GridEmbedding2D
+from ...layers.embeddings import GridEmbedding2D
 
 def load_pt_traintestsplit(data_path, 
                         n_train, n_test,
