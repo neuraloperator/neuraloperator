@@ -60,7 +60,7 @@ class DataProcessor(torch.nn.Module, metaclass=ABCMeta):
     @abstractmethod
     def forward(self, x):
         pass
-    
+
 class DefaultDataProcessor(DataProcessor):
     def __init__(
         self, in_normalizer=None, out_normalizer=None, positional_encoding=None
@@ -175,10 +175,6 @@ class IncrementalDataProcessor(torch.nn.Module):
         print(f'Original Incre Res: change index to {self.current_index}')
         print(f'Original Incre Res: change sub to {self.current_sub}')
         print(f'Original Incre Res: change res to {self.current_res}')
-            
-    def wrap(self, model):
-        self.model = model
-        return self
 
     def to(self, device):
         if self.in_normalizer is not None:
@@ -318,10 +314,6 @@ class MGPatchingDataProcessor(DataProcessor):
             self.in_normalizer = self.in_normalizer.to(self.device)
         if self.out_normalizer:
             self.out_normalizer = self.out_normalizer.to(self.device)
-
-    def wrap(self, model):
-        self.model = model
-        return self
 
     def preprocess(self, data_dict, batched=True):
         """
