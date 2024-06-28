@@ -4,6 +4,10 @@ import torch
 from neuralop.training.patching import MultigridPatching2D
 
 
+import torch
+from neuralop.training.patching import MultigridPatching2D
+
+
 class DataProcessor(torch.nn.Module, metaclass=ABCMeta):
     def __init__(self):
         """DataProcessor exposes functionality for pre-
@@ -37,14 +41,25 @@ class DataProcessor(torch.nn.Module, metaclass=ABCMeta):
     def postprocess(self, x):
         pass
 
-    @abstractmethod
+    # default wrap method
     def wrap(self, model):
-        pass
+        self.model = model
+        return self
+    
+    # default train and eval methods
+    def train(self, val: bool=True):
+        super().train(val)
+        if self.model is not None:
+            self.model.train()
+    
+    def eval(self):
+        super().eval()
+        if self.model is not None:
+            self.model.eval()
 
     @abstractmethod
     def forward(self, x):
         pass
-
 
 class DefaultDataProcessor(DataProcessor):
     def __init__(
@@ -66,10 +81,7 @@ class DefaultDataProcessor(DataProcessor):
         self.out_normalizer = out_normalizer
         self.positional_encoding = positional_encoding
         self.device = "cpu"
-
-    def wrap(self, model):
-        self.model = model
-        return self
+        self.model = None
 
     def to(self, device):
         if self.in_normalizer is not None:
@@ -87,7 +99,7 @@ class DefaultDataProcessor(DataProcessor):
             x = self.in_normalizer.transform(x)
         if self.positional_encoding is not None:
             x = self.positional_encoding(x, batched=batched)
-        if self.out_normalizer is not None and self.train:
+        if self.out_normalizer is not None and self.training:
             y = self.out_normalizer.transform(y)
 
         data_dict["x"] = x
@@ -97,7 +109,7 @@ class DefaultDataProcessor(DataProcessor):
 
     def postprocess(self, output, data_dict):
         y = data_dict["y"]
-        if self.out_normalizer and not self.train:
+        if self.out_normalizer and not self.training:
             output = self.out_normalizer.inverse_transform(output)
             y = self.out_normalizer.inverse_transform(y)
         data_dict["y"] = y
@@ -108,6 +120,8 @@ class DefaultDataProcessor(DataProcessor):
         output = self.model(data_dict["x"])
         output = self.postprocess(output)
         return output, data_dict
+        
+
 
 class IncrementalDataProcessor(torch.nn.Module):
     def __init__(self, 
@@ -151,7 +165,6 @@ class IncrementalDataProcessor(torch.nn.Module):
         self.dataset_indices = dataset_indices
         self.epoch_gap = epoch_gap
         self.verbose = verbose
-        self.mode = "Train"
         self.epoch = 0
         
         self.current_index = 0
@@ -162,10 +175,6 @@ class IncrementalDataProcessor(torch.nn.Module):
         print(f'Original Incre Res: change index to {self.current_index}')
         print(f'Original Incre Res: change sub to {self.current_sub}')
         print(f'Original Incre Res: change res to {self.current_res}')
-            
-    def wrap(self, model):
-        self.model = model
-        return self
 
     def to(self, device):
         if self.in_normalizer is not None:
@@ -220,7 +229,7 @@ class IncrementalDataProcessor(torch.nn.Module):
         if self.out_normalizer is not None and self.train:
             y = self.out_normalizer.transform(y)
         
-        if self.mode == "Train":
+        if self.training:
             x, y = self.step(epoch=self.epoch, x=x, y=y)
         
         data_dict['x'] = x
@@ -272,7 +281,7 @@ class MGPatchingDataProcessor(DataProcessor):
             OutputEncoder to decode model inputs, by default None
         in_normalizer : neuralop.datasets.transforms.Transform, optional
             OutputEncoder to decode model outputs, by default None
-        positional_encoding : neuralop.datasets.transforms.GridEmbedding2D, optional
+        positional_encoding : neuralop.datasets.transforms.PositionalEmbedding2D, optional
             appends pos encoding to x if used
         device : str, optional
             device 'cuda' or 'cpu' where computations are performed
@@ -305,10 +314,6 @@ class MGPatchingDataProcessor(DataProcessor):
             self.in_normalizer = self.in_normalizer.to(self.device)
         if self.out_normalizer:
             self.out_normalizer = self.out_normalizer.to(self.device)
-
-    def wrap(self, model):
-        self.model = model
-        return self
 
     def preprocess(self, data_dict, batched=True):
         """

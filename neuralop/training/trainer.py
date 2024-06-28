@@ -155,6 +155,8 @@ class Trainer:
             avg_loss = 0
             avg_lasso_loss = 0
             self.model.train()
+            if self.data_processor:
+                self.data_processor.train()
             t1 = default_timer()
             train_err = 0.0
             
@@ -282,6 +284,8 @@ class Trainer:
             )
 
         self.model.eval()
+        if self.data_processor:
+                self.data_processor.eval()
 
         errors = {f"{log_prefix}_{loss_name}": 0 for loss_name in loss_dict.keys()}
 

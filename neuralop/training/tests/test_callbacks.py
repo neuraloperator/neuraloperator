@@ -9,37 +9,7 @@ from neuralop.models import FNO
 from neuralop.data.datasets import load_darcy_flow_small
 
 from neuralop import Trainer, LpLoss, H1Loss, CheckpointCallback, IncrementalCallback
-from neuralop.models.base_model import BaseModel
-
-class DummyDataset(Dataset):
-    # Simple linear regression problem, PyTorch style
-
-    def __init__(self, n_examples):
-        super().__init__()
-
-        self.X = torch.randn((n_examples, 50))
-        self.y = torch.randn((n_examples, 1))
-
-    def __getitem__(self, idx):
-        return {'x': self.X[idx], 'y': self.y[idx]}
-
-    def __len__(self):
-        return self.X.shape[0]
-
-class DummyModel(BaseModel, name='Dummy'):
-    """
-    Simple linear model to mock-up our model API
-    """
-
-    def __init__(self, features, **kwargs):
-        super().__init__()
-        self.net = nn.Linear(features, 1)
-
-    def forward(self, x, **kwargs):
-        """
-        Throw out extra args as in FNO and other models
-        """
-        return self.net(x)
+from neuralop.tests.test_utils import DummyDataset, DummyModel
 
 def test_model_checkpoint_saves():
     save_pth = Path('./test_checkpoints')
