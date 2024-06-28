@@ -1,7 +1,6 @@
 from ..data_processors import DefaultDataProcessor, IncrementalDataProcessor
 from ..normalizers import UnitGaussianNormalizer
-from ..positional_embeddings import GridEmbedding2D
-
+from ....layers.embeddings import GridEmbedding2D
 import torch
 from torch.testing import assert_close
 
