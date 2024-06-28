@@ -4,7 +4,7 @@ import torch
 from torch.testing import assert_close
 import pytest
 
-from ..positional_embeddings import GridEmbedding2D, GridEmbeddingND
+from ..embeddings import GridEmbedding2D, GridEmbeddingND
 
 # Testing grid-based pos encoding: choose a random grid 
 # point and assert the proper encoding is applied there
