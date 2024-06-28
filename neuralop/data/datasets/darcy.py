@@ -88,7 +88,7 @@ def load_darcy_flow_small(n_train,
     n_tests,
     batch_size,
     test_batch_sizes,
-    data_root = "./neuralop/datasets/data",
+    data_root = "./neuralop/data/datasets/data",
     test_resolutions=[16, 32],
     grid_boundaries=[[0, 1], [0, 1]],
     positional_encoding=True,
@@ -109,7 +109,8 @@ def load_darcy_flow_small(n_train,
                            encode_input=encode_input,
                            encode_output=encode_output,
                            encoding=encoding,
-                           channel_dim=channel_dim,)
+                           channel_dim=channel_dim,
+                           download=False)
     
     # return dataloaders for backwards compat
     train_loader = DataLoader(dataset.train_db,
