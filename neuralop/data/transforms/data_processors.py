@@ -41,14 +41,26 @@ class DataProcessor(torch.nn.Module, metaclass=ABCMeta):
     def postprocess(self, x):
         pass
 
-    @abstractmethod
+    # default wrap method
     def wrap(self, model):
-        pass
+        self.model = model
+        return self
+    
+    # default train and eval methods
+    def train(self, val: bool=True):
+        super().train(val)
+        if self.model is not None:
+            self.model.train()
+    
+    def eval(self):
+        super().eval()
+        if self.model is not None:
+            self.model.eval()
 
     @abstractmethod
     def forward(self, x):
         pass
-
+    
 class DefaultDataProcessor(DataProcessor):
     def __init__(
         self, in_normalizer=None, out_normalizer=None, positional_encoding=None
@@ -70,10 +82,6 @@ class DefaultDataProcessor(DataProcessor):
         self.positional_encoding = positional_encoding
         self.device = "cpu"
         self.model = None
-
-    def wrap(self, model):
-        self.model = model
-        return self
 
     def to(self, device):
         if self.in_normalizer is not None:
@@ -113,15 +121,6 @@ class DefaultDataProcessor(DataProcessor):
         output = self.postprocess(output)
         return output, data_dict
         
-    def train(self, val: bool=True):
-        super().train(val)
-        if self.model:
-            self.model.train()
-    
-    def eval(self):
-        super().eval()
-        if self.model:
-            self.model.eval()
 
 
 class IncrementalDataProcessor(torch.nn.Module):
