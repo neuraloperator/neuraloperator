@@ -193,7 +193,9 @@ class SpectralConv(BaseSpectralConv):
         Number of output channels
     max_n_modes : None or int tuple, default is None
         Number of modes to use for contraction in Fourier domain during training.
- 
+        * If not None, **maximum** number of modes to keep in Fourier Layer, along each dim
+            The number of modes (`n_modes`) cannot be increased beyond that.
+        * If None, all the n_modes are used.
         .. warning::
             
             We take care of the redundancy in the Fourier modes, therefore, for an input 
@@ -202,18 +204,11 @@ class SpectralConv(BaseSpectralConv):
             last mode only, if you specify M_N modes we will use M_N // 2 + 1 modes 
             as the real FFT is redundant along that last dimension.
 
-            
         .. note::
 
-            Provided modes should be even integers. odd numbers will be rounded to the closest even number.  
-
-        This can be updated dynamically during training.
-
-    max_n_modes : int tuple or None, default is None
-        * If not None, **maximum** number of modes to keep in Fourier Layer, along each dim
-            The number of modes (`n_modes`) cannot be increased beyond that.
-        * If None, all the n_modes are used.
-
+            Provided modes should be even integers. odd numbers will be rounded to the closest even number.
+            
+        This can be updated dynamically during training.        
     separable : bool, default is True
     init_std : float or 'auto', default is 'auto'
         std to use for the init
