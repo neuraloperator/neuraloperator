@@ -59,11 +59,10 @@ class SphericalSWEDataset(Dataset):
 
         self.dataset = None
 
+        self._gen_dataset(n_examples=num_examples)
+
     def set_initial_condition(self, ictype='random'):
         self.ictype = ictype
-    
-    def set_num_examples(self, num_examples=32):
-        self.num_examples = num_examples
 
     def _get_sample(self):
         if self.ictype == 'random':
