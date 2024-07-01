@@ -191,7 +191,7 @@ class SpectralConv(BaseSpectralConv):
         Number of input channels
     out_channels : int, optional
         Number of output channels
-    max_n_modes : None or int tuple, default is None
+    n_modes : None or int tuple, default is None
         Number of modes to use for contraction in Fourier domain during training.
  
         .. warning::

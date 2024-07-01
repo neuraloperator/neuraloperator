@@ -6,6 +6,8 @@ import wandb
 import os
 import torch
 from torch import nn
+from torch.utils.data import Dataset, DataLoader
+from neuralop.models.base_model import BaseModel
 
 def test_count_model_params():
     # A nested dummy model to make sure all parameters are counted 
@@ -102,3 +104,32 @@ def test_ArgparseConfig(monkeypatch):
     with pytest.raises(ValueError):
         wandb_login()
 
+class DummyDataset(Dataset):
+    # Simple linear regression problem, PyTorch style
+
+    def __init__(self, n_examples):
+        super().__init__()
+
+        self.X = torch.randn((n_examples, 50))
+        self.y = torch.randn((n_examples, 1))
+
+    def __getitem__(self, idx):
+        return {'x': self.X[idx], 'y': self.y[idx]}
+
+    def __len__(self):
+        return self.X.shape[0]
+
+class DummyModel(BaseModel, name='Dummy'):
+    """
+    Simple linear model to mock-up our model API
+    """
+
+    def __init__(self, features, **kwargs):
+        super().__init__()
+        self.net = nn.Linear(features, 1)
+
+    def forward(self, x, **kwargs):
+        """
+        Throw out extra args as in FNO and other models
+        """
+        return self.net(x)
