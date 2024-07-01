@@ -1,5 +1,6 @@
-from ..darcy import DarcyDataset
 from ..burgers import Burgers1dTimeDataset
+from ..darcy import DarcyDataset
+from ..navier_stokes import NavierStokesDataset
 from pathlib import Path
 
 import os
@@ -49,3 +50,23 @@ def test_BurgersDataset(resolution):
     assert dataset.test_dbs
     assert dataset.data_processor
     
+def test_NSDownload(monkeypatch):
+    # monkeypatch bypasses confirmation input
+    monkeypatch.setattr('builtins.input', lambda _: "y")
+    dataset = NavierStokesDataset(root_dir=test_data_dir,
+                           n_train=5,
+                           n_tests=[5],
+                           batch_size=1,
+                           test_batch_sizes=[1],
+                           train_resolution=128,
+                           test_resolutions=[128],
+                           download=True)
+    
+    downloaded_files = os.listdir(test_data_dir)
+    for split in ['train','test']:
+        for res in [128]:
+            assert f"nsforcing_{split}_{res}.pt" in downloaded_files
+    assert dataset.train_db
+    assert dataset.test_dbs
+    assert dataset.data_processor
+    shutil.rmtree(test_data_dir)
