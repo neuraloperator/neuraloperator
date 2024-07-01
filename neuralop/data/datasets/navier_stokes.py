@@ -64,6 +64,7 @@ class NavierStokesDataset(PTDataset):
         super().__init__(root_dir=root_dir,
                        n_train=n_train,
                        n_tests=n_tests,
+                       dataset_name="nsforcing",
                        batch_size=batch_size,
                        test_batch_sizes=test_batch_sizes,
                        train_resolution=train_resolution,
@@ -74,7 +75,8 @@ class NavierStokesDataset(PTDataset):
                        encode_output=encode_output,
                        encoding=encoding,
                        channel_dim=channel_dim,
-                       subsampling_rate=subsampling_rate)
+                       input_subsampling_rate=subsampling_rate,
+                       output_subsampling_rate=subsampling_rate)
 
 # load navier stokes pt for backwards compatibility
 def load_navier_stokes_pt(n_train,

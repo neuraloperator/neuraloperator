@@ -87,7 +87,7 @@ def download_from_url(
 
     # check if file is already present locally
     if check_integrity(fpath, md5):
-        logger.info("Using downloaded and verified file: " + fpath)
+        logger.info("Using downloaded and verified file: " + str(fpath))
         return
 
     # download and stream file in chunks

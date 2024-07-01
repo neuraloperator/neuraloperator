@@ -1,8 +1,12 @@
 from math import ceil, floor
 
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
 from torch_harmonics.examples import ShallowWaterSolver
+
+from .tensor_dataset import TensorDataset
+from ..transforms.normalizers import UnitGaussianNormalizer
+from ..transforms.data_processors import DefaultDataProcessor
 
 def load_spherical_swe(n_train, n_tests, batch_size, test_batch_sizes,
                   train_resolution=(256, 512), test_resolutions=[(256, 512)],
@@ -24,8 +28,11 @@ def load_spherical_swe(n_train, n_tests, batch_size, test_batch_sizes,
     return train_loader, test_loaders
 
 
-class SphericalSWEDataset(torch.utils.data.Dataset):
-    """Custom Dataset class for PDE training data"""
+class SphericalSWEDataset(Dataset):
+    """
+    Custom Dataset class for the shallow-water PDEs
+    defined over the surface of a sphere.
+    """
     def __init__(self, dt=3600, dims=(256, 512), initial_condition='random', num_examples=32,
                  device=torch.device('cpu'), normalize=True, stream=None):
         # Caution: this is a heuristic which can break and lead to diverging results
@@ -46,18 +53,11 @@ class SphericalSWEDataset(torch.utils.data.Dataset):
         lmax = ceil(self.nlat/3)
         mmax = lmax
         dt_solver = dt / float(self.nsteps)
-        self.solver = ShallowWaterSolver(self.nlat, self.nlon, dt_solver, lmax=lmax, mmax=mmax, grid='equiangular').to(self.device).float()
 
+        self.solver = ShallowWaterSolver(self.nlat, self.nlon, dt_solver, lmax=lmax, mmax=mmax, grid='equiangular').to(self.device).float()
         self.set_initial_condition(ictype=initial_condition)
 
-        if self.normalize:
-            inp0, _ = self._get_sample()
-            self.inp_mean = torch.mean(inp0, dim=(-1, -2)).reshape(-1, 1, 1)
-            self.inp_var = torch.var(inp0, dim=(-1, -2)).reshape(-1, 1, 1)
-
-    def __len__(self):
-        length = self.num_examples if self.ictype == 'random' else 1
-        return length
+        self.dataset = None
 
     def set_initial_condition(self, ictype='random'):
         self.ictype = ictype
@@ -66,7 +66,6 @@ class SphericalSWEDataset(torch.utils.data.Dataset):
         self.num_examples = num_examples
 
     def _get_sample(self):
-
         if self.ictype == 'random':
             inp = self.solver.random_initial_condition(mach=0.2)
         elif self.ictype == 'galewsky':
@@ -79,14 +78,46 @@ class SphericalSWEDataset(torch.utils.data.Dataset):
 
         return inp, tar
 
+    def _gen_dataset(self, n_examples):
+        x = []
+        y = []
+        for _ in range(n_examples):
+            inp, tar = self._get_sample()
+            self.x.append(inp)
+            self.y.append(tar)
+
+        x = torch.cat(x, dim=0)
+        y = torch.cat(y, dim=0)
+
+        self.dataset = TensorDataset(x=x, y=y)
+        if self.normalize:
+            normalizers = UnitGaussianNormalizer.from_dataset(self.dataset)
+            self.data_processor = DefaultDataProcessor(
+                in_normalizer=normalizers['x'],
+                out_normalizer=normalizers['y'],
+            )
+
+
     def __getitem__(self, index):
+        """
+        Draw an example instance from the shallow-water equations
+        by calling the dataset's integrated PDE solver
 
-        with torch.inference_mode():
-            with torch.no_grad():
-                inp, tar = self._get_sample()
-
-                if self.normalize:
-                    inp = (inp - self.inp_mean) / torch.sqrt(self.inp_var)
-                    tar = (tar - self.inp_mean) / torch.sqrt(self.inp_var)
-
-        return {'x': inp.clone(), 'y': tar.clone()}
+        Params
+        ------
+        index : Optional int, slice, default None
+            since __getitem__ draws a random sample from
+            the dataset's solver, index is unused.
+            
+        """
+        if self.dataset is not None:
+            return self.dataset[index]
+        else:
+            print("Error: no data has been generated.")
+            raise IndexError
+    
+    def __len__(self):
+        if self.dataset is not None:
+            return len(self.dataset)
+        else:
+            return 0
