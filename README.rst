@@ -45,7 +45,7 @@ You can also just pip install the library:
 Quickstart
 ----------
 
-After you've installed the library, you can start training operators seemlessly:
+After you've installed the library, you can start training operators seamlessly:
 
 
 .. code-block:: python
@@ -100,7 +100,7 @@ Running the tests
 =================
 
 Testing and documentation are an essential part of this package and all
-functions come with uni-tests and documentation. The tests are ran using the
+functions come with unit-tests and documentation. The tests are ran using the
 pytest package. First install ``pytest``:
 
 .. code::
