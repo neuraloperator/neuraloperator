@@ -1,7 +1,12 @@
+'''
+meta_losses.py contains losses that compose multiple other losses.
+'''
 
 import torch
 
-class FieldwiseAggregatorLoss(object):
+from .loss import Loss
+
+class FieldwiseAggregatorLoss(Loss):
     """
     AggregatorLoss takes a dict of losses, keyed to correspond 
         to different properties or fields of a model's output.
@@ -30,7 +35,7 @@ class FieldwiseAggregatorLoss(object):
         self.mappings = mappings
         self.logging = logging
 
-    def __call__(self, pred: torch.Tensor, truth: torch.Tensor, **kwargs):
+    def forward(self, pred: torch.Tensor, truth: torch.Tensor, **kwargs):
         """
         Calculate aggregate loss across model inputs and outputs.
 
@@ -62,28 +67,39 @@ class FieldwiseAggregatorLoss(object):
         else:
             return loss
 
-
 class WeightedSumLoss(object):
     """
     Computes an average or weighted sum of given losses.
     """
 
-    def __init__(self, losses, weights=None):
+    def __init__(self, losses, weights=None, return_individual=True, compute_grads=False):
         super().__init__()
         if weights is None:
             weights = [1.0 / len(losses)] * len(losses)
         if not len(weights) == len(losses):
             raise ValueError("Each loss must have a weight.")
-        self.losses = list(zip(losses, weights))
+        #self.losses = list(zip(losses, weights))
+        self.losses = {x.__name__: [x,y] for x,y in zip(losses,weights)}
+        self.compute_grads = compute_grads
+
+        self.return_individual = return_individual
 
     def __call__(self, *args, **kwargs):
         weighted_loss = 0.0
-        for loss, weight in self.losses:
-            weighted_loss += weight * loss(*args, **kwargs)
-        return weighted_loss
+        wrapper = {}
+        for name, (loss,weight) in self.losses.items():
+            loss_value = loss(*args, **kwargs)
+            if self.return_individual:
+                wrapper[name] = weight * loss_value
+            else:
+                weighted_loss += weight * loss_value
+        if self.return_individual:
+            return wrapper
+        else:
+            return weighted_loss
 
     def __str__(self):
         description = "Combined loss: "
-        for loss, weight in self.losses:
-            description += f"{loss} (weight: {weight}) "
+        for name, (loss, weight) in self.losses.items():
+            description += f"{name} (weight: {weight}) "
         return description

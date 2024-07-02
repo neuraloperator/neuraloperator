@@ -1,11 +1,9 @@
 import torch
 from torch.cuda import amp
 from timeit import default_timer
-import pathlib
 
 from .callbacks import PipelineCallback
-import neuralop.mpu.comm as comm
-from neuralop.losses import LpLoss
+from neuralop.losses import LpLoss, WeightedSumLoss
 
 
 class Trainer:
@@ -54,15 +52,18 @@ class Trainer:
             self.override_load_to_device = (
                 self.callbacks.device_load_callback_idx is not None
             )
-            self.overrides_loss = self.callbacks.overrides_loss
+            self.overrides_training_loss = self.callbacks.overrides_training_loss
+            self.overrides_val_loss = self.callbacks.overrides_val_loss
         else:
             self.callbacks = []
             self.override_load_to_device = False
-            self.overrides_loss = False
+            self.overrides_training_loss = False
+            self.overrides_val_loss = False
 
         if verbose:
             print(f"{self.override_load_to_device=}")
-            print(f"{self.overrides_loss=}")
+            print(f"{self.overrides_training_loss=}")
+            print(f"{self.overrides_val_loss=}")
 
         if self.callbacks:
             self.callbacks.on_init_start(
@@ -142,6 +143,15 @@ class Trainer:
 
         if training_loss is None:
             training_loss = LpLoss(d=2)
+        
+        # Optionally track individual outputs of a weighted sum loss
+        self.compute_train_grads = False
+        self.monitor_individual_train_losses = False
+        if isinstance(training_loss, WeightedSumLoss):
+            if training_loss.compute_grads:
+                self.compute_train_grads = True
+            if training_loss.return_individual:
+                self.monitor_individual_train_losses = True
 
         if eval_losses is None:  # By default just evaluate on the training loss
             eval_losses = dict(l2=training_loss)
@@ -159,6 +169,15 @@ class Trainer:
                 self.data_processor.train()
             t1 = default_timer()
             train_err = 0.0
+
+            # track independent components of loss if Weighted Sum
+            train_losses = None
+            train_grads = None
+            if self.monitor_individual_train_losses:
+                train_losses = {name: 0. for name in training_loss.losses.keys()}
+            if self.compute_train_grads:
+                train_grads = {name: 0. for name in training_loss.losses.keys()}
+
             
             # track number of training examples in batch
             n_samples = 0
@@ -199,16 +218,32 @@ class Trainer:
 
                 loss = 0.0
 
-                if self.overrides_loss:
+                if self.overrides_training_loss:
                     loss += self.callbacks.compute_training_loss(
                         out=out, **sample, amp_autocast=self.amp_autocast
                     )
                 else:
-                    if self.amp_autocast:
-                        with amp.autocast(enabled=True):
-                            loss += training_loss(out, **sample)
+                    if self.monitor_individual_train_losses:
+                        if self.amp_autocast:
+                            with amp.autocast(enabled=True):
+                                loss_outputs = training_loss(out, **sample)
+                        else:
+                            loss_outputs = training_loss(out, **sample)
+
+                        for loss_name, loss_value in loss_outputs.items():
+                            loss += loss_value
+                            train_losses[loss_name] += loss_value
+                            # accumulate training gradients for each subloss over the epoch
+                            if self.compute_train_grads:
+                                grad_norm = torch.norm(torch.autograd.grad(loss_value,\
+                                                                            self.model.parameters(), retain_graph=True)[0],p=2)
+                                train_grads[loss_name] += grad_norm
                     else:
-                        loss += training_loss(out, **sample)
+                        if self.amp_autocast:
+                            with amp.autocast(enabled=True):
+                                loss += training_loss(out, **sample)
+                        else:
+                            loss += training_loss(out, **sample)
 
                 if regularizer:
                     loss += regularizer.loss
@@ -245,6 +280,8 @@ class Trainer:
                         time=epoch_train_time,
                         avg_loss=avg_loss,
                         avg_lasso_loss=avg_lasso_loss,
+                        train_grads=train_grads,
+                        train_losses=train_losses
                     )
 
                 for loader_name, loader in test_loaders.items():
@@ -317,8 +354,8 @@ class Trainer:
                     self.callbacks.on_before_val_loss(out=out)
 
                 for loss_name, loss in loss_dict.items():
-                    if self.overrides_loss:
-                        val_loss = self.callbacks.compute_training_loss(out, **sample)
+                    if self.overrides_val_loss:
+                        val_loss = self.callbacks.compute_val_loss(out, **sample)
                     else:
                         val_loss = loss(out, **sample)
                         if val_loss.shape == ():
