@@ -45,8 +45,8 @@ class Burgers1dTimeDataset(PTDataset):
                          n_tests=n_tests,
                          batch_size=batch_size,
                          test_batch_sizes=test_batch_sizes,
-                         train_resolution=train_resolution, #TODO: figure out how to integrate
-                         test_resolutions=test_resolutions, #TODO: ^
+                         train_resolution=train_resolution,
+                         test_resolutions=test_resolutions,
                          grid_boundaries=grid_boundaries,
                          input_subsampling_rate=spatial_subsample,
                          output_subsampling_rate=[temporal_subsample, spatial_subsample],
@@ -134,7 +134,6 @@ def load_burgers_1dtime(
         domain_lengths = [d + incr * pad for d, incr in zip(domain_lengths, incrs)]
         domain_starts = [-incr * pad for incr in incrs]
 
-    # TODO: use include_endpoint arg here
     grid_x = torch.tensor(np.linspace(domain_starts[0], domain_lengths[0], spatial_length + 1)[:-1], dtype=torch.float)
     grid_t = torch.tensor(np.linspace(domain_starts[1], domain_lengths[1], temporal_length), dtype=torch.float)
 
