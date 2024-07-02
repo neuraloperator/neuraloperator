@@ -14,7 +14,9 @@ provide a :code:`Trainer` class that automates much of this boilerplate logic.
 Things like loading a model to device, zeroing gradients and computing most loss 
 functions are taken care of.
 
-If you need to implement more domain-specific training logic, we also expose an
+Callbacks
+==========
+If you need to implement more domain-specific training logic within a trainer, we also expose an
 interface for stateful Callbacks that trigger events and track information
 throughout the lifetime of your Trainer. Each callback implements a series of 
 methods that are automatically called throughout the training loop, and you
@@ -36,7 +38,6 @@ so all you need to do on a multi-GPU system is the following:
 
 You may need to adjust the batch size, model parallel size and world size in 
 accordance with your specific use case. 
-
 
  
 
