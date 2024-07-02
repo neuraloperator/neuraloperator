@@ -1,4 +1,5 @@
 from tensorly.utils import DefineDeprecated
+
 warning_msg = "Warning: neuralop.datasets.data_transforms is deprecated and has been moved to neuralop.data.datasets.data_processors."
 
 DataProcessor = DefineDeprecated('neuralop.data.transforms.data_processors.DataProcessor', warning_msg)
