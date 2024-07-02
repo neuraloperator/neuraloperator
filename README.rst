@@ -101,8 +101,7 @@ NeuralOperator has additional dependencies for development, which can be found i
 Code formatting
 ----------------
 
-Before you submit
-your changes, you should make sure your code adheres to our style-guide. The
+Before you submit your changes, you should make sure your code adheres to our style-guide. The
 easiest way to do this is with ``black``:
 
 .. code::
