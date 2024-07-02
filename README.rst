@@ -89,9 +89,9 @@ Contributing
 ===============
 
 NeuralOperator is 100% open-source, and we welcome all contributions from the community! 
-If you spot a bug or a typo in the documentation, please report it on our 
-`issue tracker <https://github.com/neuraloperator/neuraloperator/issues>`_, or even better, 
-open a Pull-Request on `GitHub <https://github.com/neuraloperator/neuraloperator>`_. 
+If you spot a bug or a typo in the documentation, or have an idea for a feature you'd like to see,
+please report it on our `issue tracker <https://github.com/neuraloperator/neuraloperator/issues>`_, 
+or even better, open a Pull-Request on `GitHub <https://github.com/neuraloperator/neuraloperator>`_. 
 
 NeuralOperator has additional dependencies for development, which can be found in ``requirements_dev.txt``:
 
