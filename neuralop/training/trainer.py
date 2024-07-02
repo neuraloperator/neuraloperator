@@ -5,7 +5,7 @@ import pathlib
 
 from .callbacks import PipelineCallback
 import neuralop.mpu.comm as comm
-from neuralop.losses import LpLoss
+from neuralop.losses import MSELoss
 
 
 class Trainer:
@@ -141,7 +141,7 @@ class Trainer:
             )
 
         if training_loss is None:
-            training_loss = LpLoss(d=2)
+            training_loss = MSELoss(d=2)
 
         if eval_losses is None:  # By default just evaluate on the training loss
             eval_losses = dict(l2=training_loss)
