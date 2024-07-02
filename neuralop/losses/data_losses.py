@@ -1,5 +1,5 @@
 """
-losses.py contains code to compute standard data objective 
+data_losses.py contains code to compute standard data objective 
 functions for training Neural Operators. 
 
 By default, losses expect arguments y_pred (model predictions) and y (ground y.)
@@ -10,62 +10,7 @@ from typing import List
 
 import torch
 
-
-#Set fix{x,y,z}_bnd if function is non-periodic in {x,y,z} direction
-#x: (*, s)
-#y: (*, s)
-def central_diff_1d(x, h, fix_x_bnd=False):
-    dx = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1))/(2.0*h)
-
-    if fix_x_bnd:
-        dx[...,0] = (x[...,1] - x[...,0])/h
-        dx[...,-1] = (x[...,-1] - x[...,-2])/h
-    
-    return dx
-
-#x: (*, s1, s2)
-#y: (*, s1, s2)
-def central_diff_2d(x, h, fix_x_bnd=False, fix_y_bnd=False):
-    if isinstance(h, float):
-        h = [h, h]
-
-    dx = (torch.roll(x, -1, dims=-2) - torch.roll(x, 1, dims=-2))/(2.0*h[0])
-    dy = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1))/(2.0*h[1])
-
-    if fix_x_bnd:
-        dx[...,0,:] = (x[...,1,:] - x[...,0,:])/h[0]
-        dx[...,-1,:] = (x[...,-1,:] - x[...,-2,:])/h[0]
-    
-    if fix_y_bnd:
-        dy[...,:,0] = (x[...,:,1] - x[...,:,0])/h[1]
-        dy[...,:,-1] = (x[...,:,-1] - x[...,:,-2])/h[1]
-        
-    return dx, dy
-
-#x: (*, s1, s2, s3)
-#y: (*, s1, s2, s3)
-def central_diff_3d(x, h, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
-    if isinstance(h, float):
-        h = [h, h, h]
-
-    dx = (torch.roll(x, -1, dims=-3) - torch.roll(x, 1, dims=-3))/(2.0*h[0])
-    dy = (torch.roll(x, -1, dims=-2) - torch.roll(x, 1, dims=-2))/(2.0*h[1])
-    dz = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1))/(2.0*h[2])
-
-    if fix_x_bnd:
-        dx[...,0,:,:] = (x[...,1,:,:] - x[...,0,:,:])/h[0]
-        dx[...,-1,:,:] = (x[...,-1,:,:] - x[...,-2,:,:])/h[0]
-    
-    if fix_y_bnd:
-        dy[...,:,0,:] = (x[...,:,1,:] - x[...,:,0,:])/h[1]
-        dy[...,:,-1,:] = (x[...,:,-1,:] - x[...,:,-2,:])/h[1]
-    
-    if fix_z_bnd:
-        dz[...,:,:,0] = (x[...,:,:,1] - x[...,:,:,0])/h[2]
-        dz[...,:,:,-1] = (x[...,:,:,-1] - x[...,:,:,-2])/h[2]
-        
-    return dx, dy, dz
-
+from .finite_diff import central_diff_1d, central_diff_2d, central_diff_3d
 
 #loss function with rel/abs Lp loss
 class LpLoss(object):
@@ -93,6 +38,10 @@ class LpLoss(object):
             self.L = [L]*self.d
         else:
             self.L = L
+    
+    @property
+    def name(self):
+        return f"L{self.p}_{self.d}Dloss"
     
     def uniform_h(self, x):
         h = [0.0]*self.d
@@ -143,7 +92,6 @@ class LpLoss(object):
     def __call__(self, y_pred, y, **kwargs):
         return self.rel(y_pred, y)
 
-
 class H1Loss(object):
     def __init__(self, d=1, L=2*math.pi, reduce_dims=0, reductions='sum', fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
         super().__init__()
@@ -174,6 +122,10 @@ class H1Loss(object):
         else:
             self.L = L
     
+    @property
+    def name(self):
+        return f"H1_{self.d}DLoss"
+     
     def compute_terms(self, x, y, h):
         dict_x = {}
         dict_y = {}
@@ -283,3 +235,26 @@ class H1Loss(object):
 
     def __call__(self, y_pred, y, h=None, **kwargs):
         return self.rel(y_pred, y, h=h)
+    
+class MSELoss(object):
+    """
+    MSELoss computes absolute mean-squared L2 error between two tensors.
+    """
+    def __init__(self):
+        super().__init__()
+
+    def __call__(self, y_pred: torch.Tensor, y: torch.Tensor, dim: List[int]=None, **kwargs):
+        """MSE loss call 
+
+        Parameters
+        ----------
+        y_pred : torch.Tensor
+            tensor of predictions
+        y : torch.Tensor
+            ground truth, must be same shape as x
+        dim : List[int], optional
+            dimensions across which to compute MSE, by default None
+        """
+        if dim is None:
+            dim = list(range(1, y_pred.ndim)) # no reduction across batch dim
+        return torch.mean((y_pred - y) ** 2, dim=dim).sum() # sum of MSEs for each element
