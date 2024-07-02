@@ -96,6 +96,7 @@ or even better, open a Pull-Request on `GitHub <https://github.com/neuraloperato
 NeuralOperator has additional dependencies for development, which can be found in ``requirements_dev.txt``:
 
 .. code::
+   
    pip install -r requirements_dev.txt
 
 Code formatting
@@ -136,7 +137,7 @@ This will build the docs in ``./doc/build/html``.
 To view the documentation locally, run:
 
 .. code::
-   
+
    cd doc/build/html
    python -m http.server [PORT_NUM]
 
