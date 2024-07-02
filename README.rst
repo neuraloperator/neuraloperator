@@ -123,10 +123,11 @@ To run the tests, simply run, in the terminal:
 
 Building documentation
 -----------------------
-The HTML for our documentation website is built using `sphinx`. The documentation
-is built from inside the ``./doc`` folder. To build:
+The HTML for our documentation website is built using ``sphinx``. The documentation
+is built from inside the ``doc`` folder. To build:
 
 .. code::
+
    cd doc
    make html
 
@@ -135,6 +136,7 @@ This will build the docs in ``./doc/build/html``.
 To view the documentation locally, run:
 
 .. code::
+   
    cd doc/build/html
    python -m http.server [PORT_NUM]
 
