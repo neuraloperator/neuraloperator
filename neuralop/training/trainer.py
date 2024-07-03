@@ -132,6 +132,7 @@ class Trainer:
 
         if self.callbacks:
             self.callbacks.on_train_start(
+                model=self.model,
                 train_loader=train_loader,
                 test_loaders=test_loaders,
                 optimizer=optimizer,
@@ -149,6 +150,12 @@ class Trainer:
             eval_losses = dict(l2=training_loss)
 
         errors = None
+
+        if self.verbose:
+            print(f'Training on {len(train_loader)} samples')
+            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
+                  f'         on resolutions {[name for name in test_loaders]}.')
+            sys.stdout.flush()
 
         for epoch in range(self.n_epochs):
             if self.callbacks:
@@ -259,7 +266,7 @@ class Trainer:
                                      avg_loss=avg_loss,
                                      avg_lasso_loss=avg_lasso_loss)
                 #TODO: rename and/or reform
-                msg, values_to_log = self.callbacks.logging_method_name(msg, values_to_log)
+                #msg, values_to_log = self.callbacks.logging_method_name(msg, values_to_log)
             
                 for loader_name, loader in test_loaders.items():
                     errors = self.evaluate(eval_losses, loader, log_prefix=loader_name)

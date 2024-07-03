@@ -284,11 +284,16 @@ class CheckpointCallback(Callback):
 
         self.resume_from_dir = resume_from_dir
 
-    def on_init_end(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
 
-    def on_train_start(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+    def on_train_start(self, model,
+                        train_loader,
+                        test_loaders,
+                        optimizer,
+                        scheduler,
+                        regularizer,
+                        training_loss,
+                        eval_losses,
+                        data_processor):
 
         verbose = self.state_dict.get("verbose", False)
         if self.save_best:
@@ -304,8 +309,6 @@ class CheckpointCallback(Callback):
 
         # load state dict if resume_from_dir is given
         if self.resume_from_dir:
-            saved_modules = [x.stem for x in self.resume_from_dir.glob("*.pt")]
-
             # check for save model exists
             if (self.resume_from_dir / "best_model_state_dict.pt").exists():
                 save_name = "best_model"
@@ -316,26 +319,26 @@ class CheckpointCallback(Callback):
                                          state dict named model.pt or best_model.pt.")
             # returns key-value pairs "model":model, "optimizer":optimizer...
             training_state = load_training_state(save_dir=self.resume_from_dir, save_name=save_name,
-                                                 model=self.state_dict['model'],
-                                                 optimizer=self.state_dict.get('optimizer'),
-                                                 regularizer=self.state_dict.get('regularizer'),
-                                                 scheduler=self.state_dict.get('scheduler'))
+                                                 model=model,
+                                                 optimizer=optimizer,
+                                                 regularizer=regularizer,
+                                                 scheduler=scheduler)
+            # reassign references
+            model = training_state['model']
+            if training_state.get('optimizer', False):
+                optimizer = training_state['optimizer']
+            if training_state.get('scheduler', False):
+                scheduler = training_state['scheduler']
+            if training_state.get('regularizer', False):
+                regularizer = training_state['regularizer']
             
-            self._update_state_dict(**training_state)
-            
-    def on_epoch_start(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
+    
 
-    def on_val_epoch_start(self, *args, **kwargs):
-        self._update_state_dict(**kwargs)
-
-    def on_val_epoch_end(self, *args, **kwargs):
-        """
-        Update state dict with errors
-        """
-        self._update_state_dict(**kwargs)
-
-    def on_epoch_end(self, *args, **kwargs):
+    def on_epoch_end(self, epoch, 
+                    train_err, 
+                    avg_loss,
+                    errors,
+                    model):
         """
         Save state to dir if all conditions are met
         """
@@ -412,115 +415,62 @@ class IncrementalCallback(Callback):
     
     def on_init_end(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
-    
-    def on_train_start(self, **kwargs):
-        self._update_state_dict(**kwargs)
-
-        train_loader = self.state_dict['train_loader']
-        test_loaders = self.state_dict['test_loaders']
-        verbose = self.state_dict['verbose']
-
-        n_train = len(train_loader.dataset)
-        self._update_state_dict(n_train=n_train)
-
-        if not isinstance(test_loaders, dict):
-            test_loaders = dict(test=test_loaders)
-
-        if verbose:
-            print(f'Training on {n_train} samples')
-            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
-                  f'         on resolutions {[name for name in test_loaders]}.')
-            sys.stdout.flush()
-        
-    def on_epoch_start(self, epoch):
-        self._update_state_dict(epoch=epoch)
         
     def on_epoch_end(self, epoch, **kwargs):
         self._update_state_dict(epoch=epoch)
         print(f'Currently the model is using incremental_n_modes = {self.state_dict["model"].fno_blocks.convs.n_modes}')
     
-    def on_batch_start(self, idx, **kwargs):
-        self._update_state_dict(idx=idx)
+    def on_batch_start(self, epoch, idx, sample, data_processor):
         self.mode = "Train"
-        self.data = self.state_dict['data_processor']
-        if self.data is not None:
-            self.data.epoch = self.state_dict['epoch']
-        
-    def on_before_loss(self, out, **kwargs):
-        if self.state_dict['epoch'] == 0 and self.state_dict['idx'] == 0 \
-            and self.state_dict['verbose']:
-            print(f'Raw outputs of size {out.shape=}')
+        if data_processor:
+            data_processor.epoch = epoch
     
-    def on_before_val(self, epoch, train_err, time, avg_loss, avg_lasso_loss, **kwargs):
-        # track training err and val losses to print at interval epochs
-        msg = f'[{epoch}] time={time:.2f}, avg_loss={avg_loss:.4f}, train_err={train_err:.4f}'
-
-        self.step(avg_loss)
-        
-        self._update_state_dict(msg=msg)
-        self._update_state_dict(avg_lasso_loss=avg_lasso_loss)
-        
-    def on_val_epoch_end(self, errors, **kwargs):
-        for loss_name, loss_value in errors.items():
-            if isinstance(loss_value, float):
-                self.state_dict['msg'] += f', {loss_name}={loss_value:.4f}'
-            else:
-                loss_value = {i:e.item() for (i, e) in enumerate(loss_value)}
-                self.state_dict['msg'] += f', {loss_name}={loss_value}'
-    
+    #TODO: step on loss
     def on_val_batch_start(self, *args, **kwargs):
+
         self.mode = "Validation"
         if self.data is not None:
             self.data.epoch = self.state_dict['epoch']
-
-    def on_val_end(self, *args, **kwargs):
-        if self.state_dict.get('regularizer', False):
-            avg_lasso = self.state_dict.get('avg_lasso_loss', 0.)
-            avg_lasso /= self.state_dict.get('n_epochs')
-            self.state_dict['msg'] += f', avg_lasso={avg_lasso:.5f}'
-        
-        print(self.state_dict['msg'])
-        sys.stdout.flush()
     
     # Main step function: which algorithm to run
-    def step(self, loss=None):
+    def step(self, model, loss=None):
         if self.incremental_loss_gap and loss is not None:
-            self.loss_gap(loss)
+            self.loss_gap(loss, model)
         if self.incremental_grad:
-            self.grad_explained()
+            self.grad_explained(model)
     
     # Algorithm 1: Incremental
-    def loss_gap(self, loss):
+    def loss_gap(self, loss, model):
         self.loss_list.append(loss)
-        self.ndim = len(self.state_dict['model'].fno_blocks.convs.n_modes)
+        self.ndim = len(model.fno_blocks.convs.n_modes)
         # method 1: loss_gap
-        incremental_modes = self.state_dict['model'].fno_blocks.convs.n_modes[0]
-        max_modes = self.state_dict['model'].fno_blocks.convs.max_n_modes[0]
+        incremental_modes = model.fno_blocks.convs.n_modes[0]
+        max_modes = model.fno_blocks.convs.max_n_modes[0]
         if len(self.loss_list) > 1:
             if abs(self.loss_list[-1] - self.loss_list[-2]) <= self.incremental_loss_eps:
                 if incremental_modes < max_modes:
                     incremental_modes += 1
         modes_list = tuple([incremental_modes] * self.ndim)
-        self.state_dict['model'].fno_blocks.convs.n_modes = modes_list
+        model.fno_blocks.convs.n_modes = modes_list
 
     # Algorithm 2: Gradient based explained ratio
-    def grad_explained(self):
+    def grad_explained(self, model):
         # for mode 1
         if not hasattr(self, 'accumulated_grad'):
             self.accumulated_grad = torch.zeros_like(
-                self.state_dict['model'].fno_blocks.convs.weight[0])
+                model.fno_blocks.convs.weight[0])
         if not hasattr(self, 'grad_iter'):
             self.grad_iter = 1
             
-        self.ndim = len(self.state_dict['model'].fno_blocks.convs.n_modes)
+        self.ndim = len(model.fno_blocks.convs.n_modes)
         if self.grad_iter <= self.incremental_grad_max_iter:
             self.grad_iter += 1
-            self.accumulated_grad += self.state_dict['model'].fno_blocks.convs.weight[0]
+            self.accumulated_grad += model.fno_blocks.convs.weight[0]
         else:
             incremental_final = []
             for i in range(self.ndim):
-                max_modes = self.state_dict['model'].fno_blocks.convs.max_n_modes[i]
-                incremental_modes = self.state_dict['model'].fno_blocks.convs.n_modes[i]
+                max_modes = model.fno_blocks.convs.max_n_modes[i]
+                incremental_modes = model.fno_blocks.convs.n_modes[i]
                 weight = self.accumulated_grad
                 strength_vector = []
                 for mode_index in range(
@@ -538,7 +488,7 @@ class IncrementalCallback(Callback):
             # update the modes and frequency dimensions
             self.grad_iter = 1
             self.accumulated_grad = torch.zeros_like(
-                self.state_dict['model'].fno_blocks.convs.weight[0])
+                model.fno_blocks.convs.weight[0])
             main_modes = incremental_final[0]
             modes_list = tuple([main_modes] * self.ndim)
-            self.state_dict['model'].fno_blocks.convs.n_modes = tuple(modes_list)
+            model.fno_blocks.convs.n_modes = tuple(modes_list)
