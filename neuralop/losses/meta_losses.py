@@ -70,31 +70,28 @@ class WeightedSumLoss(object):
     Computes an average or weighted sum of given losses.
     """
 
-    def __init__(self, losses, weights=None, return_individual=True, compute_grads=False):
+    def __init__(self, losses, weights=None, return_sum=False):
         super().__init__()
         if weights is None:
             weights = [1.0 / len(losses)] * len(losses)
         if not len(weights) == len(losses):
             raise ValueError("Each loss must have a weight.")
-        #self.losses = list(zip(losses, weights))
-        self.losses = {x.__name__: [x,y] for x,y in zip(losses,weights)}
-        self.compute_grads = compute_grads
-
-        self.return_individual = return_individual
+        self.losses = {x.__class__.__name__: [x,y] for x,y in zip(losses,weights)}
+        self.return_sum = return_sum
 
     def __call__(self, *args, **kwargs):
-        weighted_loss = 0.0
-        wrapper = {}
+
+        output_dict = {}
         for name, (loss,weight) in self.losses.items():
             loss_value = loss(*args, **kwargs)
             if self.return_individual:
-                wrapper[name] = weight * loss_value
+                output_dict[name] = (weight, loss_value)
             else:
                 weighted_loss += weight * loss_value
-        if self.return_individual:
-            return wrapper
-        else:
+        if self.return_sum:
             return weighted_loss
+        else:
+            return SumLossOutput(output_dict)
 
     def __str__(self):
         description = "Combined loss: "
@@ -112,9 +109,8 @@ class SumLossOutput(dict):
     dict : _type_
         _description_
     """
-    def __init__(self, loss_outputs: dict, loss_weights: list):
+    def __init__(self, loss_outputs: dict):
         self.loss_outputs = loss_outputs
-        self.loss_weights = loss_weights
     
     def __getitem__(self, key):
         return self.loss_outputs[key]
@@ -122,8 +118,8 @@ class SumLossOutput(dict):
     def __str__(self):
         #msg = 'SumLoss['
         msg = ''
-        for name, value in self.loss_outputs.items():
-            msg += f"{name}: {value:.2f}, "
+        for name, (weight, value) in self.loss_outputs.items():
+            msg += f"{name}({weight=:.3e}): {value:.2f}, "
         #msg += ']'
         return msg
     
