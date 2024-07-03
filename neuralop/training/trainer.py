@@ -209,6 +209,12 @@ class Trainer:
                             loss += training_loss(out, **sample)
                     else:
                         loss += training_loss(out, **sample)
+                
+                # raise a warning if training loss uses a batch-mean reduction
+                if epoch == 0 and idx == 0 and getattr(training_loss, 'reduction') == 'mean':
+                    print(f"Warning: training loss {training_loss} uses batch mean reduction. The Trainer
+                          divides training loss by the number of examples by default. Change loss reduction to
+                          `sum` for more accurate backprop.")
 
                 if regularizer:
                     loss += regularizer.loss
