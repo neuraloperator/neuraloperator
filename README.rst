@@ -125,7 +125,7 @@ To run the tests, simply run, in the terminal:
 Building documentation
 -----------------------
 The HTML for our documentation website is built using ``sphinx``. The documentation
-is built from inside the ``doc`` folder. To build:
+is built from inside the ``doc`` folder. 
 
 .. code::
 
@@ -133,6 +133,8 @@ is built from inside the ``doc`` folder. To build:
    make html
 
 This will build the docs in ``./doc/build/html``.
+
+Note that the documentation requires other dependencies installable from ``./doc/requirements_doc.txt``. 
 
 To view the documentation locally, run:
 
