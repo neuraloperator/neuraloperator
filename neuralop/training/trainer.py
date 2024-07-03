@@ -2,6 +2,8 @@ import torch
 from torch.cuda import amp
 from timeit import default_timer
 import pathlib
+import sys
+import wandb
 
 from .callbacks import PipelineCallback
 import neuralop.mpu.comm as comm
@@ -166,7 +168,10 @@ class Trainer:
             for idx, sample in enumerate(train_loader):
                 if self.callbacks:
                     self.callbacks.on_batch_start(
-                        idx=idx, sample=sample, data_processor=self.data_processor
+                        epoch=epoch,
+                        idx=idx,
+                        sample=sample,
+                        data_processor=self.data_processor
                     )
 
                 optimizer.zero_grad(set_to_none=True)
@@ -195,8 +200,12 @@ class Trainer:
                     out, sample = self.data_processor.postprocess(out, sample)
 
                 if self.callbacks:
-                    self.callbacks.on_before_loss(out=out)
+                    out = self.callbacks.on_before_loss(out=out)
 
+                # log output shape the first time outputs are received
+                if epoch == 0 and idx == 0 and self.verbose:
+                    print(f"Raw outputs of shape {out.shape}")
+                
                 loss = 0.0
 
                 if self.overrides_loss:
@@ -216,6 +225,10 @@ class Trainer:
                 loss.backward()
                 del out
 
+                # free sample memory
+                sample = {k: None for k in sample.keys()}
+                del sample
+
                 optimizer.step()
                 train_err += loss.item()
 
@@ -223,9 +236,6 @@ class Trainer:
                     avg_loss += loss.item()
                     if regularizer:
                         avg_lasso_loss += regularizer.loss
-
-                if self.callbacks:
-                    self.callbacks.on_batch_end()
 
             if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler.step(train_err)
@@ -236,26 +246,54 @@ class Trainer:
 
             train_err /= len(train_loader)
             avg_loss /= n_samples
-
+            if regularizer:
+                avg_lasso_loss /= n_samples
+            
+            # collect info to log, message to print
             if epoch % self.log_test_interval == 0:
-                if self.callbacks:
-                    self.callbacks.on_before_val(
-                        epoch=epoch,
-                        train_err=train_err,
-                        time=epoch_train_time,
-                        avg_loss=avg_loss,
-                        avg_lasso_loss=avg_lasso_loss,
-                    )
-
+                msg = f"[{epoch}] time={epoch_train_time:.2f}, avg_loss={avg_loss:.4f}, train_err={train_err:.4f}"
+                if regularizer: 
+                    msg += f", avg_lasso={avg_lasso_loss:.5f}"
+                values_to_log = dict(train_err=train_err,
+                                     time=epoch_train_time,
+                                     avg_loss=avg_loss,
+                                     avg_lasso_loss=avg_lasso_loss)
+                #TODO: rename and/or reform
+                msg, values_to_log = self.callbacks.logging_method_name(msg, values_to_log)
+            
                 for loader_name, loader in test_loaders.items():
                     errors = self.evaluate(eval_losses, loader, log_prefix=loader_name)
-
-                if self.callbacks:
-                    self.callbacks.on_val_end()
+                    for loss_name, loss_value in errors.items():
+                        if isinstance(loss_value, float):
+                            msg += f", {loss_name}={loss_value:.4f}"
+                        else:
+                            # TODO: figure out how to change this form for Weighted Sum
+                            loss_value = {i: e.item() for (i, e) in enumerate(loss_value)}
+                            msg += f", val_{loss_name}={loss_value}"
+                        values_to_log[f"val_{loss_name}"] = loss_value
+                
+                # print msg to console and optionally log to wandb
+                if self.verbose:
+                    print(msg)
+                    sys.stdout.flush()
+                
+                if self.wandb_log:
+                    for pg in optimizer.param_groups:
+                        lr = pg["lr"]
+                        values_to_log["lr"] = lr
+                    wandb.log(
+                        values_to_log,
+                        step=epoch + 1,
+                        commit=True,
+                    )
 
             if self.callbacks:
                 self.callbacks.on_epoch_end(
-                    epoch=epoch, train_err=train_err, avg_loss=avg_loss
+                    epoch=epoch, 
+                    train_err=train_err, 
+                    avg_loss=avg_loss,
+                    errors=errors,
+                    model=self.model
                 )
 
         return errors
@@ -285,15 +323,15 @@ class Trainer:
 
         self.model.eval()
         if self.data_processor:
-                self.data_processor.eval()
+            self.data_processor.eval()
 
-        errors = {f"{log_prefix}_{loss_name}": 0 for loss_name in loss_dict.keys()}
+        errors = {f"{log_prefix}_{loss_name}": 0. for loss_name in loss_dict.keys()}
 
         n_samples = 0
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
                 if self.callbacks:
-                    self.callbacks.on_val_batch_start(
+                    sample, self.data_processor = self.callbacks.on_val_batch_start(
                         idx=idx, sample=sample, data_processor=self.data_processor
                     )
 
