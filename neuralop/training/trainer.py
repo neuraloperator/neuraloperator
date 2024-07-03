@@ -213,23 +213,23 @@ class Trainer:
                 if epoch == 0 and idx == 0 and self.verbose:
                     print(f"Raw outputs of shape {out.shape}")
                 
-                loss = 0.0
 
                 if self.overrides_loss:
-                    loss += self.callbacks.compute_training_loss(
+                    loss = self.callbacks.compute_training_loss(
                         out=out, **sample, amp_autocast=self.amp_autocast
                     )
                 else:
                     if self.amp_autocast:
                         with amp.autocast(enabled=True):
-                            loss += training_loss(out, **sample)
+                            loss = training_loss(out, **sample)
                     else:
-                        loss += training_loss(out, **sample)
-
+                        loss = training_loss(out, **sample)
+                print(loss)
                 if regularizer:
                     loss += regularizer.loss
 
                 loss.backward()
+                print(f"{loss=}")
                 del out
 
                 # free sample memory
@@ -237,7 +237,11 @@ class Trainer:
                 del sample
 
                 optimizer.step()
-                train_err += loss.item()
+                if isinstance(loss, torch.Tensor):
+                    train_err += loss.item()
+                else:
+                    train_err = loss + train_err
+                print(f"{train_err=}")
 
                 with torch.no_grad():
                     avg_loss += loss.item()
@@ -252,6 +256,7 @@ class Trainer:
             epoch_train_time = default_timer() - t1
 
             train_err /= len(train_loader)
+            print(f"{train_err=}")
             avg_loss /= n_samples
             if regularizer:
                 avg_lasso_loss /= n_samples

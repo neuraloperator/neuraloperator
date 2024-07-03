@@ -81,17 +81,19 @@ class WeightedSumLoss(object):
 
     def __call__(self, *args, **kwargs):
 
-        output_dict = {}
+        loss_dict = {}
+        weight_dict = {}
         for name, (loss,weight) in self.losses.items():
             loss_value = loss(*args, **kwargs)
-            if self.return_individual:
-                output_dict[name] = (weight, loss_value)
-            else:
+            if self.return_sum:
                 weighted_loss += weight * loss_value
+            else:
+                loss_dict[name] = loss_value
+                weight_dict[name] = weight
         if self.return_sum:
             return weighted_loss
         else:
-            return SumLossOutput(output_dict)
+            return SumLossOutput(loss_dict, weight_dict)
 
     def __str__(self):
         description = "Combined loss: "
@@ -109,20 +111,60 @@ class SumLossOutput(dict):
     dict : _type_
         _description_
     """
-    def __init__(self, loss_outputs: dict):
-        self.loss_outputs = loss_outputs
+    def __init__(self, losses: dict, weights: dict):
+        self.losses = losses
+        self.weights = weights
     
     def __getitem__(self, key):
-        return self.loss_outputs[key]
+        return self.losses[key]
 
     def __str__(self):
-        #msg = 'SumLoss['
-        msg = ''
-        for name, (weight, value) in self.loss_outputs.items():
-            msg += f"{name}({weight=:.3e}): {value:.2f}, "
-        #msg += ']'
+        msg = 'SumLoss['
+        for name, value in self.losses.items():
+            weight = self.weights[name]
+            msg += f"{name}({weight:.1e}): {value:.2f}, "
+        msg += ']'
         return msg
     
     def __div__(self, x):
-        loss_outputs = {k: v/x for k,v in self.loss_outputs.items()}
-        return SumLossOutput(loss_outputs, self.loss_weights)
+        losses = {k: v/x for k,v in self.losses.items()}
+        return SumLossOutput(losses, self.loss_weights)
+
+    def __itruediv__(self, x):
+        for name in self.losses.keys():
+            self.losses[name] /= x
+        
+    def sum(self):
+        out_sum = 0.
+        for name, value in self.losses.items():
+            out_sum += self.weights[name] * value
+        return out_sum
+    
+    def item(self):
+        return self.sum().item()
+
+    def backward(self):
+        self.sum().backward()
+        return self
+    
+    def __format__(self, format_spec):
+        msg = 'SumLoss['
+        for name, value in self.losses.items():
+            weight_fmt = format(self.weights[name], format_spec)
+            value_fmt = format(value, format_spec)
+            msg += f"{name} * {weight_fmt}: {value_fmt}"
+        msg.append(']')
+        return msg
+    
+    def __add__(self, x):
+        loss_outputs = {}
+        if isinstance(x, int) or isinstance(x, float) or isinstance(x,torch.Tensor):
+            for name, value in self.losses.items():
+                loss_outputs[name] = value + x
+        return SumLossOutput(loss_outputs, self.weights)
+
+    def __iadd__(self, x):
+        if isinstance(x, int) or isinstance(x, float) or isinstance(x,torch.Tensor):
+            for name, value in self.losses.items():
+                self.loss_outputs[name] += value
+        
