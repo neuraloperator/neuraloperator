@@ -156,12 +156,6 @@ if config.verbose:
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
 
-# only perform MG patching if config patching levels > 0
-
-callbacks = [
-    BasicLoggerCallback(wandb_init_args)
-]
-
 
 trainer = Trainer(
     model=model,
@@ -169,7 +163,6 @@ trainer = Trainer(
     data_processor=data_processor,
     device=device,
     amp_autocast=config.opt.amp_autocast,
-    callbacks=callbacks,
     log_test_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,

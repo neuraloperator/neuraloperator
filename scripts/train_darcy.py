@@ -9,7 +9,6 @@ from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.training import setup
-from neuralop.training.callbacks import BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -160,10 +159,7 @@ trainer = Trainer(
     log_test_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
-    verbose=config.verbose and is_logger,
-    callbacks=[
-        BasicLoggerCallback(wandb_args)
-              ]
+    verbose=config.verbose and is_logger
               )
 
 # Log parameter count

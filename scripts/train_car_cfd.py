@@ -10,7 +10,6 @@ from neuralop.training.trainer import Trainer
 from neuralop.data.datasets import MeshDataModule
 from neuralop.data.transforms.data_processors import DataProcessor
 from copy import deepcopy
-from neuralop.training.callbacks import BasicLoggerCallback
 
 # query points is [sdf_query_resolution] * 3 (taken from config ahmed)
 
@@ -172,9 +171,6 @@ trainer = Trainer(model=model,
                   n_epochs=config.opt.n_epochs,
                   data_processor=data_processor,
                   device=device,
-                  callbacks=[
-                      BasicLoggerCallback(wandb_kwargs=wandb_init_args)
-                  ],
                   wandb_log=config.wandb.log
                   )
 
