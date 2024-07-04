@@ -82,7 +82,7 @@ To import the data:
 
    train_loader, test_loaders, data_processor = load_darcy_flow_small(
         n_train=1000, batch_size=32, 
-        test_resolutions=[32], n_tests=[100],
+        test_resolutions=[16], n_tests=[100],
         test_batch_sizes=[32],
         positional_encoding=True
 )
