@@ -8,6 +8,7 @@ import wandb
 from .callbacks import PipelineCallback
 import neuralop.mpu.comm as comm
 from neuralop.losses import LpLoss
+from neuralop.losses.meta_losses import SumLossOutput
 
 
 class Trainer:
@@ -56,15 +57,15 @@ class Trainer:
             self.override_load_to_device = (
                 self.callbacks.device_load_callback_idx is not None
             )
-            self.overrides_loss = self.callbacks.overrides_loss
+            self.overrides_train_loss = self.callbacks.overrides_train_loss
         else:
             self.callbacks = []
             self.override_load_to_device = False
-            self.overrides_loss = False
+            self.overrides_train_loss = False
 
         if verbose:
             print(f"{self.override_load_to_device=}")
-            print(f"{self.overrides_loss=}")
+            print(f"{self.overrides_train_loss=}")
 
         if self.callbacks:
             self.callbacks.on_init_start(
@@ -206,17 +207,21 @@ class Trainer:
                 if self.data_processor is not None:
                     out, sample = self.data_processor.postprocess(out, sample)
 
-                if self.callbacks:
-                    out = self.callbacks.on_before_loss(out=out)
+                '''if self.callbacks:
+                    out = self.callbacks.on_before_loss(out=out)'''
 
                 # log output shape the first time outputs are received
                 if epoch == 0 and idx == 0 and self.verbose:
                     print(f"Raw outputs of shape {out.shape}")
                 
 
-                if self.overrides_loss:
+                if self.overrides_train_loss:
                     loss = self.callbacks.compute_training_loss(
-                        out=out, **sample, amp_autocast=self.amp_autocast
+                        out=out, 
+                        sample=sample, 
+                        loss=training_loss,
+                        model=self.model,
+                        amp_autocast=self.amp_autocast
                     )
                 else:
                     if self.amp_autocast:
@@ -238,7 +243,7 @@ class Trainer:
                 optimizer.step()
                 if isinstance(loss, torch.Tensor):
                     train_err += loss.item()
-                else:
+                elif isinstance(loss, SumLossOutput):
                     train_err = loss + train_err
 
                 with torch.no_grad():
@@ -339,10 +344,10 @@ class Trainer:
         n_samples = 0
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
-                if self.callbacks:
+                '''if self.callbacks:
                     sample = self.callbacks.on_val_batch_start(
                         idx=idx, sample=sample, data_processor=self.data_processor
-                    )
+                    )'''
 
                 if self.data_processor is not None:
                     sample = self.data_processor.preprocess(sample)
@@ -364,12 +369,9 @@ class Trainer:
                     self.callbacks.on_before_val_loss(out=out)
 
                 for loss_name, loss in loss_dict.items():
-                    if self.overrides_loss:
-                        val_loss = self.callbacks.compute_training_loss(out, **sample)
-                    else:
-                        val_loss = loss(out, **sample)
-                        if val_loss.shape == ():
-                            val_loss = val_loss.item()
+                    val_loss = loss(out, **sample)
+                    if val_loss.shape == ():
+                        val_loss = val_loss.item()
 
                     errors[f"{log_prefix}_{loss_name}"] += val_loss
 

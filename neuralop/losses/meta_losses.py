@@ -147,13 +147,15 @@ class SumLossOutput(dict):
         return self.sum().item()
 
     def backward(self):
-        self.sum()
-        self.sum_value.backward()
-        print(self)
+        self.sum().backward()
+        #self.sum_value
+        #print(self)
     
     def _log_tensors(self):
         for name, value in self.losses.items():
             print(f"{name=} {value=}")
+        if self.out_sum:
+            print(self.sum_value)
     
     def __format__(self, format_spec):
         msg = 'SumLoss['

@@ -121,16 +121,20 @@ class PipelineCallback(Callback):
             print("using standard method to load data to device.")
 
         # unless loss computation is overriden, call a basic loss function calculation
-        overrides_loss = [
+        overrides_train_loss = [
             "compute_training_loss" in c.__class__.__dict__.keys() for c in callbacks
         ]
 
-        if sum(overrides_loss) >= 1:
-            self.overrides_loss = True
-            print("using custom callback to compute loss.")
+        assert (
+            sum(overrides_train_loss) < 2
+        ), "More than one callback cannot override train loss computation"
+        if sum(overrides_train_loss) == 1:
+            self.loss_callback_idx = overrides_train_loss.index(True)
+            print("using custom callback to compute train loss.")
         else:
-            self.overrides_loss = False
-            print("using standard method to compute loss.")
+            self.loss_callback_idx = None
+            print("using standard method to compute train loss.")
+        self.overrides_train_loss = overrides_train_loss
 
     def _update_state_dict(self, **kwargs):
         for c in self.callbacks:
@@ -175,9 +179,8 @@ class PipelineCallback(Callback):
             c.on_before_loss(*args, **kwargs)
 
     def compute_training_loss(self, *args, **kwargs):
-        if self.overrides_loss:
-            for c in self.callbacks:
-                c.compute_training_loss(*args, **kwargs)
+        if self.overrides_train_loss:
+            return self.callbacks[self.loss_callback_idx].compute_training_loss(*args, **kwargs)
         else:
             pass
 
@@ -209,12 +212,12 @@ class PipelineCallback(Callback):
         for c in self.callbacks:
             c.on_before_val_loss(*args, **kwargs)
 
-    def compute_val_loss(self, *args, **kwargs):
+    '''def compute_val_loss(self, *args, **kwargs):
         if self.overrides_loss:
             for c in self.callbacks:
                 c.compute_val_loss(*args, **kwargs)
         else:
-            pass
+            pass'''
 
     def on_val_batch_end(self, *args, **kwargs):
         for c in self.callbacks:
@@ -496,12 +499,22 @@ class IncrementalCallback(Callback):
             model.fno_blocks.convs.n_modes = tuple(modes_list)
 
 class LossBalancingCallback(Callback):
-    def __init__(self):
+    def __init__(self, alpha: float=0.9):
         super().__init__()
+        self.alpha = alpha
     
     def compute_training_loss(self, out, sample, loss, model, **kwargs):
         loss_vals = loss(out, **sample) # sumlossoutput
-        grads = {}
-        for name, val in loss_vals.losses.items()
-            grads[name] = torch.autograd.grad(outputs=val, inputs=model.parameters(), retain_graph=True)
+        grad_norms = {}
+        total_grad_norm = 0.
+        for name, val in loss_vals.losses.items():
+            grads = torch.autograd.grad(outputs=val, inputs=model.parameters(), retain_graph=True)
+            full_norm = torch.norm(torch.stack([torch.norm(x, p=2) for x in grads]), p=2)
+            grad_norms[name] = full_norm
+            total_grad_norm += full_norm
+        for name in loss_vals.losses.keys():
+            loss_vals.weights[name] = loss_vals.weights[name] * self.alpha +\
+            (1-self.alpha) * grad_norms[name] / total_grad_norm
+            
+        return loss_vals
         
