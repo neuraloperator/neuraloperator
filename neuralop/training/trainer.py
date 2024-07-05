@@ -224,12 +224,16 @@ class Trainer:
                             loss = training_loss(out, **sample)
                     else:
                         loss = training_loss(out, **sample)
-                print(loss)
                 if regularizer:
                     loss += regularizer.loss
-
+                '''
+                print(f"pre back {type(loss)=}")
+                print(f"pre back {loss}")
                 loss.backward()
-                print(f"{loss=}")
+                print(f"post back {loss}")
+                print(f"post back {type(loss)=}")'''
+
+                #loss._log_tensors()
                 del out
 
                 # free sample memory
@@ -241,7 +245,6 @@ class Trainer:
                     train_err += loss.item()
                 else:
                     train_err = loss + train_err
-                print(f"{train_err=}")
 
                 with torch.no_grad():
                     avg_loss += loss.item()
@@ -256,7 +259,6 @@ class Trainer:
             epoch_train_time = default_timer() - t1
 
             train_err /= len(train_loader)
-            print(f"{train_err=}")
             avg_loss /= n_samples
             if regularizer:
                 avg_lasso_loss /= n_samples

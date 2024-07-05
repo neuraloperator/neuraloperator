@@ -114,6 +114,7 @@ class SumLossOutput(dict):
     def __init__(self, losses: dict, weights: dict):
         self.losses = losses
         self.weights = weights
+        self.sum_value = 0.
     
     def __getitem__(self, key):
         return self.losses[key]
@@ -126,34 +127,41 @@ class SumLossOutput(dict):
         msg += ']'
         return msg
     
-    def __div__(self, x):
+    def __truediv__(self, x):
         losses = {k: v/x for k,v in self.losses.items()}
         return SumLossOutput(losses, self.loss_weights)
 
     def __itruediv__(self, x):
         for name in self.losses.keys():
             self.losses[name] /= x
+        return self
         
     def sum(self):
         out_sum = 0.
         for name, value in self.losses.items():
             out_sum += self.weights[name] * value
+        self.sum_value = out_sum
         return out_sum
     
     def item(self):
         return self.sum().item()
 
     def backward(self):
-        self.sum().backward()
-        return self
+        self.sum()
+        self.sum_value.backward()
+        print(self)
+    
+    def _log_tensors(self):
+        for name, value in self.losses.items():
+            print(f"{name=} {value=}")
     
     def __format__(self, format_spec):
         msg = 'SumLoss['
         for name, value in self.losses.items():
             weight_fmt = format(self.weights[name], format_spec)
             value_fmt = format(value, format_spec)
-            msg += f"{name} * {weight_fmt}: {value_fmt}"
-        msg.append(']')
+            msg += f"{name} * {weight_fmt}: {value_fmt}, "
+        msg += ']'
         return msg
     
     def __add__(self, x):
@@ -161,10 +169,17 @@ class SumLossOutput(dict):
         if isinstance(x, int) or isinstance(x, float) or isinstance(x,torch.Tensor):
             for name, value in self.losses.items():
                 loss_outputs[name] = value + x
+        elif isinstance(x, SumLossOutput):
+            assert set(x.losses.keys()) == set(self.losses.keys())
+            assert set(x.weights.keys()) == set(self.weights.keys())
+            for name, value in self.losses.items():
+                loss_outputs[name] = value + x.losses[name]
         return SumLossOutput(loss_outputs, self.weights)
+    
 
     def __iadd__(self, x):
         if isinstance(x, int) or isinstance(x, float) or isinstance(x,torch.Tensor):
             for name, value in self.losses.items():
                 self.loss_outputs[name] += value
+        
         
