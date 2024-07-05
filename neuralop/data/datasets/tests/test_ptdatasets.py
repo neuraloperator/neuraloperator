@@ -11,9 +11,7 @@ import pytest
 test_data_dir = Path("./dataset_test")
 
 @pytest.mark.parametrize('resolution', [16])
-def test_DarcyDatasetDownload(resolution, monkeypatch):
-    # monkeypatch bypasses confirmation input
-    monkeypatch.setattr('builtins.input', lambda _: "y")
+def test_DarcyDatasetDownload(resolution):
     dataset = DarcyDataset(root_dir=test_data_dir,
                            n_train=5,
                            n_tests=[5],
@@ -50,9 +48,8 @@ def test_BurgersDataset(resolution):
     assert dataset.test_dbs
     assert dataset.data_processor
     
-def test_NSDownload(monkeypatch):
+def test_NSDownload():
     # monkeypatch bypasses confirmation input
-    monkeypatch.setattr('builtins.input', lambda _: "y")
     dataset = NavierStokesDataset(root_dir=test_data_dir,
                            n_train=5,
                            n_tests=[5],
