@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 from .base_model import BaseModel
 from ..layers.transformer_block import TransformerEncoderBlock, TransformerDecoderBlock
-from ..layers.embeddings import RotaryEmbedding
+from ..layers.embeddings import RotaryEmbedding2D
 
 
 class TransformerNO(BaseModel, name='transformer_no'):
