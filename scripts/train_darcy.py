@@ -6,6 +6,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
+from neuralop.losses import WeightedSumLoss
 from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.training import setup
@@ -128,7 +129,7 @@ else:
 # Creating the losses
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
-if config.opt.training_loss == "l2":
+'''if config.opt.training_loss == "l2":
     train_loss = l2loss
 elif config.opt.training_loss == "h1":
     train_loss = h1loss
@@ -137,6 +138,9 @@ else:
         f'Got training_loss={config.opt.training_loss} '
         f'but expected one of ["l2", "h1"]'
     )
+'''
+train_loss = WeightedSumLoss([l2loss, h1loss])
+
 eval_losses = {"h1": h1loss, "l2": l2loss}
 
 if config.verbose and is_logger:
