@@ -113,8 +113,8 @@ class TransformerNO(BaseModel, name='transformer_no'):
             raise ValueError(f'pos_emb must be one of ["rotary", "none"], got {self.pos_emb}')
 
         if self.pos_emb == 'rotary':
-            self.enc_pos_emb_module = RotaryEmbedding(self.encoder_head_n_channels // self.n_dim)
-            self.dec_pos_emb_module = RotaryEmbedding(self.decoder_head_n_channels // self.n_dim)
+            self.enc_pos_emb_module = RotaryEmbedding2D(self.encoder_head_n_channels // self.n_dim)
+            self.dec_pos_emb_module = RotaryEmbedding2D(self.decoder_head_n_channels // self.n_dim)
         else:
             self.enc_pos_emb_module = None
             self.dec_pos_emb_module = None
