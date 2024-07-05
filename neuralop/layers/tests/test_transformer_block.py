@@ -2,7 +2,7 @@ import pytest
 import torch
 import math
 from ..transformer_block import TransformerEncoderBlock, TransformerDecoderBlock
-from ..embeddings import RotaryEmbedding
+from ..embeddings import RotaryEmbedding2D
 
 def test_TransformerEncoderBlock_output():
     """Test TransformerEncoderBlock
