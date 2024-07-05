@@ -226,14 +226,9 @@ class Trainer:
                         loss = training_loss(out, **sample)
                 if regularizer:
                     loss += regularizer.loss
-                '''
-                print(f"pre back {type(loss)=}")
-                print(f"pre back {loss}")
+                
                 loss.backward()
-                print(f"post back {loss}")
-                print(f"post back {type(loss)=}")'''
 
-                #loss._log_tensors()
                 del out
 
                 # free sample memory
@@ -345,7 +340,7 @@ class Trainer:
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
                 if self.callbacks:
-                    sample, self.data_processor = self.callbacks.on_val_batch_start(
+                    sample = self.callbacks.on_val_batch_start(
                         idx=idx, sample=sample, data_processor=self.data_processor
                     )
 
