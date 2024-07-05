@@ -70,6 +70,14 @@ Spherical Fourier Neural Operators (SFNO)
 
     SFNO
 
+Geometry-Informed Neural Operators (GINO)
+-----------------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    GINO
 
 U-shaped Neural Operators (U-NO)
 --------------------------------
@@ -125,6 +133,52 @@ Neural operator Layers
     :template: class.rst
 
     SphericalConv
+
+To support geometry-informed (GINO) models, we also offer the ability to integrate kernels in the spatial domain, which we formulate as mappings between arbitrary coordinate meshes.
+
+**Graph convolutions and kernel integration**:
+
+.. automodule:: neuralop.layers.integral_transform
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    IntegralTransform
+
+**Neighbor search and neighborhood reduction**
+
+Find neighborhoods on arbitrary coordinate meshes:
+
+.. automodule:: neuralop.layers.neighbor_search
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    NeighborSearch
+
+.. autosummary::
+    :toctree: generated
+    :template: function.rst
+
+    native_neighbor_search
+
+Given a CSR-formatted matrix, reduce data associated with index entries:
+
+.. automodule:: neuralop.layers.segment_csr
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: function.rst
+
+    segment_csr
 
 
 Other resolution invariant operations
@@ -207,11 +261,13 @@ Trainer, we provide a Callback class and several examples of common domain-speci
     CheckpointCallback
 
 
-Datasets
+Data
 ========
-We ship a small dataset for testing:
+In `neuralop.data`, we provide APIs for standardizing PDE datasets (`.datasets`) and transforming raw data into model inputs (`.transforms`).
 
-.. automodule:: neuralop.datasets
+We also ship a small dataset for testing:
+
+.. automodule:: neuralop.data.datasets
     :no-members:
     :no-inherited-members:
 
@@ -221,11 +277,11 @@ We ship a small dataset for testing:
 
     load_darcy_flow_small
 
-Much like PyTorch's `Torchvision.Datasets` module, our Datasets module also includes
+Much like PyTorch's `Torchvision.Datasets` module, our `data` module also includes
 utilities to transform data from its raw form into the form expected by models and 
 loss functions:
 
-.. automodule:: neuralop.datasets.data_transforms
+.. automodule:: neuralop.data.transforms.data_processors
     :no-members:
     :no-inherited-members:
 

@@ -52,7 +52,7 @@ class FNO(BaseModel, name='FNO'):
         expansion parameter of MLP layer, by default 0.5
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
-    norm : F.module, optional
+    norm : Literal["ada_in", "group_norm", "instance_norm"], optional
         Normalization layer to use, by default None
     preactivation : bool, default is False
         if True, use resnet-style preactivation
@@ -81,8 +81,11 @@ class FNO(BaseModel, name='FNO'):
           the decomposition
     decomposition_kwargs : dict, optional, default is {}
         Optionaly additional parameters to pass to the tensor decomposition
-    domain_padding : None or float, optional
+    domain_padding : None, float, or List[float], optional
         If not None, percentage of padding to use, by default None
+        To vary the percentage of padding used along each input dimension,
+        pass in a list of percentages e.g. [p1, p2, ..., pN] such that
+        p1 corresponds to the percentage of padding along dim 1, etc.
     domain_padding_mode : {'symmetric', 'one-sided'}, optional
         How to perform domain padding, by default 'one-sided'
     fft_norm : str, optional

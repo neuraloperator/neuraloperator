@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 import sys
 from neuralop.models import FNO
 from neuralop import Trainer
-from neuralop.datasets import load_darcy_flow_small
+from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
 from neuralop.training.callbacks import IncrementalCallback
-from neuralop.datasets import data_transforms
+from neuralop.data.transforms.data_processors import IncrementalDataProcessor
 from neuralop import LpLoss, H1Loss
 
 
@@ -70,7 +70,7 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 #    uses the dataset_resolution parameter - the resolution of the input
 #    uses the epoch_gap parameter - the number of epochs to wait before increasing the resolution
 #    uses the verbose parameter - if True, print the resolution and the number of modes
-data_transform = data_transforms.IncrementalDataProcessor(
+data_transform = IncrementalDataProcessor(
     in_normalizer=None,
     out_normalizer=None,
     positional_encoding=None,

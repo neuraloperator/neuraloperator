@@ -14,7 +14,7 @@ from typing import List, Union, Literal
 import torch
 import wandb
 
-from .training_state import save_training_state
+from .training_state import save_training_state, load_training_state
 from neuralop.utils import compute_rank, compute_stable_rank, compute_explained_variance
 
 
@@ -401,42 +401,23 @@ class CheckpointCallback(Callback):
         if self.resume_from_dir:
             saved_modules = [x.stem for x in self.resume_from_dir.glob("*.pt")]
 
-            assert (
-                "best_model_state_dict" in saved_modules
-                or "model_state_dict" in saved_modules
-            ), "Error: CheckpointCallback expects a model state dict named model.pt or best_model.pt."
-
-            # no need to handle exceptions if assertion that either model file exists passes
-            if "best_model_state_dict" in saved_modules:
-                if hasattr(self.state_dict["model"], "load_checkpoint"):
-                    self.state_dict["model"].load_checkpoint(
-                        save_folder=self.resume_from_dir, save_name="best_model"
-                    )
-                else:
-                    self.state_dict["model"].load_state_dict(
-                        torch.load(self.resume_from_dir / "best_model.pt")
-                    )
-                if verbose:
-                    print(f"Loading model state from best_model_state_dict.pt")
+            # check for save model exists
+            if (self.resume_from_dir / "best_model_state_dict.pt").exists():
+                save_name = "best_model"
+            elif (self.resume_from_dir / "model_state_dict.pt").exists():
+                save_name = "model"
             else:
-                if hasattr(self.state_dict["model"], "load_checkpoint"):
-                    self.state_dict["model"].load_checkpoint(
-                        save_folder=self.resume_from_dir, save_name="model"
-                    )
-                else:
-                    self.state_dict["model"].load_state_dict(
-                        torch.load(self.resume_from_dir / "model.pt")
-                    )
-                if verbose:
-                    print(f"Loading model state from model.pt")
-
-            # load all of optimizer, scheduler, regularizer if they exist
-            for module in ["optimizer", "scheduler", "regularizer"]:
-                if module in saved_modules:
-                    self.state_dict[module].load_state_dict(
-                        torch.load(self.resume_from_dir / f"{module}.pt")
-                    )
-
+                raise FileNotFoundError("Error: CheckpointCallback expects a model\
+                                         state dict named model.pt or best_model.pt.")
+            # returns key-value pairs "model":model, "optimizer":optimizer...
+            training_state = load_training_state(save_dir=self.resume_from_dir, save_name=save_name,
+                                                 model=self.state_dict['model'],
+                                                 optimizer=self.state_dict.get('optimizer'),
+                                                 regularizer=self.state_dict.get('regularizer'),
+                                                 scheduler=self.state_dict.get('scheduler'))
+            
+            self._update_state_dict(**training_state)
+            
     def on_epoch_start(self, *args, **kwargs):
         self._update_state_dict(**kwargs)
 
@@ -558,7 +539,6 @@ class IncrementalCallback(Callback):
         self.mode = "Train"
         self.data = self.state_dict['data_processor']
         if self.data is not None:
-            self.data.mode = self.mode
             self.data.epoch = self.state_dict['epoch']
         
     def on_before_loss(self, out, **kwargs):
@@ -586,7 +566,6 @@ class IncrementalCallback(Callback):
     def on_val_batch_start(self, *args, **kwargs):
         self.mode = "Validation"
         if self.data is not None:
-            self.data.mode = self.mode
             self.data.epoch = self.state_dict['epoch']
 
     def on_val_end(self, *args, **kwargs):

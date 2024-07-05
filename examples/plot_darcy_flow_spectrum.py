@@ -22,7 +22,7 @@ import torch
 import matplotlib
 import matplotlib.pyplot as plt
 from neuralop.utils import spectrum_2d
-from neuralop.datasets import load_darcy_flow_small
+from neuralop.data.datasets import load_darcy_flow_small
 
 font = {'size'   : 28}
 matplotlib.rc('font', **font)

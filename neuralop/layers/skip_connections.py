@@ -35,12 +35,10 @@ def skip_connection(
             n_dim=n_dim,
         )
     elif skip_type.lower() == "linear":
-        return getattr(nn, f"Conv{n_dim}d")(
-            in_channels=in_features,
-            out_channels=out_features,
-            kernel_size=1,
-            bias=bias,
-        )
+        return Flattened1dConv(in_channels=in_features,
+                               out_channels=out_features,
+                               kernel_size=1,
+                               bias=bias,)
     elif skip_type.lower() == "identity":
         return nn.Identity()
     else:
@@ -89,3 +87,37 @@ class SoftGating(nn.Module):
             return self.weight * x + self.bias
         else:
             return self.weight * x
+
+class Flattened1dConv(nn.Module):
+    def __init__(self, in_channels: int, out_channels: int, kernel_size, bias=False):
+        """Flattened3dConv is a Conv-based skip layer for
+        input tensors of ndim > 3 (batch, channels, d1, ...) that flattens all dimensions 
+        past the batch and channel dims into one dimension, applies the Conv,
+        and un-flattens.
+
+        Parameters
+        ----------
+        in_channels : int
+            in_channels of Conv1d
+        out_channels : int
+            out_channels of Conv1d
+        kernel_size : int
+            kernel_size of Conv1d
+        bias : bool, optional
+            bias of Conv3d, by default False
+        """
+        super().__init__()
+        self.conv = nn.Conv1d(in_channels=in_channels,
+                              out_channels=out_channels,
+                              kernel_size=kernel_size,
+                              bias=bias)
+    def forward(self, x):
+        # x.shape: b, c, x1, ..., xn x_ndim > 1
+        size = list(x.shape)
+        # flatten everything past 1st data dim
+        x = x.view(*size[:2], -1)
+        x = self.conv(x)
+        # reshape x into an Nd tensor b, c, x1, x2, ...
+        x = x.view(size[0], self.conv.out_channels, *size[2:])
+        return x
+        
