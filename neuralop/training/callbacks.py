@@ -499,6 +499,8 @@ class IncrementalCallback(Callback):
             model.fno_blocks.convs.n_modes = tuple(modes_list)
 
 class LossBalancingCallback(Callback):
+    # source: https://arxiv.org/pdf/2308.08468
+    # Wang et al., "An Expert's Guide to Training Physics-Informed Neural Networks"
     def __init__(self, alpha: float=0.9):
         super().__init__()
         self.alpha = alpha
