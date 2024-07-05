@@ -261,13 +261,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f86d1ea0400>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fe84c6e3bb0>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7f86d1ea0a60>
+     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7fe84c6e3fd0>
 
-     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7f86d1ea0a60>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f86d1ea0f10>}
+     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7fe84c6e3fd0>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fe84c6e3ac0>}
 
 
 
@@ -331,7 +331,7 @@ Actually train the model on our small Darcy-Flow dataset
  .. code-block:: none
 
 
-    {'32_h1': 0.5894950675964356, '32_l2': 0.47785011291503904}
+    {'32_h1': 0.5721134376525879, '32_l2': 0.453486385345459}
 
 
 
@@ -405,7 +405,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 57.616 seconds)
+   **Total running time of the script:** (1 minutes 58.164 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_UNO_darcy.py:

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Using torchtnt to count FLOPS &#8212; neuraloperator 0.3.0 documentation</title> 
+<link rel="stylesheet" href="../_static/tensorly_style.css">
+<link rel="apple-touch-icon" sizes="180x180" href="../_static/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../_static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../_static/favicon/favicon-16x16.png">
+<link rel="manifest" href="../_static/favicon/site.webmanifest">
+<link rel="mask-icon" href="../_static/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="../_static/favicon/favicon.ico">
+<meta name="theme-color" content="#ffffff">
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/tensorly_style.css?v=a02e9698" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=61a4c737" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+    <script src="../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+ <script src="../_static/navbar_burger.js"></script>
+ <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+ 
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Training a TFNO on Darcy-Flow" href="plot_FNO_darcy.html" />
+    <link rel="prev" title="A simple Darcy-Flow dataset" href="plot_darcy_flow.html" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  </head>
+<body  class="has-navbar-fixed-top">
+
+  <header>
+    <navbar>
+      <nav class="navbar top-navbar is-fixed-top has-shadow is-flex-wrap-wrap" role="navigation" aria-label="main top navigation">
+        <div class="navbar-brand">
+        
+
+          <a class="navbar-item" href="../index.html">
+            <img src="../_static/neuraloperator_logo.png" height="28">
+          </a>
+          <a class="navbar-item is-hidden-desktop" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon"><i class="fab fa-github"></i></span>
+          </a>
+
+          <a role="button" class="navbar-burger" data-target="top-nav-menu" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+
+        </div>
+        
+        <div class="navbar-menu" id="top-nav-menu">
+        
+
+          <div class="navbar-start">
+            
+              <a class="navbar-item" href="../install.html">
+              Install
+            </a>
+              <a class="navbar-item" href="../user_guide/index.html">
+              User Guide
+            </a>
+              <a class="navbar-item" href="../modules/api.html">
+              API
+            </a>
+              <a class="navbar-item" href="index.html">
+              Examples
+            </a>
+          </div>
+        
+          <div class="navbar-end">
+            <div class="navbar-item">
+            
+            <a class="button is-hidden-touch is-dark" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon-text">
+                <span class="icon is-large">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>Github</span>
+              </span>
+            </a>
+
+            </div> 
+          </div> 
+        </div> 
+
+      </nav>
+      
+    </navbar>
+  </header>
+
+
+  <div id="column-container">
+  <div class="columns is-mobile is-centered">
+	
+  
+      <div class="column is-10-mobile is-one-third-tablet is-3-desktop is-hidden-mobile" id="sidebar">
+    
+    <aside class="sticky-nav sidebar-menu">
+<div class="sidebar-search">
+  <form class="field" id="searchbox" role="search" action="../search.html" method="get">
+    <!-- <label class="label" id="searchlabel">Quick search</label> -->
+    <div class="field has-addons">
+      <div class="control is-expanded">
+        <input class="input" type="text" placeholder="Search the doc" name="q" aria-labelledby="searchlabel autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      </div>
+      <div class="control">
+        <input class="button is-info" type="submit" value="Go" />
+      </div>
+    </div>
+  </form>
+  <script>document.getElementById('searchbox').style.display = "block"</script>
+
+</div>
+      
+      <div class="sidebar-menu-toc">
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installing NeuralOperator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide/index.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules/api.html">API reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Gallery of examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Using <cite>torchtnt</cite> to count FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_SFNO_swe.html">Training a SFNO on the spherical Shallow Water equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_UNO_darcy.html">U-NO on Darcy-Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow_spectrum.html">A simple Darcy-Flow spectrum analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_incremental_FNO_darcy.html">Training a neural operator on Darcy-Flow - Author Robert Joseph George</a></li>
+</ul>
+</li>
+</ul>
+ 
+      </div>
+    </aside>
+  </div>
+  
+
+  <div class="column main-column">
+
+    
+    <div class="main-section">
+
+      
+      
+      <div class="side-menu-toggle">
+        <button class="button" id="toggle-sidebar" onclick="toggle_sidebar()">
+          <span class="icon"><i class="fa fa-bars" aria-hidden="true"></i></span>
+          <span>menu</span> 
+        </button>
+      </div>
+      
+
+      <div class="container content main-content">
+        
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-examples-plot-count-flops-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="using-torchtnt-to-count-flops">
+<span id="sphx-glr-auto-examples-plot-count-flops-py"></span><h1>Using <cite>torchtnt</cite> to count FLOPS<a class="headerlink" href="#using-torchtnt-to-count-flops" title="Link to this heading"></a></h1>
+<p>In this example, we demonstrate how to use torchtnt to estimate the number of floating-point
+operations per second (FLOPS) required for a model’s forward and backward pass.</p>
+<p>We will use the FLOP computation to compare the resources used by a base FNO.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torchtnt.utils.flops</span> <span class="kn">import</span> <span class="n">FlopTensorDispatchMode</span>
+
+<span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">FNO</span>
+
+<span class="n">device</span> <span class="o">=</span> <span class="s1">&#39;cpu&#39;</span>
+
+<span class="n">fno</span> <span class="o">=</span> <span class="n">FNO</span><span class="p">(</span><span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span><span class="mi">64</span><span class="p">),</span>
+          <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+          <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+          <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+          <span class="n">projection_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>
+
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">model_input</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">)</span>
+
+
+<span class="k">with</span> <span class="n">FlopTensorDispatchMode</span><span class="p">(</span><span class="n">fno</span><span class="p">)</span> <span class="k">as</span> <span class="n">ftdm</span><span class="p">:</span>
+    <span class="c1"># count forward flops</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">fno</span><span class="p">(</span><span class="n">model_input</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">fno_forward_flops</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">ftdm</span><span class="o">.</span><span class="n">flop_counts</span><span class="p">)</span>
+
+    <span class="n">ftdm</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+    <span class="n">res</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">fno_backward_flops</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">ftdm</span><span class="o">.</span><span class="n">flop_counts</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This output is organized as a defaultdict object that counts the FLOPS used in each submodule.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">fno_forward_flops</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>defaultdict(&lt;function FlopTensorDispatchMode.__init__.&lt;locals&gt;.&lt;lambda&gt; at 0x7fe8466a6d30&gt;, {&#39;&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 2470445056, &#39;bmm.default&#39;: 138412032}), &#39;lifting&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 1124073472}), &#39;lifting.fcs.0&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 50331648}), &#39;lifting.fcs.1&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 1073741824}), &#39;fno_blocks&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 1073741824, &#39;bmm.default&#39;: 138412032}), &#39;fno_blocks.fno_skips.0&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 268435456}), &#39;fno_blocks.fno_skips.0.conv&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 268435456}), &#39;fno_blocks.convs&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;bmm.default&#39;: 138412032}), &#39;fno_blocks.fno_skips.1&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 268435456}), &#39;fno_blocks.fno_skips.1.conv&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 268435456}), &#39;fno_blocks.fno_skips.2&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 268435456}), &#39;fno_blocks.fno_skips.2.conv&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 268435456}), &#39;fno_blocks.fno_skips.3&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 268435456}), &#39;fno_blocks.fno_skips.3.conv&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 268435456}), &#39;projection&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 272629760}), &#39;projection.fcs.0&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 268435456}), &#39;projection.fcs.1&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;convolution.default&#39;: 4194304})})
+</pre></div>
+</div>
+<p>To check the maximum FLOPS used during the forward pass, let’s create a recursive function to search the nested dict:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="k">def</span> <span class="nf">get_max_flops</span><span class="p">(</span><span class="n">flop_count_dict</span><span class="p">,</span> <span class="n">max_value</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">flop_count_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># if not nested, compare leaf value to max</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">max_value</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_value</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+        <span class="c1"># otherwise compute recursive max value below node</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">defaultdict</span><span class="p">):</span>
+            <span class="n">new_val</span> <span class="o">=</span> <span class="n">get_max_flops</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">max_value</span><span class="p">)</span>
+            <span class="n">max_value</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_value</span><span class="p">,</span> <span class="n">new_val</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">max_value</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Max FLOPS required for FNO.forward: </span><span class="si">{</span><span class="n">get_max_flops</span><span class="p">(</span><span class="n">fno_forward_flops</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Max FLOPS required for FNO.backward: </span><span class="si">{</span><span class="n">get_max_flops</span><span class="p">(</span><span class="n">fno_backward_flops</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Max FLOPS required for FNO.forward: 2470445056
+Max FLOPS required for FNO.backward: 4890558464
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 3.086 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-count-flops-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/84c435865e4e2910253a980881498782/plot_count_flops.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_count_flops.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/de69282d3144c5a2b675c6f6338237c1/plot_count_flops.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_count_flops.py</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+
+
+      </div>
+
+      
+        <nav class="pagination" role="navigation" aria-label="pagination">
+    
+    <a class="button pagination-previous" href="plot_darcy_flow.html" title="previous page" accesskey="p">
+        <span class="icon">
+            <i class="fa fa-arrow-circle-left"></i>
+        </span>
+        <span>A simple Darcy-Flow dataset</span>
+    </a>
+    
+    
+    <a class="button pagination-next" href="plot_FNO_darcy.html" title="next page" accesskey="n">
+        <span>Training a TFNO on Darcy-Flow </span>
+        <span class="icon">
+            <i class="fa fa-arrow-circle-right"></i>
+        </span>
+    </a>
+    
+</nav>
+
+      
+
+        <footer class="footer">
+    <div class="content has-text-centered">
+        <div class="block">
+          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+        </div>
+    </div>
+  </footer>
+
+    </div>
+
+  </div>  
+
+	
+    
+
+  
+
+  </div>  
+  </div> 
+
+  
+  <script>
+    function toggle_sidebar() {
+        var element = document.getElementById("sidebar");
+        var container = document.getElementById("column-container");
+        var localtoccolumn = document.getElementById("localtoc-column");
+        element.classList.toggle("hide-tablet");
+        element.classList.toggle("is-hidden-mobile");
+        container.classList.toggle("sidemenu-hidden");
+        localtoccolumn.classList.toggle("is-one-fifth-widescreen");
+        localtoccolumn.classList.toggle("is-2-desktop");
+        localtoccolumn.classList.toggle("is-3-desktop");
+    }
+  </script> 
+
+
+
+  </body>
+</html>
