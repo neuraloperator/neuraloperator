@@ -17,6 +17,8 @@ import wandb
 from .training_state import save_training_state, load_training_state
 from neuralop.utils import compute_rank, compute_stable_rank, compute_explained_variance
 
+from neuralop.losses.meta_losses import WeightedSumLoss
+
 
 class Callback(object):
     """
@@ -492,3 +494,14 @@ class IncrementalCallback(Callback):
             main_modes = incremental_final[0]
             modes_list = tuple([main_modes] * self.ndim)
             model.fno_blocks.convs.n_modes = tuple(modes_list)
+
+class LossBalancingCallback(Callback):
+    def __init__(self):
+        super().__init__()
+    
+    def compute_training_loss(self, out, sample, loss, model, **kwargs):
+        loss_vals = loss(out, **sample) # sumlossoutput
+        grads = {}
+        for name, val in loss_vals.losses.items()
+            grads[name] = torch.autograd.grad(outputs=val, inputs=model.parameters(), retain_graph=True)
+        
