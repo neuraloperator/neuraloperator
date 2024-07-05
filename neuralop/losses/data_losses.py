@@ -240,8 +240,11 @@ class MSELoss(object):
     """
     MSELoss computes absolute mean-squared L2 error between two tensors.
     """
-    def __init__(self):
+    def __init__(self, reductions='sum'):
         super().__init__()
+        allowed_reductions = ['sum', 'mean']
+        assert reductions in allowed_reductions, f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions}"
+        self.reductions = reductions
 
     def __call__(self, y_pred: torch.Tensor, y: torch.Tensor, dim: List[int]=None, **kwargs):
         """MSE loss call 
@@ -257,4 +260,7 @@ class MSELoss(object):
         """
         if dim is None:
             dim = list(range(1, y_pred.ndim)) # no reduction across batch dim
-        return torch.mean((y_pred - y) ** 2, dim=dim).sum() # sum of MSEs for each element
+        if self.reductions == 'sum':
+            return torch.mean((y_pred - y) ** 2, dim=dim).sum() # sum of MSEs for each element
+        elif self.reductions == 'mean':
+            return torch.mean((y_pred - y) ** 2, dim=dim).mean()
