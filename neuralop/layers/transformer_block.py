@@ -159,8 +159,8 @@ class TransformerEncoderBlock(nn.Module):
         Encode the input function u using the Transformer Encoder Block.
 
         Parameters:
-            u: torch.Tensor, input tensor of shape [batch_size, num_grid_points, channels]
-            pos: torch.Tensor, grid point coordinates of shape [batch_size, num_grid_points, channels]
+            u: torch.Tensor, input tensor of shape [batch_size, num_mesh_points, channels]
+            pos: torch.Tensor, mesh point coordinates of shape [batch_size, num_mesh_points, channels]
             pos_emb_module: nn.Module, positional embedding module, by default None
 
         """
@@ -181,9 +181,9 @@ class TransformerEncoderBlock(nn.Module):
 
 
 # Note: this is not a causal-attention-based Transformer decoder as in language models
-# but rather a "decoder" that maps from the latent grid to the output grid.
+# but rather a "decoder" that maps from the latent mesh to the output mesh.
 class TransformerDecoderBlock(nn.Module):
-    """Transformer Decoder Block using cross-attention to map input grid to output grid.
+    """Transformer Decoder Block using cross-attention to map input mesh to output mesh.
 
     For details regarding attention-based decoding, see:
     Transformer for Partial Differential Equations' Operator Learning: https://arxiv.org/abs/2205.13671
@@ -282,16 +282,16 @@ class TransformerDecoderBlock(nn.Module):
                 **kwargs
                 ):
         """
-           Project the input function u from the source grid to the query grid using the Transformer Decoder Block.
+           Project the input function u from the source mesh to the query mesh using the Transformer Decoder Block.
 
           Parameters:
-                u: torch.Tensor, input tensor of shape [batch_size, num_src_grid_points, channels]
-                pos_src: torch.Tensor, grid point coordinates of shape [batch_size, num_src_grid_points, channels]
+                u: torch.Tensor, input tensor of shape [batch_size, num_src_mesh_points, channels]
+                pos_src: torch.Tensor, mesh point coordinates of shape [batch_size, num_src_mesh_points, channels]
                 pos_emb_module: nn.Module, positional embedding module, by default None
-                pos_qry: torch.Tensor, grid point coordinates of shape [batch_size, num_qry_grid_points, channels],
+                pos_qry: torch.Tensor, mesh point coordinates of shape [batch_size, num_qry_mesh_points, channels],
                          by default None and is set to pos_src, where input and output function will be sampled on
-                         the same grid (the input grid specified by pos_src).
-                         If pos_qry is provided, the output function will be sampled on query grid whose coordinates
+                         the same mesh (the input mesh specified by pos_src).
+                         If pos_qry is provided, the output function will be sampled on query mesh whose coordinates
                          are specified by pos_qry. This allows the output function to be sampled on arbitrary
                          discretization.
 

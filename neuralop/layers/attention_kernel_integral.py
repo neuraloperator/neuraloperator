@@ -15,14 +15,14 @@ class AttentionKernelIntegral(torch.nn.Module):
     two input functions (cross-attention) to compute the kernel integral transform.
 
     1. Self-attention:
-        input function u(.), sampling grid D_x = {x_i}_{i=1}^N
+        input function u(.), sampling mesh D_x = {x_i}_{i=1}^N
         query function: q(x_i) = u(x_i) W_q
         key function: k(x_i) = u(x_i) W_k
         value function: v(x_i) = u(x_i) W_v
 
     2. Cross-attention:
-        first input function u_qry(.), sampling grid D_x = {x_i}_{i=1}^N
-        second input function u_src(.), sampling grid D_y = {y_j}_{j=1}^M, D_y can be different from D_x
+        first input function u_qry(.), sampling mesh D_x = {x_i}_{i=1}^N
+        second input function u_src(.), sampling mesh D_y = {y_j}_{j=1}^M, D_y can be different from D_x
         query function: q(x_i) = u_qry(x_i) W_q
         key function: k(y_j) = u_src(y_j) W_k
         value function: v(y_j) = u_src(y_j) W_v
@@ -113,8 +113,8 @@ class AttentionKernelIntegral(torch.nn.Module):
     def normalize_wrt_domain(self, u, norm_fn):
         """
         Normalize the input function with respect to the domain,
-         reshape the tensor to [batch_size*n_heads, num_grid_points, head_n_channels]
-        The second dimension is equal to the number of grid points that discretize the domain
+         reshape the tensor to [batch_size*n_heads, num_mesh_points, head_n_channels]
+        The second dimension is equal to the number of mesh points that discretize the domain
         """
         # u: the input or transformed function
         batch_size = u.shape[0]
@@ -133,7 +133,7 @@ class AttentionKernelIntegral(torch.nn.Module):
                 u_qry=None,
                 pos_qry=None,
                 weights=None,
-                associative=True,   # can be much faster if num_grid_points is larger than the channel number c
+                associative=True,   # can be much faster if num_mesh_points is larger than the channel number c
                 return_kernel=False):
         """
         Computes kernel integral transform with attention
@@ -141,19 +141,19 @@ class AttentionKernelIntegral(torch.nn.Module):
         Parameters
         ----------
         u_src: input function (used to compute key and value in attention),
-                tensor of shape [batch_size, num_grid_points_src, channels]
+                tensor of shape [batch_size, num_mesh_points_src, channels]
         pos_src: coordinate of the second source of function's sampling points y,
-                tensor of shape [batch_size, num_grid_points_src, pos_dim]
+                tensor of shape [batch_size, num_mesh_points_src, pos_dim]
         positional_embedding_module: positional embedding module for encoding query/key (q/k),
                 a torch.nn.Module
         u_qry: query function,
-                tensor of shape [batch_size, num_grid_points_query, channels], if not provided, u_qry = u_src
+                tensor of shape [batch_size, num_mesh_points_query, channels], if not provided, u_qry = u_src
         pos_qry: coordinate of query points x,
-                tensor of shape [batch_size, num_grid_points_query, pos_dim], if not provided, pos_qry = pos_src
+                tensor of shape [batch_size, num_mesh_points_query, pos_dim], if not provided, pos_qry = pos_src
         weights : quadrature weight w(y_j) for the kernel integral: u(x_i) = sum_{j} k(x_i, y_j) f(y_i) w(y_j),
-                tensor of shape [batch_size, num_grid_points_src], if not provided assume to be 1/num_grid_points_src
+                tensor of shape [batch_size, num_mesh_points_src], if not provided assume to be 1/num_mesh_points_src
         associative: if True, use associativity of matrix multiplication, first multiply K^T V, then multiply Q,
-                much faster when num_grid_points is larger than the channel number (which is usually the case)
+                much faster when num_mesh_points is larger than the channel number (which is usually the case)
         return_kernel: if True, return the kernel matrix (for analyzing the kernel)
 
         Output
@@ -172,7 +172,7 @@ class AttentionKernelIntegral(torch.nn.Module):
         if return_kernel and associative:
             raise ValueError('Cannot get kernel matrix when associative is set to True')
 
-        batch_size, num_grid_points = u_src.shape[:2]   # batch size and number of grid points
+        batch_size, num_mesh_points = u_src.shape[:2]   # batch size and number of mesh points
         pos_dim = pos_src.shape[-1]   # position dimension
 
         q = self.to_q(u_qry)
@@ -221,19 +221,19 @@ class AttentionKernelIntegral(torch.nn.Module):
                 raise ValueError('Currently doesnt support relative embedding >= 3 dimensions')
 
         if weights is not None:
-            weights = weights.view(batch_size, 1, num_grid_points, 1)
+            weights = weights.view(batch_size, 1, num_mesh_points, 1)
         else:
-            weights = 1.0 / num_grid_points
+            weights = 1.0 / num_mesh_points
 
         if associative:
             dots = torch.matmul(k.transpose(-1, -2), v)
             u = torch.matmul(q, dots) * weights
         else:
-            # this is more efficient when num_grid_points<<channels
+            # this is more efficient when num_mesh_points<<channels
             kxy = torch.matmul(q, k.transpose(-1, -2))
             u = torch.matmul(kxy, v) * weights
 
-        u = u.permute(0, 2, 1, 3).contiguous().view(batch_size, num_grid_points, self.n_heads*self.head_n_channels)
+        u = u.permute(0, 2, 1, 3).contiguous().view(batch_size, num_mesh_points, self.n_heads*self.head_n_channels)
         u = self.to_out(u)
         if return_kernel:
             return u, kxy
