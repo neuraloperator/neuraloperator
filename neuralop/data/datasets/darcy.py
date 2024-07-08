@@ -8,6 +8,8 @@ from torch.utils.data import DataLoader
 from .pt_dataset import PTDataset
 from .web_utils import download_from_zenodo_record
 
+from neuralop.utils import get_project_root
+
 logger = logging.Logger(logging.root.level)
 
 class DarcyDataset(PTDataset):
@@ -84,11 +86,12 @@ class DarcyDataset(PTDataset):
                        output_subsampling_rate=subsampling_rate)
         
 # legacy Small Darcy Flow example
+example_data_root = get_project_root() / "neuralop/data/datasets/data"
 def load_darcy_flow_small(n_train,
     n_tests,
     batch_size,
     test_batch_sizes,
-    data_root = "./neuralop/data/datasets/data",
+    data_root = example_data_root,
     test_resolutions=[16, 32],
     grid_boundaries=[[0, 1], [0, 1]],
     positional_encoding=True,

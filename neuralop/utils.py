@@ -1,9 +1,9 @@
 from typing import List, Optional, Union
 from math import prod
+from pathlib import Path
 import torch
 import wandb
 import warnings
-
 
 # normalization, pointwise gaussian
 class UnitGaussianNormalizer:
@@ -269,3 +269,7 @@ def compute_explained_variance(frequency_max, s):
     s_current = s.clone()
     s_current[frequency_max:] = 0
     return 1 - torch.var(s - s_current) / torch.var(s)
+
+def get_project_root():
+    root = Path(__file__).parent.parent
+    return root
