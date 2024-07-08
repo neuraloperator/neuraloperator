@@ -5,10 +5,13 @@ import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
 
-from neuralop import H1Loss, LpLoss, Trainer, get_model
-from neuralop.datasets import load_darcy_flow_small
-from neuralop.training import setup
-from neuralop.training.callbacks import MGPatchingCallback, SimpleWandBLoggerCallback
+from neuralop import get_model
+from neuralop.losses import H1Loss, LpLoss
+from neuralop.data.datasets import load_darcy_flow_small
+from neuralop.data.transforms.data_processors import DefaultDataProcessor
+from neuralop.layers.embeddings import GridEmbedding2D
+from neuralop.training import Trainer, setup
+from neuralop.training.callbacks import BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -68,7 +71,8 @@ if config.verbose and is_logger:
     sys.stdout.flush()
 
 # Loading the Darcy flow dataset
-train_loader, test_loaders, output_encoder = load_darcy_flow_small(
+train_loader, test_loaders, default_data_processor = load_darcy_flow_small(
+    data_root="../neuralop/data/datasets/data/",
     n_train=config.data.n_train,
     batch_size=config.data.batch_size,
     positional_encoding=config.data.positional_encoding,
@@ -81,7 +85,57 @@ train_loader, test_loaders, output_encoder = load_darcy_flow_small(
 
 model = get_model(config)
 
-### The following wrapper is to maintain a consistent input format with other FNO-based model
+class TransformerNODataProcessor(DefaultDataProcessor):
+    """
+    TransformerNODataProcessor provides almost the same functionality as a 
+    DefaultDataProcessor but splits the input into two tensors `(u, pos_src)`
+    so that some model forward operations can operate on only the input function `u`
+    and some can operate on both `u` and the positional embedding `pos_src`
+    """
+    def __init__(self, in_normalizer=None, out_normalizer=None, device='cpu'):
+        super().__init__()
+        self.in_normalizer = in_normalizer
+        self.out_normalizer = out_normalizer
+        pos_embed = GridEmbedding2D(grid_boundaries=[[0,1], [0,1]])
+        self.positional_embedding = pos_embed
+        self.device = device
+    
+    def preprocess(self, data_dict):
+        x = data_dict["x"]
+        batch_size = x.shape[0]
+        if self.in_normalizer:
+            x = self.in_normalizer.transform(x)
+        
+        x = self.positional_embedding(x)
+
+        y = data_dict["y"]
+        if self.out_normalizer and self.training:
+            y = self.out_normalizer.transform(y)
+       
+        u = x[:,:-2, ...].permute(0,2,3,1).to(self.device).view(batch_size, -1, 1) # separate positional embedding and u
+        pos_src = x[:,-2:, ...].permute(0,2,3,1).to(self.device).view(batch_size, -1, 2)
+        data_dict["x"] = u
+        data_dict["pos_src"] = pos_src
+        data_dict["y"] = y.permute(0,2,3,1).to(self.device)
+
+        return data_dict
+    
+    def postprocess(self, out, data_dict):
+        y = data_dict["y"]
+        batch_size, _, nx, ny = y.shape
+        out = out.view(batch_size, nx, ny, -1).permute(0, 3, 1, 2)
+        print(f"{out.shape=}")
+        print(f"{y.shape=}")
+        if self.out_normalizer and not self.training:
+            out = self.out_normalizer.inverse_transform(out)
+            y = self.out_normalizer.inverse_transform(y)
+        data_dict["y"] = y
+
+        '''y_pred = y_pred.reshape(y_pred.shape[0], ny, nx, -1).permute(0, 3, 1, 2)
+        return y_pred'''
+        return out, data_dict
+
+'''### The following wrapper is to maintain a consistent input format with other FNO-based model
 class ModelWrapper(torch.nn.Module):
     def __init__(self, model):
         super().__init__()
@@ -100,7 +154,10 @@ class ModelWrapper(torch.nn.Module):
         y_pred = y_pred.reshape(y_pred.shape[0], ny, nx, -1).permute(0, 3, 1, 2)
         return y_pred
 
-model = ModelWrapper(model)
+model = ModelWrapper(model)'''
+
+data_processor = TransformerNODataProcessor(in_normalizer=default_data_processor.in_normalizer,
+                                            out_normalizer=default_data_processor.out_normalizer).to(device)
 model = model.to(device)
 
 
@@ -137,8 +194,8 @@ else:
 
 
 # Creating the losses
-l2loss = LpLoss(d=2, p=2)
-h1loss = H1Loss(d=2)
+l2loss = LpLoss(d=3, p=2)
+h1loss = H1Loss(d=3)
 if config.opt.training_loss == "l2":
     train_loss = l2loss
 elif config.opt.training_loss == "h1":
@@ -160,9 +217,15 @@ if config.verbose and is_logger:
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
 
+if config.wandb.log:
+    logger = BasicLoggerCallback(**wandb_args)
+else:
+    logger = BasicLoggerCallback()
+
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
+    data_processor=data_processor,
     device=device,
     amp_autocast=config.opt.amp_autocast,
     wandb_log=config.wandb.log,
@@ -171,11 +234,7 @@ trainer = Trainer(
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
     callbacks=[
-        MGPatchingCallback(levels=config.patching.levels,
-                                  padding_fraction=config.patching.padding,
-                                  stitching=config.patching.stitching,
-                                  encoder=output_encoder),
-        SimpleWandBLoggerCallback(**wandb_args)
+        logger
               ]
               )
 

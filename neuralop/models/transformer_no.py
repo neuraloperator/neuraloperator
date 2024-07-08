@@ -154,7 +154,7 @@ class TransformerNO(BaseModel, name='transformer_no'):
         )
 
     def forward(self,
-                u,
+                x,
                 pos_src,
                 pos_qry=None,
                 **kwargs):
@@ -162,9 +162,9 @@ class TransformerNO(BaseModel, name='transformer_no'):
            please note that coordinates must be normalized to [-1, 1] interval when using siren"""
 
         # encoder part, use self-attention to process input function
-        u = self.encoder(u, pos_src, self.enc_pos_emb_module, **kwargs)
+        x = self.encoder(x, pos_src, self.enc_pos_emb_module)
 
         # decoder part, use cross-attention to query the solution function
-        u_out = self.decoder(u, pos_src, self.dec_pos_emb_module, pos_qry, **kwargs)
+        u_out = self.decoder(x, pos_src, self.dec_pos_emb_module, pos_qry)
 
         return u_out
