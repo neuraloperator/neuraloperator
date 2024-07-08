@@ -2,6 +2,8 @@ import time
 import torch
 import pytest
 import math
+from random import shuffle
+from torch.testing import assert_close
 
 from ..transformer_no import TransformerNO
 from neuralop.layers.embeddings import regular_grid_nd
@@ -63,6 +65,18 @@ def test_TransformerNO(input_shape, regular_grid):
     # Check backward pass
     loss = out.sum()
     loss.backward()
+
+    # make sure the ordering of the points does not change output
+    mesh_pt_indices = in_data.shape[1]
+    indices = list(range(mesh_pt_indices))
+    shuffle(indices)
+    in_data_shuffled = in_data[:, indices, ...]
+    pos_shuffled = pos[:, indices, ...]
+
+    with torch.no_grad():
+        out_shuffled = model(in_data_shuffled, pos_shuffled)
+        out_unshuffled = model(in_data, pos)
+        assert_close(out_unshuffled[:, indices, ...], out_shuffled)
 
     n_unused_params = 0
     for name, param in model.named_parameters():
