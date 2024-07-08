@@ -74,7 +74,8 @@ Loading the Navier-Stokes dataset in 128x128 resolution
 
  .. code-block:: none
 
-    Loading test db at resolution 32 with 50 samples and batch-size=32
+    Loading test db for resolution 16 with 100 samples 
+    Loading test db for resolution 32 with 50 samples 
 
 
 
@@ -222,13 +223,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fe84f6f4c40>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fb1423aa6d0>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7fe84f67dca0>
+     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7fb142ff2430>
 
-     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7fe84f67dca0>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fe83a1865b0>}
+     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7fb142ff2430>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fb1565e1340>}
 
 
 
@@ -291,7 +292,7 @@ Actually train the model on our small Darcy-Flow dataset
  .. code-block:: none
 
 
-    {'32_h1': 0.751883773803711, '32_l2': 0.48167106628417966}
+    {'32_h1': 0.7471728897094727, '32_l2': 0.46962326049804687}
 
 
 
@@ -365,7 +366,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 51.496 seconds)
+   **Total running time of the script:** (0 minutes 51.010 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_FNO_darcy.py:

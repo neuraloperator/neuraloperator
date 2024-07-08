@@ -70,7 +70,8 @@ Training samples are 16x16 and we load testing samples at both
 
  .. code-block:: none
 
-    Loading test db at resolution 32 with 50 samples and batch-size=2
+    Loading test db for resolution 16 with 50 samples 
+    Loading test db for resolution 32 with 50 samples 
 
 
 
@@ -150,7 +151,7 @@ Visualizing the data
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.332 seconds)
+   **Total running time of the script:** (0 minutes 0.379 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_darcy_flow.py:
