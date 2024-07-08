@@ -124,8 +124,6 @@ class TransformerNODataProcessor(DefaultDataProcessor):
         y = data_dict["y"]
         batch_size, _, nx, ny = y.shape
         out = out.view(batch_size, nx, ny, -1).permute(0, 3, 1, 2)
-        print(f"{out.shape=}")
-        print(f"{y.shape=}")
         if self.out_normalizer and not self.training:
             out = self.out_normalizer.inverse_transform(out)
             y = self.out_normalizer.inverse_transform(y)
