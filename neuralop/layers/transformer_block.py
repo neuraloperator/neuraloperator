@@ -288,7 +288,7 @@ class TransformerDecoderBlock(nn.Module):
                 u: torch.Tensor, input tensor of shape [batch_size, num_src_grid_points, channels]
                 pos_src: torch.Tensor, grid point coordinates of shape [batch_size, num_src_grid_points, channels]
                 pos_emb_module: nn.Module, positional embedding module, by default None
-                pos_qry: torch.Tensor, grid point coordinates of shape [batch_size, num_sry_grid_points, channels],
+                pos_qry: torch.Tensor, grid point coordinates of shape [batch_size, num_qry_grid_points, channels],
                          by default None and is set to pos_src, where input and output function will be sampled on
                          the same grid (the input grid specified by pos_src).
                          If pos_qry is provided, the output function will be sampled on query grid whose coordinates
@@ -302,8 +302,7 @@ class TransformerDecoderBlock(nn.Module):
         query_emb = self.query_basis_fn(pos_qry)
         query_emb = query_emb.view(pos_qry.shape[0], -1, self.num_heads * self.head_n_channels)
         if query_emb.shape[0] != u.shape[0]:
-            query_emb = query_emb.expand(u.shape[0], -1, -1)
-
+            query_emb = query_emb.expand(u.shape[0], -1, -1)        
         u_out = self.attention_layer(u_src=u,
                                      pos_src=pos_src,
                                      u_qry=query_emb,
