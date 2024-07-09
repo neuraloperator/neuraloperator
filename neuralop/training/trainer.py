@@ -2,6 +2,8 @@ import torch
 from torch.cuda import amp
 from timeit import default_timer
 import pathlib
+import sys
+import wandb
 
 from .callbacks import PipelineCallback
 import neuralop.mpu.comm as comm
@@ -147,6 +149,12 @@ class Trainer:
             eval_losses = dict(l2=training_loss)
 
         errors = None
+        
+        if self.verbose:
+            print(f'Training on {len(train_loader)} samples')
+            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
+                  f'         on resolutions {[name for name in test_loaders]}.')
+            sys.stdout.flush()
 
         for epoch in range(self.n_epochs):
             if self.callbacks:
@@ -190,6 +198,10 @@ class Trainer:
                         out = self.model(**sample)
                 else:
                     out = self.model(**sample)
+                
+                # log output shape the first time outputs are received
+                if epoch == 0 and idx == 0 and self.verbose:
+                    print(f"Raw outputs of shape {out.shape}")
 
                 if self.data_processor is not None:
                     out, sample = self.data_processor.postprocess(out, sample)
@@ -236,6 +248,17 @@ class Trainer:
 
             train_err /= len(train_loader)
             avg_loss /= n_samples
+            if regularizer:
+                avg_lasso_loss /= n_samples
+            # collect info to log, message to print
+            if epoch % self.log_test_interval == 0:
+                msg = f"[{epoch}] time={epoch_train_time:.2f}, avg_loss={avg_loss:.4f}, train_err={train_err:.4f}"
+                if regularizer: 
+                    msg += f", avg_lasso={avg_lasso_loss:.5f}"
+                values_to_log = dict(train_err=train_err,
+                                     time=epoch_train_time,
+                                     avg_loss=avg_loss,
+                                     avg_lasso_loss=avg_lasso_loss)
 
             if epoch % self.log_test_interval == 0:
                 if self.callbacks:
@@ -246,9 +269,46 @@ class Trainer:
                         avg_loss=avg_loss,
                         avg_lasso_loss=avg_lasso_loss,
                     )
-
+                
+                all_errors = {}
                 for loader_name, loader in test_loaders.items():
-                    errors = self.evaluate(eval_losses, loader, log_prefix=loader_name)
+                    errors = self.evaluate(eval_losses, loader,
+                                           log_prefix=loader_name)
+                    for loss_name, loss_value in errors.items():
+                        msg += f", {loss_name}={loss_value:.4f}"
+                        
+                        values_to_log[f"{loader_name}_val_{loss_name}"] = loss_value
+                    all_errors[loader_name] = errors
+
+                # print msg to console and optionally log to wandb
+                if self.verbose:
+                    #print(msg)
+                    #sys.stdout.flush()
+                    lr = None
+                    if self.wandb_log:
+                        for pg in optimizer.param_groups:
+                            lr = pg["lr"]
+                    
+                    if not regularizer:
+                        avg_lasso_loss = None
+                    self.log_epoch(
+                        epoch=epoch,
+                        time=epoch_train_time,
+                        avg_loss=avg_loss,
+                        train_err=train_err,
+                        avg_lasso_loss=avg_lasso_loss,
+                        eval_metrics=all_errors,
+                        lr=lr
+                    )
+                '''if self.wandb_log:
+                    for pg in optimizer.param_groups:
+                        lr = pg["lr"]
+                        values_to_log["lr"] = lr
+                    wandb.log(
+                        values_to_log,
+                        step=epoch + 1,
+                        commit=True,
+                    )'''
 
                 if self.callbacks:
                     self.callbacks.on_val_end()
@@ -258,7 +318,7 @@ class Trainer:
                     epoch=epoch, train_err=train_err, avg_loss=avg_loss
                 )
 
-        return errors
+        return all_errors
 
     def evaluate(self, loss_dict, data_loader, log_prefix=""):
         """Evaluates the model on a dictionary of losses
@@ -287,7 +347,7 @@ class Trainer:
         if self.data_processor:
                 self.data_processor.eval()
 
-        errors = {f"{log_prefix}_{loss_name}": 0 for loss_name in loss_dict.keys()}
+        errors = {loss_name: 0 for loss_name in loss_dict.keys()}
 
         n_samples = 0
         with torch.no_grad():
@@ -324,7 +384,7 @@ class Trainer:
                         if val_loss.shape == ():
                             val_loss = val_loss.item()
 
-                    errors[f"{log_prefix}_{loss_name}"] += val_loss
+                    errors[loss_name] += val_loss
 
                 if self.callbacks:
                     self.callbacks.on_val_batch_end()
@@ -338,3 +398,49 @@ class Trainer:
         del out
 
         return errors
+    
+    def log_epoch(self, 
+            epoch:int,
+            time: float,
+            avg_loss: float,
+            train_err: float,
+            avg_lasso_loss: float=None,
+            eval_metrics: dict=None,
+            lr: float=None):
+        """Basic method to log a dict of output values
+        from a single training epoch. 
+        
+
+        Parameters
+        ----------
+        values : dict
+            dict keyed 'metric': float_value
+        """
+        if self.wandb_log:
+            values_to_log = dict(
+                train_err=train_err,
+                time=time,
+                avg_loss=avg_loss,
+                avg_lasso_loss=avg_lasso_loss,
+                lr=lr)
+
+        msg = f"[{epoch}] time={time:.2f}, "
+        msg += f"avg_loss={avg_loss:.4f}, "
+        msg += f"train_err={train_err:.4f}"
+        if avg_lasso_loss is not None:
+            msg += f", avg_lasso={avg_lasso_loss:.4f}"
+        for loader_name, loader_metrics in eval_metrics.items():
+            for metric, value in loader_metrics.items():
+                msg += f", {loader_name}_val_{metric}={value:.4f}"
+                if self.wandb_log:
+                    values_to_log[f"{loader_name}_val_{metric}"] = value
+
+        print(msg)
+        sys.stdout.flush()
+
+        if self.wandb_log:
+            wandb.log(
+                values_to_log,
+                step=epoch+1,
+                commit=True
+            )

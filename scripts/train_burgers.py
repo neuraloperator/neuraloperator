@@ -8,7 +8,6 @@ import torch.nn.functional as F
 from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Trainer, get_model
 from neuralop.data.datasets import load_burgers_1dtime
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
-from neuralop.training import setup, BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -160,11 +159,6 @@ if config.verbose:
     sys.stdout.flush()
 
 # only perform MG patching if config patching levels > 0
-
-callbacks = [
-    BasicLoggerCallback(wandb_init_args)
-]
-
 data_processor = MGPatchingDataProcessor(model=model,
                                        levels=config.patching.levels,
                                        padding_fraction=config.patching.padding,
@@ -178,7 +172,6 @@ trainer = Trainer(
     data_processor=data_processor,
     device=device,
     amp_autocast=config.opt.amp_autocast,
-    callbacks=callbacks,
     log_test_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
