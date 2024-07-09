@@ -129,30 +129,7 @@ class TransformerNODataProcessor(DefaultDataProcessor):
             y = self.out_normalizer.inverse_transform(y)
         data_dict["y"] = y
 
-        '''y_pred = y_pred.reshape(y_pred.shape[0], ny, nx, -1).permute(0, 3, 1, 2)
-        return y_pred'''
         return out, data_dict
-
-'''### The following wrapper is to maintain a consistent input format with other FNO-based model
-class ModelWrapper(torch.nn.Module):
-    def __init__(self, model):
-        super().__init__()
-        self.model = model
-
-    def forward(self, x, **samples):
-        x = x.permute(0, 2, 3, 1)  # channel first to channel last
-        nx, ny = x.shape[2], x.shape[1]
-        input_pos_x, input_pos_y = torch.meshgrid(
-            [torch.linspace(0, 1, x.shape[1]),
-             torch.linspace(0, 1, x.shape[2])])
-        x = x.reshape(x.shape[0], -1, 1)
-        input_pos = torch.stack([input_pos_x, input_pos_y], dim=-1).reshape(1, -1, 2).to(x.device)
-        input_pos = input_pos.repeat(x.shape[0], 1, 1)
-        y_pred = self.model(x, input_pos)
-        y_pred = y_pred.reshape(y_pred.shape[0], ny, nx, -1).permute(0, 3, 1, 2)
-        return y_pred
-
-model = ModelWrapper(model)'''
 
 data_processor = TransformerNODataProcessor(in_normalizer=default_data_processor.in_normalizer,
                                             out_normalizer=default_data_processor.out_normalizer).to(device)
