@@ -64,6 +64,24 @@ class GridEmbedding2D(nn.Module):
             return out.squeeze(0)
         else:
             return out
+    
+    def coords_only(self, resolutions: List):
+        """coords_only generates positional embeddings
+        for a specific resolution 
+
+        Params
+        ------
+        resolutions: List[int]
+            list of resolutions on which to grid coordinates
+
+        Returns
+        -------
+        coords: a tensor of shape [dim, res1, res2, ...resn]
+            coords[d, i, j...] contains the d-dim coordinate at point
+            i,j,... on the grid of resolution res1 x res2 x ... resn
+        """
+        grid = regular_grid_2d(resolutions, self.grid_boundaries)
+        return torch.cat([x.unsqueeze(0) for x in grid], dim=0) # concatenate on channel dim
 
 class GridEmbeddingND(nn.Module):
     """A positional embedding as a regular ND grid
@@ -115,6 +133,18 @@ class GridEmbeddingND(nn.Module):
             self._res = spatial_dims
 
         return self._grid
+    
+    def coords_only(self, resolutions: List):
+        """coords_only generates positional embeddings
+        for a specific resolution.
+
+        Params
+        ------
+        resolutions: List[int]
+            list of resolutions on which to grid coordinates
+        """
+        grid = regular_grid_nd(resolutions, self.grid_boundaries)
+        return torch.cat([x.unsqueeze(0) for x in grid], dim=0) # concatenate on channel dim
 
     def forward(self, data, batched=True):
         """
