@@ -268,7 +268,7 @@ class Trainer:
                 for loader_name, loader in test_loaders.items():
                     errors = self.evaluate(eval_losses, loader,
                                            log_prefix=loader_name)                        
-                    all_errors[loader_name] = errors
+                    all_errors.update(**errors)
 
                 # print msg to console and optionally log to wandb
                 if self.verbose:
@@ -323,7 +323,7 @@ class Trainer:
         if self.data_processor:
                 self.data_processor.eval()
 
-        errors = {loss_name: 0 for loss_name in loss_dict.keys()}
+        errors = {f"{log_prefix}_{loss_name}": 0 for loss_name in loss_dict.keys()}
 
         n_samples = 0
         with torch.no_grad():
@@ -360,7 +360,7 @@ class Trainer:
                         if val_loss.shape == ():
                             val_loss = val_loss.item()
 
-                    errors[loss_name] += val_loss
+                    errors[f"{log_prefix}_{loss_name}"] += val_loss
 
                 if self.callbacks:
                     self.callbacks.on_val_batch_end()
@@ -405,11 +405,11 @@ class Trainer:
         msg += f"train_err={train_err:.4f}"
         if avg_lasso_loss is not None:
             msg += f", avg_lasso={avg_lasso_loss:.4f}"
-        for loader_name, loader_metrics in eval_metrics.items():
-            for metric, value in loader_metrics.items():
-                msg += f", {loader_name}_val_{metric}={value:.4f}"
+        if eval_metrics:
+            for metric, value in eval_metrics.items():
+                msg += f", {metric}={value:.4f}"
                 if self.wandb_log:
-                    values_to_log[f"{loader_name}_val_{metric}"] = value
+                    values_to_log[metric] = value
 
         print(msg)
         sys.stdout.flush()
