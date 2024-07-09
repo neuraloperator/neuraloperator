@@ -250,16 +250,10 @@ class Trainer:
             avg_loss /= n_samples
             if regularizer:
                 avg_lasso_loss /= n_samples
-            # collect info to log, message to print
-            if epoch % self.log_test_interval == 0:
-                msg = f"[{epoch}] time={epoch_train_time:.2f}, avg_loss={avg_loss:.4f}, train_err={train_err:.4f}"
-                if regularizer: 
-                    msg += f", avg_lasso={avg_lasso_loss:.5f}"
-                values_to_log = dict(train_err=train_err,
-                                     time=epoch_train_time,
-                                     avg_loss=avg_loss,
-                                     avg_lasso_loss=avg_lasso_loss)
+            else:
+                avg_lasso_loss = None
 
+            # collect info to log, message to print
             if epoch % self.log_test_interval == 0:
                 if self.callbacks:
                     self.callbacks.on_before_val(
@@ -273,24 +267,15 @@ class Trainer:
                 all_errors = {}
                 for loader_name, loader in test_loaders.items():
                     errors = self.evaluate(eval_losses, loader,
-                                           log_prefix=loader_name)
-                    for loss_name, loss_value in errors.items():
-                        msg += f", {loss_name}={loss_value:.4f}"
-                        
-                        values_to_log[f"{loader_name}_val_{loss_name}"] = loss_value
+                                           log_prefix=loader_name)                        
                     all_errors[loader_name] = errors
 
                 # print msg to console and optionally log to wandb
                 if self.verbose:
-                    #print(msg)
-                    #sys.stdout.flush()
                     lr = None
                     if self.wandb_log:
                         for pg in optimizer.param_groups:
                             lr = pg["lr"]
-                    
-                    if not regularizer:
-                        avg_lasso_loss = None
                     self.log_epoch(
                         epoch=epoch,
                         time=epoch_train_time,
@@ -300,15 +285,6 @@ class Trainer:
                         eval_metrics=all_errors,
                         lr=lr
                     )
-                '''if self.wandb_log:
-                    for pg in optimizer.param_groups:
-                        lr = pg["lr"]
-                        values_to_log["lr"] = lr
-                    wandb.log(
-                        values_to_log,
-                        step=epoch + 1,
-                        commit=True,
-                    )'''
 
                 if self.callbacks:
                     self.callbacks.on_val_end()
