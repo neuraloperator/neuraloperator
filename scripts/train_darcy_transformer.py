@@ -103,17 +103,17 @@ class TransformerNODataProcessor(DefaultDataProcessor):
     def preprocess(self, data_dict):
         x = data_dict["x"]
         batch_size = x.shape[0]
+        grid_res = x.shape[2:4]
         if self.in_normalizer:
             x = self.in_normalizer.transform(x)
         
-        x = self.positional_embedding(x)
-
+        pos = self.positional_embedding.coords_only(grid_res)
         y = data_dict["y"]
         if self.out_normalizer and self.training:
             y = self.out_normalizer.transform(y)
        
-        u = x[:,:-2, ...].permute(0,2,3,1).to(self.device).view(batch_size, -1, 1) # separate positional embedding and u
-        pos_src = x[:,-2:, ...].permute(0,2,3,1).to(self.device).view(batch_size, -1, 2)
+        u = x.permute(0,2,3,1).to(self.device).view(batch_size, -1, 1)
+        pos_src = pos.permute(1,2,0).to(self.device).view(-1, 2).unsqueeze(0)
         data_dict["x"] = u
         data_dict["pos_src"] = pos_src
         data_dict["y"] = y.permute(0,2,3,1).to(self.device)
