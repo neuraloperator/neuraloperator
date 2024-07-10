@@ -130,35 +130,22 @@ class Trainer:
             dict of losses to use in self.eval()
         """
 
-        if self.callbacks:
-            self.callbacks.on_train_start(
-                train_loader=train_loader,
-                test_loaders=test_loaders,
-                optimizer=optimizer,
-                scheduler=scheduler,
-                regularizer=regularizer,
-                training_loss=training_loss,
-                eval_losses=eval_losses,
-                data_processor=self.data_processor,
+        # setup self.training_loss and self.eval_losses
+        self.before_training_loop(
+            train_loader=train_loader,
+            test_loaders=test_loaders,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            regularizer=regularizer,
+            training_loss=training_loss,
+            eval_losses=eval_losses,
+            data_processor=self.data_processor,
             )
-
-        if training_loss is None:
-            training_loss = LpLoss(d=2)
-
-        if eval_losses is None:  # By default just evaluate on the training loss
-            eval_losses = dict(l2=training_loss)
-
-        errors = None
         
-        if self.verbose:
-            print(f'Training on {len(train_loader)} samples')
-            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
-                  f'         on resolutions {[name for name in test_loaders]}.')
-            sys.stdout.flush()
+        errors = None
 
         for epoch in range(self.n_epochs):
-            if self.callbacks:
-                self.callbacks.on_epoch_start(epoch=epoch)
+            self.on_epoch_start(epoch)
 
             avg_loss = 0
             avg_lasso_loss = 0
@@ -172,25 +159,8 @@ class Trainer:
             n_samples = 0
 
             for idx, sample in enumerate(train_loader):
-                if self.callbacks:
-                    self.callbacks.on_batch_start(
-                        idx=idx, sample=sample, data_processor=self.data_processor
-                    )
-
-                optimizer.zero_grad(set_to_none=True)
-                if regularizer:
-                    regularizer.reset()
-
-                if self.data_processor is not None:
-                    sample = self.data_processor.preprocess(sample)
-                else:
-                    # load data to device if no preprocessor exists
-                    sample = {
-                        k: v.to(self.device)
-                        for k, v in sample.items()
-                        if torch.is_tensor(v)
-                    }
-
+                
+                sample = self.on_batch_start(idx, sample)
                 n_samples += sample["y"].shape[0]
 
                 if self.amp_autocast:
@@ -199,36 +169,11 @@ class Trainer:
                 else:
                     out = self.model(**sample)
                 
-                # log output shape the first time outputs are received
-                if epoch == 0 and idx == 0 and self.verbose:
-                    print(f"Raw outputs of shape {out.shape}")
-
-                if self.data_processor is not None:
-                    out, sample = self.data_processor.postprocess(out, sample)
-
-                if self.callbacks:
-                    self.callbacks.on_before_loss(out=out)
-
-                loss = 0.0
-
-                if self.overrides_loss:
-                    loss += self.callbacks.compute_training_loss(
-                        out=out, **sample, amp_autocast=self.amp_autocast
-                    )
-                else:
-                    if self.amp_autocast:
-                        with amp.autocast(enabled=True):
-                            loss += training_loss(out, **sample)
-                    else:
-                        loss += training_loss(out, **sample)
-
-                if regularizer:
-                    loss += regularizer.loss
-
+                loss = self.compute_batch_train_loss(out, sample)
                 loss.backward()
                 del out
 
-                optimizer.step()
+                self.optimizer.step()
                 train_err += loss.item()
 
                 with torch.no_grad():
@@ -236,13 +181,10 @@ class Trainer:
                     if regularizer:
                         avg_lasso_loss += regularizer.loss
 
-                if self.callbacks:
-                    self.callbacks.on_batch_end()
-
             if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                scheduler.step(train_err)
+                self.scheduler.step(train_err)
             else:
-                scheduler.step()
+                self.scheduler.step()
 
             epoch_train_time = default_timer() - t1
 
@@ -327,21 +269,8 @@ class Trainer:
         n_samples = 0
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
-                if self.callbacks:
-                    self.callbacks.on_val_batch_start(
-                        idx=idx, sample=sample, data_processor=self.data_processor
-                    )
-
-                if self.data_processor is not None:
-                    sample = self.data_processor.preprocess(sample)
-                else:
-                    # load data to device if no preprocessor exists
-                    sample = {
-                        k: v.to(self.device)
-                        for k, v in sample.items()
-                        if torch.is_tensor(v)
-                    }
-                n_samples += sample["y"].size(0)
+                sample = self.on_batch_start(idx, sample)
+                n_samples += self.sample["y"].size(0)
 
                 out = self.model(**sample)
 
@@ -374,6 +303,77 @@ class Trainer:
 
         return errors
     
+    def before_training_loop(self,
+                             train_loader,
+                             test_loaders,
+                             optimizer,
+                             scheduler,
+                             regularizer,
+                             training_loss,
+                             eval_losses,
+                             data_processor):
+        if training_loss is None:
+            self.training_loss = LpLoss(d=2)
+        else:
+            self.training_loss = training_loss
+
+        if eval_losses is None:  # By default just evaluate on the training loss
+            self.eval_losses = dict(l2=training_loss)
+        else:
+            self.eval_losses = eval_losses
+        
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.regularizer = regularizer
+        
+        if self.verbose:
+            print(f'Training on {len(train_loader)} samples')
+            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
+                  f'         on resolutions {[name for name in test_loaders]}.')
+            sys.stdout.flush()
+    
+    def on_epoch_start(self, epoch):
+        self.epoch = epoch
+        return None
+
+    def on_batch_start(self, idx, sample):
+        # reset optimizer
+        self.optimizer.zero_grad(set_to_none=True)
+        if self.regularizer:
+            self.regularizer.reset()
+
+        self.idx = idx # Dummy variable for now, just to expose this api
+        if self.data_processor is not None:
+            sample = self.data_processor.preprocess(sample)
+        else:
+            # load data to device if no preprocessor exists
+            sample = {
+                k: v.to(self.device)
+                for k, v in sample.items()
+                if torch.is_tensor(v)
+            }
+
+        return sample
+
+    def compute_batch_train_loss(self, out, sample):
+        # log output shape the first time outputs are received
+        if self.epoch == 0 and self.idx == 0 and self.verbose:
+            print(f"Raw outputs of shape {out.shape}")
+
+        if self.data_processor is not None:
+            out, sample = self.data_processor.postprocess(out, sample)
+
+        loss = 0.
+        if self.amp_autocast:
+            with amp.autocast(enabled=True):
+                loss += self.training_loss(out, **sample)
+        else:
+            loss += self.training_loss(out, **sample)
+        if self.regularizer:
+            loss += self.regularizer.loss
+
+        return loss
+
     def log_epoch(self, 
             epoch:int,
             time: float,
