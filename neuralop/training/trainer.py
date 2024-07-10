@@ -273,9 +273,8 @@ class Trainer:
                 # print msg to console and optionally log to wandb
                 if self.verbose:
                     lr = None
-                    if self.wandb_log:
-                        for pg in optimizer.param_groups:
-                            lr = pg["lr"]
+                    for pg in optimizer.param_groups:
+                        lr = pg["lr"]
                     self.log_epoch(
                         epoch=epoch,
                         time=epoch_train_time,
