@@ -10,7 +10,8 @@ from torch import nn
 import torch.distributed as dist
 
 
-def load_training_state(save_dir: Union[str, Path], save_name: str,
+def load_training_state(save_dir: Union[str, Path], 
+                        save_name: str,
                         model: nn.Module,
                         optimizer: nn.Module=None,
                         scheduler: nn.Module=None,
