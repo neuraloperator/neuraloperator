@@ -7,11 +7,9 @@ from typing import Union
 import sys
 import wandb
 
-from .callbacks import PipelineCallback
 import neuralop.mpu.comm as comm
 from neuralop.losses import LpLoss
-from neuralop.training import load_training_state, save_training_state
-from neuralop.data.transforms.data_processors import DataProcessor
+from .training_state import load_training_state, save_training_state
 
 
 class Trainer:
@@ -23,7 +21,7 @@ class Trainer:
         wandb_log: bool=False,
         device: str='cpu',
         amp_autocast: bool=False,
-        data_processor: DataProcessor=None,
+        data_processor: nn.Module=None,
         eval_interval: int=1,
         log_output: bool=False,
         use_distributed: bool=False,
@@ -64,7 +62,6 @@ class Trainer:
         self.device = device
         self.amp_autocast = amp_autocast
         self.data_processor = data_processor
-        self.s
 
     def train(
         self,
@@ -77,7 +74,8 @@ class Trainer:
         eval_losses=None,
         save_every: int=None,
         save_best: int=None,
-        save_dir: Union[str, Path]="./ckpt"
+        save_dir: Union[str, Path]="./ckpt",
+        resume_from_dir: Union[str, Path]=None,
     ):
         """Trains the given model on the given datasets.
         params:
@@ -102,6 +100,10 @@ class Trainer:
         save_dir: str | Path, default "./ckpt"
             directory at which to save training states if
             save_every and/or save_best is provided
+        resume_from_dir: str | Path, default None
+            if provided, resumes training state (model, 
+            optimizer, regularizer, scheduler) from state saved in
+            `resume_from_dir`
             
         """
         self.optimizer = optimizer
@@ -109,27 +111,27 @@ class Trainer:
         self.regularizer = regularizer
 
         if training_loss is None:
-            self.training_loss = LpLoss(d=2)
-        else:
-            self.training_loss = training_loss
+            training_loss = LpLoss(d=2)
 
         if eval_losses is None:  # By default just evaluate on the training loss
-            self.eval_losses = dict(l2=training_loss)
-        else:
-            self.eval_losses = eval_losses
+            eval_losses = dict(l2=training_loss)
         
+        # attributes for checkpointing
+        self.save_every = save_every
+        self.save_best = save_best
+        if resume_from_dir is not None:
+            self.resume
         # ensure save_best is a metric we collect
-        if save_best is not None:
+        if self.save_best is not None:
             metrics = []
             for name in test_loaders.keys():
                 for metric in eval_losses.keys():
                     metrics.append(f"{name}_{metric}")
-            assert save_best in metrics,\
+            assert self.save_best in metrics,\
                 f"Error: expected a metric of the form <loader_name>_<metric>, got {save_best}"
             best_metric_value = float('inf')
-            
             # either monitor metric or save on interval, exclusive for simplicity
-            save_every = None
+            self.save_every = None
 
         if self.verbose:
             print(f'Training on {len(train_loader)} samples')
@@ -139,13 +141,13 @@ class Trainer:
         
         for epoch in range(self.n_epochs):
             train_err, avg_loss, avg_lasso_loss, epoch_train_time =\
-                  self.train_one_epoch(epoch, train_loader, test_loaders)
+                  self.train_one_epoch(epoch, train_loader, training_loss)
             
             if epoch % self.eval_interval == 0:
                 # evaluate and gather metrics across each loader in test_loaders
                 all_metrics = {}
                 for loader_name, loader in test_loaders.items():
-                    loader_metrics = self.evaluate(self.eval_losses, loader,
+                    loader_metrics = self.evaluate(eval_losses, loader,
                                             log_prefix=loader_name)                        
                     all_metrics.update(**loader_metrics)
 
@@ -173,11 +175,12 @@ class Trainer:
             # save checkpoint if save_every and save_best is not set
             if save_every is not None:
                 if epoch % save_every == 0:
+                    print(f"saving state to {save_dir}")
                     self.checkpoint(save_dir)
 
         return all_metrics
 
-    def train_one_epoch(self, epoch, train_loader):
+    def train_one_epoch(self, epoch, train_loader, training_loss):
         """train_one_epoch trains self.model on train_loader
         for one epoch and returns training metrics
 
@@ -209,7 +212,7 @@ class Trainer:
 
         for idx, sample in enumerate(train_loader):
             
-            loss = self.train_one_batch(idx, sample)
+            loss = self.train_one_batch(idx, sample, training_loss)
             train_err += loss.item()
 
             loss.backward()
@@ -237,30 +240,6 @@ class Trainer:
 
         return train_err, avg_loss, avg_lasso_loss, epoch_train_time
 
-        '''# collect info to log, message to print
-        if epoch % self.eval_interval == 0:
-            errors = {}
-            all_errors = {}
-            for loader_name, loader in test_loaders.items():
-                errors = self.evaluate(self.eval_losses, loader,
-                                        log_prefix=loader_name)                        
-                all_errors.update(**errors)
-
-            # print msg to console and optionally log to wandb
-            if self.verbose:
-                lr = None
-                for pg in self.optimizer.param_groups:
-                    lr = pg["lr"]
-                self.log_epoch(
-                    epoch=epoch,
-                    time=epoch_train_time,
-                    avg_loss=avg_loss,
-                    train_err=train_err,
-                    avg_lasso_loss=avg_lasso_loss,
-                    eval_metrics=all_errors,
-                    lr=lr
-                )
-        return all_errors'''
     
     def evaluate(self, loss_dict, data_loader, log_prefix=""):
         """Evaluates the model on a dictionary of losses
@@ -289,23 +268,20 @@ class Trainer:
         self.n_samples = 0
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
-                eval_step_losses = self.eval_one_batch(idx, sample)
-
+                eval_step_losses = self.eval_one_batch(idx, sample, loss_dict)
                 for loss_name, val_loss in eval_step_losses.items():
                     errors[f"{log_prefix}_{loss_name}"] += val_loss
 
         for key in errors.keys():
             errors[key] /= self.n_samples
-            
-        #del out
-
+        
         return errors
     
     def on_epoch_start(self, epoch):
         self.epoch = epoch
         return None
 
-    def train_one_batch(self, idx, sample):
+    def train_one_batch(self, idx, sample, training_loss):
         """Run one batch of input through model
            and return training loss on outputs
 
@@ -354,16 +330,16 @@ class Trainer:
 
         if self.amp_autocast:
             with amp.autocast(enabled=True):
-                loss += self.training_loss(out, **sample)
+                loss += training_loss(out, **sample)
         else:
-            loss += self.training_loss(out, **sample)
+            loss += training_loss(out, **sample)
 
         if self.regularizer:
             loss += self.regularizer.loss
-
+        
         return loss
     
-    def eval_one_batch(self, idx, sample):
+    def eval_one_batch(self, idx, sample, eval_losses):
         if self.data_processor is not None:
             sample = self.data_processor.preprocess(sample)
 
@@ -376,10 +352,10 @@ class Trainer:
         
         eval_step_losses = {}
 
-        for loss_name, loss in self.eval_losses.items():
+        for loss_name, loss in eval_losses.items():
             val_loss = loss(out, **sample)
-            if val_loss.shape == ():
-                val_loss = val_loss.item()
+            '''if val_loss.shape == ():
+                val_loss = val_loss.item()'''
             eval_step_losses[loss_name] = val_loss
         return eval_step_losses
         
@@ -451,7 +427,7 @@ class Trainer:
             raise FileNotFoundError("Error: resume_from_dir expects a model\
                                         state dict named model.pt or best_model.pt.")
         # returns model, loads other modules in-place if provided
-        self.model = load_training_state(save_dir=self.resume_from_dir, save_name=save_name,
+        self.model = load_training_state(save_dir=save_dir, save_name=save_name,
                                                 model=self.model,
                                                 optimizer=self.optimizer,
                                                 regularizer=self.regularizer,
@@ -469,6 +445,8 @@ class Trainer:
                             scheduler=self.scheduler,
                             regularizer=self.regularizer
                             )
+        if self.verbose:
+            print(f"Saved training state to {save_dir}")
     
 
 class CheckpointTrainer(Trainer):
