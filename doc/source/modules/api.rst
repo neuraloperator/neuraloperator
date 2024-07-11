@@ -246,18 +246,7 @@ training a machine learning model to minimize a loss function on a dataset:
 
 The general case (assuming no modifications) is covered above. To implement domain-specific 
 logic in your training loop while still using the automation and logging provided by a
-Trainer, we provide a Callback class and several examples of common domain-specific Callbacks.
-
-.. automodule:: neuralop.training.callbacks
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :toctree: generated
-    :template: class.rst
-
-    Callback
-    CheckpointCallback
+Trainer, you can subclass the trainer and implement your own special methods.
 
 
 Data
