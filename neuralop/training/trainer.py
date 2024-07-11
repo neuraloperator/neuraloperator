@@ -16,7 +16,7 @@ class Trainer:
         *,
         model,
         n_epochs,
-        wandb_log=True,
+        wandb_log=False,
         device=None,
         amp_autocast=False,
         data_processor=None,
@@ -33,10 +33,12 @@ class Trainer:
         ----------
         model : nn.Module
         n_epochs : int
-        wandb_log : bool, default is True
-        device : torch.device
+        wandb_log : bool, default is False
+            whether to log results to wandb
+        device : str 'cpu' or 'cuda'
         amp_autocast : bool, default is False
-        data_processor : class to transform data, default is None
+            whether to use torch.amp automatic mixed precision
+        data_processor : DataProcessor class to transform data, default is None
             if not None, data from the loaders is transform first with data_processor.preprocess,
             then after getting an output from the model, that is transformed with data_processor.postprocess.
         log_test_interval : int, default is 1
@@ -143,6 +145,12 @@ class Trainer:
             )
         
         errors = None
+        
+        if self.verbose:
+            print(f'Training on {len(train_loader)} samples')
+            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
+                  f'         on resolutions {[name for name in test_loaders]}.')
+            sys.stdout.flush()
 
         for epoch in range(self.n_epochs):
             self.on_epoch_start(epoch)
@@ -162,7 +170,7 @@ class Trainer:
                 
                 loss = self.train_one_batch(idx, sample)
                 train_err += loss.item()
-                
+
                 loss.backward()
                 del out
                 self.optimizer.step()
@@ -403,7 +411,7 @@ class Trainer:
         print(msg)
         sys.stdout.flush()
 
-        if self.wandb_log:
+        if self.wandb_log and wandb.run is not None:
             wandb.log(
                 values_to_log,
                 step=epoch+1,
