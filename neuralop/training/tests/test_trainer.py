@@ -37,7 +37,8 @@ def test_model_checkpoint_saves():
                   regularizer=None,
                   training_loss=l2loss,
                   eval_losses=None,
-                  save_dir=save_pth
+                  save_dir=save_pth,
+                  save_every=1
                   )
     
     for file_ext in ['model_state_dict.pt', 'model_metadata.pkl', 'optimizer.pt', 'scheduler.pt']:
@@ -59,7 +60,7 @@ def test_model_checkpoint_and_resume():
     )
 
     optimizer = torch.optim.Adam(model.parameters(), 
-                                lr=8e-3, 
+                                lr=3e-4, 
                                 weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
@@ -77,19 +78,18 @@ def test_model_checkpoint_and_resume():
                   training_loss=l2loss,
                   eval_losses=eval_losses,
                   save_best='test_h1',
-                  save_dir=save_pth
+                  save_dir=save_pth,
+                  save_every=1
                   )
-    
     for file_ext in ['best_model_state_dict.pt', 'best_model_metadata.pkl', 'optimizer.pt', 'scheduler.pt']:
         file_pth = save_pth / file_ext
+        
         assert file_pth.exists()
 
     # Resume from checkpoint
     trainer = Trainer(model=model,
                       n_epochs=5
     )
-    trainer.resume_state_from_dir(save_pth)
-
     errors = trainer.train(train_loader=train_loader, 
                   test_loaders={'': test_loader}, 
                   optimizer=optimizer,
@@ -97,6 +97,7 @@ def test_model_checkpoint_and_resume():
                   regularizer=None,
                   training_loss=l2loss,
                   eval_losses=eval_losses,
+                  resume_from_dir=save_pth
                   )
     
     # clean up dummy checkpoint directory after testing
@@ -138,15 +139,12 @@ def test_load_from_checkpoint():
     
     # create a new model from saved checkpoint and evaluate
     loaded_model = DummyModel.from_checkpoint(save_folder='./full_states', save_name='best_model')
-    print(loaded_model.state_dict())
-    print(model.state_dict())
     trainer = Trainer(model=loaded_model,
                       n_epochs=1,
     )
 
     loaded_model_eval_errors = trainer.evaluate(loss_dict=eval_losses,
                               data_loader=test_loader, log_prefix='test')
-    print(loaded_model_eval_errors)
 
     # log prefix is empty except for default underscore
     assert orig_model_eval_errors['test_l2'] - loaded_model_eval_errors['test_l2'] < 0.1

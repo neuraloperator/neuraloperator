@@ -120,7 +120,7 @@ class Trainer:
         self.save_every = save_every
         self.save_best = save_best
         if resume_from_dir is not None:
-            self.resume
+            self.resume_state_from_dir(resume_from_dir)
         # ensure save_best is a metric we collect
         if self.save_best is not None:
             metrics = []
@@ -173,9 +173,9 @@ class Trainer:
                         self.checkpoint(save_dir)
 
             # save checkpoint if save_every and save_best is not set
-            if save_every is not None:
-                if epoch % save_every == 0:
-                    print(f"saving state to {save_dir}")
+            if self.save_every is not None:
+                if epoch % self.save_every == 0:
+                    print(f"Saving state to {save_dir}")
                     self.checkpoint(save_dir)
 
         return all_metrics
