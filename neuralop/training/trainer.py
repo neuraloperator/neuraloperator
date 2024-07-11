@@ -160,28 +160,19 @@ class Trainer:
 
             for idx, sample in enumerate(train_loader):
                 
-                sample = self.on_batch_start(idx, sample)
-                n_samples += sample["y"].shape[0]
-
-                if self.amp_autocast:
-                    with amp.autocast(enabled=True):
-                        out = self.model(**sample)
-                else:
-                    out = self.model(**sample)
+                loss = self.train_one_batch(idx, sample)
+                train_err += loss.item()
                 
-                loss = self.compute_batch_train_loss(out, sample)
                 loss.backward()
                 del out
-
                 self.optimizer.step()
-                train_err += loss.item()
 
                 with torch.no_grad():
                     avg_loss += loss.item()
-                    if regularizer:
-                        avg_lasso_loss += regularizer.loss
+                    if self.regularizer:
+                        avg_lasso_loss += self.regularizer.loss
 
-            if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+            if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 self.scheduler.step(train_err)
             else:
                 self.scheduler.step()
@@ -197,14 +188,6 @@ class Trainer:
 
             # collect info to log, message to print
             if epoch % self.log_test_interval == 0:
-                if self.callbacks:
-                    self.callbacks.on_before_val(
-                        epoch=epoch,
-                        train_err=train_err,
-                        time=epoch_train_time,
-                        avg_loss=avg_loss,
-                        avg_lasso_loss=avg_lasso_loss,
-                    )
                 
                 all_errors = {}
                 for loader_name, loader in test_loaders.items():
@@ -255,50 +238,23 @@ class Trainer:
             dict[f'{log_prefix}_{loss_name}] = loss for loss in loss_dict
         """
 
-        if self.callbacks:
-            self.callbacks.on_val_epoch_start(
-                log_prefix=log_prefix, loss_dict=loss_dict, data_loader=data_loader
-            )
-
         self.model.eval()
         if self.data_processor:
-                self.data_processor.eval()
+            self.data_processor.eval()
 
         errors = {f"{log_prefix}_{loss_name}": 0 for loss_name in loss_dict.keys()}
 
-        n_samples = 0
+        self.n_samples = 0
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
-                sample = self.on_batch_start(idx, sample)
-                n_samples += self.sample["y"].size(0)
+                eval_step_losses = self.eval_one_batch(idx, sample)
 
-                out = self.model(**sample)
-
-                if self.data_processor is not None:
-                    out, sample = self.data_processor.postprocess(out, sample)
-
-                if self.callbacks:
-                    self.callbacks.on_before_val_loss(out=out)
-
-                for loss_name, loss in loss_dict.items():
-                    if self.overrides_loss:
-                        val_loss = self.callbacks.compute_training_loss(out, **sample)
-                    else:
-                        val_loss = loss(out, **sample)
-                        if val_loss.shape == ():
-                            val_loss = val_loss.item()
-
+                for loss_name, val_loss in eval_step_losses.items():
                     errors[f"{log_prefix}_{loss_name}"] += val_loss
 
-                if self.callbacks:
-                    self.callbacks.on_val_batch_end()
-
         for key in errors.keys():
-            errors[key] /= n_samples
-
-        if self.callbacks:
-            self.callbacks.on_val_epoch_end(errors=errors, sample=sample, out=out)
-
+            errors[key] /= self.n_samples
+            
         del out
 
         return errors
@@ -334,15 +290,15 @@ class Trainer:
     
     def on_epoch_start(self, epoch):
         self.epoch = epoch
+        self.n_samples = 0
         return None
 
-    def on_batch_start(self, idx, sample):
-        # reset optimizer
+    def train_one_batch(self, idx, sample):
+
         self.optimizer.zero_grad(set_to_none=True)
         if self.regularizer:
             self.regularizer.reset()
 
-        self.idx = idx # Dummy variable for now, just to expose this api
         if self.data_processor is not None:
             sample = self.data_processor.preprocess(sample)
         else:
@@ -353,26 +309,60 @@ class Trainer:
                 if torch.is_tensor(v)
             }
 
-        return sample
+        self.n_samples += sample["y"].shape[0]
 
-    def compute_batch_train_loss(self, out, sample):
-        # log output shape the first time outputs are received
-        if self.epoch == 0 and self.idx == 0 and self.verbose:
+        if self.amp_autocast:
+            with amp.autocast(enabled=True):
+                out = self.model(**sample)
+        else:
+            out = self.model(**sample)
+        
+        if self.epoch == 0 and idx == 0 and self.verbose:
             print(f"Raw outputs of shape {out.shape}")
 
         if self.data_processor is not None:
             out, sample = self.data_processor.postprocess(out, sample)
 
-        loss = 0.
+        if self.callbacks:
+            self.callbacks.on_before_loss(out=out)
+
+        loss = 0.0
+
         if self.amp_autocast:
             with amp.autocast(enabled=True):
                 loss += self.training_loss(out, **sample)
         else:
             loss += self.training_loss(out, **sample)
+
         if self.regularizer:
             loss += self.regularizer.loss
 
         return loss
+    
+    def eval_one_batch(self, idx, sample):
+        if self.data_processor is not None:
+            sample = self.data_processor.preprocess(sample)
+
+        self.n_samples += self.sample["y"].size(0)
+
+        out = self.model(**sample)
+
+        if self.data_processor is not None:
+            out, sample = self.data_processor.postprocess(out, sample)
+
+        if self.callbacks:
+            self.callbacks.on_before_val_loss(out=out)
+        
+        eval_step_losses = {}
+
+        for loss_name, loss in self.eval_losses.items():
+            val_loss = loss(out, **sample)
+            if val_loss.shape == ():
+                val_loss = val_loss.item()
+            eval_step_losses[loss_name] = val_loss
+        return eval_step_losses
+        
+            
 
     def log_epoch(self, 
             epoch:int,
