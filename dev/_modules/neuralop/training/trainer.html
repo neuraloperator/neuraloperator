@@ -117,6 +117,8 @@
 <span class="kn">from</span> <span class="nn">torch.cuda</span> <span class="kn">import</span> <span class="n">amp</span>
 <span class="kn">from</span> <span class="nn">timeit</span> <span class="kn">import</span> <span class="n">default_timer</span>
 <span class="kn">import</span> <span class="nn">pathlib</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">wandb</span>
 
 <span class="kn">from</span> <span class="nn">.callbacks</span> <span class="kn">import</span> <span class="n">PipelineCallback</span>
 <span class="kn">import</span> <span class="nn">neuralop.mpu.comm</span> <span class="k">as</span> <span class="nn">comm</span>
@@ -131,7 +133,7 @@
         <span class="o">*</span><span class="p">,</span>
         <span class="n">model</span><span class="p">,</span>
         <span class="n">n_epochs</span><span class="p">,</span>
-        <span class="n">wandb_log</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">wandb_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">amp_autocast</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">data_processor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -148,10 +150,12 @@
 <span class="sd">        ----------</span>
 <span class="sd">        model : nn.Module</span>
 <span class="sd">        n_epochs : int</span>
-<span class="sd">        wandb_log : bool, default is True</span>
-<span class="sd">        device : torch.device</span>
+<span class="sd">        wandb_log : bool, default is False</span>
+<span class="sd">            whether to log results to wandb</span>
+<span class="sd">        device : str &#39;cpu&#39; or &#39;cuda&#39;</span>
 <span class="sd">        amp_autocast : bool, default is False</span>
-<span class="sd">        data_processor : class to transform data, default is None</span>
+<span class="sd">            whether to use torch.amp automatic mixed precision</span>
+<span class="sd">        data_processor : DataProcessor class to transform data, default is None</span>
 <span class="sd">            if not None, data from the loaders is transform first with data_processor.preprocess,</span>
 <span class="sd">            then after getting an output from the model, that is transformed with data_processor.postprocess.</span>
 <span class="sd">        log_test_interval : int, default is 1</span>
@@ -266,6 +270,12 @@
             <span class="n">eval_losses</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">l2</span><span class="o">=</span><span class="n">training_loss</span><span class="p">)</span>
 
         <span class="n">errors</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Training on </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">train_loader</span><span class="p">)</span><span class="si">}</span><span class="s1"> samples&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Testing on </span><span class="si">{</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">loader</span><span class="o">.</span><span class="n">dataset</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">loader</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">test_loaders</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span><span class="si">}</span><span class="s1"> samples&#39;</span>
+                  <span class="sa">f</span><span class="s1">&#39;         on resolutions </span><span class="si">{</span><span class="p">[</span><span class="n">name</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">test_loaders</span><span class="p">]</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 
         <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_epochs</span><span class="p">):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
@@ -309,6 +319,10 @@
                         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">sample</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">sample</span><span class="p">)</span>
+                
+                <span class="c1"># log output shape the first time outputs are received</span>
+                <span class="k">if</span> <span class="n">epoch</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Raw outputs of shape </span><span class="si">{</span><span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">out</span><span class="p">,</span> <span class="n">sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span><span class="o">.</span><span class="n">postprocess</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
@@ -355,7 +369,12 @@
 
             <span class="n">train_err</span> <span class="o">/=</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_loader</span><span class="p">)</span>
             <span class="n">avg_loss</span> <span class="o">/=</span> <span class="n">n_samples</span>
+            <span class="k">if</span> <span class="n">regularizer</span><span class="p">:</span>
+                <span class="n">avg_lasso_loss</span> <span class="o">/=</span> <span class="n">n_samples</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">avg_lasso_loss</span> <span class="o">=</span> <span class="kc">None</span>
 
+            <span class="c1"># collect info to log, message to print</span>
             <span class="k">if</span> <span class="n">epoch</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_test_interval</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">on_before_val</span><span class="p">(</span>
@@ -365,9 +384,27 @@
                         <span class="n">avg_loss</span><span class="o">=</span><span class="n">avg_loss</span><span class="p">,</span>
                         <span class="n">avg_lasso_loss</span><span class="o">=</span><span class="n">avg_lasso_loss</span><span class="p">,</span>
                     <span class="p">)</span>
-
+                
+                <span class="n">all_errors</span> <span class="o">=</span> <span class="p">{}</span>
                 <span class="k">for</span> <span class="n">loader_name</span><span class="p">,</span> <span class="n">loader</span> <span class="ow">in</span> <span class="n">test_loaders</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="n">errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">eval_losses</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">log_prefix</span><span class="o">=</span><span class="n">loader_name</span><span class="p">)</span>
+                    <span class="n">errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">eval_losses</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span>
+                                           <span class="n">log_prefix</span><span class="o">=</span><span class="n">loader_name</span><span class="p">)</span>                        
+                    <span class="n">all_errors</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">errors</span><span class="p">)</span>
+
+                <span class="c1"># print msg to console and optionally log to wandb</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+                    <span class="n">lr</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="k">for</span> <span class="n">pg</span> <span class="ow">in</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span><span class="p">:</span>
+                        <span class="n">lr</span> <span class="o">=</span> <span class="n">pg</span><span class="p">[</span><span class="s2">&quot;lr&quot;</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">log_epoch</span><span class="p">(</span>
+                        <span class="n">epoch</span><span class="o">=</span><span class="n">epoch</span><span class="p">,</span>
+                        <span class="n">time</span><span class="o">=</span><span class="n">epoch_train_time</span><span class="p">,</span>
+                        <span class="n">avg_loss</span><span class="o">=</span><span class="n">avg_loss</span><span class="p">,</span>
+                        <span class="n">train_err</span><span class="o">=</span><span class="n">train_err</span><span class="p">,</span>
+                        <span class="n">avg_lasso_loss</span><span class="o">=</span><span class="n">avg_lasso_loss</span><span class="p">,</span>
+                        <span class="n">eval_metrics</span><span class="o">=</span><span class="n">all_errors</span><span class="p">,</span>
+                        <span class="n">lr</span><span class="o">=</span><span class="n">lr</span>
+                    <span class="p">)</span>
 
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">on_val_end</span><span class="p">()</span>
@@ -377,7 +414,7 @@
                     <span class="n">epoch</span><span class="o">=</span><span class="n">epoch</span><span class="p">,</span> <span class="n">train_err</span><span class="o">=</span><span class="n">train_err</span><span class="p">,</span> <span class="n">avg_loss</span><span class="o">=</span><span class="n">avg_loss</span>
                 <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">errors</span></div>
+        <span class="k">return</span> <span class="n">all_errors</span></div>
 
 
 <div class="viewcode-block" id="Trainer.evaluate">
@@ -460,6 +497,55 @@
         <span class="k">del</span> <span class="n">out</span>
 
         <span class="k">return</span> <span class="n">errors</span></div>
+
+    
+<div class="viewcode-block" id="Trainer.log_epoch">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.training.Trainer.html#neuralop.training.Trainer.log_epoch">[docs]</a>
+    <span class="k">def</span> <span class="nf">log_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+            <span class="n">epoch</span><span class="p">:</span><span class="nb">int</span><span class="p">,</span>
+            <span class="n">time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">avg_loss</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">train_err</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">avg_lasso_loss</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">eval_metrics</span><span class="p">:</span> <span class="nb">dict</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Basic method to log a dict of output values</span>
+<span class="sd">        from a single training epoch. </span>
+<span class="sd">        </span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        values : dict</span>
+<span class="sd">            dict keyed &#39;metric&#39;: float_value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wandb_log</span><span class="p">:</span>
+            <span class="n">values_to_log</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">train_err</span><span class="o">=</span><span class="n">train_err</span><span class="p">,</span>
+                <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span>
+                <span class="n">avg_loss</span><span class="o">=</span><span class="n">avg_loss</span><span class="p">,</span>
+                <span class="n">avg_lasso_loss</span><span class="o">=</span><span class="n">avg_lasso_loss</span><span class="p">,</span>
+                <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">)</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s2">] time=</span><span class="si">{</span><span class="n">time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, &quot;</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;avg_loss=</span><span class="si">{</span><span class="n">avg_loss</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;train_err=</span><span class="si">{</span><span class="n">train_err</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">avg_lasso_loss</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;, avg_lasso=</span><span class="si">{</span><span class="n">avg_lasso_loss</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">eval_metrics</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">metric</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">eval_metrics</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;, </span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wandb_log</span><span class="p">:</span>
+                    <span class="n">values_to_log</span><span class="p">[</span><span class="n">metric</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wandb_log</span> <span class="ow">and</span> <span class="n">wandb</span><span class="o">.</span><span class="n">run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="n">values_to_log</span><span class="p">,</span>
+                <span class="n">step</span><span class="o">=</span><span class="n">epoch</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">commit</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span></div>
 </div>
 
 </pre></div>

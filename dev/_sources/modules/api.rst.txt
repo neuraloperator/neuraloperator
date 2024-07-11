@@ -257,7 +257,6 @@ Trainer, we provide a Callback class and several examples of common domain-speci
     :template: class.rst
 
     Callback
-    BasicLoggerCallback
     CheckpointCallback
 
 

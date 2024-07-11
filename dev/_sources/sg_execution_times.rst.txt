@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**04:19.613** total execution time for 8 files **from all galleries**:
+**04:24.966** total execution time for 8 files **from all galleries**:
 
 .. container::
 
@@ -33,25 +33,25 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_plot_UNO_darcy.py` (``../../examples/plot_UNO_darcy.py``)
-     - 01:56.842
+     - 01:58.656
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_SFNO_swe.py` (``../../examples/plot_SFNO_swe.py``)
-     - 01:23.248
+     - 01:24.637
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_FNO_darcy.py` (``../../examples/plot_FNO_darcy.py``)
-     - 00:49.904
+     - 00:51.780
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_incremental_FNO_darcy.py` (``../../examples/plot_incremental_FNO_darcy.py``)
-     - 00:06.022
+     - 00:06.238
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_count_flops.py` (``../../examples/plot_count_flops.py``)
-     - 00:03.058
+     - 00:03.085
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_darcy_flow.py` (``../../examples/plot_darcy_flow.py``)
-     - 00:00.341
+     - 00:00.368
      - 0.0
    * - :ref:`sphx_glr_auto_examples_plot_darcy_flow_spectrum.py` (``../../examples/plot_darcy_flow_spectrum.py``)
-     - 00:00.198
+     - 00:00.201
      - 0.0
    * - :ref:`sphx_glr_auto_examples_checkpoint_FNO_darcy.py` (``../../examples/checkpoint_FNO_darcy.py``)
      - 00:00.000

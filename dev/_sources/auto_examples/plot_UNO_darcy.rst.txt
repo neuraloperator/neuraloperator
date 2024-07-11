@@ -262,13 +262,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fa65a581760>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fb2d07aa760>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7fa65a5810d0>
+     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7fb2cb5013a0>
 
-     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7fa65a5810d0>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fa65a581310>}
+     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7fb2cb5013a0>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fb2cb501460>}
 
 
 
@@ -331,8 +331,18 @@ Actually train the model on our small Darcy-Flow dataset
 
  .. code-block:: none
 
+    Training on 32 samples
+    Testing on [50, 50] samples         on resolutions [16, 32].
+    Raw outputs of shape torch.Size([32, 1, 16, 16])
+    [0] time=5.80, avg_loss=0.6082, train_err=19.0048, 16_h1=0.6863, 16_l2=0.4684, 32_h1=0.6360, 32_l2=0.3697
+    [3] time=5.76, avg_loss=0.2760, train_err=8.6252, 16_h1=0.6692, 16_l2=0.4669, 32_h1=0.6254, 32_l2=0.4401
+    [6] time=5.82, avg_loss=0.2407, train_err=7.5216, 16_h1=0.6603, 16_l2=0.4707, 32_h1=0.6125, 32_l2=0.4675
+    [9] time=5.76, avg_loss=0.2179, train_err=6.8093, 16_h1=0.6603, 16_l2=0.4702, 32_h1=0.6039, 32_l2=0.4774
+    [12] time=5.75, avg_loss=0.2214, train_err=6.9175, 16_h1=0.6333, 16_l2=0.4543, 32_h1=0.5890, 32_l2=0.4760
+    [15] time=5.85, avg_loss=0.1984, train_err=6.1995, 16_h1=0.7044, 16_l2=0.4766, 32_h1=0.6018, 32_l2=0.4678
+    [18] time=5.78, avg_loss=0.1793, train_err=5.6029, 16_h1=0.6042, 16_l2=0.4415, 32_h1=0.5802, 32_l2=0.4736
 
-    {'32_h1': 0.6134993362426758, '32_l2': 0.5083626365661621}
+    {'16_h1': 0.6042024230957032, '16_l2': 0.4415410804748535, '32_h1': 0.5802475547790528, '32_l2': 0.47362098693847654}
 
 
 
@@ -406,7 +416,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 56.842 seconds)
+   **Total running time of the script:** (1 minutes 58.656 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_UNO_darcy.py:
