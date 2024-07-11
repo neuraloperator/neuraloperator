@@ -9,7 +9,7 @@ from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.data.datasets.navier_stokes import load_navier_stokes_pt
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.utils import get_wandb_api_key, count_model_params
-
+from neuralop.training import setup
 
 
 # Read the configuration
@@ -71,7 +71,6 @@ if config.verbose:
 
 # Loading the Navier-Stokes dataset in 128x128 resolution
 train_loader, test_loaders, data_processor = load_navier_stokes_pt(
-    config.data.folder,
     train_resolution=config.data.train_resolution,
     n_train=config.data.n_train,
     batch_size=config.data.batch_size,
@@ -81,9 +80,6 @@ train_loader, test_loaders, data_processor = load_navier_stokes_pt(
     test_batch_sizes=config.data.test_batch_sizes,
     encode_input=config.data.encode_input,
     encode_output=config.data.encode_output,
-    num_workers=config.data.num_workers,
-    pin_memory=config.data.pin_memory,
-    persistent_workers=config.data.persistent_workers,
 )
 
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
@@ -162,7 +158,7 @@ trainer = Trainer(
     data_processor=data_processor,
     device=device,
     amp_autocast=config.opt.amp_autocast,
-    log_test_interval=config.wandb.log_test_interval,
+    eval_interval=config.wandb.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,

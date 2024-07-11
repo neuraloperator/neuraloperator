@@ -66,7 +66,7 @@ default: &DEFAULT
     n_train: 10000
     train_resolution: 128
     n_tests: [2000, 1000, 1000] #, 1000]
-    test_resolutions: [128, 256, 512] #, 1024] 
+    test_resolutions: [128] #, 1024] 
     test_batch_sizes: [16, 8, 4] #, 1]
     positional_encoding: True
 
@@ -91,7 +91,7 @@ default: &DEFAULT
     entity: "nvr-ai-algo" # put your username here
     sweep: False
     log_output: True
-    log_test_interval: 1
+    eval_interval: 1
 
 original_fno:
   arch: 'tfno2d'

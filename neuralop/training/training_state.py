@@ -95,12 +95,10 @@ def save_training_state(save_dir: Union[str, Path], save_name: str,
     save_name : str
         name of model to load
     """
-    training_state = {}
-
     if isinstance(save_dir, str):
         save_dir = Path(save_dir)
     
-    training_state['model'] = model.save_checkpoint(save_dir, save_name)
+    model.save_checkpoint(save_dir, save_name)
     
     # load optimizer if state exists
     if optimizer is not None:
