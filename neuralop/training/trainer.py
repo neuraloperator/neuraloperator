@@ -100,76 +100,95 @@ class Trainer:
             data_processor=self.data_processor,
             )
         
-        errors = None
-
         for epoch in range(self.n_epochs):
-            self.on_epoch_start(epoch)
-
-            avg_loss = 0
-            avg_lasso_loss = 0
-            self.model.train()
-            if self.data_processor:
-                self.data_processor.train()
-            t1 = default_timer()
-            train_err = 0.0
-            
-            # track number of training examples in batch
-            self.n_samples = 0
-
-            for idx, sample in enumerate(train_loader):
-                
-                loss = self.train_one_batch(idx, sample)
-                train_err += loss.item()
-
-                loss.backward()
-                #del out
-                self.optimizer.step()
-
-                with torch.no_grad():
-                    avg_loss += loss.item()
-                    if self.regularizer:
-                        avg_lasso_loss += self.regularizer.loss
-
-            if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                self.scheduler.step(train_err)
-            else:
-                self.scheduler.step()
-
-            epoch_train_time = default_timer() - t1
-
-            train_err /= len(train_loader)
-            avg_loss /= self.n_samples
-            if regularizer:
-                avg_lasso_loss /= self.n_samples
-            else:
-                avg_lasso_loss = None
-
-            # collect info to log, message to print
-            if epoch % self.log_test_interval == 0:
-                
-                all_errors = {}
-                for loader_name, loader in test_loaders.items():
-                    errors = self.evaluate(eval_losses, loader,
-                                           log_prefix=loader_name)                        
-                    all_errors.update(**errors)
-
-                # print msg to console and optionally log to wandb
-                if self.verbose:
-                    lr = None
-                    for pg in optimizer.param_groups:
-                        lr = pg["lr"]
-                    self.log_epoch(
-                        epoch=epoch,
-                        time=epoch_train_time,
-                        avg_loss=avg_loss,
-                        train_err=train_err,
-                        avg_lasso_loss=avg_lasso_loss,
-                        eval_metrics=all_errors,
-                        lr=lr
-                    )
-
+            all_errors = self.train_one_epoch(epoch, train_loader, test_loaders)
         return all_errors
 
+    def train_one_epoch(self, epoch, train_loader, test_loaders):
+        """train_one_epoch trains self.model on train_loader
+        for one epoch, and optionally evaluates self.model 
+        on the dict of loaders test_loaders if the epoch is the 
+        start of a new interval self.log_test_interval
+
+        Parameters
+        ----------
+        epoch : int
+            epoch number
+        train_loader : torch.utils.data.DataLoader
+            data loader of train examples
+        test_loaders : dict
+            dict of test torch.utils.data.DataLoader objects
+
+        Returns
+        -------
+        all_errors
+            dict of all eval metrics for the last epoch
+        """
+        self.on_epoch_start(epoch)
+        avg_loss = 0
+        avg_lasso_loss = 0
+        self.model.train()
+        if self.data_processor:
+            self.data_processor.train()
+        t1 = default_timer()
+        train_err = 0.0
+        
+        # track number of training examples in batch
+        self.n_samples = 0
+
+        for idx, sample in enumerate(train_loader):
+            
+            loss = self.train_one_batch(idx, sample)
+            train_err += loss.item()
+
+            loss.backward()
+            #del out
+            self.optimizer.step()
+
+            with torch.no_grad():
+                avg_loss += loss.item()
+                if self.regularizer:
+                    avg_lasso_loss += self.regularizer.loss
+
+        if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+            self.scheduler.step(train_err)
+        else:
+            self.scheduler.step()
+
+        epoch_train_time = default_timer() - t1
+
+        train_err /= len(train_loader)
+        avg_loss /= self.n_samples
+        if self.regularizer:
+            avg_lasso_loss /= self.n_samples
+        else:
+            avg_lasso_loss = None
+
+        # collect info to log, message to print
+        if epoch % self.log_test_interval == 0:
+            errors = {}
+            all_errors = {}
+            for loader_name, loader in test_loaders.items():
+                errors = self.evaluate(self.eval_losses, loader,
+                                        log_prefix=loader_name)                        
+                all_errors.update(**errors)
+
+            # print msg to console and optionally log to wandb
+            if self.verbose:
+                lr = None
+                for pg in self.optimizer.param_groups:
+                    lr = pg["lr"]
+                self.log_epoch(
+                    epoch=epoch,
+                    time=epoch_train_time,
+                    avg_loss=avg_loss,
+                    train_err=train_err,
+                    avg_lasso_loss=avg_lasso_loss,
+                    eval_metrics=all_errors,
+                    lr=lr
+                )
+        return all_errors
+    
     def evaluate(self, loss_dict, data_loader, log_prefix=""):
         """Evaluates the model on a dictionary of losses
 
