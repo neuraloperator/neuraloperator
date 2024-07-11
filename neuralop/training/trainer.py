@@ -1,30 +1,33 @@
 import torch
 from torch.cuda import amp
+from torch import nn
 from timeit import default_timer
-import pathlib
+from pathlib import Path
+from typing import Union
 import sys
 import wandb
 
 from .callbacks import PipelineCallback
 import neuralop.mpu.comm as comm
 from neuralop.losses import LpLoss
+from neuralop.training import load_training_state, save_training_state
+from neuralop.data.transforms.data_processors import DataProcessor
 
 
 class Trainer:
     def __init__(
         self,
         *,
-        model,
-        n_epochs,
-        wandb_log=False,
-        device=None,
-        amp_autocast=False,
-        data_processor=None,
-        callbacks=None,
-        log_test_interval=1,
-        log_output=False,
-        use_distributed=False,
-        verbose=False,
+        model: nn.Module,
+        n_epochs: int,
+        wandb_log: bool=False,
+        device: str='cpu',
+        amp_autocast: bool=False,
+        data_processor: DataProcessor=None,
+        eval_interval: int=1,
+        log_output: bool=False,
+        use_distributed: bool=False,
+        verbose: bool=False,
     ):
         """
         A general Trainer class to train neural-operators on given datasets
@@ -41,8 +44,8 @@ class Trainer:
         data_processor : DataProcessor class to transform data, default is None
             if not None, data from the loaders is transform first with data_processor.preprocess,
             then after getting an output from the model, that is transformed with data_processor.postprocess.
-        log_test_interval : int, default is 1
-            how frequently to print updates
+        eval_interval : int, default is 1
+            how frequently to evaluate model and log training stats
         log_output : bool, default is False
             if True, and if wandb_log is also True, log output images to wandb
         use_distributed : bool, default is False
@@ -54,13 +57,14 @@ class Trainer:
         self.n_epochs = n_epochs
 
         self.wandb_log = wandb_log
-        self.log_test_interval = log_test_interval
+        self.eval_interval = eval_interval
         self.log_output = log_output
         self.verbose = verbose
         self.use_distributed = use_distributed
         self.device = device
         self.amp_autocast = amp_autocast
         self.data_processor = data_processor
+        self.s
 
     def train(
         self,
@@ -68,9 +72,12 @@ class Trainer:
         test_loaders,
         optimizer,
         scheduler,
-        regularizer,
+        regularizer=None,
         training_loss=None,
         eval_losses=None,
+        save_every: int=None,
+        save_best: int=None,
+        save_dir: Union[str, Path]="./ckpt"
     ):
         """Trains the given model on the given datasets.
         params:
@@ -86,29 +93,47 @@ class Trainer:
             cost function to minimize
         eval_losses: dict[Loss]
             dict of losses to use in self.eval()
+        save_every: int, optional, default is None
+            if provided, interval at which to save checkpoints
+        save_best: str, optional, default is None
+            if provided, key of metric f"{loader_name}_{loss_name}"
+            to monitor and save model with best eval result
+            Overrides save_every and saves on eval_interval
+        save_dir: str | Path, default "./ckpt"
+            directory at which to save training states if
+            save_every and/or save_best is provided
+            
         """
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.regularizer = regularizer
 
-        # setup self.training_loss and self.eval_losses
-        self.before_training_loop(
-            train_loader=train_loader,
-            test_loaders=test_loaders,
-            optimizer=optimizer,
-            scheduler=scheduler,
-            regularizer=regularizer,
-            training_loss=training_loss,
-            eval_losses=eval_losses,
-            data_processor=self.data_processor,
-            )
+        if training_loss is None:
+            self.training_loss = LpLoss(d=2)
+        else:
+            self.training_loss = training_loss
+
+        if eval_losses is None:  # By default just evaluate on the training loss
+            self.eval_losses = dict(l2=training_loss)
+        else:
+            self.eval_losses = eval_losses
+        
+        if self.verbose:
+            print(f'Training on {len(train_loader)} samples')
+            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
+                  f'         on resolutions {[name for name in test_loaders]}.')
+            sys.stdout.flush()
         
         for epoch in range(self.n_epochs):
             all_errors = self.train_one_epoch(epoch, train_loader, test_loaders)
+        
         return all_errors
 
     def train_one_epoch(self, epoch, train_loader, test_loaders):
         """train_one_epoch trains self.model on train_loader
         for one epoch, and optionally evaluates self.model 
         on the dict of loaders test_loaders if the epoch is the 
-        start of a new interval self.log_test_interval
+        start of a new interval self.eval_interval
 
         Parameters
         ----------
@@ -165,7 +190,7 @@ class Trainer:
             avg_lasso_loss = None
 
         # collect info to log, message to print
-        if epoch % self.log_test_interval == 0:
+        if epoch % self.eval_interval == 0:
             errors = {}
             all_errors = {}
             for loader_name, loader in test_loaders.items():
@@ -228,40 +253,26 @@ class Trainer:
 
         return errors
     
-    def before_training_loop(self,
-                             train_loader,
-                             test_loaders,
-                             optimizer,
-                             scheduler,
-                             regularizer,
-                             training_loss,
-                             eval_losses,
-                             data_processor):
-        if training_loss is None:
-            self.training_loss = LpLoss(d=2)
-        else:
-            self.training_loss = training_loss
-
-        if eval_losses is None:  # By default just evaluate on the training loss
-            self.eval_losses = dict(l2=training_loss)
-        else:
-            self.eval_losses = eval_losses
-        
-        self.optimizer = optimizer
-        self.scheduler = scheduler
-        self.regularizer = regularizer
-        
-        if self.verbose:
-            print(f'Training on {len(train_loader)} samples')
-            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
-                  f'         on resolutions {[name for name in test_loaders]}.')
-            sys.stdout.flush()
-    
     def on_epoch_start(self, epoch):
         self.epoch = epoch
         return None
 
     def train_one_batch(self, idx, sample):
+        """Run one batch of input through model
+           and return training loss on outputs
+
+        Parameters
+        ----------
+        idx : int
+            index of batch within train_loader
+        sample : dict
+            data dictionary holding one batch
+
+        Returns
+        -------
+        loss
+            float value of training loss
+        """
 
         self.optimizer.zero_grad(set_to_none=True)
         if self.regularizer:
@@ -371,3 +382,79 @@ class Trainer:
                 step=epoch+1,
                 commit=True
             )
+
+    def resume_state_from_dir(self, save_dir):
+        """
+        Resume training from save_dir created by `neuralop.training.save_training_state`
+        
+        Params
+        ------
+        save_dir: Union[str, Path]
+        """
+        if isinstance(save_dir, str):
+            save_dir = Path(save_dir)
+
+        # check for save model exists
+        if (save_dir / "best_model_state_dict.pt").exists():
+            save_name = "best_model"
+        elif (save_dir / "model_state_dict.pt").exists():
+            save_name = "model"
+        else:
+            raise FileNotFoundError("Error: resume_from_dir expects a model\
+                                        state dict named model.pt or best_model.pt.")
+        # returns model, loads other modules in-place if provided
+        self.model = load_training_state(save_dir=self.resume_from_dir, save_name=save_name,
+                                                model=self.model,
+                                                optimizer=self.optimizer,
+                                                regularizer=self.regularizer,
+                                                scheduler=self.scheduler)
+
+    def checkpoint(self, save_dir):
+        if self.save_best is not None:
+            save_name = 'best_model'
+        else:
+            save_name = "model"
+        save_training_state(save_dir=save_dir, 
+                            save_name=save_name,
+                            model=self.model,
+                            optimizer=self.optimizer,
+                            scheduler=self.scheduler,
+                            regularizer=self.regularizer
+                            )
+    
+
+class CheckpointTrainer(Trainer):
+    """CheckpointTrainer is a subclass of Trainer
+    that implements saving/loading checkpoints
+    and optinally monitoring eval metrics.
+    """
+    def __init__(self,
+        *,
+        model,
+        n_epochs,
+        wandb_log=False,
+        device=None,
+        amp_autocast=False,
+        data_processor=None,
+        eval_interval=1,
+        log_output=False,
+        use_distributed=False,
+        verbose=False,
+        save_every=1,
+        save_best=None,):
+        """"""
+
+        super.__init__(model=model,
+                       n_epochs=n_epochs,
+                       wandb_log=wandb_log,
+                       device=device,
+                       amp_autocast=amp_autocast,
+                       data_processor=data_processor,
+                       eval_interval=eval_interval,
+                       log_output=log_output,
+                       use_distributed=use_distributed,
+                       verbose=verbose)
+        
+        assert (save_every is not None or save_best is not None), "Error:"
+
+        

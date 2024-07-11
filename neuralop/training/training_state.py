@@ -48,37 +48,35 @@ def load_training_state(save_dir: Union[str, Path], save_name: str,
     if not map_location:
         if dist.is_initialized():
             map_location = {"cuda:0" : f"cuda:{dist.get_rank}"}
-    
-    training_state = {}
 
     if isinstance(save_dir, str):
         save_dir = Path(save_dir)
     
-    training_state['model'] = model.from_checkpoint(save_dir, save_name, map_location=map_location)
+    model = model.from_checkpoint(save_dir, save_name, map_location=map_location)
     
     # load optimizer if state exists
     if optimizer is not None:
         optimizer_pth = save_dir / "optimizer.pt"
         if optimizer_pth.exists():
-            training_state['optimizer'] = optimizer.load_state_dict(torch.load(optimizer_pth))
+            optimizer.load_state_dict(torch.load(optimizer_pth))
         else:
             print(f"Warning: requested to load optimizer state, but no saved optimizer state exists in {save_dir}.")
     
     if scheduler is not None:
         scheduler_pth = save_dir / "scheduler.pt"
         if scheduler_pth.exists():
-            training_state['scheduler'] = scheduler.load_state_dict(torch.load(scheduler_pth))
+            scheduler.load_state_dict(torch.load(scheduler_pth))
         else:
             print(f"Warning: requested to load scheduler state, but no saved scheduler state exists in {save_dir}.")
     
     if regularizer is not None:
         regularizer_pth = save_dir / "regularizer.pt"
         if regularizer_pth.exists():
-            training_state['regularizer'] = scheduler.load_state_dict(torch.load(regularizer_pth))
+            scheduler.load_state_dict(torch.load(regularizer_pth))
         else:
             print(f"Warning: requested to load regularizer state, but no saved regularizer state exists in {save_dir}.")
     
-    return training_state
+    return model
 
 
 def save_training_state(save_dir: Union[str, Path], save_name: str,
