@@ -50,37 +50,6 @@ class Trainer:
         verbose : bool, default is False
         """
 
-        if callbacks:
-            assert isinstance(
-                callbacks, list
-            ), "Callbacks must be a list of Callback objects"
-            self.callbacks = PipelineCallback(callbacks=callbacks)
-            self.override_load_to_device = (
-                self.callbacks.device_load_callback_idx is not None
-            )
-            self.overrides_loss = self.callbacks.overrides_loss
-        else:
-            self.callbacks = []
-            self.override_load_to_device = False
-            self.overrides_loss = False
-
-        if verbose:
-            print(f"{self.override_load_to_device=}")
-            print(f"{self.overrides_loss=}")
-
-        if self.callbacks:
-            self.callbacks.on_init_start(
-                model=model,
-                n_epochs=n_epochs,
-                wandb_log=wandb_log,
-                device=device,
-                amp_autocast=amp_autocast,
-                log_test_interval=log_test_interval,
-                log_output=log_output,
-                use_distributed=use_distributed,
-                verbose=verbose,
-            )
-
         self.model = model
         self.n_epochs = n_epochs
 
@@ -92,19 +61,6 @@ class Trainer:
         self.device = device
         self.amp_autocast = amp_autocast
         self.data_processor = data_processor
-
-        if self.callbacks:
-            self.callbacks.on_init_end(
-                model=model,
-                n_epochs=n_epochs,
-                wandb_log=wandb_log,
-                device=device,
-                amp_autocast=amp_autocast,
-                log_test_interval=log_test_interval,
-                log_output=log_output,
-                use_distributed=use_distributed,
-                verbose=verbose,
-            )
 
     def train(
         self,
@@ -145,12 +101,6 @@ class Trainer:
             )
         
         errors = None
-        
-        if self.verbose:
-            print(f'Training on {len(train_loader)} samples')
-            print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
-                  f'         on resolutions {[name for name in test_loaders]}.')
-            sys.stdout.flush()
 
         for epoch in range(self.n_epochs):
             self.on_epoch_start(epoch)
@@ -164,7 +114,7 @@ class Trainer:
             train_err = 0.0
             
             # track number of training examples in batch
-            n_samples = 0
+            self.n_samples = 0
 
             for idx, sample in enumerate(train_loader):
                 
@@ -172,7 +122,7 @@ class Trainer:
                 train_err += loss.item()
 
                 loss.backward()
-                del out
+                #del out
                 self.optimizer.step()
 
                 with torch.no_grad():
@@ -188,9 +138,9 @@ class Trainer:
             epoch_train_time = default_timer() - t1
 
             train_err /= len(train_loader)
-            avg_loss /= n_samples
+            avg_loss /= self.n_samples
             if regularizer:
-                avg_lasso_loss /= n_samples
+                avg_lasso_loss /= self.n_samples
             else:
                 avg_lasso_loss = None
 
@@ -217,14 +167,6 @@ class Trainer:
                         eval_metrics=all_errors,
                         lr=lr
                     )
-
-                if self.callbacks:
-                    self.callbacks.on_val_end()
-
-            if self.callbacks:
-                self.callbacks.on_epoch_end(
-                    epoch=epoch, train_err=train_err, avg_loss=avg_loss
-                )
 
         return all_errors
 
@@ -263,7 +205,7 @@ class Trainer:
         for key in errors.keys():
             errors[key] /= self.n_samples
             
-        del out
+        #del out
 
         return errors
     
@@ -298,7 +240,6 @@ class Trainer:
     
     def on_epoch_start(self, epoch):
         self.epoch = epoch
-        self.n_samples = 0
         return None
 
     def train_one_batch(self, idx, sample):
@@ -331,9 +272,6 @@ class Trainer:
         if self.data_processor is not None:
             out, sample = self.data_processor.postprocess(out, sample)
 
-        if self.callbacks:
-            self.callbacks.on_before_loss(out=out)
-
         loss = 0.0
 
         if self.amp_autocast:
@@ -351,15 +289,12 @@ class Trainer:
         if self.data_processor is not None:
             sample = self.data_processor.preprocess(sample)
 
-        self.n_samples += self.sample["y"].size(0)
+        self.n_samples += sample["y"].size(0)
 
         out = self.model(**sample)
 
         if self.data_processor is not None:
             out, sample = self.data_processor.postprocess(out, sample)
-
-        if self.callbacks:
-            self.callbacks.on_before_val_loss(out=out)
         
         eval_step_losses = {}
 
