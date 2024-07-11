@@ -118,6 +118,19 @@ class Trainer:
         else:
             self.eval_losses = eval_losses
         
+        # ensure save_best is a metric we collect
+        if save_best is not None:
+            metrics = []
+            for name in test_loaders.keys():
+                for metric in eval_losses.keys():
+                    metrics.append(f"{name}_{metric}")
+            assert save_best in metrics,\
+                f"Error: expected a metric of the form <loader_name>_<metric>, got {save_best}"
+            best_metric_value = float('inf')
+            
+            # either monitor metric or save on interval, exclusive for simplicity
+            save_every = None
+
         if self.verbose:
             print(f'Training on {len(train_loader)} samples')
             print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
@@ -125,15 +138,48 @@ class Trainer:
             sys.stdout.flush()
         
         for epoch in range(self.n_epochs):
-            all_errors = self.train_one_epoch(epoch, train_loader, test_loaders)
-        
-        return all_errors
+            train_err, avg_loss, avg_lasso_loss, epoch_train_time =\
+                  self.train_one_epoch(epoch, train_loader, test_loaders)
+            
+            if epoch % self.eval_interval == 0:
+                # evaluate and gather metrics across each loader in test_loaders
+                all_metrics = {}
+                for loader_name, loader in test_loaders.items():
+                    loader_metrics = self.evaluate(self.eval_losses, loader,
+                                            log_prefix=loader_name)                        
+                    all_metrics.update(**loader_metrics)
 
-    def train_one_epoch(self, epoch, train_loader, test_loaders):
+                # log metrics at eval_interval
+                if self.verbose:
+                    lr = None
+                    for pg in self.optimizer.param_groups:
+                        lr = pg["lr"]
+                    self.log_epoch(
+                        epoch=epoch,
+                        time=epoch_train_time,
+                        avg_loss=avg_loss,
+                        train_err=train_err,
+                        avg_lasso_loss=avg_lasso_loss,
+                        eval_metrics=all_metrics,
+                        lr=lr
+                    )
+                
+                # save checkpoint if conditions are met
+                if save_best is not None:
+                    if all_metrics[save_best] < best_metric_value:
+                        best_metric_value = all_metrics[save_best]
+                        self.checkpoint(save_dir)
+
+            # save checkpoint if save_every and save_best is not set
+            if save_every is not None:
+                if epoch % save_every == 0:
+                    self.checkpoint(save_dir)
+
+        return all_metrics
+
+    def train_one_epoch(self, epoch, train_loader):
         """train_one_epoch trains self.model on train_loader
-        for one epoch, and optionally evaluates self.model 
-        on the dict of loaders test_loaders if the epoch is the 
-        start of a new interval self.eval_interval
+        for one epoch and returns training metrics
 
         Parameters
         ----------
@@ -189,7 +235,9 @@ class Trainer:
         else:
             avg_lasso_loss = None
 
-        # collect info to log, message to print
+        return train_err, avg_loss, avg_lasso_loss, epoch_train_time
+
+        '''# collect info to log, message to print
         if epoch % self.eval_interval == 0:
             errors = {}
             all_errors = {}
@@ -212,7 +260,7 @@ class Trainer:
                     eval_metrics=all_errors,
                     lr=lr
                 )
-        return all_errors
+        return all_errors'''
     
     def evaluate(self, loss_dict, data_loader, log_prefix=""):
         """Evaluates the model on a dictionary of losses
