@@ -16,7 +16,7 @@ class Trainer:
         *,
         model,
         n_epochs,
-        wandb_log=True,
+        wandb_log=False,
         device=None,
         amp_autocast=False,
         data_processor=None,
@@ -33,10 +33,12 @@ class Trainer:
         ----------
         model : nn.Module
         n_epochs : int
-        wandb_log : bool, default is True
-        device : torch.device
+        wandb_log : bool, default is False
+            whether to log results to wandb
+        device : str 'cpu' or 'cuda'
         amp_autocast : bool, default is False
-        data_processor : class to transform data, default is None
+            whether to use torch.amp automatic mixed precision
+        data_processor : DataProcessor class to transform data, default is None
             if not None, data from the loaders is transform first with data_processor.preprocess,
             then after getting an output from the model, that is transformed with data_processor.postprocess.
         log_test_interval : int, default is 1
