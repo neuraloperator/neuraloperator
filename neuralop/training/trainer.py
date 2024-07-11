@@ -415,7 +415,7 @@ class Trainer:
         print(msg)
         sys.stdout.flush()
 
-        if self.wandb_log:
+        if self.wandb_log and wandb.run is not None:
             wandb.log(
                 values_to_log,
                 step=epoch+1,
