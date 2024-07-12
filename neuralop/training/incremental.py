@@ -32,11 +32,12 @@ class IncrementalFNOTrainer(Trainer):
                 incremental_grad_max_iter: int = 10,
                 incremental_loss_eps: float = 0.001,
                 ):
-        assert (isinstance(model, FNO) or isinstance(self.model, TFNO)),\ 
-        f"Error: IncrementalFNOTrainer is designed to work with FNO or TFNO, instead got\
+        assert (isinstance(model, FNO) or isinstance(self.model, TFNO)), f"Error: \
+            IncrementalFNOTrainer is designed to work with FNO or TFNO, instead got\
             a model of type {model.__class__.__name__}"
         
-        super.__init__(model=model,
+        super().__init__(
+                       model=model,
                        n_epochs=n_epochs,
                        wandb_log=wandb_log,
                        device=device,
@@ -87,8 +88,8 @@ class IncrementalFNOTrainer(Trainer):
         train_err, avg_loss, avg_lasso_loss, epoch_train_time
         """
         self.training = True
-        self.data_processor.epoch = epoch
-        self.data_processor.train()
+        if self.data_processor:
+            self.data_processor.epoch = epoch
 
         train_err, avg_loss, avg_lasso_loss, epoch_train_time =\
               super().train_one_epoch(epoch, train_loader, training_loss)
