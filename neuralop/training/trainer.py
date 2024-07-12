@@ -78,7 +78,9 @@ class Trainer:
         resume_from_dir: Union[str, Path]=None,
     ):
         """Trains the given model on the given datasets.
-        params:
+
+        Parameters
+        -----------
         train_loader: torch.utils.data.DataLoader
             training dataloader
         test_loaders: dict[torch.utils.data.DataLoader]
@@ -104,6 +106,13 @@ class Trainer:
             if provided, resumes training state (model, 
             optimizer, regularizer, scheduler) from state saved in
             `resume_from_dir`
+        
+        Returns
+        -------
+        all_metrics: dict
+            dictionary keyed f"{loader_name}_{loss_name}"
+            of metric results for last validation epoch across
+            all test_loaders
             
         """
         self.optimizer = optimizer
@@ -278,6 +287,19 @@ class Trainer:
         return errors
     
     def on_epoch_start(self, epoch):
+        """on_epoch_start runs at the beginning
+        of each training epoch. This method is a stub
+        that can be overwritten in more complex cases.
+
+        Parameters
+        ----------
+        epoch : int
+            index of epoch
+
+        Returns
+        -------
+        None
+        """
         self.epoch = epoch
         return None
 
@@ -294,7 +316,7 @@ class Trainer:
 
         Returns
         -------
-        loss
+        loss: float | Tensor
             float value of training loss
         """
 
@@ -340,6 +362,23 @@ class Trainer:
         return loss
     
     def eval_one_batch(self, idx, sample, eval_losses):
+        """eval_one_batch runs inference on one batch
+        and returns eval_losses for that batch.
+
+        Parameters
+        ----------
+        idx : int
+            batch index in test_loader
+        sample : dict
+            data batch dictionary
+        eval_losses : dict
+            dictionary of named eval metrics
+
+        Returns
+        -------
+        eval_step_losses : dict
+            keyed "loss_name": step_loss_value for each loss name
+        """
         if self.data_processor is not None:
             sample = self.data_processor.preprocess(sample)
 
@@ -412,6 +451,8 @@ class Trainer:
         Params
         ------
         save_dir: Union[str, Path]
+            directory in which training state is saved
+            (see neuralop.training.training_state)
         """
         if isinstance(save_dir, str):
             save_dir = Path(save_dir)
@@ -432,6 +473,15 @@ class Trainer:
                                                 scheduler=self.scheduler)
 
     def checkpoint(self, save_dir):
+        """checkpoint saves current training state
+        to a directory for resuming later.
+        See neuralop.training.training_state
+
+        Parameters
+        ----------
+        save_dir : str | Path
+            directory in which to save training state
+        """
         if self.save_best is not None:
             save_name = 'best_model'
         else:
