@@ -1,3 +1,4 @@
+import math
 import torch
 
 from ..data_losses import LpLoss, MSELoss
@@ -13,6 +14,7 @@ def test_lploss():
     zeros = torch.zeros_like(x)
     ones = torch.ones_like(x)
 
+    # L2 w/out normalizing constant
     # sum of items in each element in ones is 16
     # norm is 4
     mean_abs_l2_err = l2_2d_mean.abs(zeros, ones, h=1.)
@@ -21,7 +23,16 @@ def test_lploss():
     sum_abs_l2_err = l2_2d_sum.abs(zeros, ones, h=1.)
     assert sum_abs_l2_err.item() == 40.
 
-def test_lploss():
+    eps = 1e-7
+    # L2 with default 1d normalizing constant 
+    # result should be scaled by 2pi/(geometric mean of input dims= 4)
+    mean_abs_l2_err = l2_2d_mean.abs(zeros, ones)
+    assert mean_abs_l2_err.item() - (4. * math.pi / 2) <= eps
+
+    sum_abs_l2_err = l2_2d_sum.abs(zeros, ones)
+    assert sum_abs_l2_err.item() - 40. * math.pi / 2  <= eps
+
+def test_mseloss():
     mse_2d = MSELoss(reductions='sum')
     x = torch.randn(10, 4, 4)
 
