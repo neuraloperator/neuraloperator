@@ -358,8 +358,6 @@ class Trainer:
                 val_loss = val_loss.item()'''
             eval_step_losses[loss_name] = val_loss
         return eval_step_losses
-        
-            
 
     def log_epoch(self, 
             epoch:int,
@@ -447,40 +445,5 @@ class Trainer:
                             )
         if self.verbose:
             print(f"Saved training state to {save_dir}")
-    
 
-class CheckpointTrainer(Trainer):
-    """CheckpointTrainer is a subclass of Trainer
-    that implements saving/loading checkpoints
-    and optinally monitoring eval metrics.
-    """
-    def __init__(self,
-        *,
-        model,
-        n_epochs,
-        wandb_log=False,
-        device=None,
-        amp_autocast=False,
-        data_processor=None,
-        eval_interval=1,
-        log_output=False,
-        use_distributed=False,
-        verbose=False,
-        save_every=1,
-        save_best=None,):
-        """"""
-
-        super.__init__(model=model,
-                       n_epochs=n_epochs,
-                       wandb_log=wandb_log,
-                       device=device,
-                       amp_autocast=amp_autocast,
-                       data_processor=data_processor,
-                       eval_interval=eval_interval,
-                       log_output=log_output,
-                       use_distributed=use_distributed,
-                       verbose=verbose)
-        
-        assert (save_every is not None or save_best is not None), "Error:"
-
-        
+       
