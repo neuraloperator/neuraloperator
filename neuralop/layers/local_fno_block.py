@@ -149,6 +149,10 @@ class LocalFNOBlocks(nn.Module):
         if isinstance(n_modes, int):
             n_modes = [n_modes]
         self._n_modes = n_modes
+
+        if len(n_modes) > 3 and True in diff_layers:
+            NotImplementedError("Differential convs not implemented for dimensions higher than 3.")
+            
         self.n_dim = len(n_modes)
 
         self.output_scaling_factor: Union[
@@ -318,6 +322,9 @@ class LocalFNOBlocks(nn.Module):
                 norm.set_embedding(embedding)
 
     def forward(self, x, index=0, output_shape=None):
+        if self.default_grid_res is None:
+            self.default_grid_res = x.shape[-1]
+
         if self.preactivation:
             return self.forward_with_preactivation(x, index, output_shape)
         else:
