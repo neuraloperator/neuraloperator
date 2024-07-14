@@ -10,7 +10,7 @@ import math
 
 from ..differential_conv import FiniteDifferenceConvolution
 
-@pytest.mark.parametrize('implementation', 'resolution',
+@pytest.mark.parametrize('implementation,resolution',
                          [('subtract_middle', 500),
                           ('subtract_middle', 700),
                           ('subtract_middle', 1000),
