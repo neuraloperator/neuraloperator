@@ -343,9 +343,6 @@ class LocalFNOBlocks(nn.Module):
 
         x_fno = self.convs(x, index, output_shape=output_shape)
 
-        if self.norm is not None:
-            x_fno = self.norm[self.n_norms * index](x_fno)
-
         if self.differential_idx_list[index] != -1:
             grid_width_scaling_factor = 1 / (x.shape[-1] / self.default_grid_res)
             x_differential = self.differential[self.differential_idx_list[index]](x, grid_width_scaling_factor)
@@ -353,7 +350,12 @@ class LocalFNOBlocks(nn.Module):
         else:
             x_differential = 0
 
-        x = x_fno + x_skip_fno + x_differential
+        x_fno_diff = x_fno + x_differential
+
+        if self.norm is not None:
+            x_fno_diff = self.norm[self.n_norms * index](x_fno_diff)
+
+        x = x_fno_diff + x_skip_fno
 
         if (self.mlp is not None) or (index < (self.n_layers - 1)):
             x = self.non_linearity(x)
@@ -377,8 +379,14 @@ class LocalFNOBlocks(nn.Module):
         if self.norm is not None:
             x = self.norm[self.n_norms * index](x)
 
+        if self.differential_idx_list[index] != -1:
+            grid_width_scaling_factor = 1 / (x.shape[-1] / self.default_grid_res)
+            x_differential = self.differential[self.differential_idx_list[index]](x, grid_width_scaling_factor)
+        else:
+            x_differential = 0
+
         x_skip_fno = self.fno_skips[index](x)
-        x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
+        x_skip_fno_diff = self.convs[index].transform(x_skip_fno + x_differential, output_shape=output_shape)
 
         if self.mlp is not None:
             x_skip_mlp = self.mlp_skips[index](x)
@@ -388,15 +396,8 @@ class LocalFNOBlocks(nn.Module):
             x = torch.tanh(x)
 
         x_fno = self.convs(x, index, output_shape=output_shape)
-        
-        if self.differential_idx_list[index] != -1:
-            grid_width_scaling_factor = 1 / (x.shape[-1] / self.default_grid_res)
-            x_differential = self.differential[self.differential_idx_list[index]](x, grid_width_scaling_factor)
-            x_differential = self.convs[index].transform(x_differential, output_shape=output_shape)
-        else:
-            x_differential = 0
 
-        x = x_fno + x_skip_fno + x_differential
+        x = x_fno + x_skip_fno_diff
 
         if self.mlp is not None:
             if index < (self.n_layers - 1):
