@@ -220,7 +220,7 @@ class LocalFNOBlocks(nn.Module):
             [
                 FiniteDifferenceConvolution(self.in_channels, self.out_channels,
                                             self.n_dim, self.fin_diff_kernel_size, 
-                                            self.groups, self.fin_diff_domain_padding, fin_diff_implementation)
+                                            self.groups, self.conv_padding_mode, fin_diff_implementation)
                 for _ in range(sum(self.diff_layers))
             ]
         )
