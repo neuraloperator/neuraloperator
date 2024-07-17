@@ -418,52 +418,6 @@ class Trainer:
             return eval_step_losses, out
         else:
             return eval_step_losses, None
-
-    def log_epoch(self, 
-            epoch:int,
-            time: float,
-            avg_loss: float,
-            train_err: float,
-            avg_lasso_loss: float=None,
-            eval_metrics: dict=None,
-            lr: float=None):
-        """Basic method to log a dict of output values
-        from a single training epoch. 
-        
-
-        Parameters
-        ----------
-        values : dict
-            dict keyed 'metric': float_value
-        """
-        if self.wandb_log:
-            values_to_log = dict(
-                train_err=train_err,
-                time=time,
-                avg_loss=avg_loss,
-                avg_lasso_loss=avg_lasso_loss,
-                lr=lr)
-
-        msg = f"[{epoch}] time={time:.2f}, "
-        msg += f"avg_loss={avg_loss:.4f}, "
-        msg += f"train_err={train_err:.4f}"
-        if avg_lasso_loss is not None:
-            msg += f", avg_lasso={avg_lasso_loss:.4f}"
-        if eval_metrics:
-            for metric, value in eval_metrics.items():
-                msg += f", {metric}={value:.4f}"
-                if self.wandb_log:
-                    values_to_log[metric] = value
-
-        print(msg)
-        sys.stdout.flush()
-
-        if self.wandb_log and wandb.run is not None:
-            wandb.log(
-                data=values_to_log,
-                step=epoch+1,
-                commit=True
-            )
     
     def log_training(self, 
             epoch:int,
