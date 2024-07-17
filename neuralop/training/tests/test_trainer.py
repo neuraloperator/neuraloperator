@@ -147,8 +147,9 @@ def test_load_from_checkpoint():
     loaded_model_eval_errors = trainer.evaluate(loss_dict=eval_losses,
                               data_loader=test_loader, log_prefix='test')
 
-    # log prefix is empty except for default underscore
-    assert orig_model_eval_errors['test_l2'] - loaded_model_eval_errors['test_l2'] < 0.1
+    # test l2 difference should be small 
+    assert (orig_model_eval_errors['test_l2'] - loaded_model_eval_errors['test_l2']) /\
+          orig_model_eval_errors['test_l2'] < 0.1
 
     # clean up dummy checkpoint directory after testing
     shutil.rmtree('./full_states')
