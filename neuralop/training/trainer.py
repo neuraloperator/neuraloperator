@@ -125,6 +125,9 @@ class Trainer:
         if eval_losses is None:  # By default just evaluate on the training loss
             eval_losses = dict(l2=training_loss)
         
+        # accumulated wandb metrics
+        self.wandb_epoch_metrics = None
+
         # attributes for checkpointing
         self.save_every = save_every
         self.save_best = save_best
@@ -153,28 +156,34 @@ class Trainer:
                   self.train_one_epoch(epoch, train_loader, training_loss)
             
             if epoch % self.eval_interval == 0:
-                # evaluate and gather metrics across each loader in test_loaders
-                all_metrics = {}
-                for loader_name, loader in test_loaders.items():
-                    loader_metrics = self.evaluate(eval_losses, loader,
-                                            log_prefix=loader_name)                        
-                    all_metrics.update(**loader_metrics)
-
-                # log metrics at eval_interval
+                # log training results 
+                lr = None
+                for pg in self.optimizer.param_groups:
+                    lr = pg["lr"]
                 if self.verbose:
-                    lr = None
-                    for pg in self.optimizer.param_groups:
-                        lr = pg["lr"]
-                    self.log_epoch(
+                    self.log_training(
                         epoch=epoch,
                         time=epoch_train_time,
                         avg_loss=avg_loss,
                         train_err=train_err,
                         avg_lasso_loss=avg_lasso_loss,
-                        eval_metrics=all_metrics,
                         lr=lr
                     )
-                
+                # evaluate and gather metrics across each loader in test_loaders
+                all_metrics = {}
+                for loader_name, loader in test_loaders.items():
+                    loader_metrics, last_batch_output = self.evaluate(eval_losses, loader,
+                                            log_prefix=loader_name)   
+                    all_metrics.update(**loader_metrics)
+
+                    if self.verbose:
+                        self.log_eval(epoch=epoch,
+                                      log_prefix=loader_name,
+                                      metrics=loader_metrics,
+                                      model_outs=last_batch_output)  
+                if self.wandb_log and wandb.run is not None:
+                    self.log_to_wandb(epoch=epoch)                   
+                    
                 # save checkpoint if conditions are met
                 if save_best is not None:
                     if all_metrics[save_best] < best_metric_value:
@@ -184,7 +193,6 @@ class Trainer:
             # save checkpoint if save_every and save_best is not set
             if self.save_every is not None:
                 if epoch % self.save_every == 0:
-                    print(f"Saving state to {save_dir}")
                     self.checkpoint(save_dir)
 
         return all_metrics
@@ -277,14 +285,18 @@ class Trainer:
         self.n_samples = 0
         with torch.no_grad():
             for idx, sample in enumerate(data_loader):
-                eval_step_losses = self.eval_one_batch(idx, sample, loss_dict)
+                return_output = False
+                if idx == len(data_loader) - 1:
+                    return_output = True
+                eval_step_losses, outs = self.eval_one_batch(sample, loss_dict, return_output=return_output)
+
                 for loss_name, val_loss in eval_step_losses.items():
                     errors[f"{log_prefix}_{loss_name}"] += val_loss
 
         for key in errors.keys():
             errors[key] /= self.n_samples
         
-        return errors
+        return errors, outs
     
     def on_epoch_start(self, epoch):
         """on_epoch_start runs at the beginning
@@ -361,23 +373,28 @@ class Trainer:
         
         return loss
     
-    def eval_one_batch(self, idx, sample, eval_losses):
+    def eval_one_batch(self,
+                       sample: dict,
+                       eval_losses: dict,
+                       return_output: bool=False):
         """eval_one_batch runs inference on one batch
         and returns eval_losses for that batch.
 
         Parameters
         ----------
-        idx : int
-            batch index in test_loader
         sample : dict
             data batch dictionary
         eval_losses : dict
             dictionary of named eval metrics
-
+        return_outputs : bool
+            whether to return model outputs for plotting
+            by default False
         Returns
         -------
         eval_step_losses : dict
             keyed "loss_name": step_loss_value for each loss name
+        outputs: torch.Tensor | None
+            optionally returns batch outputs
         """
         if self.data_processor is not None:
             sample = self.data_processor.preprocess(sample)
@@ -396,7 +413,11 @@ class Trainer:
             '''if val_loss.shape == ():
                 val_loss = val_loss.item()'''
             eval_step_losses[loss_name] = val_loss
-        return eval_step_losses
+        
+        if return_output:
+            return eval_step_losses, out
+        else:
+            return eval_step_losses, None
 
     def log_epoch(self, 
             epoch:int,
@@ -439,10 +460,112 @@ class Trainer:
 
         if self.wandb_log and wandb.run is not None:
             wandb.log(
-                values_to_log,
+                data=values_to_log,
                 step=epoch+1,
                 commit=True
             )
+    
+    def log_training(self, 
+            epoch:int,
+            time: float,
+            avg_loss: float,
+            train_err: float,
+            avg_lasso_loss: float=None,
+            lr: float=None
+            ):
+        """Basic method to log results
+        from a single training epoch. 
+        
+
+        Parameters
+        ----------
+        epoch: int
+        time: float
+            training time of epoch
+        avg_loss: float
+            average train_err per individual sample
+        train_err: float
+            train error for entire epoch
+        avg_lasso_loss: float
+            average lasso loss from regularizer, optional
+        lr: float
+            learning rate at current epoch
+        """
+        # log to wandb: first clear accumulated metrics
+        self.clear_wandb_metrics()
+        if self.wandb_log:
+            values_to_log = dict(
+                train_err=train_err,
+                time=time,
+                avg_loss=avg_loss,
+                avg_lasso_loss=avg_lasso_loss,
+                lr=lr)
+
+        msg = f"[{epoch}] time={time:.2f}, "
+        msg += f"avg_loss={avg_loss:.4f}, "
+        msg += f"train_err={train_err:.4f}"
+        if avg_lasso_loss is not None:
+            msg += f", avg_lasso={avg_lasso_loss:.4f}"
+
+        print(msg)
+        sys.stdout.flush()
+        
+        if self.wandb_log and wandb.run is not None:
+            self.accumulate_wandb_metrics(values_to_log)
+    
+    def log_eval(self,
+                 epoch: int,
+                 log_prefix: str,
+                 metrics: dict,
+                 model_outs: torch.Tensor=None):
+        """log_eval logs outputs from evaluation
+        on one test dataloader to stdout and wandb
+
+        Parameters
+        ----------
+        epoch : int
+            current training epoch
+        log_prefix : str
+            name of test_loader used in evaluation
+        metrics : dict
+            metrics collected during evaluation
+            keyed f"{test_loader_name}_{metric}"
+        model_outs: torch.Tensor
+            outputs of model on last eval batch
+            for optional saving images
+        """
+        values_to_log = {}
+        msg = ""
+        for metric, value in metrics.items():
+            msg += f", {metric}={value:.4f}"
+            if self.wandb_log:
+                values_to_log[metric] = value       
+        
+        msg = f"Eval[{log_prefix}]" + msg
+        print(msg)
+        sys.stdout.flush()
+
+        if self.wandb_log and wandb.run is not None:
+            if self.log_output:
+                values_to_log[f"{log_prefix}_outputs"] = wandb.Image(model_outs)
+            self.accumulate_wandb_metrics(values_to_log)
+    
+    def accumulate_wandb_metrics(self, metrics: dict):
+        if self.wandb_epoch_metrics is None:
+            self.wandb_epoch_metrics = metrics
+        else:
+            self.wandb_epoch_metrics.update(**metrics)
+    
+    def log_to_wandb(self, epoch):
+        wandb.log(data=self.wandb_epoch_metrics,
+                  step=epoch+1,
+                  commit=True)
+        
+    def clear_wandb_metrics(self):
+        # free mem if not cleared
+        if self.wandb_epoch_metrics is not None:
+            self.wandb_epoch_metrics = {k:None for k in self.wandb_epoch_metrics.keys()}
+            self.wandb_epoch_metrics = None
 
     def resume_state_from_dir(self, save_dir):
         """

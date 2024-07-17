@@ -60,6 +60,7 @@ if config.wandb.log and is_logger:
     if config.wandb.sweep:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
+    wandb.init(**wandb_init_args)
 
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
