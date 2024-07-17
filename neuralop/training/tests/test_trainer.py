@@ -144,7 +144,8 @@ def test_load_from_checkpoint():
                       n_epochs=1,
     )
 
-    loaded_model_eval_errors = trainer.evaluate(loss_dict=eval_losses,
+    # unpack metrics, optional model outs
+    loaded_model_eval_errors, _ = trainer.evaluate(loss_dict=eval_losses,
                               data_loader=test_loader, log_prefix='test')
 
     # log prefix is empty except for default underscore
