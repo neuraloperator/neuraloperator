@@ -53,8 +53,8 @@ class Trainer:
 
         self.model = model
         self.n_epochs = n_epochs
-
-        self.wandb_log = wandb_log
+        # only log to wandb if a run is active
+        self.wandb_log = (wandb_log and wandb.run is not None)
         self.eval_interval = eval_interval
         self.log_output = log_output
         self.verbose = verbose
@@ -154,40 +154,24 @@ class Trainer:
         for epoch in range(self.n_epochs):
             train_err, avg_loss, avg_lasso_loss, epoch_train_time =\
                   self.train_one_epoch(epoch, train_loader, training_loss)
+            epoch_metrics = dict(
+                train_err=train_err,
+                avg_loss=avg_loss,
+                avg_lasso_loss=avg_lasso_loss,
+                epoch_train_time=epoch_train_time
+            )
             
             if epoch % self.eval_interval == 0:
-                # log training results 
-                lr = None
-                for pg in self.optimizer.param_groups:
-                    lr = pg["lr"]
-                if self.verbose:
-                    self.log_training(
-                        epoch=epoch,
-                        time=epoch_train_time,
-                        avg_loss=avg_loss,
-                        train_err=train_err,
-                        avg_lasso_loss=avg_lasso_loss,
-                        lr=lr
-                    )
                 # evaluate and gather metrics across each loader in test_loaders
-                all_metrics = {}
-                for loader_name, loader in test_loaders.items():
-                    loader_metrics, last_batch_output = self.evaluate(eval_losses, loader,
-                                            log_prefix=loader_name)   
-                    all_metrics.update(**loader_metrics)
+                eval_metrics = self.evaluate_all(epoch=epoch,
+                                                eval_losses=eval_losses,
+                                                test_loaders=test_loaders)
 
-                    if self.verbose:
-                        self.log_eval(epoch=epoch,
-                                      log_prefix=loader_name,
-                                      metrics=loader_metrics,
-                                      model_outs=last_batch_output)  
-                if self.wandb_log and wandb.run is not None:
-                    self.log_to_wandb(epoch=epoch)                   
-                    
+                epoch_metrics.update(**eval_metrics)
                 # save checkpoint if conditions are met
                 if save_best is not None:
-                    if all_metrics[save_best] < best_metric_value:
-                        best_metric_value = all_metrics[save_best]
+                    if eval_metrics[save_best] < best_metric_value:
+                        best_metric_value = eval_metrics[save_best]
                         self.checkpoint(save_dir)
 
             # save checkpoint if save_every and save_best is not set
@@ -195,7 +179,7 @@ class Trainer:
                 if epoch % self.save_every == 0:
                     self.checkpoint(save_dir)
 
-        return all_metrics
+        return epoch_metrics
 
     def train_one_epoch(self, epoch, train_loader, training_loss):
         """train_one_epoch trains self.model on train_loader
@@ -254,11 +238,34 @@ class Trainer:
             avg_lasso_loss /= self.n_samples
         else:
             avg_lasso_loss = None
+        
+        lr = None
+        for pg in self.optimizer.param_groups:
+            lr = pg["lr"]
+        if self.verbose and epoch % self.eval_interval == 0:
+            self.log_training(
+                epoch=epoch,
+                time=epoch_train_time,
+                avg_loss=avg_loss,
+                train_err=train_err,
+                avg_lasso_loss=avg_lasso_loss,
+                lr=lr
+            )
 
         return train_err, avg_loss, avg_lasso_loss, epoch_train_time
 
+    def evaluate_all(self, epoch, eval_losses, test_loaders):
+        # evaluate and gather metrics across each loader in test_loaders
+        all_metrics = {}
+        for loader_name, loader in test_loaders.items():
+            loader_metrics = self.evaluate(eval_losses, loader,
+                                    log_prefix=loader_name)   
+            all_metrics.update(**loader_metrics)
+        self.log_eval(epoch=epoch,
+                      eval_metrics=all_metrics)
+        return all_metrics
     
-    def evaluate(self, loss_dict, data_loader, log_prefix=""):
+    def evaluate(self, loss_dict, data_loader, log_prefix="", epoch=None):
         """Evaluates the model on a dictionary of losses
 
         Parameters
@@ -269,7 +276,9 @@ class Trainer:
         data_loader : data_loader to evaluate on
         log_prefix : str, default is ''
             if not '', used as prefix in output dictionary
-
+        epoch : int | None
+            current epoch. Used when logging both train and eval
+            default None
         Returns
         -------
         errors : dict
@@ -292,11 +301,14 @@ class Trainer:
 
                 for loss_name, val_loss in eval_step_losses.items():
                     errors[f"{log_prefix}_{loss_name}"] += val_loss
-
+            
         for key in errors.keys():
             errors[key] /= self.n_samples
+        # on last batch, log model outputs
+        if self.log_output:
+                errors[f"{log_prefix}_outputs"] = wandb.Image(outs)
         
-        return errors, outs
+        return errors
     
     def on_epoch_start(self, epoch):
         """on_epoch_start runs at the beginning
@@ -445,8 +457,7 @@ class Trainer:
         lr: float
             learning rate at current epoch
         """
-        # log to wandb: first clear accumulated metrics
-        self.clear_wandb_metrics()
+        # accumulate info to log to wandb
         if self.wandb_log:
             values_to_log = dict(
                 train_err=train_err,
@@ -464,62 +475,42 @@ class Trainer:
         print(msg)
         sys.stdout.flush()
         
-        if self.wandb_log and wandb.run is not None:
-            self.accumulate_wandb_metrics(values_to_log)
+        if self.wandb_log:
+            wandb.log(data=values_to_log,
+                      step=epoch+1,
+                      commit=False)
     
     def log_eval(self,
                  epoch: int,
-                 log_prefix: str,
-                 metrics: dict,
-                 model_outs: torch.Tensor=None):
+                 eval_metrics: dict):
         """log_eval logs outputs from evaluation
-        on one test dataloader to stdout and wandb
+        on all test loaders to stdout and wandb
 
         Parameters
         ----------
         epoch : int
             current training epoch
-        log_prefix : str
-            name of test_loader used in evaluation
-        metrics : dict
+        eval_metrics : dict
             metrics collected during evaluation
-            keyed f"{test_loader_name}_{metric}"
-        model_outs: torch.Tensor
-            outputs of model on last eval batch
-            for optional saving images
+            keyed f"{test_loader_name}_{metric}" for each test_loader
+       
         """
         values_to_log = {}
         msg = ""
-        for metric, value in metrics.items():
-            msg += f", {metric}={value:.4f}"
+        for metric, value in eval_metrics.items():
+            if isinstance(value, float) or isinstance(value, torch.Tensor):
+                msg += f"{metric}={value:.4f}, "
             if self.wandb_log:
                 values_to_log[metric] = value       
         
-        msg = f"Eval[{log_prefix}]" + msg
+        msg = f"Eval: " + msg[:-2] # cut off last comma+space
         print(msg)
         sys.stdout.flush()
 
-        if self.wandb_log and wandb.run is not None:
-            if self.log_output:
-                values_to_log[f"{log_prefix}_outputs"] = wandb.Image(model_outs)
-            self.accumulate_wandb_metrics(values_to_log)
-    
-    def accumulate_wandb_metrics(self, metrics: dict):
-        if self.wandb_epoch_metrics is None:
-            self.wandb_epoch_metrics = metrics
-        else:
-            self.wandb_epoch_metrics.update(**metrics)
-    
-    def log_to_wandb(self, epoch):
-        wandb.log(data=self.wandb_epoch_metrics,
-                  step=epoch+1,
-                  commit=True)
-        
-    def clear_wandb_metrics(self):
-        # free mem if not cleared
-        if self.wandb_epoch_metrics is not None:
-            self.wandb_epoch_metrics = {k:None for k in self.wandb_epoch_metrics.keys()}
-            self.wandb_epoch_metrics = None
+        if self.wandb_log:
+            wandb.log(data=values_to_log,
+                      step=epoch+1,
+                      commit=True)
 
     def resume_state_from_dir(self, save_dir):
         """

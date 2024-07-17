@@ -24,7 +24,7 @@ def test_model_checkpoint_saves():
     )
 
     optimizer = torch.optim.Adam(model.parameters(), 
-                                lr=8e-3, 
+                                lr=3e-4, 
                                 weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
@@ -144,8 +144,7 @@ def test_load_from_checkpoint():
                       n_epochs=1,
     )
 
-    # unpack metrics, optional model outs
-    loaded_model_eval_errors, _ = trainer.evaluate(loss_dict=eval_losses,
+    loaded_model_eval_errors = trainer.evaluate(loss_dict=eval_losses,
                               data_loader=test_loader, log_prefix='test')
 
     # log prefix is empty except for default underscore
@@ -187,7 +186,7 @@ def test_incremental():
         incremental_grad_max_iter=2,)
 
     optimizer = torch.optim.Adam(model.parameters(), 
-                                lr=8e-3, 
+                                lr=3e-4, 
                                 weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
