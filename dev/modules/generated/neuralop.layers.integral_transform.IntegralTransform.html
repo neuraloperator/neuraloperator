@@ -175,17 +175,11 @@ Computes one of the following:</p>
 <li><p>int_{A(x)} k(x, y, f(y)) * f(y) dy</p></li>
 </ol>
 </div></blockquote>
-<p>x : Points for which the output is defined
-y : Points for which the input is defined
-A(x) : A subset of all points y (depending on</p>
-<blockquote>
-<div><p>each x) over which to integrate</p>
-</div></blockquote>
-<p>k : A kernel parametrized as a MLP
-f : Input function to integrate against given</p>
-<blockquote>
-<div><p>on the points y</p>
-</div></blockquote>
+<p>x : Points for which the output is defined</p>
+<p>y : Points for which the input is defined
+A(x) : A subset of all points y (depending on        each x) over which to integrate</p>
+<p>k : A kernel parametrized as a MLP</p>
+<p>f : Input function to integrate against given        on the points y</p>
 <p>If f is not given, a transform of type (a)
 is computed. Otherwise transforms (b), (c),
 or (d) are computed. The sets A(x) are specified

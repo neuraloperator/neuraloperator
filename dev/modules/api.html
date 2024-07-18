@@ -193,6 +193,7 @@
 </tbody>
 </table>
 </section>
+<hr class="docutils" />
 <section id="tensorized-fno-tfno">
 <h3>Tensorized FNO (TFNO)<a class="headerlink" href="#tensorized-fno-tfno" title="Link to this heading"></a></h3>
 <p>N-D version:</p>
@@ -218,6 +219,7 @@
 </tbody>
 </table>
 </section>
+<hr class="docutils" />
 <section id="spherical-fourier-neural-operators-sfno">
 <h3>Spherical Fourier Neural Operators (SFNO)<a class="headerlink" href="#spherical-fourier-neural-operators-sfno" title="Link to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
@@ -228,6 +230,7 @@
 </tbody>
 </table>
 </section>
+<hr class="docutils" />
 <section id="geometry-informed-neural-operators-gino">
 <h3>Geometry-Informed Neural Operators (GINO)<a class="headerlink" href="#geometry-informed-neural-operators-gino" title="Link to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
@@ -238,6 +241,7 @@
 </tbody>
 </table>
 </section>
+<hr class="docutils" />
 <section id="u-shaped-neural-operators-u-no">
 <h3>U-shaped Neural Operators (U-NO)<a class="headerlink" href="#u-shaped-neural-operators-u-no" title="Link to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
@@ -249,28 +253,38 @@
 </table>
 </section>
 </section>
+<hr class="docutils" />
 <section id="module-neuralop.layers">
 <span id="layers"></span><h2>Layers<a class="headerlink" href="#module-neuralop.layers" title="Link to this heading"></a></h2>
 <p id="neuralop-layers-ref">In addition to the full architectures, we also provide
 in <a class="reference internal" href="#module-neuralop.layers" title="neuralop.layers"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers</span></code></a> building blocks,
 in the form of PyTorch layers, that you can use to build your own models:</p>
+<section id="neural-operator-layers">
+<h3>Neural operator Layers<a class="headerlink" href="#neural-operator-layers" title="Link to this heading"></a></h3>
 <p><strong>Spectral convolutions</strong> (in Fourier domain):</p>
-<span class="target" id="module-neuralop.layers.spectral_convolution"></span><table class="autosummary longtable docutils align-default">
+<span class="target" id="module-neuralop.layers.spectral_convolution"></span><p>General SpectralConv layer:</p>
+<table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv.html#neuralop.layers.spectral_convolution.SpectralConv" title="neuralop.layers.spectral_convolution.SpectralConv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv</span></code></a>(in_channels, out_channels, n_modes)</p></td>
 <td><p>Generic N-Dimensional Fourier Neural Operator</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv1d.html#neuralop.layers.spectral_convolution.SpectralConv1d" title="neuralop.layers.spectral_convolution.SpectralConv1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv1d</span></code></a>(in_channels, out_channels, ...)</p></td>
+</tbody>
+</table>
+<p>Dimension-specific versions:</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv1d.html#neuralop.layers.spectral_convolution.SpectralConv1d" title="neuralop.layers.spectral_convolution.SpectralConv1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv1d</span></code></a>(in_channels, out_channels, ...)</p></td>
 <td><p>1D Spectral Conv</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv2d.html#neuralop.layers.spectral_convolution.SpectralConv2d" title="neuralop.layers.spectral_convolution.SpectralConv2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv2d</span></code></a>(in_channels, out_channels, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv2d.html#neuralop.layers.spectral_convolution.SpectralConv2d" title="neuralop.layers.spectral_convolution.SpectralConv2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv2d</span></code></a>(in_channels, out_channels, ...)</p></td>
 <td><p>2D Spectral Conv, see <code class="xref py py-class docutils literal notranslate"><span class="pre">neuralop.layers.SpectraConv</span></code> for the general case</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv3d.html#neuralop.layers.spectral_convolution.SpectralConv3d" title="neuralop.layers.spectral_convolution.SpectralConv3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv3d</span></code></a>(in_channels, out_channels, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.spectral_convolution.SpectralConv3d.html#neuralop.layers.spectral_convolution.SpectralConv3d" title="neuralop.layers.spectral_convolution.SpectralConv3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectralConv3d</span></code></a>(in_channels, out_channels, ...)</p></td>
 <td><p>3D Spectral Conv, see <code class="xref py py-class docutils literal notranslate"><span class="pre">neuralop.layers.SpectraConv</span></code> for the general case</p></td>
 </tr>
 </tbody>
 </table>
+<hr class="docutils" />
 <p><strong>Spherical convolutions</strong>: (using Spherical Harmonics)</p>
 <span class="target" id="module-neuralop.layers.spherical_convolution"></span><table class="autosummary longtable docutils align-default">
 <tbody>
@@ -279,6 +293,7 @@ in the form of PyTorch layers, that you can use to build your own models:</p>
 </tr>
 </tbody>
 </table>
+<hr class="docutils" />
 <p>To support geometry-informed (GINO) models, we also offer the ability to integrate kernels in the spatial domain, which we formulate as mappings between arbitrary coordinate meshes.</p>
 <p><strong>Graph convolutions and kernel integration</strong>:</p>
 <span class="target" id="module-neuralop.layers.integral_transform"></span><table class="autosummary longtable docutils align-default">
@@ -288,34 +303,27 @@ in the form of PyTorch layers, that you can use to build your own models:</p>
 </tr>
 </tbody>
 </table>
-<p><strong>Neighbor search and neighborhood reduction</strong></p>
+<hr class="docutils" />
+<p><strong>Neighbor search</strong></p>
 <p>Find neighborhoods on arbitrary coordinate meshes:</p>
 <span class="target" id="module-neuralop.layers.neighbor_search"></span><table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.neighbor_search.NeighborSearch.html#neuralop.layers.neighbor_search.NeighborSearch" title="neuralop.layers.neighbor_search.NeighborSearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NeighborSearch</span></code></a>([use_open3d])</p></td>
-<td><p>eighborhood search between two arbitrary coordinate meshes.</p></td>
+<td><p>Neighborhood search between two arbitrary coordinate meshes.</p></td>
 </tr>
 </tbody>
 </table>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.neighbor_search.native_neighbor_search.html#neuralop.layers.neighbor_search.native_neighbor_search" title="neuralop.layers.neighbor_search.native_neighbor_search"><code class="xref py py-obj docutils literal notranslate"><span class="pre">native_neighbor_search</span></code></a>(data, queries, radius)</p></td>
-<td><p><dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-</p></td>
+<td><p>Native PyTorch implementation of a neighborhood search between two arbitrary coordinate meshes.</p></td>
 </tr>
 </tbody>
 </table>
-<p>Given a CSR-formatted matrix, reduce data associated with index entries:</p>
-<span class="target" id="module-neuralop.layers.segment_csr"></span><table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.segment_csr.segment_csr.html#neuralop.layers.segment_csr.segment_csr" title="neuralop.layers.segment_csr.segment_csr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">segment_csr</span></code></a>(src, indptr, reduce[, use_scatter])</p></td>
-<td><p>segment_csr reduces all entries of a CSR-formatted matrix by summing or averaging over neighbors.</p></td>
-</tr>
-</tbody>
-</table>
+</section>
+<hr class="docutils" />
+<section id="other-resolution-invariant-operations">
+<h3>Other resolution invariant operations<a class="headerlink" href="#other-resolution-invariant-operations" title="Link to this heading"></a></h3>
 <p>Automatically apply resolution dependent domain padding:</p>
 <span class="target" id="module-neuralop.layers.padding"></span><table class="autosummary longtable docutils align-default">
 <tbody>
@@ -324,6 +332,7 @@ in the form of PyTorch layers, that you can use to build your own models:</p>
 </tr>
 </tbody>
 </table>
+<hr class="docutils" />
 <span class="target" id="module-neuralop.layers.skip_connections"></span><table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.layers.skip_connections.SoftGating.html#neuralop.layers.skip_connections.SoftGating" title="neuralop.layers.skip_connections.SoftGating"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SoftGating</span></code></a>(in_features[, out_features, ...])</p></td>
@@ -339,6 +348,8 @@ in the form of PyTorch layers, that you can use to build your own models:</p>
 </tbody>
 </table>
 </section>
+</section>
+<hr class="docutils" />
 <section id="model-dispatching">
 <h2>Model Dispatching<a class="headerlink" href="#model-dispatching" title="Link to this heading"></a></h2>
 <p>We provide a utility function to create model instances from a configuration.
@@ -354,6 +365,7 @@ It has the advantage of doing some checks on the parameters it receives.</p>
 </tbody>
 </table>
 </section>
+<hr class="docutils" />
 <section id="training">
 <h2>Training<a class="headerlink" href="#training" title="Link to this heading"></a></h2>
 <p>We provide functionality that automates the boilerplate code associated with
@@ -361,30 +373,12 @@ training a machine learning model to minimize a loss function on a dataset:</p>
 <span class="target" id="module-neuralop.training"></span><table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.training.Trainer.html#neuralop.training.Trainer" title="neuralop.training.Trainer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Trainer</span></code></a>(*, model, n_epochs[, wandb_log, ...])</p></td>
-<td><p><p class="rubric">Methods</p>
-</p></td>
-</tr>
-</tbody>
-</table>
-<p>The general case (assuming no modifications) is covered above. To implement domain-specific
-logic in your training loop while still using the automation and logging provided by a
-Trainer, we provide a Callback class and several examples of common domain-specific Callbacks.</p>
-<p id="module-neuralop.training.callbacks">Callbacks store all non-essential logic
-required to run specific training scripts.</p>
-<p>The callbacks in this module follow the form and 
-logic of callbacks in Pytorch-Lightning (<a class="reference external" href="https://lightning.ai/docs/pytorch/stable">https://lightning.ai/docs/pytorch/stable</a>)</p>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.Callback.html#neuralop.training.callbacks.Callback" title="neuralop.training.callbacks.Callback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Callback</span></code></a>()</p></td>
-<td><p>Base callback class.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.training.callbacks.CheckpointCallback.html#neuralop.training.callbacks.CheckpointCallback" title="neuralop.training.callbacks.CheckpointCallback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CheckpointCallback</span></code></a>(save_dir[, save_best, ...])</p></td>
-<td><p><p class="rubric">Methods</p>
-</p></td>
+<td><p></p></td>
 </tr>
 </tbody>
 </table>
 </section>
+<hr class="docutils" />
 <section id="data">
 <h2>Data<a class="headerlink" href="#data" title="Link to this heading"></a></h2>
 <p>In <cite>neuralop.data</cite>, we provide APIs for standardizing PDE datasets (<cite>.datasets</cite>) and transforming raw data into model inputs (<cite>.transforms</cite>).</p>
@@ -396,21 +390,24 @@ logic of callbacks in Pytorch-Lightning (<a class="reference external" href="htt
 </tr>
 </tbody>
 </table>
+<hr class="docutils" />
+<section id="dataprocessors">
+<h3>DataProcessors<a class="headerlink" href="#dataprocessors" title="Link to this heading"></a></h3>
 <p>Much like PyTorch’s <cite>Torchvision.Datasets</cite> module, our <cite>data</cite> module also includes
 utilities to transform data from its raw form into the form expected by models and
 loss functions:</p>
 <span class="target" id="module-neuralop.data.transforms.data_processors"></span><table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.data.transforms.data_processors.DefaultDataProcessor.html#neuralop.data.transforms.data_processors.DefaultDataProcessor" title="neuralop.data.transforms.data_processors.DefaultDataProcessor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DefaultDataProcessor</span></code></a>([in_normalizer, ...])</p></td>
-<td><p><p class="rubric">Methods</p>
-</p></td>
+<td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.data.transforms.data_processors.MGPatchingDataProcessor.html#neuralop.data.transforms.data_processors.MGPatchingDataProcessor" title="neuralop.data.transforms.data_processors.MGPatchingDataProcessor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MGPatchingDataProcessor</span></code></a>(model, levels, ...)</p></td>
-<td><p><p class="rubric">Methods</p>
-</p></td>
+<td><p></p></td>
 </tr>
 </tbody>
 </table>
+<hr class="docutils" />
+</section>
 </section>
 </section>
 
@@ -479,13 +476,18 @@ loss functions:</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#module-neuralop.layers">Layers</a><ul>
+<li><a class="reference internal" href="#neural-operator-layers">Neural operator Layers</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#other-resolution-invariant-operations">Other resolution invariant operations</a><ul>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#model-dispatching">Model Dispatching</a></li>
-<li><a class="reference internal" href="#training">Training</a><ul>
-</ul>
-</li>
+<li><a class="reference internal" href="#training">Training</a></li>
 <li><a class="reference internal" href="#data">Data</a><ul>
+<li><a class="reference internal" href="#dataprocessors">DataProcessors</a></li>
 </ul>
 </li>
 </ul>

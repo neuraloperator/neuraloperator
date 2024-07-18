@@ -122,7 +122,7 @@
 <a class="viewcode-back" href="../../../modules/generated/neuralop.layers.neighbor_search.NeighborSearch.html#neuralop.layers.neighbor_search.NeighborSearch">[docs]</a>
 <span class="k">class</span> <span class="nc">NeighborSearch</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    eighborhood search between two arbitrary coordinate meshes.</span>
+<span class="sd">    Neighborhood search between two arbitrary coordinate meshes.</span>
 <span class="sd">    For each point `x` in `queries`, returns a set of the indices of all points `y` in `data` </span>
 <span class="sd">    within the ball of radius r `B_r(x)`</span>
 
@@ -193,11 +193,11 @@
 <a class="viewcode-back" href="../../../modules/generated/neuralop.layers.neighbor_search.native_neighbor_search.html#neuralop.layers.neighbor_search.native_neighbor_search">[docs]</a>
 <span class="k">def</span> <span class="nf">native_neighbor_search</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">queries</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
 <span class="sd">    Native PyTorch implementation of a neighborhood search</span>
 <span class="sd">    between two arbitrary coordinate meshes.</span>
+<span class="sd">     </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
 
 <span class="sd">    data : torch.Tensor</span>
 <span class="sd">        vector of data points from which to find neighbors</span>
