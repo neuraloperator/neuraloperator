@@ -165,24 +165,22 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="neuralop.data.transforms.data_processors.DefaultDataProcessor">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.data.transforms.data_processors.</span></span><span class="sig-name descname"><span class="pre">DefaultDataProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_normalizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_normalizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positional_encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#DefaultDataProcessor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor" title="Link to this definition"></a></dt>
-<dd><p class="rubric">Methods</p>
+<dd><p>DefaultDataProcessor is a simple processor 
+to pre/post process data before training/inferencing a model.</p>
+<p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor.forward" title="neuralop.data.transforms.data_processors.DefaultDataProcessor.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(**data_dict)</p></td>
-<td><p>Define the computation performed at every call.</p></td>
+<td><p>forward call wraps a model to perform preprocessing, forward, and post- processing all in one call</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor.postprocess" title="neuralop.data.transforms.data_processors.DefaultDataProcessor.postprocess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">postprocess</span></code></a>(output, data_dict)</p></td>
+<td><p>postprocess model outputs and data_dict into format expected by training or val loss</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor.preprocess" title="neuralop.data.transforms.data_processors.DefaultDataProcessor.preprocess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">preprocess</span></code></a>(data_dict[, batched])</p></td>
+<td><p>preprocess a batch of data into the format expected in model's forward call</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor.to" title="neuralop.data.transforms.data_processors.DefaultDataProcessor.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>(device)</p></td>
 <td><p>Move and/or cast the parameters and buffers.</p></td>
-</tr>
-</tbody>
-</table>
-<table class="docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><strong>postprocess</strong></p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><strong>preprocess</strong></p></td>
-<td></td>
 </tr>
 </tbody>
 </table>
@@ -283,17 +281,67 @@ only argument)</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="neuralop.data.transforms.data_processors.DefaultDataProcessor.preprocess">
+<span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batched</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#DefaultDataProcessor.preprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor.preprocess" title="Link to this definition"></a></dt>
+<dd><p>preprocess a batch of data into the format
+expected in model’s forward call</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>data_dict</strong><span class="classifier">dict</span></dt><dd><p>input data dictionary with at least
+keys ‘x’ (inputs) and ‘y’ (ground truth)</p>
+</dd>
+<dt><strong>batched</strong><span class="classifier">bool, optional</span></dt><dd><p>whether data contains a batch dim, by default True</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>dict</dt><dd><p>preprocessed data_dict</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="neuralop.data.transforms.data_processors.DefaultDataProcessor.postprocess">
+<span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#DefaultDataProcessor.postprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor.postprocess" title="Link to this definition"></a></dt>
+<dd><p>postprocess model outputs and data_dict
+into format expected by training or val loss</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>output</strong><span class="classifier">torch.Tensor</span></dt><dd><p>raw model outputs</p>
+</dd>
+<dt><strong>data_dict</strong><span class="classifier">dict</span></dt><dd><p>dictionary containing single batch
+of data</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>out, data_dict</dt><dd><p>postprocessed outputs and data dict</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="neuralop.data.transforms.data_processors.DefaultDataProcessor.forward">
 <span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#DefaultDataProcessor.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor.forward" title="Link to this definition"></a></dt>
-<dd><p>Define the computation performed at every call.</p>
-<p>Should be overridden by all subclasses.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Although the recipe for forward pass needs to be defined within
-this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
-instead of this since the former takes care of running the
-registered hooks while the latter silently ignores them.</p>
-</div>
+<dd><p>forward call wraps a model
+to perform preprocessing, forward, and post-
+processing all in one call</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>output, data_dict</dt><dd><p>postprocessed data for use in loss</p>
+</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -354,6 +402,8 @@ registered hooks while the latter silently ignores them.</p>
 <li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.data.transforms.data_processors</span></code>.DefaultDataProcessor</a><ul>
 <li><a class="reference internal" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor"><code class="docutils literal notranslate"><span class="pre">DefaultDataProcessor</span></code></a><ul>
 <li><a class="reference internal" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor.to"><code class="docutils literal notranslate"><span class="pre">DefaultDataProcessor.to()</span></code></a></li>
+<li><a class="reference internal" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor.preprocess"><code class="docutils literal notranslate"><span class="pre">DefaultDataProcessor.preprocess()</span></code></a></li>
+<li><a class="reference internal" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor.postprocess"><code class="docutils literal notranslate"><span class="pre">DefaultDataProcessor.postprocess()</span></code></a></li>
 <li><a class="reference internal" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor.forward"><code class="docutils literal notranslate"><span class="pre">DefaultDataProcessor.forward()</span></code></a></li>
 </ul>
 </li>
