@@ -14,7 +14,28 @@ from .finite_diff import central_diff_1d, central_diff_2d, central_diff_3d
 
 #loss function with rel/abs Lp loss
 class LpLoss(object):
+    """
+    LpLoss provides the L-p norm on d-dimensional data
+    """
     def __init__(self, d=1, p=2, L=2*math.pi, reduce_dims=0, reductions='sum'):
+        """
+
+        Parameters
+        ----------
+        d : int, optional
+            dimension of data on which to compute, by default 1
+        p : int, optional
+            order of L-norm, by default 2
+            L-p norm: [\sum_{i=0}^n (x_i - y_i)**p] ** (1/p)
+        L : float or list, optional
+            normalization constant per dim, by default 2*math.pi
+            either single scalar for each dim, or one per dim
+        reduce_dims : int, optional
+            dimensions across which to reduce for loss, by default 0
+        reductions : str, optional
+            whether to reduce each dimension above 
+            by summing ('sum') or averaging ('mean')
+        """
         super().__init__()
 
         self.d = d
@@ -44,6 +65,19 @@ class LpLoss(object):
         return f"L{self.p}_{self.d}Dloss"
     
     def uniform_h(self, x):
+        """uniform_h creates default normalization constants
+        if none already exist.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            input data
+
+        Returns
+        -------
+        h : list
+            list of normalization constants per-dim
+        """
         h = [0.0]*self.d
         for j in range(self.d, 0, -1):
             h[-j] = self.L[-j]/x.size(-j)
@@ -51,6 +85,15 @@ class LpLoss(object):
         return h
 
     def reduce_all(self, x):
+        """
+        reduce x across all dimensions in self.reduce_dims 
+        according to self.reductions
+
+        Params
+        ------
+        x: torch.Tensor
+            inputs
+        """
         for j in range(len(self.reduce_dims)):
             if self.reductions[j] == 'sum':
                 x = torch.sum(x, dim=self.reduce_dims[j], keepdim=True)
@@ -60,6 +103,18 @@ class LpLoss(object):
         return x
 
     def abs(self, x, y, h=None):
+        """absolute Lp-norm
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            inputs
+        y : torch.Tensor
+            targets
+        h : float or list, optional
+            normalization constants for reduction
+            either single scalar or one per dimension
+        """
         #Assume uniform mesh
         if h is None:
             h = self.uniform_h(x)
@@ -77,6 +132,17 @@ class LpLoss(object):
         return diff
 
     def rel(self, x, y):
+        """
+        rel: relative LpLoss
+        computes ||x-y||/||y||
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            inputs
+        y : torch.Tensor
+            targets
+        """
 
         diff = torch.norm(torch.flatten(x, start_dim=-self.d) - torch.flatten(y, start_dim=-self.d), \
                           p=self.p, dim=-1, keepdim=False)
@@ -93,6 +159,9 @@ class LpLoss(object):
         return self.rel(y_pred, y)
 
 class H1Loss(object):
+    """
+    H1 Sobolev function norm.
+    """
     def __init__(self, d=1, L=2*math.pi, reduce_dims=0, reductions='sum', fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
         super().__init__()
 
@@ -171,6 +240,19 @@ class H1Loss(object):
         return dict_x, dict_y
 
     def uniform_h(self, x):
+        """uniform_h creates default normalization constants
+        if none already exist.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            input data
+
+        Returns
+        -------
+        h : list
+            list of normalization constants per-dim
+        """
         h = [0.0]*self.d
         for j in range(self.d, 0, -1):
             h[-j] = self.L[-j]/x.size(-j)
@@ -178,6 +260,15 @@ class H1Loss(object):
         return h
     
     def reduce_all(self, x):
+        """
+        reduce x across all dimensions in self.reduce_dims 
+        according to self.reductions
+
+        Params
+        ------
+        x: torch.Tensor
+            inputs
+        """
         for j in range(len(self.reduce_dims)):
             if self.reductions[j] == 'sum':
                 x = torch.sum(x, dim=self.reduce_dims[j], keepdim=True)
@@ -187,6 +278,17 @@ class H1Loss(object):
         return x
         
     def abs(self, x, y, h=None):
+        """absolute H1 norm
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            inputs
+        y : torch.Tensor
+            targets
+        h : float or list, optional
+            normalization constant for reduction, by default None
+        """
         #Assume uniform mesh
         if h is None:
             h = self.uniform_h(x)
@@ -210,6 +312,17 @@ class H1Loss(object):
         return diff
         
     def rel(self, x, y, h=None):
+        """relative H1-norm
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            inputs
+        y : torch.Tensor
+            targets
+        h : float or list, optional
+            normalization constant for reduction, by default None
+        """
         #Assume uniform mesh
         if h is None:
             h = self.uniform_h(x)
@@ -234,11 +347,22 @@ class H1Loss(object):
         return diff
 
     def __call__(self, y_pred, y, h=None, **kwargs):
+        """
+
+        Parameters
+        ----------
+        y_pred : torch.Tensor
+            inputs
+        y : torch.Tensor
+            targets
+        h : float or list, optional
+            normalization constant for reduction, by default None
+        """
         return self.rel(y_pred, y, h=h)
     
 class MSELoss(object):
     """
-    MSELoss computes absolute mean-squared L2 error between two tensors.
+    MSELoss computes absolute mean-squared error between two tensors.
     """
     def __init__(self, reductions='sum'):
         super().__init__()
