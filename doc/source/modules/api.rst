@@ -39,7 +39,7 @@ We also have dimension-specific classes:
     FNO2d
     FNO3d
 
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Tensorized FNO (TFNO)
 ----------------------
@@ -62,6 +62,8 @@ Dimension-specific classes:
     TFNO2d
     TFNO3d
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Spherical Fourier Neural Operators (SFNO)
 --------------------------------------------
 
@@ -70,6 +72,8 @@ Spherical Fourier Neural Operators (SFNO)
     :template: class.rst
 
     SFNO
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Geometry-Informed Neural Operators (GINO)
 ------------------------------------------
@@ -80,14 +84,18 @@ Geometry-Informed Neural Operators (GINO)
 
     GINO
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 U-shaped Neural Operators (U-NO)
 ---------------------------------
 
 .. autosummary::
     :toctree: generated
     :template: class.rst
-
+    
     UNO
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Layers
 =======
@@ -130,6 +138,7 @@ Dimension-specific versions:
     SpectralConv2d
     SpectralConv3d
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Spherical convolutions**: (using Spherical Harmonics)
 
@@ -142,6 +151,8 @@ Dimension-specific versions:
     :template: class.rst
 
     SphericalConv
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To support geometry-informed (GINO) models, we also offer the ability to integrate kernels in the spatial domain, which we formulate as mappings between arbitrary coordinate meshes.
 
@@ -157,7 +168,9 @@ To support geometry-informed (GINO) models, we also offer the ability to integra
 
     IntegralTransform
 
-**Neighbor search and neighborhood reduction**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Neighbor search**
 
 Find neighborhoods on arbitrary coordinate meshes:
 
@@ -177,6 +190,7 @@ Find neighborhoods on arbitrary coordinate meshes:
 
     native_neighbor_search
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Other resolution invariant operations
 -------------------------------------
@@ -193,6 +207,8 @@ Automatically apply resolution dependent domain padding:
 
     DomainPadding
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. automodule:: neuralop.layers.skip_connections
     :no-members:
     :no-inherited-members:
@@ -208,6 +224,8 @@ Automatically apply resolution dependent domain padding:
     :template: function.rst
 
     skip_connection
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 Model Dispatching
@@ -226,6 +244,8 @@ It has the advantage of doing some checks on the parameters it receives.
     get_model
     available_models
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Training
 =========
 We provide functionality that automates the boilerplate code associated with 
@@ -241,21 +261,7 @@ training a machine learning model to minimize a loss function on a dataset:
 
     Trainer
 
-The general case (assuming no modifications) is covered above. To implement domain-specific 
-logic in your training loop while still using the automation and logging provided by a
-Trainer, we provide a Callback class and several examples of common domain-specific Callbacks.
-
-.. automodule:: neuralop.training.callbacks
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :toctree: generated
-    :template: class.rst
-
-    Callback
-    CheckpointCallback
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Data
 ========
@@ -272,6 +278,8 @@ We also ship a small dataset for testing:
     :template: function.rst
 
     load_darcy_flow_small
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 DataProcessors
 --------------
@@ -290,3 +298,5 @@ loss functions:
 
     DefaultDataProcessor
     MGPatchingDataProcessor
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
