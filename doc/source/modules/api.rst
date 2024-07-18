@@ -1,6 +1,6 @@
-=============
+#############
 API reference
-=============
+#############
 
 :mod:`neuralop`: Neural Operators in Python
 
@@ -11,12 +11,12 @@ API reference
 .. _neuralop_models_ref:
 
 Models
-------
+=======
 
 In :mod:`neuralop.models`, we provide neural operator models you can directly use on your applications.
 
 FNO
-^^^
+----
 
 We provide a general Fourier Neural Operator (TFNO) that supports most usecases.
 
@@ -42,7 +42,7 @@ We also have dimension-specific classes:
 
 
 Tensorized FNO (TFNO)
-^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 N-D version: 
 
@@ -63,7 +63,7 @@ Dimension-specific classes:
     TFNO3d
 
 Spherical Fourier Neural Operators (SFNO)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------------------------
 
 .. autosummary::
     :toctree: generated
@@ -72,7 +72,7 @@ Spherical Fourier Neural Operators (SFNO)
     SFNO
 
 Geometry-Informed Neural Operators (GINO)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------------
 
 .. autosummary::
     :toctree: generated
@@ -81,7 +81,7 @@ Geometry-Informed Neural Operators (GINO)
     GINO
 
 U-shaped Neural Operators (U-NO)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------
 
 .. autosummary::
     :toctree: generated
@@ -90,7 +90,7 @@ U-shaped Neural Operators (U-NO)
     UNO
 
 Layers
-======
+=======
 
 .. automodule:: neuralop.layers
     :no-members:
@@ -104,7 +104,7 @@ in :mod:`neuralop.layers` building blocks,
 in the form of PyTorch layers, that you can use to build your own models:
 
 Neural operator Layers
-----------------------
+------------------------
 
 **Spectral convolutions** (in Fourier domain):
 
@@ -112,11 +112,19 @@ Neural operator Layers
     :no-members:
     :no-inherited-members:
 
+General SpectralConv layer:
+
 .. autosummary::
     :toctree: generated
     :template: class.rst
 
     SpectralConv
+
+Dimension-specific versions: 
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
 
     SpectralConv1d
     SpectralConv2d
@@ -169,21 +177,9 @@ Find neighborhoods on arbitrary coordinate meshes:
 
     native_neighbor_search
 
-Given a CSR-formatted matrix, reduce data associated with index entries:
-
-.. automodule:: neuralop.layers.segment_csr
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :toctree: generated
-    :template: function.rst
-
-    segment_csr
-
 
 Other resolution invariant operations
-+++++++++++++++++++++++++++++++++++++
+-------------------------------------
 
 Automatically apply resolution dependent domain padding: 
 
@@ -215,7 +211,7 @@ Automatically apply resolution dependent domain padding:
 
 
 Model Dispatching
-=================
+===================
 We provide a utility function to create model instances from a configuration.
 It has the advantage of doing some checks on the parameters it receives.
 
@@ -231,7 +227,7 @@ It has the advantage of doing some checks on the parameters it receives.
     available_models
 
 Training
-========
+=========
 We provide functionality that automates the boilerplate code associated with 
 training a machine learning model to minimize a loss function on a dataset:
 
@@ -276,6 +272,9 @@ We also ship a small dataset for testing:
     :template: function.rst
 
     load_darcy_flow_small
+
+DataProcessors
+--------------
 
 Much like PyTorch's `Torchvision.Datasets` module, our `data` module also includes
 utilities to transform data from its raw form into the form expected by models and 
