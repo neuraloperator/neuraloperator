@@ -11,13 +11,12 @@ API reference
 .. _neuralop_models_ref:
 
 Models
-======
+------
 
 In :mod:`neuralop.models`, we provide neural operator models you can directly use on your applications.
 
-
 FNO
----
+^^^
 
 We provide a general Fourier Neural Operator (TFNO) that supports most usecases.
 
@@ -40,8 +39,10 @@ We also have dimension-specific classes:
     FNO2d
     FNO3d
 
+
+
 Tensorized FNO (TFNO)
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 N-D version: 
 
@@ -62,7 +63,7 @@ Dimension-specific classes:
     TFNO3d
 
 Spherical Fourier Neural Operators (SFNO)
------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
     :toctree: generated
@@ -71,7 +72,7 @@ Spherical Fourier Neural Operators (SFNO)
     SFNO
 
 Geometry-Informed Neural Operators (GINO)
------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
     :toctree: generated
@@ -80,7 +81,7 @@ Geometry-Informed Neural Operators (GINO)
     GINO
 
 U-shaped Neural Operators (U-NO)
---------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
     :toctree: generated
@@ -103,7 +104,7 @@ in :mod:`neuralop.layers` building blocks,
 in the form of PyTorch layers, that you can use to build your own models:
 
 Neural operator Layers
-++++++++++++++++++++++
+----------------------
 
 **Spectral convolutions** (in Fourier domain):
 
