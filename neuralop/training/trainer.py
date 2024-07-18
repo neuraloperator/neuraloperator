@@ -411,6 +411,13 @@ class Trainer:
         """
         if self.data_processor is not None:
             sample = self.data_processor.preprocess(sample)
+        else:
+            # load data to device if no preprocessor exists
+            sample = {
+                k: v.to(self.device)
+                for k, v in sample.items()
+                if torch.is_tensor(v)
+            }
 
         self.n_samples += sample["y"].size(0)
 
