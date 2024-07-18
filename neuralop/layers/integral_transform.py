@@ -15,11 +15,14 @@ class IntegralTransform(nn.Module):
         (d) \int_{A(x)} k(x, y, f(y)) * f(y) dy
 
     x : Points for which the output is defined
+
     y : Points for which the input is defined
-    A(x) : A subset of all points y (depending on
-           each x) over which to integrate
+    A(x) : A subset of all points y (depending on\
+        each x) over which to integrate
+
     k : A kernel parametrized as a MLP
-    f : Input function to integrate against given
+    
+    f : Input function to integrate against given\
         on the points y
 
     If f is not given, a transform of type (a)
