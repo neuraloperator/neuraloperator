@@ -11,13 +11,13 @@ from ..utils import compute_explained_variance
 class IncrementalFNOTrainer(Trainer):
     """IncrementalFNOTrainer subclasses the Trainer 
     to implement specific logic for the Incremental-FNO
-    as described in [1]
+    as described in [1]_.
 
     References
     -----------
-    [1] George, R., Zhao, J., Kossaifi, J., Li, Z., and Anandkumar, A. (2024)
-    "Incremental Spatial and Spectral Learning of Neural Operators for Solving Large-Scale PDEs".
-    ArXiv preprint, https://arxiv.org/pdf/2211.15188
+    .. [1] George, R., Zhao, J., Kossaifi, J., Li, Z., and Anandkumar, A. (2024)
+        "Incremental Spatial and Spectral Learning of Neural Operators for Solving Large-Scale PDEs".
+        ArXiv preprint, https://arxiv.org/pdf/2211.15188
     """
     def __init__(self,
                 model: nn.Module,
