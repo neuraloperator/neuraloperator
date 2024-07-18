@@ -12,6 +12,12 @@ class IncrementalFNOTrainer(Trainer):
     """IncrementalFNOTrainer subclasses the Trainer 
     to implement specific logic for the Incremental-FNO
     as described in [1]
+
+    References
+    -----------
+    [1] George, R., Zhao, J., Kossaifi, J., Li, Z., and Anandkumar, A. (2024)
+    "Incremental Spatial and Spectral Learning of Neural Operators for Solving Large-Scale PDEs".
+    ArXiv preprint, https://arxiv.org/pdf/2211.15188
     """
     def __init__(self,
                 model: nn.Module,
@@ -153,11 +159,3 @@ class IncrementalFNOTrainer(Trainer):
             modes_list = tuple([main_modes] * self.ndim)
             self.model.fno_blocks.convs.n_modes = tuple(modes_list)
         
-
-"""
-References:
-
-[1] George, R., Zhao, J., Kossaifi, J., Li, Z., and Anandkumar, A. (2024)
-"Incremental Spatial and Spectral Learning of Neural Operators for Solving Large-Scale PDEs".
-ArXiv preprint, https://arxiv.org/pdf/2211.15188
-"""
