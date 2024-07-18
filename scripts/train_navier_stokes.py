@@ -8,7 +8,6 @@ import wandb
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.data.datasets.navier_stokes import load_navier_stokes_pt
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
-from neuralop.training import setup, BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -156,12 +155,6 @@ if config.verbose:
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
 
-# only perform MG patching if config patching levels > 0
-
-callbacks = [
-    BasicLoggerCallback(wandb_init_args)
-]
-
 
 trainer = Trainer(
     model=model,
@@ -169,7 +162,6 @@ trainer = Trainer(
     data_processor=data_processor,
     device=device,
     amp_autocast=config.opt.amp_autocast,
-    callbacks=callbacks,
     log_test_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,

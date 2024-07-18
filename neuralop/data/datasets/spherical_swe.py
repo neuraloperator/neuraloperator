@@ -78,7 +78,7 @@ class SphericalSWEDataset(torch.utils.data.Dataset):
         tar = self.solver.spec2grid(tar)        
 
         return inp, tar
-
+    
     def __getitem__(self, index):
 
         with torch.inference_mode():

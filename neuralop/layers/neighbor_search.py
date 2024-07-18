@@ -5,7 +5,7 @@ from torch import nn
 #Uses open3d by default which, as of 07/23/2023, requires torch 1.13.1
 class NeighborSearch(nn.Module):
     """
-    eighborhood search between two arbitrary coordinate meshes.
+    Neighborhood search between two arbitrary coordinate meshes.
     For each point `x` in `queries`, returns a set of the indices of all points `y` in `data` 
     within the ball of radius r `B_r(x)`
 
@@ -70,11 +70,11 @@ class NeighborSearch(nn.Module):
 
 def native_neighbor_search(data: torch.Tensor, queries: torch.Tensor, radius: float):
     """
-
-    Parameters
-    ----------
     Native PyTorch implementation of a neighborhood search
     between two arbitrary coordinate meshes.
+     
+    Parameters
+    -----------
 
     data : torch.Tensor
         vector of data points from which to find neighbors
