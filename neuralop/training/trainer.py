@@ -13,6 +13,9 @@ from .training_state import load_training_state, save_training_state
 
 
 class Trainer:
+    """
+    A general Trainer class to train neural-operators on given datasets
+    """
     def __init__(
         self,
         *,
@@ -28,8 +31,6 @@ class Trainer:
         verbose: bool=False,
     ):
         """
-        A general Trainer class to train neural-operators on given datasets
-
         Parameters
         ----------
         model : nn.Module
