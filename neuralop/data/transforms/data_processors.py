@@ -62,11 +62,13 @@ class DataProcessor(torch.nn.Module, metaclass=ABCMeta):
         pass
 
 class DefaultDataProcessor(DataProcessor):
+    """DefaultDataProcessor is a simple processor 
+    to pre/post process data before training/inferencing a model.
+    """
     def __init__(
         self, in_normalizer=None, out_normalizer=None, positional_encoding=None
     ):
-        """A simple processor to pre/post process data before training/inferencing a model.
-
+        """
         Parameters
         ----------
         in_normalizer : Transform, optional, default is None
@@ -92,6 +94,22 @@ class DefaultDataProcessor(DataProcessor):
         return self
 
     def preprocess(self, data_dict, batched=True):
+        """preprocess a batch of data into the format
+        expected in model's forward call
+
+        Parameters
+        ----------
+        data_dict : dict
+            input data dictionary with at least
+            keys 'x' (inputs) and 'y' (ground truth)
+        batched : bool, optional
+            whether data contains a batch dim, by default True
+
+        Returns
+        -------
+        dict
+            preprocessed data_dict
+        """
         x = data_dict["x"].to(self.device)
         y = data_dict["y"].to(self.device)
 
@@ -108,6 +126,22 @@ class DefaultDataProcessor(DataProcessor):
         return data_dict
 
     def postprocess(self, output, data_dict):
+        """postprocess model outputs and data_dict
+        into format expected by training or val loss
+
+        Parameters
+        ----------
+        output : torch.Tensor
+            raw model outputs
+        data_dict : dict
+            dictionary containing single batch
+            of data
+
+        Returns
+        -------
+        out, data_dict
+            postprocessed outputs and data dict
+        """
         y = data_dict["y"]
         if self.out_normalizer and not self.training:
             output = self.out_normalizer.inverse_transform(output)
@@ -116,6 +150,15 @@ class DefaultDataProcessor(DataProcessor):
         return output, data_dict
 
     def forward(self, **data_dict):
+        """forward call wraps a model
+        to perform preprocessing, forward, and post-
+        processing all in one call
+
+        Returns
+        -------
+        output, data_dict
+            postprocessed data for use in loss
+        """
         data_dict = self.preprocess(data_dict)
         output = self.model(data_dict["x"])
         output = self.postprocess(output)
