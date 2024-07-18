@@ -28,7 +28,7 @@ class LpLoss(object):
             order of L-norm, by default 2
             L-p norm: [\sum_{i=0}^n (x_i - y_i)**p] ** (1/p)
         L : float or list, optional
-            normalization constant per dim, by default 2*math.pi
+            quadrature weights per dim, by default 2*math.pi
             either single scalar for each dim, or one per dim
         reduce_dims : int, optional
             dimensions across which to reduce for loss, by default 0
