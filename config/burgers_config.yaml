@@ -92,4 +92,4 @@ default: &DEFAULT
     entity: "" # put your username here
     sweep: False
     log_output: True
-    log_test_interval: 1
+    eval_interval: 1
