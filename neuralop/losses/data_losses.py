@@ -15,7 +15,8 @@ from .finite_diff import central_diff_1d, central_diff_2d, central_diff_3d
 #loss function with rel/abs Lp loss
 class LpLoss(object):
     """
-    LpLoss provides the L-p norm on d-dimensional data
+    LpLoss provides the L-p norm between two 
+    discretized d-dimensional functions
     """
     def __init__(self, d=1, p=2, L=2*math.pi, reduce_dims=0, reductions='sum'):
         """
@@ -160,9 +161,33 @@ class LpLoss(object):
 
 class H1Loss(object):
     """
-    H1 Sobolev function norm.
+    H1Loss provides the H1 Sobolev norm between
+    two d-dimensional discretized functions
     """
     def __init__(self, d=1, L=2*math.pi, reduce_dims=0, reductions='sum', fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
+        """
+
+        Parameters
+        ----------
+        d : int, optional
+            dimension of input functions, by default 1
+        L : int or list, optional
+            quadrature weights (single or by dimension), by default 2*math.pi
+        reduce_dims : int, optional
+            dimensions across which to reduce for loss, by default 0
+        reductions : str, optional
+            whether to reduce each dimension above 
+            by summing ('sum') or averaging ('mean')
+        fix_x_bnd : bool, optional
+            whether to fix finite difference derivative
+            computation on the x boundary, by default False
+        fix_y_bnd : bool, optional
+            whether to fix finite difference derivative
+            computation on the y boundary, by default False
+        fix_z_bnd : bool, optional
+            whether to fix finite difference derivative
+            computation on the z boundary, by default False
+        """
         super().__init__()
 
         assert d > 0 and d < 4, "Currently only implemented for 1, 2, and 3-D."
@@ -196,6 +221,24 @@ class H1Loss(object):
         return f"H1_{self.d}DLoss"
      
     def compute_terms(self, x, y, h):
+        """compute_terms computes the necessary
+        finite-difference derivative terms for computing
+        the H1 norm
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            inputs
+        y : torch.Tensor
+            targets
+        h : int or list
+            discretization size (single or per dim)
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         dict_x = {}
         dict_y = {}
 
