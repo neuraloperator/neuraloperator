@@ -1,6 +1,7 @@
 import sys
 
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
+from pathlib import Path
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
@@ -17,7 +18,7 @@ config_name = "default"
 pipe = ConfigPipeline(
     [
         YamlConfig(
-            "./default_config.yaml", config_name="default", config_folder="../config"
+            "./navier_stokes_config.yaml", config_name="default", config_folder="../config"
         ),
         ArgparseConfig(infer_types=True, config_name=None, config_file=None),
         YamlConfig(config_folder="../config"),
@@ -32,6 +33,8 @@ device, is_logger = setup(config)
 # Set up WandB logging
 wandb_init_args = None
 if config.wandb.log and is_logger:
+    print(config.wandb.log)
+    print(config)
     wandb.login(key=get_wandb_api_key())
     if config.wandb.name:
         wandb_name = config.wandb.name
@@ -70,8 +73,11 @@ if config.verbose:
     pipe.log()
     sys.stdout.flush()
 
+data_dir = Path(f"~/{config.data.folder}").expanduser()
+
 # Loading the Navier-Stokes dataset in 128x128 resolution
 train_loader, test_loaders, data_processor = load_navier_stokes_pt(
+    data_root=data_dir,
     train_resolution=config.data.train_resolution,
     n_train=config.data.n_train,
     batch_size=config.data.batch_size,
