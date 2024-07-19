@@ -118,7 +118,10 @@ class Trainer:
         """
         self.optimizer = optimizer
         self.scheduler = scheduler
-        self.regularizer = regularizer
+        if regularizer:
+            self.regularizer = regularizer
+        else:
+            self.regularizer = None
 
         if training_loss is None:
             training_loss = LpLoss(d=2)
@@ -430,8 +433,6 @@ class Trainer:
 
         for loss_name, loss in eval_losses.items():
             val_loss = loss(out, **sample)
-            '''if val_loss.shape == ():
-                val_loss = val_loss.item()'''
             eval_step_losses[loss_name] = val_loss
         
         if return_output:
