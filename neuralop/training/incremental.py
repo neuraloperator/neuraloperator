@@ -16,7 +16,9 @@ class IncrementalFNOTrainer(Trainer):
     References
     -----------
     
-    .. _[1]: George, R., Zhao, J., Kossaifi, J., Li, Z., and Anandkumar, A. (2024)
+    .. _[1]: 
+    
+    George, R., Zhao, J., Kossaifi, J., Li, Z., and Anandkumar, A. (2024)
         "Incremental Spatial and Spectral Learning of Neural Operators for Solving Large-Scale PDEs".
         ArXiv preprint, https://arxiv.org/pdf/2211.15188
     """
