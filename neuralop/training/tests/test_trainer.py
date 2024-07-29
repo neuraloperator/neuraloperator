@@ -135,11 +135,11 @@ def test_load_from_checkpoint():
                   training_loss=l2loss,
                   eval_losses=eval_losses,
                   save_dir="./full_states",
-                  save_best="test_l2"
+                  save_every=1,
                   )
     
     # create a new model from saved checkpoint and evaluate
-    loaded_model = DummyModel.from_checkpoint(save_folder='./full_states', save_name='best_model')
+    loaded_model = DummyModel.from_checkpoint(save_folder='./full_states', save_name='model')
     trainer = Trainer(model=loaded_model,
                       n_epochs=1,
     )
