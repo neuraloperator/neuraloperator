@@ -170,12 +170,8 @@ using a very standard machine learning training loop. To speed up this process, 
 provide a <code class="code docutils literal notranslate"><span class="pre">Trainer</span></code> class that automates much of this boilerplate logic.
 Things like loading a model to device, zeroing gradients and computing most loss
 functions are taken care of.</p>
-<p>If you need to implement more domain-specific training logic, we also expose an
-interface for stateful Callbacks that trigger events and track information
-throughout the lifetime of your Trainer. Each callback implements a series of
-methods that are automatically called throughout the training loop, and you
-can override individual methods as necessary for your custom logic.</p>
-<p>For more specific documentation on callbacks, check the API reference.</p>
+<p>The <code class="code docutils literal notranslate"><span class="pre">Trainer</span></code> implements training in a modular fashion, meaning that more domain-specific logic
+can easily be implemented. For more specific documentation, check the API reference.</p>
 </section>
 <section id="distributed-training">
 <h2>Distributed Training<a class="headerlink" href="#distributed-training" title="Link to this heading"></a></h2>

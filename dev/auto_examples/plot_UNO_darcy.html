@@ -32,7 +32,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="A simple Darcy-Flow spectrum analysis" href="plot_darcy_flow_spectrum.html" />
-    <link rel="prev" title="Training a TFNO on Darcy-Flow" href="checkpoint_FNO_darcy.html" />
+    <link rel="prev" title="Training a SFNO on the spherical Shallow Water equations" href="plot_SFNO_swe.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -131,9 +131,9 @@
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Gallery of examples</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_count_flops.html">Using <cite>torchtnt</cite> to count FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_SFNO_swe.html">Training a SFNO on the spherical Shallow Water equations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">U-NO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow_spectrum.html">A simple Darcy-Flow spectrum analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_incremental_FNO_darcy.html">Training a neural operator on Darcy-Flow - Author Robert Joseph George</a></li>
@@ -341,13 +341,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f8ae377d340&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7efd595c9b50&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f8ae377d4c0&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7efd595c9c40&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f8ae377d4c0&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f8ae377dfd0&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7efd595c9c40&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7efd595c9730&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -356,13 +356,9 @@ Parameter Group 0
                   <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
                   <span class="n">data_processor</span><span class="o">=</span><span class="n">data_processor</span><span class="p">,</span>
                   <span class="n">wandb_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                  <span class="n">log_test_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                  <span class="n">eval_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
                   <span class="n">use_distributed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>self.override_load_to_device=False
-self.overrides_loss=False
 </pre></div>
 </div>
 <p>Actually train the model on our small Darcy-Flow dataset</p>
@@ -378,15 +374,22 @@ self.overrides_loss=False
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 32 samples
 Testing on [50, 50] samples         on resolutions [16, 32].
 Raw outputs of shape torch.Size([32, 1, 16, 16])
-[0] time=5.83, avg_loss=0.6012, train_err=18.7867, 16_h1=0.5133, 16_l2=0.4089, 32_h1=0.4970, 32_l2=0.3935
-[3] time=5.87, avg_loss=0.2688, train_err=8.3987, 16_h1=0.6916, 16_l2=0.5097, 32_h1=0.5882, 32_l2=0.4531
-[6] time=5.87, avg_loss=0.2288, train_err=7.1504, 16_h1=0.6106, 16_l2=0.4656, 32_h1=0.5639, 32_l2=0.4548
-[9] time=5.86, avg_loss=0.2169, train_err=6.7785, 16_h1=0.6177, 16_l2=0.4394, 32_h1=0.5442, 32_l2=0.4321
-[12] time=5.84, avg_loss=0.2201, train_err=6.8779, 16_h1=0.6908, 16_l2=0.4800, 32_h1=0.6080, 32_l2=0.4647
-[15] time=5.94, avg_loss=0.1872, train_err=5.8501, 16_h1=0.7006, 16_l2=0.4764, 32_h1=0.5985, 32_l2=0.4483
-[18] time=5.88, avg_loss=0.1782, train_err=5.5691, 16_h1=0.6349, 16_l2=0.4515, 32_h1=0.5680, 32_l2=0.4354
+[0] time=5.82, avg_loss=0.6165, train_err=19.2667
+Eval: 16_h1=0.5875, 16_l2=0.4274, 32_h1=0.5295, 32_l2=0.3757
+[3] time=5.81, avg_loss=0.2736, train_err=8.5510
+Eval: 16_h1=0.5196, 16_l2=0.3979, 32_h1=0.5524, 32_l2=0.4040
+[6] time=5.79, avg_loss=0.2347, train_err=7.3343
+Eval: 16_h1=0.7142, 16_l2=0.4887, 32_h1=0.6056, 32_l2=0.4374
+[9] time=5.82, avg_loss=0.2340, train_err=7.3113
+Eval: 16_h1=0.5869, 16_l2=0.4162, 32_h1=0.5607, 32_l2=0.4314
+[12] time=5.82, avg_loss=0.2090, train_err=6.5310
+Eval: 16_h1=0.6857, 16_l2=0.4781, 32_h1=0.6081, 32_l2=0.4705
+[15] time=5.78, avg_loss=0.2120, train_err=6.6249
+Eval: 16_h1=0.6293, 16_l2=0.4450, 32_h1=0.5829, 32_l2=0.4549
+[18] time=5.75, avg_loss=0.1875, train_err=5.8592
+Eval: 16_h1=0.6699, 16_l2=0.4715, 32_h1=0.6176, 32_l2=0.4755
 
-{&#39;16_h1&#39;: 0.6348944282531739, &#39;16_l2&#39;: 0.45152570724487306, &#39;32_h1&#39;: 0.5679565238952636, &#39;32_l2&#39;: 0.4353780460357666}
+{&#39;train_err&#39;: 5.4388433657586575, &#39;avg_loss&#39;: 0.17404298770427704, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 5.705583133999994}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -436,7 +439,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 0.160 seconds)</p>
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 58.417 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/ecc34f03fb30bee651bda959149422c4/plot_UNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_UNO_darcy.ipynb</span></code></a></p>
@@ -457,11 +460,11 @@ ii) can be trained quickly on CPU</p>
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="checkpoint_FNO_darcy.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="plot_SFNO_swe.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span>Training a TFNO on Darcy-Flow</span>
+        <span>Training a SFNO on the spherical Shallow Water equations</span>
     </a>
     
     

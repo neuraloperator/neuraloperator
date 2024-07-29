@@ -247,7 +247,7 @@
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.models.UNO.html#neuralop.models.UNO" title="neuralop.models.UNO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UNO</span></code></a>(in_channels, out_channels, hidden_channels)</p></td>
-<td><p>U-Shaped Neural Operator <a href="#id3"><span class="problematic" id="id1">[1]_</span></a></p></td>
+<td><p>U-Shaped Neural Operator <a href="#id4"><span class="problematic" id="id1">[1]_</span></a></p></td>
 </tr>
 </tbody>
 </table>
@@ -373,7 +373,10 @@ training a machine learning model to minimize a loss function on a dataset:</p>
 <span class="target" id="module-neuralop.training"></span><table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/neuralop.training.Trainer.html#neuralop.training.Trainer" title="neuralop.training.Trainer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Trainer</span></code></a>(*, model, n_epochs[, wandb_log, ...])</p></td>
-<td><p></p></td>
+<td><p>A general Trainer class to train neural-operators on given datasets</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/neuralop.training.IncrementalFNOTrainer.html#neuralop.training.IncrementalFNOTrainer" title="neuralop.training.IncrementalFNOTrainer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IncrementalFNOTrainer</span></code></a>(model, n_epochs[, ...])</p></td>
+<td><p>IncrementalFNOTrainer subclasses the Trainer  to implement specific logic for the Incremental-FNO as described in <a href="#id5"><span class="problematic" id="id3">[1]_</span></a>.</p></td>
 </tr>
 </tbody>
 </table>

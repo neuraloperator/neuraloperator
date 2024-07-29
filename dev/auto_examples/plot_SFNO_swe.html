@@ -31,7 +31,7 @@
  
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Training a TFNO on Darcy-Flow" href="checkpoint_FNO_darcy.html" />
+    <link rel="next" title="U-NO on Darcy-Flow" href="plot_UNO_darcy.html" />
     <link rel="prev" title="Training a TFNO on Darcy-Flow" href="plot_FNO_darcy.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
@@ -131,9 +131,9 @@
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Gallery of examples</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_count_flops.html">Using <cite>torchtnt</cite> to count FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Training a SFNO on the spherical Shallow Water equations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_UNO_darcy.html">U-NO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow_spectrum.html">A simple Darcy-Flow spectrum analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_incremental_FNO_darcy.html">Training a neural operator on Darcy-Flow - Author Robert Joseph George</a></li>
@@ -279,26 +279,22 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f8ae3836580&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7efd591f52b0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f8ae37a6ca0&gt;
+ * Train: &lt;neuralop.losses.data_losses.LpLoss object at 0x7efd591abac0&gt;
 
- * Test: {&#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f8ae37a6ca0&gt;}
+ * Test: {&#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7efd591abac0&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
                   <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
                   <span class="n">wandb_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                  <span class="n">log_test_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                  <span class="n">eval_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
                   <span class="n">use_distributed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>self.override_load_to_device=False
-self.overrides_loss=False
 </pre></div>
 </div>
 <p>Actually train the model on our small Darcy-Flow dataset</p>
@@ -314,15 +310,22 @@ self.overrides_loss=False
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 50 samples
 Testing on [50, 50] samples         on resolutions [(32, 64), (64, 128)].
 Raw outputs of shape torch.Size([4, 3, 32, 64])
-[0] time=3.62, avg_loss=2.2126, train_err=8.8506, (32, 64)_l2=1.7585, (64, 128)_l2=2.6395
-[3] time=3.58, avg_loss=0.9967, train_err=3.9867, (32, 64)_l2=1.0471, (64, 128)_l2=2.4588
-[6] time=3.60, avg_loss=0.9582, train_err=3.8328, (32, 64)_l2=0.9580, (64, 128)_l2=2.4546
-[9] time=3.60, avg_loss=0.9329, train_err=3.7315, (32, 64)_l2=0.9267, (64, 128)_l2=2.4371
-[12] time=3.62, avg_loss=0.9173, train_err=3.6691, (32, 64)_l2=0.9586, (64, 128)_l2=2.4413
-[15] time=3.57, avg_loss=0.9103, train_err=3.6411, (32, 64)_l2=0.9544, (64, 128)_l2=2.4106
-[18] time=3.63, avg_loss=0.9032, train_err=3.6129, (32, 64)_l2=0.9295, (64, 128)_l2=2.4366
+[0] time=3.54, avg_loss=2.1786, train_err=8.7145
+Eval: (32, 64)_l2=1.4735, (64, 128)_l2=2.5687
+[3] time=3.53, avg_loss=0.9820, train_err=3.9281
+Eval: (32, 64)_l2=1.0271, (64, 128)_l2=2.4180
+[6] time=3.50, avg_loss=0.9389, train_err=3.7557
+Eval: (32, 64)_l2=0.9747, (64, 128)_l2=2.4168
+[9] time=3.58, avg_loss=0.9262, train_err=3.7046
+Eval: (32, 64)_l2=0.9829, (64, 128)_l2=2.3908
+[12] time=3.61, avg_loss=0.9140, train_err=3.6561
+Eval: (32, 64)_l2=0.9445, (64, 128)_l2=2.3779
+[15] time=3.67, avg_loss=0.9036, train_err=3.6145
+Eval: (32, 64)_l2=0.9544, (64, 128)_l2=2.3643
+[18] time=3.58, avg_loss=0.9024, train_err=3.6097
+Eval: (32, 64)_l2=0.9162, (64, 128)_l2=2.3589
 
-{&#39;(32, 64)_l2&#39;: 0.9294701004028321, &#39;(64, 128)_l2&#39;: 2.436557731628418}
+{&#39;train_err&#39;: 3.5767033672332764, &#39;avg_loss&#39;: 0.8941758418083191, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 3.6299532699999872}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -369,7 +372,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 29.050 seconds)</p>
+<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 28.468 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-sfno-swe-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/af3a515d2684655c6a5a8e0df87a4cf9/plot_SFNO_swe.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_SFNO_swe.ipynb</span></code></a></p>
@@ -398,8 +401,8 @@ ii) can be trained quickly on CPU</p>
     </a>
     
     
-    <a class="button pagination-next" href="checkpoint_FNO_darcy.html" title="next page" accesskey="n">
-        <span>Training a TFNO on Darcy-Flow </span>
+    <a class="button pagination-next" href="plot_UNO_darcy.html" title="next page" accesskey="n">
+        <span>U-NO on Darcy-Flow </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>

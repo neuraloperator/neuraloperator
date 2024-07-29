@@ -130,9 +130,9 @@
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Gallery of examples</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_count_flops.html">Using <cite>torchtnt</cite> to count FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_SFNO_swe.html">Training a SFNO on the spherical Shallow Water equations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_UNO_darcy.html">U-NO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow_spectrum.html">A simple Darcy-Flow spectrum analysis</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Training a neural operator on Darcy-Flow - Author Robert Joseph George</a></li>
@@ -174,10 +174,9 @@ to download the full example code.</p>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">FNO</span>
-<span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">Trainer</span>
 <span class="kn">from</span> <span class="nn">neuralop.data.datasets</span> <span class="kn">import</span> <span class="n">load_darcy_flow_small</span>
 <span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">count_model_params</span>
-<span class="kn">from</span> <span class="nn">neuralop.training.callbacks</span> <span class="kn">import</span> <span class="n">IncrementalCallback</span>
+<span class="kn">from</span> <span class="nn">neuralop.training.incremental</span> <span class="kn">import</span> <span class="n">IncrementalFNOTrainer</span>
 <span class="kn">from</span> <span class="nn">neuralop.data.transforms.data_processors</span> <span class="kn">import</span> <span class="n">IncrementalDataProcessor</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">LpLoss</span><span class="p">,</span> <span class="n">H1Loss</span>
 </pre></div>
@@ -295,18 +294,18 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f8aeb29c370&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7efd5b6c7640&gt;
 
 ### LOSSES ###
 
 ### INCREMENTAL RESOLUTION + GRADIENT EXPLAINED ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f8aeb29c970&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7efd555a55b0&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f8aeb29c970&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f8aeb29cac0&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7efd555a55b0&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7efd6054d0d0&gt;}
 </pre></div>
 </div>
-<p>Set up the IncrementalCallback
+<p>Set up the IncrementalTrainer
 other options include setting incremental_loss_gap = True
 If one wants to use incremental resolution set it to True
 In this example we only update the modes and not the resolution
@@ -325,34 +324,21 @@ uses the incremental_grad_max_iter parameter - sets the maximum number of iterat
 uses the incremental_loss_eps parameter</p>
 </dd>
 </dl>
-<p>One can use multiple Callbacks as well</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">callbacks</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">IncrementalCallback</span><span class="p">(</span>
-        <span class="n">incremental_loss_gap</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">incremental_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">incremental_grad_eps</span><span class="o">=</span><span class="mf">0.9999</span><span class="p">,</span>
-        <span class="n">incremental_loss_eps</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
-        <span class="n">incremental_buffer</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-        <span class="n">incremental_max_iter</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">incremental_grad_max_iter</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-    <span class="p">)</span>
-<span class="p">]</span>
-
-<span class="c1"># Finally pass all of these to the Trainer</span>
-<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Finally pass all of these to the Trainer</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">IncrementalFNOTrainer</span><span class="p">(</span>
     <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
     <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
     <span class="n">data_processor</span><span class="o">=</span><span class="n">data_transform</span><span class="p">,</span>
-    <span class="n">callbacks</span><span class="o">=</span><span class="n">callbacks</span><span class="p">,</span>
     <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
     <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">incremental_loss_gap</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">incremental_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">incremental_grad_eps</span><span class="o">=</span><span class="mf">0.9999</span><span class="p">,</span>
+    <span class="n">incremental_loss_eps</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
+    <span class="n">incremental_buffer</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">incremental_max_iter</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">incremental_grad_max_iter</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
 <span class="p">)</span>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>using standard method to load data to device.
-using standard method to compute loss.
-self.override_load_to_device=False
-self.overrides_loss=False
 </pre></div>
 </div>
 <p>Train the model</p>
@@ -367,77 +353,54 @@ self.overrides_loss=False
 <span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 100 samples
-Testing on [50, 50] samples         on resolutions [16, 32].
-Training on 7 samples
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 7 samples
 Testing on [50, 50] samples         on resolutions [16, 32].
 Raw outputs of shape torch.Size([16, 1, 8, 8])
-Raw outputs of size out.shape=torch.Size([16, 1, 8, 8])
-[0] time=0.15, avg_loss=0.8267, train_err=11.8096, 16_h1=0.8102, 16_l2=0.6643, 32_h1=0.8250, 32_l2=0.6596
-[0] time=0.15, avg_loss=0.8267, train_err=11.8096, 16_h1=0.8102, 16_l2=0.6643, 32_h1=0.8250, 32_l2=0.6596
-Currently the model is using incremental_n_modes = [2, 2]
-[1] time=0.13, avg_loss=0.7575, train_err=10.8212, 16_h1=0.7362, 16_l2=0.5747, 32_h1=0.7570, 32_l2=0.5641
-[1] time=0.13, avg_loss=0.7575, train_err=10.8212, 16_h1=0.7362, 16_l2=0.5747, 32_h1=0.7570, 32_l2=0.5641
-Currently the model is using incremental_n_modes = [2, 2]
-[2] time=0.14, avg_loss=0.7239, train_err=10.3411, 16_h1=0.7366, 16_l2=0.5766, 32_h1=0.7783, 32_l2=0.5661
-[2] time=0.14, avg_loss=0.7239, train_err=10.3411, 16_h1=0.7366, 16_l2=0.5766, 32_h1=0.7783, 32_l2=0.5661
-Currently the model is using incremental_n_modes = [3, 2]
-[3] time=0.14, avg_loss=0.7228, train_err=10.3255, 16_h1=0.7465, 16_l2=0.5743, 32_h1=0.8169, 32_l2=0.5600
-[3] time=0.14, avg_loss=0.7228, train_err=10.3255, 16_h1=0.7465, 16_l2=0.5743, 32_h1=0.8169, 32_l2=0.5600
-Currently the model is using incremental_n_modes = [3, 2]
-[4] time=0.14, avg_loss=0.7274, train_err=10.3921, 16_h1=0.7092, 16_l2=0.5530, 32_h1=0.7454, 32_l2=0.5419
-[4] time=0.14, avg_loss=0.7274, train_err=10.3921, 16_h1=0.7092, 16_l2=0.5530, 32_h1=0.7454, 32_l2=0.5419
-Currently the model is using incremental_n_modes = [3, 2]
-[5] time=0.13, avg_loss=0.7118, train_err=10.1691, 16_h1=0.7132, 16_l2=0.5544, 32_h1=0.7537, 32_l2=0.5433
-[5] time=0.13, avg_loss=0.7118, train_err=10.1691, 16_h1=0.7132, 16_l2=0.5544, 32_h1=0.7537, 32_l2=0.5433
-Currently the model is using incremental_n_modes = [4, 3]
-[6] time=0.15, avg_loss=0.6916, train_err=9.8802, 16_h1=0.7031, 16_l2=0.5461, 32_h1=0.7355, 32_l2=0.5360
-[6] time=0.15, avg_loss=0.6916, train_err=9.8802, 16_h1=0.7031, 16_l2=0.5461, 32_h1=0.7355, 32_l2=0.5360
-Currently the model is using incremental_n_modes = [4, 3]
-[7] time=0.15, avg_loss=0.6754, train_err=9.6491, 16_h1=0.7058, 16_l2=0.5526, 32_h1=0.7365, 32_l2=0.5361
-[7] time=0.15, avg_loss=0.6754, train_err=9.6491, 16_h1=0.7058, 16_l2=0.5526, 32_h1=0.7365, 32_l2=0.5361
-Currently the model is using incremental_n_modes = [4, 3]
-[8] time=0.15, avg_loss=0.6691, train_err=9.5586, 16_h1=0.6777, 16_l2=0.5305, 32_h1=0.7038, 32_l2=0.5220
-[8] time=0.15, avg_loss=0.6691, train_err=9.5586, 16_h1=0.6777, 16_l2=0.5305, 32_h1=0.7038, 32_l2=0.5220
-Currently the model is using incremental_n_modes = [5, 3]
-[9] time=0.16, avg_loss=0.6522, train_err=9.3177, 16_h1=0.6972, 16_l2=0.5441, 32_h1=0.7197, 32_l2=0.5342
-[9] time=0.16, avg_loss=0.6522, train_err=9.3177, 16_h1=0.6972, 16_l2=0.5441, 32_h1=0.7197, 32_l2=0.5342
-Currently the model is using incremental_n_modes = [5, 3]
+[0] time=0.14, avg_loss=0.8267, train_err=11.8096
+Eval: 16_h1=0.8102, 16_l2=0.6643, 32_h1=0.8250, 32_l2=0.6596
+[1] time=0.13, avg_loss=0.7575, train_err=10.8212
+Eval: 16_h1=0.7362, 16_l2=0.5747, 32_h1=0.7570, 32_l2=0.5641
+[2] time=0.13, avg_loss=0.7239, train_err=10.3411
+Eval: 16_h1=0.7366, 16_l2=0.5766, 32_h1=0.7783, 32_l2=0.5661
+[3] time=0.14, avg_loss=0.7228, train_err=10.3255
+Eval: 16_h1=0.7465, 16_l2=0.5743, 32_h1=0.8169, 32_l2=0.5600
+[4] time=0.13, avg_loss=0.7274, train_err=10.3921
+Eval: 16_h1=0.7092, 16_l2=0.5530, 32_h1=0.7454, 32_l2=0.5419
+[5] time=0.13, avg_loss=0.7118, train_err=10.1691
+Eval: 16_h1=0.7132, 16_l2=0.5544, 32_h1=0.7537, 32_l2=0.5433
+[6] time=0.15, avg_loss=0.6916, train_err=9.8802
+Eval: 16_h1=0.7031, 16_l2=0.5461, 32_h1=0.7355, 32_l2=0.5360
+[7] time=0.15, avg_loss=0.6754, train_err=9.6491
+Eval: 16_h1=0.7058, 16_l2=0.5526, 32_h1=0.7365, 32_l2=0.5361
+[8] time=0.15, avg_loss=0.6691, train_err=9.5586
+Eval: 16_h1=0.6777, 16_l2=0.5305, 32_h1=0.7038, 32_l2=0.5220
+[9] time=0.15, avg_loss=0.6522, train_err=9.3177
+Eval: 16_h1=0.6972, 16_l2=0.5441, 32_h1=0.7197, 32_l2=0.5342
 Incre Res Update: change index to 1
 Incre Res Update: change sub to 1
 Incre Res Update: change res to 16
-[10] time=0.23, avg_loss=0.6335, train_err=9.0503, 16_h1=0.6933, 16_l2=0.5498, 32_h1=0.7084, 32_l2=0.5363
-[10] time=0.23, avg_loss=0.6335, train_err=9.0503, 16_h1=0.6933, 16_l2=0.5498, 32_h1=0.7084, 32_l2=0.5363
-Currently the model is using incremental_n_modes = [5, 3]
-[11] time=0.22, avg_loss=0.6075, train_err=8.6785, 16_h1=0.6825, 16_l2=0.5391, 32_h1=0.6986, 32_l2=0.5267
-[11] time=0.22, avg_loss=0.6075, train_err=8.6785, 16_h1=0.6825, 16_l2=0.5391, 32_h1=0.6986, 32_l2=0.5267
-Currently the model is using incremental_n_modes = [6, 4]
-[12] time=0.24, avg_loss=0.5724, train_err=8.1771, 16_h1=0.6952, 16_l2=0.5516, 32_h1=0.7056, 32_l2=0.5335
-[12] time=0.24, avg_loss=0.5724, train_err=8.1771, 16_h1=0.6952, 16_l2=0.5516, 32_h1=0.7056, 32_l2=0.5335
-Currently the model is using incremental_n_modes = [6, 4]
-[13] time=0.24, avg_loss=0.5271, train_err=7.5303, 16_h1=0.7562, 16_l2=0.5915, 32_h1=0.7667, 32_l2=0.5748
-[13] time=0.24, avg_loss=0.5271, train_err=7.5303, 16_h1=0.7562, 16_l2=0.5915, 32_h1=0.7667, 32_l2=0.5748
-Currently the model is using incremental_n_modes = [6, 4]
-[14] time=0.24, avg_loss=0.4876, train_err=6.9663, 16_h1=0.7453, 16_l2=0.5880, 32_h1=0.7560, 32_l2=0.5700
-[14] time=0.24, avg_loss=0.4876, train_err=6.9663, 16_h1=0.7453, 16_l2=0.5880, 32_h1=0.7560, 32_l2=0.5700
-Currently the model is using incremental_n_modes = [7, 4]
-[15] time=0.24, avg_loss=0.4745, train_err=6.7789, 16_h1=0.6888, 16_l2=0.5401, 32_h1=0.7067, 32_l2=0.5310
-[15] time=0.24, avg_loss=0.4745, train_err=6.7789, 16_h1=0.6888, 16_l2=0.5401, 32_h1=0.7067, 32_l2=0.5310
-Currently the model is using incremental_n_modes = [7, 4]
-[16] time=0.25, avg_loss=0.4645, train_err=6.6351, 16_h1=0.7172, 16_l2=0.5724, 32_h1=0.7301, 32_l2=0.5611
-[16] time=0.25, avg_loss=0.4645, train_err=6.6351, 16_h1=0.7172, 16_l2=0.5724, 32_h1=0.7301, 32_l2=0.5611
-Currently the model is using incremental_n_modes = [7, 4]
-[17] time=0.24, avg_loss=0.4599, train_err=6.5699, 16_h1=0.7613, 16_l2=0.5980, 32_h1=0.7752, 32_l2=0.5801
-[17] time=0.24, avg_loss=0.4599, train_err=6.5699, 16_h1=0.7613, 16_l2=0.5980, 32_h1=0.7752, 32_l2=0.5801
-Currently the model is using incremental_n_modes = [8, 5]
-[18] time=0.24, avg_loss=0.3874, train_err=5.5345, 16_h1=0.6920, 16_l2=0.5396, 32_h1=0.7117, 32_l2=0.5285
-[18] time=0.24, avg_loss=0.3874, train_err=5.5345, 16_h1=0.6920, 16_l2=0.5396, 32_h1=0.7117, 32_l2=0.5285
-Currently the model is using incremental_n_modes = [8, 5]
-[19] time=0.24, avg_loss=0.3342, train_err=4.7749, 16_h1=0.6870, 16_l2=0.5392, 32_h1=0.6975, 32_l2=0.5236
-[19] time=0.24, avg_loss=0.3342, train_err=4.7749, 16_h1=0.6870, 16_l2=0.5392, 32_h1=0.6975, 32_l2=0.5236
-Currently the model is using incremental_n_modes = [8, 5]
+[10] time=0.22, avg_loss=0.6335, train_err=9.0503
+Eval: 16_h1=0.6933, 16_l2=0.5498, 32_h1=0.7084, 32_l2=0.5363
+[11] time=0.21, avg_loss=0.6075, train_err=8.6785
+Eval: 16_h1=0.6825, 16_l2=0.5391, 32_h1=0.6986, 32_l2=0.5267
+[12] time=0.23, avg_loss=0.5724, train_err=8.1771
+Eval: 16_h1=0.6952, 16_l2=0.5516, 32_h1=0.7056, 32_l2=0.5335
+[13] time=0.24, avg_loss=0.5271, train_err=7.5303
+Eval: 16_h1=0.7562, 16_l2=0.5915, 32_h1=0.7667, 32_l2=0.5748
+[14] time=0.24, avg_loss=0.4876, train_err=6.9663
+Eval: 16_h1=0.7453, 16_l2=0.5880, 32_h1=0.7560, 32_l2=0.5700
+[15] time=0.24, avg_loss=0.4745, train_err=6.7789
+Eval: 16_h1=0.6888, 16_l2=0.5401, 32_h1=0.7067, 32_l2=0.5310
+[16] time=0.25, avg_loss=0.4645, train_err=6.6351
+Eval: 16_h1=0.7172, 16_l2=0.5724, 32_h1=0.7301, 32_l2=0.5611
+[17] time=0.24, avg_loss=0.4599, train_err=6.5699
+Eval: 16_h1=0.7613, 16_l2=0.5980, 32_h1=0.7752, 32_l2=0.5801
+[18] time=0.24, avg_loss=0.3874, train_err=5.5345
+Eval: 16_h1=0.6920, 16_l2=0.5396, 32_h1=0.7117, 32_l2=0.5285
+[19] time=0.24, avg_loss=0.3342, train_err=4.7749
+Eval: 16_h1=0.6870, 16_l2=0.5392, 32_h1=0.6975, 32_l2=0.5236
 
-{&#39;16_h1&#39;: 0.6869734001159667, &#39;16_l2&#39;: 0.5392194366455079, &#39;32_h1&#39;: 0.6974964904785156, &#39;32_l2&#39;: 0.5235791015625}
+{&#39;train_err&#39;: 4.774891308375767, &#39;avg_loss&#39;: 0.3342423915863037, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 0.2437376640000366, &#39;16_h1&#39;: tensor(0.6870), &#39;16_l2&#39;: tensor(0.5392), &#39;32_h1&#39;: tensor(0.6975), &#39;32_l2&#39;: tensor(0.5236)}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -487,7 +450,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 6.416 seconds)</p>
+<img src="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 6.294 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-incremental-fno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/082e73328a5caf8c1fe9ad7fe05cf68f/plot_incremental_FNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_incremental_FNO_darcy.ipynb</span></code></a></p>

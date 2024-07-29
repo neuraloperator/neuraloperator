@@ -24,7 +24,7 @@ Training a TFNO on Darcy-Flow
 In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
 to train a Tensorized Fourier-Neural Operator
 
-.. GENERATED FROM PYTHON SOURCE LINES 11-24
+.. GENERATED FROM PYTHON SOURCE LINES 11-23
 
 .. code-block:: Python
 
@@ -33,7 +33,6 @@ to train a Tensorized Fourier-Neural Operator
     import sys
     from neuralop.models import TFNO
     from neuralop import Trainer
-    from neuralop.training import CheckpointCallback
     from neuralop.data.datasets import load_darcy_flow_small
     from neuralop.utils import count_model_params
     from neuralop import LpLoss, H1Loss
@@ -42,11 +41,11 @@ to train a Tensorized Fourier-Neural Operator
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 25-26
+.. GENERATED FROM PYTHON SOURCE LINES 24-25
 
 Loading the Navier-Stokes dataset in 128x128 resolution
 
-.. GENERATED FROM PYTHON SOURCE LINES 26-33
+.. GENERATED FROM PYTHON SOURCE LINES 25-32
 
 .. code-block:: Python
 
@@ -58,11 +57,11 @@ Loading the Navier-Stokes dataset in 128x128 resolution
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 34-35
+.. GENERATED FROM PYTHON SOURCE LINES 33-34
 
 We create a tensorized FNO model
 
-.. GENERATED FROM PYTHON SOURCE LINES 35-44
+.. GENERATED FROM PYTHON SOURCE LINES 34-43
 
 .. code-block:: Python
 
@@ -76,11 +75,11 @@ We create a tensorized FNO model
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 45-46
+.. GENERATED FROM PYTHON SOURCE LINES 44-45
 
 Create the optimizer
 
-.. GENERATED FROM PYTHON SOURCE LINES 46-52
+.. GENERATED FROM PYTHON SOURCE LINES 45-51
 
 .. code-block:: Python
 
@@ -91,11 +90,11 @@ Create the optimizer
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 53-54
+.. GENERATED FROM PYTHON SOURCE LINES 52-53
 
 Creating the losses
 
-.. GENERATED FROM PYTHON SOURCE LINES 54-61
+.. GENERATED FROM PYTHON SOURCE LINES 53-60
 
 .. code-block:: Python
 
@@ -107,7 +106,7 @@ Creating the losses
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 62-73
+.. GENERATED FROM PYTHON SOURCE LINES 61-72
 
 .. code-block:: Python
 
@@ -123,35 +122,29 @@ Creating the losses
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 74-75
+.. GENERATED FROM PYTHON SOURCE LINES 73-74
 
 Create the trainer
 
-.. GENERATED FROM PYTHON SOURCE LINES 75-90
+.. GENERATED FROM PYTHON SOURCE LINES 74-83
 
 .. code-block:: Python
 
     trainer = Trainer(model=model, n_epochs=20,
                       device=device,
-                      callbacks=[
-                        CheckpointCallback(save_dir='./checkpoints',
-                                           save_interval=10,
-                                                save_optimizer=True,
-                                                save_scheduler=True)
-                            ],
                       data_processor=data_processor,
                       wandb_log=False,
-                      log_test_interval=3,
+                      eval_interval=3,
                       use_distributed=False,
                       verbose=True)
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 91-92
+.. GENERATED FROM PYTHON SOURCE LINES 84-85
 
 Actually train the model on our small Darcy-Flow dataset
 
-.. GENERATED FROM PYTHON SOURCE LINES 92-120
+.. GENERATED FROM PYTHON SOURCE LINES 85-112
 
 .. code-block:: Python
 
@@ -161,7 +154,9 @@ Actually train the model on our small Darcy-Flow dataset
                   optimizer=optimizer,
                   scheduler=scheduler, 
                   regularizer=False, 
-                  training_loss=train_loss)
+                  training_loss=train_loss, 
+                  save_every=1,
+                  save_dir="./checkpoints")
 
 
     # resume training from saved checkpoint at epoch 10
@@ -169,12 +164,8 @@ Actually train the model on our small Darcy-Flow dataset
     trainer = Trainer(model=model, n_epochs=20,
                       device=device,
                       data_processor=data_processor,
-                      callbacks=[
-                        CheckpointCallback(save_dir='./new_checkpoints',
-                                                resume_from_dir='./checkpoints/ep_10')
-                            ],             
                       wandb_log=False,
-                      log_test_interval=3,
+                      eval_interval=3,
                       use_distributed=False,
                       verbose=True)
 
@@ -183,7 +174,8 @@ Actually train the model on our small Darcy-Flow dataset
                   optimizer=optimizer,
                   scheduler=scheduler, 
                   regularizer=False, 
-                  training_loss=train_loss)
+                  training_loss=train_loss,
+                  resume_from_dir="./checkpoints")
 
 .. _sphx_glr_download_auto_examples_checkpoint_FNO_darcy.py:
 

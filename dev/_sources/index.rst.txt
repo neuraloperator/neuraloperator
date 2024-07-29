@@ -100,7 +100,7 @@ We provide a ``Trainer`` object that automates the logic of a basic neural opera
    trainer = Trainer(model=model, n_epochs=20,
                      data_processor=data_processor,
                      wandb_log=False,
-                     log_test_interval=3,
+                     eval_interval=3,
                      use_distributed=False,
                      verbose=True)
 

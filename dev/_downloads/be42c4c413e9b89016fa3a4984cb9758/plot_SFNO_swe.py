@@ -72,7 +72,7 @@ sys.stdout.flush()
 trainer = Trainer(model=model, n_epochs=20,
                   device=device,
                   wandb_log=False,
-                  log_test_interval=3,
+                  eval_interval=3,
                   use_distributed=False,
                   verbose=True)
 

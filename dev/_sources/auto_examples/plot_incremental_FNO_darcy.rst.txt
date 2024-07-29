@@ -22,7 +22,7 @@ Training a neural operator on Darcy-Flow - Author Robert Joseph George
 ========================================
 In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package on Incremental FNO and Incremental Resolution
 
-.. GENERATED FROM PYTHON SOURCE LINES 9-22
+.. GENERATED FROM PYTHON SOURCE LINES 9-21
 
 .. code-block:: Python
 
@@ -31,10 +31,9 @@ In this example, we demonstrate how to use the small Darcy-Flow example we ship 
     import matplotlib.pyplot as plt
     import sys
     from neuralop.models import FNO
-    from neuralop import Trainer
     from neuralop.data.datasets import load_darcy_flow_small
     from neuralop.utils import count_model_params
-    from neuralop.training.callbacks import IncrementalCallback
+    from neuralop.training.incremental import IncrementalFNOTrainer
     from neuralop.data.transforms.data_processors import IncrementalDataProcessor
     from neuralop import LpLoss, H1Loss
 
@@ -46,11 +45,11 @@ In this example, we demonstrate how to use the small Darcy-Flow example we ship 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 23-24
+.. GENERATED FROM PYTHON SOURCE LINES 22-23
 
 Loading the Darcy flow dataset
 
-.. GENERATED FROM PYTHON SOURCE LINES 24-32
+.. GENERATED FROM PYTHON SOURCE LINES 23-31
 
 .. code-block:: Python
 
@@ -80,11 +79,11 @@ Loading the Darcy flow dataset
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 33-34
+.. GENERATED FROM PYTHON SOURCE LINES 32-33
 
 Choose device
 
-.. GENERATED FROM PYTHON SOURCE LINES 34-36
+.. GENERATED FROM PYTHON SOURCE LINES 33-35
 
 .. code-block:: Python
 
@@ -97,13 +96,13 @@ Choose device
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 37-40
+.. GENERATED FROM PYTHON SOURCE LINES 36-39
 
 Set up the incremental FNO model
 We start with 2 modes in each dimension
 We choose to update the modes by the incremental gradient explained algorithm
 
-.. GENERATED FROM PYTHON SOURCE LINES 40-46
+.. GENERATED FROM PYTHON SOURCE LINES 39-45
 
 .. code-block:: Python
 
@@ -120,11 +119,11 @@ We choose to update the modes by the incremental gradient explained algorithm
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 47-48
+.. GENERATED FROM PYTHON SOURCE LINES 46-47
 
 set up model
 
-.. GENERATED FROM PYTHON SOURCE LINES 48-58
+.. GENERATED FROM PYTHON SOURCE LINES 47-57
 
 .. code-block:: Python
 
@@ -145,11 +144,11 @@ set up model
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 59-60
+.. GENERATED FROM PYTHON SOURCE LINES 58-59
 
 Set up the optimizer and scheduler
 
-.. GENERATED FROM PYTHON SOURCE LINES 60-86
+.. GENERATED FROM PYTHON SOURCE LINES 59-85
 
 .. code-block:: Python
 
@@ -194,11 +193,11 @@ Set up the optimizer and scheduler
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 87-88
+.. GENERATED FROM PYTHON SOURCE LINES 86-87
 
 Set up the losses
 
-.. GENERATED FROM PYTHON SOURCE LINES 88-101
+.. GENERATED FROM PYTHON SOURCE LINES 87-100
 
 .. code-block:: Python
 
@@ -244,22 +243,22 @@ Set up the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f8aeb29c370>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7efd5b6c7640>
 
     ### LOSSES ###
 
     ### INCREMENTAL RESOLUTION + GRADIENT EXPLAINED ###
 
-     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7f8aeb29c970>
+     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7efd555a55b0>
 
-     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7f8aeb29c970>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f8aeb29cac0>}
-
-
+     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7efd555a55b0>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7efd6054d0d0>}
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 102-118
 
-Set up the IncrementalCallback
+
+.. GENERATED FROM PYTHON SOURCE LINES 101-116
+
+Set up the IncrementalTrainer
 other options include setting incremental_loss_gap = True
 If one wants to use incremental resolution set it to True
 In this example we only update the modes and not the resolution
@@ -274,55 +273,41 @@ incremental_grad : bool, default is False
 incremental_loss_gap : bool, default is False
    if True, use the incremental algorithm based on loss gap
    uses the incremental_loss_eps parameter
-One can use multiple Callbacks as well
 
-.. GENERATED FROM PYTHON SOURCE LINES 118-140
+.. GENERATED FROM PYTHON SOURCE LINES 116-134
 
 .. code-block:: Python
 
-    callbacks = [
-        IncrementalCallback(
-            incremental_loss_gap=False,
-            incremental_grad=True,
-            incremental_grad_eps=0.9999,
-            incremental_loss_eps = 0.001,
-            incremental_buffer=5,
-            incremental_max_iter=1,
-            incremental_grad_max_iter=2,
-        )
-    ]
+
 
     # Finally pass all of these to the Trainer
-    trainer = Trainer(
+    trainer = IncrementalFNOTrainer(
         model=model,
         n_epochs=20,
         data_processor=data_transform,
-        callbacks=callbacks,
         device=device,
         verbose=True,
+        incremental_loss_gap=False,
+        incremental_grad=True,
+        incremental_grad_eps=0.9999,
+        incremental_loss_eps = 0.001,
+        incremental_buffer=5,
+        incremental_max_iter=1,
+        incremental_grad_max_iter=2,
     )
 
 
 
 
 
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
-
-    using standard method to load data to device.
-    using standard method to compute loss.
-    self.override_load_to_device=False
-    self.overrides_loss=False
 
 
 
-
-.. GENERATED FROM PYTHON SOURCE LINES 141-142
+.. GENERATED FROM PYTHON SOURCE LINES 135-136
 
 Train the model
 
-.. GENERATED FROM PYTHON SOURCE LINES 142-152
+.. GENERATED FROM PYTHON SOURCE LINES 136-146
 
 .. code-block:: Python
 
@@ -344,81 +329,58 @@ Train the model
 
  .. code-block:: none
 
-    Training on 100 samples
-    Testing on [50, 50] samples         on resolutions [16, 32].
     Training on 7 samples
     Testing on [50, 50] samples         on resolutions [16, 32].
     Raw outputs of shape torch.Size([16, 1, 8, 8])
-    Raw outputs of size out.shape=torch.Size([16, 1, 8, 8])
-    [0] time=0.15, avg_loss=0.8267, train_err=11.8096, 16_h1=0.8102, 16_l2=0.6643, 32_h1=0.8250, 32_l2=0.6596
-    [0] time=0.15, avg_loss=0.8267, train_err=11.8096, 16_h1=0.8102, 16_l2=0.6643, 32_h1=0.8250, 32_l2=0.6596
-    Currently the model is using incremental_n_modes = [2, 2]
-    [1] time=0.13, avg_loss=0.7575, train_err=10.8212, 16_h1=0.7362, 16_l2=0.5747, 32_h1=0.7570, 32_l2=0.5641
-    [1] time=0.13, avg_loss=0.7575, train_err=10.8212, 16_h1=0.7362, 16_l2=0.5747, 32_h1=0.7570, 32_l2=0.5641
-    Currently the model is using incremental_n_modes = [2, 2]
-    [2] time=0.14, avg_loss=0.7239, train_err=10.3411, 16_h1=0.7366, 16_l2=0.5766, 32_h1=0.7783, 32_l2=0.5661
-    [2] time=0.14, avg_loss=0.7239, train_err=10.3411, 16_h1=0.7366, 16_l2=0.5766, 32_h1=0.7783, 32_l2=0.5661
-    Currently the model is using incremental_n_modes = [3, 2]
-    [3] time=0.14, avg_loss=0.7228, train_err=10.3255, 16_h1=0.7465, 16_l2=0.5743, 32_h1=0.8169, 32_l2=0.5600
-    [3] time=0.14, avg_loss=0.7228, train_err=10.3255, 16_h1=0.7465, 16_l2=0.5743, 32_h1=0.8169, 32_l2=0.5600
-    Currently the model is using incremental_n_modes = [3, 2]
-    [4] time=0.14, avg_loss=0.7274, train_err=10.3921, 16_h1=0.7092, 16_l2=0.5530, 32_h1=0.7454, 32_l2=0.5419
-    [4] time=0.14, avg_loss=0.7274, train_err=10.3921, 16_h1=0.7092, 16_l2=0.5530, 32_h1=0.7454, 32_l2=0.5419
-    Currently the model is using incremental_n_modes = [3, 2]
-    [5] time=0.13, avg_loss=0.7118, train_err=10.1691, 16_h1=0.7132, 16_l2=0.5544, 32_h1=0.7537, 32_l2=0.5433
-    [5] time=0.13, avg_loss=0.7118, train_err=10.1691, 16_h1=0.7132, 16_l2=0.5544, 32_h1=0.7537, 32_l2=0.5433
-    Currently the model is using incremental_n_modes = [4, 3]
-    [6] time=0.15, avg_loss=0.6916, train_err=9.8802, 16_h1=0.7031, 16_l2=0.5461, 32_h1=0.7355, 32_l2=0.5360
-    [6] time=0.15, avg_loss=0.6916, train_err=9.8802, 16_h1=0.7031, 16_l2=0.5461, 32_h1=0.7355, 32_l2=0.5360
-    Currently the model is using incremental_n_modes = [4, 3]
-    [7] time=0.15, avg_loss=0.6754, train_err=9.6491, 16_h1=0.7058, 16_l2=0.5526, 32_h1=0.7365, 32_l2=0.5361
-    [7] time=0.15, avg_loss=0.6754, train_err=9.6491, 16_h1=0.7058, 16_l2=0.5526, 32_h1=0.7365, 32_l2=0.5361
-    Currently the model is using incremental_n_modes = [4, 3]
-    [8] time=0.15, avg_loss=0.6691, train_err=9.5586, 16_h1=0.6777, 16_l2=0.5305, 32_h1=0.7038, 32_l2=0.5220
-    [8] time=0.15, avg_loss=0.6691, train_err=9.5586, 16_h1=0.6777, 16_l2=0.5305, 32_h1=0.7038, 32_l2=0.5220
-    Currently the model is using incremental_n_modes = [5, 3]
-    [9] time=0.16, avg_loss=0.6522, train_err=9.3177, 16_h1=0.6972, 16_l2=0.5441, 32_h1=0.7197, 32_l2=0.5342
-    [9] time=0.16, avg_loss=0.6522, train_err=9.3177, 16_h1=0.6972, 16_l2=0.5441, 32_h1=0.7197, 32_l2=0.5342
-    Currently the model is using incremental_n_modes = [5, 3]
+    [0] time=0.14, avg_loss=0.8267, train_err=11.8096
+    Eval: 16_h1=0.8102, 16_l2=0.6643, 32_h1=0.8250, 32_l2=0.6596
+    [1] time=0.13, avg_loss=0.7575, train_err=10.8212
+    Eval: 16_h1=0.7362, 16_l2=0.5747, 32_h1=0.7570, 32_l2=0.5641
+    [2] time=0.13, avg_loss=0.7239, train_err=10.3411
+    Eval: 16_h1=0.7366, 16_l2=0.5766, 32_h1=0.7783, 32_l2=0.5661
+    [3] time=0.14, avg_loss=0.7228, train_err=10.3255
+    Eval: 16_h1=0.7465, 16_l2=0.5743, 32_h1=0.8169, 32_l2=0.5600
+    [4] time=0.13, avg_loss=0.7274, train_err=10.3921
+    Eval: 16_h1=0.7092, 16_l2=0.5530, 32_h1=0.7454, 32_l2=0.5419
+    [5] time=0.13, avg_loss=0.7118, train_err=10.1691
+    Eval: 16_h1=0.7132, 16_l2=0.5544, 32_h1=0.7537, 32_l2=0.5433
+    [6] time=0.15, avg_loss=0.6916, train_err=9.8802
+    Eval: 16_h1=0.7031, 16_l2=0.5461, 32_h1=0.7355, 32_l2=0.5360
+    [7] time=0.15, avg_loss=0.6754, train_err=9.6491
+    Eval: 16_h1=0.7058, 16_l2=0.5526, 32_h1=0.7365, 32_l2=0.5361
+    [8] time=0.15, avg_loss=0.6691, train_err=9.5586
+    Eval: 16_h1=0.6777, 16_l2=0.5305, 32_h1=0.7038, 32_l2=0.5220
+    [9] time=0.15, avg_loss=0.6522, train_err=9.3177
+    Eval: 16_h1=0.6972, 16_l2=0.5441, 32_h1=0.7197, 32_l2=0.5342
     Incre Res Update: change index to 1
     Incre Res Update: change sub to 1
     Incre Res Update: change res to 16
-    [10] time=0.23, avg_loss=0.6335, train_err=9.0503, 16_h1=0.6933, 16_l2=0.5498, 32_h1=0.7084, 32_l2=0.5363
-    [10] time=0.23, avg_loss=0.6335, train_err=9.0503, 16_h1=0.6933, 16_l2=0.5498, 32_h1=0.7084, 32_l2=0.5363
-    Currently the model is using incremental_n_modes = [5, 3]
-    [11] time=0.22, avg_loss=0.6075, train_err=8.6785, 16_h1=0.6825, 16_l2=0.5391, 32_h1=0.6986, 32_l2=0.5267
-    [11] time=0.22, avg_loss=0.6075, train_err=8.6785, 16_h1=0.6825, 16_l2=0.5391, 32_h1=0.6986, 32_l2=0.5267
-    Currently the model is using incremental_n_modes = [6, 4]
-    [12] time=0.24, avg_loss=0.5724, train_err=8.1771, 16_h1=0.6952, 16_l2=0.5516, 32_h1=0.7056, 32_l2=0.5335
-    [12] time=0.24, avg_loss=0.5724, train_err=8.1771, 16_h1=0.6952, 16_l2=0.5516, 32_h1=0.7056, 32_l2=0.5335
-    Currently the model is using incremental_n_modes = [6, 4]
-    [13] time=0.24, avg_loss=0.5271, train_err=7.5303, 16_h1=0.7562, 16_l2=0.5915, 32_h1=0.7667, 32_l2=0.5748
-    [13] time=0.24, avg_loss=0.5271, train_err=7.5303, 16_h1=0.7562, 16_l2=0.5915, 32_h1=0.7667, 32_l2=0.5748
-    Currently the model is using incremental_n_modes = [6, 4]
-    [14] time=0.24, avg_loss=0.4876, train_err=6.9663, 16_h1=0.7453, 16_l2=0.5880, 32_h1=0.7560, 32_l2=0.5700
-    [14] time=0.24, avg_loss=0.4876, train_err=6.9663, 16_h1=0.7453, 16_l2=0.5880, 32_h1=0.7560, 32_l2=0.5700
-    Currently the model is using incremental_n_modes = [7, 4]
-    [15] time=0.24, avg_loss=0.4745, train_err=6.7789, 16_h1=0.6888, 16_l2=0.5401, 32_h1=0.7067, 32_l2=0.5310
-    [15] time=0.24, avg_loss=0.4745, train_err=6.7789, 16_h1=0.6888, 16_l2=0.5401, 32_h1=0.7067, 32_l2=0.5310
-    Currently the model is using incremental_n_modes = [7, 4]
-    [16] time=0.25, avg_loss=0.4645, train_err=6.6351, 16_h1=0.7172, 16_l2=0.5724, 32_h1=0.7301, 32_l2=0.5611
-    [16] time=0.25, avg_loss=0.4645, train_err=6.6351, 16_h1=0.7172, 16_l2=0.5724, 32_h1=0.7301, 32_l2=0.5611
-    Currently the model is using incremental_n_modes = [7, 4]
-    [17] time=0.24, avg_loss=0.4599, train_err=6.5699, 16_h1=0.7613, 16_l2=0.5980, 32_h1=0.7752, 32_l2=0.5801
-    [17] time=0.24, avg_loss=0.4599, train_err=6.5699, 16_h1=0.7613, 16_l2=0.5980, 32_h1=0.7752, 32_l2=0.5801
-    Currently the model is using incremental_n_modes = [8, 5]
-    [18] time=0.24, avg_loss=0.3874, train_err=5.5345, 16_h1=0.6920, 16_l2=0.5396, 32_h1=0.7117, 32_l2=0.5285
-    [18] time=0.24, avg_loss=0.3874, train_err=5.5345, 16_h1=0.6920, 16_l2=0.5396, 32_h1=0.7117, 32_l2=0.5285
-    Currently the model is using incremental_n_modes = [8, 5]
-    [19] time=0.24, avg_loss=0.3342, train_err=4.7749, 16_h1=0.6870, 16_l2=0.5392, 32_h1=0.6975, 32_l2=0.5236
-    [19] time=0.24, avg_loss=0.3342, train_err=4.7749, 16_h1=0.6870, 16_l2=0.5392, 32_h1=0.6975, 32_l2=0.5236
-    Currently the model is using incremental_n_modes = [8, 5]
+    [10] time=0.22, avg_loss=0.6335, train_err=9.0503
+    Eval: 16_h1=0.6933, 16_l2=0.5498, 32_h1=0.7084, 32_l2=0.5363
+    [11] time=0.21, avg_loss=0.6075, train_err=8.6785
+    Eval: 16_h1=0.6825, 16_l2=0.5391, 32_h1=0.6986, 32_l2=0.5267
+    [12] time=0.23, avg_loss=0.5724, train_err=8.1771
+    Eval: 16_h1=0.6952, 16_l2=0.5516, 32_h1=0.7056, 32_l2=0.5335
+    [13] time=0.24, avg_loss=0.5271, train_err=7.5303
+    Eval: 16_h1=0.7562, 16_l2=0.5915, 32_h1=0.7667, 32_l2=0.5748
+    [14] time=0.24, avg_loss=0.4876, train_err=6.9663
+    Eval: 16_h1=0.7453, 16_l2=0.5880, 32_h1=0.7560, 32_l2=0.5700
+    [15] time=0.24, avg_loss=0.4745, train_err=6.7789
+    Eval: 16_h1=0.6888, 16_l2=0.5401, 32_h1=0.7067, 32_l2=0.5310
+    [16] time=0.25, avg_loss=0.4645, train_err=6.6351
+    Eval: 16_h1=0.7172, 16_l2=0.5724, 32_h1=0.7301, 32_l2=0.5611
+    [17] time=0.24, avg_loss=0.4599, train_err=6.5699
+    Eval: 16_h1=0.7613, 16_l2=0.5980, 32_h1=0.7752, 32_l2=0.5801
+    [18] time=0.24, avg_loss=0.3874, train_err=5.5345
+    Eval: 16_h1=0.6920, 16_l2=0.5396, 32_h1=0.7117, 32_l2=0.5285
+    [19] time=0.24, avg_loss=0.3342, train_err=4.7749
+    Eval: 16_h1=0.6870, 16_l2=0.5392, 32_h1=0.6975, 32_l2=0.5236
 
-    {'16_h1': 0.6869734001159667, '16_l2': 0.5392194366455079, '32_h1': 0.6974964904785156, '32_l2': 0.5235791015625}
+    {'train_err': 4.774891308375767, 'avg_loss': 0.3342423915863037, 'avg_lasso_loss': None, 'epoch_train_time': 0.2437376640000366, '16_h1': tensor(0.6870), '16_l2': tensor(0.5392), '32_h1': tensor(0.6975), '32_l2': tensor(0.5236)}
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 153-163
+.. GENERATED FROM PYTHON SOURCE LINES 147-157
 
 Plot the prediction, and compare with the ground-truth
 Note that we trained on a very small resolution for
@@ -431,7 +393,7 @@ ii) can be trained quickly on CPU
 
 In practice we would train a Neural Operator on one or multiple GPUs
 
-.. GENERATED FROM PYTHON SOURCE LINES 163-201
+.. GENERATED FROM PYTHON SOURCE LINES 157-195
 
 .. code-block:: Python
 
@@ -488,7 +450,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 6.416 seconds)
+   **Total running time of the script:** (0 minutes 6.294 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_incremental_FNO_darcy.py:

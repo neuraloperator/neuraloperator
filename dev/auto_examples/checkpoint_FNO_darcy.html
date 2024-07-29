@@ -31,8 +31,8 @@
  
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="U-NO on Darcy-Flow" href="plot_UNO_darcy.html" />
-    <link rel="prev" title="Training a SFNO on the spherical Shallow Water equations" href="plot_SFNO_swe.html" />
+    <link rel="next" title="Training a TFNO on Darcy-Flow" href="plot_FNO_darcy.html" />
+    <link rel="prev" title="Using torchtnt to count FLOPS" href="plot_count_flops.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -131,9 +131,9 @@
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Gallery of examples</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_count_flops.html">Using <cite>torchtnt</cite> to count FLOPS</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_SFNO_swe.html">Training a SFNO on the spherical Shallow Water equations</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_UNO_darcy.html">U-NO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow_spectrum.html">A simple Darcy-Flow spectrum analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_incremental_FNO_darcy.html">Training a neural operator on Darcy-Flow - Author Robert Joseph George</a></li>
@@ -177,7 +177,6 @@ to train a Tensorized Fourier-Neural Operator</p>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">TFNO</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">Trainer</span>
-<span class="kn">from</span> <span class="nn">neuralop.training</span> <span class="kn">import</span> <span class="n">CheckpointCallback</span>
 <span class="kn">from</span> <span class="nn">neuralop.data.datasets</span> <span class="kn">import</span> <span class="n">load_darcy_flow_small</span>
 <span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">count_model_params</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">LpLoss</span><span class="p">,</span> <span class="n">H1Loss</span>
@@ -229,15 +228,9 @@ to train a Tensorized Fourier-Neural Operator</p>
 <p>Create the trainer</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
                   <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
-                  <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
-                    <span class="n">CheckpointCallback</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="s1">&#39;./checkpoints&#39;</span><span class="p">,</span>
-                                       <span class="n">save_interval</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-                                            <span class="n">save_optimizer</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                            <span class="n">save_scheduler</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                        <span class="p">],</span>
                   <span class="n">data_processor</span><span class="o">=</span><span class="n">data_processor</span><span class="p">,</span>
                   <span class="n">wandb_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                  <span class="n">log_test_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                  <span class="n">eval_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
                   <span class="n">use_distributed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
@@ -248,7 +241,9 @@ to train a Tensorized Fourier-Neural Operator</p>
               <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
               <span class="n">scheduler</span><span class="o">=</span><span class="n">scheduler</span><span class="p">,</span>
               <span class="n">regularizer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-              <span class="n">training_loss</span><span class="o">=</span><span class="n">train_loss</span><span class="p">)</span>
+              <span class="n">training_loss</span><span class="o">=</span><span class="n">train_loss</span><span class="p">,</span>
+              <span class="n">save_every</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+              <span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;./checkpoints&quot;</span><span class="p">)</span>
 
 
 <span class="c1"># resume training from saved checkpoint at epoch 10</span>
@@ -256,12 +251,8 @@ to train a Tensorized Fourier-Neural Operator</p>
 <span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
                   <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
                   <span class="n">data_processor</span><span class="o">=</span><span class="n">data_processor</span><span class="p">,</span>
-                  <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
-                    <span class="n">CheckpointCallback</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="s1">&#39;./new_checkpoints&#39;</span><span class="p">,</span>
-                                            <span class="n">resume_from_dir</span><span class="o">=</span><span class="s1">&#39;./checkpoints/ep_10&#39;</span><span class="p">)</span>
-                        <span class="p">],</span>
                   <span class="n">wandb_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                  <span class="n">log_test_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                  <span class="n">eval_interval</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
                   <span class="n">use_distributed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -270,7 +261,8 @@ to train a Tensorized Fourier-Neural Operator</p>
               <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
               <span class="n">scheduler</span><span class="o">=</span><span class="n">scheduler</span><span class="p">,</span>
               <span class="n">regularizer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-              <span class="n">training_loss</span><span class="o">=</span><span class="n">train_loss</span><span class="p">)</span>
+              <span class="n">training_loss</span><span class="o">=</span><span class="n">train_loss</span><span class="p">,</span>
+              <span class="n">resume_from_dir</span><span class="o">=</span><span class="s2">&quot;./checkpoints&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-checkpoint-fno-darcy-py">
@@ -293,16 +285,16 @@ to train a Tensorized Fourier-Neural Operator</p>
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="plot_SFNO_swe.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="plot_count_flops.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span>Training a SFNO on the spherical Shallow Water equations</span>
+        <span>Using <cite>torchtnt</cite> to count FLOPS</span>
     </a>
     
     
-    <a class="button pagination-next" href="plot_UNO_darcy.html" title="next page" accesskey="n">
-        <span>U-NO on Darcy-Flow </span>
+    <a class="button pagination-next" href="plot_FNO_darcy.html" title="next page" accesskey="n">
+        <span>Training a TFNO on Darcy-Flow </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>

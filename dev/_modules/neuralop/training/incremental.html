@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>neuralop.training.incremental &#8212; neuraloperator 0.3.0 documentation</title> 
+<link rel="stylesheet" href="../../../_static/tensorly_style.css">
+<link rel="apple-touch-icon" sizes="180x180" href="../../../_static/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../_static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../../_static/favicon/favicon-16x16.png">
+<link rel="manifest" href="../../../_static/favicon/site.webmanifest">
+<link rel="mask-icon" href="../../../_static/favicon/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="../../../_static/favicon/favicon.ico">
+<meta name="theme-color" content="#ffffff">
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/tensorly_style.css?v=a02e9698" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+    <script src="../../../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+ <script src="../../../_static/navbar_burger.js"></script>
+ <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+ 
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  </head>
+<body  class="has-navbar-fixed-top">
+
+  <header>
+    <navbar>
+      <nav class="navbar top-navbar is-fixed-top has-shadow is-flex-wrap-wrap" role="navigation" aria-label="main top navigation">
+        <div class="navbar-brand">
+        
+
+          <a class="navbar-item" href="../../../index.html">
+            <img src="../../../_static/neuraloperator_logo.png" height="28">
+          </a>
+          <a class="navbar-item is-hidden-desktop" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon"><i class="fab fa-github"></i></span>
+          </a>
+
+          <a role="button" class="navbar-burger" data-target="top-nav-menu" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+
+        </div>
+        
+        <div class="navbar-menu" id="top-nav-menu">
+        
+
+          <div class="navbar-start">
+            
+              <a class="navbar-item" href="../../../install.html">
+              Install
+            </a>
+              <a class="navbar-item" href="../../../user_guide/index.html">
+              User Guide
+            </a>
+              <a class="navbar-item" href="../../../modules/api.html">
+              API
+            </a>
+              <a class="navbar-item" href="../../../auto_examples/index.html">
+              Examples
+            </a>
+          </div>
+        
+          <div class="navbar-end">
+            <div class="navbar-item">
+            
+            <a class="button is-hidden-touch is-dark" href="https://github.com/neuraloperator/neuraloperator" target="_blank">
+              <span class="icon-text">
+                <span class="icon is-large">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>Github</span>
+              </span>
+            </a>
+
+            </div> 
+          </div> 
+        </div> 
+
+      </nav>
+      
+    </navbar>
+  </header>
+
+
+  <div id="column-container">
+  <div class="columns is-mobile is-centered">
+	
+  
+
+  <div class="column main-column">
+
+    
+    <div class="main-section">
+
+      
+      
+
+      <div class="container content main-content">
+        
+  <h1>Source code for neuralop.training.incremental</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">Trainer for Incremental-FNO</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+
+<span class="kn">from</span> <span class="nn">.trainer</span> <span class="kn">import</span> <span class="n">Trainer</span>
+<span class="kn">from</span> <span class="nn">..models</span> <span class="kn">import</span> <span class="n">FNO</span><span class="p">,</span> <span class="n">TFNO</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">compute_explained_variance</span>
+
+<div class="viewcode-block" id="IncrementalFNOTrainer">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.training.IncrementalFNOTrainer.html#neuralop.training.IncrementalFNOTrainer">[docs]</a>
+<span class="k">class</span> <span class="nc">IncrementalFNOTrainer</span><span class="p">(</span><span class="n">Trainer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;IncrementalFNOTrainer subclasses the Trainer </span>
+<span class="sd">    to implement specific logic for the Incremental-FNO</span>
+<span class="sd">    as described in [1]_.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    -----------</span>
+<span class="sd">    </span>
+<span class="sd">    .. _[1]: </span>
+<span class="sd">    </span>
+<span class="sd">    George, R., Zhao, J., Kossaifi, J., Li, Z., and Anandkumar, A. (2024)</span>
+<span class="sd">        &quot;Incremental Spatial and Spectral Learning of Neural Operators for Solving Large-Scale PDEs&quot;.</span>
+<span class="sd">        ArXiv preprint, https://arxiv.org/pdf/2211.15188</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+                <span class="n">n_epochs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                <span class="n">wandb_log</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">device</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">,</span>
+                <span class="n">amp_autocast</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">data_processor</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">eval_interval</span><span class="p">:</span> <span class="nb">int</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">log_output</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">use_distributed</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">incremental_grad</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> 
+                <span class="n">incremental_loss_gap</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> 
+                <span class="n">incremental_grad_eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
+                <span class="n">incremental_buffer</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> 
+                <span class="n">incremental_max_iter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> 
+                <span class="n">incremental_grad_max_iter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="n">incremental_loss_eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
+                <span class="p">):</span>
+        <span class="k">assert</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">FNO</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">TFNO</span><span class="p">)),</span> <span class="sa">f</span><span class="s2">&quot;Error: </span><span class="se">\</span>
+<span class="s2">            IncrementalFNOTrainer is designed to work with FNO or TFNO, instead got</span><span class="se">\</span>
+<span class="s2">            a model of type </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
+        
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+                       <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+                       <span class="n">n_epochs</span><span class="o">=</span><span class="n">n_epochs</span><span class="p">,</span>
+                       <span class="n">wandb_log</span><span class="o">=</span><span class="n">wandb_log</span><span class="p">,</span>
+                       <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
+                       <span class="n">amp_autocast</span><span class="o">=</span><span class="n">amp_autocast</span><span class="p">,</span>
+                       <span class="n">data_processor</span><span class="o">=</span><span class="n">data_processor</span><span class="p">,</span>
+                       <span class="n">eval_interval</span><span class="o">=</span><span class="n">eval_interval</span><span class="p">,</span>
+                       <span class="n">log_output</span><span class="o">=</span><span class="n">log_output</span><span class="p">,</span>
+                       <span class="n">use_distributed</span><span class="o">=</span><span class="n">use_distributed</span><span class="p">,</span>
+                       <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">incremental_loss_gap</span> <span class="o">=</span> <span class="n">incremental_loss_gap</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incremental_grad</span> <span class="o">=</span> <span class="n">incremental_grad</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incremental</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">incremental_loss_gap</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">incremental_grad</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">incremental</span><span class="p">,</span> \
+            <span class="s2">&quot;Error: IncrementalTrainer expects at least one incremental algorithm to be True.&quot;</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incremental_loss_gap</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">incremental_grad</span><span class="p">),</span>\
+            <span class="s2">&quot;Error: IncrementalTrainer expects only one incremental algorithm to be True.&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">incremental_grad_eps</span> <span class="o">=</span> <span class="n">incremental_grad_eps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incremental_buffer</span> <span class="o">=</span> <span class="n">incremental_buffer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incremental_max_iter</span> <span class="o">=</span> <span class="n">incremental_max_iter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incremental_grad_max_iter</span> <span class="o">=</span> <span class="n">incremental_grad_max_iter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incremental_loss_eps</span> <span class="o">=</span> <span class="n">incremental_loss_eps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loss_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Main step function: which algorithm to run</span>
+    <span class="k">def</span> <span class="nf">incremental_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">incremental_loss_gap</span> <span class="ow">and</span> <span class="n">loss</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loss_gap</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">incremental_grad</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grad_explained</span><span class="p">()</span>
+
+<div class="viewcode-block" id="IncrementalFNOTrainer.train_one_epoch">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.training.IncrementalFNOTrainer.html#neuralop.training.IncrementalFNOTrainer.train_one_epoch">[docs]</a>
+    <span class="k">def</span> <span class="nf">train_one_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">training_loss</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;train_one_epoch inherits from the base Trainer&#39;s method</span>
+<span class="sd">            and adds the computation of the incremental-FNO algorithm</span>
+<span class="sd">            before returning the training epoch&#39;s metrics. </span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        epoch : int</span>
+<span class="sd">            epoch of training</span>
+<span class="sd">        train_loader : DataLoader</span>
+<span class="sd">        training_loss : callable</span>
+<span class="sd">            loss function to train with</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        train_err, avg_loss, avg_lasso_loss, epoch_train_time</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span><span class="o">.</span><span class="n">epoch</span> <span class="o">=</span> <span class="n">epoch</span>
+
+        <span class="n">train_err</span><span class="p">,</span> <span class="n">avg_loss</span><span class="p">,</span> <span class="n">avg_lasso_loss</span><span class="p">,</span> <span class="n">epoch_train_time</span> <span class="o">=</span>\
+              <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">train_one_epoch</span><span class="p">(</span><span class="n">epoch</span><span class="p">,</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">training_loss</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incremental_update</span><span class="p">(</span><span class="n">avg_loss</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">train_err</span><span class="p">,</span> <span class="n">avg_loss</span><span class="p">,</span> <span class="n">avg_lasso_loss</span><span class="p">,</span> <span class="n">epoch_train_time</span></div>
+
+    
+    
+    <span class="c1"># Algorithm 1: Incremental</span>
+<div class="viewcode-block" id="IncrementalFNOTrainer.loss_gap">
+<a class="viewcode-back" href="../../../modules/generated/neuralop.training.IncrementalFNOTrainer.html#neuralop.training.IncrementalFNOTrainer.loss_gap">[docs]</a>
+    <span class="k">def</span> <span class="nf">loss_gap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        loss_gap increases the model&#39;s incremental modes if </span>
+<span class="sd">        the epoch&#39;s training loss does not decrease sufficiently</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------</span>
+<span class="sd">        loss : float | scalar torch.Tensor</span>
+<span class="sd">            scalar value of epoch&#39;s training loss</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loss_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ndim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">convs</span><span class="o">.</span><span class="n">n_modes</span><span class="p">)</span>
+
+        <span class="c1"># method 1: loss_gap</span>
+        <span class="n">incremental_modes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">convs</span><span class="o">.</span><span class="n">n_modes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">max_modes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">convs</span><span class="o">.</span><span class="n">max_n_modes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loss_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loss_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_list</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">incremental_loss_eps</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">incremental_modes</span> <span class="o">&lt;</span> <span class="n">max_modes</span><span class="p">:</span>
+                    <span class="n">incremental_modes</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">modes_list</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">incremental_modes</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ndim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">convs</span><span class="o">.</span><span class="n">n_modes</span> <span class="o">=</span> <span class="n">modes_list</span></div>
+
+
+    <span class="c1"># Algorithm 2: Gradient based explained ratio</span>
+    <span class="k">def</span> <span class="nf">grad_explained</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># for mode 1</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;accumulated_grad&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">accumulated_grad</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">convs</span><span class="o">.</span><span class="n">weight</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;grad_iter&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grad_iter</span> <span class="o">=</span> <span class="mi">1</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">ndim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">convs</span><span class="o">.</span><span class="n">n_modes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">grad_iter</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">incremental_grad_max_iter</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grad_iter</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">accumulated_grad</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">convs</span><span class="o">.</span><span class="n">weight</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">incremental_final</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ndim</span><span class="p">):</span>
+                <span class="n">max_modes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">convs</span><span class="o">.</span><span class="n">max_n_modes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">incremental_modes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">convs</span><span class="o">.</span><span class="n">n_modes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">accumulated_grad</span>
+                <span class="n">strength_vector</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">mode_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span>
+                        <span class="nb">min</span><span class="p">(</span><span class="n">weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">incremental_modes</span><span class="p">)):</span>
+                    <span class="n">strength</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span>
+                        <span class="n">weight</span><span class="p">[:,</span> <span class="n">mode_index</span><span class="p">,</span> <span class="p">:],</span> <span class="n">p</span><span class="o">=</span><span class="s1">&#39;fro&#39;</span><span class="p">)</span>
+                    <span class="n">strength_vector</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strength</span><span class="p">)</span>
+                <span class="n">expained_ratio</span> <span class="o">=</span> <span class="n">compute_explained_variance</span><span class="p">(</span>
+                    <span class="n">incremental_modes</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">incremental_buffer</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">strength_vector</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">expained_ratio</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">incremental_grad_eps</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">incremental_modes</span> <span class="o">&lt;</span> <span class="n">max_modes</span><span class="p">:</span>
+                        <span class="n">incremental_modes</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">incremental_final</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">incremental_modes</span><span class="p">)</span>
+
+            <span class="c1"># update the modes and frequency dimensions</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grad_iter</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">accumulated_grad</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">convs</span><span class="o">.</span><span class="n">weight</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">main_modes</span> <span class="o">=</span> <span class="n">incremental_final</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">modes_list</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">main_modes</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ndim</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fno_blocks</span><span class="o">.</span><span class="n">convs</span><span class="o">.</span><span class="n">n_modes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">modes_list</span><span class="p">)</span></div>
+
+        
+</pre></div>
+
+      </div>
+
+      
+
+        <footer class="footer">
+    <div class="content has-text-centered">
+        <div class="block">
+          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+        </div>
+    </div>
+  </footer>
+
+    </div>
+
+  </div>  
+
+	
+
+  </div>  
+  </div> 
+
+  
+  <script>
+    function toggle_sidebar() {
+        var element = document.getElementById("sidebar");
+        var container = document.getElementById("column-container");
+        var localtoccolumn = document.getElementById("localtoc-column");
+        element.classList.toggle("hide-tablet");
+        element.classList.toggle("is-hidden-mobile");
+        container.classList.toggle("sidemenu-hidden");
+        localtoccolumn.classList.toggle("is-one-fifth-widescreen");
+        localtoccolumn.classList.toggle("is-2-desktop");
+        localtoccolumn.classList.toggle("is-3-desktop");
+    }
+  </script> 
+
+
+
+  </body>
+</html>
