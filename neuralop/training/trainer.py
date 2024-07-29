@@ -150,7 +150,7 @@ class Trainer:
             self.save_every = None
 
         if self.verbose:
-            print(f'Training on {len(train_loader)} samples')
+            print(f'Training on {len(train_loader.dataset)} samples')
             print(f'Testing on {[len(loader.dataset) for loader in test_loaders.values()]} samples'
                   f'         on resolutions {[name for name in test_loaders]}.')
             sys.stdout.flush()
@@ -218,12 +218,12 @@ class Trainer:
         for idx, sample in enumerate(train_loader):
             
             loss = self.train_one_batch(idx, sample, training_loss)
-            train_err += loss.item()
-
+            
             loss.backward()
-            #del out
+            
             self.optimizer.step()
 
+            train_err += loss.item()
             with torch.no_grad():
                 avg_loss += loss.item()
                 if self.regularizer:
@@ -308,6 +308,7 @@ class Trainer:
             
         for key in errors.keys():
             errors[key] /= self.n_samples
+
         # on last batch, log model outputs
         if self.log_output:
                 errors[f"{log_prefix}_outputs"] = wandb.Image(outs)
