@@ -59,9 +59,7 @@ default: &DEFAULT
 
   # Dataset related
   data:
-    # folder: '/home/nikola/HDD/NavierStokes/2D'
-    folder: /data/navier_stokes/
-    # folder: '/data'
+    folder: data/navier_stokes/
     batch_size: 16
     n_train: 10000
     train_resolution: 128
@@ -69,12 +67,8 @@ default: &DEFAULT
     test_resolutions: [128, 1024] #, 1024] 
     test_batch_sizes: [16, 4] #, 1]
     positional_encoding: True
-
     encode_input: True
-    encode_output: False
-    num_workers: 0
-    pin_memory: False
-    persistent_workers: False
+    encode_output: True
 
   # Patching
   patching:
@@ -86,59 +80,9 @@ default: &DEFAULT
   wandb:
     log: True
     name: None # If None, config will be used but you can override it here
-    group: 'super-resolution' 
-    project: "Refactored-TFNO"
-    entity: "nvr-ai-algo" # put your username here
+    group: '' 
+    project: "train_ns"
+    entity: "dhpitt" # put your username here
     sweep: False
     log_output: True
     eval_interval: 1
-
-original_fno:
-  arch: 'tfno2d'
-
-  fno2d:
-    modes_height: 64
-    modes_width: 64
-    width: 64
-    hidden_channels: 256
-    n_layers: 4
-    domain_padding: 0.078125
-    domain_padding_mode: 'one-sided'
-    fft_norm: 'forward'
-    norm: None
-    skip: 'linear'
-    
-    use_mlp: 0
-    mlp:
-        expansion: 0.5
-        dropout: 0
-
-    separable: False
-    factorization: None
-    rank: 1.0
-    fixed_rank_modes: None
-
-  wandb:
-    log: False
-    name: None # If None, config will be used but you can override it here
-    group: 'wandb_group'
-    
-  
-distributed_mg_tucker:
-  tfno2d:
-    factorization: Tucker
-    compression: 0.42
-    domain_padding: 9
-
-  distributed:
-    use_distributed: True
-    wireup_info: 'mpi'
-    wireup_store: 'tcp'
-    model_parallel_size: 2
-    seed: 666
-
-  patching:
-    levels: 1
-    padding: 16
-    stitching: True
-

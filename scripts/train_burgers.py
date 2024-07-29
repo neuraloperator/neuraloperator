@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Trainer, get_model
 from neuralop.data.datasets import load_burgers_1dtime
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
+from neuralop.training import setup
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -58,7 +59,7 @@ if config.wandb.log and is_logger:
     if config.wandb.sweep:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
-
+    wandb.init(**wandb_init_args)
 else: 
     wandb_init_args = None
 # Make sure we only print information when needed
@@ -172,7 +173,7 @@ trainer = Trainer(
     data_processor=data_processor,
     device=device,
     amp_autocast=config.opt.amp_autocast,
-    log_test_interval=config.wandb.log_test_interval,
+    eval_interval=config.wandb.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,

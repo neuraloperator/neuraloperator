@@ -260,6 +260,7 @@ training a machine learning model to minimize a loss function on a dataset:
     :template: class.rst
 
     Trainer
+    IncrementalFNOTrainer
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

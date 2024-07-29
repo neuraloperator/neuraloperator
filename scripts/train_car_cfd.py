@@ -46,6 +46,7 @@ if config.wandb.log and is_logger:
     if config.wandb.sweep:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
+    wandb.init(**wandb_init_args)
 
 #Load CFD body data
 data_module = MeshDataModule(config.data.path, 

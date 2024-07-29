@@ -36,9 +36,8 @@ default: &DEFAULT
     stabilizer: None
 
     use_mlp: 1
-    mlp:
-        expansion: 0.5
-        dropout: 0
+    mlp_expansion: 0.5
+    mlp_dropout: 0
 
     factorization: None
     rank: 0.05
@@ -97,4 +96,4 @@ default: &DEFAULT
     entity: "" # put your username here
     sweep: False
     log_output: True
-    log_test_interval: 1
+    eval_interval: 1

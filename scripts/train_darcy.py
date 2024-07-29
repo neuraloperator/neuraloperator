@@ -60,6 +60,7 @@ if config.wandb.log and is_logger:
     if config.wandb.sweep:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
+    wandb.init(**wandb_args)
 
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
@@ -156,7 +157,7 @@ trainer = Trainer(
     data_processor=data_processor,
     amp_autocast=config.opt.amp_autocast,
     wandb_log=config.wandb.log,
-    log_test_interval=config.wandb.log_test_interval,
+    eval_interval=config.wandb.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
