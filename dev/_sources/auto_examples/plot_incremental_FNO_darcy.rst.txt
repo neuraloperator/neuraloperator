@@ -70,7 +70,11 @@ Loading the Darcy flow dataset
 
  .. code-block:: none
 
+    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:102: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+      data = torch.load(
     Loading test db for resolution 16 with 100 samples 
+    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:183: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+      data = torch.load(Path(root_dir).joinpath(f"{dataset_name}_test_{res}.pt").as_posix())
     Loading test db for resolution 32 with 50 samples 
 
 
@@ -240,15 +244,15 @@ Set up the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fc83b993df0>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f8aeb29c370>
 
     ### LOSSES ###
 
     ### INCREMENTAL RESOLUTION + GRADIENT EXPLAINED ###
 
-     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7fc840894070>
+     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7f8aeb29c970>
 
-     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7fc840894070>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fc83ba88d60>}
+     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7f8aeb29c970>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f8aeb29cac0>}
 
 
 
@@ -346,68 +350,68 @@ Train the model
     Testing on [50, 50] samples         on resolutions [16, 32].
     Raw outputs of shape torch.Size([16, 1, 8, 8])
     Raw outputs of size out.shape=torch.Size([16, 1, 8, 8])
-    [0] time=0.14, avg_loss=0.8267, train_err=11.8096, 16_h1=0.8102, 16_l2=0.6643, 32_h1=0.8250, 32_l2=0.6596
-    [0] time=0.14, avg_loss=0.8267, train_err=11.8096, 16_h1=0.8102, 16_l2=0.6643, 32_h1=0.8250, 32_l2=0.6596
+    [0] time=0.15, avg_loss=0.8267, train_err=11.8096, 16_h1=0.8102, 16_l2=0.6643, 32_h1=0.8250, 32_l2=0.6596
+    [0] time=0.15, avg_loss=0.8267, train_err=11.8096, 16_h1=0.8102, 16_l2=0.6643, 32_h1=0.8250, 32_l2=0.6596
     Currently the model is using incremental_n_modes = [2, 2]
     [1] time=0.13, avg_loss=0.7575, train_err=10.8212, 16_h1=0.7362, 16_l2=0.5747, 32_h1=0.7570, 32_l2=0.5641
     [1] time=0.13, avg_loss=0.7575, train_err=10.8212, 16_h1=0.7362, 16_l2=0.5747, 32_h1=0.7570, 32_l2=0.5641
     Currently the model is using incremental_n_modes = [2, 2]
-    [2] time=0.12, avg_loss=0.7239, train_err=10.3411, 16_h1=0.7366, 16_l2=0.5766, 32_h1=0.7783, 32_l2=0.5661
-    [2] time=0.12, avg_loss=0.7239, train_err=10.3411, 16_h1=0.7366, 16_l2=0.5766, 32_h1=0.7783, 32_l2=0.5661
+    [2] time=0.14, avg_loss=0.7239, train_err=10.3411, 16_h1=0.7366, 16_l2=0.5766, 32_h1=0.7783, 32_l2=0.5661
+    [2] time=0.14, avg_loss=0.7239, train_err=10.3411, 16_h1=0.7366, 16_l2=0.5766, 32_h1=0.7783, 32_l2=0.5661
     Currently the model is using incremental_n_modes = [3, 2]
-    [3] time=0.13, avg_loss=0.7228, train_err=10.3255, 16_h1=0.7465, 16_l2=0.5743, 32_h1=0.8169, 32_l2=0.5600
-    [3] time=0.13, avg_loss=0.7228, train_err=10.3255, 16_h1=0.7465, 16_l2=0.5743, 32_h1=0.8169, 32_l2=0.5600
+    [3] time=0.14, avg_loss=0.7228, train_err=10.3255, 16_h1=0.7465, 16_l2=0.5743, 32_h1=0.8169, 32_l2=0.5600
+    [3] time=0.14, avg_loss=0.7228, train_err=10.3255, 16_h1=0.7465, 16_l2=0.5743, 32_h1=0.8169, 32_l2=0.5600
     Currently the model is using incremental_n_modes = [3, 2]
-    [4] time=0.13, avg_loss=0.7274, train_err=10.3921, 16_h1=0.7092, 16_l2=0.5530, 32_h1=0.7454, 32_l2=0.5419
-    [4] time=0.13, avg_loss=0.7274, train_err=10.3921, 16_h1=0.7092, 16_l2=0.5530, 32_h1=0.7454, 32_l2=0.5419
+    [4] time=0.14, avg_loss=0.7274, train_err=10.3921, 16_h1=0.7092, 16_l2=0.5530, 32_h1=0.7454, 32_l2=0.5419
+    [4] time=0.14, avg_loss=0.7274, train_err=10.3921, 16_h1=0.7092, 16_l2=0.5530, 32_h1=0.7454, 32_l2=0.5419
     Currently the model is using incremental_n_modes = [3, 2]
     [5] time=0.13, avg_loss=0.7118, train_err=10.1691, 16_h1=0.7132, 16_l2=0.5544, 32_h1=0.7537, 32_l2=0.5433
     [5] time=0.13, avg_loss=0.7118, train_err=10.1691, 16_h1=0.7132, 16_l2=0.5544, 32_h1=0.7537, 32_l2=0.5433
     Currently the model is using incremental_n_modes = [4, 3]
-    [6] time=0.14, avg_loss=0.6916, train_err=9.8802, 16_h1=0.7031, 16_l2=0.5461, 32_h1=0.7355, 32_l2=0.5360
-    [6] time=0.14, avg_loss=0.6916, train_err=9.8802, 16_h1=0.7031, 16_l2=0.5461, 32_h1=0.7355, 32_l2=0.5360
+    [6] time=0.15, avg_loss=0.6916, train_err=9.8802, 16_h1=0.7031, 16_l2=0.5461, 32_h1=0.7355, 32_l2=0.5360
+    [6] time=0.15, avg_loss=0.6916, train_err=9.8802, 16_h1=0.7031, 16_l2=0.5461, 32_h1=0.7355, 32_l2=0.5360
     Currently the model is using incremental_n_modes = [4, 3]
-    [7] time=0.14, avg_loss=0.6754, train_err=9.6491, 16_h1=0.7058, 16_l2=0.5526, 32_h1=0.7365, 32_l2=0.5361
-    [7] time=0.14, avg_loss=0.6754, train_err=9.6491, 16_h1=0.7058, 16_l2=0.5526, 32_h1=0.7365, 32_l2=0.5361
+    [7] time=0.15, avg_loss=0.6754, train_err=9.6491, 16_h1=0.7058, 16_l2=0.5526, 32_h1=0.7365, 32_l2=0.5361
+    [7] time=0.15, avg_loss=0.6754, train_err=9.6491, 16_h1=0.7058, 16_l2=0.5526, 32_h1=0.7365, 32_l2=0.5361
     Currently the model is using incremental_n_modes = [4, 3]
-    [8] time=0.14, avg_loss=0.6691, train_err=9.5586, 16_h1=0.6777, 16_l2=0.5305, 32_h1=0.7038, 32_l2=0.5220
-    [8] time=0.14, avg_loss=0.6691, train_err=9.5586, 16_h1=0.6777, 16_l2=0.5305, 32_h1=0.7038, 32_l2=0.5220
+    [8] time=0.15, avg_loss=0.6691, train_err=9.5586, 16_h1=0.6777, 16_l2=0.5305, 32_h1=0.7038, 32_l2=0.5220
+    [8] time=0.15, avg_loss=0.6691, train_err=9.5586, 16_h1=0.6777, 16_l2=0.5305, 32_h1=0.7038, 32_l2=0.5220
     Currently the model is using incremental_n_modes = [5, 3]
-    [9] time=0.15, avg_loss=0.6522, train_err=9.3177, 16_h1=0.6972, 16_l2=0.5441, 32_h1=0.7197, 32_l2=0.5342
-    [9] time=0.15, avg_loss=0.6522, train_err=9.3177, 16_h1=0.6972, 16_l2=0.5441, 32_h1=0.7197, 32_l2=0.5342
+    [9] time=0.16, avg_loss=0.6522, train_err=9.3177, 16_h1=0.6972, 16_l2=0.5441, 32_h1=0.7197, 32_l2=0.5342
+    [9] time=0.16, avg_loss=0.6522, train_err=9.3177, 16_h1=0.6972, 16_l2=0.5441, 32_h1=0.7197, 32_l2=0.5342
     Currently the model is using incremental_n_modes = [5, 3]
     Incre Res Update: change index to 1
     Incre Res Update: change sub to 1
     Incre Res Update: change res to 16
-    [10] time=0.21, avg_loss=0.6335, train_err=9.0503, 16_h1=0.6933, 16_l2=0.5498, 32_h1=0.7084, 32_l2=0.5363
-    [10] time=0.21, avg_loss=0.6335, train_err=9.0503, 16_h1=0.6933, 16_l2=0.5498, 32_h1=0.7084, 32_l2=0.5363
+    [10] time=0.23, avg_loss=0.6335, train_err=9.0503, 16_h1=0.6933, 16_l2=0.5498, 32_h1=0.7084, 32_l2=0.5363
+    [10] time=0.23, avg_loss=0.6335, train_err=9.0503, 16_h1=0.6933, 16_l2=0.5498, 32_h1=0.7084, 32_l2=0.5363
     Currently the model is using incremental_n_modes = [5, 3]
-    [11] time=0.21, avg_loss=0.6075, train_err=8.6785, 16_h1=0.6825, 16_l2=0.5391, 32_h1=0.6986, 32_l2=0.5267
-    [11] time=0.21, avg_loss=0.6075, train_err=8.6785, 16_h1=0.6825, 16_l2=0.5391, 32_h1=0.6986, 32_l2=0.5267
+    [11] time=0.22, avg_loss=0.6075, train_err=8.6785, 16_h1=0.6825, 16_l2=0.5391, 32_h1=0.6986, 32_l2=0.5267
+    [11] time=0.22, avg_loss=0.6075, train_err=8.6785, 16_h1=0.6825, 16_l2=0.5391, 32_h1=0.6986, 32_l2=0.5267
     Currently the model is using incremental_n_modes = [6, 4]
-    [12] time=0.22, avg_loss=0.5724, train_err=8.1771, 16_h1=0.6952, 16_l2=0.5516, 32_h1=0.7056, 32_l2=0.5335
-    [12] time=0.22, avg_loss=0.5724, train_err=8.1771, 16_h1=0.6952, 16_l2=0.5516, 32_h1=0.7056, 32_l2=0.5335
+    [12] time=0.24, avg_loss=0.5724, train_err=8.1771, 16_h1=0.6952, 16_l2=0.5516, 32_h1=0.7056, 32_l2=0.5335
+    [12] time=0.24, avg_loss=0.5724, train_err=8.1771, 16_h1=0.6952, 16_l2=0.5516, 32_h1=0.7056, 32_l2=0.5335
     Currently the model is using incremental_n_modes = [6, 4]
-    [13] time=0.23, avg_loss=0.5271, train_err=7.5303, 16_h1=0.7562, 16_l2=0.5915, 32_h1=0.7667, 32_l2=0.5748
-    [13] time=0.23, avg_loss=0.5271, train_err=7.5303, 16_h1=0.7562, 16_l2=0.5915, 32_h1=0.7667, 32_l2=0.5748
+    [13] time=0.24, avg_loss=0.5271, train_err=7.5303, 16_h1=0.7562, 16_l2=0.5915, 32_h1=0.7667, 32_l2=0.5748
+    [13] time=0.24, avg_loss=0.5271, train_err=7.5303, 16_h1=0.7562, 16_l2=0.5915, 32_h1=0.7667, 32_l2=0.5748
     Currently the model is using incremental_n_modes = [6, 4]
-    [14] time=0.23, avg_loss=0.4876, train_err=6.9663, 16_h1=0.7453, 16_l2=0.5880, 32_h1=0.7560, 32_l2=0.5700
-    [14] time=0.23, avg_loss=0.4876, train_err=6.9663, 16_h1=0.7453, 16_l2=0.5880, 32_h1=0.7560, 32_l2=0.5700
+    [14] time=0.24, avg_loss=0.4876, train_err=6.9663, 16_h1=0.7453, 16_l2=0.5880, 32_h1=0.7560, 32_l2=0.5700
+    [14] time=0.24, avg_loss=0.4876, train_err=6.9663, 16_h1=0.7453, 16_l2=0.5880, 32_h1=0.7560, 32_l2=0.5700
     Currently the model is using incremental_n_modes = [7, 4]
-    [15] time=0.23, avg_loss=0.4745, train_err=6.7789, 16_h1=0.6888, 16_l2=0.5401, 32_h1=0.7067, 32_l2=0.5310
-    [15] time=0.23, avg_loss=0.4745, train_err=6.7789, 16_h1=0.6888, 16_l2=0.5401, 32_h1=0.7067, 32_l2=0.5310
+    [15] time=0.24, avg_loss=0.4745, train_err=6.7789, 16_h1=0.6888, 16_l2=0.5401, 32_h1=0.7067, 32_l2=0.5310
+    [15] time=0.24, avg_loss=0.4745, train_err=6.7789, 16_h1=0.6888, 16_l2=0.5401, 32_h1=0.7067, 32_l2=0.5310
     Currently the model is using incremental_n_modes = [7, 4]
-    [16] time=0.24, avg_loss=0.4645, train_err=6.6351, 16_h1=0.7172, 16_l2=0.5724, 32_h1=0.7301, 32_l2=0.5611
-    [16] time=0.24, avg_loss=0.4645, train_err=6.6351, 16_h1=0.7172, 16_l2=0.5724, 32_h1=0.7301, 32_l2=0.5611
+    [16] time=0.25, avg_loss=0.4645, train_err=6.6351, 16_h1=0.7172, 16_l2=0.5724, 32_h1=0.7301, 32_l2=0.5611
+    [16] time=0.25, avg_loss=0.4645, train_err=6.6351, 16_h1=0.7172, 16_l2=0.5724, 32_h1=0.7301, 32_l2=0.5611
     Currently the model is using incremental_n_modes = [7, 4]
-    [17] time=0.23, avg_loss=0.4599, train_err=6.5699, 16_h1=0.7613, 16_l2=0.5980, 32_h1=0.7752, 32_l2=0.5801
-    [17] time=0.23, avg_loss=0.4599, train_err=6.5699, 16_h1=0.7613, 16_l2=0.5980, 32_h1=0.7752, 32_l2=0.5801
+    [17] time=0.24, avg_loss=0.4599, train_err=6.5699, 16_h1=0.7613, 16_l2=0.5980, 32_h1=0.7752, 32_l2=0.5801
+    [17] time=0.24, avg_loss=0.4599, train_err=6.5699, 16_h1=0.7613, 16_l2=0.5980, 32_h1=0.7752, 32_l2=0.5801
     Currently the model is using incremental_n_modes = [8, 5]
-    [18] time=0.23, avg_loss=0.3874, train_err=5.5345, 16_h1=0.6920, 16_l2=0.5396, 32_h1=0.7117, 32_l2=0.5285
-    [18] time=0.23, avg_loss=0.3874, train_err=5.5345, 16_h1=0.6920, 16_l2=0.5396, 32_h1=0.7117, 32_l2=0.5285
+    [18] time=0.24, avg_loss=0.3874, train_err=5.5345, 16_h1=0.6920, 16_l2=0.5396, 32_h1=0.7117, 32_l2=0.5285
+    [18] time=0.24, avg_loss=0.3874, train_err=5.5345, 16_h1=0.6920, 16_l2=0.5396, 32_h1=0.7117, 32_l2=0.5285
     Currently the model is using incremental_n_modes = [8, 5]
-    [19] time=0.26, avg_loss=0.3342, train_err=4.7749, 16_h1=0.6870, 16_l2=0.5392, 32_h1=0.6975, 32_l2=0.5236
-    [19] time=0.26, avg_loss=0.3342, train_err=4.7749, 16_h1=0.6870, 16_l2=0.5392, 32_h1=0.6975, 32_l2=0.5236
+    [19] time=0.24, avg_loss=0.3342, train_err=4.7749, 16_h1=0.6870, 16_l2=0.5392, 32_h1=0.6975, 32_l2=0.5236
+    [19] time=0.24, avg_loss=0.3342, train_err=4.7749, 16_h1=0.6870, 16_l2=0.5392, 32_h1=0.6975, 32_l2=0.5236
     Currently the model is using incremental_n_modes = [8, 5]
 
     {'16_h1': 0.6869734001159667, '16_l2': 0.5392194366455079, '32_h1': 0.6974964904785156, '32_l2': 0.5235791015625}
@@ -484,7 +488,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 6.081 seconds)
+   **Total running time of the script:** (0 minutes 6.416 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_incremental_FNO_darcy.py:
@@ -500,6 +504,10 @@ In practice we would train a Neural Operator on one or multiple GPUs
     .. container:: sphx-glr-download sphx-glr-download-python
 
       :download:`Download Python source code: plot_incremental_FNO_darcy.py <plot_incremental_FNO_darcy.py>`
+
+    .. container:: sphx-glr-download sphx-glr-download-zip
+
+      :download:`Download zipped: plot_incremental_FNO_darcy.zip <plot_incremental_FNO_darcy.zip>`
 
 
 .. only:: html

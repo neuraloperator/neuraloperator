@@ -17,7 +17,7 @@
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../_static/tensorly_style.css?v=a02e9698" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=61a4c737" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
@@ -203,7 +203,11 @@ the small Darcy-Flow example we ship with the package</p>
 <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Loading test db for resolution 16 with 100 samples
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:102: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  data = torch.load(
+Loading test db for resolution 16 with 100 samples
+/home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:183: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  data = torch.load(Path(root_dir).joinpath(f&quot;{dataset_name}_test_{res}.pt&quot;).as_posix())
 Loading test db for resolution 32 with 50 samples
 
 Our model has 2665921 parameters.
@@ -337,13 +341,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fc83aaaaac0&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f8ae377d340&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fc83aaaa820&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f8ae377d4c0&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fc83aaaa820&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fc83aaaabe0&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f8ae377d4c0&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f8ae377dfd0&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -374,15 +378,15 @@ self.overrides_loss=False
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 32 samples
 Testing on [50, 50] samples         on resolutions [16, 32].
 Raw outputs of shape torch.Size([32, 1, 16, 16])
-[0] time=5.66, avg_loss=0.5851, train_err=18.2858, 16_h1=0.4833, 16_l2=0.4110, 32_h1=0.5315, 32_l2=0.4329
-[3] time=5.65, avg_loss=0.2588, train_err=8.0887, 16_h1=0.6392, 16_l2=0.4759, 32_h1=0.5737, 32_l2=0.4375
-[6] time=5.63, avg_loss=0.2417, train_err=7.5521, 16_h1=0.6469, 16_l2=0.4709, 32_h1=0.5745, 32_l2=0.4481
-[9] time=5.66, avg_loss=0.2361, train_err=7.3785, 16_h1=0.6198, 16_l2=0.4254, 32_h1=0.5353, 32_l2=0.4202
-[12] time=5.63, avg_loss=0.2084, train_err=6.5120, 16_h1=0.6467, 16_l2=0.4704, 32_h1=0.5909, 32_l2=0.4792
-[15] time=5.72, avg_loss=0.1990, train_err=6.2190, 16_h1=0.6351, 16_l2=0.4381, 32_h1=0.5628, 32_l2=0.4428
-[18] time=5.66, avg_loss=0.1806, train_err=5.6437, 16_h1=0.6908, 16_l2=0.4800, 32_h1=0.6015, 32_l2=0.4713
+[0] time=5.83, avg_loss=0.6012, train_err=18.7867, 16_h1=0.5133, 16_l2=0.4089, 32_h1=0.4970, 32_l2=0.3935
+[3] time=5.87, avg_loss=0.2688, train_err=8.3987, 16_h1=0.6916, 16_l2=0.5097, 32_h1=0.5882, 32_l2=0.4531
+[6] time=5.87, avg_loss=0.2288, train_err=7.1504, 16_h1=0.6106, 16_l2=0.4656, 32_h1=0.5639, 32_l2=0.4548
+[9] time=5.86, avg_loss=0.2169, train_err=6.7785, 16_h1=0.6177, 16_l2=0.4394, 32_h1=0.5442, 32_l2=0.4321
+[12] time=5.84, avg_loss=0.2201, train_err=6.8779, 16_h1=0.6908, 16_l2=0.4800, 32_h1=0.6080, 32_l2=0.4647
+[15] time=5.94, avg_loss=0.1872, train_err=5.8501, 16_h1=0.7006, 16_l2=0.4764, 32_h1=0.5985, 32_l2=0.4483
+[18] time=5.88, avg_loss=0.1782, train_err=5.5691, 16_h1=0.6349, 16_l2=0.4515, 32_h1=0.5680, 32_l2=0.4354
 
-{&#39;16_h1&#39;: 0.690761833190918, &#39;16_l2&#39;: 0.47997188568115234, &#39;32_h1&#39;: 0.601503562927246, &#39;32_l2&#39;: 0.4712911033630371}
+{&#39;16_h1&#39;: 0.6348944282531739, &#39;16_l2&#39;: 0.45152570724487306, &#39;32_h1&#39;: 0.5679565238952636, &#39;32_l2&#39;: 0.4353780460357666}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -432,13 +436,16 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 55.849 seconds)</p>
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 0.160 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/ecc34f03fb30bee651bda959149422c4/plot_UNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_UNO_darcy.ipynb</span></code></a></p>
 </div>
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/f9c1e50d48828a746410d5400feb61f7/plot_UNO_darcy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_UNO_darcy.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/cefc537c5730a6b3e916b83c1fd313d6/plot_UNO_darcy.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_UNO_darcy.zip</span></code></a></p>
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>

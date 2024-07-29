@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.losses`.LpLoss
+====================================
+
+.. currentmodule:: neuralop.losses
+
+.. autoclass:: LpLoss
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

@@ -199,6 +199,10 @@ Actually train the model on our small Darcy-Flow dataset
 
       :download:`Download Python source code: checkpoint_FNO_darcy.py <checkpoint_FNO_darcy.py>`
 
+    .. container:: sphx-glr-download sphx-glr-download-zip
+
+      :download:`Download zipped: checkpoint_FNO_darcy.zip <checkpoint_FNO_darcy.zip>`
+
 
 .. only:: html
 

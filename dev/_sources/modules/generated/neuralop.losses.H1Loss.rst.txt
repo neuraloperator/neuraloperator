@@ -1,0 +1,11 @@
+﻿:mod:`neuralop.losses`.H1Loss
+====================================
+
+.. currentmodule:: neuralop.losses
+
+.. autoclass:: H1Loss
+   :members:
+
+.. raw:: html
+
+    <div class="clearer"></div>

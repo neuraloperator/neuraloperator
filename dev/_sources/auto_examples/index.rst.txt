@@ -35,7 +35,7 @@ Gallery of examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="In this example, we demonstrate how to use torchtnt to estimate the number of floating-point op...">
+    <div class="sphx-glr-thumbcontainer" tooltip="In this example, we demonstrate how to use torchtnt to estimate the number of floating-point operations per second (FLOPS) required for a model&#x27;s forward and backward pass. ">
 
 .. only:: html
 
@@ -52,7 +52,7 @@ Gallery of examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="In this example, we demonstrate how to use the small Darcy-Flow example we ship with the packag...">
+    <div class="sphx-glr-thumbcontainer" tooltip="In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package to train a Tensorized Fourier-Neural Operator">
 
 .. only:: html
 
@@ -69,7 +69,7 @@ Gallery of examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="In this example, we demonstrate how to use the small Spherical Shallow Water Equations example ...">
+    <div class="sphx-glr-thumbcontainer" tooltip="In this example, we demonstrate how to use the small Spherical Shallow Water Equations example we ship with the package to train a Spherical Fourier-Neural Operator">
 
 .. only:: html
 
@@ -86,7 +86,7 @@ Gallery of examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="In this example, we demonstrate how to use the small Darcy-Flow example we ship with the packag...">
+    <div class="sphx-glr-thumbcontainer" tooltip="In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package to train a Tensorized Fourier-Neural Operator">
 
 .. only:: html
 
@@ -103,7 +103,7 @@ Gallery of examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="In this example, we demonstrate how to train a U-shaped Neural Operator on  the small Darcy-Flo...">
+    <div class="sphx-glr-thumbcontainer" tooltip="In this example, we demonstrate how to train a U-shaped Neural Operator on  the small Darcy-Flow example we ship with the package">
 
 .. only:: html
 
