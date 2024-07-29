@@ -65,9 +65,9 @@ default: &DEFAULT
     batch_size: 16
     n_train: 10000
     train_resolution: 128
-    n_tests: [2000, 1000, 1000] #, 1000]
-    test_resolutions: [128] #, 1024] 
-    test_batch_sizes: [16, 8, 4] #, 1]
+    n_tests: [2000, 1000] #, 1000]
+    test_resolutions: [128, 1024] #, 1024] 
+    test_batch_sizes: [16, 4] #, 1]
     positional_encoding: True
 
     encode_input: True
