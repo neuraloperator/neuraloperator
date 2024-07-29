@@ -15,7 +15,8 @@ class IncrementalFNOTrainer(Trainer):
 
     References
     -----------
-    .. [1] George, R., Zhao, J., Kossaifi, J., Li, Z., and Anandkumar, A. (2024)
+    
+    .. _[1]: George, R., Zhao, J., Kossaifi, J., Li, Z., and Anandkumar, A. (2024)
         "Incremental Spatial and Spectral Learning of Neural Operators for Solving Large-Scale PDEs".
         ArXiv preprint, https://arxiv.org/pdf/2211.15188
     """
@@ -106,6 +107,15 @@ class IncrementalFNOTrainer(Trainer):
     
     # Algorithm 1: Incremental
     def loss_gap(self, loss):
+        """
+        loss_gap increases the model's incremental modes if 
+        the epoch's training loss does not decrease sufficiently
+
+        Parameters
+        -----------
+        loss : float | scalar torch.Tensor
+            scalar value of epoch's training loss
+        """
         self.loss_list.append(loss)
         self.ndim = len(self.model.fno_blocks.convs.n_modes)
 
