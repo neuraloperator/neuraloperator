@@ -39,12 +39,12 @@ class FNOBlocks(nn.Module):
             maximum number of modes to keep along each dimension, by default None
         fno_block_precision : str, optional
             floating point precision to use for computations, by default "full"
-        use_mlp : bool, optional
+        use_channel_mixing : bool, optional
             whether to use mlp layers to parameterize skip connections, by default False
         mlp_dropout : int, optional
-            dropout parameter for self.mlp, by default 0
+            dropout parameter for self.channel_mixing, by default 0
         mlp_expansion : float, optional
-            expansion parameter for self.mlp, by default 0.5
+            expansion parameter for self.channel_mixing, by default 0.5
         non_linearity : torch.nn.F module, optional
             nonlinear activation function to use between layers, by default F.gelu
         stabilizer : Literal["tanh"], optional
@@ -95,7 +95,7 @@ class FNOBlocks(nn.Module):
         n_layers=1,
         max_n_modes=None,
         fno_block_precision="full",
-        use_mlp=False,
+        use_channel_mixing=False,
         mlp_dropout=0,
         mlp_expansion=0.5,
         non_linearity=F.gelu,
@@ -140,7 +140,7 @@ class FNOBlocks(nn.Module):
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = fno_skip
         self.mlp_skip = mlp_skip
-        self.use_mlp = use_mlp
+        self.use_channel_mixing = use_channel_mixing
         self.mlp_expansion = mlp_expansion
         self.mlp_dropout = mlp_dropout
         self.fft_norm = fft_norm
@@ -177,8 +177,8 @@ class FNOBlocks(nn.Module):
             ]
         )
 
-        if use_mlp:
-            self.mlp = nn.ModuleList(
+        if use_channel_mixing:
+            self.channel_mixing = nn.ModuleList(
                 [
                     ChannelMixingMLP(
                         in_channels=self.out_channels,
@@ -201,10 +201,10 @@ class FNOBlocks(nn.Module):
                 ]
             )
         else:
-            self.mlp = None
+            self.channel_mixing = None
 
         # Each block will have 2 norms if we also use a ChannelMixingMLP
-        self.n_norms = 1 if self.mlp is None else 2
+        self.n_norms = 1 if self.channel_mixing is None else 2
         if norm is None:
             self.norm = None
         elif norm == "instance_norm":
@@ -267,7 +267,7 @@ class FNOBlocks(nn.Module):
         x_skip_fno = self.fno_skips[index](x)
         x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
 
-        if self.mlp is not None:
+        if self.channel_mixing is not None:
             x_skip_mlp = self.mlp_skips[index](x)
             x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
 
@@ -281,11 +281,11 @@ class FNOBlocks(nn.Module):
 
         x = x_fno + x_skip_fno
 
-        if (self.mlp is not None) or (index < (self.n_layers - 1)):
+        if (self.channel_mixing is not None) or (index < (self.n_layers - 1)):
             x = self.non_linearity(x)
 
-        if self.mlp is not None:
-            x = self.mlp[index](x) + x_skip_mlp
+        if self.channel_mixing is not None:
+            x = self.channel_mixing[index](x) + x_skip_mlp
 
             if self.norm is not None:
                 x = self.norm[self.n_norms * index + 1](x)
@@ -306,7 +306,7 @@ class FNOBlocks(nn.Module):
         x_skip_fno = self.fno_skips[index](x)
         x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
 
-        if self.mlp is not None:
+        if self.channel_mixing is not None:
             x_skip_mlp = self.mlp_skips[index](x)
             x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
 
@@ -316,14 +316,14 @@ class FNOBlocks(nn.Module):
         x_fno = self.convs(x, index, output_shape=output_shape)
         x = x_fno + x_skip_fno
 
-        if self.mlp is not None:
+        if self.channel_mixing is not None:
             if index < (self.n_layers - 1):
                 x = self.non_linearity(x)
 
             if self.norm is not None:
                 x = self.norm[self.n_norms * index + 1](x)
 
-            x = self.mlp[index](x) + x_skip_mlp
+            x = self.channel_mixing[index](x) + x_skip_mlp
 
         return x
 
