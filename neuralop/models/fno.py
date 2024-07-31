@@ -44,7 +44,7 @@ class FNO(BaseModel, name='FNO'):
         if 'mixed', the contraction and inverse FFT run in half precision
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
-    use_mlp : bool, optional
+    use_channel_mixing : bool, optional
         Whether to use an MLP layer after each FNO block, by default False
     mlp_dropout : float , optional
         droupout parameter of MLP layer, by default 0
@@ -59,7 +59,7 @@ class FNO(BaseModel, name='FNO'):
     fno_skip : {'linear', 'identity', 'soft-gating'}, optional
         Type of skip connection to use in fno, by default 'linear'
     mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
-        Type of skip connection to use in mlp, by default 'soft-gating'
+        Type of skip connection to use in channel-mixing mlp, by default 'soft-gating'
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
     factorization : str or None, {'tucker', 'cp', 'tt'}
@@ -104,7 +104,7 @@ class FNO(BaseModel, name='FNO'):
         output_scaling_factor=None,
         max_n_modes=None,
         fno_block_precision="full",
-        use_mlp=False,
+        use_channel_mixing=False,
         mlp_dropout=0,
         mlp_expansion=0.5,
         non_linearity=F.gelu,
@@ -176,7 +176,7 @@ class FNO(BaseModel, name='FNO'):
             out_channels=hidden_channels,
             n_modes=self.n_modes,
             output_scaling_factor=output_scaling_factor,
-            use_mlp=use_mlp,
+            use_channel_mixing=use_channel_mixing,
             mlp_dropout=mlp_dropout,
             mlp_expansion=mlp_expansion,
             non_linearity=non_linearity,
@@ -203,7 +203,7 @@ class FNO(BaseModel, name='FNO'):
         # if lifting_channels is passed, make lifting an MLP
         # with a hidden layer of size lifting_channels
         if self.lifting_channels:
-            self.lifting = MLP(
+            self.lifting = ChannelMixingMLP(
                 in_channels=in_channels,
                 out_channels=self.hidden_channels,
                 hidden_channels=self.lifting_channels,
@@ -212,14 +212,14 @@ class FNO(BaseModel, name='FNO'):
             )
         # otherwise, make it a linear layer
         else:
-            self.lifting = MLP(
+            self.lifting = ChannelMixingMLP(
                 in_channels=in_channels,
                 out_channels=self.hidden_channels,
                 hidden_channels=self.hidden_channels,
                 n_layers=1,
                 n_dim=self.n_dim,
             )
-        self.projection = MLP(
+        self.projection = ChannelMixingMLP(
             in_channels=self.hidden_channels,
             out_channels=out_channels,
             hidden_channels=self.projection_channels,
@@ -297,7 +297,7 @@ class FNO1d(FNO):
         output_scaling_factor=None,
         non_linearity=F.gelu,
         stabilizer=None,
-        use_mlp=False,
+        use_channel_mixing=False,
         mlp_dropout=0,
         mlp_expansion=0.5,
         norm=None,
@@ -326,7 +326,7 @@ class FNO1d(FNO):
             output_scaling_factor=output_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            use_mlp=use_mlp,
+            use_channel_mixing=use_channel_mixing,
             mlp_dropout=mlp_dropout,
             mlp_expansion=mlp_expansion,
             max_n_modes=max_n_modes,
@@ -376,7 +376,7 @@ class FNO2d(FNO):
         fno_block_precision="full",
         non_linearity=F.gelu,
         stabilizer=None,
-        use_mlp=False,
+        use_channel_mixing=False,
         mlp_dropout=0,
         mlp_expansion=0.5,
         norm=None,
@@ -405,7 +405,7 @@ class FNO2d(FNO):
             output_scaling_factor=output_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            use_mlp=use_mlp,
+            use_channel_mixing=use_channel_mixing,
             mlp_dropout=mlp_dropout,
             mlp_expansion=mlp_expansion,
             max_n_modes=max_n_modes,
@@ -459,7 +459,7 @@ class FNO3d(FNO):
         fno_block_precision="full",
         non_linearity=F.gelu,
         stabilizer=None,
-        use_mlp=False,
+        use_channel_mixing=False,
         mlp_dropout=0,
         mlp_expansion=0.5,
         norm=None,
@@ -490,7 +490,7 @@ class FNO3d(FNO):
             stabilizer=stabilizer,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
-            use_mlp=use_mlp,
+            use_channel_mixing=use_channel_mixing,
             mlp_dropout=mlp_dropout,
             mlp_expansion=mlp_expansion,
             norm=norm,
