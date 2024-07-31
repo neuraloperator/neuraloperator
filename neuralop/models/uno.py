@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-from ..layers.channel_mixing import ChannelMixingMLP
+from ..layers.channel_mixing import ChannelMixing
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.skip_connections import skip_connection
 from ..layers.padding import DomainPadding
@@ -48,10 +48,10 @@ class UNO(nn.Module):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
-    use_mlp : bool, optional
-        Whether to use an MLP layer after each FNO block, by default False
-    mlp : dict, optional
-        Parameters of the MLP, by default None
+    use_channel_mixing : bool, optional
+        Whether to use an ChannelMixing layer after each FNO block, by default False
+    ChannelMixing : dict, optional
+        Parameters of the ChannelMixing, by default None
         {'expansion': float, 'dropout': float}
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
@@ -102,15 +102,15 @@ class UNO(nn.Module):
         uno_scalings=None,
         horizontal_skips_map=None,
         incremental_n_modes=None,
-        use_mlp=False,
-        mlp_dropout=0,
-        mlp_expansion=0.5,
+        use_channel_mixing=False,
+        channel_mixingdropout=0,
+        channel_mixingexpansion=0.5,
         non_linearity=F.gelu,
         norm=None,
         preactivation=False,
         fno_skip="linear",
         horizontal_skip="linear",
-        mlp_skip="soft-gating",
+        channel_mixingskip="soft-gating",
         separable=False,
         factorization=None,
         rank=1.0,
@@ -159,7 +159,7 @@ class UNO(nn.Module):
         self.fixed_rank_modes = fixed_rank_modes
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = (fno_skip,)
-        self.mlp_skip = (mlp_skip,)
+        self.channel_mixingskip = (channel_mixingskip,)
         self.fft_norm = fft_norm
         self.implementation = implementation
         self.separable = separable
@@ -214,7 +214,7 @@ class UNO(nn.Module):
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
 
-        self.lifting = MLP(
+        self.lifting = ChannelMixing(
             in_channels=in_channels,
             out_channels=self.hidden_channels,
             hidden_channels=self.lifting_channels,
@@ -236,15 +236,15 @@ class UNO(nn.Module):
                     in_channels=prev_out,
                     out_channels=self.uno_out_channels[i],
                     n_modes=self.uno_n_modes[i],
-                    use_mlp=use_mlp,
-                    mlp_dropout=mlp_dropout,
-                    mlp_expansion=mlp_expansion,
+                    use_channel_mixing=use_channel_mixing,
+                    channel_mixingdropout=channel_mixingdropout,
+                    channel_mixingexpansion=channel_mixingexpansion,
                     output_scaling_factor=[self.uno_scalings[i]],
                     non_linearity=non_linearity,
                     norm=norm,
                     preactivation=preactivation,
                     fno_skip=fno_skip,
-                    mlp_skip=mlp_skip,
+                    channel_mixingskip=channel_mixingskip,
                     incremental_n_modes=incremental_n_modes,
                     rank=rank,
                     SpectralConv=self.integral_operator,
@@ -269,7 +269,7 @@ class UNO(nn.Module):
 
             prev_out = self.uno_out_channels[i]
 
-        self.projection = MLP(
+        self.projection = ChannelMixing(
             in_channels=prev_out,
             out_channels=out_channels,
             hidden_channels=self.projection_channels,

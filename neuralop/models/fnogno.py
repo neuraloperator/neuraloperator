@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from .base_model import BaseModel
 from .fno import FNO
 
-from ..layers.channel_mixing import ChannelMixingMLP
+from ..layers.channel_mixing import ChannelMixing
 from ..layers.embeddings import SinusoidalEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.integral_transform import IntegralTransform
@@ -28,13 +28,13 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         dimension of embeddings of GNO coordinates.
     gno_radius : float, defaults to 0.033
         radius parameter to construct graph.
-    gno_mlp_hidden_layers : list, defaults to [512, 256]
-        dimension of hidden MLP layers of GNO.
-    gno_mlp_non_linearity : nn.Module, defaults to F.gelu
+    gno_channel_mixing_hidden_layers : list, defaults to [512, 256]
+        dimension of hidden ChannelMixing layers of GNO.
+    gno_channel_mixing_non_linearity : nn.Module, defaults to F.gelu
         nonlinear activation function between layers
     gno_transform_type : str, defaults to 'linear'
         type of kernel integral transform to apply in GNO.
-        kernel k(x,y): parameterized as MLP integrated over a neighborhood of x
+        kernel k(x,y): parameterized as ChannelMixing MLP integrated over a neighborhood of x
         options: 'linear_kernelonly': integrand is k(x, y)
                     'linear' : integrand is k(x, y) * f(y)
                     'nonlinear_kernelonly' : integrand is k(x, y, f(y))
@@ -59,12 +59,12 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         if passed, sets n_modes separately for each FNO layer.
     fno_block_precision : str, defaults to 'full'
         data precision to compute within fno block
-    fno_use_mlp : bool, defaults to False
-        Whether to use an MLP layer after each FNO block.
-    fno_mlp_dropout : float, defaults to 0
-        dropout parameter of above MLP.
-    fno_mlp_expansion : float, defaults to 0.5
-        expansion parameter of above MLP.
+    fno_use_channel_mixing : bool, defaults to False
+        Whether to use a ChannelMixing layer after each FNO block.
+    fno_channel_mixing_dropout : float, defaults to 0
+        dropout parameter of above ChannelMixing.
+    fno_channel_mixing_expansion : float, defaults to 0.5
+        expansion parameter of above ChannelMixing.
     fno_non_linearity : nn.Module, defaults to F.gelu
         nonlinear activation function between each FNO layer.
     fno_stabilizer : nn.Module | None, defaults to None
@@ -79,7 +79,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         whether to use Resnet-style preactivation.
     fno_skip : str, defaults to 'linear'
         type of skip connection to use.
-    fno_mlp_skip : str, defaults to 'soft-gating'
+    fno_channel_mixing_skip : str, defaults to 'soft-gating'
         type of skip connection to use in the FNO
         'linear': conv layer
         'soft-gating': weights the channels of the input
@@ -118,8 +118,8 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         gno_coord_dim=3,
         gno_coord_embed_dim=None,
         gno_radius=0.033,
-        gno_mlp_hidden_layers=[512, 256],
-        gno_mlp_non_linearity=F.gelu,
+        gno_channel_mixing_hidden_layers=[512, 256],
+        gno_channel_mixing_non_linearity=F.gelu,
         gno_transform_type="linear",
         gno_use_open3d=False,
         gno_batched=False,
@@ -130,9 +130,9 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         fno_output_scaling_factor=None,
         fno_incremental_n_modes=None,
         fno_block_precision="full",
-        fno_use_mlp=False,
-        fno_mlp_dropout=0,
-        fno_mlp_expansion=0.5,
+        fno_use_channel_mixing=False,
+        fno_channel_mixing_dropout=0,
+        fno_channel_mixing_expansion=0.5,
         fno_non_linearity=F.gelu,
         fno_stabilizer=None,
         fno_norm=None,
@@ -140,7 +140,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         fno_ada_in_dim=1,
         fno_preactivation=False,
         fno_skip="linear",
-        fno_mlp_skip="soft-gating",
+        fno_channel_mixing_skip="soft-gating",
         fno_separable=False,
         fno_factorization=None,
         fno_rank=1.0,
@@ -208,15 +208,15 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             output_scaling_factor=fno_output_scaling_factor,
             incremental_n_modes=fno_incremental_n_modes,
             fno_block_precision=fno_block_precision,
-            use_mlp=fno_use_mlp,
-            mlp={"expansion": fno_mlp_expansion, "dropout": fno_mlp_dropout},
+            use_channel_mixing=fno_use_channel_mixing,
+            channel_mixing={"expansion": fno_channel_mixing_expansion, "dropout": fno_channel_mixing_dropout},
             non_linearity=fno_non_linearity,
             stabilizer=fno_stabilizer,
             norm=fno_norm,
             ada_in_features=self.ada_in_dim,
             preactivation=fno_preactivation,
             fno_skip=fno_skip,
-            mlp_skip=fno_mlp_skip,
+            channel_mixing_skip=fno_channel_mixing_skip,
             separable=fno_separable,
             factorization=fno_factorization,
             rank=fno_rank,
@@ -245,16 +245,16 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         kernel_in_dim = 2 * self.gno_coord_dim_embed
         kernel_in_dim += fno_hidden_channels if gno_transform_type != "linear" else 0
 
-        gno_mlp_hidden_layers.insert(0, kernel_in_dim)
-        gno_mlp_hidden_layers.append(fno_hidden_channels)
+        gno_channel_mixing_hidden_layers.insert(0, kernel_in_dim)
+        gno_channel_mixing_hidden_layers.append(fno_hidden_channels)
 
         self.gno = IntegralTransform(
-            mlp_layers=gno_mlp_hidden_layers,
-            mlp_non_linearity=gno_mlp_non_linearity,
+            channel_mixing_layers=gno_channel_mixing_hidden_layers,
+            channel_mixing_non_linearity=gno_channel_mixing_non_linearity,
             transform_type=gno_transform_type,
         )
 
-        self.projection = MLP(
+        self.projection = ChannelMixing(
             in_channels=fno_hidden_channels,
             out_channels=out_channels,
             hidden_channels=projection_channels,
