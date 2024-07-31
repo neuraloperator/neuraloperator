@@ -19,9 +19,9 @@ default: &DEFAULT
     skip: 'soft-gating'
     implementation: 'factorized'
     
-    use_mlp: 1
-    mlp_expansion: 0.5
-    mlp_dropout: 0
+    use_channel_mixing: 1
+    channel_mixing_expansion: 0.5
+    channel_mixing_dropout: 0
 
     factorization: None
     rank: 1.0
