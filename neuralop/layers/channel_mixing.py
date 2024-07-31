@@ -3,9 +3,10 @@ from torch import nn
 import torch.nn.functional as F
 
 
-class ChannelMixingMLP(nn.Module):
-    """A Multi-Layer Perceptron, with arbitrary number of layers
-    The MLP operates
+class ChannelMixing(nn.Module):
+    """ChannelMixing applies an arbitrary number of layers of 
+    1d convolution and nonlinearity to the channels of input
+    and is invariant to spatial resolution.
 
     Parameters
     ----------
@@ -83,8 +84,8 @@ class ChannelMixingMLP(nn.Module):
         return x
 
 
-# Reimplementation of the ChannelMixingMLP class using Linear instead of Conv
-class ChannelMixingMLPLinear(torch.nn.Module):
+# Reimplementation of the ChannelMixing class using Linear instead of Conv
+class LinearChannelMixing(torch.nn.Module):
     def __init__(self, layers, non_linearity=F.gelu, dropout=0.0):
         super().__init__()
 
