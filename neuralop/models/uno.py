@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-from ..layers.mlp import MLP
+from ..layers.channel_mixing import ChannelMixingMLP
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.skip_connections import skip_connection
 from ..layers.padding import DomainPadding

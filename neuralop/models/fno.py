@@ -7,7 +7,7 @@ from ..layers.spectral_convolution import SpectralConv
 from ..layers.spherical_convolution import SphericalConv
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
-from ..layers.mlp import MLP
+from ..layers.channel_mixing import ChannelMixingMLP
 from .base_model import BaseModel
 
 class FNO(BaseModel, name='FNO'):

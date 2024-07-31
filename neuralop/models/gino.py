@@ -7,7 +7,7 @@ from torch import nn
 
 from .fno import FNO
 
-from ..layers.mlp import MLP
+from ..layers.channel_mixing import ChannelMixingMLP
 from ..layers.embeddings import SinusoidalEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.integral_transform import IntegralTransform

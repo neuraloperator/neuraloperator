@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from .mlp import MLPLinear
+from .channel_mixing import ChannelMixingMLPLinear
 from .segment_csr import segment_csr
 
 
