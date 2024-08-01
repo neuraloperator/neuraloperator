@@ -202,6 +202,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             hidden_channels=fno_hidden_channels,
             in_channels=in_channels + self.in_coord_dim,
             out_channels=fno_hidden_channels,
+            spatial_pos_embed=None,
             lifting_channels=fno_lifting_channels,
             projection_channels=1,
             n_layers=fno_n_layers,
