@@ -3,6 +3,7 @@ from functools import partialmethod
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ..layers.embeddings import GridEmbeddingND
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.spherical_convolution import SphericalConv
 from ..layers.padding import DomainPadding
@@ -30,6 +31,11 @@ class FNO(BaseModel, name='FNO'):
         number of hidden channels of the projection block of the FNO, by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
+    spatial_pos_embed : str literal, optional
+        Whether to use/type of spatial positional embedding
+        to append to model inputs before forward pass:
+        1. "grid": GridEmbeddingND
+        2. None: none
     max_n_modes : None or int tuple, default is None
         * If not None, this allows to incrementally increase the number of
           modes in Fourier domain during training. Has to verify n <= N
@@ -101,6 +107,7 @@ class FNO(BaseModel, name='FNO'):
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
+        spatial_pos_embed="grid",
         output_scaling_factor=None,
         max_n_modes=None,
         fno_block_precision="full",
@@ -151,7 +158,9 @@ class FNO(BaseModel, name='FNO'):
         self.separable = separable
         self.preactivation = preactivation
         self.fno_block_precision = fno_block_precision
-
+        
+        
+        self.spatial_pos_embed = spatial_pos_embed
         if domain_padding is not None and (
             (isinstance(domain_padding, list) and sum(domain_padding) > 0)
             or (isinstance(domain_padding, (float, int)) and domain_padding > 0)
@@ -247,6 +256,7 @@ class FNO(BaseModel, name='FNO'):
         elif isinstance(output_shape, tuple):
             output_shape = [None]*(self.n_layers - 1) + [output_shape]
 
+        grid_embedding = 
         x = self.lifting(x)
 
         if self.domain_padding is not None:
