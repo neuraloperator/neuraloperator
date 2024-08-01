@@ -151,7 +151,6 @@ def get_contract_fun(weight, implementation="reconstructed", separable=False):
     """
     if implementation == "reconstructed":
         if separable:
-            print("SEPARABLE")
             return _contract_dense_separable
         else:
             return _contract_dense
@@ -215,6 +214,8 @@ class SpectralConv(BaseSpectralConv):
         * If None, all the n_modes are used.
 
     separable : bool, default is True
+        whether to use separable contraction
+        only checked if `implementation` == 'reconstructed'
     init_std : float or 'auto', default is 'auto'
         std to use for the init
     n_layers : int, optional
@@ -314,7 +315,7 @@ class SpectralConv(BaseSpectralConv):
         if not factorization.lower().startswith("complex"):
             factorization = f"Complex{factorization}"
 
-        if separable:
+        if separable and implementation == 'factorized':
             if in_channels != out_channels:
                 raise ValueError(
                     "To use separable Fourier Conv, in_channels must be equal "
@@ -452,11 +453,18 @@ class SpectralConv(BaseSpectralConv):
         slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
         weight = self._get_weight(indices)[slices_w]
 
-        starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[2:]))]
+        # if separable conv, weight tensor only has one channel dim
+        if self.separable:
+            weight_start_idx = 1
+        # otherwise drop first two dims (in_channels, out_channels)
+        else:
+            weight_start_idx = 2
+        starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[weight_start_idx:]))]
+
         slices_x =  [slice(None), slice(None)] # Batch_size, channels
         slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
         slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
-        out_fft[slices_x] = self._contract(x[slices_x], weight, separable=False)
+        out_fft[slices_x] = self._contract(x[slices_x], weight, separable=self.separable)
 
         if self.output_scaling_factor is not None and output_shape is None:
             mode_sizes = tuple([round(s * r) for (s, r) in zip(mode_sizes, self.output_scaling_factor[indices])])
