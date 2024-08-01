@@ -204,7 +204,8 @@ class SpectralConv(BaseSpectralConv):
 
     separable : bool, default is True
         whether to use separable contraction
-        only checked if `implementation` == 'reconstructed'
+        if True, contracts factors of factorized 
+        tensor weight individually
     init_std : float or 'auto', default is 'auto'
         std to use for the init
     n_layers : int, optional
