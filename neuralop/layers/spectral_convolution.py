@@ -8,6 +8,7 @@ from torch import nn
 import tensorly as tl
 from tensorly.plugins import use_opt_einsum
 from tltorch.factorized_tensors.core import FactorizedTensor
+from tltorch.factorized_tensors import ComplexDenseTensor
 
 from .einsum_utils import einsum_complexhalf
 from .base_spectral_conv import BaseSpectralConv
@@ -33,7 +34,7 @@ def _contract_dense(x, weight, separable=False):
         weight_syms.insert(1, einsum_symbols[order])  # outputs
         out_syms = list(weight_syms)
         out_syms[0] = x_syms[0]
-
+    
     eq = f'{"".join(x_syms)},{"".join(weight_syms)}->{"".join(out_syms)}'
 
     if not torch.is_tensor(weight):
@@ -44,12 +45,6 @@ def _contract_dense(x, weight, separable=False):
         return einsum_complexhalf(eq, x, weight)
     else:
         return tl.einsum(eq, x, weight)
-
-
-def _contract_dense_separable(x, weight, separable=True):
-    if not separable:
-        raise ValueError("This function is only for separable=True")
-    return x * weight
 
 
 def _contract_cp(x, cp_weight, separable=False):
@@ -132,7 +127,7 @@ def _contract_tt(x, tt_weight, separable=False):
         return tl.einsum(eq, x, *tt_weight.factors)
 
 
-def get_contract_fun(weight, implementation="reconstructed", separable=False):
+def get_contract_fun(weight, implementation="reconstructed"):
     """Generic ND implementation of Fourier Spectral Conv contraction
 
     Parameters
@@ -141,19 +136,13 @@ def get_contract_fun(weight, implementation="reconstructed", separable=False):
     implementation : {'reconstructed', 'factorized'}, default is 'reconstructed'
         whether to reconstruct the weight and do a forward pass (reconstructed)
         or contract directly the factors of the factorized weight with the input (factorized)
-    separable : bool
-        whether to use the separable implementation of contraction. This arg is
-        only checked when `implementation=reconstructed`.
 
     Returns
     -------
     function : (x, weight) -> x * weight in Fourier space
     """
     if implementation == "reconstructed":
-        if separable:
-            return _contract_dense_separable
-        else:
-            return _contract_dense
+        return _contract_dense
     elif implementation == "factorized":
         if torch.is_tensor(weight):
             return _contract_dense
@@ -315,7 +304,7 @@ class SpectralConv(BaseSpectralConv):
         if not factorization.lower().startswith("complex"):
             factorization = f"Complex{factorization}"
 
-        if separable and implementation == 'factorized':
+        if separable:
             if in_channels != out_channels:
                 raise ValueError(
                     "To use separable Fourier Conv, in_channels must be equal "
@@ -353,7 +342,7 @@ class SpectralConv(BaseSpectralConv):
             for w in self.weight:
                 w.normal_(0, init_std)
         self._contract = get_contract_fun(
-            self.weight[0], implementation=implementation, separable=separable
+            self.weight[0], implementation=implementation
         )
 
         if bias:
@@ -459,8 +448,8 @@ class SpectralConv(BaseSpectralConv):
         # otherwise drop first two dims (in_channels, out_channels)
         else:
             weight_start_idx = 2
-        starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[weight_start_idx:]))]
 
+        starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[weight_start_idx:]))]
         slices_x =  [slice(None), slice(None)] # Batch_size, channels
         slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
         slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
