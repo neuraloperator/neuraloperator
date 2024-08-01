@@ -3,6 +3,7 @@ from functools import partialmethod
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ..layers.embeddings import GridEmbeddingND
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.spherical_convolution import SphericalConv
 from ..layers.padding import DomainPadding
@@ -17,7 +18,7 @@ class FNO(BaseModel, name='FNO'):
     ----------
     n_modes : int tuple
         number of modes to keep in Fourier Layer, along each dimension
-        The dimensionality of the TFNO is inferred from ``len(n_modes)``
+        The dimensionality of the FNO is inferred from ``len(n_modes)``
     hidden_channels : int
         width of the FNO (i.e. number of channels)
     in_channels : int, optional
@@ -30,6 +31,15 @@ class FNO(BaseModel, name='FNO'):
         number of hidden channels of the projection block of the FNO, by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
+    spatial_pos_embed : str literal | None
+        if "grid", appends a grid positional embedding to 
+        the last channels of raw input. See
+        `neuralop.embeddings.GridEmbeddingND` for details
+        if None, does nothing
+    spatial_grid_boundaries : List[List[int]] | None
+        boundaries of the input domain along each dimension
+        e.g. [[0,1], [0,1], ...] for use in GridEmbedding
+        If None, inferred
     max_n_modes : None or int tuple, default is None
         * If not None, this allows to incrementally increase the number of
           modes in Fourier domain during training. Has to verify n <= N
@@ -101,6 +111,8 @@ class FNO(BaseModel, name='FNO'):
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
+        spatial_pos_embed="grid",
+        spatial_grid_boundaries=None,
         output_scaling_factor=None,
         max_n_modes=None,
         fno_block_precision="full",
@@ -152,6 +164,17 @@ class FNO(BaseModel, name='FNO'):
         self.preactivation = preactivation
         self.fno_block_precision = fno_block_precision
 
+        if spatial_pos_embed == "grid":
+            if spatial_grid_boundaries is not None:
+                assert len(spatial_grid_boundaries) == self.n_dim, f"Error: instantiating an FNO\
+                    with {self.n_dim}-d modes, but passed grid boundaries for\
+                        inputs of dimension {len(spatial_grid_boundaries)}"
+            else:
+                spatial_grid_boundaries = [[0., 1.]] * self.n_dim
+            self.spatial_pos_embed = GridEmbeddingND(dim=self.n_dim, grid_boundaries=spatial_grid_boundaries)
+        else:
+            self.spatial_pos_embed = None
+        
         if domain_padding is not None and (
             (isinstance(domain_padding, list) and sum(domain_padding) > 0)
             or (isinstance(domain_padding, (float, int)) and domain_padding > 0)
@@ -200,11 +223,14 @@ class FNO(BaseModel, name='FNO'):
             **kwargs
         )
 
+        lifting_in_channels = self.in_channels
+        if self.spatial_pos_embed is not None:
+            lifting_in_channels += self.n_dim
         # if lifting_channels is passed, make lifting an MLP
         # with a hidden layer of size lifting_channels
         if self.lifting_channels:
             self.lifting = MLP(
-                in_channels=in_channels,
+                in_channels=lifting_in_channels,
                 out_channels=self.hidden_channels,
                 hidden_channels=self.lifting_channels,
                 n_layers=2,
@@ -213,7 +239,7 @@ class FNO(BaseModel, name='FNO'):
         # otherwise, make it a linear layer
         else:
             self.lifting = MLP(
-                in_channels=in_channels,
+                in_channels=lifting_in_channels,
                 out_channels=self.hidden_channels,
                 hidden_channels=self.hidden_channels,
                 n_layers=1,
@@ -247,6 +273,10 @@ class FNO(BaseModel, name='FNO'):
         elif isinstance(output_shape, tuple):
             output_shape = [None]*(self.n_layers - 1) + [output_shape]
 
+        # append spatial pos embedding if set
+        if self.spatial_pos_embed is not None:
+            x = self.spatial_pos_embed(x)
+        
         x = self.lifting(x)
 
         if self.domain_padding is not None:
