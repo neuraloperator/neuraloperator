@@ -59,31 +59,35 @@ class FiniteDifferenceConvolution(nn.Module):
             raise NotImplementedError("Desired padding mode is not currently supported")
         self.pad_size = kernel_size // 2
 
-        if implementation in ['subtract_middle', 'subtract_all']:
-            self.implementation = implementation
-            if implementation == 'subtract_all':
-                self.conv_kernel = torch.nn.parameter.Parameter(torch.randn(
-                                            out_channels, in_channels // groups, kernel_size, kernel_size))
-                self.weight = self.conv_kernel
-            if implementation == 'subtract_middle':
-                self.conv = conv_module(in_channels, out_channels, kernel_size=kernel_size, 
-                                padding='same', padding_mode=self.padding_mode,
-                                bias=False, groups=groups)
-                self.weight = self.conv.weight
+        self.implementation = implementation
+        if implementation == 'subtract_all':
+            self.conv_kernel = torch.nn.parameter.Parameter(torch.randn(
+                                        out_channels, in_channels // groups, kernel_size, kernel_size))
+            self.weight = self.conv_kernel
+        elif implementation == 'subtract_middle':
+            self.conv = conv_module(in_channels, out_channels, kernel_size=kernel_size, 
+                            padding='same', padding_mode=self.padding_mode,
+                            bias=False, groups=groups)
+            self.weight = self.conv.weight
         else:
             raise NotImplementedError("Desired implementation is not currently supported")
 
+    def _forward_subtract_middle(self, x, grid_width):
+        conv = self.conv(x)
+        conv_sum = torch.sum(self.conv.weight, dim=tuple([i for i in range(2, 2 + self.num_dim)]), keepdim=True)
+        conv_sum = self.conv_function(x, conv_sum, groups=self.groups)
+        return (conv - conv_sum) / grid_width
+    def _forward_subtract_all(self, x, grid_width):
+        x_pad = F.pad(x, (self.pad_size, self.pad_size, self.pad_size, self.pad_size), self.padding_mode)
+        conv_mean = torch.mean(self.conv_kernel, dim=tuple([i for i in range(2, 2 + self.num_dim)]), keepdim=True)
+        conv_mean = conv_mean.repeat([1 for _ in range(len(conv_mean.shape) - self.num_dim)] + [self.kernel_size for _ in range(self.num_dim)])
+        conv_x = self.F_conv_module(input=x_pad, weight=(self.conv_kernel - conv_mean), padding='valid', groups=self.groups)
+        return conv_x / grid_width
+
     def forward(self, x, grid_width):
         if self.implementation == 'subtract_middle':
-            conv = self.conv(x)
-            conv_sum = torch.sum(self.conv.weight, dim=tuple([i for i in range(2, 2 + self.num_dim)]), keepdim=True)
-            conv_sum = self.conv_function(x, conv_sum, groups=self.groups)
-            return (conv - conv_sum) / grid_width
+            return self._forward_subtract_middle(x, grid_width)
         elif self.implementation == 'subtract_all':
-            x_pad = F.pad(x, (self.pad_size, self.pad_size, self.pad_size, self.pad_size), self.padding_mode)
-            conv_mean = torch.mean(self.conv_kernel, dim=tuple([i for i in range(2, 2 + self.num_dim)]), keepdim=True)
-            conv_mean = conv_mean.repeat([1 for _ in range(len(conv_mean.shape) - self.num_dim)] + [self.kernel_size for _ in range(self.num_dim)])
-            conv_x = self.F_conv_module(input=x_pad, weight=(self.conv_kernel - conv_mean), padding='valid', groups=self.groups)
-            return conv_x / grid_width
+            return self._forward_subtract_all(x, grid_width)
         else:
-            raise NotImplementedError
+            raise RuntimeError
