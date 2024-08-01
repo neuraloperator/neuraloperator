@@ -16,7 +16,7 @@ default: &DEFAULT
 
   # FNO related
   fno2d:
-    data_channels: 3
+    data_channels: 1
     n_modes_height: 24
     n_modes_width: 24
     hidden_channels: 64
