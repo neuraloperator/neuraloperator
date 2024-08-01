@@ -4,7 +4,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..layers.spectral_convolution import SpectralConv
-from ..layers.spherical_convolution import SphericalConv
+# Only reference SphericalConv if torch_harmonics is built locally
+torch_harmonics_is_built = False
+from importlib.util import find_spec
+if find_spec('torch_harmonics') is not None:
+    torch_harmonics_is_built = True
+    from ..layers.spherical_convolution import SphericalConv
+
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
 from ..layers.mlp import MLP
@@ -546,7 +552,9 @@ TFNO1d = partialclass("TFNO1d", FNO1d, factorization="Tucker")
 TFNO2d = partialclass("TFNO2d", FNO2d, factorization="Tucker")
 TFNO3d = partialclass("TFNO3d", FNO3d, factorization="Tucker")
 
-SFNO = partialclass("SFNO", FNO, factorization="dense", SpectralConv=SphericalConv)
-SFNO.__doc__ = SFNO.__doc__.replace("Fourier", "Spherical Fourier", 1)
-SFNO.__doc__ = SFNO.__doc__.replace("FNO", "SFNO")
-SFNO.__doc__ = SFNO.__doc__.replace("fno", "sfno")
+# Only reference SphericalConv if torch_harmonics is built locally
+if torch_harmonics_is_built:
+    SFNO = partialclass("SFNO", FNO, factorization="dense", SpectralConv=SphericalConv)
+    SFNO.__doc__ = SFNO.__doc__.replace("Fourier", "Spherical Fourier", 1)
+    SFNO.__doc__ = SFNO.__doc__.replace("FNO", "SFNO")
+    SFNO.__doc__ = SFNO.__doc__.replace("fno", "sfno")
