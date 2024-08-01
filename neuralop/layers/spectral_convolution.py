@@ -436,8 +436,16 @@ class SpectralConv(BaseSpectralConv):
             out_dtype = torch.cfloat
         out_fft = torch.zeros([batchsize, self.out_channels, *fft_size],
                               device=x.device, dtype=out_dtype)
+        
+        # if current modes are less than max, start indexing modes closer to the center of the weight tensor
         starts = [(max_modes - min(size, n_mode)) for (size, n_mode, max_modes) in zip(fft_size, self.n_modes, self.max_n_modes)]
-        slices_w =  [slice(None), slice(None)] # Batch_size, channels
+
+        # if contraction is separable, weights have shape (channels, modes_x, ...)
+        # otherwise they have shape (in_channels, out_channels, modes_x, ...)
+        if self.separable: 
+            slices_w = [slice(None)] # channels
+        else:
+            slices_w =  [slice(None), slice(None)] # in_channels, out_channels
         slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
         slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
         weight = self._get_weight(indices)[slices_w]
@@ -448,7 +456,6 @@ class SpectralConv(BaseSpectralConv):
         # otherwise drop first two dims (in_channels, out_channels)
         else:
             weight_start_idx = 2
-
         starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[weight_start_idx:]))]
         slices_x =  [slice(None), slice(None)] # Batch_size, channels
         slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
