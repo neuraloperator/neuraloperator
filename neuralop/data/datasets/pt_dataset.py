@@ -36,7 +36,7 @@ class PTDataset:
                  train_resolution: int,
                  test_resolutions: List[int]=[16,32],
                  grid_boundaries: List=[[0,1],[0,1]],
-                 positional_encoding: bool=True,
+                 positional_encoding: bool=False,
                  encode_input: bool=False, 
                  encode_output: bool=True, 
                  encoding="channel-wise",
@@ -68,7 +68,7 @@ class PTDataset:
             by default [[0,1],[0,1]]
         positional_encoding : bool, optional
             whether to append positional encoding in the provided DataProcessor,
-            by default True
+            by default False
         encode_input : bool, optional
             whether to normalize inputs in provided DataProcessor,
             by default False

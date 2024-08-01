@@ -21,7 +21,7 @@ class NavierStokesDataset(PTDataset):
                  train_resolution: int,
                  test_resolutions: int=[16,32],
                  grid_boundaries: List[int]=[[0,1],[0,1]],
-                 positional_encoding: bool=True,
+                 positional_encoding: bool=False,
                  encode_input: bool=False, 
                  encode_output: bool=True, 
                  encoding="channel-wise",
