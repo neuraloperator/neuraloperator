@@ -7,7 +7,7 @@ from torch import nn
 
 from .fno import FNO
 
-from ..layers.channel_mixing import ChannelMixing
+from ..layers.channel_mixing import ChannelMLP
 from ..layers.embeddings import SinusoidalEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.integral_transform import IntegralTransform
@@ -37,7 +37,7 @@ class GINO(nn.Module):
         out_gno_channel_mixing_hidden_layers : list, optional
             widths of hidden layers in output GNO, by default [512, 256]
         gno_channel_mixing_non_linearity : nn.Module, optional
-            nonlinearity to use in gno ChannelMixing, by default F.gelu
+            nonlinearity to use in gno ChannelMLP, by default F.gelu
         in_gno_transform_type : str, optional
             transform type parameter for input GNO, by default 'linear'
             see neuralop.layers.IntegralTransform
@@ -73,11 +73,11 @@ class GINO(nn.Module):
         fno_block_precision : str, defaults to 'full'
             data precision to compute within fno block
         fno_use_channel_mixing : bool, defaults to False
-            Whether to use a ChannelMixing layer after each FNO block.
+            Whether to use a ChannelMLP layer after each FNO block.
         fno_channel_mixing_dropout : float, defaults to 0
-            dropout parameter of above ChannelMixing.
+            dropout parameter of above ChannelMLP.
         fno_channel_mixing_expansion : float, defaults to 0.5
-            expansion parameter of above ChannelMixing.
+            expansion parameter of above ChannelMLP.
         fno_non_linearity : nn.Module, defaults to F.gelu
             nonlinear activation function between each FNO layer.
         fno_stabilizer : nn.Module | None, defaults to None
@@ -219,7 +219,7 @@ class GINO(nn.Module):
                 incremental_n_modes=fno_incremental_n_modes,
                 fno_block_precision=fno_block_precision,
                 use_channel_mixing=fno_use_channel_mixing,
-                ChannelMixing={"expansion": fno_channel_mixing_expansion, "dropout": fno_channel_mixing_dropout},
+                ChannelMLP={"expansion": fno_channel_mixing_expansion, "dropout": fno_channel_mixing_dropout},
                 non_linearity=fno_non_linearity,
                 stabilizer=fno_stabilizer, 
                 norm=fno_norm,
@@ -256,7 +256,7 @@ class GINO(nn.Module):
         
 
         ### input GNO
-        # input to the first GNO ChannelMixing: x pos encoding, y (integrand) pos encoding
+        # input to the first GNO ChannelMLP: x pos encoding, y (integrand) pos encoding
         in_kernel_in_dim = self.gno_coord_dim * 2
         # add f_y features if input GNO uses a nonlinear kernel
         if in_gno_transform_type == "nonlinear" or in_gno_transform_type == "nonlinear_kernelonly":
@@ -283,7 +283,7 @@ class GINO(nn.Module):
                     use_torch_scatter=gno_use_torch_scatter
         )
 
-        self.projection = ChannelMixing(in_channels=fno_hidden_channels, 
+        self.projection = ChannelMLP(in_channels=fno_hidden_channels, 
                               out_channels=self.out_channels, 
                               hidden_channels=projection_channels, 
                               n_layers=2, 

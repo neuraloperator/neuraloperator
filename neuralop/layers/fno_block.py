@@ -4,7 +4,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from .channel_mixing import ChannelMixing
+from .channel_mixing import ChannelMLP
 from .normalization_layers import AdaIN, InstanceNorm
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
@@ -62,7 +62,7 @@ class FNOBlocks(nn.Module):
             module to use for FNO skip connections, by default "linear"
             see layers.skip_connections for more details
         channel_mixing_skip : str, optional
-            module to use for ChannelMixing skip connections, by default "soft-gating"
+            module to use for ChannelMLP skip connections, by default "soft-gating"
             see layers.skip_connections for more details
         SpectralConv Params
         -------------------
@@ -180,7 +180,7 @@ class FNOBlocks(nn.Module):
         if use_channel_mixing:
             self.channel_mixing = nn.ModuleList(
                 [
-                    ChannelMixing(
+                    ChannelMLP(
                         in_channels=self.out_channels,
                         hidden_channels=round(self.out_channels * channel_mixing_expansion),
                         dropout=channel_mixing_dropout,
@@ -203,7 +203,7 @@ class FNOBlocks(nn.Module):
         else:
             self.channel_mixing = None
 
-        # Each block will have 2 norms if we also use a ChannelMixing
+        # Each block will have 2 norms if we also use a ChannelMLP
         self.n_norms = 1 if self.channel_mixing is None else 2
         if norm is None:
             self.norm = None

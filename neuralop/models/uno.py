@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-from ..layers.channel_mixing import ChannelMixing
+from ..layers.channel_mixing import ChannelMLP
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.skip_connections import skip_connection
 from ..layers.padding import DomainPadding
@@ -49,9 +49,9 @@ class UNO(nn.Module):
 
         This can be updated dynamically during training.
     use_channel_mixing : bool, optional
-        Whether to use an ChannelMixing layer after each FNO block, by default False
-    ChannelMixing : dict, optional
-        Parameters of the ChannelMixing, by default None
+        Whether to use an ChannelMLP layer after each FNO block, by default False
+    ChannelMLP : dict, optional
+        Parameters of the ChannelMLP, by default None
         {'expansion': float, 'dropout': float}
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
@@ -214,7 +214,7 @@ class UNO(nn.Module):
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
 
-        self.lifting = ChannelMixing(
+        self.lifting = ChannelMLP(
             in_channels=in_channels,
             out_channels=self.hidden_channels,
             hidden_channels=self.lifting_channels,
@@ -269,7 +269,7 @@ class UNO(nn.Module):
 
             prev_out = self.uno_out_channels[i]
 
-        self.projection = ChannelMixing(
+        self.projection = ChannelMLP(
             in_channels=prev_out,
             out_channels=out_channels,
             hidden_channels=self.projection_channels,

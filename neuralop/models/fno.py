@@ -7,7 +7,7 @@ from ..layers.spectral_convolution import SpectralConv
 from ..layers.spherical_convolution import SphericalConv
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
-from ..layers.channel_mixing import ChannelMixing
+from ..layers.channel_mixing import ChannelMLP
 from .base_model import BaseModel
 
 class FNO(BaseModel, name='FNO'):
@@ -45,11 +45,11 @@ class FNO(BaseModel, name='FNO'):
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
     use_channel_mixing : bool, optional
-        Whether to use a ChannelMixing layer after each FNO block, by default False
+        Whether to use a ChannelMLP layer after each FNO block, by default False
     channel_mixing_dropout : float , optional
-        droupout parameter of ChannelMixing layer, by default 0
+        droupout parameter of ChannelMLP layer, by default 0
     channel_mixing_expansion : float, optional
-        expansion parameter of ChannelMixing layer, by default 0.5
+        expansion parameter of ChannelMLP layer, by default 0.5
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
     norm : Literal["ada_in", "group_norm", "instance_norm"], optional
@@ -203,7 +203,7 @@ class FNO(BaseModel, name='FNO'):
         # if lifting_channels is passed, make lifting a Channel-Mixing MLP
         # with a hidden layer of size lifting_channels
         if self.lifting_channels:
-            self.lifting = ChannelMixing(
+            self.lifting = ChannelMLP(
                 in_channels=in_channels,
                 out_channels=self.hidden_channels,
                 hidden_channels=self.lifting_channels,
@@ -212,14 +212,14 @@ class FNO(BaseModel, name='FNO'):
             )
         # otherwise, make it a linear layer
         else:
-            self.lifting = ChannelMixing(
+            self.lifting = ChannelMLP(
                 in_channels=in_channels,
                 out_channels=self.hidden_channels,
                 hidden_channels=self.hidden_channels,
                 n_layers=1,
                 n_dim=self.n_dim,
             )
-        self.projection = ChannelMixing(
+        self.projection = ChannelMLP(
             in_channels=self.hidden_channels,
             out_channels=out_channels,
             hidden_channels=self.projection_channels,

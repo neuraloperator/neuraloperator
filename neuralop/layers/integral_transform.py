@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from .channel_mixing import LinearChannelMixing
+from .channel_mixing import LinearChannelMLP
 from .segment_csr import segment_csr
 
 
@@ -20,7 +20,7 @@ class IntegralTransform(nn.Module):
     A(x) : A subset of all points y (depending on\
         each x) over which to integrate
 
-    k : A kernel parametrized as a MLP (LinearChannelMixing)
+    k : A kernel parametrized as a MLP (LinearChannelMLP)
     
     f : Input function to integrate against given\
         on the points y
@@ -38,10 +38,10 @@ class IntegralTransform(nn.Module):
     channel_mixing_layers : list, default None
         List of layers sizes speficing a MLP which
         parametrizes the kernel k. The MLP will be
-        instansiated by the LinearChannelMixing class
+        instansiated by the LinearChannelMLP class
     channel_mixing_non_linearity : callable, default torch.nn.functional.gelu
         Non-linear function used to be used by the
-        LinearChannelMixing class. Only used if channel_mixing_layers is
+        LinearChannelMLP class. Only used if channel_mixing_layers is
         given and channel_mixing is None
     transform_type : str, default 'linear'
         Which integral transform to compute. The mapping is:
@@ -86,7 +86,7 @@ class IntegralTransform(nn.Module):
             )
 
         if channel_mixing is None:
-            self.channel_mixing = LinearChannelMixing(layers=channel_mixing_layers, non_linearity=channel_mixing_non_linearity)
+            self.channel_mixing = LinearChannelMLP(layers=channel_mixing_layers, non_linearity=channel_mixing_non_linearity)
         else:
             self.channel_mixing = channel_mixing
             

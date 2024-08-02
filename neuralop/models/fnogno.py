@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from .base_model import BaseModel
 from .fno import FNO
 
-from ..layers.channel_mixing import ChannelMixing
+from ..layers.channel_mixing import ChannelMLP
 from ..layers.embeddings import SinusoidalEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.integral_transform import IntegralTransform
@@ -29,12 +29,12 @@ class FNOGNO(BaseModel, name="FNOGNO"):
     gno_radius : float, defaults to 0.033
         radius parameter to construct graph.
     gno_channel_mixing_hidden_layers : list, defaults to [512, 256]
-        dimension of hidden ChannelMixing layers of GNO.
+        dimension of hidden ChannelMLP layers of GNO.
     gno_channel_mixing_non_linearity : nn.Module, defaults to F.gelu
         nonlinear activation function between layers
     gno_transform_type : str, defaults to 'linear'
         type of kernel integral transform to apply in GNO.
-        kernel k(x,y): parameterized as ChannelMixing MLP integrated over a neighborhood of x
+        kernel k(x,y): parameterized as ChannelMLP MLP integrated over a neighborhood of x
         options: 'linear_kernelonly': integrand is k(x, y)
                     'linear' : integrand is k(x, y) * f(y)
                     'nonlinear_kernelonly' : integrand is k(x, y, f(y))
@@ -60,11 +60,11 @@ class FNOGNO(BaseModel, name="FNOGNO"):
     fno_block_precision : str, defaults to 'full'
         data precision to compute within fno block
     fno_use_channel_mixing : bool, defaults to False
-        Whether to use a ChannelMixing layer after each FNO block.
+        Whether to use a ChannelMLP layer after each FNO block.
     fno_channel_mixing_dropout : float, defaults to 0
-        dropout parameter of above ChannelMixing.
+        dropout parameter of above ChannelMLP.
     fno_channel_mixing_expansion : float, defaults to 0.5
-        expansion parameter of above ChannelMixing.
+        expansion parameter of above ChannelMLP.
     fno_non_linearity : nn.Module, defaults to F.gelu
         nonlinear activation function between each FNO layer.
     fno_stabilizer : nn.Module | None, defaults to None
@@ -254,7 +254,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             transform_type=gno_transform_type,
         )
 
-        self.projection = ChannelMixing(
+        self.projection = ChannelMLP(
             in_channels=fno_hidden_channels,
             out_channels=out_channels,
             hidden_channels=projection_channels,

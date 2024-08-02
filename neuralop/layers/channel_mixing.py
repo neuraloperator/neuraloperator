@@ -3,8 +3,8 @@ from torch import nn
 import torch.nn.functional as F
 
 
-class ChannelMixing(nn.Module):
-    """ChannelMixing applies an arbitrary number of layers of 
+class ChannelMLP(nn.Module):
+    """ChannelMLP applies an arbitrary number of layers of 
     1d convolution and nonlinearity to the channels of input
     and is invariant to spatial resolution.
 
@@ -84,8 +84,8 @@ class ChannelMixing(nn.Module):
         return x
 
 
-# Reimplementation of the ChannelMixing class using Linear instead of Conv
-class LinearChannelMixing(torch.nn.Module):
+# Reimplementation of the ChannelMLP class using Linear instead of Conv
+class LinearChannelMLP(torch.nn.Module):
     def __init__(self, layers, non_linearity=F.gelu, dropout=0.0):
         super().__init__()
 
