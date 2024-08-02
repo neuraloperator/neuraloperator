@@ -197,7 +197,10 @@ as the real FFT is redundant along that last dimension.</p>
 <li><p>If None, all the n_modes are used.</p></li>
 </ul>
 </dd>
-<dt><strong>separable</strong><span class="classifier">bool, default is True</span></dt><dd></dd>
+<dt><strong>separable</strong><span class="classifier">bool, default is True</span></dt><dd><p>whether to use separable implementation of contraction
+if True, contracts factors of factorized 
+tensor weight individually</p>
+</dd>
 <dt><strong>init_std</strong><span class="classifier">float or ‘auto’, default is ‘auto’</span></dt><dd><p>std to use for the init</p>
 </dd>
 <dt><strong>n_layers</strong><span class="classifier">int, optional</span></dt><dd><p>Number of Fourier Layers, by default 4</p>
@@ -328,7 +331,7 @@ This allows you to deal with it however you want (e.g. avoid aliasing)</p></li>
         <footer class="footer">
     <div class="content has-text-centered">
         <div class="block">
-          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+          &copy; Copyright 2024, Jean Kossaifi, David Pitt, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
         </div>
     </div>
   </footer>

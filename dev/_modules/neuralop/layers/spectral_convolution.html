@@ -123,6 +123,7 @@
 <span class="kn">import</span> <span class="nn">tensorly</span> <span class="k">as</span> <span class="nn">tl</span>
 <span class="kn">from</span> <span class="nn">tensorly.plugins</span> <span class="kn">import</span> <span class="n">use_opt_einsum</span>
 <span class="kn">from</span> <span class="nn">tltorch.factorized_tensors.core</span> <span class="kn">import</span> <span class="n">FactorizedTensor</span>
+<span class="kn">from</span> <span class="nn">tltorch.factorized_tensors</span> <span class="kn">import</span> <span class="n">ComplexDenseTensor</span>
 
 <span class="kn">from</span> <span class="nn">.einsum_utils</span> <span class="kn">import</span> <span class="n">einsum_complexhalf</span>
 <span class="kn">from</span> <span class="nn">.base_spectral_conv</span> <span class="kn">import</span> <span class="n">BaseSpectralConv</span>
@@ -148,7 +149,7 @@
         <span class="n">weight_syms</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">einsum_symbols</span><span class="p">[</span><span class="n">order</span><span class="p">])</span>  <span class="c1"># outputs</span>
         <span class="n">out_syms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">weight_syms</span><span class="p">)</span>
         <span class="n">out_syms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_syms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
+    
     <span class="n">eq</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x_syms</span><span class="p">)</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">weight_syms</span><span class="p">)</span><span class="si">}</span><span class="s1">-&gt;</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_syms</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">weight</span><span class="p">):</span>
@@ -160,12 +161,10 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">tl</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">weight</span><span class="p">)</span>
 
-
-<span class="k">def</span> <span class="nf">_contract_dense_separable</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">separable</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">separable</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;This function is only for separable=True&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_contract_dense_separable</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">separable</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">weight</span><span class="p">):</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span><span class="o">.</span><span class="n">to_tensor</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">weight</span>
-
 
 <span class="k">def</span> <span class="nf">_contract_cp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">cp_weight</span><span class="p">,</span> <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="n">order</span> <span class="o">=</span> <span class="n">tl</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
@@ -256,17 +255,15 @@
 <span class="sd">    implementation : {&#39;reconstructed&#39;, &#39;factorized&#39;}, default is &#39;reconstructed&#39;</span>
 <span class="sd">        whether to reconstruct the weight and do a forward pass (reconstructed)</span>
 <span class="sd">        or contract directly the factors of the factorized weight with the input (factorized)</span>
-<span class="sd">    separable : bool</span>
-<span class="sd">        whether to use the separable implementation of contraction. This arg is</span>
-<span class="sd">        only checked when `implementation=reconstructed`.</span>
-
+<span class="sd">    separable: bool</span>
+<span class="sd">        if True, performs contraction with individual tensor factors. </span>
+<span class="sd">        if False, </span>
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    function : (x, weight) -&gt; x * weight in Fourier space</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">implementation</span> <span class="o">==</span> <span class="s2">&quot;reconstructed&quot;</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">separable</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;SEPARABLE&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">_contract_dense_separable</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">_contract_dense</span>
@@ -332,6 +329,9 @@
 <span class="sd">        * If None, all the n_modes are used.</span>
 
 <span class="sd">    separable : bool, default is True</span>
+<span class="sd">        whether to use separable implementation of contraction</span>
+<span class="sd">        if True, contracts factors of factorized </span>
+<span class="sd">        tensor weight individually</span>
 <span class="sd">    init_std : float or &#39;auto&#39;, default is &#39;auto&#39;</span>
 <span class="sd">        std to use for the init</span>
 <span class="sd">    n_layers : int, optional</span>
@@ -568,17 +568,31 @@
             <span class="n">out_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cfloat</span>
         <span class="n">out_fft</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">batchsize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span><span class="p">,</span> <span class="o">*</span><span class="n">fft_size</span><span class="p">],</span>
                               <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">out_dtype</span><span class="p">)</span>
+        
+        <span class="c1"># if current modes are less than max, start indexing modes closer to the center of the weight tensor</span>
         <span class="n">starts</span> <span class="o">=</span> <span class="p">[(</span><span class="n">max_modes</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">n_mode</span><span class="p">))</span> <span class="k">for</span> <span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">n_mode</span><span class="p">,</span> <span class="n">max_modes</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fft_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_modes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_n_modes</span><span class="p">)]</span>
-        <span class="n">slices_w</span> <span class="o">=</span>  <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)]</span> <span class="c1"># Batch_size, channels</span>
+
+        <span class="c1"># if contraction is separable, weights have shape (channels, modes_x, ...)</span>
+        <span class="c1"># otherwise they have shape (in_channels, out_channels, modes_x, ...)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">separable</span><span class="p">:</span> 
+            <span class="n">slices_w</span> <span class="o">=</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)]</span> <span class="c1"># channels</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">slices_w</span> <span class="o">=</span>  <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)]</span> <span class="c1"># in_channels, out_channels</span>
         <span class="n">slices_w</span> <span class="o">+=</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="n">start</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="n">start</span><span class="o">//</span><span class="mi">2</span><span class="p">)</span> <span class="k">if</span> <span class="n">start</span> <span class="k">else</span> <span class="nb">slice</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="n">starts</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
         <span class="n">slices_w</span> <span class="o">+=</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="o">-</span><span class="n">starts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">if</span> <span class="n">starts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">else</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)]</span> <span class="c1"># The last mode already has redundant half removed</span>
         <span class="n">weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_weight</span><span class="p">(</span><span class="n">indices</span><span class="p">)[</span><span class="n">slices_w</span><span class="p">]</span>
 
-        <span class="n">starts</span> <span class="o">=</span> <span class="p">[(</span><span class="n">size</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">n_mode</span><span class="p">))</span> <span class="k">for</span> <span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">n_mode</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]),</span> <span class="nb">list</span><span class="p">(</span><span class="n">weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]))]</span>
+        <span class="c1"># if separable conv, weight tensor only has one channel dim</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">separable</span><span class="p">:</span>
+            <span class="n">weight_start_idx</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="c1"># otherwise drop first two dims (in_channels, out_channels)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">weight_start_idx</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">starts</span> <span class="o">=</span> <span class="p">[(</span><span class="n">size</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">n_mode</span><span class="p">))</span> <span class="k">for</span> <span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">n_mode</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]),</span> <span class="nb">list</span><span class="p">(</span><span class="n">weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">weight_start_idx</span><span class="p">:]))]</span>
         <span class="n">slices_x</span> <span class="o">=</span>  <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)]</span> <span class="c1"># Batch_size, channels</span>
         <span class="n">slices_x</span> <span class="o">+=</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="n">start</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="n">start</span><span class="o">//</span><span class="mi">2</span><span class="p">)</span> <span class="k">if</span> <span class="n">start</span> <span class="k">else</span> <span class="nb">slice</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="n">starts</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
         <span class="n">slices_x</span> <span class="o">+=</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="o">-</span><span class="n">starts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">if</span> <span class="n">starts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">else</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)]</span> <span class="c1"># The last mode already has redundant half removed</span>
-        <span class="n">out_fft</span><span class="p">[</span><span class="n">slices_x</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contract</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">slices_x</span><span class="p">],</span> <span class="n">weight</span><span class="p">,</span> <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">out_fft</span><span class="p">[</span><span class="n">slices_x</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contract</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">slices_x</span><span class="p">],</span> <span class="n">weight</span><span class="p">,</span> <span class="n">separable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">separable</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">output_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">mode_sizes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="nb">round</span><span class="p">(</span><span class="n">s</span> <span class="o">*</span> <span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">mode_sizes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span><span class="p">[</span><span class="n">indices</span><span class="p">])])</span>
@@ -840,7 +854,7 @@
         <footer class="footer">
     <div class="content has-text-centered">
         <div class="block">
-          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+          &copy; Copyright 2024, Jean Kossaifi, David Pitt, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
         </div>
     </div>
   </footer>
