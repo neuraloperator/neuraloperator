@@ -71,7 +71,6 @@ default: &DEFAULT
     spatial_length: 128
     temporal_length: 101
 
-    positional_encoding: False
     encode_input: False
     encode_output: False
     include_endpoint: [True, False]
