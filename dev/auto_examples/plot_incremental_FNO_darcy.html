@@ -294,15 +294,15 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fb214189af0&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f04f5d55c10&gt;
 
 ### LOSSES ###
 
 ### INCREMENTAL RESOLUTION + GRADIENT EXPLAINED ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fb208f012b0&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f04f5e491c0&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fb208f012b0&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fb208f01310&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f04f5e491c0&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f04f5e493d0&gt;}
 </pre></div>
 </div>
 <p>Set up the IncrementalTrainer
@@ -366,41 +366,41 @@ Eval: 16_h1=0.7366, 16_l2=0.5766, 32_h1=0.7783, 32_l2=0.5661
 Eval: 16_h1=0.7465, 16_l2=0.5743, 32_h1=0.8169, 32_l2=0.5600
 [4] time=0.13, avg_loss=0.7274, train_err=10.3921
 Eval: 16_h1=0.7092, 16_l2=0.5530, 32_h1=0.7454, 32_l2=0.5419
-[5] time=0.14, avg_loss=0.7118, train_err=10.1691
+[5] time=0.13, avg_loss=0.7118, train_err=10.1691
 Eval: 16_h1=0.7132, 16_l2=0.5544, 32_h1=0.7537, 32_l2=0.5433
-[6] time=0.15, avg_loss=0.6916, train_err=9.8802
+[6] time=0.14, avg_loss=0.6916, train_err=9.8802
 Eval: 16_h1=0.7031, 16_l2=0.5461, 32_h1=0.7355, 32_l2=0.5360
 [7] time=0.14, avg_loss=0.6754, train_err=9.6491
 Eval: 16_h1=0.7058, 16_l2=0.5526, 32_h1=0.7365, 32_l2=0.5361
 [8] time=0.15, avg_loss=0.6691, train_err=9.5586
 Eval: 16_h1=0.6777, 16_l2=0.5305, 32_h1=0.7038, 32_l2=0.5220
-[9] time=0.15, avg_loss=0.6522, train_err=9.3177
+[9] time=0.14, avg_loss=0.6522, train_err=9.3177
 Eval: 16_h1=0.6972, 16_l2=0.5441, 32_h1=0.7197, 32_l2=0.5342
 Incre Res Update: change index to 1
 Incre Res Update: change sub to 1
 Incre Res Update: change res to 16
-[10] time=0.22, avg_loss=0.6335, train_err=9.0503
+[10] time=0.21, avg_loss=0.6335, train_err=9.0503
 Eval: 16_h1=0.6933, 16_l2=0.5498, 32_h1=0.7084, 32_l2=0.5363
 [11] time=0.21, avg_loss=0.6075, train_err=8.6785
 Eval: 16_h1=0.6825, 16_l2=0.5391, 32_h1=0.6986, 32_l2=0.5267
-[12] time=0.24, avg_loss=0.5724, train_err=8.1771
+[12] time=0.22, avg_loss=0.5724, train_err=8.1771
 Eval: 16_h1=0.6952, 16_l2=0.5516, 32_h1=0.7056, 32_l2=0.5335
-[13] time=0.23, avg_loss=0.5271, train_err=7.5303
+[13] time=0.22, avg_loss=0.5271, train_err=7.5303
 Eval: 16_h1=0.7562, 16_l2=0.5915, 32_h1=0.7667, 32_l2=0.5748
-[14] time=0.23, avg_loss=0.4876, train_err=6.9663
+[14] time=0.22, avg_loss=0.4876, train_err=6.9663
 Eval: 16_h1=0.7453, 16_l2=0.5880, 32_h1=0.7560, 32_l2=0.5700
-[15] time=0.24, avg_loss=0.4745, train_err=6.7789
+[15] time=0.22, avg_loss=0.4745, train_err=6.7789
 Eval: 16_h1=0.6888, 16_l2=0.5401, 32_h1=0.7067, 32_l2=0.5310
-[16] time=0.24, avg_loss=0.4645, train_err=6.6351
+[16] time=0.23, avg_loss=0.4645, train_err=6.6351
 Eval: 16_h1=0.7172, 16_l2=0.5724, 32_h1=0.7301, 32_l2=0.5611
-[17] time=0.24, avg_loss=0.4599, train_err=6.5699
+[17] time=0.22, avg_loss=0.4599, train_err=6.5699
 Eval: 16_h1=0.7613, 16_l2=0.5980, 32_h1=0.7752, 32_l2=0.5801
-[18] time=0.24, avg_loss=0.3874, train_err=5.5345
+[18] time=0.23, avg_loss=0.3874, train_err=5.5345
 Eval: 16_h1=0.6920, 16_l2=0.5396, 32_h1=0.7117, 32_l2=0.5285
-[19] time=0.24, avg_loss=0.3342, train_err=4.7749
+[19] time=0.23, avg_loss=0.3342, train_err=4.7749
 Eval: 16_h1=0.6870, 16_l2=0.5392, 32_h1=0.6975, 32_l2=0.5236
 
-{&#39;train_err&#39;: 4.774891308375767, &#39;avg_loss&#39;: 0.3342423915863037, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 0.23900270400008594, &#39;16_h1&#39;: tensor(0.6870), &#39;16_l2&#39;: tensor(0.5392), &#39;32_h1&#39;: tensor(0.6975), &#39;32_l2&#39;: tensor(0.5236)}
+{&#39;train_err&#39;: 4.774891308375767, &#39;avg_loss&#39;: 0.3342423915863037, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 0.22652795700003026, &#39;16_h1&#39;: tensor(0.6870), &#39;16_l2&#39;: tensor(0.5392), &#39;32_h1&#39;: tensor(0.6975), &#39;32_l2&#39;: tensor(0.5236)}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -450,7 +450,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 6.335 seconds)</p>
+<img src="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_incremental_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 5.963 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-incremental-fno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/082e73328a5caf8c1fe9ad7fe05cf68f/plot_incremental_FNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_incremental_FNO_darcy.ipynb</span></code></a></p>
@@ -486,7 +486,7 @@ ii) can be trained quickly on CPU</p>
         <footer class="footer">
     <div class="content has-text-centered">
         <div class="block">
-          &copy; Copyright 2024, Jean Kossaifi, David Pitt, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
         </div>
     </div>
   </footer>
