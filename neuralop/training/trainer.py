@@ -8,10 +8,11 @@ import sys
 
 # Only import wandb and use if installed
 wandb_available = False
-from importlib.util import find_spec
-if find_spec('wandb') is not None:
-    wandb_available = True
+try:
     import wandb
+    wandb_available = True
+except ModuleNotFoundError:
+    wandb_available = False
 
 import neuralop.mpu.comm as comm
 from neuralop.losses import LpLoss
