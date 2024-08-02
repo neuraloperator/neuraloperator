@@ -25,7 +25,6 @@ class Burgers1dTimeDataset(PTDataset):
             temporal_subsample: Optional[int]=None, 
             spatial_subsample: Optional[int]=None, 
             pad: int=0,
-            grid_boundaries: List[List[int]]=[[0,1],[0,1]],
             channel_dim: int=1,
             download: bool=True,
             ):
@@ -47,10 +46,8 @@ class Burgers1dTimeDataset(PTDataset):
                          test_batch_sizes=test_batch_sizes,
                          train_resolution=train_resolution,
                          test_resolutions=test_resolutions,
-                         grid_boundaries=grid_boundaries,
                          input_subsampling_rate=spatial_subsample,
                          output_subsampling_rate=[temporal_subsample, spatial_subsample],
-                         positional_encoding=False,
                          encode_input=True,
                          encode_output=True,
                          encoding="channel-wise",
