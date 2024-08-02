@@ -5,12 +5,13 @@ from .burgers import load_burgers_1dtime
 from .dict_dataset import DictDataset
 
 # only import MeshDataModule if open3d is built locally
-from importlib.util import find_spec
-if find_spec('open3d') is not None:
+try:
     from .mesh_datamodule import MeshDataModule
+except ModuleNotFoundError:
+    pass
 
 # only import SphericalSWEDataset if torch_harmonics is built locally
-from importlib.util import find_spec
-if find_spec('torch_harmonics') is not None:
+try:
     from .spherical_swe import load_spherical_swe
-
+except ModuleNotFoundError:
+    pass
