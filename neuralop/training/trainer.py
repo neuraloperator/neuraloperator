@@ -5,7 +5,14 @@ from timeit import default_timer
 from pathlib import Path
 from typing import Union
 import sys
-import wandb
+
+# Only import wandb and use if installed
+wandb_available = False
+try:
+    import wandb
+    wandb_available = True
+except ModuleNotFoundError:
+    wandb_available = False
 
 import neuralop.mpu.comm as comm
 from neuralop.losses import LpLoss
@@ -55,7 +62,9 @@ class Trainer:
         self.model = model
         self.n_epochs = n_epochs
         # only log to wandb if a run is active
-        self.wandb_log = (wandb_log and wandb.run is not None)
+        self.wandb_log = False
+        if wandb_available:
+            self.wandb_log = (wandb_log and wandb.run is not None)
         self.eval_interval = eval_interval
         self.log_output = log_output
         self.verbose = verbose
@@ -309,7 +318,7 @@ class Trainer:
 
         # on last batch, log model outputs
         if self.log_output:
-                errors[f"{log_prefix}_outputs"] = wandb.Image(outs)
+            errors[f"{log_prefix}_outputs"] = wandb.Image(outs)
         
         return errors
     
