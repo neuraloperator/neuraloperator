@@ -10,7 +10,9 @@ from ..spectral_convolution import (SpectralConv3d, SpectralConv2d,
 
 @pytest.mark.parametrize('factorization', ['ComplexDense', 'ComplexCP', 'ComplexTucker', 'ComplexTT'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
-def test_SpectralConv(factorization, implementation):
+@pytest.mark.parametrize('separable', [False, True])
+@pytest.mark.parametrize('dim', [1,2,3,4])
+def test_SpectralConv(factorization, implementation, separable, dim):
     """Test for SpectralConv of any order
     
     Compares Factorized and Dense convolution output
@@ -24,44 +26,47 @@ def test_SpectralConv(factorization, implementation):
     incremental_modes = (6, 6, 4, 4)
 
     # Test for Conv1D to Conv4D
-    for dim in [1, 2, 3, 4]:
-        conv = SpectralConv(
-            3, 3, modes[:dim], n_layers=1, bias=False, implementation=implementation, factorization=factorization)
+    conv = SpectralConv(
+        3, 3, modes[:dim], n_layers=1, bias=False, implementation=implementation, factorization=factorization, separable=separable)
 
-        conv_dense = SpectralConv(
-            3, 3, modes[:dim], n_layers=1, bias=False, implementation='reconstructed', factorization=None)
+    conv_dense = SpectralConv(
+        3, 3, modes[:dim], n_layers=1, bias=False, implementation='reconstructed', factorization=None)
 
+    x = torch.randn(2, 3, *(12, )*dim)
+
+    # this closeness test only works if the weights in full form have the same shape
+    if not separable:
         conv_dense.weight[0] = FactorizedTensor.from_tensor(conv.weight[0].to_tensor(), rank=None, factorization='ComplexDense')
+    
+    res_dense = conv_dense(x)
+    res = conv(x)
+    res_shape = res.shape
 
-        x = torch.randn(2, 3, *(12, )*dim)
-
-        res_dense = conv_dense(x)
-        res = conv(x)
-        res_shape = res.shape
-
+    # this closeness test only works if the weights in full form have the same shape
+    if not separable:
         torch.testing.assert_close(res_dense, res)
 
-        # Dynamically reduce the number of modes in Fourier space
-        conv.n_modes = incremental_modes[:dim]
-        res = conv(x)
-        assert res_shape == res.shape
+    # Dynamically reduce the number of modes in Fourier space
+    conv.n_modes = incremental_modes[:dim]
+    res = conv(x)
+    assert res_shape == res.shape
 
-        # Downsample outputs
-        block = SpectralConv(
-            3, 4, modes[:dim], n_layers=1, output_scaling_factor=0.5)
+    # Downsample outputs
+    block = SpectralConv(
+        3, 4, modes[:dim], n_layers=1, output_scaling_factor=0.5)
+
+    x = torch.randn(2, 3, *(12, )*dim)
+    res = block(x)
+    assert(list(res.shape[2:]) == [12//2]*dim)
     
-        x = torch.randn(2, 3, *(12, )*dim)
-        res = block(x)
-        assert(list(res.shape[2:]) == [12//2]*dim)
-        
-        # Upsample outputs
-        block = SpectralConv(
-            3, 4, modes[:dim], n_layers=1, output_scaling_factor=2)
-    
-        x = torch.randn(2, 3, *(12, )*dim)
-        res = block(x)
-        assert res.shape[1] == 4 # Check out channels
-        assert(list(res.shape[2:]) == [12*2]*dim)
+    # Upsample outputs
+    block = SpectralConv(
+        3, 4, modes[:dim], n_layers=1, output_scaling_factor=2)
+
+    x = torch.randn(2, 3, *(12, )*dim)
+    res = block(x)
+    assert res.shape[1] == 4 # Check out channels
+    assert(list(res.shape[2:]) == [12*2]*dim)
 
 
 

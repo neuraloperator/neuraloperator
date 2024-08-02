@@ -8,6 +8,7 @@ from torch import nn
 import tensorly as tl
 from tensorly.plugins import use_opt_einsum
 from tltorch.factorized_tensors.core import FactorizedTensor
+from tltorch.factorized_tensors import ComplexDenseTensor
 
 from .einsum_utils import einsum_complexhalf
 from .base_spectral_conv import BaseSpectralConv
@@ -33,7 +34,7 @@ def _contract_dense(x, weight, separable=False):
         weight_syms.insert(1, einsum_symbols[order])  # outputs
         out_syms = list(weight_syms)
         out_syms[0] = x_syms[0]
-
+    
     eq = f'{"".join(x_syms)},{"".join(weight_syms)}->{"".join(out_syms)}'
 
     if not torch.is_tensor(weight):
@@ -45,12 +46,10 @@ def _contract_dense(x, weight, separable=False):
     else:
         return tl.einsum(eq, x, weight)
 
-
-def _contract_dense_separable(x, weight, separable=True):
-    if not separable:
-        raise ValueError("This function is only for separable=True")
+def _contract_dense_separable(x, weight, separable):
+    if not torch.is_tensor(weight):
+        weight = weight.to_tensor()
     return x * weight
-
 
 def _contract_cp(x, cp_weight, separable=False):
     order = tl.ndim(x)
@@ -141,17 +140,15 @@ def get_contract_fun(weight, implementation="reconstructed", separable=False):
     implementation : {'reconstructed', 'factorized'}, default is 'reconstructed'
         whether to reconstruct the weight and do a forward pass (reconstructed)
         or contract directly the factors of the factorized weight with the input (factorized)
-    separable : bool
-        whether to use the separable implementation of contraction. This arg is
-        only checked when `implementation=reconstructed`.
-
+    separable: bool
+        if True, performs contraction with individual tensor factors. 
+        if False, 
     Returns
     -------
     function : (x, weight) -> x * weight in Fourier space
     """
     if implementation == "reconstructed":
         if separable:
-            print("SEPARABLE")
             return _contract_dense_separable
         else:
             return _contract_dense
@@ -215,6 +212,9 @@ class SpectralConv(BaseSpectralConv):
         * If None, all the n_modes are used.
 
     separable : bool, default is True
+        whether to use separable implementation of contraction
+        if True, contracts factors of factorized 
+        tensor weight individually
     init_std : float or 'auto', default is 'auto'
         std to use for the init
     n_layers : int, optional
@@ -446,17 +446,31 @@ class SpectralConv(BaseSpectralConv):
             out_dtype = torch.cfloat
         out_fft = torch.zeros([batchsize, self.out_channels, *fft_size],
                               device=x.device, dtype=out_dtype)
+        
+        # if current modes are less than max, start indexing modes closer to the center of the weight tensor
         starts = [(max_modes - min(size, n_mode)) for (size, n_mode, max_modes) in zip(fft_size, self.n_modes, self.max_n_modes)]
-        slices_w =  [slice(None), slice(None)] # Batch_size, channels
+
+        # if contraction is separable, weights have shape (channels, modes_x, ...)
+        # otherwise they have shape (in_channels, out_channels, modes_x, ...)
+        if self.separable: 
+            slices_w = [slice(None)] # channels
+        else:
+            slices_w =  [slice(None), slice(None)] # in_channels, out_channels
         slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
         slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
         weight = self._get_weight(indices)[slices_w]
 
-        starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[2:]))]
+        # if separable conv, weight tensor only has one channel dim
+        if self.separable:
+            weight_start_idx = 1
+        # otherwise drop first two dims (in_channels, out_channels)
+        else:
+            weight_start_idx = 2
+        starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[weight_start_idx:]))]
         slices_x =  [slice(None), slice(None)] # Batch_size, channels
         slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
         slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
-        out_fft[slices_x] = self._contract(x[slices_x], weight, separable=False)
+        out_fft[slices_x] = self._contract(x[slices_x], weight, separable=self.separable)
 
         if self.output_scaling_factor is not None and output_shape is None:
             mode_sizes = tuple([round(s * r) for (s, r) in zip(mode_sizes, self.output_scaling_factor[indices])])
