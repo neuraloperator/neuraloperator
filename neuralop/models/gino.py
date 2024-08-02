@@ -212,7 +212,7 @@ class GINO(nn.Module):
                 hidden_channels=fno_hidden_channels,
                 in_channels=fno_in_channels,
                 out_channels=fno_hidden_channels,
-                spatial_pos_embed=None,
+                positional_embedding=None,
                 lifting_channels=fno_lifting_channels,
                 projection_channels=fno_projection_channels,
                 n_layers=fno_n_layers,
