@@ -53,6 +53,7 @@ config = {
     'long_description_content_type' : 'text/x-rst',
     'authors': [
         {'name': "Jean Kossaifi", 'email': "jean.kossaifi@gmail.com"},
+        {'name': "David Pitt", 'email': "david.h.pitt@gmail.com"},
         {'name': "Nikola Kovachki", 'email': "nkovachki@caltech.edu"},
         {'name': "Zongyi Li", 'email': "zongyili@caltech.edu"}
         ],
