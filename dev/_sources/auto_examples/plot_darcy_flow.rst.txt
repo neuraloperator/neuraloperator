@@ -28,13 +28,14 @@ Import the library
 ------------------
 We first import our `neuralop` library and required dependencies.
 
-.. GENERATED FROM PYTHON SOURCE LINES 11-15
+.. GENERATED FROM PYTHON SOURCE LINES 11-16
 
 .. code-block:: Python
 
 
     import matplotlib.pyplot as plt
     from neuralop.data.datasets import load_darcy_flow_small
+    from neuralop.layers.embeddings import GridEmbedding2D
 
 
 
@@ -43,14 +44,14 @@ We first import our `neuralop` library and required dependencies.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 16-20
+.. GENERATED FROM PYTHON SOURCE LINES 17-21
 
 Load the dataset
 ----------------
 Training samples are 16x16 and we load testing samples at both 
 16x16 and 32x32 (to test resolution invariance).
 
-.. GENERATED FROM PYTHON SOURCE LINES 20-28
+.. GENERATED FROM PYTHON SOURCE LINES 21-29
 
 .. code-block:: Python
 
@@ -70,22 +71,22 @@ Training samples are 16x16 and we load testing samples at both
 
  .. code-block:: none
 
-    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:102: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:93: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
       data = torch.load(
     Loading test db for resolution 16 with 50 samples 
-    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:183: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:168: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
       data = torch.load(Path(root_dir).joinpath(f"{dataset_name}_test_{res}.pt").as_posix())
     Loading test db for resolution 32 with 50 samples 
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 29-31
+.. GENERATED FROM PYTHON SOURCE LINES 30-32
 
 Visualizing the data
 --------------------
 
-.. GENERATED FROM PYTHON SOURCE LINES 31-72
+.. GENERATED FROM PYTHON SOURCE LINES 32-80
 
 .. code-block:: Python
 
@@ -104,7 +105,7 @@ Visualizing the data
     x = data['x']
     y = data['y']
 
-    print(f'Training sample have shape {x.shape[1:]}')
+    print(f'Training samples have shape {x.shape[1:]}')
 
 
     # Which sample to view
@@ -112,7 +113,14 @@ Visualizing the data
 
     data = train_dataset[index]
     data = data_processor.preprocess(data, batched=False)
-    x = data['x']
+
+    # The first step of the default FNO model is a grid-based
+    # positional embedding. We will add it manually here to
+    # visualize the channels appended by this embedding.
+    positional_embedding = GridEmbedding2D()
+    # at train time, data will be collated with a batch dim.
+    # we create a batch dim to pass into the embedding, then re-squeeze
+    x = positional_embedding(data['x'].unsqueeze(0)).squeeze(0)
     y = data['y']
     fig = plt.figure(figsize=(7, 7))
     ax = fig.add_subplot(2, 2, 1)
@@ -147,7 +155,7 @@ Visualizing the data
     Testing samples for res 16 have shape torch.Size([1, 16, 16])
     32
     Testing samples for res 32 have shape torch.Size([1, 32, 32])
-    Training sample have shape torch.Size([16, 16])
+    Training samples have shape torch.Size([16, 16])
 
 
 
@@ -155,7 +163,7 @@ Visualizing the data
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.356 seconds)
+   **Total running time of the script:** (0 minutes 0.353 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_darcy_flow.py:

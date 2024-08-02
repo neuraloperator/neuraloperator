@@ -170,7 +170,7 @@
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
 <dt><strong>n_modes</strong><span class="classifier">int tuple</span></dt><dd><p>number of modes to keep in Fourier Layer, along each dimension
-The dimensionality of the TSFNO is inferred from <code class="docutils literal notranslate"><span class="pre">len(n_modes)</span></code></p>
+The dimensionality of the SFNO is inferred from <code class="docutils literal notranslate"><span class="pre">len(n_modes)</span></code></p>
 </dd>
 <dt><strong>hidden_channels</strong><span class="classifier">int</span></dt><dd><p>width of the SFNO (i.e. number of channels)</p>
 </dd>
@@ -183,6 +183,13 @@ The dimensionality of the TSFNO is inferred from <code class="docutils literal n
 <dt><strong>projection_channels</strong><span class="classifier">int, optional</span></dt><dd><p>number of hidden channels of the projection block of the SFNO, by default 256</p>
 </dd>
 <dt><strong>n_layers</strong><span class="classifier">int, optional</span></dt><dd><p>Number of Fourier Layers, by default 4</p>
+</dd>
+<dt><strong>positional_embedding</strong><span class="classifier">str literal | GridEmbedding2D | GridEmbeddingND | None</span></dt><dd><p>if “grid”, appends a grid positional embedding with default settings to 
+the last channels of raw input. Assumes the inputs are discretized
+over a grid with entry [0,0,…] at the origin and side lengths of 1.
+If an initialized GridEmbedding, uses this module directly
+See <cite>neuralop.embeddings.GridEmbeddingND</cite> for details
+if None, does nothing</p>
 </dd>
 <dt><strong>max_n_modes</strong><span class="classifier">None or int tuple, default is None</span></dt><dd><ul class="simple">
 <li><p>If not None, this allows to incrementally increase the number of
@@ -310,7 +317,7 @@ p1 corresponds to the percentage of padding along dim 1, etc.</p>
         <footer class="footer">
     <div class="content has-text-centered">
         <div class="block">
-          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+          &copy; Copyright 2024, Jean Kossaifi, David Pitt, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
         </div>
     </div>
   </footer>

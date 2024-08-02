@@ -31,8 +31,8 @@
  
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Using torchtnt to count FLOPS" href="plot_count_flops.html" />
-    <link rel="prev" title="Gallery of examples" href="index.html" />
+    <link rel="next" title="Training a TFNO on Darcy-Flow" href="checkpoint_FNO_darcy.html" />
+    <link rel="prev" title="Using torchtnt to count FLOPS" href="plot_count_flops.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -129,8 +129,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../user_guide/index.html">User guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../modules/api.html">API reference</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Gallery of examples</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_count_flops.html">Using <cite>torchtnt</cite> to count FLOPS</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_SFNO_swe.html">Training a SFNO on the spherical Shallow Water equations</a></li>
@@ -176,6 +176,7 @@ to download the full example code.</p>
 <p>We first import our <cite>neuralop</cite> library and required dependencies.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">from</span> <span class="nn">neuralop.data.datasets</span> <span class="kn">import</span> <span class="n">load_darcy_flow_small</span>
+<span class="kn">from</span> <span class="nn">neuralop.layers.embeddings</span> <span class="kn">import</span> <span class="n">GridEmbedding2D</span>
 </pre></div>
 </div>
 </section>
@@ -191,10 +192,10 @@ to download the full example code.</p>
 <span class="n">train_dataset</span> <span class="o">=</span> <span class="n">train_loader</span><span class="o">.</span><span class="n">dataset</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:102: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:93: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   data = torch.load(
 Loading test db for resolution 16 with 50 samples
-/home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:183: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+/home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:168: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   data = torch.load(Path(root_dir).joinpath(f&quot;{dataset_name}_test_{res}.pt&quot;).as_posix())
 Loading test db for resolution 32 with 50 samples
 </pre></div>
@@ -216,7 +217,7 @@ Loading test db for resolution 32 with 50 samples
 <span class="n">x</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Training sample have shape </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Training samples have shape </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
 
 <span class="c1"># Which sample to view</span>
@@ -224,7 +225,14 @@ Loading test db for resolution 32 with 50 samples
 
 <span class="n">data</span> <span class="o">=</span> <span class="n">train_dataset</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
 <span class="n">data</span> <span class="o">=</span> <span class="n">data_processor</span><span class="o">.</span><span class="n">preprocess</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
+
+<span class="c1"># The first step of the default FNO model is a grid-based</span>
+<span class="c1"># positional embedding. We will add it manually here to</span>
+<span class="c1"># visualize the channels appended by this embedding.</span>
+<span class="n">positional_embedding</span> <span class="o">=</span> <span class="n">GridEmbedding2D</span><span class="p">()</span>
+<span class="c1"># at train time, data will be collated with a batch dim.</span>
+<span class="c1"># we create a batch dim to pass into the embedding, then re-squeeze</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">positional_embedding</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
 <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">))</span>
 <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -248,10 +256,10 @@ Loading test db for resolution 32 with 50 samples
 Testing samples for res 16 have shape torch.Size([1, 16, 16])
 32
 Testing samples for res 32 have shape torch.Size([1, 32, 32])
-Training sample have shape torch.Size([16, 16])
+Training samples have shape torch.Size([16, 16])
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.356 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.353 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-darcy-flow-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/0ac9f102e4f1903984e3b4a7d517c88f/plot_darcy_flow.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_darcy_flow.ipynb</span></code></a></p>
@@ -273,16 +281,16 @@ Training sample have shape torch.Size([16, 16])
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="index.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="plot_count_flops.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span>Gallery of examples</span>
+        <span>Using <cite>torchtnt</cite> to count FLOPS</span>
     </a>
     
     
-    <a class="button pagination-next" href="plot_count_flops.html" title="next page" accesskey="n">
-        <span>Using <cite>torchtnt</cite> to count FLOPS </span>
+    <a class="button pagination-next" href="checkpoint_FNO_darcy.html" title="next page" accesskey="n">
+        <span>Training a TFNO on Darcy-Flow </span>
         <span class="icon">
             <i class="fa fa-arrow-circle-right"></i>
         </span>
@@ -295,7 +303,7 @@ Training sample have shape torch.Size([16, 16])
         <footer class="footer">
     <div class="content has-text-centered">
         <div class="block">
-          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+          &copy; Copyright 2024, Jean Kossaifi, David Pitt, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
         </div>
     </div>
   </footer>

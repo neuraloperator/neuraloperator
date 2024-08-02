@@ -65,7 +65,7 @@ Loading the Darcy Flow dataset
 
 
 
-    model = UNO(3,1, hidden_channels=64, projection_channels=64,uno_out_channels = [32,64,64,64,32], \
+    model = UNO(in_channels=1, out_channels=1, hidden_channels=64, projection_channels=64,uno_out_channels = [32,64,64,64,32], \
                 uno_n_modes= [[16,16],[8,8],[8,8],[8,8],[16,16]], uno_scalings=  [[1.0,1.0],[0.5,0.5],[1,1],[2,2],[1,1]],\
                 horizontal_skips_map = None, n_layers = 5, domain_padding = 0.2)
     model = model.to(device)
@@ -83,10 +83,10 @@ Loading the Darcy Flow dataset
 
  .. code-block:: none
 
-    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:102: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:93: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
       data = torch.load(
     Loading test db for resolution 16 with 100 samples 
-    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:183: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:168: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
       data = torch.load(Path(root_dir).joinpath(f"{dataset_name}_test_{res}.pt").as_posix())
     Loading test db for resolution 32 with 50 samples 
 
@@ -164,6 +164,7 @@ Creating the losses
 
     ### MODEL ###
      UNO(
+      (positional_embedding): GridEmbeddingND()
       (domain_padding): DomainPadding()
       (lifting): MLP(
         (fcs): ModuleList(
@@ -266,13 +267,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f04f74e2430>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7ff08d18d310>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7f04f74e2d90>
+     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7ff08d18d0d0>
 
-     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7f04f74e2d90>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f04f74e2790>}
+     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7ff08d18d0d0>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7ff08d17cfd0>}
 
 
 
@@ -331,22 +332,22 @@ Actually train the model on our small Darcy-Flow dataset
     Training on 1000 samples
     Testing on [50, 50] samples         on resolutions [16, 32].
     Raw outputs of shape torch.Size([32, 1, 16, 16])
-    [0] time=5.71, avg_loss=0.6205, train_err=19.3893
-    Eval: 16_h1=0.6122, 16_l2=0.4514, 32_h1=0.6531, 32_l2=0.4933
-    [3] time=5.78, avg_loss=0.2661, train_err=8.3148
-    Eval: 16_h1=0.5742, 16_l2=0.4228, 32_h1=0.6210, 32_l2=0.4780
-    [6] time=5.84, avg_loss=0.2422, train_err=7.5681
-    Eval: 16_h1=0.6276, 16_l2=0.4303, 32_h1=0.6233, 32_l2=0.4809
-    [9] time=5.69, avg_loss=0.2298, train_err=7.1798
-    Eval: 16_h1=0.6253, 16_l2=0.4619, 32_h1=0.6449, 32_l2=0.5211
-    [12] time=5.71, avg_loss=0.2023, train_err=6.3229
-    Eval: 16_h1=0.6235, 16_l2=0.4556, 32_h1=0.6373, 32_l2=0.5167
-    [15] time=5.79, avg_loss=0.1946, train_err=6.0818
-    Eval: 16_h1=0.6986, 16_l2=0.4692, 32_h1=0.6447, 32_l2=0.5037
-    [18] time=5.78, avg_loss=0.1810, train_err=5.6571
-    Eval: 16_h1=0.6242, 16_l2=0.4579, 32_h1=0.6443, 32_l2=0.5193
+    [0] time=5.77, avg_loss=0.5637, train_err=17.6148
+    Eval: 16_h1=0.6081, 16_l2=0.4601, 32_h1=0.6338, 32_l2=0.4757
+    [3] time=5.75, avg_loss=0.2662, train_err=8.3180
+    Eval: 16_h1=0.6313, 16_l2=0.4898, 32_h1=0.6462, 32_l2=0.4921
+    [6] time=5.75, avg_loss=0.2387, train_err=7.4603
+    Eval: 16_h1=0.6190, 16_l2=0.4436, 32_h1=0.6257, 32_l2=0.4812
+    [9] time=5.74, avg_loss=0.2129, train_err=6.6528
+    Eval: 16_h1=0.6139, 16_l2=0.4456, 32_h1=0.6093, 32_l2=0.4754
+    [12] time=5.75, avg_loss=0.2164, train_err=6.7629
+    Eval: 16_h1=0.6593, 16_l2=0.4606, 32_h1=0.6203, 32_l2=0.4767
+    [15] time=5.75, avg_loss=0.1995, train_err=6.2359
+    Eval: 16_h1=0.7098, 16_l2=0.4888, 32_h1=0.6417, 32_l2=0.4864
+    [18] time=5.74, avg_loss=0.1798, train_err=5.6185
+    Eval: 16_h1=0.5951, 16_l2=0.4261, 32_h1=0.5943, 32_l2=0.4599
 
-    {'train_err': 5.593266375362873, 'avg_loss': 0.17898452401161194, 'avg_lasso_loss': None, 'epoch_train_time': 5.757408095999949}
+    {'train_err': 5.559252228587866, 'avg_loss': 0.1778960713148117, 'avg_lasso_loss': None, 'epoch_train_time': 5.741577055999983}
 
 
 
@@ -420,7 +421,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 57.805 seconds)
+   **Total running time of the script:** (1 minutes 57.840 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_UNO_darcy.py:

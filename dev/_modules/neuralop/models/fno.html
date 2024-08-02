@@ -118,6 +118,7 @@
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 <span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
 
+<span class="kn">from</span> <span class="nn">..layers.embeddings</span> <span class="kn">import</span> <span class="n">GridEmbeddingND</span><span class="p">,</span> <span class="n">GridEmbedding2D</span>
 <span class="kn">from</span> <span class="nn">..layers.spectral_convolution</span> <span class="kn">import</span> <span class="n">SpectralConv</span>
 <span class="kn">from</span> <span class="nn">..layers.spherical_convolution</span> <span class="kn">import</span> <span class="n">SphericalConv</span>
 <span class="kn">from</span> <span class="nn">..layers.padding</span> <span class="kn">import</span> <span class="n">DomainPadding</span>
@@ -134,7 +135,7 @@
 <span class="sd">    ----------</span>
 <span class="sd">    n_modes : int tuple</span>
 <span class="sd">        number of modes to keep in Fourier Layer, along each dimension</span>
-<span class="sd">        The dimensionality of the TFNO is inferred from ``len(n_modes)``</span>
+<span class="sd">        The dimensionality of the FNO is inferred from ``len(n_modes)``</span>
 <span class="sd">    hidden_channels : int</span>
 <span class="sd">        width of the FNO (i.e. number of channels)</span>
 <span class="sd">    in_channels : int, optional</span>
@@ -147,6 +148,13 @@
 <span class="sd">        number of hidden channels of the projection block of the FNO, by default 256</span>
 <span class="sd">    n_layers : int, optional</span>
 <span class="sd">        Number of Fourier Layers, by default 4</span>
+<span class="sd">    positional_embedding : str literal | GridEmbedding2D | GridEmbeddingND | None</span>
+<span class="sd">        if &quot;grid&quot;, appends a grid positional embedding with default settings to </span>
+<span class="sd">        the last channels of raw input. Assumes the inputs are discretized</span>
+<span class="sd">        over a grid with entry [0,0,...] at the origin and side lengths of 1.</span>
+<span class="sd">        If an initialized GridEmbedding, uses this module directly</span>
+<span class="sd">        See `neuralop.embeddings.GridEmbeddingND` for details</span>
+<span class="sd">        if None, does nothing</span>
 <span class="sd">    max_n_modes : None or int tuple, default is None</span>
 <span class="sd">        * If not None, this allows to incrementally increase the number of</span>
 <span class="sd">          modes in Fourier domain during training. Has to verify n &lt;= N</span>
@@ -218,6 +226,7 @@
         <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">positional_embedding</span><span class="o">=</span><span class="s2">&quot;grid&quot;</span><span class="p">,</span>
         <span class="n">output_scaling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">max_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">fno_block_precision</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
@@ -269,6 +278,22 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">preactivation</span> <span class="o">=</span> <span class="n">preactivation</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fno_block_precision</span> <span class="o">=</span> <span class="n">fno_block_precision</span>
 
+        <span class="k">if</span> <span class="n">positional_embedding</span> <span class="o">==</span> <span class="s2">&quot;grid&quot;</span><span class="p">:</span>
+            <span class="n">spatial_grid_boundaries</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">]]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span> <span class="o">=</span> <span class="n">GridEmbeddingND</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">,</span> <span class="n">grid_boundaries</span><span class="o">=</span><span class="n">spatial_grid_boundaries</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">positional_embedding</span><span class="p">,</span> <span class="n">GridEmbedding2D</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span> <span class="o">=</span> <span class="n">positional_embedding</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Error: expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="si">}</span><span class="s1">-d positional embeddings, got </span><span class="si">{</span><span class="n">positional_embedding</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">positional_embedding</span><span class="p">,</span> <span class="n">GridEmbeddingND</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span> <span class="o">=</span> <span class="n">positional_embedding</span>
+        <span class="k">elif</span> <span class="n">positional_embedding</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: tried to instantiate FNO positional embedding with </span><span class="si">{</span><span class="n">positional_embedding</span><span class="si">}</span><span class="s2">,</span><span class="se">\</span>
+<span class="s2">                              expected one of </span><span class="se">\&#39;</span><span class="s2">grid</span><span class="se">\&#39;</span><span class="s2">, GridEmbeddingND&quot;</span><span class="p">)</span>
+        
         <span class="k">if</span> <span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
             <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">sum</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
             <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">domain_padding</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="ow">and</span> <span class="n">domain_padding</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
@@ -317,11 +342,14 @@
             <span class="o">**</span><span class="n">kwargs</span>
         <span class="p">)</span>
 
+        <span class="n">lifting_in_channels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lifting_in_channels</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span>
         <span class="c1"># if lifting_channels is passed, make lifting an MLP</span>
         <span class="c1"># with a hidden layer of size lifting_channels</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lifting_channels</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span>
-                <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                <span class="n">in_channels</span><span class="o">=</span><span class="n">lifting_in_channels</span><span class="p">,</span>
                 <span class="n">out_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span>
                 <span class="n">hidden_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lifting_channels</span><span class="p">,</span>
                 <span class="n">n_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
@@ -330,7 +358,7 @@
         <span class="c1"># otherwise, make it a linear layer</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span>
-                <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                <span class="n">in_channels</span><span class="o">=</span><span class="n">lifting_in_channels</span><span class="p">,</span>
                 <span class="n">out_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span>
                 <span class="n">hidden_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span>
                 <span class="n">n_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
@@ -366,6 +394,10 @@
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_shape</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
             <span class="n">output_shape</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">output_shape</span><span class="p">]</span>
 
+        <span class="c1"># append spatial pos embedding if set</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -689,7 +721,7 @@
         <footer class="footer">
     <div class="content has-text-centered">
         <div class="block">
-          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+          &copy; Copyright 2024, Jean Kossaifi, David Pitt, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
         </div>
     </div>
   </footer>

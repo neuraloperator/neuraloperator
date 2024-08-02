@@ -140,8 +140,6 @@
                  <span class="n">test_batch_sizes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
                  <span class="n">train_resolution</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">test_resolutions</span><span class="p">:</span> <span class="nb">int</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">],</span>
-                 <span class="n">grid_boundaries</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]],</span>
-                 <span class="n">positional_encoding</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                  <span class="n">encode_input</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
                  <span class="n">encode_output</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
                  <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;channel-wise&quot;</span><span class="p">,</span>
@@ -191,8 +189,6 @@
                        <span class="n">test_batch_sizes</span><span class="o">=</span><span class="n">test_batch_sizes</span><span class="p">,</span>
                        <span class="n">train_resolution</span><span class="o">=</span><span class="n">train_resolution</span><span class="p">,</span>
                        <span class="n">test_resolutions</span><span class="o">=</span><span class="n">test_resolutions</span><span class="p">,</span>
-                       <span class="n">grid_boundaries</span><span class="o">=</span><span class="n">grid_boundaries</span><span class="p">,</span>
-                       <span class="n">positional_encoding</span><span class="o">=</span><span class="n">positional_encoding</span><span class="p">,</span>
                        <span class="n">encode_input</span><span class="o">=</span><span class="n">encode_input</span><span class="p">,</span>
                        <span class="n">encode_output</span><span class="o">=</span><span class="n">encode_output</span><span class="p">,</span>
                        <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span>
@@ -210,8 +206,6 @@
     <span class="n">test_batch_sizes</span><span class="p">,</span>
     <span class="n">data_root</span> <span class="o">=</span> <span class="n">example_data_root</span><span class="p">,</span>
     <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span>
-    <span class="n">grid_boundaries</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]],</span>
-    <span class="n">positional_encoding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">encode_input</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">encode_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;channel-wise&quot;</span><span class="p">,</span>
@@ -224,12 +218,10 @@
                            <span class="n">test_batch_sizes</span><span class="o">=</span><span class="n">test_batch_sizes</span><span class="p">,</span>
                            <span class="n">train_resolution</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
                            <span class="n">test_resolutions</span><span class="o">=</span><span class="n">test_resolutions</span><span class="p">,</span>
-                           <span class="n">grid_boundaries</span><span class="o">=</span><span class="n">grid_boundaries</span><span class="p">,</span>
-                           <span class="n">positional_encoding</span><span class="o">=</span><span class="n">positional_encoding</span><span class="p">,</span>
                            <span class="n">encode_input</span><span class="o">=</span><span class="n">encode_input</span><span class="p">,</span>
                            <span class="n">encode_output</span><span class="o">=</span><span class="n">encode_output</span><span class="p">,</span>
-                           <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span>
                            <span class="n">channel_dim</span><span class="o">=</span><span class="n">channel_dim</span><span class="p">,</span>
+                           <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span>
                            <span class="n">download</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     
     <span class="c1"># return dataloaders for backwards compat</span>
@@ -259,8 +251,6 @@
                   <span class="n">data_root</span> <span class="o">=</span> <span class="s2">&quot;./neuralop/data/datasets/data&quot;</span><span class="p">,</span>
                   <span class="n">train_resolution</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
                   <span class="n">test_resolutions</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span>
-                  <span class="n">grid_boundaries</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]],</span>
-                  <span class="n">positional_encoding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                   <span class="n">encode_input</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">encode_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                   <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;channel-wise&quot;</span><span class="p">,</span>
@@ -273,8 +263,6 @@
                            <span class="n">test_batch_sizes</span><span class="o">=</span><span class="n">test_batch_sizes</span><span class="p">,</span>
                            <span class="n">train_resolution</span><span class="o">=</span><span class="n">train_resolution</span><span class="p">,</span>
                            <span class="n">test_resolutions</span><span class="o">=</span><span class="n">test_resolutions</span><span class="p">,</span>
-                           <span class="n">grid_boundaries</span><span class="o">=</span><span class="n">grid_boundaries</span><span class="p">,</span>
-                           <span class="n">positional_encoding</span><span class="o">=</span><span class="n">positional_encoding</span><span class="p">,</span>
                            <span class="n">encode_input</span><span class="o">=</span><span class="n">encode_input</span><span class="p">,</span>
                            <span class="n">encode_output</span><span class="o">=</span><span class="n">encode_output</span><span class="p">,</span>
                            <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span>
@@ -307,7 +295,7 @@
         <footer class="footer">
     <div class="content has-text-centered">
         <div class="block">
-          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+          &copy; Copyright 2024, Jean Kossaifi, David Pitt, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
         </div>
     </div>
   </footer>

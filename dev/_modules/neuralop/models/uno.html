@@ -122,6 +122,7 @@
 <span class="kn">from</span> <span class="nn">..layers.padding</span> <span class="kn">import</span> <span class="n">DomainPadding</span>
 <span class="kn">from</span> <span class="nn">..layers.fno_block</span> <span class="kn">import</span> <span class="n">FNOBlocks</span>
 <span class="kn">from</span> <span class="nn">..layers.resample</span> <span class="kn">import</span> <span class="n">resample</span>
+<span class="kn">from</span> <span class="nn">..layers.embeddings</span> <span class="kn">import</span> <span class="n">GridEmbedding2D</span><span class="p">,</span> <span class="n">GridEmbeddingND</span>
 
 
 <div class="viewcode-block" id="UNO">
@@ -141,6 +142,13 @@
 <span class="sd">        number of hidden channels of the lifting block of the FNO, by default 256</span>
 <span class="sd">    projection_channels : int, optional</span>
 <span class="sd">        number of hidden channels of the projection block of the FNO, by default 256</span>
+<span class="sd">    positional_embedding : str literal | GridEmbedding2D | GridEmbeddingND | None</span>
+<span class="sd">        if &quot;grid&quot;, appends a grid positional embedding with default settings to </span>
+<span class="sd">        the last channels of raw input. Assumes the inputs are discretized</span>
+<span class="sd">        over a grid with entry [0,0,...] at the origin and side lengths of 1.</span>
+<span class="sd">        If an initialized GridEmbedding, uses this module directly</span>
+<span class="sd">        See `neuralop.embeddings.GridEmbeddingND` for details</span>
+<span class="sd">        if None, does nothing</span>
 <span class="sd">    n_layers : int, optional</span>
 <span class="sd">        Number of Fourier Layers, by default 4</span>
 <span class="sd">    uno_out_channels: list</span>
@@ -213,6 +221,7 @@
         <span class="n">hidden_channels</span><span class="p">,</span>
         <span class="n">lifting_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
         <span class="n">projection_channels</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+        <span class="n">positional_embedding</span><span class="o">=</span><span class="s2">&quot;grid&quot;</span><span class="p">,</span>
         <span class="n">n_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
         <span class="n">uno_out_channels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">uno_n_modes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -284,6 +293,26 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_incremental_n_modes</span> <span class="o">=</span> <span class="n">incremental_n_modes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">operator_block</span> <span class="o">=</span> <span class="n">operator_block</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">integral_operator</span> <span class="o">=</span> <span class="n">integral_operator</span>
+
+        <span class="c1"># create positional embedding at the beginning of the model</span>
+        <span class="k">if</span> <span class="n">positional_embedding</span> <span class="o">==</span> <span class="s2">&quot;grid&quot;</span><span class="p">:</span>
+            <span class="n">spatial_grid_boundaries</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">]]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span> <span class="o">=</span> <span class="n">GridEmbeddingND</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">,</span> <span class="n">grid_boundaries</span><span class="o">=</span><span class="n">spatial_grid_boundaries</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">positional_embedding</span><span class="p">,</span> <span class="n">GridEmbedding2D</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span> <span class="o">=</span> <span class="n">positional_embedding</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Error: expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="si">}</span><span class="s1">-d positional embeddings, got </span><span class="si">{</span><span class="n">positional_embedding</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">positional_embedding</span><span class="p">,</span> <span class="n">GridEmbeddingND</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span> <span class="o">=</span> <span class="n">positional_embedding</span>
+        <span class="k">elif</span> <span class="n">positional_embedding</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: tried to instantiate FNO positional embedding with </span><span class="si">{</span><span class="n">positional_embedding</span><span class="si">}</span><span class="s2">,</span><span class="se">\</span>
+<span class="s2">                              expected one of </span><span class="se">\&#39;</span><span class="s2">grid</span><span class="se">\&#39;</span><span class="s2">, GridEmbeddingND&quot;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">in_channels</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span>
 
         <span class="c1"># constructing default skip maps</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontal_skips_map</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -398,6 +427,9 @@
 <div class="viewcode-block" id="UNO.forward">
 <a class="viewcode-back" href="../../../modules/generated/neuralop.models.UNO.html#neuralop.models.UNO.forward">[docs]</a>
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positional_embedding</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -447,7 +479,7 @@
         <footer class="footer">
     <div class="content has-text-centered">
         <div class="block">
-          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+          &copy; Copyright 2024, Jean Kossaifi, David Pitt, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
         </div>
     </div>
   </footer>

@@ -129,8 +129,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../user_guide/index.html">User guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../modules/api.html">API reference</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Gallery of examples</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_count_flops.html">Using <cite>torchtnt</cite> to count FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_SFNO_swe.html">Training a SFNO on the spherical Shallow Water equations</a></li>
@@ -193,7 +193,7 @@ the small Darcy-Flow example we ship with the package</p>
 
 
 
-<span class="n">model</span> <span class="o">=</span> <span class="n">UNO</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">projection_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span><span class="n">uno_out_channels</span> <span class="o">=</span> <span class="p">[</span><span class="mi">32</span><span class="p">,</span><span class="mi">64</span><span class="p">,</span><span class="mi">64</span><span class="p">,</span><span class="mi">64</span><span class="p">,</span><span class="mi">32</span><span class="p">],</span> \
+<span class="n">model</span> <span class="o">=</span> <span class="n">UNO</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">projection_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span><span class="n">uno_out_channels</span> <span class="o">=</span> <span class="p">[</span><span class="mi">32</span><span class="p">,</span><span class="mi">64</span><span class="p">,</span><span class="mi">64</span><span class="p">,</span><span class="mi">64</span><span class="p">,</span><span class="mi">32</span><span class="p">],</span> \
             <span class="n">uno_n_modes</span><span class="o">=</span> <span class="p">[[</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">],[</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">],[</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">],[</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">],[</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">]],</span> <span class="n">uno_scalings</span><span class="o">=</span>  <span class="p">[[</span><span class="mf">1.0</span><span class="p">,</span><span class="mf">1.0</span><span class="p">],[</span><span class="mf">0.5</span><span class="p">,</span><span class="mf">0.5</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]],</span>\
             <span class="n">horizontal_skips_map</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">n_layers</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">domain_padding</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
@@ -203,10 +203,10 @@ the small Darcy-Flow example we ship with the package</p>
 <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:102: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:93: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   data = torch.load(
 Loading test db for resolution 16 with 100 samples
-/home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:183: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+/home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:168: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   data = torch.load(Path(root_dir).joinpath(f&quot;{dataset_name}_test_{res}.pt&quot;).as_posix())
 Loading test db for resolution 32 with 50 samples
 
@@ -239,6 +239,7 @@ Our model has 2665921 parameters.
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>### MODEL ###
  UNO(
+  (positional_embedding): GridEmbeddingND()
   (domain_padding): DomainPadding()
   (lifting): MLP(
     (fcs): ModuleList(
@@ -341,13 +342,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f04f74e2430&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7ff08d18d310&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f04f74e2d90&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7ff08d18d0d0&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f04f74e2d90&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f04f74e2790&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7ff08d18d0d0&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7ff08d17cfd0&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -374,22 +375,22 @@ Parameter Group 0
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 1000 samples
 Testing on [50, 50] samples         on resolutions [16, 32].
 Raw outputs of shape torch.Size([32, 1, 16, 16])
-[0] time=5.71, avg_loss=0.6205, train_err=19.3893
-Eval: 16_h1=0.6122, 16_l2=0.4514, 32_h1=0.6531, 32_l2=0.4933
-[3] time=5.78, avg_loss=0.2661, train_err=8.3148
-Eval: 16_h1=0.5742, 16_l2=0.4228, 32_h1=0.6210, 32_l2=0.4780
-[6] time=5.84, avg_loss=0.2422, train_err=7.5681
-Eval: 16_h1=0.6276, 16_l2=0.4303, 32_h1=0.6233, 32_l2=0.4809
-[9] time=5.69, avg_loss=0.2298, train_err=7.1798
-Eval: 16_h1=0.6253, 16_l2=0.4619, 32_h1=0.6449, 32_l2=0.5211
-[12] time=5.71, avg_loss=0.2023, train_err=6.3229
-Eval: 16_h1=0.6235, 16_l2=0.4556, 32_h1=0.6373, 32_l2=0.5167
-[15] time=5.79, avg_loss=0.1946, train_err=6.0818
-Eval: 16_h1=0.6986, 16_l2=0.4692, 32_h1=0.6447, 32_l2=0.5037
-[18] time=5.78, avg_loss=0.1810, train_err=5.6571
-Eval: 16_h1=0.6242, 16_l2=0.4579, 32_h1=0.6443, 32_l2=0.5193
+[0] time=5.77, avg_loss=0.5637, train_err=17.6148
+Eval: 16_h1=0.6081, 16_l2=0.4601, 32_h1=0.6338, 32_l2=0.4757
+[3] time=5.75, avg_loss=0.2662, train_err=8.3180
+Eval: 16_h1=0.6313, 16_l2=0.4898, 32_h1=0.6462, 32_l2=0.4921
+[6] time=5.75, avg_loss=0.2387, train_err=7.4603
+Eval: 16_h1=0.6190, 16_l2=0.4436, 32_h1=0.6257, 32_l2=0.4812
+[9] time=5.74, avg_loss=0.2129, train_err=6.6528
+Eval: 16_h1=0.6139, 16_l2=0.4456, 32_h1=0.6093, 32_l2=0.4754
+[12] time=5.75, avg_loss=0.2164, train_err=6.7629
+Eval: 16_h1=0.6593, 16_l2=0.4606, 32_h1=0.6203, 32_l2=0.4767
+[15] time=5.75, avg_loss=0.1995, train_err=6.2359
+Eval: 16_h1=0.7098, 16_l2=0.4888, 32_h1=0.6417, 32_l2=0.4864
+[18] time=5.74, avg_loss=0.1798, train_err=5.6185
+Eval: 16_h1=0.5951, 16_l2=0.4261, 32_h1=0.5943, 32_l2=0.4599
 
-{&#39;train_err&#39;: 5.593266375362873, &#39;avg_loss&#39;: 0.17898452401161194, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 5.757408095999949}
+{&#39;train_err&#39;: 5.559252228587866, &#39;avg_loss&#39;: 0.1778960713148117, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 5.741577055999983}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -439,7 +440,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 57.805 seconds)</p>
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 57.840 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/ecc34f03fb30bee651bda959149422c4/plot_UNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_UNO_darcy.ipynb</span></code></a></p>
@@ -482,7 +483,7 @@ ii) can be trained quickly on CPU</p>
         <footer class="footer">
     <div class="content has-text-centered">
         <div class="block">
-          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+          &copy; Copyright 2024, Jean Kossaifi, David Pitt, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
         </div>
     </div>
   </footer>

@@ -32,7 +32,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Training a TFNO on Darcy-Flow" href="plot_FNO_darcy.html" />
-    <link rel="prev" title="Using torchtnt to count FLOPS" href="plot_count_flops.html" />
+    <link rel="prev" title="A simple Darcy-Flow dataset" href="plot_darcy_flow.html" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
@@ -129,8 +129,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../user_guide/index.html">User guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../modules/api.html">API reference</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Gallery of examples</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_count_flops.html">Using <cite>torchtnt</cite> to count FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_SFNO_swe.html">Training a SFNO on the spherical Shallow Water equations</a></li>
@@ -193,7 +193,7 @@ to train a Tensorized Fourier-Neural Operator</p>
 </pre></div>
 </div>
 <p>We create a tensorized FNO model</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">TFNO</span><span class="p">(</span><span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">projection_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;tucker&#39;</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="mf">0.42</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">TFNO</span><span class="p">(</span><span class="n">n_modes</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">in_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hidden_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">projection_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="s1">&#39;tucker&#39;</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="mf">0.42</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 
 <span class="n">n_params</span> <span class="o">=</span> <span class="n">count_model_params</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
@@ -285,11 +285,11 @@ to train a Tensorized Fourier-Neural Operator</p>
       
         <nav class="pagination" role="navigation" aria-label="pagination">
     
-    <a class="button pagination-previous" href="plot_count_flops.html" title="previous page" accesskey="p">
+    <a class="button pagination-previous" href="plot_darcy_flow.html" title="previous page" accesskey="p">
         <span class="icon">
             <i class="fa fa-arrow-circle-left"></i>
         </span>
-        <span>Using <cite>torchtnt</cite> to count FLOPS</span>
+        <span>A simple Darcy-Flow dataset</span>
     </a>
     
     
@@ -307,7 +307,7 @@ to train a Tensorized Fourier-Neural Operator</p>
         <footer class="footer">
     <div class="content has-text-centered">
         <div class="block">
-          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+          &copy; Copyright 2024, Jean Kossaifi, David Pitt, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
         </div>
     </div>
   </footer>

@@ -129,8 +129,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../user_guide/index.html">User guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../modules/api.html">API reference</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Gallery of examples</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_count_flops.html">Using <cite>torchtnt</cite> to count FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_darcy_flow.html">A simple Darcy-Flow dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="checkpoint_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_FNO_darcy.html">Training a TFNO on Darcy-Flow</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Training a SFNO on the spherical Shallow Water equations</a></li>
@@ -203,7 +203,7 @@ Loading test dataloader at resolution (64, 128) with 50 samples and batch-size=1
 <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Our model has 277923 parameters.
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Our model has 278435 parameters.
 </pre></div>
 </div>
 <p>Create the optimizer</p>
@@ -232,6 +232,7 @@ Loading test dataloader at resolution (64, 128) with 50 samples and batch-size=1
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>### MODEL ###
  SFNO(
+  (positional_embedding): GridEmbeddingND()
   (fno_blocks): FNOBlocks(
     (convs): SphericalConv(
       (weight): ModuleList(
@@ -250,7 +251,7 @@ Loading test dataloader at resolution (64, 128) with 50 samples and batch-size=1
   )
   (lifting): MLP(
     (fcs): ModuleList(
-      (0): Conv1d(3, 256, kernel_size=(1,), stride=(1,))
+      (0): Conv1d(5, 256, kernel_size=(1,), stride=(1,))
       (1): Conv1d(256, 32, kernel_size=(1,), stride=(1,))
     )
   )
@@ -279,13 +280,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f04f5d86280&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7ff085a333d0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f04f5e2ee80&gt;
+ * Train: &lt;neuralop.losses.data_losses.LpLoss object at 0x7ff085a2a4c0&gt;
 
- * Test: {&#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f04f5e2ee80&gt;}
+ * Test: {&#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7ff085a2a4c0&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -310,22 +311,22 @@ Parameter Group 0
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 200 samples
 Testing on [50, 50] samples         on resolutions [(32, 64), (64, 128)].
 Raw outputs of shape torch.Size([4, 3, 32, 64])
-[0] time=3.48, avg_loss=2.1515, train_err=8.6058
-Eval: (32, 64)_l2=1.4257, (64, 128)_l2=2.6645
-[3] time=3.45, avg_loss=0.9904, train_err=3.9617
-Eval: (32, 64)_l2=1.1669, (64, 128)_l2=2.4593
-[6] time=3.44, avg_loss=0.9458, train_err=3.7830
-Eval: (32, 64)_l2=1.1209, (64, 128)_l2=2.4699
-[9] time=3.45, avg_loss=0.9336, train_err=3.7344
-Eval: (32, 64)_l2=1.0834, (64, 128)_l2=2.4365
-[12] time=3.46, avg_loss=0.9209, train_err=3.6838
-Eval: (32, 64)_l2=1.0781, (64, 128)_l2=2.4665
-[15] time=3.46, avg_loss=0.9093, train_err=3.6373
-Eval: (32, 64)_l2=1.0596, (64, 128)_l2=2.4480
-[18] time=3.44, avg_loss=0.9030, train_err=3.6121
-Eval: (32, 64)_l2=1.0297, (64, 128)_l2=2.4174
+[0] time=3.57, avg_loss=2.2748, train_err=9.0993
+Eval: (32, 64)_l2=1.6341, (64, 128)_l2=2.6596
+[3] time=3.50, avg_loss=0.4163, train_err=1.6651
+Eval: (32, 64)_l2=0.5311, (64, 128)_l2=2.3721
+[6] time=3.55, avg_loss=0.3075, train_err=1.2299
+Eval: (32, 64)_l2=0.5323, (64, 128)_l2=2.3400
+[9] time=3.50, avg_loss=0.2477, train_err=0.9908
+Eval: (32, 64)_l2=0.4506, (64, 128)_l2=2.3325
+[12] time=3.50, avg_loss=0.2415, train_err=0.9661
+Eval: (32, 64)_l2=0.4419, (64, 128)_l2=2.3313
+[15] time=3.50, avg_loss=0.1830, train_err=0.7318
+Eval: (32, 64)_l2=0.3518, (64, 128)_l2=2.3400
+[18] time=3.50, avg_loss=0.1611, train_err=0.6445
+Eval: (32, 64)_l2=0.3381, (64, 128)_l2=2.3424
 
-{&#39;train_err&#39;: 3.59575222492218, &#39;avg_loss&#39;: 0.898938056230545, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 3.4453636560000405}
+{&#39;train_err&#39;: 0.6296631598472595, &#39;avg_loss&#39;: 0.15741578996181488, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 3.5172618430000284}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -372,7 +373,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 26.215 seconds)</p>
+<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 27.125 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-sfno-swe-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/af3a515d2684655c6a5a8e0df87a4cf9/plot_SFNO_swe.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_SFNO_swe.ipynb</span></code></a></p>
@@ -415,7 +416,7 @@ ii) can be trained quickly on CPU</p>
         <footer class="footer">
     <div class="content has-text-centered">
         <div class="block">
-          &copy; Copyright 2024, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
+          &copy; Copyright 2024, Jean Kossaifi, David Pitt, Nikola Kovachki, Zongyi Li and Anima Anandkumar.<br/>
         </div>
     </div>
   </footer>

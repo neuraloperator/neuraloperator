@@ -72,7 +72,6 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 data_transform = IncrementalDataProcessor(
     in_normalizer=None,
     out_normalizer=None,
-    positional_encoding=None,
     device=device,
     subsampling_rates=[2, 1],
     dataset_resolution=16,

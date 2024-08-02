@@ -53,7 +53,7 @@ to train a Tensorized Fourier-Neural Operator
 
 Loading the Navier-Stokes dataset in 128x128 resolution
 
-.. GENERATED FROM PYTHON SOURCE LINES 27-36
+.. GENERATED FROM PYTHON SOURCE LINES 27-35
 
 .. code-block:: Python
 
@@ -61,7 +61,6 @@ Loading the Navier-Stokes dataset in 128x128 resolution
             n_train=1000, batch_size=32, 
             test_resolutions=[16, 32], n_tests=[100, 50],
             test_batch_sizes=[32, 32],
-            positional_encoding=True
     )
     data_processor = data_processor.to(device)
 
@@ -74,26 +73,26 @@ Loading the Navier-Stokes dataset in 128x128 resolution
 
  .. code-block:: none
 
-    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:102: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:93: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
       data = torch.load(
     Loading test db for resolution 16 with 100 samples 
-    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:183: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:168: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
       data = torch.load(Path(root_dir).joinpath(f"{dataset_name}_test_{res}.pt").as_posix())
     Loading test db for resolution 32 with 50 samples 
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 37-38
+.. GENERATED FROM PYTHON SOURCE LINES 36-37
 
 We create a tensorized FNO model
 
-.. GENERATED FROM PYTHON SOURCE LINES 38-47
+.. GENERATED FROM PYTHON SOURCE LINES 37-46
 
 .. code-block:: Python
 
 
-    model = TFNO(n_modes=(16, 16), hidden_channels=32, projection_channels=64, factorization='tucker', rank=0.42)
+    model = TFNO(n_modes=(16, 16), in_channels=1, hidden_channels=32, projection_channels=64, factorization='tucker', rank=0.42)
     model = model.to(device)
 
     n_params = count_model_params(model)
@@ -115,11 +114,11 @@ We create a tensorized FNO model
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 48-49
+.. GENERATED FROM PYTHON SOURCE LINES 47-48
 
 Create the optimizer
 
-.. GENERATED FROM PYTHON SOURCE LINES 49-55
+.. GENERATED FROM PYTHON SOURCE LINES 48-54
 
 .. code-block:: Python
 
@@ -136,11 +135,11 @@ Create the optimizer
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 56-57
+.. GENERATED FROM PYTHON SOURCE LINES 55-56
 
 Creating the losses
 
-.. GENERATED FROM PYTHON SOURCE LINES 57-64
+.. GENERATED FROM PYTHON SOURCE LINES 56-63
 
 .. code-block:: Python
 
@@ -158,7 +157,7 @@ Creating the losses
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 65-76
+.. GENERATED FROM PYTHON SOURCE LINES 64-75
 
 .. code-block:: Python
 
@@ -184,6 +183,7 @@ Creating the losses
 
     ### MODEL ###
      TFNO(
+      (positional_embedding): GridEmbeddingND()
       (fno_blocks): FNOBlocks(
         (convs): SpectralConv(
           (weight): ModuleList(
@@ -227,22 +227,22 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f04fcec3490>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7ff087e02580>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7f04fd9e32e0>
+     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7ff087e02ca0>
 
-     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7f04fd9e32e0>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f04fd9e35e0>}
-
-
+     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7ff087e02ca0>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7ff087e1d100>}
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 77-78
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 76-77
 
 Create the trainer
 
-.. GENERATED FROM PYTHON SOURCE LINES 78-87
+.. GENERATED FROM PYTHON SOURCE LINES 77-86
 
 .. code-block:: Python
 
@@ -262,11 +262,11 @@ Create the trainer
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 88-89
+.. GENERATED FROM PYTHON SOURCE LINES 87-88
 
 Actually train the model on our small Darcy-Flow dataset
 
-.. GENERATED FROM PYTHON SOURCE LINES 89-99
+.. GENERATED FROM PYTHON SOURCE LINES 88-98
 
 .. code-block:: Python
 
@@ -291,26 +291,26 @@ Actually train the model on our small Darcy-Flow dataset
     Training on 1000 samples
     Testing on [50, 50] samples         on resolutions [16, 32].
     Raw outputs of shape torch.Size([32, 1, 16, 16])
-    [0] time=2.62, avg_loss=0.8330, train_err=26.0322
-    Eval: 16_h1=0.6311, 16_l2=0.4304, 32_h1=0.6889, 32_l2=0.4348
-    [3] time=2.54, avg_loss=0.2454, train_err=7.6673
-    Eval: 16_h1=0.6934, 16_l2=0.4745, 32_h1=0.7667, 32_l2=0.4814
-    [6] time=2.62, avg_loss=0.1961, train_err=6.1282
-    Eval: 16_h1=0.6949, 16_l2=0.4867, 32_h1=0.7609, 32_l2=0.4930
-    [9] time=2.53, avg_loss=0.1737, train_err=5.4275
-    Eval: 16_h1=0.5773, 16_l2=0.4474, 32_h1=0.6461, 32_l2=0.4545
-    [12] time=2.56, avg_loss=0.1642, train_err=5.1316
-    Eval: 16_h1=0.6883, 16_l2=0.4665, 32_h1=0.7693, 32_l2=0.4689
-    [15] time=2.57, avg_loss=0.1386, train_err=4.3319
-    Eval: 16_h1=0.6607, 16_l2=0.4556, 32_h1=0.7501, 32_l2=0.4603
-    [18] time=2.54, avg_loss=0.1454, train_err=4.5451
-    Eval: 16_h1=0.6803, 16_l2=0.4685, 32_h1=0.7763, 32_l2=0.4723
+    [0] time=2.53, avg_loss=0.7876, train_err=24.6129
+    Eval: 16_h1=0.6396, 16_l2=0.4510, 32_h1=0.6867, 32_l2=0.4551
+    [3] time=2.51, avg_loss=0.2601, train_err=8.1277
+    Eval: 16_h1=0.6122, 16_l2=0.4267, 32_h1=0.6779, 32_l2=0.4338
+    [6] time=2.53, avg_loss=0.1835, train_err=5.7337
+    Eval: 16_h1=0.6285, 16_l2=0.4796, 32_h1=0.6857, 32_l2=0.4915
+    [9] time=2.52, avg_loss=0.1870, train_err=5.8432
+    Eval: 16_h1=0.6765, 16_l2=0.4737, 32_h1=0.7488, 32_l2=0.4803
+    [12] time=2.51, avg_loss=0.1528, train_err=4.7750
+    Eval: 16_h1=0.5689, 16_l2=0.4425, 32_h1=0.6415, 32_l2=0.4500
+    [15] time=2.51, avg_loss=0.1398, train_err=4.3697
+    Eval: 16_h1=0.7206, 16_l2=0.4975, 32_h1=0.8096, 32_l2=0.5013
+    [18] time=2.62, avg_loss=0.1333, train_err=4.1672
+    Eval: 16_h1=0.7525, 16_l2=0.5012, 32_h1=0.8561, 32_l2=0.5041
 
-    {'train_err': 4.11881023645401, 'avg_loss': 0.1318019275665283, 'avg_lasso_loss': None, 'epoch_train_time': 2.558373689000007}
+    {'train_err': 4.316340930759907, 'avg_loss': 0.13812290978431702, 'avg_lasso_loss': None, 'epoch_train_time': 2.5245594979999737}
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 100-110
+.. GENERATED FROM PYTHON SOURCE LINES 99-109
 
 Plot the prediction, and compare with the ground-truth 
 Note that we trained on a very small resolution for
@@ -323,7 +323,7 @@ ii) can be trained quickly on CPU
 
 In practice we would train a Neural Operator on one or multiple GPUs
 
-.. GENERATED FROM PYTHON SOURCE LINES 110-148
+.. GENERATED FROM PYTHON SOURCE LINES 109-147
 
 .. code-block:: Python
 
@@ -380,7 +380,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 52.701 seconds)
+   **Total running time of the script:** (0 minutes 51.695 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_FNO_darcy.py:
