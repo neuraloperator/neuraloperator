@@ -7,6 +7,7 @@ from ..layers.skip_connections import skip_connection
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
 from ..layers.resample import resample
+from ..layers.embeddings import GridEmbedding2D, GridEmbeddingND
 
 
 class UNO(nn.Module):
@@ -24,6 +25,13 @@ class UNO(nn.Module):
         number of hidden channels of the lifting block of the FNO, by default 256
     projection_channels : int, optional
         number of hidden channels of the projection block of the FNO, by default 256
+    positional_embedding : str literal | GridEmbedding2D | GridEmbeddingND | None
+        if "grid", appends a grid positional embedding with default settings to 
+        the last channels of raw input. Assumes the inputs are discretized
+        over a grid with entry [0,0,...] at the origin and side lengths of 1.
+        If an initialized GridEmbedding, uses this module directly
+        See `neuralop.embeddings.GridEmbeddingND` for details
+        if None, does nothing
     n_layers : int, optional
         Number of Fourier Layers, by default 4
     uno_out_channels: list
@@ -96,6 +104,7 @@ class UNO(nn.Module):
         hidden_channels,
         lifting_channels=256,
         projection_channels=256,
+        positional_embedding="grid",
         n_layers=4,
         uno_out_channels=None,
         uno_n_modes=None,
@@ -167,6 +176,26 @@ class UNO(nn.Module):
         self._incremental_n_modes = incremental_n_modes
         self.operator_block = operator_block
         self.integral_operator = integral_operator
+
+        # create positional embedding at the beginning of the model
+        if positional_embedding == "grid":
+            spatial_grid_boundaries = [[0., 1.]] * self.n_dim
+            self.positional_embedding = GridEmbeddingND(dim=self.n_dim, grid_boundaries=spatial_grid_boundaries)
+        elif isinstance(positional_embedding, GridEmbedding2D):
+            if self.n_dim == 2:
+                self.positional_embedding = positional_embedding
+            else:
+                raise ValueError(f'Error: expected {self.n_dim}-d positional embeddings, got {positional_embedding}')
+        elif isinstance(positional_embedding, GridEmbeddingND):
+            self.positional_embedding = positional_embedding
+        elif positional_embedding == None:
+            self.positional_embedding = None
+        else:
+            raise ValueError(f"Error: tried to instantiate FNO positional embedding with {positional_embedding},\
+                              expected one of \'grid\', GridEmbeddingND")
+        
+        if self.positional_embedding is not None:
+            in_channels += self.n_dim
 
         # constructing default skip maps
         if self.horizontal_skips_map is None:
@@ -279,6 +308,9 @@ class UNO(nn.Module):
         )
 
     def forward(self, x, **kwargs):
+        if self.positional_embedding is not None:
+            x = self.positional_embedding(x)
+        
         x = self.lifting(x)
 
         if self.domain_padding is not None:
