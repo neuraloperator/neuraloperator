@@ -1,6 +1,5 @@
 from ..data_processors import DefaultDataProcessor, IncrementalDataProcessor
 from ..normalizers import UnitGaussianNormalizer
-from ....layers.embeddings import GridEmbedding2D
 import torch
 from torch.testing import assert_close
 
@@ -15,14 +14,12 @@ def test_DefaultDataProcessor_pipeline():
     x = torch.randn((1,2,64,64))
     y = torch.randn((1,2,64,64))
 
-    pos_encoder = GridEmbedding2D(grid_boundaries=[[0,1],[0,1]])
     normalizer = UnitGaussianNormalizer(mean=torch.zeros((1,2,1,1)),
                                         std=torch.ones((1,2,1,1)),
                                         eps=1e-5)
 
     pipeline = DefaultDataProcessor(in_normalizer=normalizer,
-                           out_normalizer=normalizer,
-                           positional_encoding=pos_encoder)
+                           out_normalizer=normalizer)
     
     data = {'x':x, 'y':y} # data on cpu at this point
 
@@ -79,7 +76,6 @@ def test_incremental_resolution():
     data_transform = IncrementalDataProcessor(
         in_normalizer=None,
         out_normalizer=None,
-        positional_encoding=None,
         device=device,
         subsampling_rates=[2],
         dataset_resolution=16,
