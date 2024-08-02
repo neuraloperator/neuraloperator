@@ -46,6 +46,10 @@ def _contract_dense(x, weight, separable=False):
     else:
         return tl.einsum(eq, x, weight)
 
+def _contract_dense_separable(x, weight, separable):
+    if not torch.is_tensor(weight):
+        weight = weight.to_tensor()
+    return x * weight
 
 def _contract_cp(x, cp_weight, separable=False):
     order = tl.ndim(x)
@@ -127,7 +131,7 @@ def _contract_tt(x, tt_weight, separable=False):
         return tl.einsum(eq, x, *tt_weight.factors)
 
 
-def get_contract_fun(weight, implementation="reconstructed"):
+def get_contract_fun(weight, implementation="reconstructed", separable=False):
     """Generic ND implementation of Fourier Spectral Conv contraction
 
     Parameters
@@ -136,13 +140,18 @@ def get_contract_fun(weight, implementation="reconstructed"):
     implementation : {'reconstructed', 'factorized'}, default is 'reconstructed'
         whether to reconstruct the weight and do a forward pass (reconstructed)
         or contract directly the factors of the factorized weight with the input (factorized)
-
+    separable: bool
+        if True, performs contraction with individual tensor factors. 
+        if False, 
     Returns
     -------
     function : (x, weight) -> x * weight in Fourier space
     """
     if implementation == "reconstructed":
-        return _contract_dense
+        if separable:
+            return _contract_dense_separable
+        else:
+            return _contract_dense
     elif implementation == "factorized":
         if torch.is_tensor(weight):
             return _contract_dense
@@ -203,7 +212,7 @@ class SpectralConv(BaseSpectralConv):
         * If None, all the n_modes are used.
 
     separable : bool, default is True
-        whether to use separable contraction
+        whether to use separable implementation of contraction
         if True, contracts factors of factorized 
         tensor weight individually
     init_std : float or 'auto', default is 'auto'
@@ -343,7 +352,7 @@ class SpectralConv(BaseSpectralConv):
             for w in self.weight:
                 w.normal_(0, init_std)
         self._contract = get_contract_fun(
-            self.weight[0], implementation=implementation
+            self.weight[0], implementation=implementation, separable=separable
         )
 
         if bias:
