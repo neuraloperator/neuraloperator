@@ -3,7 +3,7 @@ from .fno import FNO, FNO1d, FNO2d, FNO3d
 # only import SFNO if torch_harmonics is built locally
 from importlib.util import find_spec
 if find_spec('torch_harmonics') is not None:
-    from .fno import SFNO
+    from .sfno import SFNO
 from .uno import UNO
 from .fnogno import FNOGNO
 from .gino import GINO
