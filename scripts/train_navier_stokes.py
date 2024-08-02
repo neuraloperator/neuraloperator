@@ -81,7 +81,6 @@ train_loader, test_loaders, data_processor = load_navier_stokes_pt(
     train_resolution=config.data.train_resolution,
     n_train=config.data.n_train,
     batch_size=config.data.batch_size,
-    positional_encoding=config.data.positional_encoding,
     test_resolutions=config.data.test_resolutions,
     n_tests=config.data.n_tests,
     test_batch_sizes=config.data.test_batch_sizes,
@@ -93,7 +92,6 @@ train_loader, test_loaders, data_processor = load_navier_stokes_pt(
 if config.patching.levels > 0:
     data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
                                              out_normalizer=data_processor.out_normalizer,
-                                             positional_encoding=data_processor.positional_encoding,
                                              padding_fraction=config.patching.padding,
                                              stitching=config.patching.stitching,
                                              levels=config.patching.levels)
