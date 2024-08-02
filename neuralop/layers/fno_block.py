@@ -4,7 +4,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from .channel_mixing import ChannelMLP
+from .channel_mlp import ChannelMLP
 from .normalization_layers import AdaIN, InstanceNorm
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
@@ -39,12 +39,12 @@ class FNOBlocks(nn.Module):
             maximum number of modes to keep along each dimension, by default None
         fno_block_precision : str, optional
             floating point precision to use for computations, by default "full"
-        use_channel_mixing : bool, optional
+        use_channel_mlp : bool, optional
             whether to use mlp layers to parameterize skip connections, by default False
-        channel_mixing_dropout : int, optional
-            dropout parameter for self.channel_mixing, by default 0
-        channel_mixing_expansion : float, optional
-            expansion parameter for self.channel_mixing, by default 0.5
+        channel_mlp_dropout : int, optional
+            dropout parameter for self.channel_mlp, by default 0
+        channel_mlp_expansion : float, optional
+            expansion parameter for self.channel_mlp, by default 0.5
         non_linearity : torch.nn.F module, optional
             nonlinear activation function to use between layers, by default F.gelu
         stabilizer : Literal["tanh"], optional
@@ -61,7 +61,7 @@ class FNOBlocks(nn.Module):
         fno_skip : str, optional
             module to use for FNO skip connections, by default "linear"
             see layers.skip_connections for more details
-        channel_mixing_skip : str, optional
+        channel_mlp_skip : str, optional
             module to use for ChannelMLP skip connections, by default "soft-gating"
             see layers.skip_connections for more details
         SpectralConv Params
@@ -95,16 +95,16 @@ class FNOBlocks(nn.Module):
         n_layers=1,
         max_n_modes=None,
         fno_block_precision="full",
-        use_channel_mixing=False,
-        channel_mixing_dropout=0,
-        channel_mixing_expansion=0.5,
+        use_channel_mlp=False,
+        channel_mlp_dropout=0,
+        channel_mlp_expansion=0.5,
         non_linearity=F.gelu,
         stabilizer=None,
         norm=None,
         ada_in_features=None,
         preactivation=False,
         fno_skip="linear",
-        channel_mixing_skip="soft-gating",
+        channel_mlp_skip="soft-gating",
         separable=False,
         factorization=None,
         rank=1.0,
@@ -139,10 +139,10 @@ class FNOBlocks(nn.Module):
         self.fixed_rank_modes = fixed_rank_modes
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = fno_skip
-        self.channel_mixing_skip = channel_mixing_skip
-        self.use_channel_mixing = use_channel_mixing
-        self.channel_mixing_expansion = channel_mixing_expansion
-        self.channel_mixing_dropout = channel_mixing_dropout
+        self.channel_mlp_skip = channel_mlp_skip
+        self.use_channel_mlp = use_channel_mlp
+        self.channel_mlp_expansion = channel_mlp_expansion
+        self.channel_mlp_dropout = channel_mlp_dropout
         self.fft_norm = fft_norm
         self.implementation = implementation
         self.separable = separable
@@ -177,34 +177,34 @@ class FNOBlocks(nn.Module):
             ]
         )
 
-        if use_channel_mixing:
-            self.channel_mixing = nn.ModuleList(
+        if use_channel_mlp:
+            self.channel_mlp = nn.ModuleList(
                 [
                     ChannelMLP(
                         in_channels=self.out_channels,
-                        hidden_channels=round(self.out_channels * channel_mixing_expansion),
-                        dropout=channel_mixing_dropout,
+                        hidden_channels=round(self.out_channels * channel_mlp_expansion),
+                        dropout=channel_mlp_dropout,
                         n_dim=self.n_dim,
                     )
                     for _ in range(n_layers)
                 ]
             )
-            self.channel_mixing_skips = nn.ModuleList(
+            self.channel_mlp_skips = nn.ModuleList(
                 [
                     skip_connection(
                         self.in_channels,
                         self.out_channels,
-                        skip_type=channel_mixing_skip,
+                        skip_type=channel_mlp_skip,
                         n_dim=self.n_dim,
                     )
                     for _ in range(n_layers)
                 ]
             )
         else:
-            self.channel_mixing = None
+            self.channel_mlp = None
 
         # Each block will have 2 norms if we also use a ChannelMLP
-        self.n_norms = 1 if self.channel_mixing is None else 2
+        self.n_norms = 1 if self.channel_mlp is None else 2
         if norm is None:
             self.norm = None
         elif norm == "instance_norm":
@@ -267,9 +267,9 @@ class FNOBlocks(nn.Module):
         x_skip_fno = self.fno_skips[index](x)
         x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
 
-        if self.channel_mixing is not None:
-            x_skip_channel_mixing = self.channel_mixing_skips[index](x)
-            x_skip_channel_mixing = self.convs[index].transform(x_skip_channel_mixing, output_shape=output_shape)
+        if self.channel_mlp is not None:
+            x_skip_channel_mlp = self.channel_mlp_skips[index](x)
+            x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
@@ -281,11 +281,11 @@ class FNOBlocks(nn.Module):
 
         x = x_fno + x_skip_fno
 
-        if (self.channel_mixing is not None) or (index < (self.n_layers - 1)):
+        if (self.channel_mlp is not None) or (index < (self.n_layers - 1)):
             x = self.non_linearity(x)
 
-        if self.channel_mixing is not None:
-            x = self.channel_mixing[index](x) + x_skip_channel_mixing
+        if self.channel_mlp is not None:
+            x = self.channel_mlp[index](x) + x_skip_channel_mlp
 
             if self.norm is not None:
                 x = self.norm[self.n_norms * index + 1](x)
@@ -306,9 +306,9 @@ class FNOBlocks(nn.Module):
         x_skip_fno = self.fno_skips[index](x)
         x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
 
-        if self.channel_mixing is not None:
-            x_skip_channel_mixing = self.channel_mixing_skips[index](x)
-            x_skip_channel_mixing = self.convs[index].transform(x_skip_channel_mixing, output_shape=output_shape)
+        if self.channel_mlp is not None:
+            x_skip_channel_mlp = self.channel_mlp_skips[index](x)
+            x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
@@ -316,14 +316,14 @@ class FNOBlocks(nn.Module):
         x_fno = self.convs(x, index, output_shape=output_shape)
         x = x_fno + x_skip_fno
 
-        if self.channel_mixing is not None:
+        if self.channel_mlp is not None:
             if index < (self.n_layers - 1):
                 x = self.non_linearity(x)
 
             if self.norm is not None:
                 x = self.norm[self.n_norms * index + 1](x)
 
-            x = self.channel_mixing[index](x) + x_skip_channel_mixing
+            x = self.channel_mlp[index](x) + x_skip_channel_mlp
 
         return x
 

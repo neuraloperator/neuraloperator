@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-from ..layers.channel_mixing import ChannelMLP
+from ..layers.channel_mlp import ChannelMLP
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.skip_connections import skip_connection
 from ..layers.padding import DomainPadding
@@ -48,7 +48,7 @@ class UNO(nn.Module):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
-    use_channel_mixing : bool, optional
+    use_channel_mlp : bool, optional
         Whether to use an ChannelMLP layer after each FNO block, by default False
     ChannelMLP : dict, optional
         Parameters of the ChannelMLP, by default None
@@ -102,15 +102,15 @@ class UNO(nn.Module):
         uno_scalings=None,
         horizontal_skips_map=None,
         incremental_n_modes=None,
-        use_channel_mixing=False,
-        channel_mixingdropout=0,
-        channel_mixingexpansion=0.5,
+        use_channel_mlp=False,
+        channel_mlpdropout=0,
+        channel_mlpexpansion=0.5,
         non_linearity=F.gelu,
         norm=None,
         preactivation=False,
         fno_skip="linear",
         horizontal_skip="linear",
-        channel_mixingskip="soft-gating",
+        channel_mlpskip="soft-gating",
         separable=False,
         factorization=None,
         rank=1.0,
@@ -159,7 +159,7 @@ class UNO(nn.Module):
         self.fixed_rank_modes = fixed_rank_modes
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = (fno_skip,)
-        self.channel_mixingskip = (channel_mixingskip,)
+        self.channel_mlpskip = (channel_mlpskip,)
         self.fft_norm = fft_norm
         self.implementation = implementation
         self.separable = separable
@@ -236,15 +236,15 @@ class UNO(nn.Module):
                     in_channels=prev_out,
                     out_channels=self.uno_out_channels[i],
                     n_modes=self.uno_n_modes[i],
-                    use_channel_mixing=use_channel_mixing,
-                    channel_mixingdropout=channel_mixingdropout,
-                    channel_mixingexpansion=channel_mixingexpansion,
+                    use_channel_mlp=use_channel_mlp,
+                    channel_mlpdropout=channel_mlpdropout,
+                    channel_mlpexpansion=channel_mlpexpansion,
                     output_scaling_factor=[self.uno_scalings[i]],
                     non_linearity=non_linearity,
                     norm=norm,
                     preactivation=preactivation,
                     fno_skip=fno_skip,
-                    channel_mixingskip=channel_mixingskip,
+                    channel_mlpskip=channel_mlpskip,
                     incremental_n_modes=incremental_n_modes,
                     rank=rank,
                     SpectralConv=self.integral_operator,

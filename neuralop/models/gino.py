@@ -7,7 +7,7 @@ from torch import nn
 
 from .fno import FNO
 
-from ..layers.channel_mixing import ChannelMLP
+from ..layers.channel_mlp import ChannelMLP
 from ..layers.embeddings import SinusoidalEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.integral_transform import IntegralTransform
@@ -32,11 +32,11 @@ class GINO(nn.Module):
             max positions for use in gno positional embedding, by default None
         gno_radius : float, optional
             radius in input/output space for GNO neighbor search, by default 0.033
-        in_gno_channel_mixing_hidden_layers : list, optional
+        in_gno_channel_mlp_hidden_layers : list, optional
             widths of hidden layers in input GNO, by default [80, 80, 80]
-        out_gno_channel_mixing_hidden_layers : list, optional
+        out_gno_channel_mlp_hidden_layers : list, optional
             widths of hidden layers in output GNO, by default [512, 256]
-        gno_channel_mixing_non_linearity : nn.Module, optional
+        gno_channel_mlp_non_linearity : nn.Module, optional
             nonlinearity to use in gno ChannelMLP, by default F.gelu
         in_gno_transform_type : str, optional
             transform type parameter for input GNO, by default 'linear'
@@ -72,11 +72,11 @@ class GINO(nn.Module):
         if passed, sets n_modes separately for each FNO layer.
         fno_block_precision : str, defaults to 'full'
             data precision to compute within fno block
-        fno_use_channel_mixing : bool, defaults to False
+        fno_use_channel_mlp : bool, defaults to False
             Whether to use a ChannelMLP layer after each FNO block.
-        fno_channel_mixing_dropout : float, defaults to 0
+        fno_channel_mlp_dropout : float, defaults to 0
             dropout parameter of above ChannelMLP.
-        fno_channel_mixing_expansion : float, defaults to 0.5
+        fno_channel_mlp_expansion : float, defaults to 0.5
             expansion parameter of above ChannelMLP.
         fno_non_linearity : nn.Module, defaults to F.gelu
             nonlinear activation function between each FNO layer.
@@ -92,7 +92,7 @@ class GINO(nn.Module):
             whether to use Resnet-style preactivation.
         fno_skip : str, defaults to 'linear'
             type of skip connection to use.
-        fno_channel_mixing_skip : str, defaults to 'soft-gating'
+        fno_channel_mlp_skip : str, defaults to 'soft-gating'
             type of skip connection to use in the FNO
             'linear': conv layer
             'soft-gating': weights the channels of the input
@@ -131,9 +131,9 @@ class GINO(nn.Module):
             gno_coord_embed_dim=None,
             gno_embed_max_positions=None,
             gno_radius=0.033,
-            in_gno_channel_mixing_hidden_layers=[80, 80, 80],
-            out_gno_channel_mixing_hidden_layers=[512, 256],
-            gno_channel_mixing_non_linearity=F.gelu, 
+            in_gno_channel_mlp_hidden_layers=[80, 80, 80],
+            out_gno_channel_mlp_hidden_layers=[512, 256],
+            gno_channel_mlp_non_linearity=F.gelu, 
             in_gno_transform_type='linear',
             out_gno_transform_type='linear',
             gno_use_open3d=False,
@@ -148,9 +148,9 @@ class GINO(nn.Module):
             fno_output_scaling_factor=None,
             fno_incremental_n_modes=None,
             fno_block_precision='full',
-            fno_use_channel_mixing=False, 
-            fno_channel_mixing_dropout=0, 
-            fno_channel_mixing_expansion=0.5,
+            fno_use_channel_mlp=False, 
+            fno_channel_mlp_dropout=0, 
+            fno_channel_mlp_expansion=0.5,
             fno_non_linearity=F.gelu,
             fno_stabilizer=None, 
             fno_norm=None,
@@ -158,7 +158,7 @@ class GINO(nn.Module):
             fno_ada_in_dim=1,
             fno_preactivation=False,
             fno_skip='linear',
-            fno_channel_mixing_skip='soft-gating',
+            fno_channel_mlp_skip='soft-gating',
             fno_separable=False,
             fno_factorization=None,
             fno_rank=1.0,
@@ -218,15 +218,15 @@ class GINO(nn.Module):
                 output_scaling_factor=fno_output_scaling_factor,
                 incremental_n_modes=fno_incremental_n_modes,
                 fno_block_precision=fno_block_precision,
-                use_channel_mixing=fno_use_channel_mixing,
-                ChannelMLP={"expansion": fno_channel_mixing_expansion, "dropout": fno_channel_mixing_dropout},
+                use_channel_mlp=fno_use_channel_mlp,
+                ChannelMLP={"expansion": fno_channel_mlp_expansion, "dropout": fno_channel_mlp_dropout},
                 non_linearity=fno_non_linearity,
                 stabilizer=fno_stabilizer, 
                 norm=fno_norm,
                 ada_in_features=self.ada_in_dim,
                 preactivation=fno_preactivation,
                 fno_skip=fno_skip,
-                channel_mixing_skip=fno_channel_mixing_skip,
+                channel_mlp_skip=fno_channel_mlp_skip,
                 separable=fno_separable,
                 factorization=fno_factorization,
                 rank=fno_rank,
@@ -262,11 +262,11 @@ class GINO(nn.Module):
         if in_gno_transform_type == "nonlinear" or in_gno_transform_type == "nonlinear_kernelonly":
             in_kernel_in_dim += self.in_channels
             
-        in_gno_channel_mixing_hidden_layers.insert(0, in_kernel_in_dim)
-        in_gno_channel_mixing_hidden_layers.append(fno_in_channels) 
+        in_gno_channel_mlp_hidden_layers.insert(0, in_kernel_in_dim)
+        in_gno_channel_mlp_hidden_layers.append(fno_in_channels) 
         self.gno_in = IntegralTransform(
-                    channel_mixing_layers=in_gno_channel_mixing_hidden_layers,
-                    channel_mixing_non_linearity=gno_channel_mixing_non_linearity,
+                    channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
+                    channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
                     transform_type=in_gno_transform_type,
                     use_torch_scatter=gno_use_torch_scatter
         )
@@ -274,11 +274,11 @@ class GINO(nn.Module):
         ### output GNO
         out_kernel_in_dim = 2 * self.gno_coord_dim_embed 
         out_kernel_in_dim += fno_hidden_channels if out_gno_transform_type != 'linear' else 0
-        out_gno_channel_mixing_hidden_layers.insert(0, out_kernel_in_dim)
-        out_gno_channel_mixing_hidden_layers.append(fno_hidden_channels)
+        out_gno_channel_mlp_hidden_layers.insert(0, out_kernel_in_dim)
+        out_gno_channel_mlp_hidden_layers.append(fno_hidden_channels)
         self.gno_out = IntegralTransform(
-                    channel_mixing_layers=out_gno_channel_mixing_hidden_layers,
-                    channel_mixing_non_linearity=gno_channel_mixing_non_linearity,
+                    channel_mlp_layers=out_gno_channel_mlp_hidden_layers,
+                    channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
                     transform_type=out_gno_transform_type,
                     use_torch_scatter=gno_use_torch_scatter
         )

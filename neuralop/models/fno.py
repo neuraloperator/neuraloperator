@@ -7,7 +7,7 @@ from ..layers.spectral_convolution import SpectralConv
 from ..layers.spherical_convolution import SphericalConv
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
-from ..layers.channel_mixing import ChannelMLP
+from ..layers.channel_mlp import ChannelMLP
 from .base_model import BaseModel
 
 class FNO(BaseModel, name='FNO'):
@@ -44,11 +44,11 @@ class FNO(BaseModel, name='FNO'):
         if 'mixed', the contraction and inverse FFT run in half precision
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
-    use_channel_mixing : bool, optional
+    use_channel_mlp : bool, optional
         Whether to use a ChannelMLP layer after each FNO block, by default False
-    channel_mixing_dropout : float , optional
+    channel_mlp_dropout : float , optional
         droupout parameter of ChannelMLP layer, by default 0
-    channel_mixing_expansion : float, optional
+    channel_mlp_expansion : float, optional
         expansion parameter of ChannelMLP layer, by default 0.5
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
@@ -58,7 +58,7 @@ class FNO(BaseModel, name='FNO'):
         if True, use resnet-style preactivation
     fno_skip : {'linear', 'identity', 'soft-gating'}, optional
         Type of skip connection to use in fno, by default 'linear'
-    channel_mixing_skip : {'linear', 'identity', 'soft-gating'}, optional
+    channel_mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
         Type of skip connection to use in channel-mixing mlp, by default 'soft-gating'
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
@@ -104,15 +104,15 @@ class FNO(BaseModel, name='FNO'):
         output_scaling_factor=None,
         max_n_modes=None,
         fno_block_precision="full",
-        use_channel_mixing=False,
-        channel_mixing_dropout=0,
-        channel_mixing_expansion=0.5,
+        use_channel_mlp=False,
+        channel_mlp_dropout=0,
+        channel_mlp_expansion=0.5,
         non_linearity=F.gelu,
         stabilizer=None,
         norm=None,
         preactivation=False,
         fno_skip="linear",
-        channel_mixing_skip="soft-gating",
+        channel_mlp_skip="soft-gating",
         separable=False,
         factorization=None,
         rank=1.0,
@@ -145,7 +145,7 @@ class FNO(BaseModel, name='FNO'):
         self.fixed_rank_modes = fixed_rank_modes
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = (fno_skip,)
-        self.channel_mixing_skip = (channel_mixing_skip,)
+        self.channel_mlp_skip = (channel_mlp_skip,)
         self.fft_norm = fft_norm
         self.implementation = implementation
         self.separable = separable
@@ -176,15 +176,15 @@ class FNO(BaseModel, name='FNO'):
             out_channels=hidden_channels,
             n_modes=self.n_modes,
             output_scaling_factor=output_scaling_factor,
-            use_channel_mixing=use_channel_mixing,
-            channel_mixing_dropout=channel_mixing_dropout,
-            channel_mixing_expansion=channel_mixing_expansion,
+            use_channel_mlp=use_channel_mlp,
+            channel_mlp_dropout=channel_mlp_dropout,
+            channel_mlp_expansion=channel_mlp_expansion,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
             norm=norm,
             preactivation=preactivation,
             fno_skip=fno_skip,
-            channel_mixing_skip=channel_mixing_skip,
+            channel_mlp_skip=channel_mlp_skip,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             rank=rank,
@@ -297,9 +297,9 @@ class FNO1d(FNO):
         output_scaling_factor=None,
         non_linearity=F.gelu,
         stabilizer=None,
-        use_channel_mixing=False,
-        channel_mixing_dropout=0,
-        channel_mixing_expansion=0.5,
+        use_channel_mlp=False,
+        channel_mlp_dropout=0,
+        channel_mlp_expansion=0.5,
         norm=None,
         skip="soft-gating",
         separable=False,
@@ -326,9 +326,9 @@ class FNO1d(FNO):
             output_scaling_factor=output_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            use_channel_mixing=use_channel_mixing,
-            channel_mixing_dropout=channel_mixing_dropout,
-            channel_mixing_expansion=channel_mixing_expansion,
+            use_channel_mlp=use_channel_mlp,
+            channel_mlp_dropout=channel_mlp_dropout,
+            channel_mlp_expansion=channel_mlp_expansion,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             norm=norm,
@@ -376,9 +376,9 @@ class FNO2d(FNO):
         fno_block_precision="full",
         non_linearity=F.gelu,
         stabilizer=None,
-        use_channel_mixing=False,
-        channel_mixing_dropout=0,
-        channel_mixing_expansion=0.5,
+        use_channel_mlp=False,
+        channel_mlp_dropout=0,
+        channel_mlp_expansion=0.5,
         norm=None,
         skip="soft-gating",
         separable=False,
@@ -405,9 +405,9 @@ class FNO2d(FNO):
             output_scaling_factor=output_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            use_channel_mixing=use_channel_mixing,
-            channel_mixing_dropout=channel_mixing_dropout,
-            channel_mixing_expansion=channel_mixing_expansion,
+            use_channel_mlp=use_channel_mlp,
+            channel_mlp_dropout=channel_mlp_dropout,
+            channel_mlp_expansion=channel_mlp_expansion,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             norm=norm,
@@ -459,9 +459,9 @@ class FNO3d(FNO):
         fno_block_precision="full",
         non_linearity=F.gelu,
         stabilizer=None,
-        use_channel_mixing=False,
-        channel_mixing_dropout=0,
-        channel_mixing_expansion=0.5,
+        use_channel_mlp=False,
+        channel_mlp_dropout=0,
+        channel_mlp_expansion=0.5,
         norm=None,
         skip="soft-gating",
         separable=False,
@@ -490,9 +490,9 @@ class FNO3d(FNO):
             stabilizer=stabilizer,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
-            use_channel_mixing=use_channel_mixing,
-            channel_mixing_dropout=channel_mixing_dropout,
-            channel_mixing_expansion=channel_mixing_expansion,
+            use_channel_mlp=use_channel_mlp,
+            channel_mlp_dropout=channel_mlp_dropout,
+            channel_mlp_expansion=channel_mlp_expansion,
             norm=norm,
             skip=skip,
             separable=separable,

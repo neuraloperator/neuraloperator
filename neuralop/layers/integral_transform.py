@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from .channel_mixing import LinearChannelMLP
+from .channel_mlp import LinearChannelMLP
 from .segment_csr import segment_csr
 
 
@@ -32,17 +32,17 @@ class IntegralTransform(nn.Module):
 
     Parameters
     ----------
-    channel_mixing : torch.nn.Module, default None
+    channel_mlp : torch.nn.Module, default None
         MLP parametrizing the kernel k. Input dimension
         should be dim x + dim y or dim x + dim y + dim f
-    channel_mixing_layers : list, default None
+    channel_mlp_layers : list, default None
         List of layers sizes speficing a MLP which
         parametrizes the kernel k. The MLP will be
         instansiated by the LinearChannelMLP class
-    channel_mixing_non_linearity : callable, default torch.nn.functional.gelu
+    channel_mlp_non_linearity : callable, default torch.nn.functional.gelu
         Non-linear function used to be used by the
-        LinearChannelMLP class. Only used if channel_mixing_layers is
-        given and channel_mixing is None
+        LinearChannelMLP class. Only used if channel_mlp_layers is
+        given and channel_mlp is None
     transform_type : str, default 'linear'
         Which integral transform to compute. The mapping is:
         'linear_kernelonly' -> (a)
@@ -61,15 +61,15 @@ class IntegralTransform(nn.Module):
 
     def __init__(
         self,
-        channel_mixing=None,
-        channel_mixing_layers=None,
-        channel_mixing_non_linearity=F.gelu,
+        channel_mlp=None,
+        channel_mlp_layers=None,
+        channel_mlp_non_linearity=F.gelu,
         transform_type="linear",
         use_torch_scatter=True,
     ):
         super().__init__()
 
-        assert channel_mixing is not None or channel_mixing_layers is not None
+        assert channel_mlp is not None or channel_mlp_layers is not None
 
         self.transform_type = transform_type
         self.use_torch_scatter = use_torch_scatter
@@ -85,10 +85,10 @@ class IntegralTransform(nn.Module):
                 "[linear_kernelonly, linear, nonlinear_kernelonly, nonlinear]"
             )
 
-        if channel_mixing is None:
-            self.channel_mixing = LinearChannelMLP(layers=channel_mixing_layers, non_linearity=channel_mixing_non_linearity)
+        if channel_mlp is None:
+            self.channel_mlp = LinearChannelMLP(layers=channel_mlp_layers, non_linearity=channel_mlp_non_linearity)
         else:
-            self.channel_mixing = channel_mixing
+            self.channel_mlp = channel_mlp
             
 
     """"
@@ -178,7 +178,7 @@ class IntegralTransform(nn.Module):
                 )
             agg_features = torch.cat([agg_features, in_features], dim=-1)
 
-        rep_features = self.channel_mixing(agg_features)
+        rep_features = self.channel_mlp(agg_features)
 
         if f_y is not None and self.transform_type != "nonlinear_kernelonly":
             rep_features = rep_features * in_features

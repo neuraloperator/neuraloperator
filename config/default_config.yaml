@@ -29,9 +29,9 @@ default: &DEFAULT
     skip: 'soft-gating'
     implementation: 'reconstructed'
     
-    use_channel_mixing: 1
-    channel_mixing_expansion: 0.5
-    channel_mixing_dropout: 0
+    use_channel_mlp: 1
+    channel_mlp_expansion: 0.5
+    channel_mlp_dropout: 0
 
     separable: False
     factorization: None
@@ -108,8 +108,8 @@ original_fno:
     norm: None
     skip: 'linear'
     
-    use_channel_mixing: 0
-    channel_mixing:
+    use_channel_mlp: 0
+    channel_mlp:
         expansion: 0.5
         dropout: 0
 
