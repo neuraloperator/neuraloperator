@@ -66,7 +66,7 @@ class DefaultDataProcessor(DataProcessor):
     to pre/post process data before training/inferencing a model.
     """
     def __init__(
-        self, in_normalizer=None, out_normalizer=None, positional_encoding=None
+        self, in_normalizer=None, out_normalizer=None
     ):
         """
         Parameters
@@ -75,13 +75,10 @@ class DefaultDataProcessor(DataProcessor):
             normalizer (e.g. StandardScaler) for the input samples
         out_normalizer : Transform, optional, default is None
             normalizer (e.g. StandardScaler) for the target and predicted samples
-        positional_encoding : Processor, optional, default is None
-            class that appends a positional encoding to the input
         """
         super().__init__()
         self.in_normalizer = in_normalizer
         self.out_normalizer = out_normalizer
-        self.positional_encoding = positional_encoding
         self.device = "cpu"
         self.model = None
 
@@ -115,8 +112,6 @@ class DefaultDataProcessor(DataProcessor):
 
         if self.in_normalizer is not None:
             x = self.in_normalizer.transform(x)
-        if self.positional_encoding is not None:
-            x = self.positional_encoding(x, batched=batched)
         if self.out_normalizer is not None and self.training:
             y = self.out_normalizer.transform(y)
 
@@ -168,8 +163,7 @@ class DefaultDataProcessor(DataProcessor):
 
 class IncrementalDataProcessor(torch.nn.Module):
     def __init__(self, 
-                 in_normalizer=None, out_normalizer=None, 
-                 positional_encoding=None, device = 'cpu',
+                 in_normalizer=None, out_normalizer=None, device = 'cpu',
                  subsampling_rates=[2, 1], dataset_resolution=16, dataset_indices=[2,3], epoch_gap=10, verbose=False):
         """An incremental processor to pre/post process data before training/inferencing a model
         In particular this processor first regularizes the input resolution based on the sub_list and dataset_indices
@@ -183,8 +177,6 @@ class IncrementalDataProcessor(torch.nn.Module):
             normalizer (e.g. StandardScaler) for the input samples
         out_normalizer : Transform, optional, default is None
             normalizer (e.g. StandardScaler) for the target and predicted samples
-        positional_encoding : Processor, optional, default is None
-            class that appends a positional encoding to the input
         device : str, optional, default is 'cpu'
             device 'cuda' or 'cpu' where computations are performed
         subsampling_rates : list, optional, default is [2, 1]
@@ -201,7 +193,6 @@ class IncrementalDataProcessor(torch.nn.Module):
         super().__init__()
         self.in_normalizer = in_normalizer
         self.out_normalizer = out_normalizer
-        self.positional_encoding = positional_encoding
         self.device = device
         self.sub_list = subsampling_rates
         self.dataset_resolution = dataset_resolution
@@ -267,8 +258,6 @@ class IncrementalDataProcessor(torch.nn.Module):
 
         if self.in_normalizer is not None:
             x = self.in_normalizer.transform(x)
-        if self.positional_encoding is not None:
-            x = self.positional_encoding(x, batched=batched)
         if self.out_normalizer is not None and self.train:
             y = self.out_normalizer.transform(y)
         
@@ -304,7 +293,6 @@ class MGPatchingDataProcessor(DataProcessor):
         device: str = "cpu",
         in_normalizer=None,
         out_normalizer=None,
-        positional_encoding=None,
     ):
         """MGPatchingDataProcessor
         Applies multigrid patching to inputs out-of-place
@@ -324,11 +312,8 @@ class MGPatchingDataProcessor(DataProcessor):
             OutputEncoder to decode model inputs, by default None
         in_normalizer : neuralop.datasets.transforms.Transform, optional
             OutputEncoder to decode model outputs, by default None
-        positional_encoding : neuralop.datasets.transforms.PositionalEmbedding2D, optional
-            appends pos encoding to x if used
         device : str, optional
             device 'cuda' or 'cpu' where computations are performed
-        positional_encoding : neuralop.datasets.transforms.Transform, optional
         """
         super().__init__()
         self.levels = levels
@@ -348,7 +333,6 @@ class MGPatchingDataProcessor(DataProcessor):
             self.in_normalizer = in_normalizer.to(self.device)
         if out_normalizer:
             self.out_normalizer = out_normalizer.to(self.device)
-        self.positional_encoding = positional_encoding
         self.model = None
 
     def to(self, device):
@@ -379,15 +363,12 @@ class MGPatchingDataProcessor(DataProcessor):
         if self.in_normalizer:
             x = self.in_normalizer.transform(x)
             y = self.out_normalizer.transform(y)
-        if self.positional_encoding is not None:
-            x = self.positional_encoding(x, batched=batched)
         data_dict["x"], data_dict["y"] = self.patcher.patch(x, y)
         return data_dict
 
     def postprocess(self, out, data_dict):
         """
-        Postprocess model outputs, including decoding
-        if an encoder exists.
+        Postprocess model outputs.
 
         Params
         ------

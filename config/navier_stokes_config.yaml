@@ -16,7 +16,7 @@ default: &DEFAULT
 
   # FNO related
   fno2d:
-    data_channels: 3
+    data_channels: 1
     n_modes_height: 24
     n_modes_width: 24
     hidden_channels: 64
@@ -66,7 +66,6 @@ default: &DEFAULT
     n_tests: [2000, 1000] #, 1000]
     test_resolutions: [128, 1024] #, 1024] 
     test_batch_sizes: [16, 4] #, 1]
-    positional_encoding: True
     encode_input: True
     encode_output: True
 
