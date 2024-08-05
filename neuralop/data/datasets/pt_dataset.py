@@ -40,7 +40,7 @@ class PTDataset:
                  input_subsampling_rate=None,
                  output_subsampling_rate=None,
                  channel_dim=1,):
-        """PTDataset.__init__
+        """PTDataset
 
         Parameters
         ----------
