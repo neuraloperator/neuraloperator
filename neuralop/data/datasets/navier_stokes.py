@@ -12,6 +12,20 @@ from neuralop.utils import get_project_root
 logger = logging.Logger(logging.root.level)
 
 class NavierStokesDataset(PTDataset):
+    """
+    NavierStokesDataset stores data generated according to the 2d
+    incompressible Navier-Stokes equations. Input and output are both
+    2d fields with one channel of data which describes the vorticity at each point. 
+
+    Data source: https://zenodo.org/records/12825163
+
+    Attributes
+    ----------
+    train_db: torch.utils.data.Dataset of training examples
+    test_db:  ""                       of test examples
+    data_processor: neuralop.datasets.DataProcessor to process data examples
+        optional, default is None
+    """
     def __init__(self,
                  root_dir: Union[Path, str],
                  n_train: int,
@@ -28,7 +42,42 @@ class NavierStokesDataset(PTDataset):
                  download: bool=True):
         
         
-        """ _summary_
+        """ NavierStokesDataset
+
+        Parameters
+        ----------
+        root_dir : Union[Path, str]
+            root at which to download data files
+        dataset_name : str
+            prefix of pt data files to store/access
+        n_train : int
+            number of train instances
+        n_tests : List[int]
+            number of test instances per test dataset
+        batch_size : int
+            batch size of training set
+        test_batch_sizes : List[int]
+            batch size of test sets
+        train_resolution : int
+            resolution of data for training set
+        test_resolutions : List[int], optional
+            resolution of data for testing sets, by default [16,32]
+        encode_input : bool, optional
+            whether to normalize inputs in provided DataProcessor,
+            by default False
+        encode_output : bool, optional
+            whether to normalize outputs in provided DataProcessor,
+            by default True
+        encoding : str, optional
+            parameter for input/output normalization. Whether
+            to normalize by channel ("channel-wise") or 
+            by pixel ("pixel-wise"), default "channel-wise"
+        input_subsampling_rate : int or List[int], optional
+            rate at which to subsample each input dimension, by default None
+        output_subsampling_rate : int or List[int], optional
+            rate at which to subsample each output dimension, by default None
+        channel_dim : int, optional
+            dimension of saved tensors to index data channels, by default 1
         """
         # convert root dir to Path
         if isinstance(root_dir, str):
@@ -37,7 +86,7 @@ class NavierStokesDataset(PTDataset):
             root_dir.mkdir(parents=True)
 
         # Zenodo record ID for Navier-Stokes dataset
-        zenodo_record_id = "11043303"
+        zenodo_record_id = "12825163"
 
         # List of resolutions needed for dataset object
         resolutions = set(test_resolutions + [train_resolution])
