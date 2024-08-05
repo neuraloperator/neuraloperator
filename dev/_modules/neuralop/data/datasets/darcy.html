@@ -131,6 +131,15 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    DarcyDataset stores data generated according to Darcy&#39;s Law.</span>
 <span class="sd">    Input is a coefficient function and outputs describe flow. </span>
+
+<span class="sd">    Data source: https://zenodo.org/records/10994262</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    train_db: torch.utils.data.Dataset of training examples</span>
+<span class="sd">    test_db:  &quot;&quot;                       of test examples</span>
+<span class="sd">    data_processor: neuralop.datasets.DataProcessor to process data examples</span>
+<span class="sd">        optional, default is None</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">root_dir</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
@@ -146,11 +155,45 @@
                  <span class="n">channel_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                  <span class="n">subsampling_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">download</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<span class="w">        </span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Darcy Flow dataset</span>
-<span class="sd">        Data source: https://zenodo.org/records/10994262</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;DarcyDataset</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        root_dir : Union[Path, str]</span>
+<span class="sd">            root at which to download data files</span>
+<span class="sd">        dataset_name : str</span>
+<span class="sd">            prefix of pt data files to store/access</span>
+<span class="sd">        n_train : int</span>
+<span class="sd">            number of train instances</span>
+<span class="sd">        n_tests : List[int]</span>
+<span class="sd">            number of test instances per test dataset</span>
+<span class="sd">        batch_size : int</span>
+<span class="sd">            batch size of training set</span>
+<span class="sd">        test_batch_sizes : List[int]</span>
+<span class="sd">            batch size of test sets</span>
+<span class="sd">        train_resolution : int</span>
+<span class="sd">            resolution of data for training set</span>
+<span class="sd">        test_resolutions : List[int], optional</span>
+<span class="sd">            resolution of data for testing sets, by default [16,32]</span>
+<span class="sd">        encode_input : bool, optional</span>
+<span class="sd">            whether to normalize inputs in provided DataProcessor,</span>
+<span class="sd">            by default False</span>
+<span class="sd">        encode_output : bool, optional</span>
+<span class="sd">            whether to normalize outputs in provided DataProcessor,</span>
+<span class="sd">            by default True</span>
+<span class="sd">        encoding : str, optional</span>
+<span class="sd">            parameter for input/output normalization. Whether</span>
+<span class="sd">            to normalize by channel (&quot;channel-wise&quot;) or </span>
+<span class="sd">            by pixel (&quot;pixel-wise&quot;), default &quot;channel-wise&quot;</span>
+<span class="sd">        input_subsampling_rate : int or List[int], optional</span>
+<span class="sd">            rate at which to subsample each input dimension, by default None</span>
+<span class="sd">        output_subsampling_rate : int or List[int], optional</span>
+<span class="sd">            rate at which to subsample each output dimension, by default None</span>
+<span class="sd">        channel_dim : int, optional</span>
+<span class="sd">            dimension of saved tensors to index data channels, by default 1</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="c1"># convert root dir to Path</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">root_dir</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">root_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">root_dir</span><span class="p">)</span>
