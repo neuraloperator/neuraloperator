@@ -8,7 +8,7 @@ from ..spectral_convolution import (SpectralConv3d, SpectralConv2d,
 
 
 
-@pytest.mark.parametrize('factorization', ['ComplexDense', 'ComplexCP', 'ComplexTucker', 'ComplexTT'])
+@pytest.mark.parametrize('factorization', ['Dense', 'CP', 'Tucker', 'TT'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
 @pytest.mark.parametrize('separable', [False, True])
 @pytest.mark.parametrize('dim', [1,2,3,4])
@@ -33,6 +33,9 @@ def test_SpectralConv(factorization, implementation, separable, dim):
         3, 3, modes[:dim], n_layers=1, bias=False, implementation='reconstructed', factorization=None)
 
     x = torch.randn(2, 3, *(12, )*dim)
+
+    assert torch.is_complex(conv._get_weight(0))
+    assert torch.is_complex(conv_dense._get_weight(0))
 
     # this closeness test only works if the weights in full form have the same shape
     if not separable:
