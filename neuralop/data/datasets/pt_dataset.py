@@ -7,7 +7,6 @@ import torch
 from .tensor_dataset import TensorDataset
 from ..transforms.data_processors import DefaultDataProcessor
 from ..transforms.normalizers import UnitGaussianNormalizer
-from neuralop.layers.embeddings import GridEmbedding2D
 
 class PTDataset:
     """PTDataset is a base Dataset class for our library.
@@ -34,16 +33,14 @@ class PTDataset:
                  batch_size: int,
                  test_batch_sizes: List[int],
                  train_resolution: int,
-                 test_resolutions: List[int]=[16,32],
-                 grid_boundaries: List=[[0,1],[0,1]],
-                 positional_encoding: bool=True,
+                 test_resolutions: List[int],
                  encode_input: bool=False, 
                  encode_output: bool=True, 
                  encoding="channel-wise",
                  input_subsampling_rate=None,
                  output_subsampling_rate=None,
                  channel_dim=1,):
-        """PTDataset.__init__
+        """PTDataset
 
         Parameters
         ----------
@@ -63,12 +60,6 @@ class PTDataset:
             resolution of data for training set
         test_resolutions : List[int], optional
             resolution of data for testing sets, by default [16,32]
-        grid_boundaries : List, optional
-            boundaries of grid on which to append positional embedding,
-            by default [[0,1],[0,1]]
-        positional_encoding : bool, optional
-            whether to append positional encoding in the provided DataProcessor,
-            by default True
         encode_input : bool, optional
             whether to normalize inputs in provided DataProcessor,
             by default False
@@ -164,15 +155,9 @@ class PTDataset:
             y_train,
         )
 
-        # create pos encoder and DataProcessor
-        if positional_encoding:
-            pos_encoding = GridEmbedding2D(grid_boundaries=grid_boundaries)
-        else:
-            pos_encoding = None
-
+        # create DataProcessor
         self._data_processor = DefaultDataProcessor(in_normalizer=input_encoder,
-                                                   out_normalizer=output_encoder,
-                                                   positional_encoding=pos_encoding)
+                                                   out_normalizer=output_encoder)
 
         # load test data
         self._test_dbs = {}

@@ -16,11 +16,11 @@ default: &DEFAULT
 
   # FNO related
   fno2d:
-    data_channels: 3
-    n_modes_height: 64
-    n_modes_width: 64
-    hidden_channels: 128
-    projection_channels: 128
+    data_channels: 1
+    n_modes_height: 24
+    n_modes_width: 24
+    hidden_channels: 64
+    projection_channels: 256
     n_layers: 4
     domain_padding: 0. #0.078125
     domain_padding_mode: 'one-sided' #symmetric
@@ -63,10 +63,9 @@ default: &DEFAULT
     batch_size: 8
     n_train: 8000
     train_resolution: 128
-    n_tests: [2000] #, 1000]
-    test_resolutions: [128] #, 1024] 
-    test_batch_sizes: [8] #, 1]
-    positional_encoding: True
+    n_tests: [2000, 1000] #, 1000]
+    test_resolutions: [128, 1024] #, 1024] 
+    test_batch_sizes: [16, 4] #, 1]
     encode_input: True
     encode_output: True
 

@@ -32,7 +32,7 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
 
 
 
-model = UNO(3,1, hidden_channels=64, projection_channels=64,uno_out_channels = [32,64,64,64,32], \
+model = UNO(in_channels=1, out_channels=1, hidden_channels=64, projection_channels=64,uno_out_channels = [32,64,64,64,32], \
             uno_n_modes= [[16,16],[8,8],[8,8],[8,8],[16,16]], uno_scalings=  [[1.0,1.0],[0.5,0.5],[1,1],[2,2],[1,1]],\
             horizontal_skips_map = None, n_layers = 5, domain_padding = 0.2)
 model = model.to(device)

@@ -16,6 +16,15 @@ class DarcyDataset(PTDataset):
     """
     DarcyDataset stores data generated according to Darcy's Law.
     Input is a coefficient function and outputs describe flow. 
+
+    Data source: https://zenodo.org/records/10994262
+
+    Attributes
+    ----------
+    train_db: torch.utils.data.Dataset of training examples
+    test_db:  ""                       of test examples
+    data_processor: neuralop.datasets.DataProcessor to process data examples
+        optional, default is None
     """
     def __init__(self,
                  root_dir: Union[Path, str],
@@ -25,19 +34,51 @@ class DarcyDataset(PTDataset):
                  test_batch_sizes: List[int],
                  train_resolution: int,
                  test_resolutions: int=[16,32],
-                 grid_boundaries: List[int]=[[0,1],[0,1]],
-                 positional_encoding: bool=True,
                  encode_input: bool=False, 
                  encode_output: bool=True, 
                  encoding="channel-wise",
                  channel_dim=1,
                  subsampling_rate=None,
                  download: bool=True):
-        
+
+        """DarcyDataset
+
+        Parameters
+        ----------
+        root_dir : Union[Path, str]
+            root at which to download data files
+        dataset_name : str
+            prefix of pt data files to store/access
+        n_train : int
+            number of train instances
+        n_tests : List[int]
+            number of test instances per test dataset
+        batch_size : int
+            batch size of training set
+        test_batch_sizes : List[int]
+            batch size of test sets
+        train_resolution : int
+            resolution of data for training set
+        test_resolutions : List[int], optional
+            resolution of data for testing sets, by default [16,32]
+        encode_input : bool, optional
+            whether to normalize inputs in provided DataProcessor,
+            by default False
+        encode_output : bool, optional
+            whether to normalize outputs in provided DataProcessor,
+            by default True
+        encoding : str, optional
+            parameter for input/output normalization. Whether
+            to normalize by channel ("channel-wise") or 
+            by pixel ("pixel-wise"), default "channel-wise"
+        input_subsampling_rate : int or List[int], optional
+            rate at which to subsample each input dimension, by default None
+        output_subsampling_rate : int or List[int], optional
+            rate at which to subsample each output dimension, by default None
+        channel_dim : int, optional
+            dimension of saved tensors to index data channels, by default 1
         """
-        Darcy Flow dataset
-        Data source: https://zenodo.org/records/10994262
-        """
+
         # convert root dir to Path
         if isinstance(root_dir, str):
             root_dir = Path(root_dir)
@@ -76,8 +117,6 @@ class DarcyDataset(PTDataset):
                        test_batch_sizes=test_batch_sizes,
                        train_resolution=train_resolution,
                        test_resolutions=test_resolutions,
-                       grid_boundaries=grid_boundaries,
-                       positional_encoding=positional_encoding,
                        encode_input=encode_input,
                        encode_output=encode_output,
                        encoding=encoding,
@@ -93,8 +132,6 @@ def load_darcy_flow_small(n_train,
     test_batch_sizes,
     data_root = example_data_root,
     test_resolutions=[16, 32],
-    grid_boundaries=[[0, 1], [0, 1]],
-    positional_encoding=True,
     encode_input=False,
     encode_output=True,
     encoding="channel-wise",
@@ -107,12 +144,10 @@ def load_darcy_flow_small(n_train,
                            test_batch_sizes=test_batch_sizes,
                            train_resolution=16,
                            test_resolutions=test_resolutions,
-                           grid_boundaries=grid_boundaries,
-                           positional_encoding=positional_encoding,
                            encode_input=encode_input,
                            encode_output=encode_output,
-                           encoding=encoding,
                            channel_dim=channel_dim,
+                           encoding=encoding,
                            download=False)
     
     # return dataloaders for backwards compat
@@ -141,8 +176,6 @@ def load_darcy_pt(n_train,
                   data_root = "./neuralop/data/datasets/data",
                   train_resolution=16,
                   test_resolutions=[16, 32],
-                  grid_boundaries=[[0, 1], [0, 1]],
-                  positional_encoding=True,
                   encode_input=False,
                   encode_output=True,
                   encoding="channel-wise",
@@ -155,8 +188,6 @@ def load_darcy_pt(n_train,
                            test_batch_sizes=test_batch_sizes,
                            train_resolution=train_resolution,
                            test_resolutions=test_resolutions,
-                           grid_boundaries=grid_boundaries,
-                           positional_encoding=positional_encoding,
                            encode_input=encode_input,
                            encode_output=encode_output,
                            encoding=encoding,

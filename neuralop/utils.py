@@ -2,7 +2,15 @@ from typing import List, Optional, Union
 from math import prod
 from pathlib import Path
 import torch
-import wandb
+
+# Only import wandb and use if installed
+wandb_available = False
+try:
+    import wandb
+    wandb_available = True
+except ModuleNotFoundError:
+    wandb_available = False
+
 import warnings
 
 # normalization, pointwise gaussian

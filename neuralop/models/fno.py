@@ -3,8 +3,8 @@ from functools import partialmethod
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ..layers.embeddings import GridEmbeddingND, GridEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
-from ..layers.spherical_convolution import SphericalConv
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
 from ..layers.channel_mlp import ChannelMLP
@@ -17,7 +17,7 @@ class FNO(BaseModel, name='FNO'):
     ----------
     n_modes : int tuple
         number of modes to keep in Fourier Layer, along each dimension
-        The dimensionality of the TFNO is inferred from ``len(n_modes)``
+        The dimensionality of the FNO is inferred from ``len(n_modes)``
     hidden_channels : int
         width of the FNO (i.e. number of channels)
     in_channels : int, optional
@@ -30,6 +30,13 @@ class FNO(BaseModel, name='FNO'):
         number of hidden channels of the projection block of the FNO, by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
+    positional_embedding : str literal | GridEmbedding2D | GridEmbeddingND | None
+        if "grid", appends a grid positional embedding with default settings to 
+        the last channels of raw input. Assumes the inputs are discretized
+        over a grid with entry [0,0,...] at the origin and side lengths of 1.
+        If an initialized GridEmbedding, uses this module directly
+        See `neuralop.embeddings.GridEmbeddingND` for details
+        if None, does nothing
     max_n_modes : None or int tuple, default is None
         * If not None, this allows to incrementally increase the number of
           modes in Fourier domain during training. Has to verify n <= N
@@ -101,6 +108,7 @@ class FNO(BaseModel, name='FNO'):
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
+        positional_embedding="grid",
         output_scaling_factor=None,
         max_n_modes=None,
         fno_block_precision="full",
@@ -152,6 +160,22 @@ class FNO(BaseModel, name='FNO'):
         self.preactivation = preactivation
         self.fno_block_precision = fno_block_precision
 
+        if positional_embedding == "grid":
+            spatial_grid_boundaries = [[0., 1.]] * self.n_dim
+            self.positional_embedding = GridEmbeddingND(dim=self.n_dim, grid_boundaries=spatial_grid_boundaries)
+        elif isinstance(positional_embedding, GridEmbedding2D):
+            if self.n_dim == 2:
+                self.positional_embedding = positional_embedding
+            else:
+                raise ValueError(f'Error: expected {self.n_dim}-d positional embeddings, got {positional_embedding}')
+        elif isinstance(positional_embedding, GridEmbeddingND):
+            self.positional_embedding = positional_embedding
+        elif positional_embedding == None:
+            self.positional_embedding = None
+        else:
+            raise ValueError(f"Error: tried to instantiate FNO positional embedding with {positional_embedding},\
+                              expected one of \'grid\', GridEmbeddingND")
+        
         if domain_padding is not None and (
             (isinstance(domain_padding, list) and sum(domain_padding) > 0)
             or (isinstance(domain_padding, (float, int)) and domain_padding > 0)
@@ -199,7 +223,11 @@ class FNO(BaseModel, name='FNO'):
             n_layers=n_layers,
             **kwargs
         )
-
+        
+        # if adding a positional embedding, add those channels to lifting
+        lifting_in_channels = self.in_channels
+        if self.positional_embedding is not None:
+            lifting_in_channels += self.n_dim
         # if lifting_channels is passed, make lifting a Channel-Mixing MLP
         # with a hidden layer of size lifting_channels
         if self.lifting_channels:
@@ -213,8 +241,7 @@ class FNO(BaseModel, name='FNO'):
         # otherwise, make it a linear layer
         else:
             self.lifting = ChannelMLP(
-                in_channels=in_channels,
-                out_channels=self.hidden_channels,
+                in_channels=lifting_in_channels,self.hidden_channels,
                 hidden_channels=self.hidden_channels,
                 n_layers=1,
                 n_dim=self.n_dim,
@@ -247,6 +274,10 @@ class FNO(BaseModel, name='FNO'):
         elif isinstance(output_shape, tuple):
             output_shape = [None]*(self.n_layers - 1) + [output_shape]
 
+        # append spatial pos embedding if set
+        if self.positional_embedding is not None:
+            x = self.positional_embedding(x)
+        
         x = self.lifting(x)
 
         if self.domain_padding is not None:
@@ -545,8 +576,3 @@ TFNO = partialclass("TFNO", FNO, factorization="Tucker")
 TFNO1d = partialclass("TFNO1d", FNO1d, factorization="Tucker")
 TFNO2d = partialclass("TFNO2d", FNO2d, factorization="Tucker")
 TFNO3d = partialclass("TFNO3d", FNO3d, factorization="Tucker")
-
-SFNO = partialclass("SFNO", FNO, factorization="dense", SpectralConv=SphericalConv)
-SFNO.__doc__ = SFNO.__doc__.replace("Fourier", "Spherical Fourier", 1)
-SFNO.__doc__ = SFNO.__doc__.replace("FNO", "SFNO")
-SFNO.__doc__ = SFNO.__doc__.replace("fno", "sfno")
