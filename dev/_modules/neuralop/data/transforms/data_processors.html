@@ -216,6 +216,9 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;preprocess a batch of data into the format</span>
 <span class="sd">        expected in model&#39;s forward call</span>
 
+<span class="sd">        By default, training loss is computed on normalized out and y</span>
+<span class="sd">        and eval loss is computed on unnormalized out and y</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        data_dict : dict</span>
@@ -249,6 +252,9 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;postprocess model outputs and data_dict</span>
 <span class="sd">        into format expected by training or val loss</span>
 
+<span class="sd">        By default, training loss is computed on normalized out and y</span>
+<span class="sd">        and eval loss is computed on unnormalized out and y</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        output : torch.Tensor</span>
@@ -262,11 +268,8 @@
 <span class="sd">        out, data_dict</span>
 <span class="sd">            postprocessed outputs and data dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
             <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
-            <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_normalizer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-        <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
         <span class="k">return</span> <span class="n">output</span><span class="p">,</span> <span class="n">data_dict</span></div>
 
 

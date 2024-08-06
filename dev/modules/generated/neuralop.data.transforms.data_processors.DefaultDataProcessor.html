@@ -285,6 +285,8 @@ only argument)</p>
 <span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batched</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#DefaultDataProcessor.preprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor.preprocess" title="Link to this definition"></a></dt>
 <dd><p>preprocess a batch of data into the format
 expected in model’s forward call</p>
+<p>By default, training loss is computed on normalized out and y
+and eval loss is computed on unnormalized out and y</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
@@ -309,6 +311,8 @@ keys ‘x’ (inputs) and ‘y’ (ground truth)</p>
 <span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/data/transforms/data_processors.html#DefaultDataProcessor.postprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.data.transforms.data_processors.DefaultDataProcessor.postprocess" title="Link to this definition"></a></dt>
 <dd><p>postprocess model outputs and data_dict
 into format expected by training or val loss</p>
+<p>By default, training loss is computed on normalized out and y
+and eval loss is computed on unnormalized out and y</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
