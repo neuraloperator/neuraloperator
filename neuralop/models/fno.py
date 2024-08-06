@@ -241,7 +241,7 @@ class FNO(BaseModel, name='FNO'):
         # otherwise, make it a linear layer
         else:
             self.lifting = ChannelMLP(
-                in_channels=lifting_in_channels,self.hidden_channels,
+                in_channels=lifting_in_channels,
                 hidden_channels=self.hidden_channels,
                 n_layers=1,
                 n_dim=self.n_dim,
