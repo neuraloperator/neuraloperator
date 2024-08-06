@@ -342,13 +342,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fc560a2ab80&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f0c46f8a910&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fc560a2a820&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f0c462174f0&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fc560a2a820&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fc5616f2280&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f0c462174f0&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f0c46217d90&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -375,22 +375,22 @@ Parameter Group 0
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 1000 samples
 Testing on [50, 50] samples         on resolutions [16, 32].
 Raw outputs of shape torch.Size([32, 1, 16, 16])
-[0] time=5.71, avg_loss=0.6078, train_err=18.9945
-Eval: 16_h1=0.5365, 16_l2=0.4144, 32_h1=0.6197, 32_l2=0.4976
-[3] time=5.76, avg_loss=0.2682, train_err=8.3802
-Eval: 16_h1=0.5549, 16_l2=0.4320, 32_h1=0.5971, 32_l2=0.4948
-[6] time=5.71, avg_loss=0.2376, train_err=7.4262
-Eval: 16_h1=0.5900, 16_l2=0.4443, 32_h1=0.6071, 32_l2=0.5084
-[9] time=5.70, avg_loss=0.2165, train_err=6.7643
-Eval: 16_h1=0.6057, 16_l2=0.4414, 32_h1=0.6090, 32_l2=0.5196
-[12] time=5.71, avg_loss=0.2154, train_err=6.7327
-Eval: 16_h1=0.6417, 16_l2=0.4624, 32_h1=0.6136, 32_l2=0.5240
-[15] time=5.71, avg_loss=0.1935, train_err=6.0464
-Eval: 16_h1=0.7046, 16_l2=0.4768, 32_h1=0.6265, 32_l2=0.5187
-[18] time=5.74, avg_loss=0.1857, train_err=5.8032
-Eval: 16_h1=0.6015, 16_l2=0.4315, 32_h1=0.5997, 32_l2=0.5039
+[0] time=5.79, avg_loss=0.5421, train_err=16.9421
+Eval: 16_h1=0.4950, 16_l2=0.3822, 32_h1=0.5723, 32_l2=0.4187
+[3] time=5.75, avg_loss=0.2638, train_err=8.2429
+Eval: 16_h1=0.6364, 16_l2=0.4408, 32_h1=0.5984, 32_l2=0.4386
+[6] time=5.76, avg_loss=0.2517, train_err=7.8641
+Eval: 16_h1=0.6297, 16_l2=0.4536, 32_h1=0.5918, 32_l2=0.4457
+[9] time=5.78, avg_loss=0.2172, train_err=6.7890
+Eval: 16_h1=0.6190, 16_l2=0.4487, 32_h1=0.5877, 32_l2=0.4488
+[12] time=5.76, avg_loss=0.1968, train_err=6.1492
+Eval: 16_h1=0.6603, 16_l2=0.4606, 32_h1=0.5738, 32_l2=0.4392
+[15] time=5.77, avg_loss=0.2040, train_err=6.3756
+Eval: 16_h1=0.6872, 16_l2=0.4632, 32_h1=0.5912, 32_l2=0.4355
+[18] time=5.75, avg_loss=0.1836, train_err=5.7372
+Eval: 16_h1=0.6757, 16_l2=0.4733, 32_h1=0.5963, 32_l2=0.4541
 
-{&#39;train_err&#39;: 5.594652522355318, &#39;avg_loss&#39;: 0.17902888071537018, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 5.717695097999922}
+{&#39;train_err&#39;: 5.275350738316774, &#39;avg_loss&#39;: 0.1688112236261368, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 5.752707145999921}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -440,7 +440,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 56.995 seconds)</p>
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 57.981 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/ecc34f03fb30bee651bda959149422c4/plot_UNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_UNO_darcy.ipynb</span></code></a></p>
