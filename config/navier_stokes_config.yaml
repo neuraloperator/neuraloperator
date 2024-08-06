@@ -22,16 +22,16 @@ default: &DEFAULT
     hidden_channels: 64
     projection_channels: 256
     n_layers: 4
-    domain_padding: 0.078125
+    domain_padding: 0. #0.078125
     domain_padding_mode: 'one-sided' #symmetric
     fft_norm: 'forward'
     norm: None
     skip: 'soft-gating'
     implementation: 'reconstructed'
     
-    use_mlp: 1
-    mlp_expansion: 0.5
-    mlp_dropout: 0
+    use_channel_mlp: 1
+    channel_mlp_expansion: 0.5
+    channel_mlp_dropout: 0
 
     separable: False
     factorization: None
@@ -45,23 +45,23 @@ default: &DEFAULT
 
   # Optimizer
   opt:
-    n_epochs: 500
-    learning_rate: 1e-3
+    n_epochs: 3000
+    learning_rate: 3e-4
     training_loss: 'h1'
     weight_decay: 1e-4
     amp_autocast: False
 
     scheduler_T_max: 500 # For cosine only, typically take n_epochs
-    scheduler_patience: 5 # For ReduceLROnPlateau only
-    scheduler: 'StepLR' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
+    scheduler_patience: 100 # For ReduceLROnPlateau only
+    scheduler: 'ReduceLROnPlateau' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
     step_size: 100
     gamma: 0.5
 
   # Dataset related
   data:
     folder: data/navier_stokes/
-    batch_size: 16
-    n_train: 10000
+    batch_size: 8
+    n_train: 8000
     train_resolution: 128
     n_tests: [2000, 1000] #, 1000]
     test_resolutions: [128, 1024] #, 1024] 
@@ -77,7 +77,7 @@ default: &DEFAULT
 
   # Weights and biases
   wandb:
-    log: True
+    log: False
     name: None # If None, config will be used but you can override it here
     group: '' 
     project: "train_ns"
