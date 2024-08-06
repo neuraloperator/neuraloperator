@@ -73,7 +73,7 @@ def load_training_state(save_dir: Union[str, Path],
     if regularizer is not None:
         regularizer_pth = save_dir / "regularizer.pt"
         if regularizer_pth.exists():
-            scheduler.load_state_dict(torch.load(regularizer_pth))
+            regularizer.load_state_dict(torch.load(regularizer_pth))
         else:
             print(f"Warning: requested to load regularizer state, but no saved regularizer state exists in {save_dir}.")
     
