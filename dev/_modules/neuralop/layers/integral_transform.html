@@ -117,7 +117,7 @@
 <span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
 <span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
 
-<span class="kn">from</span> <span class="nn">.mlp</span> <span class="kn">import</span> <span class="n">MLPLinear</span>
+<span class="kn">from</span> <span class="nn">.channel_mlp</span> <span class="kn">import</span> <span class="n">LinearChannelMLP</span>
 <span class="kn">from</span> <span class="nn">.segment_csr</span> <span class="kn">import</span> <span class="n">segment_csr</span>
 
 
@@ -137,7 +137,7 @@
 <span class="sd">    A(x) : A subset of all points y (depending on\</span>
 <span class="sd">        each x) over which to integrate</span>
 
-<span class="sd">    k : A kernel parametrized as a MLP</span>
+<span class="sd">    k : A kernel parametrized as a MLP (LinearChannelMLP)</span>
 <span class="sd">    </span>
 <span class="sd">    f : Input function to integrate against given\</span>
 <span class="sd">        on the points y</span>
@@ -149,17 +149,17 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    mlp : torch.nn.Module, default None</span>
+<span class="sd">    channel_mlp : torch.nn.Module, default None</span>
 <span class="sd">        MLP parametrizing the kernel k. Input dimension</span>
 <span class="sd">        should be dim x + dim y or dim x + dim y + dim f</span>
-<span class="sd">    mlp_layers : list, default None</span>
+<span class="sd">    channel_mlp_layers : list, default None</span>
 <span class="sd">        List of layers sizes speficing a MLP which</span>
 <span class="sd">        parametrizes the kernel k. The MLP will be</span>
-<span class="sd">        instansiated by the MLPLinear class</span>
-<span class="sd">    mlp_non_linearity : callable, default torch.nn.functional.gelu</span>
+<span class="sd">        instansiated by the LinearChannelMLP class</span>
+<span class="sd">    channel_mlp_non_linearity : callable, default torch.nn.functional.gelu</span>
 <span class="sd">        Non-linear function used to be used by the</span>
-<span class="sd">        MLPLinear class. Only used if mlp_layers is</span>
-<span class="sd">        given and mlp is None</span>
+<span class="sd">        LinearChannelMLP class. Only used if channel_mlp_layers is</span>
+<span class="sd">        given and channel_mlp is None</span>
 <span class="sd">    transform_type : str, default &#39;linear&#39;</span>
 <span class="sd">        Which integral transform to compute. The mapping is:</span>
 <span class="sd">        &#39;linear_kernelonly&#39; -&gt; (a)</span>
@@ -178,15 +178,15 @@
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">mlp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">mlp_layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">mlp_non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
+        <span class="n">channel_mlp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">channel_mlp_layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">channel_mlp_non_linearity</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
         <span class="n">transform_type</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span>
         <span class="n">use_torch_scatter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
-        <span class="k">assert</span> <span class="n">mlp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">mlp_layers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="n">channel_mlp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">channel_mlp_layers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">transform_type</span> <span class="o">=</span> <span class="n">transform_type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">use_torch_scatter</span> <span class="o">=</span> <span class="n">use_torch_scatter</span>
@@ -202,10 +202,10 @@
                 <span class="s2">&quot;[linear_kernelonly, linear, nonlinear_kernelonly, nonlinear]&quot;</span>
             <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">mlp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span> <span class="o">=</span> <span class="n">MLPLinear</span><span class="p">(</span><span class="n">layers</span><span class="o">=</span><span class="n">mlp_layers</span><span class="p">,</span> <span class="n">non_linearity</span><span class="o">=</span><span class="n">mlp_non_linearity</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">channel_mlp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">channel_mlp</span> <span class="o">=</span> <span class="n">LinearChannelMLP</span><span class="p">(</span><span class="n">layers</span><span class="o">=</span><span class="n">channel_mlp_layers</span><span class="p">,</span> <span class="n">non_linearity</span><span class="o">=</span><span class="n">channel_mlp_non_linearity</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span> <span class="o">=</span> <span class="n">mlp</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">channel_mlp</span> <span class="o">=</span> <span class="n">channel_mlp</span>
 <span class="w">            </span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;&quot;</span>
@@ -297,7 +297,7 @@
                 <span class="p">)</span>
             <span class="n">agg_features</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">agg_features</span><span class="p">,</span> <span class="n">in_features</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="n">rep_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span><span class="p">(</span><span class="n">agg_features</span><span class="p">)</span>
+        <span class="n">rep_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel_mlp</span><span class="p">(</span><span class="n">agg_features</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">f_y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_type</span> <span class="o">!=</span> <span class="s2">&quot;nonlinear_kernelonly&quot;</span><span class="p">:</span>
             <span class="n">rep_features</span> <span class="o">=</span> <span class="n">rep_features</span> <span class="o">*</span> <span class="n">in_features</span>

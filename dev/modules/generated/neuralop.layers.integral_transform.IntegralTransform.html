@@ -164,7 +164,7 @@
 <h1><a class="reference internal" href="../api.html#module-neuralop.layers.integral_transform" title="neuralop.layers.integral_transform"><code class="xref py py-mod docutils literal notranslate"><span class="pre">neuralop.layers.integral_transform</span></code></a>.IntegralTransform<a class="headerlink" href="#neuralop-layers-integral-transform-integraltransform" title="Link to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="neuralop.layers.integral_transform.IntegralTransform">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.layers.integral_transform.</span></span><span class="sig-name descname"><span class="pre">IntegralTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mlp=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_layers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_non_linearity=&lt;built-in</span> <span class="pre">function</span> <span class="pre">gelu&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_type='linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_torch_scatter=True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/integral_transform.html#IntegralTransform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.integral_transform.IntegralTransform" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">neuralop.layers.integral_transform.</span></span><span class="sig-name descname"><span class="pre">IntegralTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_mlp=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_mlp_layers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_mlp_non_linearity=&lt;built-in</span> <span class="pre">function</span> <span class="pre">gelu&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_type='linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_torch_scatter=True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/neuralop/layers/integral_transform.html#IntegralTransform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#neuralop.layers.integral_transform.IntegralTransform" title="Link to this definition"></a></dt>
 <dd><p>Integral Kernel Transform (GNO)
 Computes one of the following:</p>
 <blockquote>
@@ -178,7 +178,7 @@ Computes one of the following:</p>
 <p>x : Points for which the output is defined</p>
 <p>y : Points for which the input is defined
 A(x) : A subset of all points y (depending on        each x) over which to integrate</p>
-<p>k : A kernel parametrized as a MLP</p>
+<p>k : A kernel parametrized as a MLP (LinearChannelMLP)</p>
 <p>f : Input function to integrate against given        on the points y</p>
 <p>If f is not given, a transform of type (a)
 is computed. Otherwise transforms (b), (c),
@@ -187,16 +187,16 @@ as a graph in CRS format.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mlp</strong><span class="classifier">torch.nn.Module, default None</span></dt><dd><p>MLP parametrizing the kernel k. Input dimension
+<dt><strong>channel_mlp</strong><span class="classifier">torch.nn.Module, default None</span></dt><dd><p>MLP parametrizing the kernel k. Input dimension
 should be dim x + dim y or dim x + dim y + dim f</p>
 </dd>
-<dt><strong>mlp_layers</strong><span class="classifier">list, default None</span></dt><dd><p>List of layers sizes speficing a MLP which
+<dt><strong>channel_mlp_layers</strong><span class="classifier">list, default None</span></dt><dd><p>List of layers sizes speficing a MLP which
 parametrizes the kernel k. The MLP will be
-instansiated by the MLPLinear class</p>
+instansiated by the LinearChannelMLP class</p>
 </dd>
-<dt><strong>mlp_non_linearity</strong><span class="classifier">callable, default torch.nn.functional.gelu</span></dt><dd><p>Non-linear function used to be used by the
-MLPLinear class. Only used if mlp_layers is
-given and mlp is None</p>
+<dt><strong>channel_mlp_non_linearity</strong><span class="classifier">callable, default torch.nn.functional.gelu</span></dt><dd><p>Non-linear function used to be used by the
+LinearChannelMLP class. Only used if channel_mlp_layers is
+given and channel_mlp is None</p>
 </dd>
 <dt><strong>transform_type</strong><span class="classifier">str, default ‘linear’</span></dt><dd><p>Which integral transform to compute. The mapping is:
 ‘linear_kernelonly’ -&gt; (a)

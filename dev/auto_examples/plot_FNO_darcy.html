@@ -252,13 +252,13 @@ Loading test db for resolution 32 with 50 samples
       )
     )
   )
-  (lifting): MLP(
+  (lifting): ChannelMLP(
     (fcs): ModuleList(
       (0): Conv1d(3, 256, kernel_size=(1,), stride=(1,))
       (1): Conv1d(256, 32, kernel_size=(1,), stride=(1,))
     )
   )
-  (projection): MLP(
+  (projection): ChannelMLP(
     (fcs): ModuleList(
       (0): Conv1d(32, 64, kernel_size=(1,), stride=(1,))
       (1): Conv1d(64, 1, kernel_size=(1,), stride=(1,))
@@ -283,13 +283,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f3171044d30&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fbc07745c70&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f316be1d460&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fbc076544f0&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f316be1d460&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f316be1d8b0&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fbc076544f0&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fbc07654400&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -315,22 +315,22 @@ Parameter Group 0
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 1000 samples
 Testing on [50, 50] samples         on resolutions [16, 32].
 Raw outputs of shape torch.Size([32, 1, 16, 16])
-[0] time=2.88, avg_loss=0.7661, train_err=23.9419
-Eval: 16_h1=0.3953, 16_l2=0.2987, 32_h1=0.4617, 32_l2=0.3027
-[3] time=2.81, avg_loss=0.2495, train_err=7.7978
-Eval: 16_h1=0.1970, 16_l2=0.1514, 32_h1=0.2920, 32_l2=0.1774
-[6] time=2.82, avg_loss=0.2069, train_err=6.4672
-Eval: 16_h1=0.1915, 16_l2=0.1542, 32_h1=0.3040, 32_l2=0.1784
-[9] time=2.87, avg_loss=0.1787, train_err=5.5841
-Eval: 16_h1=0.1445, 16_l2=0.1013, 32_h1=0.2670, 32_l2=0.1316
-[12] time=2.80, avg_loss=0.1914, train_err=5.9824
-Eval: 16_h1=0.1938, 16_l2=0.1565, 32_h1=0.2955, 32_l2=0.1849
-[15] time=2.76, avg_loss=0.1562, train_err=4.8817
-Eval: 16_h1=0.1446, 16_l2=0.1027, 32_h1=0.2768, 32_l2=0.1276
-[18] time=2.83, avg_loss=0.1348, train_err=4.2134
-Eval: 16_h1=0.1433, 16_l2=0.1077, 32_h1=0.2707, 32_l2=0.1424
+[0] time=2.50, avg_loss=0.7345, train_err=22.9524
+Eval: 16_h1=0.3482, 16_l2=0.2597, 32_h1=0.4115, 32_l2=0.2559
+[3] time=2.52, avg_loss=0.2787, train_err=8.7102
+Eval: 16_h1=0.2665, 16_l2=0.2073, 32_h1=0.3515, 32_l2=0.2263
+[6] time=2.48, avg_loss=0.1920, train_err=5.9985
+Eval: 16_h1=0.1794, 16_l2=0.1392, 32_h1=0.3056, 32_l2=0.1733
+[9] time=2.48, avg_loss=0.1702, train_err=5.3181
+Eval: 16_h1=0.1686, 16_l2=0.1331, 32_h1=0.3086, 32_l2=0.1689
+[12] time=2.48, avg_loss=0.1774, train_err=5.5430
+Eval: 16_h1=0.1479, 16_l2=0.1051, 32_h1=0.3219, 32_l2=0.1521
+[15] time=2.49, avg_loss=0.1706, train_err=5.3314
+Eval: 16_h1=0.1848, 16_l2=0.1446, 32_h1=0.3387, 32_l2=0.1728
+[18] time=2.48, avg_loss=0.1422, train_err=4.4449
+Eval: 16_h1=0.1413, 16_l2=0.0998, 32_h1=0.3361, 32_l2=0.1439
 
-{&#39;train_err&#39;: 4.481835693120956, &#39;avg_loss&#39;: 0.1434187421798706, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 2.7678069610000193}
+{&#39;train_err&#39;: 3.984621312469244, &#39;avg_loss&#39;: 0.1275078819990158, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 2.4826061229999823}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -380,7 +380,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 57.822 seconds)</p>
+<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 51.000 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-fno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/e81e8f640b2a3cda84c542bbc8f36a54/plot_FNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_FNO_darcy.ipynb</span></code></a></p>
