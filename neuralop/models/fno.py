@@ -232,7 +232,7 @@ class FNO(BaseModel, name='FNO'):
         # with a hidden layer of size lifting_channels
         if self.lifting_channels:
             self.lifting = ChannelMLP(
-                in_channels=in_channels,
+                in_channels=lifting_in_channels,
                 out_channels=self.hidden_channels,
                 hidden_channels=self.lifting_channels,
                 n_layers=2,
@@ -243,6 +243,7 @@ class FNO(BaseModel, name='FNO'):
             self.lifting = ChannelMLP(
                 in_channels=lifting_in_channels,
                 hidden_channels=self.hidden_channels,
+                out_channels=self.hidden_channels,
                 n_layers=1,
                 n_dim=self.n_dim,
             )
