@@ -17,16 +17,16 @@ default: &DEFAULT
   # FNO related
   fno2d:
     data_channels: 1
-    n_modes_height: 24
-    n_modes_width: 24
+    n_modes_height: 64
+    n_modes_width: 64
     hidden_channels: 64
     projection_channels: 256
     n_layers: 4
-    domain_padding: 0.078125
+    domain_padding: 0 #0.078125
     domain_padding_mode: 'one-sided' #symmetric
     fft_norm: 'forward'
     norm: None
-    skip: 'soft-gating'
+    skip: 'linear'
     implementation: 'reconstructed'
     
     use_mlp: 1
@@ -52,7 +52,7 @@ default: &DEFAULT
     amp_autocast: False
 
     scheduler_T_max: 500 # For cosine only, typically take n_epochs
-    scheduler_patience: 5 # For ReduceLROnPlateau only
+    scheduler_patience: 50 # For ReduceLROnPlateau only
     scheduler: 'StepLR' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
     step_size: 100
     gamma: 0.5
@@ -63,9 +63,9 @@ default: &DEFAULT
     batch_size: 16
     n_train: 10000
     train_resolution: 128
-    n_tests: [2000, 1000] #, 1000]
-    test_resolutions: [128, 1024] #, 1024] 
-    test_batch_sizes: [16, 4] #, 1]
+    n_tests: [2000] #, 1000] #, 1000]
+    test_resolutions: [128] #, 1024] #, 1024] 
+    test_batch_sizes: [16] #, 4] #, 1]
     encode_input: True
     encode_output: True
 
