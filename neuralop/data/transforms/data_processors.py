@@ -94,6 +94,9 @@ class DefaultDataProcessor(DataProcessor):
         """preprocess a batch of data into the format
         expected in model's forward call
 
+        By default, training loss is computed on normalized out and y
+        and eval loss is computed on unnormalized out and y
+
         Parameters
         ----------
         data_dict : dict
@@ -124,6 +127,9 @@ class DefaultDataProcessor(DataProcessor):
         """postprocess model outputs and data_dict
         into format expected by training or val loss
 
+        By default, training loss is computed on normalized out and y
+        and eval loss is computed on unnormalized out and y
+
         Parameters
         ----------
         output : torch.Tensor
@@ -137,11 +143,8 @@ class DefaultDataProcessor(DataProcessor):
         out, data_dict
             postprocessed outputs and data dict
         """
-        y = data_dict["y"]
         if self.out_normalizer and not self.training:
             output = self.out_normalizer.inverse_transform(output)
-            y = self.out_normalizer.inverse_transform(y)
-        data_dict["y"] = y
         return output, data_dict
 
     def forward(self, **data_dict):
