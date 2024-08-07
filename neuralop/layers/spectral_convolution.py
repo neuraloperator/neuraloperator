@@ -8,7 +8,6 @@ from torch import nn
 import tensorly as tl
 from tensorly.plugins import use_opt_einsum
 from tltorch.factorized_tensors.core import FactorizedTensor
-from tltorch.factorized_tensors import ComplexDenseTensor
 
 from .einsum_utils import einsum_complexhalf
 from .base_spectral_conv import BaseSpectralConv
@@ -245,6 +244,9 @@ class SpectralConv(BaseSpectralConv):
     decomposition_kwargs : dict, optional, default is {}
         Optionaly additional parameters to pass to the tensor decomposition
         Ignored if ``factorization is None``
+    complex_spatial_data: bool, optional
+        whether data takes on complex values in the spatial domain, by default False
+        if True, uses different logic for FFT contraction and uses full FFT instead of real-valued
     """
 
     def __init__(
@@ -264,6 +266,7 @@ class SpectralConv(BaseSpectralConv):
         fixed_rank_modes=False,
         joint_factorization=False,
         decomposition_kwargs: Optional[dict] = None,
+        complex_spatial_data: bool=False,
         init_std="auto",
         fft_norm="backward",
         device=None,
