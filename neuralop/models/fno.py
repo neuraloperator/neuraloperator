@@ -7,7 +7,7 @@ from ..layers.embeddings import GridEmbeddingND, GridEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
-from ..layers.mlp import MLP
+from ..layers.channel_mlp import ChannelMLP
 from .base_model import BaseModel
 
 class FNO(BaseModel, name='FNO'):
@@ -51,12 +51,12 @@ class FNO(BaseModel, name='FNO'):
         if 'mixed', the contraction and inverse FFT run in half precision
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
-    use_mlp : bool, optional
-        Whether to use an MLP layer after each FNO block, by default False
-    mlp_dropout : float , optional
-        droupout parameter of MLP layer, by default 0
-    mlp_expansion : float, optional
-        expansion parameter of MLP layer, by default 0.5
+    use_channel_mlp : bool, optional
+        Whether to use a ChannelMLP layer after each FNO block, by default False
+    channel_mlp_dropout : float , optional
+        droupout parameter of ChannelMLP layer, by default 0
+    channel_mlp_expansion : float, optional
+        expansion parameter of ChannelMLP layer, by default 0.5
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
     norm : Literal["ada_in", "group_norm", "instance_norm"], optional
@@ -65,8 +65,8 @@ class FNO(BaseModel, name='FNO'):
         if True, use resnet-style preactivation
     fno_skip : {'linear', 'identity', 'soft-gating'}, optional
         Type of skip connection to use in fno, by default 'linear'
-    mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
-        Type of skip connection to use in mlp, by default 'soft-gating'
+    channel_mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
+        Type of skip connection to use in channel-mixing mlp, by default 'soft-gating'
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
     factorization : str or None, {'tucker', 'cp', 'tt'}
@@ -112,15 +112,15 @@ class FNO(BaseModel, name='FNO'):
         output_scaling_factor=None,
         max_n_modes=None,
         fno_block_precision="full",
-        use_mlp=False,
-        mlp_dropout=0,
-        mlp_expansion=0.5,
+        use_channel_mlp=False,
+        channel_mlp_dropout=0,
+        channel_mlp_expansion=0.5,
         non_linearity=F.gelu,
         stabilizer=None,
         norm=None,
         preactivation=False,
         fno_skip="linear",
-        mlp_skip="soft-gating",
+        channel_mlp_skip="soft-gating",
         separable=False,
         factorization=None,
         rank=1.0,
@@ -153,7 +153,7 @@ class FNO(BaseModel, name='FNO'):
         self.fixed_rank_modes = fixed_rank_modes
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = (fno_skip,)
-        self.mlp_skip = (mlp_skip,)
+        self.channel_mlp_skip = (channel_mlp_skip,)
         self.fft_norm = fft_norm
         self.implementation = implementation
         self.separable = separable
@@ -200,15 +200,15 @@ class FNO(BaseModel, name='FNO'):
             out_channels=hidden_channels,
             n_modes=self.n_modes,
             output_scaling_factor=output_scaling_factor,
-            use_mlp=use_mlp,
-            mlp_dropout=mlp_dropout,
-            mlp_expansion=mlp_expansion,
+            use_channel_mlp=use_channel_mlp,
+            channel_mlp_dropout=channel_mlp_dropout,
+            channel_mlp_expansion=channel_mlp_expansion,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
             norm=norm,
             preactivation=preactivation,
             fno_skip=fno_skip,
-            mlp_skip=mlp_skip,
+            channel_mlp_skip=channel_mlp_skip,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             rank=rank,
@@ -223,14 +223,15 @@ class FNO(BaseModel, name='FNO'):
             n_layers=n_layers,
             **kwargs
         )
-
+        
+        # if adding a positional embedding, add those channels to lifting
         lifting_in_channels = self.in_channels
         if self.positional_embedding is not None:
             lifting_in_channels += self.n_dim
-        # if lifting_channels is passed, make lifting an MLP
+        # if lifting_channels is passed, make lifting a Channel-Mixing MLP
         # with a hidden layer of size lifting_channels
         if self.lifting_channels:
-            self.lifting = MLP(
+            self.lifting = ChannelMLP(
                 in_channels=lifting_in_channels,
                 out_channels=self.hidden_channels,
                 hidden_channels=self.lifting_channels,
@@ -239,14 +240,14 @@ class FNO(BaseModel, name='FNO'):
             )
         # otherwise, make it a linear layer
         else:
-            self.lifting = MLP(
+            self.lifting = ChannelMLP(
                 in_channels=lifting_in_channels,
-                out_channels=self.hidden_channels,
                 hidden_channels=self.hidden_channels,
+                out_channels=self.hidden_channels,
                 n_layers=1,
                 n_dim=self.n_dim,
             )
-        self.projection = MLP(
+        self.projection = ChannelMLP(
             in_channels=self.hidden_channels,
             out_channels=out_channels,
             hidden_channels=self.projection_channels,
@@ -328,9 +329,9 @@ class FNO1d(FNO):
         output_scaling_factor=None,
         non_linearity=F.gelu,
         stabilizer=None,
-        use_mlp=False,
-        mlp_dropout=0,
-        mlp_expansion=0.5,
+        use_channel_mlp=False,
+        channel_mlp_dropout=0,
+        channel_mlp_expansion=0.5,
         norm=None,
         skip="soft-gating",
         separable=False,
@@ -357,9 +358,9 @@ class FNO1d(FNO):
             output_scaling_factor=output_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            use_mlp=use_mlp,
-            mlp_dropout=mlp_dropout,
-            mlp_expansion=mlp_expansion,
+            use_channel_mlp=use_channel_mlp,
+            channel_mlp_dropout=channel_mlp_dropout,
+            channel_mlp_expansion=channel_mlp_expansion,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             norm=norm,
@@ -407,9 +408,9 @@ class FNO2d(FNO):
         fno_block_precision="full",
         non_linearity=F.gelu,
         stabilizer=None,
-        use_mlp=False,
-        mlp_dropout=0,
-        mlp_expansion=0.5,
+        use_channel_mlp=False,
+        channel_mlp_dropout=0,
+        channel_mlp_expansion=0.5,
         norm=None,
         skip="soft-gating",
         separable=False,
@@ -436,9 +437,9 @@ class FNO2d(FNO):
             output_scaling_factor=output_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            use_mlp=use_mlp,
-            mlp_dropout=mlp_dropout,
-            mlp_expansion=mlp_expansion,
+            use_channel_mlp=use_channel_mlp,
+            channel_mlp_dropout=channel_mlp_dropout,
+            channel_mlp_expansion=channel_mlp_expansion,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             norm=norm,
@@ -490,9 +491,9 @@ class FNO3d(FNO):
         fno_block_precision="full",
         non_linearity=F.gelu,
         stabilizer=None,
-        use_mlp=False,
-        mlp_dropout=0,
-        mlp_expansion=0.5,
+        use_channel_mlp=False,
+        channel_mlp_dropout=0,
+        channel_mlp_expansion=0.5,
         norm=None,
         skip="soft-gating",
         separable=False,
@@ -521,9 +522,9 @@ class FNO3d(FNO):
             stabilizer=stabilizer,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
-            use_mlp=use_mlp,
-            mlp_dropout=mlp_dropout,
-            mlp_expansion=mlp_expansion,
+            use_channel_mlp=use_channel_mlp,
+            channel_mlp_dropout=channel_mlp_dropout,
+            channel_mlp_expansion=channel_mlp_expansion,
             norm=norm,
             skip=skip,
             separable=separable,
