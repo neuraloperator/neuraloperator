@@ -132,7 +132,7 @@ class LpLoss(object):
             
         return diff
 
-    def rel(self, x, y):
+    def rel(self, x, y, squared=True):
         """
         rel: squared relative LpLoss
         computes ||x-y||^2/||y||^2
@@ -143,13 +143,18 @@ class LpLoss(object):
             inputs
         y : torch.Tensor
             targets
+        squared : bool
+            whether to compute squared relative loss
+            by default True
         """
 
         diff = torch.norm(torch.flatten(x, start_dim=-self.d) - torch.flatten(y, start_dim=-self.d), \
                           p=self.p, dim=-1, keepdim=False)
         ynorm = torch.norm(torch.flatten(y, start_dim=-self.d), p=self.p, dim=-1, keepdim=False)
 
-        diff = (diff/ynorm)**2
+        diff = diff/ynorm
+        if squared: 
+            diff = diff ** 2
 
         if self.reduce_dims is not None:
             diff = self.reduce_all(diff).squeeze()
@@ -157,7 +162,7 @@ class LpLoss(object):
         return diff
 
     def __call__(self, y_pred, y, **kwargs):
-        return self.rel(y_pred, y)
+        return self.abs(y_pred, y)
 
 class H1Loss(object):
     """
@@ -354,7 +359,7 @@ class H1Loss(object):
             
         return diff
         
-    def rel(self, x, y, h=None):
+    def rel(self, x, y, h=None, squared=True):
         """relative squared H1-norm
         ||x-y||^2/||y||^2
 
@@ -366,6 +371,8 @@ class H1Loss(object):
             targets
         h : float or list, optional
             normalization constant for reduction, by default None
+        squared : bool
+            whether to compute squared relative loss, by default True
         """
         #Assume uniform mesh
         if h is None:
@@ -384,6 +391,8 @@ class H1Loss(object):
             ynorm += torch.norm(dict_y[j], p=2, dim=-1, keepdim=False)**2
         
         diff = (diff)/(ynorm)
+        if squared: 
+            diff = diff ** 2
 
         if self.reduce_dims is not None:
             diff = self.reduce_all(diff).squeeze()
