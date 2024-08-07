@@ -46,10 +46,15 @@ class BurgersEqnLoss(object):
 
         # compute the loss of the left and right hand sides of Burgers' equation
         return self.loss(dudt, right_hand_side)
+    
+    def autograd(self, u):
+
 
     def __call__(self, y_pred, **kwargs):
         if self.method == "finite_difference":
             return self.fdm(u=y_pred)
+        elif self.method == "autograd":
+            return self.autograd(u=y_pred)
         raise NotImplementedError()
     
 
