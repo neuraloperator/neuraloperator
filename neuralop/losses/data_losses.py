@@ -132,10 +132,10 @@ class LpLoss(object):
             
         return diff
 
-    def rel(self, x, y):
+    def rel(self, x, y, squared=True):
         """
-        rel: relative LpLoss
-        computes ||x-y||/||y||
+        rel: squared relative LpLoss
+        computes ||x-y||^2/||y||^2
 
         Parameters
         ----------
@@ -143,6 +143,9 @@ class LpLoss(object):
             inputs
         y : torch.Tensor
             targets
+        squared : bool
+            whether to compute squared relative loss
+            by default True
         """
 
         diff = torch.norm(torch.flatten(x, start_dim=-self.d) - torch.flatten(y, start_dim=-self.d), \
@@ -150,6 +153,8 @@ class LpLoss(object):
         ynorm = torch.norm(torch.flatten(y, start_dim=-self.d), p=self.p, dim=-1, keepdim=False)
 
         diff = diff/ynorm
+        if squared: 
+            diff = diff ** 2
 
         if self.reduce_dims is not None:
             diff = self.reduce_all(diff).squeeze()
@@ -157,7 +162,7 @@ class LpLoss(object):
         return diff
 
     def __call__(self, y_pred, y, **kwargs):
-        return self.rel(y_pred, y)
+        return self.abs(y_pred, y)
 
 class H1Loss(object):
     """
@@ -354,8 +359,9 @@ class H1Loss(object):
             
         return diff
         
-    def rel(self, x, y, h=None):
-        """relative H1-norm
+    def rel(self, x, y, h=None, squared=True):
+        """relative squared H1-norm
+        ||x-y||^2/||y||^2
 
         Parameters
         ----------
@@ -365,6 +371,8 @@ class H1Loss(object):
             targets
         h : float or list, optional
             normalization constant for reduction, by default None
+        squared : bool
+            whether to compute squared relative loss, by default True
         """
         #Assume uniform mesh
         if h is None:
@@ -382,7 +390,9 @@ class H1Loss(object):
             diff += torch.norm(dict_x[j] - dict_y[j], p=2, dim=-1, keepdim=False)**2
             ynorm += torch.norm(dict_y[j], p=2, dim=-1, keepdim=False)**2
         
-        diff = (diff**0.5)/(ynorm**0.5)
+        diff = (diff)/(ynorm)
+        if squared: 
+            diff = diff ** 2
 
         if self.reduce_dims is not None:
             diff = self.reduce_all(diff).squeeze()
