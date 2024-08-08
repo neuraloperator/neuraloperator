@@ -29,7 +29,7 @@ def ctanh(x: torch.Tensor):
         x: complex tensor
     """
     return torch.tanh(x.real).type(torch.cfloat) + 1j * torch.tanh(x.imag).type(
-        torch.cfloat()
+        torch.cfloat
     )
 
 

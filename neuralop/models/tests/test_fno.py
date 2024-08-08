@@ -18,7 +18,7 @@ tenalg.set_backend("einsum")
 @pytest.mark.parametrize("n_dim", [1, 2, 3, 4])
 @pytest.mark.parametrize("fno_block_precision", ["full", "half", "mixed"])
 @pytest.mark.parametrize("stabilizer", [None, "tanh"])
-@pytest.mark.parametrize("lifting_channels", [None, 16])
+@pytest.mark.parametrize("lifting_channels", [None, 32])
 @pytest.mark.parametrize("preactivation", [False, True])
 @pytest.mark.parametrize("complex_spatial_data", [False, True])
 def test_tfno(
