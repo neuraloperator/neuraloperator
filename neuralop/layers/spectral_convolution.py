@@ -328,6 +328,7 @@ class SpectralConv(BaseSpectralConv):
         else:
             weight_shape = (in_channels, out_channels, *max_n_modes)
         self.separable = separable
+        self.complex_spatial_data = complex_spatial_data
 
         tensor_kwargs = decomposition_kwargs if decomposition_kwargs is not None else {}
         if joint_factorization:
@@ -404,9 +405,11 @@ class SpectralConv(BaseSpectralConv):
             n_modes = [n_modes]
         else:
             n_modes = list(n_modes)
-        # The last mode has a redundacy as we use real FFT
+        # the real FFT is skew-symmetric, so the last mode has a redundacy if our data is real in space 
         # As a design choice we do the operation here to avoid users dealing with the +1
-        n_modes[-1] = n_modes[-1] // 2 + 1
+        # if we use the full FFT we cannot cut off informtion from the last mode
+        if not self.complex_spatial_data:
+            n_modes[-1] = n_modes[-1] // 2 + 1
         self._n_modes = n_modes
 
     def forward(
@@ -428,13 +431,17 @@ class SpectralConv(BaseSpectralConv):
         batchsize, channels, *mode_sizes = x.shape
 
         fft_size = list(mode_sizes)
-        fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient
+        if not self.complex_spatial_data:
+            fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient in real spatial data
         fft_dims = list(range(-self.order, 0))
 
         if self.fno_block_precision == "half":
             x = x.half()
 
-        x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
+        if self.complex_spatial_data:
+            x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
+        else: 
+            x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
         if self.order > 1:
             x = torch.fft.fftshift(x, dim=fft_dims[:-1])
 
@@ -459,8 +466,13 @@ class SpectralConv(BaseSpectralConv):
             slices_w = [slice(None)] # channels
         else:
             slices_w =  [slice(None), slice(None)] # in_channels, out_channels
-        slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
-        slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+        if self.complex_spatial_data:
+            slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
+        else:
+            # The last mode already has redundant half removed in real FFT
+            slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
+            slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)]
+        
         weight = self._get_weight(indices)[slices_w]
 
         # if separable conv, weight tensor only has one channel dim
@@ -471,8 +483,12 @@ class SpectralConv(BaseSpectralConv):
             weight_start_idx = 2
         starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[weight_start_idx:]))]
         slices_x =  [slice(None), slice(None)] # Batch_size, channels
-        slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
-        slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+
+        if self.complex_spatial_data:
+            slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
+        else:
+            slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
+            slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
         out_fft[slices_x] = self._contract(x[slices_x], weight, separable=self.separable)
 
         if self.output_scaling_factor is not None and output_shape is None:
@@ -483,7 +499,11 @@ class SpectralConv(BaseSpectralConv):
 
         if self.order > 1:
             out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
-        x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+        
+        if self.complex_spatial_data:
+            x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+        else:
+            x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]
