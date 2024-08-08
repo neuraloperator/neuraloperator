@@ -10,7 +10,7 @@ from ..spectral_convolution import (SpectralConv3d, SpectralConv2d,
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
 @pytest.mark.parametrize('separable', [False, True])
 @pytest.mark.parametrize('dim', [1,2,3,4])
-@pytest.mark.parametrize('complex_spatial_data', [True])
+@pytest.mark.parametrize('complex_spatial_data', [True, False])
 def test_SpectralConv(factorization, implementation, separable, dim, complex_spatial_data):
     """Test for SpectralConv of any order
     
