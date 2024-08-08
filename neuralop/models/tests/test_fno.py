@@ -18,8 +18,9 @@ tenalg.set_backend("einsum")
 @pytest.mark.parametrize("n_dim", [1, 2, 3, 4])
 @pytest.mark.parametrize("fno_block_precision", ["full", "half", "mixed"])
 @pytest.mark.parametrize("stabilizer", [None, "tanh"])
-@pytest.mark.parametrize("lifting_channels", [None, 256])
+@pytest.mark.parametrize("lifting_channels", [None, 16])
 @pytest.mark.parametrize("preactivation", [False, True])
+@pytest.mark.parametrize("complex_spatial_data", [False, True])
 def test_tfno(
     factorization,
     implementation,
@@ -28,6 +29,7 @@ def test_tfno(
     stabilizer,
     lifting_channels,
     preactivation,
+    complex_spatial_data
 ):
     if torch.has_cuda:
         device = "cuda"
@@ -38,7 +40,6 @@ def test_tfno(
         batch_size = 4
         use_channel_mlp = True
         n_layers = 4
-        mlp = Bunch(dict(expansion=0.5, dropout=0))
     else:
         device = "cpu"
         fno_block_precision = "full"
@@ -50,7 +51,6 @@ def test_tfno(
         n_layers = 2
 
         use_channel_mlp = True
-        mlp = Bunch(dict(expansion=0.5, dropout=0))
 
     rank = 0.2
     size = (s,) * n_dim
@@ -70,8 +70,13 @@ def test_tfno(
         fc_channels=fc_channels,
         lifting_channels=lifting_channels,
         preactivation=preactivation,
+        complex_spatial_data=complex_spatial_data
     ).to(device)
-    in_data = torch.randn(batch_size, 3, *size).to(device)
+
+    if complex_spatial_data:
+        in_data = torch.randn(batch_size, 3, *size, dtype=torch.cfloat).to(device)
+    else:
+        in_data = torch.randn(batch_size, 3, *size).to(device)
 
     # Test forward pass
     out = model(in_data)
@@ -81,6 +86,9 @@ def test_tfno(
 
     # Check backward pass
     loss = out.sum()
+    # take the modulus if data is complex-valued to create grad
+    if complex_spatial_data:
+        loss = (loss.real ** 2 + loss.imag ** 2) ** 0.5
     loss.backward()
 
     n_unused_params = 0

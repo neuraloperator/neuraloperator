@@ -205,8 +205,9 @@ class FNOBlocks(nn.Module):
                 ]
             )
             if self.complex_spatial_data:
-                self.channel_mlp = ComplexValued(self.channel_mlp)
-            
+                self.channel_mlp = nn.ModuleList(
+                    [ComplexValued(x) for x in self.channel_mlp]
+                )
             self.channel_mlp_skips = nn.ModuleList(
                 [
                     skip_connection(

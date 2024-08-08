@@ -3,8 +3,6 @@ import torch
 from tltorch import FactorizedTensor
 from ..spectral_convolution import (SpectralConv3d, SpectralConv2d,
                                        SpectralConv1d, SpectralConv)
-# from ..cp import (SpectralConv3d, SpectralConv2d,
-#                                        SpectralConv1d, SpectralConv)
 
 
 
@@ -12,7 +10,8 @@ from ..spectral_convolution import (SpectralConv3d, SpectralConv2d,
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
 @pytest.mark.parametrize('separable', [False, True])
 @pytest.mark.parametrize('dim', [1,2,3,4])
-def test_SpectralConv(factorization, implementation, separable, dim):
+@pytest.mark.parametrize('complex_spatial_data', [True])
+def test_SpectralConv(factorization, implementation, separable, dim, complex_spatial_data):
     """Test for SpectralConv of any order
     
     Compares Factorized and Dense convolution output
@@ -27,12 +26,15 @@ def test_SpectralConv(factorization, implementation, separable, dim):
 
     # Test for Conv1D to Conv4D
     conv = SpectralConv(
-        3, 3, modes[:dim], n_layers=1, bias=False, implementation=implementation, factorization=factorization, separable=separable)
+        3, 3, modes[:dim], n_layers=1, bias=False, implementation=implementation, factorization=factorization, separable=separable, complex_spatial_data=complex_spatial_data)
 
     conv_dense = SpectralConv(
-        3, 3, modes[:dim], n_layers=1, bias=False, implementation='reconstructed', factorization=None)
+        3, 3, modes[:dim], n_layers=1, bias=False, implementation='reconstructed', factorization=None, complex_spatial_data=complex_spatial_data)
 
-    x = torch.randn(2, 3, *(12, )*dim)
+    if complex_spatial_data:
+        x = torch.randn(2, 3, *(12, )*dim, dtype=torch.cfloat)
+    else:
+        x = torch.randn(2, 3, *(12, )*dim)
 
     # this closeness test only works if the weights in full form have the same shape
     if not separable:

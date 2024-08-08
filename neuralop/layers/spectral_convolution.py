@@ -277,6 +277,7 @@ class SpectralConv(BaseSpectralConv):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.joint_factorization = joint_factorization
+        self.complex_spatial_data = complex_spatial_data
 
         # n_modes is the total number of modes kept along each dimension
         self.n_modes = n_modes
@@ -328,7 +329,6 @@ class SpectralConv(BaseSpectralConv):
         else:
             weight_shape = (in_channels, out_channels, *max_n_modes)
         self.separable = separable
-        self.complex_spatial_data = complex_spatial_data
 
         tensor_kwargs = decomposition_kwargs if decomposition_kwargs is not None else {}
         if joint_factorization:
