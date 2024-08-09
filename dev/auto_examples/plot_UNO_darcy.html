@@ -251,7 +251,7 @@ Our model has 2665921 parameters.
     (0): FNOBlocks(
       (convs): SpectralConv(
         (weight): ModuleList(
-          (0): ComplexDenseTensor(shape=torch.Size([64, 32, 16, 9]), rank=None)
+          (0): DenseTensor(shape=torch.Size([64, 32, 16, 9]), rank=None)
         )
       )
       (fno_skips): ModuleList(
@@ -263,7 +263,7 @@ Our model has 2665921 parameters.
     (1): FNOBlocks(
       (convs): SpectralConv(
         (weight): ModuleList(
-          (0): ComplexDenseTensor(shape=torch.Size([32, 64, 8, 5]), rank=None)
+          (0): DenseTensor(shape=torch.Size([32, 64, 8, 5]), rank=None)
         )
       )
       (fno_skips): ModuleList(
@@ -275,7 +275,7 @@ Our model has 2665921 parameters.
     (2): FNOBlocks(
       (convs): SpectralConv(
         (weight): ModuleList(
-          (0): ComplexDenseTensor(shape=torch.Size([64, 64, 8, 5]), rank=None)
+          (0): DenseTensor(shape=torch.Size([64, 64, 8, 5]), rank=None)
         )
       )
       (fno_skips): ModuleList(
@@ -287,7 +287,7 @@ Our model has 2665921 parameters.
     (3): FNOBlocks(
       (convs): SpectralConv(
         (weight): ModuleList(
-          (0): ComplexDenseTensor(shape=torch.Size([128, 64, 8, 5]), rank=None)
+          (0): DenseTensor(shape=torch.Size([128, 64, 8, 5]), rank=None)
         )
       )
       (fno_skips): ModuleList(
@@ -299,7 +299,7 @@ Our model has 2665921 parameters.
     (4): FNOBlocks(
       (convs): SpectralConv(
         (weight): ModuleList(
-          (0): ComplexDenseTensor(shape=torch.Size([96, 32, 16, 9]), rank=None)
+          (0): DenseTensor(shape=torch.Size([96, 32, 16, 9]), rank=None)
         )
       )
       (fno_skips): ModuleList(
@@ -342,13 +342,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fbbf6fef1c0&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fcfe7e29df0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fbbf6fefbb0&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fcfe7e29c40&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fbbf6fefbb0&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fbbf6fef070&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7fcfe7e29c40&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fcfe7e29fa0&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -375,22 +375,22 @@ Parameter Group 0
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 1000 samples
 Testing on [50, 50] samples         on resolutions [16, 32].
 Raw outputs of shape torch.Size([32, 1, 16, 16])
-[0] time=5.59, avg_loss=0.5832, train_err=18.2242
-Eval: 16_h1=0.3488, 16_l2=0.2807, 32_h1=0.7974, 32_l2=0.6138
-[3] time=5.65, avg_loss=0.2759, train_err=8.6228
-Eval: 16_h1=0.2316, 16_l2=0.1791, 32_h1=0.7814, 32_l2=0.6114
-[6] time=5.65, avg_loss=0.2387, train_err=7.4587
-Eval: 16_h1=0.1888, 16_l2=0.1336, 32_h1=0.7597, 32_l2=0.5975
-[9] time=5.66, avg_loss=0.2243, train_err=7.0093
-Eval: 16_h1=0.2154, 16_l2=0.1621, 32_h1=0.7303, 32_l2=0.5744
-[12] time=5.71, avg_loss=0.2036, train_err=6.3638
-Eval: 16_h1=0.1790, 16_l2=0.1235, 32_h1=0.7155, 32_l2=0.5633
-[15] time=5.65, avg_loss=0.1910, train_err=5.9675
-Eval: 16_h1=0.1796, 16_l2=0.1255, 32_h1=0.7135, 32_l2=0.5630
-[18] time=5.64, avg_loss=0.1766, train_err=5.5200
-Eval: 16_h1=0.1823, 16_l2=0.1277, 32_h1=0.7028, 32_l2=0.5489
+[0] time=5.72, avg_loss=0.6037, train_err=18.8669
+Eval: 16_h1=0.3631, 16_l2=0.2959, 32_h1=0.7945, 32_l2=0.6175
+[3] time=5.74, avg_loss=0.2823, train_err=8.8215
+Eval: 16_h1=0.2241, 16_l2=0.1750, 32_h1=0.7786, 32_l2=0.5893
+[6] time=5.71, avg_loss=0.2399, train_err=7.4962
+Eval: 16_h1=0.2250, 16_l2=0.1727, 32_h1=0.7488, 32_l2=0.5798
+[9] time=5.70, avg_loss=0.2191, train_err=6.8464
+Eval: 16_h1=0.2073, 16_l2=0.1545, 32_h1=0.7250, 32_l2=0.5622
+[12] time=5.70, avg_loss=0.1998, train_err=6.2430
+Eval: 16_h1=0.1745, 16_l2=0.1221, 32_h1=0.6946, 32_l2=0.5354
+[15] time=5.70, avg_loss=0.2078, train_err=6.4928
+Eval: 16_h1=0.1874, 16_l2=0.1334, 32_h1=0.6941, 32_l2=0.5316
+[18] time=5.76, avg_loss=0.1758, train_err=5.4924
+Eval: 16_h1=0.1792, 16_l2=0.1265, 32_h1=0.6881, 32_l2=0.5315
 
-{&#39;train_err&#39;: 5.426288228482008, &#39;avg_loss&#39;: 0.17364122331142426, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 5.647743191000018}
+{&#39;train_err&#39;: 5.390077922493219, &#39;avg_loss&#39;: 0.172482493519783, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 5.694101072999956}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -440,7 +440,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 55.867 seconds)</p>
+<img src="../_images/sphx_glr_plot_UNO_darcy_001.png" srcset="../_images/sphx_glr_plot_UNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 57.136 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-uno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/ecc34f03fb30bee651bda959149422c4/plot_UNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_UNO_darcy.ipynb</span></code></a></p>

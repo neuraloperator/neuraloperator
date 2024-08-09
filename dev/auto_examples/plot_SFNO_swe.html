@@ -280,13 +280,13 @@ Parameter Group 0
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fbc0526f850&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fcfe5a88310&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fbc0772bc10&gt;
+ * Train: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fcfe5ad2e50&gt;
 
- * Test: {&#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fbc0772bc10&gt;}
+ * Test: {&#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7fcfe5ad2e50&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -311,22 +311,22 @@ Parameter Group 0
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 200 samples
 Testing on [50, 50] samples         on resolutions [(32, 64), (64, 128)].
 Raw outputs of shape torch.Size([4, 3, 32, 64])
-[0] time=3.51, avg_loss=2.2765, train_err=9.1058
-Eval: (32, 64)_l2=1.6102, (64, 128)_l2=2.5885
-[3] time=3.49, avg_loss=0.4754, train_err=1.9016
-Eval: (32, 64)_l2=0.9118, (64, 128)_l2=2.5415
-[6] time=3.47, avg_loss=0.3541, train_err=1.4164
-Eval: (32, 64)_l2=0.7276, (64, 128)_l2=2.4485
-[9] time=3.46, avg_loss=0.2851, train_err=1.1403
-Eval: (32, 64)_l2=0.6037, (64, 128)_l2=2.3891
-[12] time=3.48, avg_loss=0.2433, train_err=0.9733
-Eval: (32, 64)_l2=0.5381, (64, 128)_l2=2.3639
-[15] time=3.45, avg_loss=0.2107, train_err=0.8428
-Eval: (32, 64)_l2=0.4819, (64, 128)_l2=2.3571
-[18] time=3.46, avg_loss=0.1764, train_err=0.7057
-Eval: (32, 64)_l2=0.4299, (64, 128)_l2=2.3572
+[0] time=3.54, avg_loss=2.3061, train_err=9.2246
+Eval: (32, 64)_l2=1.3936, (64, 128)_l2=2.5116
+[3] time=3.50, avg_loss=0.5153, train_err=2.0610
+Eval: (32, 64)_l2=0.6860, (64, 128)_l2=2.3577
+[6] time=3.50, avg_loss=0.3336, train_err=1.3343
+Eval: (32, 64)_l2=0.6157, (64, 128)_l2=2.3560
+[9] time=3.51, avg_loss=0.2479, train_err=0.9915
+Eval: (32, 64)_l2=0.6461, (64, 128)_l2=2.3586
+[12] time=3.53, avg_loss=0.2048, train_err=0.8193
+Eval: (32, 64)_l2=0.3809, (64, 128)_l2=2.3535
+[15] time=3.51, avg_loss=0.1748, train_err=0.6994
+Eval: (32, 64)_l2=0.3164, (64, 128)_l2=2.3544
+[18] time=3.51, avg_loss=0.1405, train_err=0.5620
+Eval: (32, 64)_l2=0.2945, (64, 128)_l2=2.3714
 
-{&#39;train_err&#39;: 0.7105237686634064, &#39;avg_loss&#39;: 0.1776309421658516, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 3.466393640999968}
+{&#39;train_err&#39;: 0.5367424893379211, &#39;avg_loss&#39;: 0.13418562233448028, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 3.5091267360000415}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -373,7 +373,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 26.191 seconds)</p>
+<img src="../_images/sphx_glr_plot_SFNO_swe_001.png" srcset="../_images/sphx_glr_plot_SFNO_swe_001.png" alt="Inputs, ground-truth output and prediction., Input x (32, 64), Ground-truth y, Model prediction, Input x (64, 128), Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 27.295 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-sfno-swe-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/af3a515d2684655c6a5a8e0df87a4cf9/plot_SFNO_swe.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_SFNO_swe.ipynb</span></code></a></p>
