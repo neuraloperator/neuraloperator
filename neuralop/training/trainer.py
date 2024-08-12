@@ -272,7 +272,8 @@ class Trainer:
             loader_metrics = self.evaluate(eval_losses, loader,
                                     log_prefix=loader_name)   
             all_metrics.update(**loader_metrics)
-        self.log_eval(epoch=epoch,
+        if self.verbose:
+            self.log_eval(epoch=epoch,
                       eval_metrics=all_metrics)
         return all_metrics
     
