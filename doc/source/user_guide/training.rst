@@ -19,18 +19,21 @@ can easily be implemented. For more specific documentation, check the API refere
 
 Distributed Training
 =====================
-We also provide a simple way to use PyTorch's :code:`DistributedDataParallel`
-functionality to hold data across multiple GPUs. We use PyTorch's MPI backend,
-so all you need to do on a multi-GPU system is the following:
+We also provide a simple way to use PyTorch's :code:`DistributedDataParallel` (DDP)
+functionality to hold data across multiple GPUs. We use PyTorch's  `torchrun`
+elastic distributed process launcher. All our example scripts are written to initialize DDP 
+in the background, so all that is required is installing one additional dependency and running
+the following (assuming you are running on a single node):  
 
 ::
     
-    pip install mpi4py
+    conda install openmpi -c conda-forge
 
-    mpiexec --allow-run-as-root -n N_GPUS python my_script.py
+    torchrun --standalone --nproc_per_node=NUM_GPUS --nnodes=1 myscript.py
 
 You may need to adjust the batch size, model parallel size and world size in 
-accordance with your specific use case. 
+accordance with your specific use case. For multi-node jobs, refer to documentation
+on using `torchrun` with your specific cluster setup. 
 
 
  
