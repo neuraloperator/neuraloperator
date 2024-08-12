@@ -86,7 +86,7 @@ Loading the Darcy Flow dataset
     /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:93: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
       data = torch.load(
     Loading test db for resolution 16 with 100 samples 
-    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:168: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+    /home/runner/work/neuraloperator/neuraloperator/neuralop/data/datasets/pt_dataset.py:172: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
       data = torch.load(Path(root_dir).joinpath(f"{dataset_name}_test_{res}.pt").as_posix())
     Loading test db for resolution 32 with 50 samples 
 
@@ -267,13 +267,13 @@ Creating the losses
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7fcfe7e29df0>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f3005abe340>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7fcfe7e29c40>
+     * Train: <neuralop.losses.data_losses.H1Loss object at 0x7f3005abed30>
 
-     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7fcfe7e29c40>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7fcfe7e29fa0>}
+     * Test: {'h1': <neuralop.losses.data_losses.H1Loss object at 0x7f3005abed30>, 'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f3005abe5e0>}
 
 
 
@@ -332,22 +332,22 @@ Actually train the model on our small Darcy-Flow dataset
     Training on 1000 samples
     Testing on [50, 50] samples         on resolutions [16, 32].
     Raw outputs of shape torch.Size([32, 1, 16, 16])
-    [0] time=5.72, avg_loss=0.6037, train_err=18.8669
-    Eval: 16_h1=0.3631, 16_l2=0.2959, 32_h1=0.7945, 32_l2=0.6175
-    [3] time=5.74, avg_loss=0.2823, train_err=8.8215
-    Eval: 16_h1=0.2241, 16_l2=0.1750, 32_h1=0.7786, 32_l2=0.5893
-    [6] time=5.71, avg_loss=0.2399, train_err=7.4962
-    Eval: 16_h1=0.2250, 16_l2=0.1727, 32_h1=0.7488, 32_l2=0.5798
-    [9] time=5.70, avg_loss=0.2191, train_err=6.8464
-    Eval: 16_h1=0.2073, 16_l2=0.1545, 32_h1=0.7250, 32_l2=0.5622
-    [12] time=5.70, avg_loss=0.1998, train_err=6.2430
-    Eval: 16_h1=0.1745, 16_l2=0.1221, 32_h1=0.6946, 32_l2=0.5354
-    [15] time=5.70, avg_loss=0.2078, train_err=6.4928
-    Eval: 16_h1=0.1874, 16_l2=0.1334, 32_h1=0.6941, 32_l2=0.5316
-    [18] time=5.76, avg_loss=0.1758, train_err=5.4924
-    Eval: 16_h1=0.1792, 16_l2=0.1265, 32_h1=0.6881, 32_l2=0.5315
+    [0] time=5.89, avg_loss=0.5896, train_err=18.4252
+    Eval: 16_h1=0.3677, 16_l2=0.2956, 32_h1=0.7553, 32_l2=0.5791
+    [3] time=5.91, avg_loss=0.2680, train_err=8.3735
+    Eval: 16_h1=0.2404, 16_l2=0.1864, 32_h1=0.7485, 32_l2=0.5870
+    [6] time=5.89, avg_loss=0.2512, train_err=7.8500
+    Eval: 16_h1=0.1963, 16_l2=0.1471, 32_h1=0.7273, 32_l2=0.5884
+    [9] time=5.85, avg_loss=0.2276, train_err=7.1132
+    Eval: 16_h1=0.1929, 16_l2=0.1378, 32_h1=0.7061, 32_l2=0.5669
+    [12] time=5.87, avg_loss=0.2017, train_err=6.3038
+    Eval: 16_h1=0.1847, 16_l2=0.1292, 32_h1=0.6955, 32_l2=0.5570
+    [15] time=5.88, avg_loss=0.2082, train_err=6.5054
+    Eval: 16_h1=0.1868, 16_l2=0.1316, 32_h1=0.6986, 32_l2=0.5538
+    [18] time=5.77, avg_loss=0.1772, train_err=5.5386
+    Eval: 16_h1=0.1707, 16_l2=0.1173, 32_h1=0.6903, 32_l2=0.5461
 
-    {'train_err': 5.390077922493219, 'avg_loss': 0.172482493519783, 'avg_lasso_loss': None, 'epoch_train_time': 5.694101072999956}
+    {'train_err': 5.2136271968483925, 'avg_loss': 0.16683607029914857, 'avg_lasso_loss': None, 'epoch_train_time': 5.838290819999997}
 
 
 
@@ -421,7 +421,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 57.136 seconds)
+   **Total running time of the script:** (2 minutes 0.240 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_UNO_darcy.py:
