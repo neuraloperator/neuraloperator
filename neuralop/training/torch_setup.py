@@ -1,3 +1,5 @@
+import os
+
 import torch
 import neuralop.mpu.comm as comm
 
@@ -19,6 +21,10 @@ def setup(config):
         device : torch.device
         is_logger : bool
     """
+    # We use Torchrun for spawning MP jobs, and torchrun auto-initializes env vars. 
+    # Check for override in case config option conflicts with the fact that we are inside a torch distributed elastic run.
+    if os.getenv("LOCAL_RANK") is not None:
+        config.distributed.use_distributed = True 
     if config.distributed.use_distributed:
         comm.init(config, verbose=config.verbose)
 

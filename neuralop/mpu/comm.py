@@ -98,56 +98,14 @@ def get_model_parallel_group():
 
 # get 
 def init(config, verbose = False):
-    
-    # set up global and local communicator
-    if config.distributed == "env":
-
-        world_size = int(os.getenv('WORLD_SIZE', 1))
-        world_rank = int(os.getenv('WORLD_RANK', 0))
-        port = int(os.getenv('MASTER_PORT', 0))
-        master_address = os.getenv('MASTER_ADDRESS')
-    
-    
-    elif config.distributed.wireup_info == "mpi":
-
-        import socket
-        from mpi4py import MPI
-
-        mpi_comm = MPI.COMM_WORLD.Dup()
-        world_size = mpi_comm.Get_size()
-        world_rank = mpi_comm.Get_rank()
-        my_host = '127.0.0.1'
-        port = 29500
-        master_address = mpi_comm.bcast(my_host, root=0)
-        os.environ["MASTER_ADDRESS"] = master_address
-        os.environ["MASTER_PORT"] = str(port)
-
-    else:
-        raise ValueError(f"Error, wireup-info {config.distributed.wireup_info} not supported")
-    
-    # set local rank to 0 for now
+  
     local_rank = 0
+    world_size = torch.cuda.device_count()
     
     if world_size > 1:
         with disable_logging():
-            if config.distributed.wireup_store == "file":
-
-                wireup_file_path = os.getenv('WIREUP_FILE_PATH')
-                wireup_store = dist.FileStore(wireup_file_path, world_size)
-            
-            elif config.distributed.wireup_store == "tcp":
-                # create tcp store
-                wireup_store = dist.TCPStore(host_name = master_address,
-                                             port = port,
-                                             world_size = world_size,
-                                             is_master = (world_rank == 0),
-                                             timeout = dt.timedelta(seconds=900))
-                
             # initialize process groups
-            dist.init_process_group(backend = 'nccl',
-                                    rank = world_rank,
-                                    world_size = world_size,
-                                    store = wireup_store)
+            dist.init_process_group(backend = 'nccl')
         
             # get sizes
             world_size = get_world_size()
