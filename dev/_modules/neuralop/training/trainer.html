@@ -395,7 +395,8 @@
             <span class="n">loader_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">eval_losses</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span>
                                     <span class="n">log_prefix</span><span class="o">=</span><span class="n">loader_name</span><span class="p">)</span>   
             <span class="n">all_metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">loader_metrics</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">log_eval</span><span class="p">(</span><span class="n">epoch</span><span class="o">=</span><span class="n">epoch</span><span class="p">,</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_eval</span><span class="p">(</span><span class="n">epoch</span><span class="o">=</span><span class="n">epoch</span><span class="p">,</span>
                       <span class="n">eval_metrics</span><span class="o">=</span><span class="n">all_metrics</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">all_metrics</span>
     
