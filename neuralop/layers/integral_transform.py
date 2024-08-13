@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from .mlp import MLPLinear
+from .channel_mlp import LinearChannelMLP
 from .segment_csr import segment_csr
 
 
@@ -15,11 +15,14 @@ class IntegralTransform(nn.Module):
         (d) \int_{A(x)} k(x, y, f(y)) * f(y) dy
 
     x : Points for which the output is defined
+
     y : Points for which the input is defined
-    A(x) : A subset of all points y (depending on
-           each x) over which to integrate
-    k : A kernel parametrized as a MLP
-    f : Input function to integrate against given
+    A(x) : A subset of all points y (depending on\
+        each x) over which to integrate
+
+    k : A kernel parametrized as a MLP (LinearChannelMLP)
+    
+    f : Input function to integrate against given\
         on the points y
 
     If f is not given, a transform of type (a)
@@ -29,17 +32,17 @@ class IntegralTransform(nn.Module):
 
     Parameters
     ----------
-    mlp : torch.nn.Module, default None
+    channel_mlp : torch.nn.Module, default None
         MLP parametrizing the kernel k. Input dimension
         should be dim x + dim y or dim x + dim y + dim f
-    mlp_layers : list, default None
+    channel_mlp_layers : list, default None
         List of layers sizes speficing a MLP which
         parametrizes the kernel k. The MLP will be
-        instansiated by the MLPLinear class
-    mlp_non_linearity : callable, default torch.nn.functional.gelu
+        instansiated by the LinearChannelMLP class
+    channel_mlp_non_linearity : callable, default torch.nn.functional.gelu
         Non-linear function used to be used by the
-        MLPLinear class. Only used if mlp_layers is
-        given and mlp is None
+        LinearChannelMLP class. Only used if channel_mlp_layers is
+        given and channel_mlp is None
     transform_type : str, default 'linear'
         Which integral transform to compute. The mapping is:
         'linear_kernelonly' -> (a)
@@ -48,20 +51,28 @@ class IntegralTransform(nn.Module):
         'nonlinear' -> (d)
         If the input f is not given then (a) is computed
         by default independently of this parameter.
+    use_torch_scatter : bool, default 'True'
+        Whether to use torch_scatter's implementation of 
+        segment_csr or our native PyTorch version. torch_scatter 
+        should be installed by default, but there are known versioning
+        issues on some linux builds of CPU-only PyTorch. Try setting
+        to False if you experience an error from torch_scatter.
     """
 
     def __init__(
         self,
-        mlp=None,
-        mlp_layers=None,
-        mlp_non_linearity=F.gelu,
+        channel_mlp=None,
+        channel_mlp_layers=None,
+        channel_mlp_non_linearity=F.gelu,
         transform_type="linear",
+        use_torch_scatter=True,
     ):
         super().__init__()
 
-        assert mlp is not None or mlp_layers is not None
+        assert channel_mlp is not None or channel_mlp_layers is not None
 
         self.transform_type = transform_type
+        self.use_torch_scatter = use_torch_scatter
 
         if (
             self.transform_type != "linear_kernelonly"
@@ -74,10 +85,11 @@ class IntegralTransform(nn.Module):
                 "[linear_kernelonly, linear, nonlinear_kernelonly, nonlinear]"
             )
 
-        if mlp is None:
-            self.mlp = MLPLinear(layers=mlp_layers, non_linearity=mlp_non_linearity)
+        if channel_mlp is None:
+            self.channel_mlp = LinearChannelMLP(layers=channel_mlp_layers, non_linearity=channel_mlp_non_linearity)
         else:
-            self.mlp = mlp
+            self.channel_mlp = channel_mlp
+            
 
     """"
     
@@ -166,7 +178,7 @@ class IntegralTransform(nn.Module):
                 )
             agg_features = torch.cat([agg_features, in_features], dim=-1)
 
-        rep_features = self.mlp(agg_features)
+        rep_features = self.channel_mlp(agg_features)
 
         if f_y is not None and self.transform_type != "nonlinear_kernelonly":
             rep_features = rep_features * in_features
@@ -188,6 +200,6 @@ class IntegralTransform(nn.Module):
         if batched:
             splits = splits.repeat([batch_size] + [1] * splits.ndim)
 
-        out_features = segment_csr(rep_features, splits, reduce=reduction)
+        out_features = segment_csr(rep_features, splits, reduce=reduction, use_scatter=self.use_torch_scatter)
 
         return out_features

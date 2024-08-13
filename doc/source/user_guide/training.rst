@@ -14,13 +14,8 @@ provide a :code:`Trainer` class that automates much of this boilerplate logic.
 Things like loading a model to device, zeroing gradients and computing most loss 
 functions are taken care of.
 
-If you need to implement more domain-specific training logic, we also expose an
-interface for stateful Callbacks that trigger events and track information
-throughout the lifetime of your Trainer. Each callback implements a series of 
-methods that are automatically called throughout the training loop, and you
-can override individual methods as necessary for your custom logic. 
-
-For more specific documentation on callbacks, check the API reference.
+The :code:`Trainer` implements training in a modular fashion, meaning that more domain-specific logic 
+can easily be implemented. For more specific documentation, check the API reference.
 
 Distributed Training
 =====================

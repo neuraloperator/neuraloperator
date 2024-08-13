@@ -3,8 +3,10 @@ from torch import nn
 import torch.nn.functional as F
 
 
-class MLP(nn.Module):
-    """A Multi-Layer Perceptron, with arbitrary number of layers
+class ChannelMLP(nn.Module):
+    """ChannelMLP applies an arbitrary number of layers of 
+    1d convolution and nonlinearity to the channels of input
+    and is invariant to spatial resolution.
 
     Parameters
     ----------
@@ -82,8 +84,8 @@ class MLP(nn.Module):
         return x
 
 
-# Reimplementation of the MLP class using Linear instead of Conv
-class MLPLinear(torch.nn.Module):
+# Reimplementation of the ChannelMLP class using Linear instead of Conv
+class LinearChannelMLP(torch.nn.Module):
     def __init__(self, layers, non_linearity=F.gelu, dropout=0.0):
         super().__init__()
 

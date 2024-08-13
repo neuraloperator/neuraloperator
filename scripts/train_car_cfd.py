@@ -7,14 +7,11 @@ from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
 from neuralop.losses.data_losses import LpLoss
 from neuralop.training.trainer import Trainer
-from neuralop.datasets import MeshDataModule
-from neuralop.datasets.data_transforms import DataProcessor
+from neuralop.data.datasets import MeshDataModule
+from neuralop.data.transforms.data_processors import DataProcessor
 from copy import deepcopy
-from neuralop.training.callbacks import BasicLoggerCallback
 
 # query points is [sdf_query_resolution] * 3 (taken from config ahmed)
-
-
 # Read the configuration
 config_name = 'cfd'
 pipe = ConfigPipeline([YamlConfig('./car_cfd_config.yaml', config_name=config_name, config_folder='../config'),
@@ -49,6 +46,7 @@ if config.wandb.log and is_logger:
     if config.wandb.sweep:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
+    wandb.init(**wandb_init_args)
 
 #Load CFD body data
 data_module = MeshDataModule(config.data.path, 
@@ -172,9 +170,6 @@ trainer = Trainer(model=model,
                   n_epochs=config.opt.n_epochs,
                   data_processor=data_processor,
                   device=device,
-                  callbacks=[
-                      BasicLoggerCallback(wandb_kwargs=wandb_init_args)
-                  ],
                   wandb_log=config.wandb.log
                   )
 

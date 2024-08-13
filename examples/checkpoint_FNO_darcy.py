@@ -13,8 +13,7 @@ import matplotlib.pyplot as plt
 import sys
 from neuralop.models import TFNO
 from neuralop import Trainer
-from neuralop.training import CheckpointCallback
-from neuralop.datasets import load_darcy_flow_small
+from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
 
@@ -33,7 +32,7 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
 # %%
 # We create a tensorized FNO model
 
-model = TFNO(n_modes=(16, 16), hidden_channels=32, projection_channels=64, factorization='tucker', rank=0.42)
+model = TFNO(n_modes=(16, 16), in_channels=1, hidden_channels=32, projection_channels=64, factorization='tucker', rank=0.42)
 model = model.to(device)
 
 n_params = count_model_params(model)
@@ -74,15 +73,9 @@ sys.stdout.flush()
 # Create the trainer
 trainer = Trainer(model=model, n_epochs=20,
                   device=device,
-                  callbacks=[
-                    CheckpointCallback(save_dir='./checkpoints',
-                                       save_interval=10,
-                                            save_optimizer=True,
-                                            save_scheduler=True)
-                        ],
                   data_processor=data_processor,
                   wandb_log=False,
-                  log_test_interval=3,
+                  eval_interval=3,
                   use_distributed=False,
                   verbose=True)
 
@@ -95,7 +88,9 @@ trainer.train(train_loader=train_loader,
               optimizer=optimizer,
               scheduler=scheduler, 
               regularizer=False, 
-              training_loss=train_loss)
+              training_loss=train_loss, 
+              save_every=1,
+              save_dir="./checkpoints")
 
 
 # resume training from saved checkpoint at epoch 10
@@ -103,12 +98,8 @@ trainer.train(train_loader=train_loader,
 trainer = Trainer(model=model, n_epochs=20,
                   device=device,
                   data_processor=data_processor,
-                  callbacks=[
-                    CheckpointCallback(save_dir='./new_checkpoints',
-                                            resume_from_dir='./checkpoints/ep_10')
-                        ],             
                   wandb_log=False,
-                  log_test_interval=3,
+                  eval_interval=3,
                   use_distributed=False,
                   verbose=True)
 
@@ -117,4 +108,5 @@ trainer.train(train_loader=train_loader,
               optimizer=optimizer,
               scheduler=scheduler, 
               regularizer=False, 
-              training_loss=train_loss)
+              training_loss=train_loss,
+              resume_from_dir="./checkpoints")

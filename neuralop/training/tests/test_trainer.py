@@ -6,40 +6,11 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from neuralop.models import FNO
-from neuralop.datasets import load_darcy_flow_small
+from neuralop.data.datasets import load_darcy_flow_small
 
-from neuralop import Trainer, LpLoss, H1Loss, CheckpointCallback, IncrementalCallback
-from neuralop.models.base_model import BaseModel
-
-class DummyDataset(Dataset):
-    # Simple linear regression problem, PyTorch style
-
-    def __init__(self, n_examples):
-        super().__init__()
-
-        self.X = torch.randn((n_examples, 50))
-        self.y = torch.randn((n_examples, 1))
-
-    def __getitem__(self, idx):
-        return {'x': self.X[idx], 'y': self.y[idx]}
-
-    def __len__(self):
-        return self.X.shape[0]
-
-class DummyModel(BaseModel, name='Dummy'):
-    """
-    Simple linear model to mock-up our model API
-    """
-
-    def __init__(self, features, **kwargs):
-        super().__init__()
-        self.net = nn.Linear(features, 1)
-
-    def forward(self, x, **kwargs):
-        """
-        Throw out extra args as in FNO and other models
-        """
-        return self.net(x)
+from neuralop import Trainer, LpLoss, H1Loss
+from neuralop.tests.test_utils import DummyDataset, DummyModel
+from neuralop.training import IncrementalFNOTrainer
 
 def test_model_checkpoint_saves():
     save_pth = Path('./test_checkpoints')
@@ -50,15 +21,10 @@ def test_model_checkpoint_saves():
 
     trainer = Trainer(model=model,
                       n_epochs=5,
-                      callbacks=[
-                          CheckpointCallback(save_dir=save_pth,
-                                             save_optimizer=True,
-                                             save_scheduler=True)
-                      ]
     )
 
     optimizer = torch.optim.Adam(model.parameters(), 
-                                lr=8e-3, 
+                                lr=3e-4, 
                                 weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
@@ -72,6 +38,8 @@ def test_model_checkpoint_saves():
                   regularizer=None,
                   training_loss=l2loss,
                   eval_losses=None,
+                  save_dir=save_pth,
+                  save_every=1
                   )
     
     for file_ext in ['model_state_dict.pt', 'model_metadata.pkl', 'optimizer.pt', 'scheduler.pt']:
@@ -90,16 +58,10 @@ def test_model_checkpoint_and_resume():
 
     trainer = Trainer(model=model,
                       n_epochs=5,
-                      callbacks=[
-                          CheckpointCallback(save_dir=save_pth,
-                                                  save_optimizer=True,
-                                                  save_scheduler=True,
-                                                  save_best='h1') # monitor h1 loss
-                      ]
     )
 
     optimizer = torch.optim.Adam(model.parameters(), 
-                                lr=8e-3, 
+                                lr=3e-4, 
                                 weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
@@ -110,27 +72,25 @@ def test_model_checkpoint_and_resume():
     eval_losses={'h1': h1loss, 'l2': l2loss}
 
     trainer.train(train_loader=train_loader, 
-                  test_loaders={'': test_loader}, 
+                  test_loaders={'test': test_loader}, 
                   optimizer=optimizer,
                   scheduler=scheduler,
                   regularizer=None,
                   training_loss=l2loss,
-                  eval_losses=eval_losses
+                  eval_losses=eval_losses,
+                  save_best='test_h1',
+                  save_dir=save_pth,
+                  save_every=1
                   )
-    
     for file_ext in ['best_model_state_dict.pt', 'best_model_metadata.pkl', 'optimizer.pt', 'scheduler.pt']:
         file_pth = save_pth / file_ext
+        
         assert file_pth.exists()
 
     # Resume from checkpoint
     trainer = Trainer(model=model,
-                      n_epochs=5,
-                      callbacks=[
-                          CheckpointCallback(save_dir='./checkpoints',
-                                             resume_from_dir='./full_states')
-                          ]
+                      n_epochs=5
     )
-
     errors = trainer.train(train_loader=train_loader, 
                   test_loaders={'': test_loader}, 
                   optimizer=optimizer,
@@ -138,6 +98,7 @@ def test_model_checkpoint_and_resume():
                   regularizer=None,
                   training_loss=l2loss,
                   eval_losses=eval_losses,
+                  resume_from_dir=save_pth
                   )
     
     # clean up dummy checkpoint directory after testing
@@ -150,20 +111,13 @@ def test_load_from_checkpoint():
     model = DummyModel(50)
 
     train_loader = DataLoader(DummyDataset(100))
-    test_loader = DataLoader(DummyDataset(20))
+    test_loader = DataLoader(DummyDataset(100))
 
     trainer = Trainer(model=model,
-                      n_epochs=5,
-                      callbacks=[
-                          CheckpointCallback(save_dir='./full_states',
-                                                  save_optimizer=True,
-                                                  save_scheduler=True,
-                                                  save_best='h1') # monitor h1 loss
-                      ]
-    )
+                      n_epochs=10,)
 
     optimizer = torch.optim.Adam(model.parameters(), 
-                                lr=8e-3, 
+                                lr=3e-4, 
                                 weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
@@ -174,29 +128,31 @@ def test_load_from_checkpoint():
     eval_losses={'h1': h1loss, 'l2': l2loss}
 
     orig_model_eval_errors = trainer.train(train_loader=train_loader, 
-                  test_loaders={'': test_loader}, 
+                  test_loaders={'test': test_loader}, 
                   optimizer=optimizer,
                   scheduler=scheduler,
                   regularizer=None,
                   training_loss=l2loss,
-                  eval_losses=eval_losses
+                  eval_losses=eval_losses,
+                  save_dir="./full_states",
+                  save_every=1,
                   )
     
     # create a new model from saved checkpoint and evaluate
-    loaded_model = DummyModel.from_checkpoint(save_folder='./full_states', save_name='best_model')
+    loaded_model = DummyModel.from_checkpoint(save_folder='./full_states', save_name='model')
     trainer = Trainer(model=loaded_model,
                       n_epochs=1,
     )
 
     loaded_model_eval_errors = trainer.evaluate(loss_dict=eval_losses,
-                              data_loader=test_loader)
+                              data_loader=test_loader, log_prefix='test')
 
-    # log prefix is empty except for default underscore
-    assert orig_model_eval_errors['_h1'] - loaded_model_eval_errors['_h1'] < 0.1
+    # test l2 difference should be small 
+    assert (orig_model_eval_errors['test_l2'] - loaded_model_eval_errors['test_l2']) /\
+          orig_model_eval_errors['test_l2'] < 0.1
 
     # clean up dummy checkpoint directory after testing
     shutil.rmtree('./full_states')
-    
     
 # enure that the model incrementally increases in frequency modes
 def test_incremental():
@@ -208,16 +164,6 @@ def test_incremental():
         n_tests=[10, 5],
         test_batch_sizes=[32, 32],
     )
-    callbacks = [
-        IncrementalCallback(
-            incremental_loss_gap=False,
-            incremental_grad=True,
-            incremental_grad_eps=0.9999,
-            incremental_buffer=5,
-            incremental_max_iter=1,
-            incremental_grad_max_iter=2,
-        )
-    ]
 
     initial_n_modes = (2, 2)
     initial_max_modes = (16, 16)
@@ -230,12 +176,18 @@ def test_incremental():
         out_channels=1,
     )
     
-    trainer = Trainer(model=model,
-                      n_epochs=20,
-                      callbacks=callbacks)
+    trainer = IncrementalFNOTrainer(
+        model=model,
+        n_epochs=20,
+        incremental_loss_gap=False,
+        incremental_grad=True,
+        incremental_grad_eps=0.9999,
+        incremental_buffer=5,
+        incremental_max_iter=1,
+        incremental_grad_max_iter=2,)
 
     optimizer = torch.optim.Adam(model.parameters(), 
-                                lr=8e-3, 
+                                lr=3e-4, 
                                 weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 

@@ -6,10 +6,9 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
-from neuralop.datasets import load_darcy_flow_small
-from neuralop.datasets.data_transforms import MGPatchingDataProcessor
+from neuralop.data.datasets import load_darcy_flow_small
+from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.training import setup
-from neuralop.training.callbacks import BasicLoggerCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -61,6 +60,7 @@ if config.wandb.log and is_logger:
     if config.wandb.sweep:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
+    wandb.init(**wandb_args)
 
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
@@ -74,7 +74,6 @@ if config.verbose and is_logger:
 train_loader, test_loaders, data_processor = load_darcy_flow_small(
     n_train=config.data.n_train,
     batch_size=config.data.batch_size,
-    positional_encoding=config.data.positional_encoding,
     test_resolutions=config.data.test_resolutions,
     n_tests=config.data.n_tests,
     test_batch_sizes=config.data.test_batch_sizes,
@@ -85,7 +84,6 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
 if config.patching.levels > 0:
     data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
                                              out_normalizer=data_processor.out_normalizer,
-                                             positional_encoding=data_processor.positional_encoding,
                                              padding_fraction=config.patching.padding,
                                              stitching=config.patching.stitching,
                                              levels=config.patching.levels)
@@ -157,13 +155,10 @@ trainer = Trainer(
     data_processor=data_processor,
     amp_autocast=config.opt.amp_autocast,
     wandb_log=config.wandb.log,
-    log_test_interval=config.wandb.log_test_interval,
+    eval_interval=config.wandb.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
-    callbacks=[
-        BasicLoggerCallback(wandb_args)
-              ]
               )
 
 # Log parameter count

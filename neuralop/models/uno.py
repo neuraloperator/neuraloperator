@@ -1,12 +1,13 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-from ..layers.mlp import MLP
+from ..layers.channel_mlp import ChannelMLP
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.skip_connections import skip_connection
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
 from ..layers.resample import resample
+from ..layers.embeddings import GridEmbedding2D, GridEmbeddingND
 
 
 class UNO(nn.Module):
@@ -24,6 +25,13 @@ class UNO(nn.Module):
         number of hidden channels of the lifting block of the FNO, by default 256
     projection_channels : int, optional
         number of hidden channels of the projection block of the FNO, by default 256
+    positional_embedding : str literal | GridEmbedding2D | GridEmbeddingND | None
+        if "grid", appends a grid positional embedding with default settings to 
+        the last channels of raw input. Assumes the inputs are discretized
+        over a grid with entry [0,0,...] at the origin and side lengths of 1.
+        If an initialized GridEmbedding, uses this module directly
+        See `neuralop.embeddings.GridEmbeddingND` for details
+        if None, does nothing
     n_layers : int, optional
         Number of Fourier Layers, by default 4
     uno_out_channels: list
@@ -48,10 +56,10 @@ class UNO(nn.Module):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
-    use_mlp : bool, optional
-        Whether to use an MLP layer after each FNO block, by default False
-    mlp : dict, optional
-        Parameters of the MLP, by default None
+    use_channel_mlp : bool, optional
+        Whether to use an ChannelMLP layer after each FNO block, by default False
+    ChannelMLP : dict, optional
+        Parameters of the ChannelMLP, by default None
         {'expansion': float, 'dropout': float}
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
@@ -96,21 +104,22 @@ class UNO(nn.Module):
         hidden_channels,
         lifting_channels=256,
         projection_channels=256,
+        positional_embedding="grid",
         n_layers=4,
         uno_out_channels=None,
         uno_n_modes=None,
         uno_scalings=None,
         horizontal_skips_map=None,
         incremental_n_modes=None,
-        use_mlp=False,
-        mlp_dropout=0,
-        mlp_expansion=0.5,
+        use_channel_mlp=False,
+        channel_mlpdropout=0,
+        channel_mlpexpansion=0.5,
         non_linearity=F.gelu,
         norm=None,
         preactivation=False,
         fno_skip="linear",
         horizontal_skip="linear",
-        mlp_skip="soft-gating",
+        channel_mlpskip="soft-gating",
         separable=False,
         factorization=None,
         rank=1.0,
@@ -159,7 +168,7 @@ class UNO(nn.Module):
         self.fixed_rank_modes = fixed_rank_modes
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = (fno_skip,)
-        self.mlp_skip = (mlp_skip,)
+        self.channel_mlpskip = (channel_mlpskip,)
         self.fft_norm = fft_norm
         self.implementation = implementation
         self.separable = separable
@@ -167,6 +176,26 @@ class UNO(nn.Module):
         self._incremental_n_modes = incremental_n_modes
         self.operator_block = operator_block
         self.integral_operator = integral_operator
+
+        # create positional embedding at the beginning of the model
+        if positional_embedding == "grid":
+            spatial_grid_boundaries = [[0., 1.]] * self.n_dim
+            self.positional_embedding = GridEmbeddingND(dim=self.n_dim, grid_boundaries=spatial_grid_boundaries)
+        elif isinstance(positional_embedding, GridEmbedding2D):
+            if self.n_dim == 2:
+                self.positional_embedding = positional_embedding
+            else:
+                raise ValueError(f'Error: expected {self.n_dim}-d positional embeddings, got {positional_embedding}')
+        elif isinstance(positional_embedding, GridEmbeddingND):
+            self.positional_embedding = positional_embedding
+        elif positional_embedding == None:
+            self.positional_embedding = None
+        else:
+            raise ValueError(f"Error: tried to instantiate FNO positional embedding with {positional_embedding},\
+                              expected one of \'grid\', GridEmbeddingND")
+        
+        if self.positional_embedding is not None:
+            in_channels += self.n_dim
 
         # constructing default skip maps
         if self.horizontal_skips_map is None:
@@ -214,7 +243,7 @@ class UNO(nn.Module):
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
 
-        self.lifting = MLP(
+        self.lifting = ChannelMLP(
             in_channels=in_channels,
             out_channels=self.hidden_channels,
             hidden_channels=self.lifting_channels,
@@ -236,15 +265,15 @@ class UNO(nn.Module):
                     in_channels=prev_out,
                     out_channels=self.uno_out_channels[i],
                     n_modes=self.uno_n_modes[i],
-                    use_mlp=use_mlp,
-                    mlp_dropout=mlp_dropout,
-                    mlp_expansion=mlp_expansion,
+                    use_channel_mlp=use_channel_mlp,
+                    channel_mlpdropout=channel_mlpdropout,
+                    channel_mlpexpansion=channel_mlpexpansion,
                     output_scaling_factor=[self.uno_scalings[i]],
                     non_linearity=non_linearity,
                     norm=norm,
                     preactivation=preactivation,
                     fno_skip=fno_skip,
-                    mlp_skip=mlp_skip,
+                    channel_mlpskip=channel_mlpskip,
                     incremental_n_modes=incremental_n_modes,
                     rank=rank,
                     SpectralConv=self.integral_operator,
@@ -269,7 +298,7 @@ class UNO(nn.Module):
 
             prev_out = self.uno_out_channels[i]
 
-        self.projection = MLP(
+        self.projection = ChannelMLP(
             in_channels=prev_out,
             out_channels=out_channels,
             hidden_channels=self.projection_channels,
@@ -279,6 +308,9 @@ class UNO(nn.Module):
         )
 
     def forward(self, x, **kwargs):
+        if self.positional_embedding is not None:
+            x = self.positional_embedding(x)
+        
         x = self.lifting(x)
 
         if self.domain_padding is not None:

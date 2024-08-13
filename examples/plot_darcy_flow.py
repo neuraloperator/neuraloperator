@@ -10,7 +10,8 @@ In this example, we demonstrate how to use the small Darcy-Flow example we ship 
 # We first import our `neuralop` library and required dependencies.
 
 import matplotlib.pyplot as plt
-from neuralop.datasets import load_darcy_flow_small
+from neuralop.data.datasets import load_darcy_flow_small
+from neuralop.layers.embeddings import GridEmbedding2D
 
 # %%
 # Load the dataset
@@ -43,7 +44,7 @@ data = train_dataset[0]
 x = data['x']
 y = data['y']
 
-print(f'Training sample have shape {x.shape[1:]}')
+print(f'Training samples have shape {x.shape[1:]}')
 
 
 # Which sample to view
@@ -51,7 +52,14 @@ index = 0
 
 data = train_dataset[index]
 data = data_processor.preprocess(data, batched=False)
-x = data['x']
+
+# The first step of the default FNO model is a grid-based
+# positional embedding. We will add it manually here to
+# visualize the channels appended by this embedding.
+positional_embedding = GridEmbedding2D()
+# at train time, data will be collated with a batch dim.
+# we create a batch dim to pass into the embedding, then re-squeeze
+x = positional_embedding(data['x'].unsqueeze(0)).squeeze(0)
 y = data['y']
 fig = plt.figure(figsize=(7, 7))
 ax = fig.add_subplot(2, 2, 1)

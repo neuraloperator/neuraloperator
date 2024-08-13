@@ -53,11 +53,12 @@ config = {
     'long_description_content_type' : 'text/x-rst',
     'authors': [
         {'name': "Jean Kossaifi", 'email': "jean.kossaifi@gmail.com"},
+        {'name': "David Pitt", 'email': "david.h.pitt@gmail.com"},
         {'name': "Nikola Kovachki", 'email': "nkovachki@caltech.edu"},
         {'name': "Zongyi Li", 'email': "zongyili@caltech.edu"}
         ],
     'version': VERSION,
-    'install_requires': ['numpy', 'configmypy', 'pytest', 'black', 'tensorly', 'tensorly-torch', 'opt-einsum'],
+    'install_requires': ['numpy', 'configmypy', 'pytest', 'flaky', 'black', 'tensorly', 'tensorly-torch', 'opt-einsum'],
     'license': 'Modified BSD',
     'scripts': [],
     'include_package_data': True,

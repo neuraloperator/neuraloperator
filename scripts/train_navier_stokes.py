@@ -1,16 +1,16 @@
 import sys
 
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
+from pathlib import Path
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
-from neuralop.datasets.navier_stokes import load_navier_stokes_pt
-from neuralop.datasets.data_transforms import MGPatchingDataProcessor
-from neuralop.training import setup, BasicLoggerCallback
+from neuralop.data.datasets.navier_stokes import load_navier_stokes_pt
+from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.utils import get_wandb_api_key, count_model_params
-
+from neuralop.training import setup
 
 
 # Read the configuration
@@ -18,7 +18,7 @@ config_name = "default"
 pipe = ConfigPipeline(
     [
         YamlConfig(
-            "./default_config.yaml", config_name="default", config_folder="../config"
+            "./navier_stokes_config.yaml", config_name="default", config_folder="../config"
         ),
         ArgparseConfig(infer_types=True, config_name=None, config_file=None),
         YamlConfig(config_folder="../config"),
@@ -33,6 +33,8 @@ device, is_logger = setup(config)
 # Set up WandB logging
 wandb_init_args = None
 if config.wandb.log and is_logger:
+    print(config.wandb.log)
+    print(config)
     wandb.login(key=get_wandb_api_key())
     if config.wandb.name:
         wandb_name = config.wandb.name
@@ -61,6 +63,7 @@ if config.wandb.log and is_logger:
     if config.wandb.sweep:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
+    wandb.init(**wandb_init_args)
 
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
@@ -70,28 +73,25 @@ if config.verbose:
     pipe.log()
     sys.stdout.flush()
 
+data_dir = Path(f"~/{config.data.folder}").expanduser()
+
 # Loading the Navier-Stokes dataset in 128x128 resolution
 train_loader, test_loaders, data_processor = load_navier_stokes_pt(
-    config.data.folder,
+    data_root=data_dir,
     train_resolution=config.data.train_resolution,
     n_train=config.data.n_train,
     batch_size=config.data.batch_size,
-    positional_encoding=config.data.positional_encoding,
     test_resolutions=config.data.test_resolutions,
     n_tests=config.data.n_tests,
     test_batch_sizes=config.data.test_batch_sizes,
     encode_input=config.data.encode_input,
     encode_output=config.data.encode_output,
-    num_workers=config.data.num_workers,
-    pin_memory=config.data.pin_memory,
-    persistent_workers=config.data.persistent_workers,
 )
 
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:
     data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
                                              out_normalizer=data_processor.out_normalizer,
-                                             positional_encoding=data_processor.positional_encoding,
                                              padding_fraction=config.patching.padding,
                                              stitching=config.patching.stitching,
                                              levels=config.patching.levels)
@@ -156,12 +156,6 @@ if config.verbose:
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
 
-# only perform MG patching if config patching levels > 0
-
-callbacks = [
-    BasicLoggerCallback(wandb_init_args)
-]
-
 
 trainer = Trainer(
     model=model,
@@ -169,8 +163,7 @@ trainer = Trainer(
     data_processor=data_processor,
     device=device,
     amp_autocast=config.opt.amp_autocast,
-    callbacks=callbacks,
-    log_test_interval=config.wandb.log_test_interval,
+    eval_interval=config.wandb.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,

@@ -1,6 +1,6 @@
-=============
+#############
 API reference
-=============
+#############
 
 :mod:`neuralop`: Neural Operators in Python
 
@@ -11,13 +11,12 @@ API reference
 .. _neuralop_models_ref:
 
 Models
-======
+=======
 
 In :mod:`neuralop.models`, we provide neural operator models you can directly use on your applications.
 
-
 FNO
----
+----
 
 We provide a general Fourier Neural Operator (TFNO) that supports most usecases.
 
@@ -40,8 +39,10 @@ We also have dimension-specific classes:
     FNO2d
     FNO3d
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Tensorized FNO (TFNO)
----------------------
+----------------------
 
 N-D version: 
 
@@ -61,8 +62,10 @@ Dimension-specific classes:
     TFNO2d
     TFNO3d
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Spherical Fourier Neural Operators (SFNO)
------------------------------------------
+--------------------------------------------
 
 .. autosummary::
     :toctree: generated
@@ -70,18 +73,32 @@ Spherical Fourier Neural Operators (SFNO)
 
     SFNO
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-U-shaped Neural Operators (U-NO)
---------------------------------
+Geometry-Informed Neural Operators (GINO)
+------------------------------------------
 
 .. autosummary::
     :toctree: generated
     :template: class.rst
 
+    GINO
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+U-shaped Neural Operators (U-NO)
+---------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+    
     UNO
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Layers
-======
+=======
 
 .. automodule:: neuralop.layers
     :no-members:
@@ -95,7 +112,7 @@ in :mod:`neuralop.layers` building blocks,
 in the form of PyTorch layers, that you can use to build your own models:
 
 Neural operator Layers
-++++++++++++++++++++++
+------------------------
 
 **Spectral convolutions** (in Fourier domain):
 
@@ -103,16 +120,25 @@ Neural operator Layers
     :no-members:
     :no-inherited-members:
 
+General SpectralConv layer:
+
 .. autosummary::
     :toctree: generated
     :template: class.rst
 
     SpectralConv
 
+Dimension-specific versions: 
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
     SpectralConv1d
     SpectralConv2d
     SpectralConv3d
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Spherical convolutions**: (using Spherical Harmonics)
 
@@ -126,9 +152,48 @@ Neural operator Layers
 
     SphericalConv
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To support geometry-informed (GINO) models, we also offer the ability to integrate kernels in the spatial domain, which we formulate as mappings between arbitrary coordinate meshes.
+
+**Graph convolutions and kernel integration**:
+
+.. automodule:: neuralop.layers.integral_transform
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    IntegralTransform
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Neighbor search**
+
+Find neighborhoods on arbitrary coordinate meshes:
+
+.. automodule:: neuralop.layers.neighbor_search
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    NeighborSearch
+
+.. autosummary::
+    :toctree: generated
+    :template: function.rst
+
+    native_neighbor_search
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Other resolution invariant operations
-+++++++++++++++++++++++++++++++++++++
+-------------------------------------
 
 Automatically apply resolution dependent domain padding: 
 
@@ -141,6 +206,8 @@ Automatically apply resolution dependent domain padding:
     :template: class.rst
 
     DomainPadding
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: neuralop.layers.skip_connections
     :no-members:
@@ -158,9 +225,11 @@ Automatically apply resolution dependent domain padding:
 
     skip_connection
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 Model Dispatching
-=================
+===================
 We provide a utility function to create model instances from a configuration.
 It has the advantage of doing some checks on the parameters it receives.
 
@@ -175,8 +244,10 @@ It has the advantage of doing some checks on the parameters it receives.
     get_model
     available_models
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Training
-========
+=========
 We provide functionality that automates the boilerplate code associated with 
 training a machine learning model to minimize a loss function on a dataset:
 
@@ -189,12 +260,11 @@ training a machine learning model to minimize a loss function on a dataset:
     :template: class.rst
 
     Trainer
+    IncrementalFNOTrainer
 
-The general case (assuming no modifications) is covered above. To implement domain-specific 
-logic in your training loop while still using the automation and logging provided by a
-Trainer, we provide a Callback class and several examples of common domain-specific Callbacks.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: neuralop.training.callbacks
+.. automodule:: neuralop.losses
     :no-members:
     :no-inherited-members:
 
@@ -202,16 +272,19 @@ Trainer, we provide a Callback class and several examples of common domain-speci
     :toctree: generated
     :template: class.rst
 
-    Callback
-    BasicLoggerCallback
-    CheckpointCallback
+    LpLoss
+    H1Loss
+    MSELoss
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Datasets
+Data
 ========
-We ship a small dataset for testing:
+In `neuralop.data`, we provide APIs for standardizing PDE datasets (`.datasets`) and transforming raw data into model inputs (`.transforms`).
 
-.. automodule:: neuralop.datasets
+We also ship a small dataset for testing:
+
+.. automodule:: neuralop.data.datasets
     :no-members:
     :no-inherited-members:
 
@@ -221,11 +294,16 @@ We ship a small dataset for testing:
 
     load_darcy_flow_small
 
-Much like PyTorch's `Torchvision.Datasets` module, our Datasets module also includes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+DataProcessors
+--------------
+
+Much like PyTorch's `Torchvision.Datasets` module, our `data` module also includes
 utilities to transform data from its raw form into the form expected by models and 
 loss functions:
 
-.. automodule:: neuralop.datasets.data_transforms
+.. automodule:: neuralop.data.transforms.data_processors
     :no-members:
     :no-inherited-members:
 
@@ -235,3 +313,5 @@ loss functions:
 
     DefaultDataProcessor
     MGPatchingDataProcessor
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

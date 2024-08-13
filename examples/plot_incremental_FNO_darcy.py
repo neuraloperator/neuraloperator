@@ -11,11 +11,10 @@ import torch
 import matplotlib.pyplot as plt
 import sys
 from neuralop.models import FNO
-from neuralop import Trainer
-from neuralop.datasets import load_darcy_flow_small
+from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
-from neuralop.training.callbacks import IncrementalCallback
-from neuralop.datasets import data_transforms
+from neuralop.training.incremental import IncrementalFNOTrainer
+from neuralop.data.transforms.data_processors import IncrementalDataProcessor
 from neuralop import LpLoss, H1Loss
 
 
@@ -70,10 +69,9 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 #    uses the dataset_resolution parameter - the resolution of the input
 #    uses the epoch_gap parameter - the number of epochs to wait before increasing the resolution
 #    uses the verbose parameter - if True, print the resolution and the number of modes
-data_transform = data_transforms.IncrementalDataProcessor(
+data_transform = IncrementalDataProcessor(
     in_normalizer=None,
     out_normalizer=None,
-    positional_encoding=None,
     device=device,
     subsampling_rates=[2, 1],
     dataset_resolution=16,
@@ -99,7 +97,7 @@ print(f"\n * Test: {eval_losses}")
 sys.stdout.flush()
 
 # %%
-# Set up the IncrementalCallback
+# Set up the IncrementalTrainer
 # other options include setting incremental_loss_gap = True
 # If one wants to use incremental resolution set it to True
 # In this example we only update the modes and not the resolution
@@ -114,27 +112,22 @@ sys.stdout.flush()
 # incremental_loss_gap : bool, default is False
 #    if True, use the incremental algorithm based on loss gap
 #    uses the incremental_loss_eps parameter
-# One can use multiple Callbacks as well
-callbacks = [
-    IncrementalCallback(
-        incremental_loss_gap=False,
-        incremental_grad=True,
-        incremental_grad_eps=0.9999,
-        incremental_loss_eps = 0.001,
-        incremental_buffer=5,
-        incremental_max_iter=1,
-        incremental_grad_max_iter=2,
-    )
-]
+
 
 # Finally pass all of these to the Trainer
-trainer = Trainer(
+trainer = IncrementalFNOTrainer(
     model=model,
     n_epochs=20,
     data_processor=data_transform,
-    callbacks=callbacks,
     device=device,
     verbose=True,
+    incremental_loss_gap=False,
+    incremental_grad=True,
+    incremental_grad_eps=0.9999,
+    incremental_loss_eps = 0.001,
+    incremental_buffer=5,
+    incremental_max_iter=1,
+    incremental_grad_max_iter=2,
 )
 
 # %%

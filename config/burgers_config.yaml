@@ -35,10 +35,9 @@ default: &DEFAULT
     half_prec_inverse: False
     stabilizer: None
 
-    use_mlp: 1
-    mlp:
-        expansion: 0.5
-        dropout: 0
+    use_channel_mlp: 1
+    channel_mlp_expansion: 0.5
+    channel_mlp_dropout: 0
 
     factorization: None
     rank: 0.05
@@ -72,7 +71,6 @@ default: &DEFAULT
     spatial_length: 128
     temporal_length: 101
 
-    positional_encoding: True
     encode_input: False
     encode_output: False
     include_endpoint: [True, False]
@@ -92,4 +90,4 @@ default: &DEFAULT
     entity: "" # put your username here
     sweep: False
     log_output: True
-    log_test_interval: 1
+    eval_interval: 1

@@ -20,8 +20,8 @@
 project = 'neuraloperator'
 from datetime import datetime
 year = datetime.now().year
-copyright = f'{year}, Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar'
-author = 'Jean Kossaifi, Nikola Kovachki, Zongyi Li and Anima Anandkumar'
+copyright = f'{year}, Jean Kossaifi, David Pitt, Nikola Kovachki, Zongyi Li and Anima Anandkumar'
+author = 'Jean Kossaifi, David Pitt, Nikola Kovachki, Zongyi Li and Anima Anandkumar'
 
 # The full version, including alpha/beta/rc tags
 import neuralop

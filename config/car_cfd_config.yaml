@@ -35,13 +35,13 @@ cfd: &CFD
     gno_transform_type: 'linear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
     fno_n_modes: [16, 16, 16]
     fno_hidden_channels: 64
-    fno_use_mlp: True
+    fno_use_channel_mlp: True
     fno_norm: 'instance_norm'
     fno_ada_in_features: 32
     fno_factorization: 'tucker'
     fno_rank: 0.4
     fno_domain_padding: 0.125
-    fno_mlp_expansion: 1.0
+    fno_channel_mlp_expansion: 1.0
     fno_output_scaling_factor: 1
 
   opt:
@@ -67,4 +67,4 @@ cfd: &CFD
     entity: ""
     sweep: False
     log_output: True
-    log_test_interval: 1
+    eval_interval: 1

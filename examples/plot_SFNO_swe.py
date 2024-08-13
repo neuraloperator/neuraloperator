@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import sys
 from neuralop.models import SFNO
 from neuralop import Trainer
-from neuralop.datasets import load_spherical_swe
+from neuralop.data.datasets import load_spherical_swe
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
 
@@ -72,7 +72,7 @@ sys.stdout.flush()
 trainer = Trainer(model=model, n_epochs=20,
                   device=device,
                   wandb_log=False,
-                  log_test_interval=3,
+                  eval_interval=3,
                   use_distributed=False,
                   verbose=True)
 

@@ -36,7 +36,7 @@ def test_tfno(
         width = 16
         fc_channels = 16
         batch_size = 4
-        use_mlp = True
+        use_channel_mlp = True
         n_layers = 4
         mlp = Bunch(dict(expansion=0.5, dropout=0))
     else:
@@ -49,7 +49,7 @@ def test_tfno(
         batch_size = 3
         n_layers = 2
 
-        use_mlp = True
+        use_channel_mlp = True
         mlp = Bunch(dict(expansion=0.5, dropout=0))
 
     rank = 0.2
@@ -65,8 +65,7 @@ def test_tfno(
         joint_factorization=False,
         n_layers=n_layers,
         fno_block_precision=fno_block_precision,
-        use_mlp=use_mlp,
-        mlp=mlp,
+        use_channel_mlp=use_channel_mlp,
         stabilizer=stabilizer,
         fc_channels=fc_channels,
         lifting_channels=lifting_channels,
@@ -109,7 +108,7 @@ def test_fno_superresolution(output_scaling_factor):
     fc_channels = 32
     batch_size = 3
     n_layers = 3
-    use_mlp = True
+    use_channel_mlp = True
     n_dim = 2
     rank = 0.2
     size = (s,) * n_dim
@@ -125,7 +124,7 @@ def test_fno_superresolution(output_scaling_factor):
         rank=rank,
         output_scaling_factor=output_scaling_factor,
         n_layers=n_layers,
-        use_mlp=use_mlp,
+        use_channel_mlp=use_channel_mlp,
         fc_channels=fc_channels,
     ).to(device)
 
