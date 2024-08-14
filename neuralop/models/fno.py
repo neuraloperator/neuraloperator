@@ -15,6 +15,9 @@ class FNO(BaseModel, name='FNO'):
 
     Parameters
     ----------
+
+    Core parameters
+    ~~~~~~~~~~~~
     n_modes : int tuple
         number of modes to keep in Fourier Layer, along each dimension
         The dimensionality of the FNO is inferred from ``len(n_modes)``
@@ -30,13 +33,7 @@ class FNO(BaseModel, name='FNO'):
         number of hidden channels of the projection block of the FNO, by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
-    positional_embedding : str literal | GridEmbedding2D | GridEmbeddingND | None
-        if "grid", appends a grid positional embedding with default settings to 
-        the last channels of raw input. Assumes the inputs are discretized
-        over a grid with entry [0,0,...] at the origin and side lengths of 1.
-        If an initialized GridEmbedding, uses this module directly
-        See `neuralop.embeddings.GridEmbeddingND` for details
-        if None, does nothing
+
     max_n_modes : None or int tuple, default is None
         * If not None, this allows to incrementally increase the number of
           modes in Fourier domain during training. Has to verify n <= N
@@ -45,10 +42,27 @@ class FNO(BaseModel, name='FNO'):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
+    
+    positional_embedding : str literal | GridEmbedding2D | GridEmbeddingND | None
+        if "grid", appends a grid positional embedding with default settings to 
+        the last channels of raw input. Assumes the inputs are discretized
+        over a grid with entry [0,0,...] at the origin and side lengths of 1.
+        If an initialized GridEmbedding, uses this module directly
+        See `neuralop.embeddings.GridEmbeddingND` for details
+        if None, does nothing
+    domain_padding : None, float, or List[float], optional
+        If not None, percentage of padding to use, by default None
+        To vary the percentage of padding used along each input dimension,
+        pass in a list of percentages e.g. [p1, p2, ..., pN] such that
+        p1 corresponds to the percentage of padding along dim 1, etc.
+    domain_padding_mode : {'symmetric', 'one-sided'}, optional
+        How to perform domain padding, by default 'one-sided'
     fno_block_precision : str {'full', 'half', 'mixed'}
         if 'full', the FNO Block runs in full precision
         if 'half', the FFT, contraction, and inverse FFT run in half precision
         if 'mixed', the contraction and inverse FFT run in half precision
+    fft_norm : str, optional
+        by default 'forward'
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
     use_channel_mlp : bool, optional
@@ -61,12 +75,20 @@ class FNO(BaseModel, name='FNO'):
         Non-Linearity module to use, by default F.gelu
     norm : Literal["ada_in", "group_norm", "instance_norm"], optional
         Normalization layer to use, by default None
-    preactivation : bool, default is False
-        if True, use resnet-style preactivation
+    
     fno_skip : {'linear', 'identity', 'soft-gating'}, optional
         Type of skip connection to use in fno, by default 'linear'
     channel_mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
         Type of skip connection to use in channel-mixing mlp, by default 'soft-gating'
+    
+    preactivation : bool, default is False
+        if True, use resnet-style preactivation
+    
+    
+    Tensor params
+    ~~~~~~~~~~~~~~
+    Parameters controlling FNO's tensorized weights in the frequency domain
+
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
     factorization : str or None, {'tucker', 'cp', 'tt'}
@@ -88,15 +110,6 @@ class FNO(BaseModel, name='FNO'):
           the decomposition
     decomposition_kwargs : dict, optional, default is {}
         Optionaly additional parameters to pass to the tensor decomposition
-    domain_padding : None, float, or List[float], optional
-        If not None, percentage of padding to use, by default None
-        To vary the percentage of padding used along each input dimension,
-        pass in a list of percentages e.g. [p1, p2, ..., pN] such that
-        p1 corresponds to the percentage of padding along dim 1, etc.
-    domain_padding_mode : {'symmetric', 'one-sided'}, optional
-        How to perform domain padding, by default 'one-sided'
-    fft_norm : str, optional
-        by default 'forward'
     """
 
     def __init__(
@@ -109,18 +122,21 @@ class FNO(BaseModel, name='FNO'):
         projection_channels=256,
         n_layers=4,
         positional_embedding="grid",
+        non_linearity=F.gelu,
         output_scaling_factor=None,
+        domain_padding=None,
+        domain_padding_mode="one-sided",
+        fft_norm="forward",
         max_n_modes=None,
         fno_block_precision="full",
         use_channel_mlp=False,
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
-        non_linearity=F.gelu,
         stabilizer=None,
         norm=None,
-        preactivation=False,
         fno_skip="linear",
         channel_mlp_skip="soft-gating",
+        preactivation=False,
         separable=False,
         factorization=None,
         rank=1.0,
@@ -128,10 +144,7 @@ class FNO(BaseModel, name='FNO'):
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
-        domain_padding=None,
-        domain_padding_mode="one-sided",
-        fft_norm="forward",
-        SpectralConv=SpectralConv,
+        conv_module=SpectralConv,
         **kwargs
     ):
         super().__init__()
@@ -219,7 +232,7 @@ class FNO(BaseModel, name='FNO'):
             factorization=factorization,
             decomposition_kwargs=decomposition_kwargs,
             joint_factorization=joint_factorization,
-            SpectralConv=SpectralConv,
+            conv_module=SpectralConv,
             n_layers=n_layers,
             **kwargs
         )
