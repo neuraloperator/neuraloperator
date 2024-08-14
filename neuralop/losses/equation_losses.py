@@ -3,7 +3,6 @@ import torch.nn.functional as F
 
 from .finite_diff import central_diff_2d
 from .data_losses import LpLoss
-from .utils import FC2D
 
 class BurgersEqnLoss(object):
     """
@@ -88,8 +87,6 @@ class DarcyEqnLoss(object):
         self.method = method
         self.sub = sub
         self.__name__ = 'eqn'
-        if self.method == 'fourier_continuation':
-            self.fc_helper = FC2D(device, d, C)
 
     def finite_difference(self, a, u, domain_length=1):
         # remove extra channel dimensions
@@ -119,44 +116,10 @@ class DarcyEqnLoss(object):
 
         del ux, uy, a_ux, a_uy, a_uxx, a_uyy
         return loss
-        
-    def fourier_continuation(self, a, u, domain_length_x = 1, domain_length_y = 1):
-
-        # remove extra channel dimensions
-        u = u[:, 0, :, :]
-        a = a[:, 0, :, :]
-
-        # compute derivatives along the x-direction
-        ux = self.fc.diff_x(u, domain_length_x)	
-
-        # compute derivatives along the y-direction
-        uy = self.fc.diff_y(u, domain_length_y)
-
-        a_ux = a * ux
-        a_uy = a * uy
-
-        # compute derivatives along the x-direction
-        a_uxx = self.fc_helper.diff_x(a_ux, domain_length_x)
-
-        # compute derivatives along the y-direction
-        a_uyy = self.fc_helper.diff_y(a_uy, domain_length_y)
-
-
-        left_hand_side =  -(a_uxx + a_uyy)
-        left_hand_side = left_hand_side[:, 2:-2, 2:-2] # Not necessary for FC, but can be done for purposes of comparison with FDM
-
-        # compute the Lp loss of the left and right hand sides of the Darcy Flow equation
-        forcing_fn = torch.ones(left_hand_side.shape, device=u.device)
-        lploss = LpLoss(d=2, reductions='mean') # todo: size_average=True
-        
-        return lploss.rel(left_hand_side, forcing_fn)  
-        # return lploss.rel(left_hand_side, forcing_fn), left_hand_side  
 
     def __call__(self, u, x, out_p=None, **kwargs):
         if self.method == 'finite_difference':
             return self.finite_difference(x, u)
-        elif self.method == 'fourier_continuation':
-            return self.fourier_continuation(x, u)
         else:
             raise NotImplementedError()
     
