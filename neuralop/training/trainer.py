@@ -44,7 +44,7 @@ class Trainer:
         n_epochs : int
         wandb_log : bool, default is False
             whether to log results to wandb
-        device : str 'cpu' or 'cuda'
+        device : torch.device, or str 'cpu' or 'cuda'
         mixed_precision : bool, default is False
             whether to use torch.autocast to compute mixed precision
         data_processor : DataProcessor class to transform data, default is None
