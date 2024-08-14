@@ -71,10 +71,13 @@ class Trainer:
         self.use_distributed = use_distributed
         self.device = device
         # handle autocast device
-        if "cuda" in self.device:
-            self.autocast_device_type = "cuda"
+        if isinstance(self.device, torch.device):
+            self.autocast_device_type = self.device.type
         else:
-            self.autocast_device_type = "cpu"
+            if "cuda" in self.device:
+                self.autocast_device_type = "cuda"
+            else:
+                self.autocast_device_type = "cpu"
         self.mixed_precision = mixed_precision
         self.data_processor = data_processor
 
