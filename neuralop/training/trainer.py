@@ -44,7 +44,7 @@ class Trainer:
         n_epochs : int
         wandb_log : bool, default is False
             whether to log results to wandb
-        device : str 'cpu' or 'cuda'
+        device : torch.device, or str 'cpu' or 'cuda'
         mixed_precision : bool, default is False
             whether to use torch.autocast to compute mixed precision
         data_processor : DataProcessor class to transform data, default is None
@@ -71,10 +71,13 @@ class Trainer:
         self.use_distributed = use_distributed
         self.device = device
         # handle autocast device
-        if "cuda" in self.device:
-            self.autocast_device_type = "cuda"
+        if isinstance(self.device, torch.device):
+            self.autocast_device_type = self.device.type
         else:
-            self.autocast_device_type = "cpu"
+            if "cuda" in self.device:
+                self.autocast_device_type = "cuda"
+            else:
+                self.autocast_device_type = "cpu"
         self.mixed_precision = mixed_precision
         self.data_processor = data_processor
 
