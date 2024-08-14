@@ -11,6 +11,7 @@ from neuralop.data.datasets.navier_stokes import load_navier_stokes_pt
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.training import setup
+from neuralop.training.torch_setup import config_opt_and_scheduler
 
 
 # Read the configuration
@@ -106,31 +107,8 @@ if config.distributed.use_distributed:
         model, device_ids=[device.index], output_device=device.index, static_graph=True
     )
 
-# Create the optimizer
-optimizer = torch.optim.Adam(
-    model.parameters(),
-    lr=config.opt.learning_rate,
-    weight_decay=config.opt.weight_decay,
-)
-
-if config.opt.scheduler == "ReduceLROnPlateau":
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        factor=config.opt.gamma,
-        patience=config.opt.scheduler_patience,
-        mode="min",
-    )
-elif config.opt.scheduler == "CosineAnnealingLR":
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=config.opt.scheduler_T_max
-    )
-elif config.opt.scheduler == "StepLR":
-    scheduler = torch.optim.lr_scheduler.StepLR(
-        optimizer, step_size=config.opt.step_size, gamma=config.opt.gamma
-    )
-else:
-    raise ValueError(f"Got scheduler={config.opt.scheduler}")
-
+# Create the optimizer and scheduler
+optimizer, scheduler = config_opt_and_scheduler(config, model)
 
 # Creating the losses
 l2loss = LpLoss(d=2, p=2)

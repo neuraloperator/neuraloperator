@@ -3,6 +3,7 @@ import wandb
 import sys
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from neuralop.training import setup
+from neuralop.training.torch_setup import config_opt_and_scheduler
 from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
 from neuralop.losses.data_losses import LpLoss
@@ -64,22 +65,8 @@ test_loader = data_module.test_dataloader(batch_size=1, shuffle=False)
 model = get_model(config)
 model = model.to(device)
 
-#Create the optimizer
-optimizer = torch.optim.Adam(model.parameters(), 
-                                lr=config.opt.learning_rate, 
-                                weight_decay=config.opt.weight_decay)
-
-if config.opt.scheduler == 'ReduceLROnPlateau':
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=config.opt.gamma, patience=config.opt.scheduler_patience, mode='min')
-elif config.opt.scheduler == 'CosineAnnealingLR':
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.opt.scheduler_T_max)
-elif config.opt.scheduler == 'StepLR':
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 
-                                                step_size=config.opt.step_size,
-                                                gamma=config.opt.gamma)
-else:
-    raise ValueError(f'Got {config.opt.scheduler=}')
-
+#Create the optimizer and scheduler
+optimizer, scheduler = config_opt_and_scheduler(config, model)
 
 l2loss = LpLoss(d=2,p=2)
 

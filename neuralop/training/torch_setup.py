@@ -91,6 +91,47 @@ def setup(config):
 
     return device, is_logger
 
+def config_opt_and_scheduler(config, model):
+    """config_opt_and_scheduler sets up an optimizer and scheduler
+    based on values provided in our configmypy training script configs. 
+
+    Parameters
+    ----------
+    config : configmypy.Bunch, config
+        config containing parameters for
+        initializing optimizer and scheduler
+
+    model : nn.Module
+        model with parameters to optimize
+    """
+
+    # Create the optimizer
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=config.opt.learning_rate,
+        weight_decay=config.opt.weight_decay,
+    )
+
+    if config.opt.scheduler == "ReduceLROnPlateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            factor=config.opt.gamma,
+            patience=config.opt.scheduler_patience,
+            mode="min",
+        )
+    elif config.opt.scheduler == "CosineAnnealingLR":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=config.opt.scheduler_T_max
+        )
+    elif config.opt.scheduler == "StepLR":
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=config.opt.step_size, gamma=config.opt.gamma
+        )
+    else:
+        raise ValueError(f"Got scheduler={config.opt.scheduler}")
+
+    return optimizer, scheduler
+
 
 def increase_l2_fetch_granularity():
     try:
