@@ -9,15 +9,14 @@ from torch.utils.data import DataLoader
 import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
-from neuralop.datasets.darcy import load_darcy_421_5k, loader_to_residual_db
-from neuralop.datasets.tensor_dataset import TensorDataset
-from neuralop.datasets.data_transforms import DataProcessor, MGPatchingDataProcessor
+from neuralop.data.datasets.darcy import DarcyDataset
+from neuralop.data.datasets.tensor_dataset import TensorDataset
+from neuralop.data.transforms.data_processors import DataProcessor, DefaultDataProcessor
+from neuralop.data.transforms.normalizers import UnitGaussianNormalizer
 from neuralop.losses.data_losses import PointwiseQuantileLoss
 from neuralop.models import UQNO
 from neuralop.training import setup
-from neuralop.training.callbacks import BasicLoggerCallback, Callback, CheckpointCallback
 from neuralop.utils import get_wandb_api_key, count_model_params
-
 
 # Read the configuration
 config_name = "default"
@@ -67,6 +66,7 @@ if config.wandb.log and is_logger:
     if config.wandb.sweep:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
+    wandb.init(**wandb_args)
 
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
@@ -77,21 +77,31 @@ if config.verbose and is_logger:
     sys.stdout.flush()
 
 # Loading the Darcy flow dataset for training the base model
-train_loader, train_db, test_loaders, data_processor = load_darcy_421_5k(
-    data_root=config.data.data_root,
+solution_dataset = DarcyDataset(
+    root_dir=config.data.root,
     n_train=config.data.n_train_total,
-    n_test=config.data.n_test,
-    sub=config.data.sub,
-    test_batch_size=config.data.test_batch_size,
+    n_tests=[config.data.n_test],
     batch_size=config.data.batch_size,
-    positional_encoding=config.data.positional_encoding,
+    test_batch_sizes=[config.data.test_batch_size],
+    train_resolution=421,
+    test_resolutions=[421],
     encode_input=config.data.encode_input,
     encode_output=config.data.encode_output,
 )
 
+train_db = solution_dataset.train_db
+
+test_db = solution_dataset.test_dbs[421]
+test_loaders = {
+    421: DataLoader(
+        test_db,
+        shuffle=False,
+        batch_size=config.data.test_batch_size,
+    )
+}
+data_processor = solution_dataset.data_processor
 
 # split the training set up into train, residual_train, residual_calibration
-train_db = train_loader.dataset
 solution_train_db = TensorDataset(**train_db[:config.data.n_train_solution])
 residual_train_db = TensorDataset(**train_db[config.data.n_train_solution:config.data.n_train_solution +\
                                   config.data.n_train_residual])
@@ -99,32 +109,21 @@ residual_calib_db = TensorDataset(**train_db[config.data.n_train_solution + conf
                                   config.data.n_train_solution + config.data.n_train_residual +\
                                   config.data.n_calib_residual])
 
-# convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
-if config.patching.levels > 0:
-    data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
-                                             out_normalizer=data_processor.out_normalizer,
-                                             positional_encoding=data_processor.positional_encoding,
-                                             padding_fraction=config.patching.padding,
-                                             stitching=config.patching.stitching,
-                                             levels=config.patching.levels)
+print(f"{len(train_db)=}")
+print(f"{len(residual_train_db)=}")
+print(f"{len(residual_calib_db)=}")
+
 print(f"{data_processor=}")
 print(f"{data_processor.in_normalizer=}")
 print(f"{data_processor.out_normalizer=}")
-data_processor.train = True
 data_processor = data_processor.to(device)
 
 solution_model = get_model(config)
-if config.load_soln_model:
+'''if config.load_soln_model:
     solution_model = solution_model.from_checkpoint(save_folder="./ckpt",
                                               save_name=config.soln_checkpoint)
-    #solution_model.load_state_dict(torch.load("./ckpt/ziqi-model-main"))
+    #solution_model.load_state_dict(torch.load("./ckpt/ziqi-model-main"))'''
 solution_model = solution_model.to(device)
-
-# Use distributed data parallel
-if config.distributed.use_distributed:
-    model = DDP(
-        solution_model, device_ids=[device.index], output_device=device.index, static_graph=True
-    )
 
 # Create the optimizer
 optimizer = torch.optim.Adam(
@@ -165,61 +164,64 @@ else:
         f'but expected one of ["l2", "h1"]'
     )
 eval_losses = {"h1": h1loss, "l2": l2loss}
-
-
                                               
-if not config.load_soln_model:
-    if config.verbose and is_logger:
-        print("\n### MODEL ###\n", solution_model)
-        print("\n### OPTIMIZER ###\n", optimizer)
-        print("\n### SCHEDULER ###\n", scheduler)
-        print("\n### LOSSES ###")
-        print(f"\n * Train: {train_loss}")
-        print(f"\n * Test: {eval_losses}")
-        print(f"\n### Beginning Training...\n")
+#if not config.load_soln_model:
+if config.verbose and is_logger:
+    print("\n### MODEL ###\n", solution_model)
+    print("\n### OPTIMIZER ###\n", optimizer)
+    print("\n### SCHEDULER ###\n", scheduler)
+    print("\n### LOSSES ###")
+    print(f"\n * Train: {train_loss}")
+    print(f"\n * Test: {eval_losses}")
+    print(f"\n### Beginning Training...\n")
+    sys.stdout.flush()
+
+
+# Log parameter count
+if is_logger:
+    n_params = count_model_params(solution_model)
+
+    if config.verbose:
+        print(f"\nn_params: {n_params}")
         sys.stdout.flush()
 
+    if config.wandb.log:
+        to_log = {"n_params": n_params}
+        if config.n_params_baseline is not None:
+            to_log["n_params_baseline"] = (config.n_params_baseline,)
+            to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
+            to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
+        wandb.log(to_log)
+        #wandb.watch(model)
+
+
+solution_train_loader = DataLoader(solution_train_db,
+                                batch_size=config.data.batch_size,
+                                    shuffle=True,
+                                    num_workers=1,
+                                    pin_memory=True,
+                                    persistent_workers=False,
+                                )
+
+if config.opt.solution.n_epochs > 0:
+    if config.opt.solution.resume == True:
+        resume_dir = "./solution_ckpts"
+    else:
+        resume_dir = None
+    
     trainer = Trainer(
-        model=solution_model,
-        n_epochs=config.opt.solution.n_epochs,
-        device=device,
-        data_processor=data_processor,
-        amp_autocast=config.opt.solution.amp_autocast,
-        wandb_log=config.wandb.log,
-        log_test_interval=config.wandb.log_test_interval,
-        log_output=config.wandb.log_output,
-        use_distributed=config.distributed.use_distributed,
-        verbose=config.verbose and is_logger,
-        callbacks=[
-            BasicLoggerCallback(wandb_args)
-                ]
-                )
+    model=solution_model,
+    n_epochs=config.opt.solution.n_epochs,
+    device=device,
+    data_processor=data_processor,
+    amp_autocast=config.opt.solution.amp_autocast,
+    wandb_log=config.wandb.log,
+    eval_interval=config.wandb.eval_interval,
+    log_output=config.wandb.log_output,
+    use_distributed=config.distributed.use_distributed,
+    verbose=config.verbose and is_logger,
+            )
 
-    # Log parameter count
-    if is_logger:
-        n_params = count_model_params(solution_model)
-
-        if config.verbose:
-            print(f"\nn_params: {n_params}")
-            sys.stdout.flush()
-
-        if config.wandb.log:
-            to_log = {"n_params": n_params}
-            if config.n_params_baseline is not None:
-                to_log["n_params_baseline"] = (config.n_params_baseline,)
-                to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
-                to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
-            wandb.log(to_log)
-            #wandb.watch(model)
-
-
-    solution_train_loader = DataLoader(solution_train_db,
-                                    batch_size=config.data.batch_size,
-                                        shuffle=True,
-                                        num_workers=1,
-                                        pin_memory=True,
-                                        persistent_workers=False,
-                                    )
     trainer.train(
         train_loader=solution_train_loader,
         test_loaders=test_loaders,
@@ -228,13 +230,73 @@ if not config.load_soln_model:
         regularizer=False,
         training_loss=train_loss,
         eval_losses=eval_losses,
+        save_best="421_l2",
+        save_dir="./solution_ckpts",
+        resume_from_dir=resume_dir
+
     )
 
-    solution_model.save_checkpoint(save_folder="./ckpt",save_name=config.soln_checkpoint)
+#solution_model.save_checkpoint(save_folder="./ckpt",save_name=config.soln_checkpoint)
 
 ######
 # UQ #
 ######
+
+def loader_to_residual_db(model, data_processor, loader, device, train_val_split=True):
+    """train_db_to_residual_train_db converts a dataset of x: a(x), y: u(x) to 
+    x: a(x), y: G(a,x) - u(x)"""
+    error_list = []
+    x_list = []
+    model = model.to(device)
+    model.eval()
+    data_processor.eval() # unnormalized y
+    data_processor = data_processor.to(device)
+    for idx, sample in enumerate(loader):
+        #print(f"input pre preproc {sample['y'].mean()=}")
+        sample = data_processor.preprocess(sample)
+        #print(f"input post preproc {sample['y'].mean()=}")
+        out = model(**sample)
+        #print(f"output pre postproc {out.mean()=}")
+        out, sample = data_processor.postprocess(out, sample) # unnormalize output
+        #print(f"output post postproc {out.mean()=}")
+        #print(f"output post postproc {sample['y'].mean()=}")
+
+        x_list.append(sample['x'].to("cpu"))
+        error = (out-sample['y']).detach().to("cpu") # detach, otherwise residual carries gradient of model weight
+        # error is unnormalized here
+        error_list.append(error)
+        
+        del sample, out
+    errors = torch.cat(error_list, axis=0)
+    xs = torch.cat(x_list, axis=0) # check this
+    print(f"{errors.shape=} {xs.shape=}")
+    
+    residual_encoder = UnitGaussianNormalizer()
+    print(f"{residual_encoder.mean=}")
+    print(f"{torch.mean(xs)=}")
+    print(f"{torch.mean(errors)=}")
+    print(f"{torch.var(xs)=}")
+    print(f"{torch.var(errors)=}")
+    residual_encoder.fit(errors)
+    print(f"{residual_encoder.mean=}")
+    print(f"{residual_encoder.std=}")
+
+    #errors = residual_encoder.transform(errors)
+    
+    # positional encoding and normalization already applied to X values
+    residual_data_processor = DefaultDataProcessor(in_normalizer=None,
+                                                   out_normalizer=residual_encoder)
+    residual_data_processor.train()
+
+    if train_val_split:
+        val_start = int(0.8 * xs.shape[0])
+
+        residual_train_db = TensorDataset(x=xs[:val_start], y=errors[:val_start])
+        residual_val_db = TensorDataset(x=xs[val_start:], y=errors[val_start:])
+    else:
+        residual_val_db = None
+    return residual_train_db, residual_val_db, residual_data_processor
+
 
 class UQNODataProcessor(DataProcessor):
     def __init__(self, base_data_processor: DataProcessor, resid_data_processor: DataProcessor,
@@ -278,10 +340,10 @@ class UQNODataProcessor(DataProcessor):
         return self
     
     def train(self):
-        self.base_data_processor.train = True
+        self.base_data_processor.train()
     
     def eval(self):
-        self.base_data_processor.train = False
+        self.base_data_processor.eval()
 
     def preprocess(self, *args, **kwargs):
         """
@@ -293,7 +355,7 @@ class UQNODataProcessor(DataProcessor):
         """
         unnormalize the residual prediction as well as the output
         """
-        self.base_data_processor.train = False
+        self.base_data_processor.eval()
         g_hat, pred_uncertainty = out # UQNO returns a tuple
        
         pred_uncertainty = self.residual_normalizer.inverse_transform(pred_uncertainty)
@@ -317,14 +379,14 @@ class UQNODataProcessor(DataProcessor):
         out, sample = self.postprocess(out, sample)
         return out, sample
 
-residual_model = copy.deepcopy(solution_model)
+# load best-performing solution model
+solution_model = solution_model.from_checkpoint(save_folder="./solution_ckpts", save_name="best_model")
+solution_model = solution_model.to(device)
 
-if config.load_resid_model:
-    residual_model = residual_model.from_checkpoint(save_folder='./ckpt/residual-savebest', save_name=config.resid_checkpoint)
+residual_model = copy.deepcopy(solution_model)
 residual_model = residual_model.to(device)
 
 quantile_loss = PointwiseQuantileLoss(alpha = 1 - config.opt.alpha)
-
 
 # Create the quantile model's optimizer
 residual_optimizer = torch.optim.Adam(
@@ -357,61 +419,56 @@ processed_residual_train_db, processed_residual_val_db, residual_data_processor 
 
 residual_data_processor = residual_data_processor.to(device)
 
-if not config.load_resid_model:
+#if not config.load_resid_model:
 
-    residual_train_loader = DataLoader(processed_residual_train_db,
-                                    batch_size=config.data.batch_size,
-                                        shuffle=True,
-                                        num_workers=0,
-                                        pin_memory=True,
-                                        persistent_workers=False,
-                                    )
-    residual_val_loader = DataLoader(processed_residual_val_db,
-                                    batch_size=config.data.batch_size,
-                                        shuffle=True,
-                                        num_workers=0,
-                                        pin_memory=True,
-                                        persistent_workers=False,
-                                    )
+residual_train_loader = DataLoader(processed_residual_train_db,
+                                batch_size=config.data.batch_size,
+                                    shuffle=True,
+                                    num_workers=0,
+                                    pin_memory=True,
+                                    persistent_workers=False,
+                                )
+residual_val_loader = DataLoader(processed_residual_val_db,
+                                batch_size=config.data.batch_size,
+                                    shuffle=True,
+                                    num_workers=0,
+                                    pin_memory=True,
+                                    persistent_workers=False,
+                                )
 
-    # config residual scheduler
-    if config.opt.residual.scheduler == "ReduceLROnPlateau":
-        resid_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            residual_optimizer,
-            factor=config.opt.residual.gamma,
-            patience=config.opt.residual.scheduler_patience,
-            mode="min",
-        )
-    elif config.opt.residual.scheduler == "CosineAnnealingLR":
-        resid_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            residual_optimizer, T_max=config.opt.residual.scheduler_T_max
-        )
-    elif config.opt.residual.scheduler == "StepLR":
-        resid_scheduler = torch.optim.lr_scheduler.StepLR(
-            residual_optimizer, step_size=config.opt.solution.step_size, gamma=config.opt.solution.gamma
-        )
-    else:
-        raise ValueError(f"Got residual scheduler={config.opt.residual.scheduler}")
-    # train on normalized inputs
-    residual_data_processor.train = True
+# config residual scheduler
+if config.opt.residual.scheduler == "ReduceLROnPlateau":
+    resid_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        residual_optimizer,
+        factor=config.opt.residual.gamma,
+        patience=config.opt.residual.scheduler_patience,
+        mode="min",
+    )
+elif config.opt.residual.scheduler == "CosineAnnealingLR":
+    resid_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        residual_optimizer, T_max=config.opt.residual.scheduler_T_max
+    )
+elif config.opt.residual.scheduler == "StepLR":
+    resid_scheduler = torch.optim.lr_scheduler.StepLR(
+        residual_optimizer, step_size=config.opt.solution.step_size, gamma=config.opt.solution.gamma
+    )
+else:
+    raise ValueError(f"Got residual scheduler={config.opt.residual.scheduler}")
+
+if config.opt.residual.n_epochs > 0:
+
     residual_trainer = Trainer(model=residual_model,
                             n_epochs=config.opt.residual.n_epochs,
                             data_processor=residual_data_processor,
                             wandb_log=config.wandb.log,
                             device=device,
                             amp_autocast=config.opt.residual.amp_autocast,
-                            log_test_interval=config.wandb.log_test_interval,
+                            eval_interval=config.wandb.eval_interval,
                             log_output=config.wandb.log_output,
                             use_distributed=config.distributed.use_distributed,
                             verbose=config.verbose and is_logger,
-                            callbacks=[
-                                    BasicLoggerCallback(wandb_args),
-                                    #intCallback(save_dir='./ckpt/residual-savebest',
-                                    #                   save_best='quantile')
-                                        ]
                             )
 
-    
     residual_trainer.train(train_loader=residual_train_loader,
                         test_loaders={'test':residual_val_loader}, 
                         optimizer=residual_optimizer,
@@ -419,12 +476,14 @@ if not config.load_resid_model:
                         regularizer=False,
                         training_loss=quantile_loss,
                         eval_losses={'quantile':quantile_loss,
-                                     'l2':l2loss}
+                                        'l2':l2loss},
+                        save_best='test_quantile',
+                        save_dir="./residual_ckpts",
                         )
 
-
-
-    #residual_model.save_checkpoint(save_folder='./ckpt', save_name=config.resid_checkpoint)
+# load best residual model
+residual_model = residual_model.from_checkpoint(save_name="best_model", save_folder="./residual_ckpts")
+residual_model = residual_model.to(device)
 
 ### calibrate trained quantile model
 def get_coeff_quantile_idx(alpha, delta, n_samples, n_gridpts):
@@ -535,3 +594,5 @@ for alpha in [0.02, 0.05, 0.1]:
             
 if config.wandb.log and is_logger:
     wandb.finish()
+
+
