@@ -147,7 +147,7 @@
         <span class="n">n_epochs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">wandb_log</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">device</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">,</span>
-        <span class="n">amp_autocast</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">mixed_precision</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">data_processor</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">eval_interval</span><span class="p">:</span> <span class="nb">int</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">log_output</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -161,9 +161,9 @@
 <span class="sd">        n_epochs : int</span>
 <span class="sd">        wandb_log : bool, default is False</span>
 <span class="sd">            whether to log results to wandb</span>
-<span class="sd">        device : str &#39;cpu&#39; or &#39;cuda&#39;</span>
-<span class="sd">        amp_autocast : bool, default is False</span>
-<span class="sd">            whether to use torch.amp automatic mixed precision</span>
+<span class="sd">        device : torch.device, or str &#39;cpu&#39; or &#39;cuda&#39;</span>
+<span class="sd">        mixed_precision : bool, default is False</span>
+<span class="sd">            whether to use torch.autocast to compute mixed precision</span>
 <span class="sd">        data_processor : DataProcessor class to transform data, default is None</span>
 <span class="sd">            if not None, data from the loaders is transform first with data_processor.preprocess,</span>
 <span class="sd">            then after getting an output from the model, that is transformed with data_processor.postprocess.</span>
@@ -187,7 +187,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">use_distributed</span> <span class="o">=</span> <span class="n">use_distributed</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">amp_autocast</span> <span class="o">=</span> <span class="n">amp_autocast</span>
+        <span class="c1"># handle autocast device</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">autocast_device_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">type</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;cuda&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">autocast_device_type</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">autocast_device_type</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mixed_precision</span> <span class="o">=</span> <span class="n">mixed_precision</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data_processor</span> <span class="o">=</span> <span class="n">data_processor</span>
 
 <div class="viewcode-block" id="Trainer.train">
@@ -504,8 +512,8 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span> <span class="o">+=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">amp_autocast</span><span class="p">:</span>
-            <span class="k">with</span> <span class="n">amp</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mixed_precision</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">device_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">autocast_device_type</span><span class="p">):</span>
                 <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">sample</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">sample</span><span class="p">)</span>
@@ -518,8 +526,8 @@
 
         <span class="n">loss</span> <span class="o">=</span> <span class="mf">0.0</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">amp_autocast</span><span class="p">:</span>
-            <span class="k">with</span> <span class="n">amp</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mixed_precision</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">device_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">autocast_device_type</span><span class="p">):</span>
                 <span class="n">loss</span> <span class="o">+=</span> <span class="n">training_loss</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">sample</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">loss</span> <span class="o">+=</span> <span class="n">training_loss</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">sample</span><span class="p">)</span>
