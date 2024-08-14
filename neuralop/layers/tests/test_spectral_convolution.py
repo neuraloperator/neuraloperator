@@ -10,8 +10,8 @@ from ..spectral_convolution import (SpectralConv3d, SpectralConv2d,
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
 @pytest.mark.parametrize('separable', [False, True])
 @pytest.mark.parametrize('dim', [1,2,3,4])
-@pytest.mark.parametrize('complex_spatial_data', [True, False])
-def test_SpectralConv(factorization, implementation, separable, dim, complex_spatial_data):
+@pytest.mark.parametrize('complex_data', [True, False])
+def test_SpectralConv(factorization, implementation, separable, dim, complex_data):
     """Test for SpectralConv of any order
     
     Compares Factorized and Dense convolution output
@@ -26,12 +26,12 @@ def test_SpectralConv(factorization, implementation, separable, dim, complex_spa
 
     # Test for Conv1D to Conv4D
     conv = SpectralConv(
-        3, 3, modes[:dim], n_layers=1, bias=False, implementation=implementation, factorization=factorization, separable=separable, complex_spatial_data=complex_spatial_data)
+        3, 3, modes[:dim], n_layers=1, bias=False, implementation=implementation, factorization=factorization, separable=separable, complex_data=complex_data)
 
     conv_dense = SpectralConv(
-        3, 3, modes[:dim], n_layers=1, bias=False, implementation='reconstructed', factorization=None, complex_spatial_data=complex_spatial_data)
+        3, 3, modes[:dim], n_layers=1, bias=False, implementation='reconstructed', factorization=None, complex_data=complex_data)
 
-    if complex_spatial_data:
+    if complex_data:
         x = torch.randn(2, 3, *(12, )*dim, dtype=torch.cfloat)
     else:
         x = torch.randn(2, 3, *(12, )*dim)

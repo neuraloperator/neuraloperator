@@ -65,7 +65,7 @@ class FNOBlocks(nn.Module):
         channel_mlp_skip : str, optional
             module to use for ChannelMLP skip connections, by default "soft-gating"
             see layers.skip_connections for more details
-        complex_spatial_data : bool, optional
+        complex_data : bool, optional
             whether the FNO's data takes on complex values in space, by default False
         SpectralConv Params
         -------------------
@@ -108,7 +108,7 @@ class FNOBlocks(nn.Module):
         preactivation=False,
         fno_skip="linear",
         channel_mlp_skip="soft-gating",
-        complex_spatial_data=False,
+        complex_data=False,
         separable=False,
         factorization=None,
         rank=1.0,
@@ -143,7 +143,7 @@ class FNOBlocks(nn.Module):
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = fno_skip
         self.channel_mlp_skip = channel_mlp_skip
-        self.complex_spatial_data = complex_spatial_data
+        self.complex_data = complex_data
         self.use_channel_mlp = use_channel_mlp
         self.channel_mlp_expansion = channel_mlp_expansion
         self.channel_mlp_dropout = channel_mlp_dropout
@@ -154,7 +154,7 @@ class FNOBlocks(nn.Module):
         self.ada_in_features = ada_in_features
 
         # apply real nonlin if data is real, otherwise CGELU
-        if complex_spatial_data:
+        if complex_data:
             self.non_linearity = CGELU
         else:
             self.non_linearity = non_linearity
@@ -173,7 +173,7 @@ class FNOBlocks(nn.Module):
             decomposition_kwargs=decomposition_kwargs,
             joint_factorization=joint_factorization,
             n_layers=n_layers,
-            complex_spatial_data=complex_spatial_data
+            complex_data=complex_data
         )
 
         self.fno_skips = nn.ModuleList(
@@ -187,7 +187,7 @@ class FNOBlocks(nn.Module):
                 for _ in range(n_layers)
             ]
         )
-        if self.complex_spatial_data:
+        if self.complex_data:
             self.fno_skips = nn.ModuleList(
                 [ComplexValued(x) for x in self.fno_skips]
                 )
@@ -204,7 +204,7 @@ class FNOBlocks(nn.Module):
                     for _ in range(n_layers)
                 ]
             )
-            if self.complex_spatial_data:
+            if self.complex_data:
                 self.channel_mlp = nn.ModuleList(
                     [ComplexValued(x) for x in self.channel_mlp]
                 )
@@ -219,7 +219,7 @@ class FNOBlocks(nn.Module):
                     for _ in range(n_layers)
                 ]
             )
-            if self.complex_spatial_data:
+            if self.complex_data:
                 self.channel_mlp_skips = nn.ModuleList(
                     [ComplexValued(x) for x in self.channel_mlp_skips]
                 )
@@ -295,7 +295,7 @@ class FNOBlocks(nn.Module):
             x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
-            if self.complex_spatial_data:
+            if self.complex_data:
                 x = ctanh(x)
             else:
                 x = torch.tanh(x)
@@ -337,7 +337,7 @@ class FNOBlocks(nn.Module):
             x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
-            if self.complex_spatial_data:
+            if self.complex_data:
                 x = ctanh(x)
             else:
                 x = torch.tanh(x)

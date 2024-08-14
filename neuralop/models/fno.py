@@ -98,7 +98,7 @@ class FNO(BaseModel, name='FNO'):
         How to perform domain padding, by default 'one-sided'
     fft_norm : str, optional
         by default 'forward'
-    complex_spatial_data: bool, optional
+    complex_data: bool, optional
         whether FNO data takes on complex values 
         in the spatial domain, by default False
     """
@@ -136,7 +136,7 @@ class FNO(BaseModel, name='FNO'):
         domain_padding_mode="one-sided",
         fft_norm="forward",
         SpectralConv=SpectralConv,
-        complex_spatial_data=False,
+        complex_data=False,
         **kwargs
     ):
         super().__init__()
@@ -194,7 +194,7 @@ class FNO(BaseModel, name='FNO'):
             self.domain_padding = None
 
         self.domain_padding_mode = domain_padding_mode
-        self.complex_spatial_data = complex_spatial_data
+        self.complex_data = complex_data
 
         if output_scaling_factor is not None and not joint_factorization:
             if isinstance(output_scaling_factor, (float, int)):
@@ -215,7 +215,7 @@ class FNO(BaseModel, name='FNO'):
             preactivation=preactivation,
             fno_skip=fno_skip,
             channel_mlp_skip=channel_mlp_skip,
-            complex_spatial_data=complex_spatial_data,
+            complex_data=complex_data,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             rank=rank,
@@ -254,8 +254,8 @@ class FNO(BaseModel, name='FNO'):
                 n_layers=1,
                 n_dim=self.n_dim,
             )
-        # Convert lifting to a complex ChannelMLP if self.complex_spatial_data==True
-        if self.complex_spatial_data:
+        # Convert lifting to a complex ChannelMLP if self.complex_data==True
+        if self.complex_data:
             self.lifting = ComplexValued(self.lifting)
 
         self.projection = ChannelMLP(
@@ -266,7 +266,7 @@ class FNO(BaseModel, name='FNO'):
             n_dim=self.n_dim,
             non_linearity=non_linearity,
         )
-        if self.complex_spatial_data:
+        if self.complex_data:
             self.projection = ComplexValued(self.projection)
 
     def forward(self, x, output_shape=None, **kwargs):
