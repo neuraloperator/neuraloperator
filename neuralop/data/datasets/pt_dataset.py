@@ -130,6 +130,8 @@ class PTDataset:
         if encode_input:
             if encoding == "channel-wise":
                 reduce_dims = list(range(x_train.ndim))
+                # preserve mean for each channel
+                reduce_dims.pop(channel_dim)
             elif encoding == "pixel-wise":
                 reduce_dims = [0]
 
@@ -141,6 +143,8 @@ class PTDataset:
         if encode_output:
             if encoding == "channel-wise":
                 reduce_dims = list(range(y_train.ndim))
+                # preserve mean for each channel
+                reduce_dims.pop(channel_dim)
             elif encoding == "pixel-wise":
                 reduce_dims = [0]
 

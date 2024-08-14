@@ -312,11 +312,8 @@ class SpectralConv(BaseSpectralConv):
                 fixed_rank_modes = None
         self.fft_norm = fft_norm
 
-        # Make sure we are using a Complex Factorized Tensor to parametrize the conv
         if factorization is None:
             factorization = "Dense"  # No factorization
-        if not factorization.lower().startswith("complex"):
-            factorization = f"Complex{factorization}"
 
         if separable:
             if in_channels != out_channels:
@@ -337,6 +334,7 @@ class SpectralConv(BaseSpectralConv):
                 rank=self.rank,
                 factorization=factorization,
                 fixed_rank_modes=fixed_rank_modes,
+                dtype=torch.cfloat,
                 **tensor_kwargs,
             )
             self.weight.normal_(0, init_std)
@@ -349,6 +347,7 @@ class SpectralConv(BaseSpectralConv):
                         factorization=factorization,
                         fixed_rank_modes=fixed_rank_modes,
                         **tensor_kwargs,
+                        dtype=torch.cfloat
                     )
                     for _ in range(n_layers)
                 ]
