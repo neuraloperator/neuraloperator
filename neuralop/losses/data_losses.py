@@ -391,8 +391,8 @@ class H1Loss(object):
             ynorm += torch.norm(dict_y[j], p=2, dim=-1, keepdim=False)**2
         
         diff = (diff)/(ynorm)
-        if squared: 
-            diff = diff ** 2
+        if not squared: 
+            diff = diff ** 0.5
 
         if self.reduce_dims is not None:
             diff = self.reduce_all(diff).squeeze()
