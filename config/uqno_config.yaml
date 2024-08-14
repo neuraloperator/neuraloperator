@@ -49,7 +49,7 @@ default: &DEFAULT
     delta: 0.95
     solution:
       n_epochs: 300 #300
-      resume: True
+      resume: False
       learning_rate: 5e-3
       training_loss: 'h1'
       weight_decay: 1e-4
