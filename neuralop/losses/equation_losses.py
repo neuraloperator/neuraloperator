@@ -9,7 +9,7 @@ class BurgersEqnLoss(object):
     Computes loss for Burgers' equation.
     """
 
-    def __init__(self, visc=0.01, method="fdm", loss=F.mse_loss, domain_length=1.0):
+    def __init__(self, visc=0.01, method="finite_difference", loss=F.mse_loss, domain_length=1.0):
         super().__init__()
         self.visc = visc
         self.method = method
@@ -78,14 +78,21 @@ class BCLoss(object):
         return self.boundary_condition_loss(u)
 
 class DarcyEqnLoss(object):
-    def __init__(self, method, device='cuda', d=5, C=25, sub=3):
+    """
+    Darcy-Flow PINO loss. Currently only finite-difference method
+    is implemented (stay tuned!)
+    """
+    def __init__(self, method):
         """
-        # device indicates where the matrices A and Q necessary for FC should be stored
-        # d and C are continuation parameters, and indicate which matrices A and Q to load
+
+        Parameters
+        ----------
+        method : str
+            method to use to compute PINO loss
+            "finite_difference" only for now
         """
         super().__init__()
         self.method = method
-        self.sub = sub
         self.__name__ = 'eqn'
 
     def finite_difference(self, a, u, domain_length=1):
@@ -118,16 +125,33 @@ class DarcyEqnLoss(object):
         return loss
 
     def __call__(self, u, x, out_p=None, **kwargs):
+        """DarcyEqnLoss forward call
+
+        Parameters
+        ----------
+        u : torch.Tensor
+            output function representing flow through medium
+        x : torch.Tensor
+            input function representing permeability of medium
+        out_p : torch.Tensor, optional
+            output queries for more advanced PINO methods, by default None
+
+        Returns
+        -------
+        torch.Tensor
+            loss tensor
+        """
         if self.method == 'finite_difference':
             return self.finite_difference(x, u)
         else:
             raise NotImplementedError()
     
 class NavierStokes2dVorticityEqnLoss(object):
-    def __init__(self):
-        pass
+    def __init__(self, method="finite_difference"):
+        super().__init__()
+        self.method = method
     
-    def fdm(self, w, v=1/40, t_interval=1.0):
+    def finite_difference(self, w, v=1/40, t_interval=1.0):
         batchsize = w.size(0)
         nx = w.size(1)
         ny = w.size(2)
@@ -165,6 +189,28 @@ class NavierStokes2dVorticityEqnLoss(object):
 
         Du1 = wt + (ux*wx + uy*wy - v*wlap)[...,1:-1] #- forcing
         return Du1
+
+    def __call__(self, u, x, out_p=None, **kwargs):
+        """NavierStokes2dVorticityEqnLoss forward call
+
+        Parameters
+        ----------
+        u : torch.Tensor
+            output function representing vorticity at time t
+        x : torch.Tensor
+            input function representing vorticity at time 0
+        out_p : torch.Tensor, optional
+            output queries for more advanced PINO methods, by default None
+
+        Returns
+        -------
+        torch.Tensor
+            loss tensor
+        """
+        if self.method == 'finite_difference':
+            return self.finite_difference(x, u)
+        else:
+            raise NotImplementedError()
 
 
 class ICLoss(object):
