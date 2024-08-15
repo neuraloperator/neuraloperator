@@ -40,3 +40,8 @@ jobs:
     - name: Test with pytest
       run: |
         pytest -vvv neuralop
+    - name: Build docs
+      run: |
+        cd doc
+        make html
+        cd ..

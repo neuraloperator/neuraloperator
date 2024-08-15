@@ -1,4 +1,4 @@
-name: Build documentation
+name: Build and deploy documentation for NeuralOperator/stable
 
 on:
   push:
