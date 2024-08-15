@@ -67,14 +67,9 @@ class FNOBlocks(nn.Module):
             see layers.skip_connections for more details
         complex_data : bool, optional
             whether the FNO's data takes on complex values in space, by default False
-<<<<<<< HEAD
         
         Convolution Parameters
         -----------------------
-=======
-        SpectralConv Params
-        -------------------
->>>>>>> main
         separable : bool, optional
             separable parameter for SpectralConv, by default False
         factorization : str, optional
@@ -164,7 +159,9 @@ class FNOBlocks(nn.Module):
             self.non_linearity = CGELU
         else:
             self.non_linearity = non_linearity
-        
+    
+        # TODO: eventually support complex data in SphericalConv and SFNO
+        # remove these lines once support is added
         if conv_module == SpectralConv:
             complex_kwarg = {'complex_data': complex_data}
         else:
