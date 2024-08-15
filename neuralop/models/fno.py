@@ -98,12 +98,15 @@ class FNO(BaseModel, name='FNO'):
         if 'mixed', the contraction and inverse FFT run in half precision
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
-    
-    Domain padding 
-    ~~~~~~~~~~~~~~~
+
+    Super-resolution
+    ~~~~~~~~~~~~~~~~~
     output_shape : list
         single output shape or a list of output shapes per layer
         to scale up model output shape for e.g. superresolution 
+    
+    Domain padding 
+    ~~~~~~~~~~~~~~~~
     domain_padding : None, float, or List[float], optional
         If not None, percentage of padding to use, by default None
         To vary the percentage of padding used along each input dimension,
