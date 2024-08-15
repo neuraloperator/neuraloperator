@@ -16,7 +16,7 @@ class FNO(BaseModel, name='FNO'):
 
     Parameters
     ----------
-
+        ####### TODO: REORDER PARAMS IN INIT CALL TO MATCH THIS
     Core parameters
     ~~~~~~~~~~~~~~~~
     n_modes : int tuple
@@ -54,7 +54,6 @@ class FNO(BaseModel, name='FNO'):
             ... torch.nn.Module printout truncated ...
     ```
 
-
     Advanced FNO parameters
     ~~~~~~~~~~~~~~~~~~~~~~~~~
     max_n_modes : None or int tuple, default is None
@@ -66,7 +65,7 @@ class FNO(BaseModel, name='FNO'):
 
         This can be updated dynamically during training.
     
-    positional_embedding : str literal | GridEmbedding2D | GridEmbeddingND | None
+    positional_embedding : str literal | GridEmbedding2D | GridEmbeddingND | None, default "grid"
         if "grid", appends a grid positional embedding with default settings to 
         the last channels of raw input. Assumes the inputs are discretized
         over a grid with entry [0,0,...] at the origin and side lengths of 1.
@@ -74,7 +73,7 @@ class FNO(BaseModel, name='FNO'):
         See `neuralop.embeddings.GridEmbeddingND` for details
         if None, does nothing
     non_linearity : nn.Module, optional
-        Non-Linearity module to use, by default F.gelu
+        Non-Linear activation function module to use, by default F.gelu
     norm : Literal["ada_in", "group_norm", "instance_norm"], optional
         Normalization layer to use, by default None
     
@@ -88,17 +87,17 @@ class FNO(BaseModel, name='FNO'):
         droupout parameter of ChannelMLP layer, by default 0
     channel_mlp_expansion : float, optional
         expansion parameter of ChannelMLP layer, by default 0.5
+    complex_data: bool, optional
+        whether FNO data takes on complex values in the spatial domain, by default False
         
     FNOBlock-specific parameters
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     preactivation : bool, default is False
-        if True, use resnet-style preactivation
+        if True, use resnet-style preactivation in the FNO block's forward pass
     fno_block_precision : str {'full', 'half', 'mixed'}
         if 'full', the FNO Block runs in full precision
         if 'half', the FFT, contraction, and inverse FFT run in half precision
         if 'mixed', the contraction and inverse FFT run in half precision
-    fft_norm : str, optional
-        by default 'forward'
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
     
@@ -115,7 +114,7 @@ class FNO(BaseModel, name='FNO'):
     domain_padding_mode : {'symmetric', 'one-sided'}, optional
         How to perform domain padding, by default 'one-sided'
     
-    Tensor parameters
+    Factorized tensor parameters
     ~~~~~~~~~~~~~~~~~~
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
@@ -138,18 +137,7 @@ class FNO(BaseModel, name='FNO'):
           the decomposition
     decomposition_kwargs : dict, optional, default is {}
         Optionaly additional parameters to pass to the tensor decomposition
-    domain_padding : None, float, or List[float], optional
-        If not None, percentage of padding to use, by default None
-        To vary the percentage of padding used along each input dimension,
-        pass in a list of percentages e.g. [p1, p2, ..., pN] such that
-        p1 corresponds to the percentage of padding along dim 1, etc.
-    domain_padding_mode : {'symmetric', 'one-sided'}, optional
-        How to perform domain padding, by default 'one-sided'
-    fft_norm : str, optional
-        by default 'forward'
-    complex_data: bool, optional
-        whether FNO data takes on complex values 
-        in the spatial domain, by default False
+
     """
 
     def __init__(
@@ -166,7 +154,6 @@ class FNO(BaseModel, name='FNO'):
         output_scaling_factor=None,
         domain_padding=None,
         domain_padding_mode="one-sided",
-        fft_norm="forward",
         max_n_modes=None,
         fno_block_precision="full",
         use_channel_mlp=False,
@@ -208,7 +195,6 @@ class FNO(BaseModel, name='FNO'):
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = (fno_skip,)
         self.channel_mlp_skip = (channel_mlp_skip,)
-        self.fft_norm = fft_norm
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation
@@ -268,7 +254,7 @@ class FNO(BaseModel, name='FNO'):
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             rank=rank,
-            fft_norm=fft_norm,
+            fft_norm="forward",
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
             separable=separable,
@@ -406,7 +392,6 @@ class FNO1d(FNO):
         decomposition_kwargs=dict(),
         domain_padding=None,
         domain_padding_mode="one-sided",
-        fft_norm="forward",
         **kwargs
     ):
         super().__init__(
@@ -437,7 +422,6 @@ class FNO1d(FNO):
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
             domain_padding_mode=domain_padding_mode,
-            fft_norm=fft_norm,
         )
         self.n_modes_height = n_modes_height
 
@@ -485,7 +469,6 @@ class FNO2d(FNO):
         decomposition_kwargs=dict(),
         domain_padding=None,
         domain_padding_mode="one-sided",
-        fft_norm="forward",
         **kwargs
     ):
         super().__init__(
@@ -516,7 +499,6 @@ class FNO2d(FNO):
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
             domain_padding_mode=domain_padding_mode,
-            fft_norm=fft_norm,
         )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
@@ -568,7 +550,6 @@ class FNO3d(FNO):
         decomposition_kwargs=dict(),
         domain_padding=None,
         domain_padding_mode="one-sided",
-        fft_norm="forward",
         **kwargs
     ):
         super().__init__(
@@ -599,7 +580,6 @@ class FNO3d(FNO):
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
             domain_padding_mode=domain_padding_mode,
-            fft_norm=fft_norm,
         )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
