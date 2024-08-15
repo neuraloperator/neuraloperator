@@ -19,7 +19,7 @@ from neuralop.models import FNO
 device = 'cpu'
 
 fno = FNO(n_modes=(64,64), 
-          in_channels=3, 
+          in_channels=1, 
           out_channels=1, 
           hidden_channels=64, 
           projection_channels=64)

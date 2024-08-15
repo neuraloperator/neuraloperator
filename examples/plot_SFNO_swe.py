@@ -30,7 +30,12 @@ train_loader, test_loaders = load_spherical_swe(n_train=200, batch_size=4, train
 # %%
 # We create a tensorized FNO model
 
-model = SFNO(n_modes=(32, 32), in_channels=3, out_channels=3, hidden_channels=32, projection_channels=64, factorization='dense')
+model = SFNO(n_modes=(32, 32),
+             in_channels=3,
+             out_channels=3,
+             hidden_channels=32,
+             projection_channels=64,
+             factorization='dense')
 model = model.to(device)
 
 n_params = count_model_params(model)
