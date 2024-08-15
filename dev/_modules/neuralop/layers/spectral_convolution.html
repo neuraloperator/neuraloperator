@@ -445,29 +445,25 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">separable</span> <span class="o">=</span> <span class="n">separable</span>
 
         <span class="n">tensor_kwargs</span> <span class="o">=</span> <span class="n">decomposition_kwargs</span> <span class="k">if</span> <span class="n">decomposition_kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
-        <span class="k">if</span> <span class="n">joint_factorization</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">factorization</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">weight_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">cfloat</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_layers</span><span class="p">)]</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">:</span>
+                <span class="n">w</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">init_std</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">joint_factorization</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">FactorizedTensor</span><span class="o">.</span><span class="n">new</span><span class="p">(</span>
                 <span class="p">(</span><span class="n">n_layers</span><span class="p">,</span> <span class="o">*</span><span class="n">weight_shape</span><span class="p">),</span>
-                <span class="n">rank</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span>
-                <span class="n">factorization</span><span class="o">=</span><span class="n">factorization</span><span class="p">,</span>
-                <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span>
-                <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">cfloat</span><span class="p">,</span>
-                <span class="o">**</span><span class="n">tensor_kwargs</span><span class="p">,</span>
+                <span class="n">rank</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="n">factorization</span><span class="o">=</span><span class="n">factorization</span><span class="p">,</span> <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">cfloat</span><span class="p">,</span> <span class="o">**</span><span class="n">tensor_kwargs</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">init_std</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="n">FactorizedTensor</span><span class="o">.</span><span class="n">new</span><span class="p">(</span>
-                        <span class="n">weight_shape</span><span class="p">,</span>
-                        <span class="n">rank</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span>
-                        <span class="n">factorization</span><span class="o">=</span><span class="n">factorization</span><span class="p">,</span>
-                        <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span>
-                        <span class="o">**</span><span class="n">tensor_kwargs</span><span class="p">,</span>
-                        <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">cfloat</span>
-                    <span class="p">)</span>
-                    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_layers</span><span class="p">)</span>
-                <span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span>
+                <span class="n">FactorizedTensor</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">weight_shape</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> 
+                                     <span class="n">factorization</span><span class="o">=</span><span class="n">factorization</span><span class="p">,</span> <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span>
+                                     <span class="o">**</span><span class="n">tensor_kwargs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">cfloat</span><span class="p">)</span> 
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_layers</span><span class="p">)]</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">:</span>
                 <span class="n">w</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">init_std</span><span class="p">)</span>
@@ -477,8 +473,7 @@
 
         <span class="k">if</span> <span class="n">bias</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
-                <span class="n">init_std</span>
-                <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="p">((</span><span class="n">n_layers</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">))</span>
+                <span class="n">init_std</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="p">((</span><span class="n">n_layers</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">))</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="kc">None</span>
@@ -493,10 +488,7 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">output_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">out_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="nb">round</span><span class="p">(</span><span class="n">s</span> <span class="o">*</span> <span class="n">r</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">in_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span><span class="p">[</span><span class="n">layer_index</span><span class="p">])</span>
-                <span class="p">]</span>
+                <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">s</span> <span class="o">*</span> <span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">in_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_scaling_factor</span><span class="p">[</span><span class="n">layer_index</span><span class="p">])]</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="n">output_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">out_shape</span> <span class="o">=</span> <span class="n">output_shape</span>
@@ -506,12 +498,7 @@
         <span class="k">if</span> <span class="n">in_shape</span> <span class="o">==</span> <span class="n">out_shape</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">x</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">resample</span><span class="p">(</span>
-                <span class="n">x</span><span class="p">,</span>
-                <span class="mf">1.0</span><span class="p">,</span>
-                <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span><span class="p">)),</span>
-                <span class="n">output_shape</span><span class="o">=</span><span class="n">out_shape</span><span class="p">,</span>
-            <span class="p">)</span></div>
+            <span class="k">return</span> <span class="n">resample</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span><span class="p">)),</span> <span class="n">output_shape</span><span class="o">=</span><span class="n">out_shape</span><span class="p">)</span></div>
 
     
     <span class="nd">@property</span>
