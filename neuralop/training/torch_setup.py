@@ -1,4 +1,7 @@
+from typing import Iterable
+
 import torch
+from torch import nn
 import neuralop.mpu.comm as comm
 
 
@@ -91,46 +94,97 @@ def setup(config):
 
     return device, is_logger
 
-def config_opt_and_scheduler(config, model):
-    """config_opt_and_scheduler sets up an optimizer and scheduler
-    based on values provided in our configmypy training script configs. 
+def get_optimizer(
+    name: str,
+    parameters: Iterable[nn.Parameter],
+    learning_rate: float,
+    weight_decay: float,
+    momentum: float=1e-4,
+    nesterov: bool=False,
+):
+    """get_optimizer returns an optimizer configured according
+    to a neuraloperator training script's config file.
 
     Parameters
     ----------
-    config : configmypy.Bunch, config
-        config containing parameters for
-        initializing optimizer and scheduler
+    name : str
+        name of optimizer, either 'Adam' or 'SGD'
+    parameters : Iterable[nn.Parameter]
+        parameters to optimize
+    learning_rate : float
+        optimizer's LR
+    weight_decay : float
+        optimizer's weight decay
+    momentum : float, optional
+        momentum param if optimizer is 'SGD'
+    nesterov: bool, optional
+        whether to use nesterov momentum if optimizer is 'SGD'
+    """
+    if name == 'Adam':
+        optimizer = torch.optim.Adam(
+            params=parameters,
+            learning_rate=learning_rate,
+            weight_decay=weight_decay
+        )
+    elif name == 'SGD':
+        optimizer = torch.optim.SGD(
+            params=parameters,
+            lr=learning_rate,
+            momentum=momentum,
+            nesterov=nesterov
+        )
+    return optimizer
 
-    model : nn.Module
-        model with parameters to optimize
+def get_scheduler(name: str,
+                  optimizer: torch.optim.Optimizer,
+                  gamma: float=None,
+                  patience: int=None,
+                  T_max: int=None,
+                  step_size: int=None):
+    """get_scheduler returns a learning rate scheduler configured according
+    to a neuraloperator training script's config file.
+
+    Parameters
+    ----------
+    name : str
+        name of LR Scheduler module.
+        Either 'StepLR', 'ReduceLROnPlateau', or 'CosineAnnealingLR'
+    optimizer : torch.optim.Optimizer
+        optimizer to schedule
+    gamma : float, optional
+        LR scaling factor for use in some schedulers, by default None
+    patience : int, optional
+        number of epochs to wait to drop LR in some schedulers, by default None
+    T_max : int, optional
+        max number of epochs for some schedulers, by default None
+    step_size : int, optional
+        number of epochs per step in StepLR, by default None
+
+    Returns
+    -------
+    torch.optim.lr_scheduler.LRScheduler
+        module to use to schedule LR in training
     """
 
-    # Create the optimizer
-    optimizer = torch.optim.Adam(
-        model.parameters(),
-        lr=config.opt.learning_rate,
-        weight_decay=config.opt.weight_decay,
-    )
-
-    if config.opt.scheduler == "ReduceLROnPlateau":
+    if name == "ReduceLROnPlateau":
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
-            factor=config.opt.gamma,
-            patience=config.opt.scheduler_patience,
+            factor=gamma,
+            patience=patience,
             mode="min",
         )
-    elif config.opt.scheduler == "CosineAnnealingLR":
+    elif name == "CosineAnnealingLR":
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, T_max=config.opt.scheduler_T_max
+            optimizer, T_max=T_max
         )
-    elif config.opt.scheduler == "StepLR":
+    elif name == "StepLR":
         scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=config.opt.step_size, gamma=config.opt.gamma
+            optimizer, step_size=step_size, gamma=gamma
         )
     else:
-        raise ValueError(f"Got scheduler={config.opt.scheduler}")
+        raise ValueError(f"Got scheduler={name}, expected one of \'StepLR\', \'ReduceLROnPlateau\', \'CosineAnnealingLR\'")
 
-    return optimizer, scheduler
+    return scheduler
 
 
 def increase_l2_fetch_granularity():
