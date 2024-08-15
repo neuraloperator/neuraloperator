@@ -48,7 +48,7 @@ default: &DEFAULT
     alpha: 0.9
     delta: 0.95
     solution:
-      n_epochs: 300 #300
+      n_epochs: 0 #300
       resume: False
       learning_rate: 5e-3
       training_loss: 'h1'
