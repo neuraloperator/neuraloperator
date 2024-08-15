@@ -9,7 +9,7 @@ from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.training import setup
-from neuralop.training.torch_setup import config_opt_and_scheduler
+from neuralop.training.torch_setup import get_optimizer, get_scheduler
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -100,8 +100,20 @@ if config.distributed.use_distributed:
         model, device_ids=[device.index], output_device=device.index, static_graph=True
     )
 
-optimizer, scheduler = config_opt_and_scheduler(config, model)
+# Create the optimizer and scheduler
+optimizer = get_optimizer(name=config.opt.optimizer,
+                          parameters=model.parameters(),
+                          learning_rate=config.opt.learning_rate,
+                          weight_decay=config.opt.weight_decay,
+                          momentum=config.opt.momentum,
+                          nesterov=config.opt.nesterov)
 
+scheduler = get_scheduler(name=config.opt.scheduler,
+                          optimizer=optimizer,
+                          gamma=config.opt.gamma,
+                          patience=config.opt.scheduler_patience,
+                          T_max=config.opt.scheduler_T_max,
+                          step_size=config.opt.step_size)
 # Creating the losses
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
