@@ -98,6 +98,8 @@ class FNO(BaseModel, name='FNO'):
         How to perform domain padding, by default 'one-sided'
     fft_norm : str, optional
         by default 'forward'
+    conv_module : BaseConv, optional
+        Module to use for convolutions in FNO, by default SpectralConv
     complex_data: bool, optional
         whether FNO data takes on complex values 
         in the spatial domain, by default False
@@ -135,7 +137,7 @@ class FNO(BaseModel, name='FNO'):
         domain_padding=None,
         domain_padding_mode="one-sided",
         fft_norm="forward",
-        SpectralConv=SpectralConv,
+        conv_module=SpectralConv,
         complex_data=False,
         **kwargs
     ):
@@ -226,7 +228,7 @@ class FNO(BaseModel, name='FNO'):
             factorization=factorization,
             decomposition_kwargs=decomposition_kwargs,
             joint_factorization=joint_factorization,
-            SpectralConv=SpectralConv,
+            conv_module=conv_module,
             n_layers=n_layers,
             **kwargs
         )
