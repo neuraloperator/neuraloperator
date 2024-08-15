@@ -17,16 +17,16 @@ class FNO(BaseModel, name='FNO'):
     ----------
 
     Core parameters
-    ~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~
     n_modes : int tuple
         number of modes to keep in Fourier Layer, along each dimension
         The dimensionality of the FNO is inferred from ``len(n_modes)``
-    hidden_channels : int
-        width of the FNO (i.e. number of channels)
     in_channels : int, optional
         Number of input channels, by default 3
     out_channels : int, optional
         Number of output channels, by default 1
+    hidden_channels : int
+        width of the FNO (i.e. number of channels)
     lifting_channels : int, optional
         number of hidden channels of the lifting block of the FNO, by default 256
     projection_channels : int, optional
@@ -34,6 +34,28 @@ class FNO(BaseModel, name='FNO'):
     n_layers : int, optional
         Number of Fourier Layers, by default 4
 
+    Documentation for more advanced parameters is below.
+
+    Examples
+    ```
+    >>> from neuralop.models import FNO
+    >>> model = FNO(n_modes=(12,12), in_channels=1, out_channels=1, hidden_channels=64)
+    >>> model
+    >>> model
+    FNO(
+    (positional_embedding): GridEmbeddingND()
+    (fno_blocks): FNOBlocks(
+        (convs): SpectralConv(
+        (weight): ModuleList(
+            (0-3): 4 x DenseTensor(shape=torch.Size([64, 64, 12, 7]), rank=None)
+        )
+        )
+            ... torch.nn.Module printout truncated ...
+    ```
+
+
+    Advanced FNO parameters
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
     max_n_modes : None or int tuple, default is None
         * If not None, this allows to incrementally increase the number of
           modes in Fourier domain during training. Has to verify n <= N
@@ -50,27 +72,6 @@ class FNO(BaseModel, name='FNO'):
         If an initialized GridEmbedding, uses this module directly
         See `neuralop.embeddings.GridEmbeddingND` for details
         if None, does nothing
-    domain_padding : None, float, or List[float], optional
-        If not None, percentage of padding to use, by default None
-        To vary the percentage of padding used along each input dimension,
-        pass in a list of percentages e.g. [p1, p2, ..., pN] such that
-        p1 corresponds to the percentage of padding along dim 1, etc.
-    domain_padding_mode : {'symmetric', 'one-sided'}, optional
-        How to perform domain padding, by default 'one-sided'
-    fno_block_precision : str {'full', 'half', 'mixed'}
-        if 'full', the FNO Block runs in full precision
-        if 'half', the FFT, contraction, and inverse FFT run in half precision
-        if 'mixed', the contraction and inverse FFT run in half precision
-    fft_norm : str, optional
-        by default 'forward'
-    stabilizer : str {'tanh'} or None, optional
-        By default None, otherwise tanh is used before FFT in the FNO block
-    use_channel_mlp : bool, optional
-        Whether to use a ChannelMLP layer after each FNO block, by default False
-    channel_mlp_dropout : float , optional
-        droupout parameter of ChannelMLP layer, by default 0
-    channel_mlp_expansion : float, optional
-        expansion parameter of ChannelMLP layer, by default 0.5
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
     norm : Literal["ada_in", "group_norm", "instance_norm"], optional
@@ -80,15 +81,41 @@ class FNO(BaseModel, name='FNO'):
         Type of skip connection to use in fno, by default 'linear'
     channel_mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
         Type of skip connection to use in channel-mixing mlp, by default 'soft-gating'
-    
+    use_channel_mlp : bool, optional
+        Whether to use a ChannelMLP layer after each FNO block, by default False
+    channel_mlp_dropout : float , optional
+        droupout parameter of ChannelMLP layer, by default 0
+    channel_mlp_expansion : float, optional
+        expansion parameter of ChannelMLP layer, by default 0.5
+        
+    FNOBlock-specific parameters
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     preactivation : bool, default is False
         if True, use resnet-style preactivation
+    fno_block_precision : str {'full', 'half', 'mixed'}
+        if 'full', the FNO Block runs in full precision
+        if 'half', the FFT, contraction, and inverse FFT run in half precision
+        if 'mixed', the contraction and inverse FFT run in half precision
+    fft_norm : str, optional
+        by default 'forward'
+    stabilizer : str {'tanh'} or None, optional
+        By default None, otherwise tanh is used before FFT in the FNO block
     
+    Function domain parameters
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    output_shape : list
+        single output shape or a list of output shapes per layer
+        to scale up model output shape for e.g. superresolution 
+    domain_padding : None, float, or List[float], optional
+        If not None, percentage of padding to use, by default None
+        To vary the percentage of padding used along each input dimension,
+        pass in a list of percentages e.g. [p1, p2, ..., pN] such that
+        p1 corresponds to the percentage of padding along dim 1, etc.
+    domain_padding_mode : {'symmetric', 'one-sided'}, optional
+        How to perform domain padding, by default 'one-sided'
     
-    Tensor params
-    ~~~~~~~~~~~~~~
-    Parameters controlling FNO's tensorized weights in the frequency domain
-
+    Tensor parameters
+    ~~~~~~~~~~~~~~~~~~
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
     factorization : str or None, {'tucker', 'cp', 'tt'}
