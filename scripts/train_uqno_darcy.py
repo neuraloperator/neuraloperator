@@ -109,20 +109,9 @@ residual_calib_db = TensorDataset(**train_db[config.data.n_train_solution + conf
                                   config.data.n_train_solution + config.data.n_train_residual +\
                                   config.data.n_calib_residual])
 
-print(f"{len(train_db)=}")
-print(f"{len(residual_train_db)=}")
-print(f"{len(residual_calib_db)=}")
-
-print(f"{data_processor=}")
-print(f"{data_processor.in_normalizer=}")
-print(f"{data_processor.out_normalizer=}")
 data_processor = data_processor.to(device)
 
 solution_model = get_model(config)
-'''if config.load_soln_model:
-    solution_model = solution_model.from_checkpoint(save_folder="./ckpt",
-                                              save_name=config.soln_checkpoint)
-    #solution_model.load_state_dict(torch.load("./ckpt/ziqi-model-main"))'''
 solution_model = solution_model.to(device)
 
 # Create the optimizer
@@ -277,7 +266,6 @@ def loader_to_residual_db(model, data_processor, loader, device, train_val_split
         del sample, out
     errors = torch.cat(error_list, axis=0)
     xs = torch.cat(x_list, axis=0) # check this
-    print(f"{errors.shape=} {xs.shape=}")
     
     residual_encoder = UnitGaussianNormalizer()
     residual_encoder.fit(errors)
