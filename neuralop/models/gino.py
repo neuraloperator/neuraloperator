@@ -117,9 +117,7 @@ class GINO(nn.Module):
             If not None, percentage of padding to use.
         fno_domain_padding_mode : str {'symmetric', 'one-sided'}, defaults to 'one-sided'
             How to perform domain padding.
-        fno_fft_norm : str, defaults to 'forward'
-            normalization parameter of torch.fft to use in FNO. Defaults to 'forward'
-        fno_SpectralConv : nn.Module, defaults to SpectralConv
+        fno_conv_module : nn.Module, defaults to SpectralConv
             Spectral Convolution module to use.
         """
     def __init__(
@@ -168,8 +166,7 @@ class GINO(nn.Module):
             fno_decomposition_kwargs=dict(),
             fno_domain_padding=None,
             fno_domain_padding_mode='one-sided',
-            fno_fft_norm='forward',
-            fno_SpectralConv=SpectralConv,
+            fno_conv_module=SpectralConv,
             **kwargs
         ):
         
@@ -237,8 +234,7 @@ class GINO(nn.Module):
                 decomposition_kwargs=fno_decomposition_kwargs,
                 domain_padding=fno_domain_padding,
                 domain_padding_mode=fno_domain_padding_mode,
-                fft_norm=fno_fft_norm,
-                SpectralConv=fno_SpectralConv,
+                conv_module=fno_conv_module,
                 **kwargs
         )
         del self.fno.projection

@@ -41,7 +41,6 @@ class FNO(BaseModel, name='FNO'):
     >>> from neuralop.models import FNO
     >>> model = FNO(n_modes=(12,12), in_channels=1, out_channels=1, hidden_channels=64)
     >>> model
-    >>> model
     FNO(
     (positional_embedding): GridEmbeddingND()
     (fno_blocks): FNOBlocks(
