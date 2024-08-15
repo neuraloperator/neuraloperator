@@ -67,9 +67,14 @@ class FNOBlocks(nn.Module):
             see layers.skip_connections for more details
         complex_data : bool, optional
             whether the FNO's data takes on complex values in space, by default False
+<<<<<<< HEAD
         
         Convolution Parameters
         -----------------------
+=======
+        SpectralConv Params
+        -------------------
+>>>>>>> main
         separable : bool, optional
             separable parameter for SpectralConv, by default False
         factorization : str, optional
