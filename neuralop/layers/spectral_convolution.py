@@ -8,7 +8,6 @@ from torch import nn
 import tensorly as tl
 from tensorly.plugins import use_opt_einsum
 from tltorch.factorized_tensors.core import FactorizedTensor
-from tltorch.factorized_tensors import ComplexDenseTensor
 
 from .einsum_utils import einsum_complexhalf
 from .base_spectral_conv import BaseSpectralConv
