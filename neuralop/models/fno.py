@@ -16,18 +16,17 @@ class FNO(BaseModel, name='FNO'):
 
     Parameters
     ----------
-        ####### TODO: REORDER PARAMS IN INIT CALL TO MATCH THIS
     Core parameters
     ~~~~~~~~~~~~~~~~
     n_modes : int tuple
         number of modes to keep in Fourier Layer, along each dimension
         The dimensionality of the FNO is inferred from ``len(n_modes)``
-    in_channels : int, optional
-        Number of input channels, by default 3
-    out_channels : int, optional
-        Number of output channels, by default 1
-    hidden_channels : int
-        width of the FNO (i.e. number of channels)
+    in_channels : int
+        Number of channels in input function
+    out_channels : int
+        Number of channels in output function
+    hidden_channels : int, optional
+        width of the FNO (i.e. number of channels), by default 256
     lifting_channels : int, optional
         number of hidden channels of the lifting block of the FNO, by default 256
     projection_channels : int, optional
@@ -76,7 +75,11 @@ class FNO(BaseModel, name='FNO'):
         Non-Linear activation function module to use, by default F.gelu
     norm : Literal["ada_in", "group_norm", "instance_norm"], optional
         Normalization layer to use, by default None
-    
+    complex_data: bool, optional
+        whether FNO data takes on complex values in the spatial domain, by default False
+
+    Fourier convolution 
+    ~~~~~~~~~~~~~~~~~~~~
     fno_skip : {'linear', 'identity', 'soft-gating'}, optional
         Type of skip connection to use in fno, by default 'linear'
     channel_mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
@@ -87,11 +90,6 @@ class FNO(BaseModel, name='FNO'):
         droupout parameter of ChannelMLP layer, by default 0
     channel_mlp_expansion : float, optional
         expansion parameter of ChannelMLP layer, by default 0.5
-    complex_data: bool, optional
-        whether FNO data takes on complex values in the spatial domain, by default False
-        
-    FNOBlock-specific parameters
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     preactivation : bool, default is False
         if True, use resnet-style preactivation in the FNO block's forward pass
     fno_block_precision : str {'full', 'half', 'mixed'}
@@ -101,8 +99,8 @@ class FNO(BaseModel, name='FNO'):
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
     
-    Function domain parameters
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Domain padding 
+    ~~~~~~~~~~~~~~~
     output_shape : list
         single output shape or a list of output shapes per layer
         to scale up model output shape for e.g. superresolution 
@@ -115,7 +113,7 @@ class FNO(BaseModel, name='FNO'):
         How to perform domain padding, by default 'one-sided'
     
     Factorized tensor parameters
-    ~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
     factorization : str or None, {'tucker', 'cp', 'tt'}
@@ -143,27 +141,28 @@ class FNO(BaseModel, name='FNO'):
     def __init__(
         self,
         n_modes,
-        hidden_channels,
-        in_channels=3,
-        out_channels=1,
+        in_channels,
+        out_channels,
+        hidden_channels=256,
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
+        max_n_modes=None,
         positional_embedding="grid",
         non_linearity=F.gelu,
-        output_scaling_factor=None,
-        domain_padding=None,
-        domain_padding_mode="one-sided",
-        max_n_modes=None,
+        norm=None,
+        complex_data=False,
         fno_block_precision="full",
         use_channel_mlp=False,
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
         stabilizer=None,
-        norm=None,
         fno_skip="linear",
         channel_mlp_skip="soft-gating",
         preactivation=False,
+        output_scaling_factor=None,
+        domain_padding=None,
+        domain_padding_mode="one-sided",
         separable=False,
         factorization=None,
         rank=1.0,
@@ -172,7 +171,6 @@ class FNO(BaseModel, name='FNO'):
         implementation="factorized",
         decomposition_kwargs=dict(),
         conv_module=SpectralConv,
-        complex_data=False,
         **kwargs
     ):
         super().__init__()

@@ -56,6 +56,8 @@ def test_tfno(
     size = (s,) * n_dim
     n_modes = (modes,) * n_dim
     model = TFNO(
+        in_channels=3,
+        out_channels=1,
         hidden_channels=width,
         n_modes=n_modes,
         factorization=factorization,
@@ -123,10 +125,10 @@ def test_fno_superresolution(output_scaling_factor):
     n_modes = (modes,) * n_dim
 
     model = FNO(
-        n_modes,
-        hidden_channels,
         in_channels=3,
         out_channels=1,
+        n_modes=n_modes,
+        hidden_channels=hidden_channels,
         factorization="cp",
         implementation="reconstructed",
         rank=rank,
