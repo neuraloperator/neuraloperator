@@ -67,16 +67,17 @@ class FNOBlocks(nn.Module):
             see layers.skip_connections for more details
         complex_data : bool, optional
             whether the FNO's data takes on complex values in space, by default False
-        SpectralConv Params
-        -------------------
+        
+        Convolution Parameters
+        -----------------------
         separable : bool, optional
             separable parameter for SpectralConv, by default False
         factorization : str, optional
             factorization parameter for SpectralConv, by default None
         rank : float, optional
             rank parameter for SpectralConv, by default 1.0
-        SpectralConv : BaseConv, optional
-            module to use for SpectralConv, by default SpectralConv
+        conv_module : BaseConv, optional
+            module to use for convolutions in FNO block, by default SpectralConv
         joint_factorization : bool, optional
             whether to factorize all spectralConv weights as one tensor, by default False
         fixed_rank_modes : bool, optional
@@ -112,7 +113,7 @@ class FNOBlocks(nn.Module):
         separable=False,
         factorization=None,
         rank=1.0,
-        SpectralConv=SpectralConv,
+        conv_module=SpectralConv,
         joint_factorization=False,
         fixed_rank_modes=False,
         implementation="factorized",
@@ -158,8 +159,15 @@ class FNOBlocks(nn.Module):
             self.non_linearity = CGELU
         else:
             self.non_linearity = non_linearity
+    
+        # TODO: eventually support complex data in SphericalConv and SFNO
+        # remove these lines once support is added
+        if conv_module == SpectralConv:
+            complex_kwarg = {'complex_data': complex_data}
+        else:
+            complex_kwarg = dict()
 
-        self.convs = SpectralConv(
+        self.convs = conv_module(
             self.in_channels,
             self.out_channels,
             self.n_modes,
@@ -173,7 +181,7 @@ class FNOBlocks(nn.Module):
             decomposition_kwargs=decomposition_kwargs,
             joint_factorization=joint_factorization,
             n_layers=n_layers,
-            complex_data=complex_data
+            **complex_kwarg
         )
 
         self.fno_skips = nn.ModuleList(
