@@ -3,7 +3,7 @@ import wandb
 import sys
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from neuralop.training import setup
-from neuralop.training.torch_setup import config_opt_and_scheduler
+from neuralop.training.torch_setup import get_optimizer, get_scheduler
 from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
 from neuralop.losses.data_losses import LpLoss
@@ -65,8 +65,20 @@ test_loader = data_module.test_dataloader(batch_size=1, shuffle=False)
 model = get_model(config)
 model = model.to(device)
 
-#Create the optimizer and scheduler
-optimizer, scheduler = config_opt_and_scheduler(config, model)
+# Create the optimizer and scheduler
+optimizer = get_optimizer(name=config.opt.optimizer,
+                          parameters=model.parameters(),
+                          learning_rate=config.opt.learning_rate,
+                          weight_decay=config.opt.weight_decay,
+                          momentum=config.opt.momentum,
+                          nesterov=config.opt.nesterov)
+
+scheduler = get_scheduler(name=config.opt.scheduler,
+                          optimizer=optimizer,
+                          gamma=config.opt.gamma,
+                          patience=config.opt.scheduler_patience,
+                          T_max=config.opt.scheduler_T_max,
+                          step_size=config.opt.step_size)
 
 l2loss = LpLoss(d=2,p=2)
 

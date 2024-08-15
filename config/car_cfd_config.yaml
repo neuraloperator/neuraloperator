@@ -45,11 +45,14 @@ cfd: &CFD
     fno_output_scaling_factor: 1
 
   opt:
+    optimizer: Adam #or SGD
     n_epochs: 301
     learning_rate: 1e-3
     training_loss: 'l2' 
     testing_loss: 'l2' 
     weight_decay: 1e-4
+    momentum: None
+    nesterov: None
     amp_autocast: False
 
     scheduler_T_max: 500 # For cosine only, typically take n_epochs
