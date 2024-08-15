@@ -324,29 +324,25 @@ class SpectralConv(BaseSpectralConv):
         self.separable = separable
 
         tensor_kwargs = decomposition_kwargs if decomposition_kwargs is not None else {}
-        if joint_factorization:
+        if factorization is None:
+            self.weight = nn.ModuleList(
+                [torch.tensor(weight_shape, dtype=torch.cfloat) for _ in range(n_layers)]
+            )
+            for w in self.weight:
+                w.normal_(0, init_std)
+        elif joint_factorization:
             self.weight = FactorizedTensor.new(
                 (n_layers, *weight_shape),
-                rank=self.rank,
-                factorization=factorization,
-                fixed_rank_modes=fixed_rank_modes,
-                dtype=torch.cfloat,
-                **tensor_kwargs,
+                rank=self.rank, factorization=factorization, fixed_rank_modes=fixed_rank_modes,
+                dtype=torch.cfloat, **tensor_kwargs,
             )
             self.weight.normal_(0, init_std)
         else:
-            self.weight = nn.ModuleList(
-                [
-                    FactorizedTensor.new(
-                        weight_shape,
-                        rank=self.rank,
-                        factorization=factorization,
-                        fixed_rank_modes=fixed_rank_modes,
-                        **tensor_kwargs,
-                        dtype=torch.cfloat
-                    )
-                    for _ in range(n_layers)
-                ]
+            self.weight = nn.ModuleList([
+                FactorizedTensor.new(weight_shape, rank=self.rank, 
+                                     factorization=factorization, fixed_rank_modes=fixed_rank_modes,
+                                     **tensor_kwargs, dtype=torch.cfloat) 
+                for _ in range(n_layers)]
             )
             for w in self.weight:
                 w.normal_(0, init_std)
@@ -356,8 +352,7 @@ class SpectralConv(BaseSpectralConv):
 
         if bias:
             self.bias = nn.Parameter(
-                init_std
-                * torch.randn(*((n_layers, self.out_channels) + (1,) * self.order))
+                init_std * torch.randn(*((n_layers, self.out_channels) + (1,) * self.order))
             )
         else:
             self.bias = None
@@ -370,10 +365,7 @@ class SpectralConv(BaseSpectralConv):
 
         if self.output_scaling_factor is not None and output_shape is None:
             out_shape = tuple(
-                [
-                    round(s * r)
-                    for (s, r) in zip(in_shape, self.output_scaling_factor[layer_index])
-                ]
+                [round(s * r) for (s, r) in zip(in_shape, self.output_scaling_factor[layer_index])]
             )
         elif output_shape is not None:
             out_shape = output_shape
@@ -383,12 +375,7 @@ class SpectralConv(BaseSpectralConv):
         if in_shape == out_shape:
             return x
         else:
-            return resample(
-                x,
-                1.0,
-                list(range(2, x.ndim)),
-                output_shape=out_shape,
-            )
+            return resample(x, 1.0, list(range(2, x.ndim)), output_shape=out_shape)
     
     @property
     def n_modes(self):
