@@ -48,7 +48,7 @@ default: &DEFAULT
     alpha: 0.9
     delta: 0.95
     solution:
-      n_epochs: 0 #300
+      n_epochs: 300 #300
       resume: False
       learning_rate: 5e-3
       training_loss: 'h1'
@@ -91,10 +91,10 @@ default: &DEFAULT
   # Weights and biases
   wandb:
     log: True
-    name: train-uqno-merged-code # If None, config will be used but you can override it here
+    name: train-uqno # If None, config will be used but you can override it here
     group: '' 
     project: "uqno-darcy"
-    entity: "dhpitt" # put your username here
+    entity: "YOUR_NAME" # put your username here
     sweep: False
     log_output: True
     eval_interval: 1
