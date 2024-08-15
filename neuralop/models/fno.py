@@ -37,7 +37,7 @@ class FNO(BaseModel, name='FNO'):
 
     Documentation for more advanced parameters is below.
 
-    Examples
+    Example 
     ```
     >>> from neuralop.models import FNO
     >>> model = FNO(n_modes=(12,12), in_channels=1, out_channels=1, hidden_channels=64)
