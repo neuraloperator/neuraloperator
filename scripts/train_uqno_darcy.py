@@ -72,7 +72,7 @@ if config.wandb.log and is_logger:
 config.verbose = config.verbose and is_logger
 
 # Print config to screen
-if config.verbose and is_logger:
+if config.verbose and is_logger and config.opt.solution.n_epochs > 0:
     pipe.log()
     sys.stdout.flush()
 
@@ -166,7 +166,7 @@ else:
 eval_losses = {"h1": h1loss, "l2": l2loss}
                                               
 #if not config.load_soln_model:
-if config.verbose and is_logger:
+if config.verbose and is_logger and config.opt.solution.n_epochs > 0:
     print("\n### MODEL ###\n", solution_model)
     print("\n### OPTIMIZER ###\n", optimizer)
     print("\n### SCHEDULER ###\n", scheduler)
@@ -203,13 +203,7 @@ solution_train_loader = DataLoader(solution_train_db,
                                     persistent_workers=False,
                                 )
 
-if config.opt.solution.n_epochs > 0:
-    if config.opt.solution.resume == True:
-        resume_dir = "./solution_ckpts"
-    else:
-        resume_dir = None
-    
-    trainer = Trainer(
+trainer = Trainer(
     model=solution_model,
     n_epochs=config.opt.solution.n_epochs,
     device=device,
@@ -221,6 +215,12 @@ if config.opt.solution.n_epochs > 0:
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
             )
+if config.opt.solution.n_epochs > 0:
+    if config.opt.solution.resume == True:
+        resume_dir = "./solution_ckpts"
+    else:
+        resume_dir = None
+    
 
     trainer.train(
         train_loader=solution_train_loader,
@@ -243,8 +243,21 @@ if config.opt.solution.n_epochs > 0:
 ######
 
 def loader_to_residual_db(model, data_processor, loader, device, train_val_split=True):
-    """train_db_to_residual_train_db converts a dataset of x: a(x), y: u(x) to 
-    x: a(x), y: G(a,x) - u(x)"""
+    """
+    loader_to_residual_db converts a dataset of x: a(x), y: u(x) to 
+    x: a(x), y: G(a,x) - u(x) for use training the residual model.
+
+    model : nn.Module
+        trained solution model (frozen)
+    data_processor: DataProcessor
+        data processor used to train solution model
+    loader: DataLoader
+        data loader to convert to a dataloader of residuals
+        must be drawn from the same distribution as the solution
+        model's training distribution
+    device: str or torch.device
+    train_val_split: whether to split into a training and validation dataset, default True
+    """
     error_list = []
     x_list = []
     model = model.to(device)
@@ -252,14 +265,9 @@ def loader_to_residual_db(model, data_processor, loader, device, train_val_split
     data_processor.eval() # unnormalized y
     data_processor = data_processor.to(device)
     for idx, sample in enumerate(loader):
-        #print(f"input pre preproc {sample['y'].mean()=}")
         sample = data_processor.preprocess(sample)
-        #print(f"input post preproc {sample['y'].mean()=}")
         out = model(**sample)
-        #print(f"output pre postproc {out.mean()=}")
         out, sample = data_processor.postprocess(out, sample) # unnormalize output
-        #print(f"output post postproc {out.mean()=}")
-        #print(f"output post postproc {sample['y'].mean()=}")
 
         x_list.append(sample['x'].to("cpu"))
         error = (out-sample['y']).detach().to("cpu") # detach, otherwise residual carries gradient of model weight
@@ -272,16 +280,7 @@ def loader_to_residual_db(model, data_processor, loader, device, train_val_split
     print(f"{errors.shape=} {xs.shape=}")
     
     residual_encoder = UnitGaussianNormalizer()
-    print(f"{residual_encoder.mean=}")
-    print(f"{torch.mean(xs)=}")
-    print(f"{torch.mean(errors)=}")
-    print(f"{torch.var(xs)=}")
-    print(f"{torch.var(errors)=}")
     residual_encoder.fit(errors)
-    print(f"{residual_encoder.mean=}")
-    print(f"{residual_encoder.std=}")
-
-    #errors = residual_encoder.transform(errors)
     
     # positional encoding and normalization already applied to X values
     residual_data_processor = DefaultDataProcessor(in_normalizer=None,
@@ -380,8 +379,15 @@ class UQNODataProcessor(DataProcessor):
         return out, sample
 
 # load best-performing solution model
-solution_model = solution_model.from_checkpoint(save_folder="./solution_ckpts", save_name="best_model")
+solution_model = solution_model.from_checkpoint(save_folder="./solution_ckpts", save_name="best_model_815")
 solution_model = solution_model.to(device)
+
+eval_metrics = trainer.evaluate(
+    eval_losses,
+    data_loader=test_loaders[421],
+    epoch=1
+)
+print(f"Eval metrics = {eval_metrics}")
 
 residual_model = copy.deepcopy(solution_model)
 residual_model = residual_model.to(device)
@@ -395,9 +401,6 @@ residual_optimizer = torch.optim.Adam(
     weight_decay=config.opt.residual.weight_decay,
 )
 
-# reuse scheduler
-if config.wandb.log and is_logger:
-    wandb.finish()
 
 if wandb_args is not None:
     uq_wandb_name = 'uq_'+ wandb_args['name']
@@ -532,6 +535,7 @@ with torch.no_grad():
         ratio = torch.abs(sample['y'])/out
         val_ratio_list.append(ratio.squeeze().to("cpu"))
         del sample, out
+
 val_ratios = torch.stack(val_ratio_list)
 
 vr_view = val_ratios.view(val_ratios.shape[0], -1)
