@@ -123,6 +123,7 @@
 <span class="kn">from</span> <span class="nn">..layers.padding</span> <span class="kn">import</span> <span class="n">DomainPadding</span>
 <span class="kn">from</span> <span class="nn">..layers.fno_block</span> <span class="kn">import</span> <span class="n">FNOBlocks</span>
 <span class="kn">from</span> <span class="nn">..layers.channel_mlp</span> <span class="kn">import</span> <span class="n">ChannelMLP</span>
+<span class="kn">from</span> <span class="nn">..layers.complex</span> <span class="kn">import</span> <span class="n">ComplexValued</span>
 <span class="kn">from</span> <span class="nn">.base_model</span> <span class="kn">import</span> <span class="n">BaseModel</span>
 
 <div class="viewcode-block" id="FNO">
@@ -214,6 +215,11 @@
 <span class="sd">        How to perform domain padding, by default &#39;one-sided&#39;</span>
 <span class="sd">    fft_norm : str, optional</span>
 <span class="sd">        by default &#39;forward&#39;</span>
+<span class="sd">    conv_module : BaseConv, optional</span>
+<span class="sd">        Module to use for convolutions in FNO, by default SpectralConv</span>
+<span class="sd">    complex_data: bool, optional</span>
+<span class="sd">        whether FNO data takes on complex values </span>
+<span class="sd">        in the spatial domain, by default False</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
@@ -248,7 +254,8 @@
         <span class="n">domain_padding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s2">&quot;one-sided&quot;</span><span class="p">,</span>
         <span class="n">fft_norm</span><span class="o">=</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span>
-        <span class="n">SpectralConv</span><span class="o">=</span><span class="n">SpectralConv</span><span class="p">,</span>
+        <span class="n">conv_module</span><span class="o">=</span><span class="n">SpectralConv</span><span class="p">,</span>
+        <span class="n">complex_data</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -306,6 +313,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">domain_padding_mode</span> <span class="o">=</span> <span class="n">domain_padding_mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">complex_data</span> <span class="o">=</span> <span class="n">complex_data</span>
 
         <span class="k">if</span> <span class="n">output_scaling_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">joint_factorization</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_scaling_factor</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
@@ -326,6 +334,7 @@
             <span class="n">preactivation</span><span class="o">=</span><span class="n">preactivation</span><span class="p">,</span>
             <span class="n">fno_skip</span><span class="o">=</span><span class="n">fno_skip</span><span class="p">,</span>
             <span class="n">channel_mlp_skip</span><span class="o">=</span><span class="n">channel_mlp_skip</span><span class="p">,</span>
+            <span class="n">complex_data</span><span class="o">=</span><span class="n">complex_data</span><span class="p">,</span>
             <span class="n">max_n_modes</span><span class="o">=</span><span class="n">max_n_modes</span><span class="p">,</span>
             <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
             <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
@@ -336,7 +345,7 @@
             <span class="n">factorization</span><span class="o">=</span><span class="n">factorization</span><span class="p">,</span>
             <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="n">decomposition_kwargs</span><span class="p">,</span>
             <span class="n">joint_factorization</span><span class="o">=</span><span class="n">joint_factorization</span><span class="p">,</span>
-            <span class="n">SpectralConv</span><span class="o">=</span><span class="n">SpectralConv</span><span class="p">,</span>
+            <span class="n">conv_module</span><span class="o">=</span><span class="n">conv_module</span><span class="p">,</span>
             <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span>
         <span class="p">)</span>
@@ -364,6 +373,10 @@
                 <span class="n">n_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                 <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">,</span>
             <span class="p">)</span>
+        <span class="c1"># Convert lifting to a complex ChannelMLP if self.complex_data==True</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">complex_data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lifting</span> <span class="o">=</span> <span class="n">ComplexValued</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lifting</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">ChannelMLP</span><span class="p">(</span>
             <span class="n">in_channels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_channels</span><span class="p">,</span>
             <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
@@ -372,6 +385,8 @@
             <span class="n">n_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dim</span><span class="p">,</span>
             <span class="n">non_linearity</span><span class="o">=</span><span class="n">non_linearity</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">complex_data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">ComplexValued</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="p">)</span>
 
 <div class="viewcode-block" id="FNO.forward">
 <a class="viewcode-back" href="../../../modules/generated/neuralop.models.FNO.html#neuralop.models.FNO.forward">[docs]</a>
