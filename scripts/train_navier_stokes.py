@@ -11,7 +11,7 @@ from neuralop.data.datasets.navier_stokes import load_navier_stokes_pt
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.training import setup
-from neuralop.training.torch_setup import config_opt_and_scheduler
+from neuralop.training.torch_setup import get_optimizer, get_scheduler
 
 
 # Read the configuration
@@ -108,8 +108,19 @@ if config.distributed.use_distributed:
     )
 
 # Create the optimizer and scheduler
-optimizer, scheduler = config_opt_and_scheduler(config, model)
+optimizer = get_optimizer(name=config.opt.optimizer,
+                          parameters=model.parameters(),
+                          learning_rate=config.opt.learning_rate,
+                          weight_decay=config.opt.weight_decay,
+                          momentum=config.opt.momentum,
+                          nesterov=config.opt.nesterov)
 
+scheduler = get_scheduler(name=config.opt.scheduler,
+                          optimizer=optimizer,
+                          gamma=config.opt.gamma,
+                          patience=config.opt.scheduler_patience,
+                          T_max=config.opt.scheduler_T_max,
+                          step_size=config.opt.step_size)
 # Creating the losses
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
