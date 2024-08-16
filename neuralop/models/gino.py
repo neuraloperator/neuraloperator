@@ -168,6 +168,7 @@ class GINO(nn.Module):
         self.out_channels = out_channels
         self.gno_coord_dim = gno_coord_dim
         self.fno_hidden_channels = fno_hidden_channels
+
         self.lifting_channels = lifting_channels
 
         # TODO: make sure this makes sense in all contexts
@@ -198,14 +199,15 @@ class GINO(nn.Module):
             self.adain_pos_embed = None
             self.ada_in_dim = None
         
-        self.lifting = ChannelMLP(in_channels=self.in_channels,
-                                  hidden_channels=self.lifting_channels,
-                                  out_channels=fno_in_channels)
+        self.lifting = ChannelMLP(in_channels=self.fno_in_channels,
+                                  hidden_channels=lifting_channels,
+                                  out_channels=fno_hidden_channels,
+                                  n_layers=3)
         
         self.fno_blocks = FNOBlocks(
                 n_modes=fno_n_modes,
                 hidden_channels=fno_hidden_channels,
-                in_channels=fno_in_channels,
+                in_channels=fno_hidden_channels,
                 out_channels=fno_hidden_channels,
                 positional_embedding=None,
                 n_layers=fno_n_layers,
@@ -258,10 +260,10 @@ class GINO(nn.Module):
         in_gno_channel_mlp_hidden_layers.insert(0, in_kernel_in_dim)
         in_gno_channel_mlp_hidden_layers.append(fno_in_channels) 
         self.gno_in = IntegralTransform(
-                    channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
-                    channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
-                    transform_type=in_gno_transform_type,
-                    use_torch_scatter=gno_use_torch_scatter
+            channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
+            channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
+            transform_type=in_gno_transform_type,
+            use_torch_scatter=gno_use_torch_scatter
         )
 
         ### output GNO
@@ -307,7 +309,9 @@ class GINO(nn.Module):
 
         #Apply FNO blocks
         in_p = self.lifting(in_p)
-        in_p = self.fno_blocks(in_p)
+
+        for idx in range(self.fno_blocks.n_layers):
+            in_p = self.fno_blocks(in_p, idx)
 
         return in_p 
 
