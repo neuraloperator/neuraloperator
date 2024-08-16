@@ -16,8 +16,6 @@ class FNO(BaseModel, name='FNO'):
 
     Parameters
     ----------
-    Core parameters
-    ~~~~~~~~~~~~~~~~
     n_modes : int tuple
         number of modes to keep in Fourier Layer, along each dimension
         The dimensionality of the FNO is inferred from ``len(n_modes)``
@@ -36,8 +34,9 @@ class FNO(BaseModel, name='FNO'):
 
     Documentation for more advanced parameters is below.
 
-    Example 
-    ```
+    Examples
+    ---------
+    
     >>> from neuralop.models import FNO
     >>> model = FNO(n_modes=(12,12), in_channels=1, out_channels=1, hidden_channels=64)
     >>> model
@@ -50,10 +49,9 @@ class FNO(BaseModel, name='FNO'):
         )
         )
             ... torch.nn.Module printout truncated ...
-    ```
 
-    Advanced FNO parameters
-    ~~~~~~~~~~~~~~~~~~~~~~~~~
+    Other parameters
+    -------------------------
     max_n_modes : None or int tuple, default is None
         * If not None, this allows to incrementally increase the number of
           modes in Fourier domain during training. Has to verify n <= N
@@ -68,7 +66,7 @@ class FNO(BaseModel, name='FNO'):
         the last channels of raw input. Assumes the inputs are discretized
         over a grid with entry [0,0,...] at the origin and side lengths of 1.
         If an initialized GridEmbedding, uses this module directly
-        See `neuralop.embeddings.GridEmbeddingND` for details
+        See :mod:`neuralop.embeddings.GridEmbeddingND` for details
         if None, does nothing
     non_linearity : nn.Module, optional
         Non-Linear activation function module to use, by default F.gelu
@@ -76,11 +74,8 @@ class FNO(BaseModel, name='FNO'):
         Normalization layer to use, by default None
     complex_data: bool, optional
         whether FNO data takes on complex values in the spatial domain, by default False
-
-    Fourier convolution 
-    ~~~~~~~~~~~~~~~~~~~~
     fno_skip : {'linear', 'identity', 'soft-gating'}, optional
-        Type of skip connection to use in fno, by default 'linear'
+        Type of skip connection to use in FNO layers, by default 'linear'
     channel_mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
         Type of skip connection to use in channel-mixing mlp, by default 'soft-gating'
     use_channel_mlp : bool, optional
@@ -97,15 +92,9 @@ class FNO(BaseModel, name='FNO'):
         if 'mixed', the contraction and inverse FFT run in half precision
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
-
-    Super-resolution
-    ~~~~~~~~~~~~~~~~~
     output_shape : list
         single output shape or a list of output shapes per layer
         to scale up model output shape for e.g. superresolution 
-    
-    Domain padding 
-    ~~~~~~~~~~~~~~~~
     domain_padding : None, float, or List[float], optional
         If not None, percentage of padding to use, by default None
         To vary the percentage of padding used along each input dimension,
@@ -113,13 +102,10 @@ class FNO(BaseModel, name='FNO'):
         p1 corresponds to the percentage of padding along dim 1, etc.
     domain_padding_mode : {'symmetric', 'one-sided'}, optional
         How to perform domain padding, by default 'one-sided'
-    
-    Factorized tensor parameters
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution
     factorization : str or None, {'tucker', 'cp', 'tt'}
-        Tensor factorization of the parameters weight to use, by default None.
+        Tensor factorization of the FNO layer weights to use, by default None.
         * If None, a dense tensor parametrizes the Spectral convolutions
         * Otherwise, the specified tensor factorization is used.
     joint_factorization : bool, optional
@@ -131,10 +117,9 @@ class FNO(BaseModel, name='FNO'):
         Modes to not factorize, by default False
     implementation : {'factorized', 'reconstructed'}, optional, default is 'factorized'
         If factorization is not None, forward mode to use::
-        * `reconstructed` : the full weight tensor is reconstructed from the
-          factorization and used for the forward pass
+        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass
         * `factorized` : the input is directly contracted with the factors of
-          the decomposition
+        the decomposition
     decomposition_kwargs : dict, optional, default is {}
         Optionaly additional parameters to pass to the tensor decomposition
 
@@ -305,7 +290,20 @@ class FNO(BaseModel, name='FNO'):
             self.projection = ComplexValued(self.projection)
 
     def forward(self, x, output_shape=None, **kwargs):
-        """TFNO's forward pass
+        """FNO's forward pass
+        
+        1. Applies optional positional encoding
+        
+        2. Sends inputs through a lifting layer to a high-dimensional latent
+        space
+
+        3. Applies optional domain padding to high-dimensional intermediate function representation
+
+        4. Applies `n_layers` Fourier/FNO layers in sequence (SpectralConvolution + skip connections, nonlinearity) 
+
+        5. If domain padding was applied, domain padding is removed
+
+        6. Projection of intermediate function representation to the output channels
 
         Parameters
         ----------
