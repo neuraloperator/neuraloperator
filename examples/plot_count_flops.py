@@ -25,7 +25,7 @@ fno = FNO(n_modes=(64,64),
           projection_channels=64)
 
 batch_size = 4
-model_input = torch.randn(batch_size, 3, 128, 128)
+model_input = torch.randn(batch_size, 1, 128, 128)
 
 
 with FlopTensorDispatchMode(fno) as ftdm:
