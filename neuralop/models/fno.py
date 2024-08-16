@@ -122,7 +122,6 @@ class FNO(BaseModel, name='FNO'):
         the decomposition
     decomposition_kwargs : dict, optional, default is {}
         Optionaly additional parameters to pass to the tensor decomposition
-
     """
 
     def __init__(

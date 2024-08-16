@@ -153,6 +153,13 @@ class FNOBlocks(nn.Module):
             self.non_linearity = CGELU
         else:
             self.non_linearity = non_linearity
+    
+        # TODO: eventually support complex data in SphericalConv and SFNO
+        # remove these lines once support is added
+        if conv_module == SpectralConv:
+            complex_kwarg = {'complex_data': complex_data}
+        else:
+            complex_kwarg = dict()
 
         self.convs = conv_module(
             self.in_channels,
@@ -168,7 +175,7 @@ class FNOBlocks(nn.Module):
             decomposition_kwargs=decomposition_kwargs,
             joint_factorization=joint_factorization,
             n_layers=n_layers,
-            complex_data=complex_data
+            **complex_kwarg
         )
 
         self.fno_skips = nn.ModuleList(
