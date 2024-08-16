@@ -111,7 +111,7 @@ In addition to the full architectures, we also provide
 in :mod:`neuralop.layers` building blocks,
 in the form of PyTorch layers, that you can use to build your own models:
 
-Neural operator Layers
+Neural operator layers
 ------------------------
 
 **Spectral convolutions** (in Fourier domain):
@@ -170,6 +170,24 @@ To support geometry-informed (GINO) models, we also offer the ability to integra
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+**Embeddings**
+
+Apply positional embeddings as additional channels on a function:
+
+.. automodule:: neuralop.layers.embeddings
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    GridEmbeddingND
+    GridEmbedding2D
+    SinusoidalEmbedding2D
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 **Neighbor search**
 
 Find neighborhoods on arbitrary coordinate meshes:
@@ -191,6 +209,7 @@ Find neighborhoods on arbitrary coordinate meshes:
     native_neighbor_search
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 Other resolution invariant operations
 -------------------------------------
