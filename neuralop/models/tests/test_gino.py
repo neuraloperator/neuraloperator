@@ -44,7 +44,6 @@ def test_gino(gno_transform_type, gno_coord_dim, batch_size):
         fno_n_modes=fno_n_modes[:gno_coord_dim],
         # keep the FNO model small for runtime
         fno_lifting_channels=lifting_channels,
-        fno_projection_channels=projection_channels,
         fno_norm="ada_in", #TODO: Parametrize this
     ).to(device)
 
@@ -86,6 +85,7 @@ def test_gino(gno_transform_type, gno_coord_dim, batch_size):
     n_unused_params = 0
     for param in model.parameters():
         if param.grad is None:
+            print(f"{param=}")
             n_unused_params += 1
     assert n_unused_params == 0, f"{n_unused_params} parameters were unused!"
     if batch_size > 1:
