@@ -7,7 +7,7 @@ User guide
 
 .. toctree::
 
-   quickstart
+   getting_started
    neural_operators
    fno
    training
