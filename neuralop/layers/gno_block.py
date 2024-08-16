@@ -83,6 +83,7 @@ class GNOBlock(nn.Module):
                  transform_type="linear",
                  use_open3d_neighbor_search: bool=True,
                  use_torch_scatter_reduce=True,):
+        super().__init__()
         
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -90,6 +91,7 @@ class GNOBlock(nn.Module):
 
         self.radius = radius
         self.n_layers = n_layers
+
         # Create in-to-out nb search module
         if use_open3d_neighbor_search:
             assert self.coord_dim == 3, f"Error: open3d is only designed for 3d data, \
@@ -108,10 +110,14 @@ class GNOBlock(nn.Module):
             assert channel_mlp.in_channels == kernel_in_dim, f"Error: expected ChannelMLP to take\
                   input with {kernel_in_dim} channels (feature channels={kernel_in_dim_str}),\
                       got {channel_mlp.in_channels}."
+            assert channel_mlp.out_channels == out_channels, f"Error: expected ChannelMLP to have\
+                 {out_channels=} but got {channel_mlp.in_channels=}."
             self.channel_mlp = channel_mlp
         if channel_mlp_layers:
             if channel_mlp_layers[0] != kernel_in_dim:
                 channel_mlp_layers = [kernel_in_dim] + channel_mlp_layers
+            if channel_mlp_layers[-1] != self.out_channels:
+                channel_mlp_layers.append(self.out_channels)
             self.channel_mlp = LinearChannelMLP(layers=channel_mlp_layers, non_linearity=channel_mlp_non_linearity)
 
         # Create integral transform module
@@ -153,7 +159,8 @@ class GNOBlock(nn.Module):
             Output function given on the points x.
             d4 is the output size of the kernel k.
         """
-        neighbors_dict = self.neighbor_search(data=y, queries=x)
+        
+        neighbors_dict = self.neighbor_search(data=y, queries=x, radius=self.radius)
         out_features = self.integral_transform(y=y,
                                                x=x,
                                                neighbors=neighbors_dict,
