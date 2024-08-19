@@ -281,7 +281,7 @@ class GINO(nn.Module):
         self.gno_out = GNOBlock(
             in_channels=fno_hidden_channels, # number of channels in f_y
             out_channels=fno_hidden_channels,
-            coord_dim=self.gno_coord_dim,
+            coord_dim=self.gno_coord_dim_embed,
             radius=self.gno_radius,
             channel_mlp_layers=out_gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
