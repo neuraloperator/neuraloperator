@@ -142,7 +142,7 @@ class GINO(nn.Module):
             fno_incremental_n_modes=None,
             fno_block_precision='full',
             fno_use_channel_mlp=False, 
-            fno_channel_mlp_dropout=0, 
+            fno_channel_mlp_dropout=0,
             fno_channel_mlp_expansion=0.5,
             fno_non_linearity=F.gelu,
             fno_stabilizer=None, 
