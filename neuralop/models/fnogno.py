@@ -7,9 +7,7 @@ from .fno import FNO
 from ..layers.channel_mlp import ChannelMLP
 from ..layers.embeddings import SinusoidalEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
-from ..layers.integral_transform import IntegralTransform
-from ..layers.neighbor_search import NeighborSearch
-
+from ..layers.gno_block import GNOBlock
 
 class FNOGNO(BaseModel, name="FNOGNO"):
     """FNOGNO: Fourier/Geometry Neural Operator
@@ -233,7 +231,6 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         )
         del self.fno.projection
 
-        self.nb_search_out = NeighborSearch(use_open3d=gno_use_open3d)
         self.gno_radius = gno_radius
 
         if gno_coord_embed_dim is not None:
@@ -242,17 +239,17 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         else:
             self.pos_embed = None
             self.gno_coord_dim_embed = gno_coord_dim
-
-        kernel_in_dim = 2 * self.gno_coord_dim_embed
-        kernel_in_dim += fno_hidden_channels if gno_transform_type != "linear" else 0
-
-        gno_channel_mlp_hidden_layers.insert(0, kernel_in_dim)
-        gno_channel_mlp_hidden_layers.append(fno_hidden_channels)
-
-        self.gno = IntegralTransform(
+        
+        self.gno = GNOBlock(
+            in_channels=fno_hidden_channels,
+            out_channels=fno_hidden_channels,
+            radius=gno_radius,
+            coord_dim=self.gno_coord_dim_embed,
             channel_mlp_layers=gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=gno_transform_type,
+            use_open3d_neighbor_search=gno_use_open3d,
+            use_torch_scatter_reduce=True,
         )
 
         self.projection = ChannelMLP(
@@ -317,12 +314,6 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         Compute integration region for each output point
         """
 
-        # find neighbors, data points are latent geometry
-        # and queries are output geometry
-        in_to_out_nb = self.nb_search_out(
-            in_p.view(-1, in_p.shape[-1]), out_p, self.gno_radius
-        )
-
         # Embed input points
         n_in = in_p.view(-1, in_p.shape[-1]).shape[0]
         if self.pos_embed is not None:
@@ -361,10 +352,10 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         # (n_out, fno_hidden_channels)
         out = self.gno(
             y=in_p_embed,
-            neighbors=in_to_out_nb,
             x=out_p_embed,
             f_y=latent_embed,
         )
+        
         # if self.gno is variable and not batched
         if out.ndim == 2:
             out = out.unsqueeze(0)
