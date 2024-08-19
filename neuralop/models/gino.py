@@ -277,13 +277,9 @@ class GINO(nn.Module):
         )
 
         ### output GNO
-        out_kernel_in_dim = 2 * self.gno_coord_dim_embed 
-        out_kernel_in_dim += fno_hidden_channels if out_gno_transform_type != 'linear' else 0
-        out_gno_channel_mlp_hidden_layers.insert(0, out_kernel_in_dim)
-        out_gno_channel_mlp_hidden_layers.append(fno_hidden_channels)
 
         self.gno_out = GNOBlock(
-            in_channels=out_kernel_in_dim,
+            in_channels=fno_hidden_channels, # number of channels in f_y
             out_channels=fno_hidden_channels,
             coord_dim=self.gno_coord_dim,
             radius=self.gno_radius,
@@ -352,24 +348,19 @@ class GINO(nn.Module):
             out_p_embed = self.pos_embed(out_p.reshape(-1, )).reshape((n_out, -1))
         else:
             out_p_embed = out_p #.reshape((n_out, -1))
-        
-        print(f"{latent_embed.shape=}")
-        
-        #latent_embed shape b, c, n_1, n_2, ..., n_k
+                
+        #latent_embed shape (b, c, n_1, n_2, ..., n_k)
         latent_embed = latent_embed.permute(0, *self.in_coord_dim_reverse_order, 1).reshape(batch_size, -1, self.fno.hidden_channels)
-        # shape b, n_out, channels
-        print(f"{latent_embed.shape=} after permute")
+        
+        # shape (b, n_out, channels)
         if self.out_gno_tanh in ['latent_embed', 'both']:
             latent_embed = torch.tanh(latent_embed)
+
         #(n_out, fno_hidden_channels)
-        print("---going into output GNO---")
-        
         out = self.gno_out(y=in_p_embed, 
                     x=out_p_embed,
                     f_y=latent_embed,)
 
-                    #weighting_fn=self.gno_weighting_fn)
-        print(f"{out.shape=}")
         out = out.permute(0, 2, 1)
         # Project pointwise to out channels
         #(b, n_in, out_channels)

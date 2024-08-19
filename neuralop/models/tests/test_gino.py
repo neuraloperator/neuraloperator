@@ -24,7 +24,6 @@ latent_density = 8
 @pytest.mark.parametrize("gno_coord_dim", [2,3])
 @pytest.mark.parametrize(
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
-    #"gno_transform_type", ["linear"]
 )
 def test_gino(gno_transform_type, gno_coord_dim, batch_size):
     if torch.backends.cuda.is_built():

@@ -106,6 +106,8 @@ class GNOBlock(nn.Module):
         if transform_type == "nonlinear" or transform_type == "nonlinear_kernelonly":
             kernel_in_dim += self.in_channels
             kernel_in_dim_str += " + dim(f_y)"
+        
+        print(f"{kernel_in_dim_str}={kernel_in_dim}")
         if channel_mlp:
             assert channel_mlp.in_channels == kernel_in_dim, f"Error: expected ChannelMLP to take\
                   input with {kernel_in_dim} channels (feature channels={kernel_in_dim_str}),\
@@ -161,6 +163,8 @@ class GNOBlock(nn.Module):
         """
         
         neighbors_dict = self.neighbor_search(data=y, queries=x, radius=self.radius)
+
+        # TODO: compute weights using the neighborhood dict
         out_features = self.integral_transform(y=y,
                                                x=x,
                                                neighbors=neighbors_dict,
