@@ -8,7 +8,6 @@ from torch import nn
 import tensorly as tl
 from tensorly.plugins import use_opt_einsum
 from tltorch.factorized_tensors.core import FactorizedTensor
-from tltorch.factorized_tensors import ComplexDenseTensor
 
 from .einsum_utils import einsum_complexhalf
 from .base_spectral_conv import BaseSpectralConv
@@ -245,6 +244,9 @@ class SpectralConv(BaseSpectralConv):
     decomposition_kwargs : dict, optional, default is {}
         Optionaly additional parameters to pass to the tensor decomposition
         Ignored if ``factorization is None``
+    complex_data: bool, optional
+        whether data takes on complex values in the spatial domain, by default False
+        if True, uses different logic for FFT contraction and uses full FFT instead of real-valued
     """
 
     def __init__(
@@ -264,6 +266,7 @@ class SpectralConv(BaseSpectralConv):
         fixed_rank_modes=False,
         joint_factorization=False,
         decomposition_kwargs: Optional[dict] = None,
+        complex_data: bool=False,
         init_std="auto",
         fft_norm="backward",
         device=None,
@@ -274,6 +277,7 @@ class SpectralConv(BaseSpectralConv):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.joint_factorization = joint_factorization
+        self.complex_data = complex_data
 
         # n_modes is the total number of modes kept along each dimension
         self.n_modes = n_modes
@@ -324,29 +328,25 @@ class SpectralConv(BaseSpectralConv):
         self.separable = separable
 
         tensor_kwargs = decomposition_kwargs if decomposition_kwargs is not None else {}
-        if joint_factorization:
+        if factorization is None:
+            self.weight = nn.ModuleList(
+                [torch.tensor(weight_shape, dtype=torch.cfloat) for _ in range(n_layers)]
+            )
+            for w in self.weight:
+                w.normal_(0, init_std)
+        elif joint_factorization:
             self.weight = FactorizedTensor.new(
                 (n_layers, *weight_shape),
-                rank=self.rank,
-                factorization=factorization,
-                fixed_rank_modes=fixed_rank_modes,
-                dtype=torch.cfloat,
-                **tensor_kwargs,
+                rank=self.rank, factorization=factorization, fixed_rank_modes=fixed_rank_modes,
+                dtype=torch.cfloat, **tensor_kwargs,
             )
             self.weight.normal_(0, init_std)
         else:
-            self.weight = nn.ModuleList(
-                [
-                    FactorizedTensor.new(
-                        weight_shape,
-                        rank=self.rank,
-                        factorization=factorization,
-                        fixed_rank_modes=fixed_rank_modes,
-                        **tensor_kwargs,
-                        dtype=torch.cfloat
-                    )
-                    for _ in range(n_layers)
-                ]
+            self.weight = nn.ModuleList([
+                FactorizedTensor.new(weight_shape, rank=self.rank, 
+                                     factorization=factorization, fixed_rank_modes=fixed_rank_modes,
+                                     **tensor_kwargs, dtype=torch.cfloat) 
+                for _ in range(n_layers)]
             )
             for w in self.weight:
                 w.normal_(0, init_std)
@@ -356,8 +356,7 @@ class SpectralConv(BaseSpectralConv):
 
         if bias:
             self.bias = nn.Parameter(
-                init_std
-                * torch.randn(*((n_layers, self.out_channels) + (1,) * self.order))
+                init_std * torch.randn(*((n_layers, self.out_channels) + (1,) * self.order))
             )
         else:
             self.bias = None
@@ -370,10 +369,7 @@ class SpectralConv(BaseSpectralConv):
 
         if self.output_scaling_factor is not None and output_shape is None:
             out_shape = tuple(
-                [
-                    round(s * r)
-                    for (s, r) in zip(in_shape, self.output_scaling_factor[layer_index])
-                ]
+                [round(s * r) for (s, r) in zip(in_shape, self.output_scaling_factor[layer_index])]
             )
         elif output_shape is not None:
             out_shape = output_shape
@@ -383,12 +379,7 @@ class SpectralConv(BaseSpectralConv):
         if in_shape == out_shape:
             return x
         else:
-            return resample(
-                x,
-                1.0,
-                list(range(2, x.ndim)),
-                output_shape=out_shape,
-            )
+            return resample(x, 1.0, list(range(2, x.ndim)), output_shape=out_shape)
     
     @property
     def n_modes(self):
@@ -400,9 +391,11 @@ class SpectralConv(BaseSpectralConv):
             n_modes = [n_modes]
         else:
             n_modes = list(n_modes)
-        # The last mode has a redundacy as we use real FFT
+        # the real FFT is skew-symmetric, so the last mode has a redundacy if our data is real in space 
         # As a design choice we do the operation here to avoid users dealing with the +1
-        n_modes[-1] = n_modes[-1] // 2 + 1
+        # if we use the full FFT we cannot cut off informtion from the last mode
+        if not self.complex_data:
+            n_modes[-1] = n_modes[-1] // 2 + 1
         self._n_modes = n_modes
 
     def forward(
@@ -424,13 +417,17 @@ class SpectralConv(BaseSpectralConv):
         batchsize, channels, *mode_sizes = x.shape
 
         fft_size = list(mode_sizes)
-        fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient
+        if not self.complex_data:
+            fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient in real spatial data
         fft_dims = list(range(-self.order, 0))
 
         if self.fno_block_precision == "half":
             x = x.half()
 
-        x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
+        if self.complex_data:
+            x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
+        else: 
+            x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
         if self.order > 1:
             x = torch.fft.fftshift(x, dim=fft_dims[:-1])
 
@@ -455,8 +452,13 @@ class SpectralConv(BaseSpectralConv):
             slices_w = [slice(None)] # channels
         else:
             slices_w =  [slice(None), slice(None)] # in_channels, out_channels
-        slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
-        slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+        if self.complex_data:
+            slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
+        else:
+            # The last mode already has redundant half removed in real FFT
+            slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
+            slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)]
+        
         weight = self._get_weight(indices)[slices_w]
 
         # if separable conv, weight tensor only has one channel dim
@@ -467,8 +469,12 @@ class SpectralConv(BaseSpectralConv):
             weight_start_idx = 2
         starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[weight_start_idx:]))]
         slices_x =  [slice(None), slice(None)] # Batch_size, channels
-        slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
-        slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+
+        if self.complex_data:
+            slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
+        else:
+            slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
+            slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
         out_fft[slices_x] = self._contract(x[slices_x], weight, separable=self.separable)
 
         if self.output_scaling_factor is not None and output_shape is None:
@@ -479,7 +485,11 @@ class SpectralConv(BaseSpectralConv):
 
         if self.order > 1:
             out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
-        x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+        
+        if self.complex_data:
+            x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+        else:
+            x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias[indices, ...]

@@ -2,8 +2,6 @@ name: Build documentation
 
 on:
   push:
-    branches:
-      - main
 
 jobs:
   build:
@@ -46,7 +44,8 @@ jobs:
         cd doc
         make html
         cd ..
-    - name: Push docs
+    - name: Push docs on main update
+      if: success() && github.ref == 'refs/heads/main'
       run: |
         # See https://github.community/t/github-actions-bot-email-address/17204/5
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"

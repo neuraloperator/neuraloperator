@@ -30,7 +30,7 @@ class Trainer:
         n_epochs: int,
         wandb_log: bool=False,
         device: str='cpu',
-        amp_autocast: bool=False,
+        mixed_precision: bool=False,
         data_processor: nn.Module=None,
         eval_interval: int=1,
         log_output: bool=False,
@@ -44,9 +44,9 @@ class Trainer:
         n_epochs : int
         wandb_log : bool, default is False
             whether to log results to wandb
-        device : str 'cpu' or 'cuda'
-        amp_autocast : bool, default is False
-            whether to use torch.amp automatic mixed precision
+        device : torch.device, or str 'cpu' or 'cuda'
+        mixed_precision : bool, default is False
+            whether to use torch.autocast to compute mixed precision
         data_processor : DataProcessor class to transform data, default is None
             if not None, data from the loaders is transform first with data_processor.preprocess,
             then after getting an output from the model, that is transformed with data_processor.postprocess.
@@ -70,7 +70,15 @@ class Trainer:
         self.verbose = verbose
         self.use_distributed = use_distributed
         self.device = device
-        self.amp_autocast = amp_autocast
+        # handle autocast device
+        if isinstance(self.device, torch.device):
+            self.autocast_device_type = self.device.type
+        else:
+            if "cuda" in self.device:
+                self.autocast_device_type = "cuda"
+            else:
+                self.autocast_device_type = "cpu"
+        self.mixed_precision = mixed_precision
         self.data_processor = data_processor
 
     def train(
@@ -373,8 +381,8 @@ class Trainer:
 
         self.n_samples += sample["y"].shape[0]
 
-        if self.amp_autocast:
-            with amp.autocast(enabled=True):
+        if self.mixed_precision:
+            with torch.autocast(device_type=self.autocast_device_type):
                 out = self.model(**sample)
         else:
             out = self.model(**sample)
@@ -387,8 +395,8 @@ class Trainer:
 
         loss = 0.0
 
-        if self.amp_autocast:
-            with amp.autocast(enabled=True):
+        if self.mixed_precision:
+            with torch.autocast(device_type=self.autocast_device_type):
                 loss += training_loss(out, **sample)
         else:
             loss += training_loss(out, **sample)

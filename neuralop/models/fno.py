@@ -8,6 +8,7 @@ from ..layers.spectral_convolution import SpectralConv
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
 from ..layers.channel_mlp import ChannelMLP
+from ..layers.complex import ComplexValued
 from .base_model import BaseModel
 
 class FNO(BaseModel, name='FNO'):
@@ -97,6 +98,11 @@ class FNO(BaseModel, name='FNO'):
         How to perform domain padding, by default 'one-sided'
     fft_norm : str, optional
         by default 'forward'
+    conv_module : BaseConv, optional
+        Module to use for convolutions in FNO, by default SpectralConv
+    complex_data: bool, optional
+        whether FNO data takes on complex values 
+        in the spatial domain, by default False
     """
 
     def __init__(
@@ -131,7 +137,8 @@ class FNO(BaseModel, name='FNO'):
         domain_padding=None,
         domain_padding_mode="one-sided",
         fft_norm="forward",
-        SpectralConv=SpectralConv,
+        conv_module=SpectralConv,
+        complex_data=False,
         **kwargs
     ):
         super().__init__()
@@ -189,6 +196,7 @@ class FNO(BaseModel, name='FNO'):
             self.domain_padding = None
 
         self.domain_padding_mode = domain_padding_mode
+        self.complex_data = complex_data
 
         if output_scaling_factor is not None and not joint_factorization:
             if isinstance(output_scaling_factor, (float, int)):
@@ -209,6 +217,7 @@ class FNO(BaseModel, name='FNO'):
             preactivation=preactivation,
             fno_skip=fno_skip,
             channel_mlp_skip=channel_mlp_skip,
+            complex_data=complex_data,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             rank=rank,
@@ -219,7 +228,7 @@ class FNO(BaseModel, name='FNO'):
             factorization=factorization,
             decomposition_kwargs=decomposition_kwargs,
             joint_factorization=joint_factorization,
-            SpectralConv=SpectralConv,
+            conv_module=conv_module,
             n_layers=n_layers,
             **kwargs
         )
@@ -247,6 +256,10 @@ class FNO(BaseModel, name='FNO'):
                 n_layers=1,
                 n_dim=self.n_dim,
             )
+        # Convert lifting to a complex ChannelMLP if self.complex_data==True
+        if self.complex_data:
+            self.lifting = ComplexValued(self.lifting)
+
         self.projection = ChannelMLP(
             in_channels=self.hidden_channels,
             out_channels=out_channels,
@@ -255,6 +268,8 @@ class FNO(BaseModel, name='FNO'):
             n_dim=self.n_dim,
             non_linearity=non_linearity,
         )
+        if self.complex_data:
+            self.projection = ComplexValued(self.projection)
 
     def forward(self, x, output_shape=None, **kwargs):
         """TFNO's forward pass

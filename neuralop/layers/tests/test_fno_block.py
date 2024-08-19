@@ -70,3 +70,23 @@ def test_FNOBlock_norm(norm):
     x = torch.randn(2, 3, *size[:dim])
     res = block(x)
     assert(list(res.shape[2:]) == size[:dim])
+
+@pytest.mark.parametrize('n_dim', 
+                         [1,2,3])
+def test_FNOBlock_complex_data(n_dim):
+    """Test FNO layers with complex input data
+    """
+    modes = (8, 8, 8)
+    size = [10]*3
+    mlp_dropout=0
+    mlp_expansion=0.5
+    mlp_skip='linear'
+    # Instantiate a complex-valued FNO block
+    block = FNOBlocks(
+        3, 4, modes[:n_dim], n_layers=1, use_mlp=True,
+        mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion, mlp_skip=mlp_skip, complex_data=True)
+
+    x = torch.randn(2, 3, *size[:n_dim], dtype=torch.cfloat)
+    res = block(x)
+
+    assert(list(res.shape[2:]) == size[:n_dim])
