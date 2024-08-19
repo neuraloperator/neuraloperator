@@ -198,7 +198,7 @@ class GINO(nn.Module):
         else:
             self.adain_pos_embed = None
             self.ada_in_dim = None
-        
+
         self.lifting = ChannelMLP(in_channels=self.fno_in_channels,
                                   hidden_channels=lifting_channels,
                                   out_channels=fno_hidden_channels,
