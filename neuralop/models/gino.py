@@ -10,8 +10,7 @@ from .fno import FNO
 from ..layers.channel_mlp import ChannelMLP
 from ..layers.embeddings import SinusoidalEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
-from ..layers.integral_transform import IntegralTransform
-from ..layers.neighbor_search import NeighborSearch
+from ..layers.gno_block import GNOBlock
 
 class GINO(nn.Module):
     """GINO: Geometry-informed Neural Operator
@@ -185,6 +184,7 @@ class GINO(nn.Module):
 
         if self.gno_coord_dim != 3 and gno_use_open3d:
             print(f'Warning: GNO expects {self.gno_coord_dim}-d data but Open3d expects 3-d data')
+            gno_use_open3d = False
 
         self.in_coord_dim = len(fno_n_modes)
         self.gno_out_coord_dim = len(fno_n_modes) # gno output and fno will use same dimensions
@@ -243,7 +243,6 @@ class GINO(nn.Module):
         )
         del self.fno.projection
 
-        self.nb_search_out = NeighborSearch(use_open3d=gno_use_open3d)
         self.gno_radius = gno_radius
         self.out_gno_tanh = out_gno_tanh
 
@@ -254,7 +253,6 @@ class GINO(nn.Module):
         else:
             self.pos_embed = None
             self.gno_coord_dim_embed = self.gno_out_coord_dim
-        
 
         ### input GNO
         # input to the first GNO ChannelMLP: x pos encoding, y (integrand) pos encoding
@@ -263,13 +261,19 @@ class GINO(nn.Module):
         if in_gno_transform_type == "nonlinear" or in_gno_transform_type == "nonlinear_kernelonly":
             in_kernel_in_dim += self.in_channels
             
-        in_gno_channel_mlp_hidden_layers.insert(0, in_kernel_in_dim)
-        in_gno_channel_mlp_hidden_layers.append(fno_in_channels) 
-        self.gno_in = IntegralTransform(
-                    channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
-                    channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
-                    transform_type=in_gno_transform_type,
-                    use_torch_scatter=gno_use_torch_scatter
+        #in_gno_channel_mlp_hidden_layers.insert(0, in_kernel_in_dim)
+        #in_gno_channel_mlp_hidden_layers.append(fno_in_channels) 
+
+        self.gno_in = GNOBlock(
+            in_channels=in_channels,
+            out_channels=fno_in_channels,
+            coord_dim=self.gno_coord_dim,
+            radius=gno_radius,
+            channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
+            channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
+            transform_type=in_gno_transform_type,
+            use_open3d_neighbor_search=gno_use_open3d,
+            use_torch_scatter_reduce=gno_use_torch_scatter,
         )
 
         ### output GNO
@@ -277,11 +281,17 @@ class GINO(nn.Module):
         out_kernel_in_dim += fno_hidden_channels if out_gno_transform_type != 'linear' else 0
         out_gno_channel_mlp_hidden_layers.insert(0, out_kernel_in_dim)
         out_gno_channel_mlp_hidden_layers.append(fno_hidden_channels)
-        self.gno_out = IntegralTransform(
-                    channel_mlp_layers=out_gno_channel_mlp_hidden_layers,
-                    channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
-                    transform_type=out_gno_transform_type,
-                    use_torch_scatter=gno_use_torch_scatter
+
+        self.gno_out = GNOBlock(
+            in_channels=out_kernel_in_dim,
+            out_channels=fno_hidden_channels,
+            coord_dim=self.gno_coord_dim,
+            radius=self.gno_radius,
+            channel_mlp_layers=out_gno_channel_mlp_hidden_layers,
+            channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
+            transform_type=out_gno_transform_type,
+            use_open3d_neighbor_search=gno_use_open3d,
+            use_torch_scatter_reduce=gno_use_torch_scatter
         )
 
         self.projection = ChannelMLP(in_channels=fno_hidden_channels, 
@@ -328,11 +338,6 @@ class GINO(nn.Module):
         batch_size = latent_embed.shape[0]
 
         # output shape: (batch, n_out, out_channels) or (n_out, out_channels)
-        in_to_out_nb = self.nb_search_out(
-            in_p.view(-1, in_p.shape[-1]), 
-            out_p,
-            self.gno_radius,
-            )
     
         #Embed input points
         n_in = in_p.view(-1, in_p.shape[-1]).shape[0]
@@ -358,10 +363,11 @@ class GINO(nn.Module):
             latent_embed = torch.tanh(latent_embed)
         #(n_out, fno_hidden_channels)
         print("---going into output GNO---")
+        
         out = self.gno_out(y=in_p_embed, 
-                    neighbors=in_to_out_nb,
                     x=out_p_embed,
                     f_y=latent_embed,)
+
                     #weighting_fn=self.gno_weighting_fn)
         print(f"{out.shape=}")
         out = out.permute(0, 2, 1)
@@ -396,19 +402,15 @@ class GINO(nn.Module):
 
         input_geom = input_geom.squeeze(0) 
         latent_queries = latent_queries.squeeze(0)
-    
-        spatial_nbrs = self.nb_search_out(input_geom, 
-                                          latent_queries.view((-1, latent_queries.shape[-1])), 
-                                          radius=self.gno_radius)
-        
+
+        # Pass through input GNOBlock 
         in_p = self.gno_in(y=input_geom,
                            x=latent_queries.view((-1, latent_queries.shape[-1])),
-                           f_y=x,
-                           neighbors=spatial_nbrs)
+                           f_y=x)
         
         grid_shape = latent_queries.shape[:-1] # disregard positional encoding dim
         
-        # shape (batch, grid1, ...gridn, fno_in_channels)
+        # shape (batch_size, grid1, ...gridn, fno_in_channels)
         in_p = in_p.view((batch_size, *grid_shape, self.fno_in_channels))
         
         # take apply fno in latent space
