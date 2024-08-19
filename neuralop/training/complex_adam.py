@@ -4,21 +4,16 @@ import torch
 from torch import Tensor
 from torch.utils._foreach_utils import _get_fused_kernels_supported_devices
 
-from .optimizer import (
+from torch.optim.optimizer import (
     _capturable_doc,
-    _default_to_fused_or_foreach,
     _differentiable_doc,
-    _disable_dynamo_if_unsupported,
     _foreach_doc,
     _fused_doc,
     _get_capturable_supported_devices,
     _get_scalar_dtype,
     _get_value,
     _maximize_doc,
-    _stack_if_compiling,
     _use_grad_for_differentiable,
-    _view_as_real,
-    DeviceDict,
     Optimizer,
     ParamsT,
 )
@@ -27,7 +22,7 @@ from .optimizer import (
 __all__ = ["Adam", "adam"]
 
 
-class Adam(Optimizer):
+class ComplexAdam(Optimizer):
     def __init__(
         self,
         params: ParamsT,

@@ -9,6 +9,7 @@ from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.training import setup
+from neuralop.training.complex_adam import ComplexAdam
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -99,7 +100,7 @@ if config.distributed.use_distributed:
     )
 
 # Create the optimizer
-optimizer = torch.optim.Adam(
+optimizer = ComplexAdam(
     model.parameters(),
     lr=config.opt.learning_rate,
     weight_decay=config.opt.weight_decay,
