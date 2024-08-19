@@ -139,10 +139,11 @@ class GNOBlock(nn.Module):
             the space to integrate over.
             If batched, these must remain constant
             over the whole batch so no batch dim is needed.
-        x : torch.Tensor of shape [m, d2], default None
-            m points of dimension d2 over which the
-            output function is defined.
-        f_y : torch.Tensor of shape [batch, n, d3] or [n, d3], default None
+        x : torch.Tensor of shape [m, d1], default None
+            m points of dimension d1 over which the
+            output function is defined. Must share domain
+            with y if provided
+        f_y : torch.Tensor of shape [batch, n, d2] or [n, d2], default None
             Function to integrate the kernel against defined
             on the points y. The kernel is assumed diagonal
             hence its output shape must be d3 for the transforms
@@ -157,7 +158,7 @@ class GNOBlock(nn.Module):
 
         Output
         ----------
-        out_features : torch.Tensor of shape [batch, m, d4] or [m, d4]
+        out_features : torch.Tensor of shape [batch, m, d3] or [m, d3]
             Output function given on the points x.
             d4 is the output size of the kernel k.
         """
