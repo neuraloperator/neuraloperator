@@ -13,25 +13,21 @@ class AdamW(Optimizer):
     Implements Adam algorithm with weight decay fix as introduced in [Decoupled Weight Decay
     Regularization](https://arxiv.org/abs/1711.05101).
 
-    Parameters:
-        params (`Iterable[nn.parameter.Parameter]`):
-            Iterable of parameters to optimize or dictionaries defining parameter groups.
-        lr (`float`, *optional*, defaults to 0.001):
-            The learning rate to use.
-        betas (`Tuple[float,float]`, *optional*, defaults to `(0.9, 0.999)`):
-            Adam's betas parameters (b1, b2).
-        eps (`float`, *optional*, defaults to 1e-06):
-            Adam's epsilon for numerical stability.
-        weight_decay (`float`, *optional*, defaults to 0.0):
-            Decoupled weight decay to apply.
-        correct_bias (`bool`, *optional*, defaults to `True`):
-            Whether or not to correct bias in Adam (for instance, in Bert TF repository they use `False`).
-        matrix_only : bool, default True
-            whether to use Tensor Galore or flatten tensors to matrices and use classic Galore
-        activation_checkpoint: bool, default True
-            whether to use activation checkpointing during projection
-        no_deprecation_warning (`bool`, *optional*, defaults to `False`):
-            A flag used to disable the deprecation warning (set to `True` to disable the warning).
+    Parameters
+    ----------
+    params : Iterable[nn.parameter.Parameter]
+        Iterable of parameters to optimize or dictionaries defining parameter groups.
+    lr : float, *optional*, defaults to 0.001
+        The learning rate to use.
+    betas (`Tuple[float,float]`, *optional*, defaults to `(0.9, 0.999)`):
+        Adam's betas parameters (b1, b2).
+    eps (`float`, *optional*, defaults to 1e-06):
+        Adam's epsilon for numerical stability.
+    weight_decay (`float`, *optional*, defaults to 0.0):
+        Decoupled weight decay to apply.
+    correct_bias (`bool`, *optional*, defaults to `True`):
+        Whether or not to correct bias in Adam (for instance, in Bert TF repository they use `False`).
+    track_momentum
             
     """
 
@@ -42,7 +38,8 @@ class AdamW(Optimizer):
         betas: Tuple[float, float] = (0.9, 0.999),
         eps: float = 1e-6,
         weight_decay: float = 0.0,
-        correct_bias: bool = True
+        correct_bias: bool = True,
+        track_momentum: bool = False
         ):
         if lr < 0.0:
             raise ValueError(f"Invalid learning rate: {lr} - should be >= 0.0")
@@ -54,6 +51,7 @@ class AdamW(Optimizer):
             raise ValueError(f"Invalid epsilon value: {eps} - should be >= 0.0")
         defaults = {"lr": lr, "betas": betas, "eps": eps, "weight_decay": weight_decay, "correct_bias": correct_bias}
         super().__init__(params, defaults)
+        self.track_momentum = track_momentum
     
     @torch.no_grad()
     def step(self, closure: Callable = None):
@@ -98,6 +96,13 @@ class AdamW(Optimizer):
                 # Decay the first and second moment running average coefficient
                 # In-place operations to update the averages at the same time
                 exp_avg.mul_(beta1).add_(grad, alpha=(1.0 - beta1))
+                if self.track_momentum: 
+                    momentum = torch.zeros_like(grad)
+                    if torch.is_complex(grad):
+                        momentum.addcmul_(grad, grad.conj(), value=1.0 - beta2)
+                    else:
+                        momentum.addcmul_(grad, grad, value=1.0 - beta2)
+                    state["momentum_val"] = momentum
                 if torch.is_complex(grad):
                     exp_avg_sq.mul_(beta2).addcmul_(grad, grad.conj(), value=1.0 - beta2)
                 else:
