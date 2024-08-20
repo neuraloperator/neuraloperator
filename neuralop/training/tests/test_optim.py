@@ -14,7 +14,6 @@ def test_correct_complex_adam_momentum(adam_optimizer_cls):
                       betas=(0.5, 0.5))
 
     loss1 = torch.view_as_real((param1 * param1.conj())).sum()
-    loss2 = torch.view_as_real((param2 * param2.conj())).sum()
     # grad x^2 = 2x, grads are all 0 + 2j
 
     loss1.backward()
