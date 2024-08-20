@@ -287,7 +287,7 @@ class SpectralConv(BaseSpectralConv):
             max_n_modes = self.n_modes
         elif isinstance(max_n_modes, int):
             max_n_modes = [max_n_modes]
-        self._max_n_modes = max_n_modes
+        self.max_n_modes = max_n_modes
 
         self.fno_block_precision = fno_block_precision
         self.rank = rank
@@ -404,7 +404,7 @@ class SpectralConv(BaseSpectralConv):
         
         
     @max_n_modes.setter
-    def n_modes(self, max_n_modes):
+    def max_n_modes(self, max_n_modes):
         if isinstance(max_n_modes, int): # Should happen for 1D FNO only
             max_n_modes = [max_n_modes]
         else:

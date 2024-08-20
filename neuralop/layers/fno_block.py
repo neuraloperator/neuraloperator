@@ -170,7 +170,7 @@ class FNOBlocks(nn.Module):
         self.convs = conv_module(
             self.in_channels,
             self.out_channels,
-            self.n_modes,
+            n_modes=self.n_modes,
             output_scaling_factor=output_scaling_factor,
             max_n_modes=self.max_n_modes,
             rank=rank,
@@ -379,7 +379,7 @@ class FNOBlocks(nn.Module):
         return self._max_n_modes
     
     @max_n_modes.setter
-    def n_modes(self, max_n_modes):
+    def max_n_modes(self, max_n_modes):
         self.convs.max_n_modes = max_n_modes
         self._max_n_modes = max_n_modes
         

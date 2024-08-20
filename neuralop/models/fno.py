@@ -325,7 +325,7 @@ class FNO(BaseModel, name='FNO'):
     
     @max_n_modes.setter
     def max_n_modes(self, max_n_modes):
-        self.fno_blocks._max_n_modes = max_n_modes
+        self.fno_blocks.max_n_modes = max_n_modes
         self._max_n_modes = max_n_modes
         
         
