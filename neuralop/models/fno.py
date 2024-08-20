@@ -292,7 +292,7 @@ class FNO(BaseModel, name='FNO'):
         """FNO's forward pass
         
         1. Applies optional positional encoding
-        
+
         2. Sends inputs through a lifting layer to a high-dimensional latent
         space
 
@@ -308,10 +308,14 @@ class FNO(BaseModel, name='FNO'):
         ----------
         x : tensor
             input tensor
+        
         output_shape : {tuple, tuple list, None}, default is None
             Gives the option of specifying the exact output shape for odd shaped inputs.
+            
             * If None, don't specify an output shape
+
             * If tuple, specifies the output-shape of the **last** FNO Block
+
             * If tuple list, specifies the exact output-shape of each FNO Block
         """
 
