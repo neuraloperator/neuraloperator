@@ -144,3 +144,39 @@ def test_fno_superresolution(output_scaling_factor):
     factor = prod(output_scaling_factor)
 
     assert list(out.shape) == [batch_size, 1] + [int(round(factor * s)) for s in size]
+
+
+def test_max_n_modes():
+    device = "cpu"
+    modes = [5, 5, 5, 5]
+    dim = [1, 2, 3, 4]
+    max_n_modes=[6, 6, 6, 6]
+    max_n_modes_updated=[8, 8, 8, 8]
+    hidden_channels = 15
+    fc_channels = 32
+    n_layers = 3
+    use_channel_mlp = True
+    n_dim = 2
+    rank = 0.2
+
+    for i in dim:
+        model = FNO(
+            n_modes=modes[:i],
+            hidden_channels=hidden_channels,
+            max_n_modes=max_n_modes[:i],
+            in_channels=3,
+            out_channels=1,
+            factorization="cp",
+            implementation="reconstructed",
+            rank=rank,
+            n_layers=n_layers,
+            use_channel_mlp=use_channel_mlp,
+            fc_channels=fc_channels,
+        ).to(device)
+
+        assert model.max_n_modes == max_n_modes[:i] # check original max setting
+        
+        model.max_n_modes = max_n_modes_updated[:i]
+        
+        assert model.max_n_modes == max_n_modes_updated[:i] # check new max setting
+        
