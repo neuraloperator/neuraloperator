@@ -27,8 +27,6 @@ class GNOBlock(nn.Module):
     
     Parameters
     ----------
-    ## TODO @REVIEWERS: how should we define input channels when the GNO can proceed
-    with just the coordinate dimension in linear kernels? 
     in_channels : int
         number of channels in input function. Only used if transform_type
         is (c) "nonlinear" or (d) "nonlinear_kernelonly"
@@ -76,7 +74,6 @@ class GNOBlock(nn.Module):
                  out_channels: int,
                  coord_dim: int,
                  radius: float,
-                 n_layers: int=None,
                  channel_mlp: nn.Module=None,
                  channel_mlp_layers: List[int]=None,
                  channel_mlp_non_linearity=F.gelu,
@@ -84,13 +81,12 @@ class GNOBlock(nn.Module):
                  use_open3d_neighbor_search: bool=True,
                  use_torch_scatter_reduce=True,):
         super().__init__()
-        
+
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.coord_dim = coord_dim
 
         self.radius = radius
-        self.n_layers = n_layers
 
         # Create in-to-out nb search module
         if use_open3d_neighbor_search:
@@ -106,16 +102,15 @@ class GNOBlock(nn.Module):
         if transform_type == "nonlinear" or transform_type == "nonlinear_kernelonly":
             kernel_in_dim += self.in_channels
             kernel_in_dim_str += " + dim(f_y)"
-                
-        if channel_mlp is not None:
 
+        if channel_mlp is not None:
             assert channel_mlp.in_channels == kernel_in_dim, f"Error: expected ChannelMLP to take\
                   input with {kernel_in_dim} channels (feature channels={kernel_in_dim_str}),\
                       got {channel_mlp.in_channels}."
             assert channel_mlp.out_channels == out_channels, f"Error: expected ChannelMLP to have\
                  {out_channels=} but got {channel_mlp.in_channels=}."
             self.channel_mlp = channel_mlp
-        
+
         if channel_mlp_layers is not None:
             if channel_mlp_layers[0] != kernel_in_dim:
                 channel_mlp_layers = [kernel_in_dim] + channel_mlp_layers
@@ -129,7 +124,7 @@ class GNOBlock(nn.Module):
             transform_type=transform_type,
             use_torch_scatter=use_torch_scatter_reduce
         )
-    
+
     def forward(self, y, x, f_y=None):
         """Compute a GNO neighbor search and kernel integral transform.
 
