@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Trainer, get_model
 from neuralop.data.datasets import load_burgers_1dtime
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
-from neuralop.training import setup
+from neuralop.training import setup, AdamW
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -89,7 +89,7 @@ if config.distributed.use_distributed:
     )
 
 # Create the optimizer
-optimizer = torch.optim.Adam(
+optimizer = AdamW(
     model.parameters(),
     lr=config.opt.learning_rate,
     weight_decay=config.opt.weight_decay,

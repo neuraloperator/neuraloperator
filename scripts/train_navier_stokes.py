@@ -10,7 +10,7 @@ from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.data.datasets.navier_stokes import load_navier_stokes_pt
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.utils import get_wandb_api_key, count_model_params
-from neuralop.training import setup
+from neuralop.training import setup, AdamW
 
 
 # Read the configuration
@@ -107,7 +107,7 @@ if config.distributed.use_distributed:
     )
 
 # Create the optimizer
-optimizer = torch.optim.Adam(
+optimizer = AdamW(
     model.parameters(),
     lr=config.opt.learning_rate,
     weight_decay=config.opt.weight_decay,
