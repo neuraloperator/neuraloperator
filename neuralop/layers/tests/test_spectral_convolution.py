@@ -109,11 +109,11 @@ def test_max_n_modes_setter():
         conv = SpectralConv(
             3, 3, modes[:dim], max_n_modes=max_n_modes[:dim], n_layers=1, output_scaling_factor=0.5)
     
-        assert conv.max_n_modes == max_n_modes[:dim] # check defaults
+        assert conv.max_n_modes == list(max_n_modes[:dim]) # check defaults
         
         conv.max_n_modes = updated_max_n_modes[:dim]
         
-        assert conv.max_n_modes == updated_max_n_modes[:dim] # check updated value
+        assert conv.max_n_modes == list(updated_max_n_modes[:dim]) # check updated value
 
 @pytest.mark.parametrize('factorization', ['ComplexCP', 'ComplexTucker'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])

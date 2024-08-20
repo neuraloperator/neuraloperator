@@ -103,8 +103,8 @@ def test_FNOBlock_max_n_modes_setter():
         block = FNOBlocks(
             3, 3, modes[:dim], max_n_modes=max_n_modes[:dim], n_layers=1)
     
-        assert block.convs.max_n_modes == max_n_modes[:dim] # check defaults
+        assert block.convs.max_n_modes == list(max_n_modes[:dim]) # check defaults
         
         block.convs.max_n_modes = updated_max_n_modes[:dim]
         
-        assert block.convs.max_n_modes == updated_max_n_modes[:dim] # check updated value
+        assert block.convs.max_n_modes == list(updated_max_n_modes[:dim]) # check updated value
