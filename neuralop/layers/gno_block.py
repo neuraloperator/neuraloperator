@@ -11,7 +11,7 @@ from .neighbor_search import NeighborSearch
 
 
 class GNOBlock(nn.Module):
-    """GNOBlock implements a Graph Neural Operator layer as described in [1]_.
+    """GNOBlock implements a Graph Neural Operator layer as described in _[1].
 
     A GNO layer is a resolution-invariant operator that maps a function defined
     over one coordinate mesh to another defined over another coordinate mesh using 
@@ -67,7 +67,7 @@ class GNOBlock(nn.Module):
 
     References
     -----------
-    _[1]. Neural Operator: Graph Kernel Network for Partial Differential Equations.
+    [1]_ Neural Operator: Graph Kernel Network for Partial Differential Equations.
         Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, 
         Anima Anandkumar. ArXiV, 2020 
     """
@@ -106,16 +106,16 @@ class GNOBlock(nn.Module):
         if transform_type == "nonlinear" or transform_type == "nonlinear_kernelonly":
             kernel_in_dim += self.in_channels
             kernel_in_dim_str += " + dim(f_y)"
-        
-        print(f"{kernel_in_dim_str}={kernel_in_dim}")
-        if channel_mlp:
-            assert channel_mlp.in_channels == kernel_in_dim, f"Error: expected ChannelMLP to take\
-                  input with {kernel_in_dim} channels (feature channels={kernel_in_dim_str}),\
-                      got {channel_mlp.in_channels}."
+                
+        if channel_mlp is not None:
+            assert channel_mlp.in_channels == kernel_in_dim, (f"Error: expected ChannelMLP to take
+                  input with {kernel_in_dim} channels (feature channels={kernel_in_dim_str}),
+                      got {channel_mlp.in_channels}.")
             assert channel_mlp.out_channels == out_channels, f"Error: expected ChannelMLP to have\
                  {out_channels=} but got {channel_mlp.in_channels=}."
             self.channel_mlp = channel_mlp
-        if channel_mlp_layers:
+        
+        if channel_mlp_layers is not None:
             if channel_mlp_layers[0] != kernel_in_dim:
                 channel_mlp_layers = [kernel_in_dim] + channel_mlp_layers
             if channel_mlp_layers[-1] != self.out_channels:
@@ -129,7 +129,7 @@ class GNOBlock(nn.Module):
             use_torch_scatter=use_torch_scatter_reduce
         )
     
-    def forward(self, y, x, f_y=None, weights=None):
+    def forward(self, y, x, f_y=None):
         """Compute a GNO neighbor search and kernel integral transform.
 
         Parameters
@@ -142,20 +142,13 @@ class GNOBlock(nn.Module):
         x : torch.Tensor of shape [m, d1], default None
             m points of dimension d1 over which the
             output function is defined. Must share domain
-            with y if provided
+            with y
         f_y : torch.Tensor of shape [batch, n, d2] or [n, d2], default None
             Function to integrate the kernel against defined
             on the points y. The kernel is assumed diagonal
             hence its output shape must be d3 for the transforms
             (b) or (d). If None, (a) is computed.
-        weights : torch.Tensor of shape [n,], default None
-            Weights for each point y proprtional to the
-            volume around f(y) being integrated. For example,
-            suppose d1=1 and let y_1 < y_2 < ... < y_{n+1}
-            be some points. Then, for a Riemann sum,
-            the weights are y_{j+1} - y_j. If None,
-            1/|A(x)| is used.
-
+        
         Output
         ----------
         out_features : torch.Tensor of shape [batch, m, d3] or [m, d3]
