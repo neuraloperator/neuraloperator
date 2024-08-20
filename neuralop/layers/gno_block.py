@@ -108,9 +108,10 @@ class GNOBlock(nn.Module):
             kernel_in_dim_str += " + dim(f_y)"
                 
         if channel_mlp is not None:
-            assert channel_mlp.in_channels == kernel_in_dim, (f"Error: expected ChannelMLP to take
-                  input with {kernel_in_dim} channels (feature channels={kernel_in_dim_str}),
-                      got {channel_mlp.in_channels}.")
+
+            assert channel_mlp.in_channels == kernel_in_dim, f"Error: expected ChannelMLP to take\
+                  input with {kernel_in_dim} channels (feature channels={kernel_in_dim_str}),\
+                      got {channel_mlp.in_channels}."
             assert channel_mlp.out_channels == out_channels, f"Error: expected ChannelMLP to have\
                  {out_channels=} but got {channel_mlp.in_channels=}."
             self.channel_mlp = channel_mlp

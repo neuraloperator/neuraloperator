@@ -249,14 +249,8 @@ class GINO(nn.Module):
             self.gno_coord_dim_embed = self.gno_out_coord_dim
 
         ### input GNO
-        # input to the first GNO ChannelMLP: x pos encoding, y (integrand) pos encoding
-        in_kernel_in_dim = self.gno_coord_dim * 2
-        # add f_y features if input GNO uses a nonlinear kernel
-        if in_gno_transform_type == "nonlinear" or in_gno_transform_type == "nonlinear_kernelonly":
-            in_kernel_in_dim += self.in_channels
-            
-        #in_gno_channel_mlp_hidden_layers.insert(0, in_kernel_in_dim)
-        #in_gno_channel_mlp_hidden_layers.append(fno_in_channels) 
+        # input to the first GNO ChannelMLP: x pos encoding,
+        # y (integrand) pos encoding, potentially f_y
 
         self.gno_in = GNOBlock(
             in_channels=in_channels,
