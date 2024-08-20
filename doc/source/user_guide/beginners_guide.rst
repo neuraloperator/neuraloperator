@@ -193,7 +193,7 @@ Implementation: The spectral layer is implemented using the `SpectralConv2d` cla
 b) MLP Layer
 ~~~~~~~~~~~~
 
-After the spectral layer, an MLP (Multi-Layer Perceptron) layer is applied. This introduces non-linearity and helps in learning complex patterns.
+After the spectral layer, an MLP (Multi-Layer Perceptron) layer is applied on the channels only. This introduces non-linearity and helps in learning complex patterns.
 
 Function:
 
