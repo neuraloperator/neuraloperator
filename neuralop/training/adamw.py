@@ -27,8 +27,6 @@ class AdamW(Optimizer):
         Decoupled weight decay to apply.
     correct_bias (`bool`, *optional*, defaults to `True`):
         Whether or not to correct bias in Adam (for instance, in Bert TF repository they use `False`).
-    track_momentum
-            
     """
 
     def __init__(
@@ -39,7 +37,6 @@ class AdamW(Optimizer):
         eps: float = 1e-6,
         weight_decay: float = 0.0,
         correct_bias: bool = True,
-        track_momentum: bool = False
         ):
         if lr < 0.0:
             raise ValueError(f"Invalid learning rate: {lr} - should be >= 0.0")
@@ -51,7 +48,6 @@ class AdamW(Optimizer):
             raise ValueError(f"Invalid epsilon value: {eps} - should be >= 0.0")
         defaults = {"lr": lr, "betas": betas, "eps": eps, "weight_decay": weight_decay, "correct_bias": correct_bias}
         super().__init__(params, defaults)
-        self.track_momentum = track_momentum
     
     @torch.no_grad()
     def step(self, closure: Callable = None):
@@ -96,13 +92,7 @@ class AdamW(Optimizer):
                 # Decay the first and second moment running average coefficient
                 # In-place operations to update the averages at the same time
                 exp_avg.mul_(beta1).add_(grad, alpha=(1.0 - beta1))
-                if self.track_momentum: 
-                    momentum = torch.zeros_like(grad)
-                    if torch.is_complex(grad):
-                        momentum.addcmul_(grad, grad.conj(), value=1.0 - beta2)
-                    else:
-                        momentum.addcmul_(grad, grad, value=1.0 - beta2)
-                    state["momentum_val"] = momentum
+                
                 if torch.is_complex(grad):
                     exp_avg_sq.mul_(beta2).addcmul_(grad, grad.conj(), value=1.0 - beta2)
                 else:
