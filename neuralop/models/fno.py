@@ -246,6 +246,7 @@ class FNO(BaseModel, name='FNO'):
                 hidden_channels=self.lifting_channels,
                 n_layers=2,
                 n_dim=self.n_dim,
+                non_linearity=non_linearity
             )
         # otherwise, make it a linear layer
         else:
@@ -255,6 +256,7 @@ class FNO(BaseModel, name='FNO'):
                 out_channels=self.hidden_channels,
                 n_layers=1,
                 n_dim=self.n_dim,
+                non_linearity=non_linearity
             )
         # Convert lifting to a complex ChannelMLP if self.complex_data==True
         if self.complex_data:
