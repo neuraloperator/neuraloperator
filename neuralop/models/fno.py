@@ -96,8 +96,6 @@ class FNO(BaseModel, name='FNO'):
         p1 corresponds to the percentage of padding along dim 1, etc.
     domain_padding_mode : {'symmetric', 'one-sided'}, optional
         How to perform domain padding, by default 'one-sided'
-    fft_norm : str, optional
-        by default 'forward'
     conv_module : BaseConv, optional
         Module to use for convolutions in FNO, by default SpectralConv
     complex_data: bool, optional
@@ -136,7 +134,6 @@ class FNO(BaseModel, name='FNO'):
         decomposition_kwargs=dict(),
         domain_padding=None,
         domain_padding_mode="one-sided",
-        fft_norm="forward",
         conv_module=SpectralConv,
         complex_data=False,
         **kwargs
@@ -161,7 +158,6 @@ class FNO(BaseModel, name='FNO'):
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = (fno_skip,)
         self.channel_mlp_skip = (channel_mlp_skip,)
-        self.fft_norm = fft_norm
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation
@@ -221,7 +217,6 @@ class FNO(BaseModel, name='FNO'):
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             rank=rank,
-            fft_norm=fft_norm,
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
             separable=separable,
@@ -359,7 +354,6 @@ class FNO1d(FNO):
         decomposition_kwargs=dict(),
         domain_padding=None,
         domain_padding_mode="one-sided",
-        fft_norm="forward",
         **kwargs
     ):
         super().__init__(
@@ -390,7 +384,6 @@ class FNO1d(FNO):
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
             domain_padding_mode=domain_padding_mode,
-            fft_norm=fft_norm,
         )
         self.n_modes_height = n_modes_height
 
@@ -438,7 +431,6 @@ class FNO2d(FNO):
         decomposition_kwargs=dict(),
         domain_padding=None,
         domain_padding_mode="one-sided",
-        fft_norm="forward",
         **kwargs
     ):
         super().__init__(
@@ -469,7 +461,6 @@ class FNO2d(FNO):
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
             domain_padding_mode=domain_padding_mode,
-            fft_norm=fft_norm,
         )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
@@ -521,7 +512,6 @@ class FNO3d(FNO):
         decomposition_kwargs=dict(),
         domain_padding=None,
         domain_padding_mode="one-sided",
-        fft_norm="forward",
         **kwargs
     ):
         super().__init__(
@@ -552,7 +542,6 @@ class FNO3d(FNO):
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
             domain_padding_mode=domain_padding_mode,
-            fft_norm=fft_norm,
         )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
