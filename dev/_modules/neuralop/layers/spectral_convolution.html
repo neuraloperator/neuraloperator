@@ -350,7 +350,7 @@
 <span class="sd">        Modes to not factorize, by default False</span>
 <span class="sd">        Ignored if ``factorization is None``</span>
 <span class="sd">    fft_norm : str, optional</span>
-<span class="sd">        fft normalization parameter, by default &#39;forward&#39;</span>
+<span class="sd">        by default &#39;forward&#39;</span>
 <span class="sd">    implementation : {&#39;factorized&#39;, &#39;reconstructed&#39;}, optional, default is &#39;factorized&#39;</span>
 <span class="sd">        If factorization is not None, forward mode to use::</span>
 <span class="sd">        * `reconstructed` : the full weight tensor is reconstructed from the</span>
@@ -385,7 +385,7 @@
         <span class="n">decomposition_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">complex_data</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">init_std</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
-        <span class="n">fft_norm</span><span class="o">=</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span>
+        <span class="n">fft_norm</span><span class="o">=</span><span class="s2">&quot;backward&quot;</span><span class="p">,</span>
         <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
