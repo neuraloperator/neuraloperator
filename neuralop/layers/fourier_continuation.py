@@ -63,11 +63,17 @@ class FCLegendre(nn.Module):
 
         return torch.cat((x, ext), dim=-2)
     
+    def extend1d(self, x):
+        return self.extend_left_right(x)
+    
     def extend2d(self, x):
         x = self.extend_left_right(x)
         x = self.extend_top_bottom(x)
 
         return x
     
-    def forward(self, x):
-        return self.extend2d(x)
+    def forward(self, x, dim):
+        if dim == 1:
+            return self.extend1d(x)
+        if dim == 2:
+            return self.extend2d(x)
