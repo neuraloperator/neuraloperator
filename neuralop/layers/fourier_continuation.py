@@ -72,7 +72,7 @@ class FCLegendre(nn.Module):
 
         return x
     
-    def forward(self, x, dim):
+    def forward(self, x, dim=2):
         if dim == 1:
             return self.extend1d(x)
         if dim == 2:
