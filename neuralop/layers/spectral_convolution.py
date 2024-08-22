@@ -233,7 +233,7 @@ class SpectralConv(BaseSpectralConv):
         Modes to not factorize, by default False
         Ignored if ``factorization is None``
     fft_norm : str, optional
-        by default 'forward'
+        fft normalization parameter, by default 'forward'
     implementation : {'factorized', 'reconstructed'}, optional, default is 'factorized'
         If factorization is not None, forward mode to use::
         * `reconstructed` : the full weight tensor is reconstructed from the
@@ -268,7 +268,7 @@ class SpectralConv(BaseSpectralConv):
         decomposition_kwargs: Optional[dict] = None,
         complex_data: bool=False,
         init_std="auto",
-        fft_norm="backward",
+        fft_norm="forward",
         device=None,
         dtype=None,
     ):
