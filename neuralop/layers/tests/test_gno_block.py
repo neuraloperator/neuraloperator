@@ -30,11 +30,12 @@ else:
 
 @pytest.mark.parametrize("batch_size", [1,4])
 @pytest.mark.parametrize("gno_coord_dim", [2,3])
+@pytest.mark.parametrize("gno_coord_dim_embed", [None, 32])
 @pytest.mark.parametrize(
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
 )
 @pytest.mark.parametrize('use_open3d', use_open3d_parametrize)
-def test_gno_block(gno_transform_type, gno_coord_dim, batch_size, use_open3d):
+def test_gno_block(gno_transform_type, gno_coord_dim, gno_coord_dim_embed, batch_size, use_open3d):
     if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")
     else:
@@ -46,6 +47,8 @@ def test_gno_block(gno_transform_type, gno_coord_dim, batch_size, use_open3d):
         in_channels=in_channels,
         out_channels=out_channels, # dummy var currently
         coord_dim=gno_coord_dim,
+        sinusoidal_coord_embed_dim=gno_coord_dim_embed,
+        sinusoidal_embed_max_positions=10000,
         radius=0.25,
         channel_mlp_layers=mlp_hidden_layers,
         transform_type=gno_transform_type,

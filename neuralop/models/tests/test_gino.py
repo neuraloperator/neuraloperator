@@ -25,18 +25,21 @@ latent_density = 8
 @pytest.mark.parametrize(
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
 )
-def test_gino(gno_transform_type, gno_coord_dim, batch_size):
+@pytest.mark.parametrize("gno_coord_dim_embed", [None, 32])
+def test_gino(gno_transform_type, gno_coord_dim, gno_coord_dim_embed, batch_size):
     if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")
     else:
         device = torch.device("cpu:0")
-    
+
     model = GINO(
         in_channels=in_channels,
         out_channels=out_channels,
         gno_radius=0.3,# make this large to ensure neighborhoods fit
         projection_channels=projection_channels,
         gno_coord_dim=gno_coord_dim,
+        gno_coord_embed_dim=gno_coord_dim_embed,
+        gno_embed_max_positions=10000,
         in_gno_mlp_hidden_layers=[16,16],
         out_gno_mlp_hidden_layers=[16,16],
         in_gno_transform_type=gno_transform_type,
