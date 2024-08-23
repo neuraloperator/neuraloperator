@@ -9,7 +9,7 @@ from ..adamw import AdamW
 def test_correct_complex_adam_momentum(adam_optimizer_cls):
     # param = x * 2j
     x = torch.randn((3,3), dtype=torch.float64)
-    param = Parameter((0. + 1.0j) * x)
+    param = Parameter(((0. + 1.0j) * x).to(torch.cfloat))
 
     optimizer = adam_optimizer_cls(params=[param],
                       betas=(0.5, 0.5))
@@ -23,5 +23,5 @@ def test_correct_complex_adam_momentum(adam_optimizer_cls):
     # momentum value should be elemwise (2jx * -2jx * (1 - 0.5)) = 4x**2 * 0.5 = 2x**2
     # exp_avg_sq should be empty, meaning it is just momentum * (1-beta2)
     momentum = optimizer.state[param]["exp_avg_sq"]
-    assert_close(momentum.to(torch.float64), 2 * x**2)
+    assert_close(momentum, (2 * x**2).to(torch.cfloat))
 
