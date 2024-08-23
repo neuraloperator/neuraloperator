@@ -241,8 +241,6 @@ class GINO(nn.Module):
         self.out_gno_tanh = out_gno_tanh
 
         if gno_coord_embed_dim is not None:
-            pos_embed = SinusoidalEmbedding2D(gno_coord_embed_dim, 
-                                                 max_positions=gno_embed_max_positions)
             self.gno_coord_dim_embed = self.gno_out_coord_dim*gno_coord_embed_dim # gno input and output may use separate dims
         else:
             pos_embed = None
@@ -256,8 +254,9 @@ class GINO(nn.Module):
             in_channels=in_channels,
             out_channels=fno_in_channels,
             coord_dim=self.gno_coord_dim,
+            sinusoidal_coord_embed_dim=gno_coord_embed_dim,
+            sinusoidal_embed_max_positions=gno_embed_max_positions,
             radius=gno_radius,
-            pos_embedding=pos_embed,
             channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=in_gno_transform_type,
@@ -270,9 +269,10 @@ class GINO(nn.Module):
         self.gno_out = GNOBlock(
             in_channels=fno_hidden_channels, # number of channels in f_y
             out_channels=fno_hidden_channels,
-            coord_dim=self.gno_coord_dim_embed,
+            coord_dim=self.gno_coord_dim,
             radius=self.gno_radius,
-            pos_embedding=pos_embed,
+            sinusoidal_coord_embed_dim=gno_coord_embed_dim,
+            sinusoidal_embed_max_positions=gno_embed_max_positions,
             channel_mlp_layers=out_gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=out_gno_transform_type,

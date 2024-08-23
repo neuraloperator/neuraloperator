@@ -38,11 +38,12 @@ class GNOBlock(nn.Module):
         number of channels in output function
     coord_dim : int
         dimension of domain on which x and y are defined
-    pos_embed : embedding module
-        module to use to apply optional positional embedding to 
-        input queries and output queries. 
     radius : float
         radius in which to search for neighbors
+    sinusoidal_coord_embed_dim : int, optional
+        number of channels per coordinate channel for sinusoidal positional encoding
+    sinusoidal_embed_max_positions : int, optional
+        number of max positions in sinusoidal embeddings
     channel_mlp : nn.Module, optional
         ChannelMLP parametrizing the kernel k. Input dimension
         should be dim x + dim y or dim x + dim y + dim f.
@@ -80,7 +81,8 @@ class GNOBlock(nn.Module):
                  out_channels: int,
                  coord_dim: int,
                  radius: float,
-                 pos_embedding: SinusoidalEmbedding2D=None,
+                 sinusoidal_coord_embed_dim: int=None,
+                 sinusoidal_embed_max_positions: int=None,
                  channel_mlp: nn.Module=None,
                  channel_mlp_layers: List[int]=None,
                  channel_mlp_non_linearity=F.gelu,
@@ -94,8 +96,17 @@ class GNOBlock(nn.Module):
         self.coord_dim = coord_dim
 
         self.radius = radius
-        self.pos_embedding = pos_embedding
 
+        # Apply sinusoidal positional embedding
+        self.sinusoidal_coord_embed_dim = sinusoidal_coord_embed_dim
+        self.sinusoidal_embed_max_positions = sinusoidal_embed_max_positions
+        
+        if self.sinusoidal_coord_embed_dim:
+            self.pos_embedding = SinusoidalEmbedding2D(num_channels=self.sinusoidal_coord_embed_dim,
+                                                       max_positions=self.sinusoidal_embed_max_positions)
+        else:
+            self.pos_embedding = None
+        
         # Create in-to-out nb search module
         if use_open3d_neighbor_search:
             assert self.coord_dim == 3, f"Error: open3d is only designed for 3d data, \
@@ -105,8 +116,13 @@ class GNOBlock(nn.Module):
         # create proper kernel input channel dim
         # if nonlinear of either type, add in_features dim
         # otherwise just add x and y dim
+        # x and y dim will be embedding dim if pos embedding is applied
         kernel_in_dim = self.coord_dim * 2
         kernel_in_dim_str = "dim(y) + dim(x)"
+        if self.pos_embedding is not None:
+            kernel_in_dim *= self.sinusoidal_coord_embed_dim
+            kernel_in_dim_str = "dim(y_embed) + dim(x_embed)"
+
         if transform_type == "nonlinear" or transform_type == "nonlinear_kernelonly":
             kernel_in_dim += self.in_channels
             kernel_in_dim_str += " + dim(f_y)"
