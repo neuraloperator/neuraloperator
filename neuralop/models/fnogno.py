@@ -318,8 +318,9 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             ).reshape((-1, self.fno_hidden_channels))
 
         # (n_out, fno_hidden_channels)
+        
         out = self.gno(
-            y=in_p,
+            y=in_p.reshape(-1, in_p.shape[-1]),
             x=out_p,
             f_y=latent_embed,
         )
