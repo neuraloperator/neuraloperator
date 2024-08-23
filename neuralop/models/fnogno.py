@@ -24,6 +24,8 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         dimension of GNO input data.
     gno_coord_embed_dim : int | None, defaults to none
         dimension of embeddings of GNO coordinates.
+    gno_embed_max_positions : int | None, defaults to none
+        max positions to use for sinusoidal GNO coord embedding
     gno_radius : float, defaults to 0.033
         radius parameter to construct graph.
     gno_channel_mlp_hidden_layers : list, defaults to [512, 256]
@@ -109,6 +111,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         projection_channels=256,
         gno_coord_dim=3,
         gno_coord_embed_dim=None,
+        gno_embed_max_positions=10000,
         gno_radius=0.033,
         gno_channel_mlp_hidden_layers=[512, 256],
         gno_channel_mlp_non_linearity=F.gelu,
@@ -227,20 +230,14 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         )
 
         self.gno_radius = gno_radius
-
-        if gno_coord_embed_dim is not None:
-            pos_embed = SinusoidalEmbedding2D(gno_coord_embed_dim)
-            self.gno_coord_dim_embed = gno_coord_dim * gno_coord_embed_dim
-        else:
-            pos_embed = None
-            self.gno_coord_dim_embed = gno_coord_dim
         
         self.gno = GNOBlock(
             in_channels=fno_hidden_channels,
             out_channels=fno_hidden_channels,
             radius=gno_radius,
-            coord_dim=self.gno_coord_dim_embed,
-            pos_embedding=pos_embed,
+            coord_dim=self.gno_coord_dim,
+            sinusoidal_coord_embed_dim=gno_coord_embed_dim,
+            sinusoidal_embed_max_positions=gno_embed_max_positions,
             channel_mlp_layers=gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=gno_transform_type,
