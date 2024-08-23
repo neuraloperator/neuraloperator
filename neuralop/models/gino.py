@@ -241,11 +241,11 @@ class GINO(nn.Module):
         self.out_gno_tanh = out_gno_tanh
 
         if gno_coord_embed_dim is not None:
-            self.pos_embed = SinusoidalEmbedding2D(gno_coord_embed_dim, 
+            pos_embed = SinusoidalEmbedding2D(gno_coord_embed_dim, 
                                                  max_positions=gno_embed_max_positions)
             self.gno_coord_dim_embed = self.gno_out_coord_dim*gno_coord_embed_dim # gno input and output may use separate dims
         else:
-            self.pos_embed = None
+            pos_embed = None
             self.gno_coord_dim_embed = self.gno_out_coord_dim
 
         ### input GNO
@@ -257,6 +257,7 @@ class GINO(nn.Module):
             out_channels=fno_in_channels,
             coord_dim=self.gno_coord_dim,
             radius=gno_radius,
+            pos_embedding=pos_embed,
             channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=in_gno_transform_type,
@@ -271,6 +272,7 @@ class GINO(nn.Module):
             out_channels=fno_hidden_channels,
             coord_dim=self.gno_coord_dim_embed,
             radius=self.gno_radius,
+            pos_embedding=pos_embed,
             channel_mlp_layers=out_gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=out_gno_transform_type,
@@ -317,34 +319,17 @@ class GINO(nn.Module):
 
     def integrate_latent(self, in_p, out_p, latent_embed):
         batch_size = latent_embed.shape[0]
-
-        # output shape: (batch, n_out, out_channels) or (n_out, out_channels)
-    
-        #Embed input points
-        n_in = in_p.view(-1, in_p.shape[-1]).shape[0]
-        if self.pos_embed is not None:
-            in_p_embed = self.pos_embed(in_p.reshape(-1, )).reshape((n_in, -1))
-        else:
-            in_p_embed = in_p.reshape((n_in, -1))
-        
-        #Embed output points
-        n_out = out_p.shape[0]
-        if self.pos_embed is not None:
-            out_p_embed = self.pos_embed(out_p.reshape(-1, )).reshape((n_out, -1))
-        else:
-            out_p_embed = out_p #.reshape((n_out, -1))
-                
         #latent_embed shape b, c, n_1, n_2, ..., n_k
         latent_embed = latent_embed.permute(0, *self.in_coord_dim_reverse_order, 1).reshape(batch_size, -1, self.fno_hidden_channels)
         # shape b, n_out, channels
         if self.out_gno_tanh in ['latent_embed', 'both']:
             latent_embed = torch.tanh(latent_embed)
 
+        # in_p (latent queries) is of shape d_1 x d_2 x... d_n x n, reshape to n_out x n
         #(n_out, fno_hidden_channels)
-        out = self.gno_out(y=in_p_embed, 
-                    x=out_p_embed,
+        out = self.gno_out(y=in_p.reshape((-1, in_p.shape[-1])), 
+                    x=out_p,
                     f_y=latent_embed,)
-                    #weighting_fn=self.gno_weighting_fn)
         out = out.permute(0, 2, 1)
         # Project pointwise to out channels
         #(b, n_in, out_channels)
@@ -393,6 +378,23 @@ class GINO(nn.Module):
                                              ada_in=ada_in)
 
         # Integrate latent space to output queries
-        out = self.integrate_latent(latent_queries, output_queries, latent_embed)
+        #latent_embed shape (b, c, n_1, n_2, ..., n_k)
+        batch_size = latent_embed.shape[0]
+        # permute to (b, n_1, n_2, ...n_k, c)
+        # then reshape to (b, n_1 * n_2 * ...n_k, out_channels)
+        latent_embed = latent_embed.permute(0, *self.in_coord_dim_reverse_order, 1).reshape(batch_size, -1, self.fno_hidden_channels)
+        
+        if self.out_gno_tanh in ['latent_embed', 'both']:
+            latent_embed = torch.tanh(latent_embed)
+        
+        # latent queries is of shape (d_1 x d_2 x... d_n x n), reshape to n_out x n
+        out = self.gno_out(y=latent_queries.reshape((-1, latent_queries.shape[-1])), 
+                    x=output_queries,
+                    f_y=latent_embed,)
+        out = out.permute(0, 2, 1)
 
+        # Project pointwise to out channels
+        #(b, n_in, out_channels)
+        out = self.projection(out).permute(0, 2, 1)  
+        
         return out

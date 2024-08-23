@@ -229,10 +229,10 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         self.gno_radius = gno_radius
 
         if gno_coord_embed_dim is not None:
-            self.pos_embed = SinusoidalEmbedding2D(gno_coord_embed_dim)
+            pos_embed = SinusoidalEmbedding2D(gno_coord_embed_dim)
             self.gno_coord_dim_embed = gno_coord_dim * gno_coord_embed_dim
         else:
-            self.pos_embed = None
+            pos_embed = None
             self.gno_coord_dim_embed = gno_coord_dim
         
         self.gno = GNOBlock(
@@ -240,6 +240,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             out_channels=fno_hidden_channels,
             radius=gno_radius,
             coord_dim=self.gno_coord_dim_embed,
+            pos_embedding=pos_embed,
             channel_mlp_layers=gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=gno_transform_type,
@@ -303,28 +304,6 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         Compute integration region for each output point
         """
 
-        # Embed input points
-        n_in = in_p.view(-1, in_p.shape[-1]).shape[0]
-        if self.pos_embed is not None:
-            in_p_embed = self.pos_embed(
-                in_p.reshape(
-                    -1,
-                )
-            ).reshape((n_in, -1))
-        else:
-            in_p_embed = in_p.reshape((n_in, -1))
-
-        # Embed output points
-        n_out = out_p.shape[0]
-        if self.pos_embed is not None:
-            out_p_embed = self.pos_embed(
-                out_p.reshape(
-                    -1,
-                )
-            ).reshape((n_out, -1))
-        else:
-            out_p_embed = out_p  # .reshape((n_out, -1))
-
         # (n_1*n_2*..., fno_hidden_channels)
         # if batched, (b, n1*n2*..., fno_hidden_channels)
 
@@ -340,8 +319,8 @@ class FNOGNO(BaseModel, name="FNOGNO"):
 
         # (n_out, fno_hidden_channels)
         out = self.gno(
-            y=in_p_embed,
-            x=out_p_embed,
+            y=in_p,
+            x=out_p,
             f_y=latent_embed,
         )
         

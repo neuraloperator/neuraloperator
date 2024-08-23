@@ -5,9 +5,10 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from .channel_mlp import ChannelMLP, LinearChannelMLP
+from .channel_mlp import LinearChannelMLP
 from .integral_transform import IntegralTransform
 from .neighbor_search import NeighborSearch
+from .embeddings import SinusoidalEmbedding2D
 
 
 class GNOBlock(nn.Module):
@@ -17,6 +18,9 @@ class GNOBlock(nn.Module):
     over one coordinate mesh to another defined over another coordinate mesh using 
     a pointwise kernel integral that takes contributions from neighbors of distance 1
     within a graph constructed via neighbor search with a specified radius. 
+
+    Optionally, if provided, the input and output queries can have a positional embedding
+    applied using the argument pos_embedding.
 
     The kernel integral computed in IntegralTransform 
     computes one of the following:
@@ -34,10 +38,11 @@ class GNOBlock(nn.Module):
         number of channels in output function
     coord_dim : int
         dimension of domain on which x and y are defined
+    pos_embed : embedding module
+        module to use to apply optional positional embedding to 
+        input queries and output queries. 
     radius : float
         radius in which to search for neighbors
-    use_open3d_neighbor_search : _type_, optional
-        _description_, by default None
     channel_mlp : nn.Module, optional
         ChannelMLP parametrizing the kernel k. Input dimension
         should be dim x + dim y or dim x + dim y + dim f.
@@ -58,6 +63,7 @@ class GNOBlock(nn.Module):
         If the input f is not given then (a) is computed
         by default independently of this parameter.
     use_open3d_neighbor_search: bool, optional
+        whether to use open3d or native-PyTorch search
     use_torch_scatter_reduce : bool, optional
         whether to reduce in integral computation using a function
         provided by the extra dependency torch_scatter or the slower
@@ -74,6 +80,7 @@ class GNOBlock(nn.Module):
                  out_channels: int,
                  coord_dim: int,
                  radius: float,
+                 pos_embedding: SinusoidalEmbedding2D=None,
                  channel_mlp: nn.Module=None,
                  channel_mlp_layers: List[int]=None,
                  channel_mlp_non_linearity=F.gelu,
@@ -87,6 +94,7 @@ class GNOBlock(nn.Module):
         self.coord_dim = coord_dim
 
         self.radius = radius
+        self.pos_embedding = pos_embedding
 
         # Create in-to-out nb search module
         if use_open3d_neighbor_search:
@@ -151,12 +159,21 @@ class GNOBlock(nn.Module):
             Output function given on the points x.
             d4 is the output size of the kernel k.
         """
-        
+        n_in = y.shape[0]
+        n_out = x.shape[0]
+
         neighbors_dict = self.neighbor_search(data=y, queries=x, radius=self.radius)
+        
+        if self.pos_embedding:
+            y_embed = self.pos_embedding(y.reshape(-1, )).reshape((n_in, -1))
+            x_embed = self.pos_embedding(x.reshape(-1, )).reshape((n_out, -1))
+        else:
+            y_embed = y
+            x_embed = x
 
         # TODO: compute weights using the neighborhood dict
-        out_features = self.integral_transform(y=y,
-                                               x=x,
+        out_features = self.integral_transform(y=y_embed,
+                                               x=x_embed,
                                                neighbors=neighbors_dict,
                                                f_y=f_y)
         
