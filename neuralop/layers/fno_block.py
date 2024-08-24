@@ -109,8 +109,8 @@ class FNOBlocks(nn.Module):
         rank=1.0,
         conv_module=SpectralConv,
         joint_factorization=False,
-        fixed_rank_modes=False,
-        implementation="factorized",
+        fixed_rank_modes=False, #undoc
+        implementation="factorized", #undoc
         decomposition_kwargs=dict(),
         fft_norm="forward",
         **kwargs,
