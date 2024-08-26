@@ -10,7 +10,53 @@ from torch_harmonics.quadrature import _precompute_grid
 from torch_harmonics.convolution import _compute_support_vals_isotropic, _compute_support_vals_anisotropic
 from torch_harmonics.convolution import DiscreteContinuousConv
 
-def _precompute_convolution_tensor_2d(grid_in, grid_out, kernel_shape, radius_cutoff=0.01, periodic=False):
+
+def _normalize_convolution_tensor_2d(psi_idx, psi_vals, grid_in, grid_out, kernel_shape, quad_weights, transpose_normalization=False, eps=1e-9):
+    """
+    Discretely normalizes the convolution tensor.
+    """
+
+    n_in = grid_in.shape[-1]
+    n_out = grid_out.shape[-2]
+
+    if len(kernel_shape) == 1:
+        kernel_size = math.ceil(kernel_shape[0] / 2)
+    elif len(kernel_shape) == 2:
+        kernel_size = (kernel_shape[0] // 2) * kernel_shape[1] + kernel_shape[0] % 2
+
+    # # reshape the indices implicitly to be ikernel, n_in, n_out
+    # idx = torch.stack([psi_idx[0], psi_idx[1], psi_idx[2] // nlon_in, psi_idx[2] % nlon_in], dim=0)
+    idx = psi_idx
+
+    if transpose_normalization:
+        # pre-compute the quadrature weights
+        q = quad_weights[idx[1]].reshape(-1)
+
+        # loop through dimensions which require normalization
+        for ik in range(kernel_size):
+            for iin in range(n_in):
+                # get relevant entries
+                iidx = torch.argwhere((idx[0] == ik) & (idx[2] == iin))
+                # normalize, while summing also over the input longitude dimension here as this is not available for the output
+                vnorm = torch.sum(psi_vals[iidx] * q[iidx])
+                psi_vals[iidx] = psi_vals[iidx] / (vnorm + eps)
+    else:
+        # pre-compute the quadrature weights
+        q = quad_weights[idx[2]].reshape(-1)
+
+        # loop through dimensions which require normalization
+        for ik in range(kernel_size):
+            for iout in range(n_out):
+                # get relevant entries
+                iidx = torch.argwhere((idx[0] == ik) & (idx[1] == iout))
+                # normalize
+                vnorm = torch.sum(psi_vals[iidx] * q[iidx])
+                psi_vals[iidx] = psi_vals[iidx] / (vnorm + eps)
+
+    return psi_vals
+
+
+def _precompute_convolution_tensor_2d(grid_in, grid_out, kernel_shape, quad_weights, radius_cutoff=0.01, periodic=False, transpose_normalization=False):
     """
     Precomputes the translated filters at positions $T^{-1}_j \omega_i = T^{-1}_j T_i \nu$. Similar to the S2 routine,
     only that it assumes a non-periodic subset of the euclidean plane
@@ -37,17 +83,20 @@ def _precompute_convolution_tensor_2d(grid_in, grid_out, kernel_shape, radius_cu
 
     diffs = grid_in - grid_out
     if periodic:
-        periodic_diffs = torch.where(diffs > 0.0, diffs-1, diffs+1)
+        periodic_diffs = torch.where(diffs > 0.0, diffs - 1, diffs + 1)
         diffs = torch.where(diffs.abs() < periodic_diffs.abs(), diffs, periodic_diffs)
-
 
     r = torch.sqrt(diffs[0] ** 2 + diffs[1] ** 2)
     phi = torch.arctan2(diffs[1], diffs[0]) + torch.pi
 
     idx, vals = kernel_handle(r, phi)
+
     idx = idx.permute(1, 0)
 
+    vals = _normalize_convolution_tensor_2d(idx, vals, grid_in, grid_out, kernel_shape, quad_weights, transpose_normalization=transpose_normalization)
+
     return idx, vals
+
 
 class DiscreteContinuousConv2d(DiscreteContinuousConv):
     """
@@ -123,17 +172,17 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         # integration weights
         self.register_buffer("quad_weights", quad_weights, persistent=False)
 
-        idx, vals = _precompute_convolution_tensor_2d(grid_in, grid_out, self.kernel_shape, radius_cutoff=radius_cutoff, periodic=periodic)
+        idx, vals = _precompute_convolution_tensor_2d(grid_in, grid_out, self.kernel_shape, quad_weights, radius_cutoff=radius_cutoff, periodic=periodic)
 
         # to improve performance, we make psi a matrix by merging the first two dimensions
         # This has to be accounted for in the forward pass
-        idx = torch.stack([idx[0]*self.n_out + idx[1], idx[2]], dim=0)
+        idx = torch.stack([idx[0] * self.n_out + idx[1], idx[2]], dim=0)
 
         self.register_buffer("psi_idx", idx.contiguous(), persistent=False)
         self.register_buffer("psi_vals", vals.contiguous(), persistent=False)
 
     def get_psi(self):
-        psi = torch.sparse_coo_tensor(self.psi_idx, self.psi_vals, size=(self.kernel_size*self.n_out, self.n_in))
+        psi = torch.sparse_coo_tensor(self.psi_idx, self.psi_vals, size=(self.kernel_size * self.n_out, self.n_in))
         return psi
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -159,6 +208,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
             out = out + self.bias.reshape(1, -1, 1)
 
         return out
+
 
 class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     """
@@ -235,17 +285,19 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         self.register_buffer("quad_weights", quad_weights, persistent=False)
 
         # precompute the transposed tensor
-        idx, vals = _precompute_convolution_tensor_2d(grid_out, grid_in, self.kernel_shape, radius_cutoff=radius_cutoff, periodic=periodic)
+        idx, vals = _precompute_convolution_tensor_2d(
+            grid_out, grid_in, self.kernel_shape, quad_weights, radius_cutoff=radius_cutoff, periodic=periodic, transpose_normalization=True
+        )
 
         # to improve performance, we make psi a matrix by merging the first two dimensions
         # This has to be accounted for in the forward pass
-        idx = torch.stack([idx[0]*self.n_out + idx[2], idx[1]], dim=0)
+        idx = torch.stack([idx[0] * self.n_out + idx[2], idx[1]], dim=0)
 
         self.register_buffer("psi_idx", idx.contiguous(), persistent=False)
         self.register_buffer("psi_vals", vals.contiguous(), persistent=False)
 
     def get_psi(self):
-        psi = torch.sparse_coo_tensor(self.psi_idx, self.psi_vals, size=(self.kernel_size*self.n_out, self.n_in))
+        psi = torch.sparse_coo_tensor(self.psi_idx, self.psi_vals, size=(self.kernel_size * self.n_out, self.n_in))
         return psi
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
