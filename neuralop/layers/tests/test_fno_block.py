@@ -16,16 +16,16 @@ def test_FNOBlock_output_scaling_factor():
         block = FNOBlocks(
             3, 4, max_n_modes[:dim], max_n_modes=max_n_modes[:dim], n_layers=1)
         
-        assert block.convs.n_modes[:-1] == max_n_modes[:dim-1]
-        assert block.convs.n_modes[-1] == max_n_modes[dim-1]//2 + 1
+        assert block.convs[0].n_modes[:-1] == max_n_modes[:dim-1]
+        assert block.convs[0].n_modes[-1] == max_n_modes[dim-1]//2 + 1
 
         block.n_modes = n_modes[:dim]
-        assert block.convs.n_modes[:-1] == n_modes[:dim-1]
-        assert block.convs.n_modes[-1] == n_modes[dim-1]//2 + 1
+        assert block.convs[0].n_modes[:-1] == n_modes[:dim-1]
+        assert block.convs[0].n_modes[-1] == n_modes[dim-1]//2 + 1
 
         block.n_modes = max_n_modes[:dim]
-        assert block.convs.n_modes[:-1] == max_n_modes[:dim-1]
-        assert block.convs.n_modes[-1] == max_n_modes[dim-1]//2 + 1
+        assert block.convs[0].n_modes[:-1] == max_n_modes[:dim-1]
+        assert block.convs[0].n_modes[-1] == max_n_modes[dim-1]//2 + 1
 
         # Downsample outputs
         block = FNOBlocks(

@@ -123,14 +123,13 @@ class FNOBlocks(nn.Module):
 
         self.output_scaling_factor: Union[
             None, List[List[float]]
-        ] = validate_scaling_factor(output_scaling_factor, self.n_dim, n_layers)
+        ] = validate_scaling_factor(output_scaling_factor, self.n_dim)
 
         self.max_n_modes = max_n_modes
         self.fno_block_precision = fno_block_precision
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.n_layers = n_layers
-        self.joint_factorization = joint_factorization
         self.stabilizer = stabilizer
         self.rank = rank
         self.factorization = factorization
@@ -160,23 +159,23 @@ class FNOBlocks(nn.Module):
             complex_kwarg = {'complex_data': complex_data}
         else:
             complex_kwarg = dict()
-
-        self.convs = conv_module(
-            self.in_channels,
-            self.out_channels,
-            self.n_modes,
-            output_scaling_factor=output_scaling_factor,
-            max_n_modes=max_n_modes,
-            rank=rank,
-            fixed_rank_modes=fixed_rank_modes,
-            implementation=implementation,
-            separable=separable,
-            factorization=factorization,
-            decomposition_kwargs=decomposition_kwargs,
-            joint_factorization=joint_factorization,
-            n_layers=n_layers,
-            **complex_kwarg
-        )
+        
+        self.convs = nn.ModuleList([
+                conv_module(
+                self.in_channels,
+                self.out_channels,
+                self.n_modes,
+                output_scaling_factor=None if output_scaling_factor is None else self.output_scaling_factor[i],
+                max_n_modes=max_n_modes,
+                rank=rank,
+                fixed_rank_modes=fixed_rank_modes,
+                implementation=implementation,
+                separable=separable,
+                factorization=factorization,
+                decomposition_kwargs=decomposition_kwargs,
+                **complex_kwarg
+            ) 
+            for i in range(n_layers)])
 
         self.fno_skips = nn.ModuleList(
             [
@@ -246,13 +245,7 @@ class FNOBlocks(nn.Module):
                     for _ in range(n_layers * self.n_norms)
                 ]
             )
-        # elif norm == 'layer_norm':
-        #     self.norm = nn.ModuleList(
-        #         [
-        #             nn.LayerNorm(elementwise_affine=False)
-        #             for _ in range(n_layers*self.n_norms)
-        #         ]
-        #     )
+        
         elif norm == "ada_in":
             self.norm = nn.ModuleList(
                 [
@@ -302,7 +295,8 @@ class FNOBlocks(nn.Module):
             else:
                 x = torch.tanh(x)
 
-        x_fno = self.convs(x, index, output_shape=output_shape)
+        x_fno = self.convs[index](x, output_shape=output_shape)
+        #self.convs(x, index, output_shape=output_shape)
 
         if self.norm is not None:
             x_fno = self.norm[self.n_norms * index](x_fno)
@@ -344,7 +338,8 @@ class FNOBlocks(nn.Module):
             else:
                 x = torch.tanh(x)
 
-        x_fno = self.convs(x, index, output_shape=output_shape)
+        x_fno = self.convs[index](x, output_shape=output_shape)
+
         x = x_fno + x_skip_fno
 
         if self.channel_mlp is not None:
@@ -364,7 +359,8 @@ class FNOBlocks(nn.Module):
 
     @n_modes.setter
     def n_modes(self, n_modes):
-        self.convs.n_modes = n_modes
+        for i in range(self.n_layers):
+            self.convs[i].n_modes = n_modes
         self._n_modes = n_modes
 
     def get_block(self, indices):
