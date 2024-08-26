@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import sys
 from neuralop.models import SFNO
 from neuralop import Trainer
+from neuralop.training import AdamW
 from neuralop.data.datasets import load_spherical_swe
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
@@ -45,7 +46,7 @@ sys.stdout.flush()
 
 # %%
 #Create the optimizer
-optimizer = torch.optim.Adam(model.parameters(), 
+optimizer = AdamW(model.parameters(), 
                                 lr=8e-4, 
                                 weight_decay=0.0)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)

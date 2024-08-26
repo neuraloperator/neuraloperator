@@ -2,7 +2,7 @@ import torch
 import wandb
 import sys
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
-from neuralop.training import setup
+from neuralop.training import setup, AdamW
 from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
 from neuralop.losses.data_losses import LpLoss
@@ -65,7 +65,7 @@ model = get_model(config)
 model = model.to(device)
 
 #Create the optimizer
-optimizer = torch.optim.Adam(model.parameters(), 
+optimizer = AdamW(model.parameters(), 
                                 lr=config.opt.learning_rate, 
                                 weight_decay=config.opt.weight_decay)
 
