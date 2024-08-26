@@ -311,7 +311,7 @@ class SphericalConv(BaseSpectralConv):
         bias=True,
         separable=False,
         resolution_scaling_factor: Optional[Union[Number, List[Number]]] = None,
-        # fno_block_precision="full",
+        fno_block_precision="full",
         rank=0.5,
         factorization="cp",
         implementation="reconstructed",
