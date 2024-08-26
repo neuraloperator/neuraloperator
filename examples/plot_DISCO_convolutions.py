@@ -92,7 +92,7 @@ grid_out = torch.stack([x_out.reshape(-1), y_out.reshape(-1)])
 from neuralop.layers.discrete_continuous_convolution import DiscreteContinuousConv2d, DiscreteContinuousConvTranspose2d
 
 # initialize convolution module
-conv = DiscreteContinuousConv2d(1, 1, grid_in=grid_in, grid_out=grid_out, quad_weights=quad_weights, kernel_shape=[2,4], radius_cutoff=3/90, periodic=False).float()
+conv = DiscreteContinuousConv2d(1, 1, grid_in=grid_in, grid_out=grid_out, quad_weights=quad_weights, kernel_shape=[2,4], radius_cutoff=3/nyo, periodic=False).float()
 
 # initialize a kernel resembling an edge filter
 w = torch.zeros_like(conv.weight)
