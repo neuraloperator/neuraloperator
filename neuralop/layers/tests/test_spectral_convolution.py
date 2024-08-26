@@ -26,22 +26,22 @@ def test_SpectralConv(factorization, implementation, separable, dim, complex_dat
 
     # Test for Conv1D to Conv4D
     conv = SpectralConv(
-        3, 3, modes[:dim], n_layers=1, bias=False, implementation=implementation, factorization=factorization, separable=separable, complex_data=complex_data)
+        3, 3, modes[:dim], bias=False, implementation=implementation, factorization=factorization, separable=separable, complex_data=complex_data)
 
     conv_dense = SpectralConv(
-        3, 3, modes[:dim], n_layers=1, bias=False, implementation='reconstructed', factorization=None, complex_data=complex_data)
+        3, 3, modes[:dim], bias=False, implementation='reconstructed', factorization=None, complex_data=complex_data)
 
     if complex_data:
         x = torch.randn(2, 3, *(12, )*dim, dtype=torch.cfloat)
     else:
         x = torch.randn(2, 3, *(12, )*dim)
 
-    assert torch.is_complex(conv._get_weight(0))
-    assert torch.is_complex(conv_dense._get_weight(0))
+    assert torch.is_complex(conv.weight)
+    assert torch.is_complex(conv_dense.weight)
 
     # this closeness test only works if the weights in full form have the same shape
     if not separable:
-        conv_dense.weight[0] = FactorizedTensor.from_tensor(conv.weight[0].to_tensor(), rank=None, factorization='ComplexDense')
+        conv_dense.weight = FactorizedTensor.from_tensor(conv.weight.to_tensor(), rank=None, factorization='ComplexDense')
     
     res_dense = conv_dense(x)
     res = conv(x)
@@ -58,7 +58,7 @@ def test_SpectralConv(factorization, implementation, separable, dim, complex_dat
 
     # Downsample outputs
     block = SpectralConv(
-        3, 4, modes[:dim], n_layers=1, output_scaling_factor=0.5)
+        3, 4, modes[:dim], output_scaling_factor=0.5)
 
     x = torch.randn(2, 3, *(12, )*dim)
     res = block(x)
@@ -66,7 +66,7 @@ def test_SpectralConv(factorization, implementation, separable, dim, complex_dat
     
     # Upsample outputs
     block = SpectralConv(
-        3, 4, modes[:dim], n_layers=1, output_scaling_factor=2)
+        3, 4, modes[:dim], output_scaling_factor=2)
 
     x = torch.randn(2, 3, *(12, )*dim)
     res = block(x)
@@ -83,7 +83,7 @@ def test_SpectralConv_output_scaling_factor():
     for dim in [1, 2, 3, 4]:
         # Downsample outputs
         conv = SpectralConv(
-            3, 3, modes[:dim], n_layers=1, output_scaling_factor=0.5)
+            3, 3, modes[:dim], output_scaling_factor=0.5)
     
         x = torch.randn(2, 3, *size[:dim])
         res = conv(x)
@@ -91,7 +91,7 @@ def test_SpectralConv_output_scaling_factor():
         
         # Upsample outputs
         conv = SpectralConv(
-            3, 3, modes[:dim], n_layers=1, output_scaling_factor=2)
+            3, 3, modes[:dim], output_scaling_factor=2)
     
         x = torch.randn(2, 3, *size[:dim])
         res = conv(x)
@@ -108,17 +108,16 @@ def test_SpectralConv3D(factorization, implementation):
     take with a grain of salt
     """
     conv = SpectralConv(
-        3, 6, (4, 4, 3), n_layers=1, bias=False, implementation=implementation, factorization=factorization
+        3, 6, (4, 4, 3), bias=False, implementation=implementation, factorization=factorization
     )
 
     conv_dense = SpectralConv3d(
-        3, 6, (4, 4, 3), n_layers=1, bias=False, implementation='reconstructed', factorization=None
+        3, 6, (4, 4, 3), bias=False, implementation='reconstructed', factorization=None
     )
-    for i, w in enumerate(conv.weight):
-        rec = w.to_tensor()
-        dtype = rec.dtype
-        assert dtype == torch.cfloat
-        conv_dense.weight[i] = FactorizedTensor.from_tensor(rec, rank=None, factorization='ComplexDense')
+    rec = conv.weight.to_tensor()
+    dtype = rec.dtype
+    assert dtype == torch.cfloat
+    conv_dense.weight = FactorizedTensor.from_tensor(rec, rank=None, factorization='ComplexDense')
 
     x = torch.randn(2, 3, 12, 12, 12)
     res_dense = conv_dense(x)
@@ -138,17 +137,16 @@ def test_SpectralConv2D(factorization, implementation):
     take with a grain of salt
     """
     conv = SpectralConv(
-        10, 11, (4, 5), n_layers=1, bias=False, implementation=implementation, factorization=factorization
+        10, 11, (4, 5), bias=False, implementation=implementation, factorization=factorization
     )
 
     conv_dense = SpectralConv2d(
-        10, 11, (4, 5), n_layers=1, bias=False, implementation='reconstructed', factorization=None
+        10, 11, (4, 5), bias=False, implementation='reconstructed', factorization=None
     )
-    for i, w in enumerate(conv.weight):
-        rec = w.to_tensor()
-        dtype = rec.dtype
-        assert dtype == torch.cfloat
-        conv_dense.weight[i] = FactorizedTensor.from_tensor(rec, rank=None, factorization='ComplexDense')
+    rec = conv.weight.to_tensor()
+    dtype = rec.dtype
+    assert dtype == torch.cfloat
+    conv_dense.weight = FactorizedTensor.from_tensor(rec, rank=None, factorization='ComplexDense')
 
     x = torch.randn(2, 10, 12, 12)
     res_dense = conv_dense(x)
@@ -164,16 +162,15 @@ def test_SpectralConv1D(factorization, implementation):
     Verifies that a dense conv and factorized conv with the same weight produce the same output
     """
     conv = SpectralConv(
-        10, 11, (5,), n_layers=1, bias=False, implementation=implementation, factorization=factorization
+        10, 11, (5,), bias=False, implementation=implementation, factorization=factorization
     )
     conv_dense = SpectralConv1d(
-        10, 11, (5,), n_layers=1, bias=False, implementation='reconstructed', factorization=None
+        10, 11, (5,), bias=False, implementation='reconstructed', factorization=None
     )
-    for i, w in enumerate(conv.weight):
-        rec = w.to_tensor()
-        dtype = rec.dtype
-        assert dtype == torch.cfloat
-        conv_dense.weight[i] = FactorizedTensor.from_tensor(rec, rank=None, factorization='ComplexDense')
+    rec = conv.weight.to_tensor()
+    dtype = rec.dtype
+    assert dtype == torch.cfloat
+    conv_dense.weight = FactorizedTensor.from_tensor(rec, rank=None, factorization='ComplexDense')
 
     x = torch.randn(2, 10, 12)
     res_dense = conv_dense(x)
