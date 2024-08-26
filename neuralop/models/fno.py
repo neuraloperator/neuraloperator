@@ -241,7 +241,7 @@ class FNO(BaseModel, name='FNO'):
             self.domain_padding = None
 
         self.domain_padding_mode = domain_padding_mode
-        self.complex_data = complex_data
+        self.complex_data = self.complex_data
 
         if resolution_scaling_factor is not None:
             if isinstance(resolution_scaling_factor, (float, int)):

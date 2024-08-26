@@ -64,15 +64,13 @@ def test_tfno(
         implementation=implementation,
         rank=rank,
         fixed_rank_modes=False,
-        joint_factorization=False,
         n_layers=n_layers,
-        fno_block_precision=fno_block_precision,
         use_channel_mlp=use_channel_mlp,
         stabilizer=stabilizer,
         fc_channels=fc_channels,
         lifting_channels=lifting_channels,
         preactivation=preactivation,
-        complex_data=complex_data
+        dtype=torch.cfloat if complex_data else torch.float32
     ).to(device)
 
     if complex_data:
