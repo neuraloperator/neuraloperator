@@ -110,7 +110,6 @@ class FNOBlocks(nn.Module):
         factorization=None,
         rank=1.0,
         conv_module=SpectralConv,
-        joint_factorization=False,
         fixed_rank_modes=False, #undoc
         implementation="factorized", #undoc
         decomposition_kwargs=dict(),
@@ -172,6 +171,7 @@ class FNOBlocks(nn.Module):
                 implementation=implementation,
                 separable=separable,
                 factorization=factorization,
+                fno_block_precision=fno_block_precision,
                 decomposition_kwargs=decomposition_kwargs,
                 **complex_kwarg
             ) 

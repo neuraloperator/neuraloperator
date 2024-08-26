@@ -70,7 +70,8 @@ def test_tfno(
         fc_channels=fc_channels,
         lifting_channels=lifting_channels,
         preactivation=preactivation,
-        dtype=torch.cfloat if complex_data else torch.float32
+        dtype=torch.cfloat if complex_data else torch.float32,
+        fno_block_precision=fno_block_precision
     ).to(device)
 
     if complex_data:

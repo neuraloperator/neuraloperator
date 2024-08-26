@@ -85,6 +85,12 @@ class FNO(BaseModel, name='FNO'):
         Normalization layer to use, by default None
     dtype : torch.dtype, optional
         dtype of input data (e.g. torch.float32 or torch.cfloat)
+    fno_block_precision : str literal ['full', 'half', 'mixed'], optional, by default 'full'
+
+        * if 'full' or 'half', implements standard convolution
+        
+        * if 'mixed', spectral convolution handles mixed-precision explicitly
+
     fno_skip : {'linear', 'identity', 'soft-gating'}, optional
         Type of skip connection to use in FNO layers, by default 'linear'
     channel_mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
@@ -147,6 +153,7 @@ class FNO(BaseModel, name='FNO'):
         non_linearity=F.gelu,
         norm=None,
         dtype=torch.float32,
+        fno_block_precision="full",
         use_channel_mlp=False,
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
@@ -200,14 +207,10 @@ class FNO(BaseModel, name='FNO'):
         # handle dtype and mixed_precision
         if dtype in [torch.cfloat, torch.complex64, torch.cdouble, torch.complex128]:
             self.complex_data = True
-            self.fno_block_precision = 'full'
         else:
             self.complex_data = False
-            if dtype in [torch.float16, torch.bfloat16, torch.half]:
-                self.fno_block_precision = 'half'
-            else:
-                self.fno_block_precision = 'full'
-
+        self.fno_block_precision = fno_block_precision
+        
         if positional_embedding == "grid":
             spatial_grid_boundaries = [[0., 1.]] * self.n_dim
             self.positional_embedding = GridEmbeddingND(dim=self.n_dim, grid_boundaries=spatial_grid_boundaries)
@@ -260,7 +263,7 @@ class FNO(BaseModel, name='FNO'):
             channel_mlp_skip=channel_mlp_skip,
             complex_data=self.complex_data,
             max_n_modes=max_n_modes,
-            fno_block_precision=self.fno_block_precision,
+            fno_block_precision=fno_block_precision,
             rank=rank,
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
@@ -401,6 +404,8 @@ class FNO1d(FNO):
         resolution_scaling_factor=None,
         non_linearity=F.gelu,
         stabilizer=None,
+        dtype=torch.float32,
+        fno_block_precision="full",
         use_channel_mlp=False,
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
@@ -428,6 +433,8 @@ class FNO1d(FNO):
             resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
+            dtype=dtype,
+            fno_block_precision=fno_block_precision,
             use_channel_mlp=use_channel_mlp,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
@@ -474,6 +481,8 @@ class FNO2d(FNO):
         max_n_modes=None,
         non_linearity=F.gelu,
         stabilizer=None,
+        dtype=torch.float32,
+        fno_block_precision="full",
         use_channel_mlp=False,
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
@@ -501,6 +510,8 @@ class FNO2d(FNO):
             resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
+            dtype=dtype,
+            fno_block_precision=fno_block_precision,
             use_channel_mlp=use_channel_mlp,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
@@ -551,6 +562,8 @@ class FNO3d(FNO):
         max_n_modes=None,
         non_linearity=F.gelu,
         stabilizer=None,
+        dtype=torch.float32,
+        fno_block_precision="full",
         use_channel_mlp=False,
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
@@ -578,6 +591,8 @@ class FNO3d(FNO):
             resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
+            dtype=dtype,
+            fno_block_precision=fno_block_precision,
             max_n_modes=max_n_modes,
             use_channel_mlp=use_channel_mlp,
             channel_mlp_dropout=channel_mlp_dropout,
