@@ -97,10 +97,6 @@ class FNO(BaseModel, name='FNO'):
         expansion parameter of ChannelMLP layer, by default 0.5
     preactivation : bool, default is False
         if True, use resnet-style preactivation in the FNO block's forward pass
-    fno_block_precision : str {'full', 'half', 'mixed'}
-        if 'full', the FNO Block runs in full precision
-        if 'half', the FFT, contraction, and inverse FFT run in half precision
-        if 'mixed', the contraction and inverse FFT run in half precision
     stabilizer : str {'tanh'} or None, optional
         By default None, otherwise tanh is used before FFT in the FNO block
     output_shape : list
@@ -401,7 +397,6 @@ class FNO1d(FNO):
         lifting_channels=256,
         projection_channels=256,
         max_n_modes=None,
-        fno_block_precision="full",
         n_layers=4,
         resolution_scaling_factor=None,
         non_linearity=F.gelu,
@@ -437,7 +432,6 @@ class FNO1d(FNO):
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
             max_n_modes=max_n_modes,
-            fno_block_precision=fno_block_precision,
             norm=norm,
             skip=skip,
             separable=separable,
@@ -478,7 +472,6 @@ class FNO2d(FNO):
         n_layers=4,
         resolution_scaling_factor=None,
         max_n_modes=None,
-        fno_block_precision="full",
         non_linearity=F.gelu,
         stabilizer=None,
         use_channel_mlp=False,
@@ -512,7 +505,6 @@ class FNO2d(FNO):
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
             max_n_modes=max_n_modes,
-            fno_block_precision=fno_block_precision,
             norm=norm,
             skip=skip,
             separable=separable,
@@ -557,7 +549,6 @@ class FNO3d(FNO):
         n_layers=4,
         resolution_scaling_factor=None,
         max_n_modes=None,
-        fno_block_precision="full",
         non_linearity=F.gelu,
         stabilizer=None,
         use_channel_mlp=False,
@@ -588,7 +579,6 @@ class FNO3d(FNO):
             non_linearity=non_linearity,
             stabilizer=stabilizer,
             max_n_modes=max_n_modes,
-            fno_block_precision=fno_block_precision,
             use_channel_mlp=use_channel_mlp,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
