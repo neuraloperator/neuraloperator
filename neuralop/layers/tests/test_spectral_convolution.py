@@ -124,9 +124,6 @@ def test_SpectralConv3D(factorization, implementation):
     res = conv(x)
     torch.testing.assert_close(res_dense, res)
 
-
-
-
 @pytest.mark.parametrize('factorization', ['ComplexCP', 'ComplexTucker', 'ComplexDense'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
 def test_SpectralConv2D(factorization, implementation):
