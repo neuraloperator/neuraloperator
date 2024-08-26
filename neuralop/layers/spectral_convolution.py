@@ -286,12 +286,9 @@ class SpectralConv(BaseSpectralConv):
         self.factorization = factorization
         self.implementation = implementation
 
-        print(f"in {resolution_scaling_factor=}")
         self.resolution_scaling_factor: Union[
             None, List[List[float]]
         ] = validate_scaling_factor(resolution_scaling_factor, self.order)
-
-        print(f"in spectralconv {self.resolution_scaling_factor=}")
 
         if init_std == "auto":
             init_std = (2 / (in_channels + out_channels))**0.5
