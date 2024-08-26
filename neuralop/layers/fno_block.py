@@ -19,6 +19,7 @@ class FNOBlocks(nn.Module):
     """FNOBlocks implements a sequence of Fourier layers
     as described in "Fourier Neural Operator for Parametric
     Partial Differential Equations (Li et al., 2021).
+
     Parameters
     ----------
     in_channels : int
@@ -66,12 +67,16 @@ class FNOBlocks(nn.Module):
     SpectralConv Params
     -------------------
 
+    complex_data : bool, optional
+        whether the FNO's data takes on complex values in space, by default False
     separable : bool, optional
         separable parameter for SpectralConv, by default False
     factorization : str, optional
         factorization parameter for SpectralConv, by default None
     rank : float, optional
         rank parameter for SpectralConv, by default 1.0
+    conv_module : BaseConv, optional
+        module to use for convolutions in FNO block, by default SpectralConv
     joint_factorization : bool, optional
         whether to factorize all spectralConv weights as one tensor, by default False
     fixed_rank_modes : bool, optional
@@ -80,9 +85,6 @@ class FNOBlocks(nn.Module):
         implementation parameter for SpectralConv, by default "factorized"
     decomposition_kwargs : _type_, optional
         kwargs for tensor decomposition in SpectralConv, by default dict()
-    fft_norm : str, optional
-        how to normalize discrete fast Fourier transform, by default "forward"
-        if "forward", normalize just the forward direction F(v(x)) by 1/n (number of total modes)
     """
     def __init__(
         self,
@@ -112,7 +114,6 @@ class FNOBlocks(nn.Module):
         fixed_rank_modes=False, #undoc
         implementation="factorized", #undoc
         decomposition_kwargs=dict(),
-        fft_norm="forward",
         **kwargs,
     ):
         super().__init__()
@@ -141,7 +142,6 @@ class FNOBlocks(nn.Module):
         self.use_channel_mlp = use_channel_mlp
         self.channel_mlp_expansion = channel_mlp_expansion
         self.channel_mlp_dropout = channel_mlp_dropout
-        self.fft_norm = fft_norm
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation

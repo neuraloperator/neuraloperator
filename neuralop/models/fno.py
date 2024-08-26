@@ -130,6 +130,11 @@ class FNO(BaseModel, name='FNO'):
         the decomposition
     decomposition_kwargs : dict, optional, default is {}
         Optionaly additional parameters to pass to the tensor decomposition
+    conv_module : BaseConv, optional
+        Module to use for convolutions in FNO, by default SpectralConv
+    complex_data: bool, optional
+        whether FNO data takes on complex values 
+        in the spatial domain, by default False
     """
 
     def __init__(
@@ -257,11 +262,10 @@ class FNO(BaseModel, name='FNO'):
             preactivation=preactivation,
             fno_skip=fno_skip,
             channel_mlp_skip=channel_mlp_skip,
-            complex_data=complex_data,
+            complex_data=self.complex_data,
             max_n_modes=max_n_modes,
-            fno_block_precision=fno_block_precision,
+            fno_block_precision=self.fno_block_precision,
             rank=rank,
-            fft_norm="forward",
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
             separable=separable,
@@ -285,6 +289,7 @@ class FNO(BaseModel, name='FNO'):
                 hidden_channels=self.lifting_channels,
                 n_layers=2,
                 n_dim=self.n_dim,
+                non_linearity=non_linearity
             )
         # otherwise, make it a linear layer
         else:
@@ -294,6 +299,7 @@ class FNO(BaseModel, name='FNO'):
                 out_channels=self.hidden_channels,
                 n_layers=1,
                 n_dim=self.n_dim,
+                non_linearity=non_linearity
             )
         # Convert lifting to a complex ChannelMLP if self.complex_data==True
         if self.complex_data:
