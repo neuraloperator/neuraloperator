@@ -213,8 +213,6 @@
 <span class="sd">        p1 corresponds to the percentage of padding along dim 1, etc.</span>
 <span class="sd">    domain_padding_mode : {&#39;symmetric&#39;, &#39;one-sided&#39;}, optional</span>
 <span class="sd">        How to perform domain padding, by default &#39;one-sided&#39;</span>
-<span class="sd">    fft_norm : str, optional</span>
-<span class="sd">        by default &#39;forward&#39;</span>
 <span class="sd">    conv_module : BaseConv, optional</span>
 <span class="sd">        Module to use for convolutions in FNO, by default SpectralConv</span>
 <span class="sd">    complex_data: bool, optional</span>
@@ -253,7 +251,6 @@
         <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
         <span class="n">domain_padding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s2">&quot;one-sided&quot;</span><span class="p">,</span>
-        <span class="n">fft_norm</span><span class="o">=</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span>
         <span class="n">conv_module</span><span class="o">=</span><span class="n">SpectralConv</span><span class="p">,</span>
         <span class="n">complex_data</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span>
@@ -278,7 +275,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">decomposition_kwargs</span> <span class="o">=</span> <span class="n">decomposition_kwargs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fno_skip</span> <span class="o">=</span> <span class="p">(</span><span class="n">fno_skip</span><span class="p">,)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">channel_mlp_skip</span> <span class="o">=</span> <span class="p">(</span><span class="n">channel_mlp_skip</span><span class="p">,)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_norm</span> <span class="o">=</span> <span class="n">fft_norm</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">implementation</span> <span class="o">=</span> <span class="n">implementation</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">separable</span> <span class="o">=</span> <span class="n">separable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">preactivation</span> <span class="o">=</span> <span class="n">preactivation</span>
@@ -338,7 +334,6 @@
             <span class="n">max_n_modes</span><span class="o">=</span><span class="n">max_n_modes</span><span class="p">,</span>
             <span class="n">fno_block_precision</span><span class="o">=</span><span class="n">fno_block_precision</span><span class="p">,</span>
             <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
-            <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
             <span class="n">fixed_rank_modes</span><span class="o">=</span><span class="n">fixed_rank_modes</span><span class="p">,</span>
             <span class="n">implementation</span><span class="o">=</span><span class="n">implementation</span><span class="p">,</span>
             <span class="n">separable</span><span class="o">=</span><span class="n">separable</span><span class="p">,</span>
@@ -484,7 +479,6 @@
         <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
         <span class="n">domain_padding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s2">&quot;one-sided&quot;</span><span class="p">,</span>
-        <span class="n">fft_norm</span><span class="o">=</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
@@ -515,7 +509,6 @@
             <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="n">decomposition_kwargs</span><span class="p">,</span>
             <span class="n">domain_padding</span><span class="o">=</span><span class="n">domain_padding</span><span class="p">,</span>
             <span class="n">domain_padding_mode</span><span class="o">=</span><span class="n">domain_padding_mode</span><span class="p">,</span>
-            <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span> <span class="o">=</span> <span class="n">n_modes_height</span></div>
 
@@ -566,7 +559,6 @@
         <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
         <span class="n">domain_padding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s2">&quot;one-sided&quot;</span><span class="p">,</span>
-        <span class="n">fft_norm</span><span class="o">=</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
@@ -597,7 +589,6 @@
             <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="n">decomposition_kwargs</span><span class="p">,</span>
             <span class="n">domain_padding</span><span class="o">=</span><span class="n">domain_padding</span><span class="p">,</span>
             <span class="n">domain_padding_mode</span><span class="o">=</span><span class="n">domain_padding_mode</span><span class="p">,</span>
-            <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span> <span class="o">=</span> <span class="n">n_modes_height</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_width</span> <span class="o">=</span> <span class="n">n_modes_width</span></div>
@@ -652,7 +643,6 @@
         <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
         <span class="n">domain_padding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">domain_padding_mode</span><span class="o">=</span><span class="s2">&quot;one-sided&quot;</span><span class="p">,</span>
-        <span class="n">fft_norm</span><span class="o">=</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
@@ -683,7 +673,6 @@
             <span class="n">decomposition_kwargs</span><span class="o">=</span><span class="n">decomposition_kwargs</span><span class="p">,</span>
             <span class="n">domain_padding</span><span class="o">=</span><span class="n">domain_padding</span><span class="p">,</span>
             <span class="n">domain_padding_mode</span><span class="o">=</span><span class="n">domain_padding_mode</span><span class="p">,</span>
-            <span class="n">fft_norm</span><span class="o">=</span><span class="n">fft_norm</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_height</span> <span class="o">=</span> <span class="n">n_modes_height</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_modes_width</span> <span class="o">=</span> <span class="n">n_modes_width</span>

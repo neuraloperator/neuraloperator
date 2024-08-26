@@ -177,6 +177,7 @@ to train a Tensorized Fourier-Neural Operator</p>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">neuralop.models</span> <span class="kn">import</span> <span class="n">TFNO</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">Trainer</span>
+<span class="kn">from</span> <span class="nn">neuralop.training</span> <span class="kn">import</span> <span class="n">AdamW</span>
 <span class="kn">from</span> <span class="nn">neuralop.data.datasets</span> <span class="kn">import</span> <span class="n">load_darcy_flow_small</span>
 <span class="kn">from</span> <span class="nn">neuralop.utils</span> <span class="kn">import</span> <span class="n">count_model_params</span>
 <span class="kn">from</span> <span class="nn">neuralop</span> <span class="kn">import</span> <span class="n">LpLoss</span><span class="p">,</span> <span class="n">H1Loss</span>
@@ -214,7 +215,7 @@ Loading test db for resolution 32 with 50 samples
 </pre></div>
 </div>
 <p>Create the optimizer</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
                                 <span class="n">lr</span><span class="o">=</span><span class="mf">8e-3</span><span class="p">,</span>
                                 <span class="n">weight_decay</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
 <span class="n">scheduler</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">CosineAnnealingLR</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">T_max</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
@@ -267,29 +268,24 @@ Loading test db for resolution 32 with 50 samples
 )
 
 ### OPTIMIZER ###
- Adam (
+ AdamW (
 Parameter Group 0
-    amsgrad: False
     betas: (0.9, 0.999)
-    capturable: False
-    differentiable: False
-    eps: 1e-08
-    foreach: None
-    fused: None
+    correct_bias: True
+    eps: 1e-06
     initial_lr: 0.008
     lr: 0.008
-    maximize: False
     weight_decay: 0.0001
 )
 
 ### SCHEDULER ###
- &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f252ba5fc10&gt;
+ &lt;torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f498b2d80d0&gt;
 
 ### LOSSES ###
 
- * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f252ba5f9a0&gt;
+ * Train: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f498b26a5b0&gt;
 
- * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f252ba5f9a0&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f252b9f49a0&gt;}
+ * Test: {&#39;h1&#39;: &lt;neuralop.losses.data_losses.H1Loss object at 0x7f498b26a5b0&gt;, &#39;l2&#39;: &lt;neuralop.losses.data_losses.LpLoss object at 0x7f498b26ad30&gt;}
 </pre></div>
 </div>
 <p>Create the trainer</p>
@@ -315,22 +311,22 @@ Parameter Group 0
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Training on 1000 samples
 Testing on [50, 50] samples         on resolutions [16, 32].
 Raw outputs of shape torch.Size([32, 1, 16, 16])
-[0] time=2.51, avg_loss=0.7296, train_err=22.7994
-Eval: 16_h1=0.3875, 16_l2=0.3010, 32_h1=0.4401, 32_l2=0.3004
-[3] time=2.53, avg_loss=0.2649, train_err=8.2770
-Eval: 16_h1=0.2657, 16_l2=0.2220, 32_h1=0.3487, 32_l2=0.2381
-[6] time=2.60, avg_loss=0.2248, train_err=7.0255
-Eval: 16_h1=0.2317, 16_l2=0.1920, 32_h1=0.3305, 32_l2=0.2149
-[9] time=2.52, avg_loss=0.1752, train_err=5.4762
-Eval: 16_h1=0.1951, 16_l2=0.1588, 32_h1=0.3254, 32_l2=0.1938
-[12] time=2.49, avg_loss=0.1742, train_err=5.4441
-Eval: 16_h1=0.1506, 16_l2=0.1077, 32_h1=0.3150, 32_l2=0.1465
-[15] time=2.48, avg_loss=0.1661, train_err=5.1899
-Eval: 16_h1=0.1848, 16_l2=0.1456, 32_h1=0.3388, 32_l2=0.1787
-[18] time=2.48, avg_loss=0.1311, train_err=4.0981
-Eval: 16_h1=0.1427, 16_l2=0.1000, 32_h1=0.3239, 32_l2=0.1488
+[0] time=2.63, avg_loss=0.8387, train_err=26.2096
+Eval: 16_h1=0.4562, 16_l2=0.3438, 32_h1=0.5128, 32_l2=0.3478
+[3] time=2.66, avg_loss=0.2837, train_err=8.8654
+Eval: 16_h1=0.2414, 16_l2=0.1949, 32_h1=0.3335, 32_l2=0.2132
+[6] time=2.61, avg_loss=0.2194, train_err=6.8566
+Eval: 16_h1=0.1627, 16_l2=0.1185, 32_h1=0.2929, 32_l2=0.1499
+[9] time=2.60, avg_loss=0.1777, train_err=5.5542
+Eval: 16_h1=0.1450, 16_l2=0.1021, 32_h1=0.2822, 32_l2=0.1399
+[12] time=2.60, avg_loss=0.1596, train_err=4.9864
+Eval: 16_h1=0.1686, 16_l2=0.1390, 32_h1=0.2937, 32_l2=0.1719
+[15] time=2.61, avg_loss=0.1659, train_err=5.1844
+Eval: 16_h1=0.1516, 16_l2=0.1144, 32_h1=0.2891, 32_l2=0.1454
+[18] time=2.62, avg_loss=0.1506, train_err=4.7058
+Eval: 16_h1=0.1389, 16_l2=0.0975, 32_h1=0.2948, 32_l2=0.1386
 
-{&#39;train_err&#39;: 3.967905580997467, &#39;avg_loss&#39;: 0.12697297859191894, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 2.482326818000047}
+{&#39;train_err&#39;: 4.3921311274170876, &#39;avg_loss&#39;: 0.1405481960773468, &#39;avg_lasso_loss&#39;: None, &#39;epoch_train_time&#39;: 2.591568486999961}
 </pre></div>
 </div>
 <p>Plot the prediction, and compare with the ground-truth
@@ -380,7 +376,7 @@ ii) can be trained quickly on CPU</p>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 51.290 seconds)</p>
+<img src="../_images/sphx_glr_plot_FNO_darcy_001.png" srcset="../_images/sphx_glr_plot_FNO_darcy_001.png" alt="Inputs, ground-truth output and prediction., Input x, Ground-truth y, Model prediction" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 53.416 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-fno-darcy-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/e81e8f640b2a3cda84c542bbc8f36a54/plot_FNO_darcy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_FNO_darcy.ipynb</span></code></a></p>

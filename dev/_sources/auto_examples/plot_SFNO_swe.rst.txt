@@ -24,7 +24,7 @@ Training a SFNO on the spherical Shallow Water equations
 In this example, we demonstrate how to use the small Spherical Shallow Water Equations example we ship with the package
 to train a Spherical Fourier-Neural Operator
 
-.. GENERATED FROM PYTHON SOURCE LINES 11-24
+.. GENERATED FROM PYTHON SOURCE LINES 11-25
 
 .. code-block:: Python
 
@@ -35,6 +35,7 @@ to train a Spherical Fourier-Neural Operator
     import sys
     from neuralop.models import SFNO
     from neuralop import Trainer
+    from neuralop.training import AdamW
     from neuralop.data.datasets import load_spherical_swe
     from neuralop.utils import count_model_params
     from neuralop import LpLoss, H1Loss
@@ -48,11 +49,11 @@ to train a Spherical Fourier-Neural Operator
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 25-26
+.. GENERATED FROM PYTHON SOURCE LINES 26-27
 
 Loading the Navier-Stokes dataset in 128x128 resolution
 
-.. GENERATED FROM PYTHON SOURCE LINES 26-30
+.. GENERATED FROM PYTHON SOURCE LINES 27-31
 
 .. code-block:: Python
 
@@ -75,11 +76,11 @@ Loading the Navier-Stokes dataset in 128x128 resolution
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 31-32
+.. GENERATED FROM PYTHON SOURCE LINES 32-33
 
 We create a tensorized FNO model
 
-.. GENERATED FROM PYTHON SOURCE LINES 32-41
+.. GENERATED FROM PYTHON SOURCE LINES 33-42
 
 .. code-block:: Python
 
@@ -106,15 +107,15 @@ We create a tensorized FNO model
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 42-43
+.. GENERATED FROM PYTHON SOURCE LINES 43-44
 
 Create the optimizer
 
-.. GENERATED FROM PYTHON SOURCE LINES 43-49
+.. GENERATED FROM PYTHON SOURCE LINES 44-50
 
 .. code-block:: Python
 
-    optimizer = torch.optim.Adam(model.parameters(), 
+    optimizer = AdamW(model.parameters(), 
                                     lr=8e-4, 
                                     weight_decay=0.0)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
@@ -127,11 +128,11 @@ Create the optimizer
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 50-51
+.. GENERATED FROM PYTHON SOURCE LINES 51-52
 
 Creating the losses
 
-.. GENERATED FROM PYTHON SOURCE LINES 51-58
+.. GENERATED FROM PYTHON SOURCE LINES 52-59
 
 .. code-block:: Python
 
@@ -149,7 +150,7 @@ Creating the losses
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 59-70
+.. GENERATED FROM PYTHON SOURCE LINES 60-71
 
 .. code-block:: Python
 
@@ -207,38 +208,33 @@ Creating the losses
     )
 
     ### OPTIMIZER ###
-     Adam (
+     AdamW (
     Parameter Group 0
-        amsgrad: False
         betas: (0.9, 0.999)
-        capturable: False
-        differentiable: False
-        eps: 1e-08
-        foreach: None
-        fused: None
+        correct_bias: True
+        eps: 1e-06
         initial_lr: 0.0008
         lr: 0.0008
-        maximize: False
         weight_decay: 0.0
     )
 
     ### SCHEDULER ###
-     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f252965a760>
+     <torch.optim.lr_scheduler.CosineAnnealingLR object at 0x7f4988f0c940>
 
     ### LOSSES ###
 
-     * Train: <neuralop.losses.data_losses.LpLoss object at 0x7f2529641850>
+     * Train: <neuralop.losses.data_losses.LpLoss object at 0x7f4988ec80d0>
 
-     * Test: {'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f2529641850>}
-
-
+     * Test: {'l2': <neuralop.losses.data_losses.LpLoss object at 0x7f4988ec80d0>}
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 71-72
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 72-73
 
 Create the trainer
 
-.. GENERATED FROM PYTHON SOURCE LINES 72-80
+.. GENERATED FROM PYTHON SOURCE LINES 73-81
 
 .. code-block:: Python
 
@@ -257,11 +253,11 @@ Create the trainer
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 81-82
+.. GENERATED FROM PYTHON SOURCE LINES 82-83
 
 Actually train the model on our small Darcy-Flow dataset
 
-.. GENERATED FROM PYTHON SOURCE LINES 82-92
+.. GENERATED FROM PYTHON SOURCE LINES 83-93
 
 .. code-block:: Python
 
@@ -286,26 +282,26 @@ Actually train the model on our small Darcy-Flow dataset
     Training on 200 samples
     Testing on [50, 50] samples         on resolutions [(32, 64), (64, 128)].
     Raw outputs of shape torch.Size([4, 3, 32, 64])
-    [0] time=3.55, avg_loss=2.2637, train_err=9.0549
-    Eval: (32, 64)_l2=1.4472, (64, 128)_l2=2.4706
-    [3] time=3.56, avg_loss=0.4288, train_err=1.7152
-    Eval: (32, 64)_l2=0.6011, (64, 128)_l2=2.3709
-    [6] time=3.57, avg_loss=0.3070, train_err=1.2281
-    Eval: (32, 64)_l2=0.4453, (64, 128)_l2=2.3355
-    [9] time=3.55, avg_loss=0.2579, train_err=1.0315
-    Eval: (32, 64)_l2=0.5422, (64, 128)_l2=2.3535
-    [12] time=3.54, avg_loss=0.2134, train_err=0.8534
-    Eval: (32, 64)_l2=0.3810, (64, 128)_l2=2.3132
-    [15] time=3.53, avg_loss=0.1706, train_err=0.6824
-    Eval: (32, 64)_l2=0.3554, (64, 128)_l2=2.3253
-    [18] time=3.54, avg_loss=0.1480, train_err=0.5918
-    Eval: (32, 64)_l2=0.3104, (64, 128)_l2=2.3183
+    [0] time=3.46, avg_loss=2.1115, train_err=8.4461
+    Eval: (32, 64)_l2=1.6141, (64, 128)_l2=2.6025
+    [3] time=3.44, avg_loss=0.4342, train_err=1.7368
+    Eval: (32, 64)_l2=0.9282, (64, 128)_l2=2.4483
+    [6] time=3.44, avg_loss=0.3420, train_err=1.3681
+    Eval: (32, 64)_l2=0.8449, (64, 128)_l2=2.4089
+    [9] time=3.46, avg_loss=0.2770, train_err=1.1082
+    Eval: (32, 64)_l2=0.8905, (64, 128)_l2=2.3691
+    [12] time=3.46, avg_loss=0.2321, train_err=0.9282
+    Eval: (32, 64)_l2=0.8532, (64, 128)_l2=2.3593
+    [15] time=3.44, avg_loss=0.2085, train_err=0.8341
+    Eval: (32, 64)_l2=0.8534, (64, 128)_l2=2.3659
+    [18] time=3.45, avg_loss=0.1797, train_err=0.7189
+    Eval: (32, 64)_l2=0.8101, (64, 128)_l2=2.3448
 
-    {'train_err': 0.6229610610008239, 'avg_loss': 0.15574026525020598, 'avg_lasso_loss': None, 'epoch_train_time': 3.580159698999978}
+    {'train_err': 0.6816039979457855, 'avg_loss': 0.17040099948644638, 'avg_lasso_loss': None, 'epoch_train_time': 3.450823135999997}
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 93-103
+.. GENERATED FROM PYTHON SOURCE LINES 94-104
 
 Plot the prediction, and compare with the ground-truth 
 Note that we trained on a very small resolution for
@@ -318,7 +314,7 @@ ii) can be trained quickly on CPU
 
 In practice we would train a Neural Operator on one or multiple GPUs
 
-.. GENERATED FROM PYTHON SOURCE LINES 103-138
+.. GENERATED FROM PYTHON SOURCE LINES 104-139
 
 .. code-block:: Python
 
@@ -372,7 +368,7 @@ In practice we would train a Neural Operator on one or multiple GPUs
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 28.207 seconds)
+   **Total running time of the script:** (1 minutes 25.819 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_SFNO_swe.py:
