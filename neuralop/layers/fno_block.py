@@ -105,7 +105,7 @@ class FNOBlocks(nn.Module):
         preactivation=False,
         fno_skip="linear",
         channel_mlp_skip="soft-gating",
-        complex_data=False,
+        dtype=torch.float32,
         separable=False,
         factorization=None,
         rank=1.0,
@@ -137,7 +137,14 @@ class FNOBlocks(nn.Module):
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = fno_skip
         self.channel_mlp_skip = channel_mlp_skip
-        self.complex_data = complex_data
+
+        self.dtype = dtype
+        # handle dtype and mixed_precision
+        if dtype in [torch.cfloat, torch.complex64, torch.cdouble, torch.complex128]:
+            self.complex_data = True
+        else:
+            self.complex_data = False
+
         self.use_channel_mlp = use_channel_mlp
         self.channel_mlp_expansion = channel_mlp_expansion
         self.channel_mlp_dropout = channel_mlp_dropout
@@ -147,17 +154,10 @@ class FNOBlocks(nn.Module):
         self.ada_in_features = ada_in_features
 
         # apply real nonlin if data is real, otherwise CGELU
-        if complex_data:
+        if self.complex_data:
             self.non_linearity = CGELU
         else:
             self.non_linearity = non_linearity
-    
-        # TODO: eventually support complex data in SphericalConv and SFNO
-        # remove these lines once support is added
-        if conv_module == SpectralConv:
-            complex_kwarg = {'complex_data': complex_data}
-        else:
-            complex_kwarg = dict()
         
         self.convs = nn.ModuleList([
                 conv_module(
@@ -173,7 +173,7 @@ class FNOBlocks(nn.Module):
                 factorization=factorization,
                 fno_block_precision=fno_block_precision,
                 decomposition_kwargs=decomposition_kwargs,
-                **complex_kwarg
+                dtype=dtype
             ) 
             for i in range(n_layers)])
 

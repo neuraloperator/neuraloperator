@@ -259,17 +259,22 @@ class SpectralConv(BaseSpectralConv):
         implementation="reconstructed",
         fixed_rank_modes=False,
         decomposition_kwargs: Optional[dict] = None,
-        complex_data: bool=False,
+        dtype=torch.float32,
         init_std="auto",
         fft_norm="forward",
         device=None,
-        dtype=None,
     ):
         super().__init__(dtype=dtype, device=device)
 
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.complex_data = complex_data
+
+        self.dtype = dtype
+        # handle dtype and mixed_precision
+        if dtype in [torch.cfloat, torch.complex64, torch.cdouble, torch.complex128]:
+            self.complex_data = True
+        else:
+            self.complex_data = False
 
         # n_modes is the total number of modes kept along each dimension
         self.n_modes = n_modes
