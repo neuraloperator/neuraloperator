@@ -100,15 +100,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         * `factorized` : the input is directly contracted with the factors of the decomposition
     fno_decomposition_kwargs : dict, defaults to dict()
         Optionaly additional parameters to pass to the tensor decomposition.
-<<<<<<< HEAD
-    fno_domain_padding : float | None, defaults to None
-        If not None, percentage of padding to use.
-    fno_domain_padding_mode : str {'symmetric', 'one-sided'}, defaults to 'one-sided'
-        How to perform domain padding.
-    fno_SpectralConv : nn.Module, defaults to SpectralConv
-=======
     fno_conv_module : nn.Module, defaults to SpectralConv
->>>>>>> main
          Spectral Convolution module to use.
     """
 
