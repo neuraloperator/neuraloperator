@@ -20,7 +20,7 @@ default: &DEFAULT
     n_modes_height: 16
     n_modes_width: 16
     hidden_channels: 32
-    projection_channels: 64
+    projection_channel_ratio: 2
     n_layers: 4
     domain_padding: None #0.078125
     domain_padding_mode: 'one-sided' #symmetric
