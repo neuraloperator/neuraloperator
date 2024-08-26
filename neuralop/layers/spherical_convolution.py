@@ -403,6 +403,7 @@ class SphericalConv(BaseSpectralConv):
         if isinstance(sht_grids, str):
             sht_grids = [sht_grids]*2
         self.sht_grids = sht_grids
+        print(f"{self.sht_grids=}")
         self.sht_handle = SHT(dtype=self.dtype, device=self.device)
     
     def transform(self, x, output_shape=None):
@@ -417,11 +418,11 @@ class SphericalConv(BaseSpectralConv):
             height, width = in_height, in_width
 
         # Return the identity if the resolution and grid of the input and output are the same
-        if ((in_height, in_width) == (height, width)) and (self.sht_grids == self.sht_grids):
+        if ((in_height, in_width) == (height, width)) and (self.sht_grids[0] == self.sht_grids[1]):
             return x
         else:
-            coefs = self.sht_handle.sht(x, s=self.n_modes, norm=self.sht_norm, grid=self.sht_grids)
-            return self.sht_handle.isht(coefs, s=(height, width), norm=self.sht_norm, grid=self.sht_grids)
+            coefs = self.sht_handle.sht(x, s=self.n_modes, norm=self.sht_norm, grid=self.sht_grids[0])
+            return self.sht_handle.isht(coefs, s=(height, width), norm=self.sht_norm, grid=self.sht_grids[1])
 
     def forward(self, x, output_shape=None):
         """Generic forward pass for the Factorized Spectral Conv
@@ -445,7 +446,7 @@ class SphericalConv(BaseSpectralConv):
             height, width = output_shape[0], output_shape[1]
 
         out_fft = self.sht_handle.sht(x, s=(self.n_modes[0], self.n_modes[1]//2),
-                                      norm=self.sht_norm, grid=self.sht_grids)
+                                      norm=self.sht_norm, grid=self.sht_grids[0])
 
         out_fft = self._contract(
             out_fft[:, :, :self.n_modes[0], :self.n_modes[1]//2],
@@ -455,7 +456,7 @@ class SphericalConv(BaseSpectralConv):
         )
 
         x = self.sht_handle.isht(out_fft, s=(height, width), norm=self.sht_norm,
-                                 grid=self.sht_grids)
+                                 grid=self.sht_grids[1])
 
         if self.bias is not None:
             x = x + self.bias
