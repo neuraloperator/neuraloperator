@@ -30,7 +30,7 @@ class FNOBlocks(nn.Module):
         in frequency space. Can either be specified as
         an int (for all dimensions) or an iterable with one
         number per dimension
-    output_scaling_factor : Optional[Union[Number, List[Number]]], optional
+    resolution_scaling_factor : Optional[Union[Number, List[Number]]], optional
         factor by which to scale outputs for super-resolution, by default None
     n_layers : int, optional
         number of Fourier layers to apply in sequence, by default 1
@@ -89,7 +89,7 @@ class FNOBlocks(nn.Module):
         in_channels,
         out_channels,
         n_modes,
-        output_scaling_factor=None,
+        resolution_scaling_factor=None,
         n_layers=1,
         max_n_modes=None,
         fno_block_precision="full",
@@ -121,9 +121,9 @@ class FNOBlocks(nn.Module):
         self._n_modes = n_modes
         self.n_dim = len(n_modes)
 
-        self.output_scaling_factor: Union[
+        self.resolution_scaling_factor: Union[
             None, List[List[float]]
-        ] = validate_scaling_factor(output_scaling_factor, self.n_dim, n_layers)
+        ] = validate_scaling_factor(resolution_scaling_factor, self.n_dim, n_layers)
 
         self.max_n_modes = max_n_modes
         self.fno_block_precision = fno_block_precision
@@ -165,7 +165,7 @@ class FNOBlocks(nn.Module):
                 self.in_channels,
                 self.out_channels,
                 self.n_modes,
-                output_scaling_factor=None if output_scaling_factor is None else self.output_scaling_factor[i],
+                resolution_scaling_factor=None if resolution_scaling_factor is None else self.resolution_scaling_factor[i],
                 max_n_modes=max_n_modes,
                 rank=rank,
                 fixed_rank_modes=fixed_rank_modes,

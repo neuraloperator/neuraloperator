@@ -101,7 +101,7 @@ def test_tfno(
 
 
 @pytest.mark.parametrize(
-    "output_scaling_factor",
+    "resolution_scaling_factor",
     [
         [2, 1, 1],
         [1, 2, 1],
@@ -110,7 +110,7 @@ def test_tfno(
         [1, 0.5, 1],
     ],
 )
-def test_fno_superresolution(output_scaling_factor):
+def test_fno_superresolution(resolution_scaling_factor):
     device = "cpu"
     s = 16
     modes = 5
@@ -132,17 +132,19 @@ def test_fno_superresolution(output_scaling_factor):
         factorization="cp",
         implementation="reconstructed",
         rank=rank,
-        output_scaling_factor=output_scaling_factor,
+        resolution_scaling_factor=resolution_scaling_factor,
         n_layers=n_layers,
         use_channel_mlp=use_channel_mlp,
         fc_channels=fc_channels,
     ).to(device)
+
+    print(f"{model.resolution_scaling_factor=}")
 
     in_data = torch.randn(batch_size, 3, *size).to(device)
     # Test forward pass
     out = model(in_data)
 
     # Check output size
-    factor = prod(output_scaling_factor)
+    factor = prod(resolution_scaling_factor)
 
     assert list(out.shape) == [batch_size, 1] + [int(round(factor * s)) for s in size]

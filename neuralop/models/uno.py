@@ -237,7 +237,7 @@ class UNO(nn.Module):
             self.domain_padding = DomainPadding(
                 domain_padding=domain_padding,
                 padding_mode=domain_padding_mode,
-                output_scaling_factor=self.end_to_end_scaling_factor,
+                resolution_scaling_factor=self.end_to_end_scaling_factor,
             )
         else:
             self.domain_padding = None
@@ -268,7 +268,7 @@ class UNO(nn.Module):
                     use_channel_mlp=use_channel_mlp,
                     channel_mlpdropout=channel_mlpdropout,
                     channel_mlpexpansion=channel_mlpexpansion,
-                    output_scaling_factor=[self.uno_scalings[i]],
+                    resolution_scaling_factor=[self.uno_scalings[i]],
                     non_linearity=non_linearity,
                     norm=norm,
                     preactivation=preactivation,
@@ -326,12 +326,12 @@ class UNO(nn.Module):
             
             if layer_idx in self.horizontal_skips_map.keys():
                 skip_val = skip_outputs[self.horizontal_skips_map[layer_idx]]
-                output_scaling_factors = [
+                resolution_scaling_factors = [
                     m / n for (m, n) in zip(x.shape, skip_val.shape)
                 ]
-                output_scaling_factors = output_scaling_factors[-1 * self.n_dim :]
+                resolution_scaling_factors = resolution_scaling_factors[-1 * self.n_dim :]
                 t = resample(
-                    skip_val, output_scaling_factors, list(range(-self.n_dim, 0))
+                    skip_val, resolution_scaling_factors, list(range(-self.n_dim, 0))
                 )
                 x = torch.cat([x, t], dim=1)
 

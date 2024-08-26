@@ -66,7 +66,7 @@ class GINO(nn.Module):
             number of channels in FNO's pointwise projection, by default 256
         fno_n_layers : int, optional
             number of layers in FNO, by default 4
-        fno_output_scaling_factor : float | None, optional
+        fno_resolution_scaling_factor : float | None, optional
             factor by which to scale output of FNO, by default None
         fno_incremental_n_modes : list[int] | None, defaults to None
         if passed, sets n_modes separately for each FNO layer.
@@ -143,7 +143,7 @@ class GINO(nn.Module):
             fno_lifting_channels=256,
             fno_projection_channels=256,
             fno_n_layers=4,
-            fno_output_scaling_factor=None,
+            fno_resolution_scaling_factor=None,
             fno_incremental_n_modes=None,
             fno_block_precision='full',
             fno_use_channel_mlp=False, 
@@ -213,7 +213,7 @@ class GINO(nn.Module):
                 lifting_channels=fno_lifting_channels,
                 projection_channels=fno_projection_channels,
                 n_layers=fno_n_layers,
-                output_scaling_factor=fno_output_scaling_factor,
+                resolution_scaling_factor=fno_resolution_scaling_factor,
                 incremental_n_modes=fno_incremental_n_modes,
                 fno_block_precision=fno_block_precision,
                 use_channel_mlp=fno_use_channel_mlp,

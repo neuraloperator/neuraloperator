@@ -114,9 +114,6 @@ class FNO(BaseModel, name='FNO'):
         Tensor factorization of the FNO layer weights to use, by default None.
         * If None, a dense tensor parametrizes the Spectral convolutions
         * Otherwise, the specified tensor factorization is used.
-    joint_factorization : bool, optional
-        Whether all the Fourier Layers should be parametrized by a single tensor
-        (vs one per layer), by default False
     rank : float or rank, optional
         Rank of the tensor factorization of the Fourier weights, by default 1.0
     fixed_rank_modes : bool, optional
@@ -152,13 +149,12 @@ class FNO(BaseModel, name='FNO'):
         fno_skip="linear",
         channel_mlp_skip="soft-gating",
         preactivation=False,
-        output_scaling_factor=None,
+        resolution_scaling_factor=None,
         domain_padding=None,
         domain_padding_mode="one-sided",
         separable=False,
         factorization=None,
         rank=1.0,
-        joint_factorization=False,
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
@@ -184,7 +180,6 @@ class FNO(BaseModel, name='FNO'):
         self.projection_channel_ratio = projection_channel_ratio
         self.projection_channels = projection_channel_ratio * self.hidden_channels
 
-        self.joint_factorization = joint_factorization
         self.non_linearity = non_linearity
         self.rank = rank
         self.factorization = factorization
@@ -220,7 +215,7 @@ class FNO(BaseModel, name='FNO'):
             self.domain_padding = DomainPadding(
                 domain_padding=domain_padding,
                 padding_mode=domain_padding_mode,
-                output_scaling_factor=output_scaling_factor,
+                resolution_scaling_factor=resolution_scaling_factor,
             )
         else:
             self.domain_padding = None
@@ -228,16 +223,16 @@ class FNO(BaseModel, name='FNO'):
         self.domain_padding_mode = domain_padding_mode
         self.complex_data = complex_data
 
-        if output_scaling_factor is not None and not joint_factorization:
-            if isinstance(output_scaling_factor, (float, int)):
-                output_scaling_factor = [output_scaling_factor] * self.n_layers
-        self.output_scaling_factor = output_scaling_factor
+        if resolution_scaling_factor is not None:
+            if isinstance(resolution_scaling_factor, (float, int)):
+                resolution_scaling_factor = [resolution_scaling_factor] * self.n_layers
+        self.resolution_scaling_factor = resolution_scaling_factor
 
         self.fno_blocks = FNOBlocks(
             in_channels=hidden_channels,
             out_channels=hidden_channels,
             n_modes=self.n_modes,
-            output_scaling_factor=output_scaling_factor,
+            resolution_scaling_factor=resolution_scaling_factor,
             use_channel_mlp=use_channel_mlp,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
@@ -257,7 +252,6 @@ class FNO(BaseModel, name='FNO'):
             separable=separable,
             factorization=factorization,
             decomposition_kwargs=decomposition_kwargs,
-            joint_factorization=joint_factorization,
             conv_module=conv_module,
             n_layers=n_layers,
             **kwargs
@@ -388,7 +382,7 @@ class FNO1d(FNO):
         max_n_modes=None,
         fno_block_precision="full",
         n_layers=4,
-        output_scaling_factor=None,
+        resolution_scaling_factor=None,
         non_linearity=F.gelu,
         stabilizer=None,
         use_channel_mlp=False,
@@ -400,7 +394,6 @@ class FNO1d(FNO):
         preactivation=False,
         factorization=None,
         rank=1.0,
-        joint_factorization=False,
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
@@ -416,7 +409,7 @@ class FNO1d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
-            output_scaling_factor=output_scaling_factor,
+            resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
             use_channel_mlp=use_channel_mlp,
@@ -430,7 +423,6 @@ class FNO1d(FNO):
             preactivation=preactivation,
             factorization=factorization,
             rank=rank,
-            joint_factorization=joint_factorization,
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
@@ -463,7 +455,7 @@ class FNO2d(FNO):
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
-        output_scaling_factor=None,
+        resolution_scaling_factor=None,
         max_n_modes=None,
         fno_block_precision="full",
         non_linearity=F.gelu,
@@ -477,7 +469,6 @@ class FNO2d(FNO):
         preactivation=False,
         factorization=None,
         rank=1.0,
-        joint_factorization=False,
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
@@ -493,7 +484,7 @@ class FNO2d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
-            output_scaling_factor=output_scaling_factor,
+            resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
             use_channel_mlp=use_channel_mlp,
@@ -507,7 +498,6 @@ class FNO2d(FNO):
             preactivation=preactivation,
             factorization=factorization,
             rank=rank,
-            joint_factorization=joint_factorization,
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
@@ -544,7 +534,7 @@ class FNO3d(FNO):
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
-        output_scaling_factor=None,
+        resolution_scaling_factor=None,
         max_n_modes=None,
         fno_block_precision="full",
         non_linearity=F.gelu,
@@ -558,7 +548,6 @@ class FNO3d(FNO):
         preactivation=False,
         factorization=None,
         rank=1.0,
-        joint_factorization=False,
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
@@ -574,7 +563,7 @@ class FNO3d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
-            output_scaling_factor=output_scaling_factor,
+            resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
             max_n_modes=max_n_modes,
@@ -588,7 +577,6 @@ class FNO3d(FNO):
             preactivation=preactivation,
             factorization=factorization,
             rank=rank,
-            joint_factorization=joint_factorization,
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,

@@ -58,7 +58,7 @@ def test_SpectralConv(factorization, implementation, separable, dim, complex_dat
 
     # Downsample outputs
     block = SpectralConv(
-        3, 4, modes[:dim], output_scaling_factor=0.5)
+        3, 4, modes[:dim], resolution_scaling_factor=0.5)
 
     x = torch.randn(2, 3, *(12, )*dim)
     res = block(x)
@@ -66,7 +66,7 @@ def test_SpectralConv(factorization, implementation, separable, dim, complex_dat
     
     # Upsample outputs
     block = SpectralConv(
-        3, 4, modes[:dim], output_scaling_factor=2)
+        3, 4, modes[:dim], resolution_scaling_factor=2)
 
     x = torch.randn(2, 3, *(12, )*dim)
     res = block(x)
@@ -75,7 +75,7 @@ def test_SpectralConv(factorization, implementation, separable, dim, complex_dat
 
 
 
-def test_SpectralConv_output_scaling_factor():
+def test_SpectralConv_resolution_scaling_factor():
     """Test SpectralConv with upsampled or downsampled outputs
     """
     modes = (4, 4, 4, 4)
@@ -83,7 +83,7 @@ def test_SpectralConv_output_scaling_factor():
     for dim in [1, 2, 3, 4]:
         # Downsample outputs
         conv = SpectralConv(
-            3, 3, modes[:dim], output_scaling_factor=0.5)
+            3, 3, modes[:dim], resolution_scaling_factor=0.5)
     
         x = torch.randn(2, 3, *size[:dim])
         res = conv(x)
@@ -91,7 +91,7 @@ def test_SpectralConv_output_scaling_factor():
         
         # Upsample outputs
         conv = SpectralConv(
-            3, 3, modes[:dim], output_scaling_factor=2)
+            3, 3, modes[:dim], resolution_scaling_factor=2)
     
         x = torch.randn(2, 3, *size[:dim])
         res = conv(x)

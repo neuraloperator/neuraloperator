@@ -252,7 +252,7 @@ class SpectralConv(BaseSpectralConv):
         max_n_modes=None,
         bias=True,
         separable=False,
-        output_scaling_factor: Optional[Union[Number, List[Number]]] = None,
+        resolution_scaling_factor: Optional[Union[Number, List[Number]]] = None,
         fno_block_precision="full",
         rank=0.5,
         factorization=None,
@@ -286,9 +286,12 @@ class SpectralConv(BaseSpectralConv):
         self.factorization = factorization
         self.implementation = implementation
 
-        self.output_scaling_factor: Union[
+        print(f"in {resolution_scaling_factor=}")
+        self.resolution_scaling_factor: Union[
             None, List[List[float]]
-        ] = validate_scaling_factor(output_scaling_factor, self.order)
+        ] = validate_scaling_factor(resolution_scaling_factor, self.order)
+
+        print(f"in spectralconv {self.resolution_scaling_factor=}")
 
         if init_std == "auto":
             init_std = (2 / (in_channels + out_channels))**0.5
@@ -341,12 +344,12 @@ class SpectralConv(BaseSpectralConv):
         else:
             self.bias = None
 
-    def transform(self, x, layer_index=0, output_shape=None):
+    def transform(self, x, output_shape=None):
         in_shape = list(x.shape[2:])
 
-        if self.output_scaling_factor is not None and output_shape is None:
+        if self.resolution_scaling_factor is not None and output_shape is None:
             out_shape = tuple(
-                [round(s * r) for (s, r) in zip(in_shape, self.output_scaling_factor[layer_index])]
+                [round(s * r) for (s, r) in zip(in_shape, self.resolution_scaling_factor)]
             )
         elif output_shape is not None:
             out_shape = output_shape
@@ -452,8 +455,8 @@ class SpectralConv(BaseSpectralConv):
             slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
         out_fft[slices_x] = self._contract(x[slices_x], weight, separable=self.separable)
 
-        if self.output_scaling_factor is not None and output_shape is None:
-            mode_sizes = tuple([round(s * r) for (s, r) in zip(mode_sizes, self.output_scaling_factor)])
+        if self.resolution_scaling_factor is not None and output_shape is None:
+            mode_sizes = tuple([round(s * r) for (s, r) in zip(mode_sizes, self.resolution_scaling_factor)])
 
         if output_shape is not None:
             mode_sizes = output_shape
@@ -524,8 +527,8 @@ class SpectralConv1d(SpectralConv):
             x[slices], self.weight[slices], separable=self.separable
         )
 
-        if self.output_scaling_factor is not None:
-            width = round(width * self.output_scaling_factor[0])
+        if self.resolution_scaling_factor is not None:
+            width = round(width * self.resolution_scaling_factor[0])
 
         x = torch.fft.irfft(out_fft, n=width, norm=self.fft_norm)
 
@@ -579,9 +582,9 @@ class SpectralConv2d(SpectralConv):
             x[slices1], self.weight[slices0], separable=self.separable
         )
 
-        if self.output_scaling_factor is not None:
-            width = round(width * self.output_scaling_factor[0])
-            height = round(height * self.output_scaling_factor[1])
+        if self.resolution_scaling_factor is not None:
+            width = round(width * self.resolution_scaling_factor[0])
+            height = round(height * self.resolution_scaling_factor[1])
 
         x = torch.fft.irfft2(
             out_fft, s=(height, width), dim=(-2, -1), norm=self.fft_norm
@@ -661,10 +664,10 @@ class SpectralConv3d(SpectralConv):
             x[slices3], self.weight[slices0], separable=self.separable
         )
 
-        if self.output_scaling_factor is not None:
-            width = round(width * self.output_scaling_factor[0])
-            height = round(height * self.output_scaling_factor[1])
-            depth = round(depth * self.output_scaling_factor[2])
+        if self.resolution_scaling_factor is not None:
+            width = round(width * self.resolution_scaling_factor[0])
+            height = round(height * self.resolution_scaling_factor[1])
+            depth = round(depth * self.resolution_scaling_factor[2])
 
         x = torch.fft.irfftn(out_fft, s=(height, width, depth), dim=[-3, -2, -1], norm=self.fft_norm)
 

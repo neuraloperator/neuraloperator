@@ -34,7 +34,7 @@ def test_SphericalConv(factorization, implementation):
 
     # Downsample outputs
     block = SphericalConv(
-        3, 4, n_modes, n_layers=1, output_scaling_factor=0.5)
+        3, 4, n_modes, n_layers=1, resolution_scaling_factor=0.5)
 
     x = torch.randn(2, 3, *(12, 12))
     res = block(x)
@@ -42,7 +42,7 @@ def test_SphericalConv(factorization, implementation):
 
     # Upsample outputs
     block = SphericalConv(
-        3, 4, n_modes, n_layers=1, output_scaling_factor=2)
+        3, 4, n_modes, n_layers=1, resolution_scaling_factor=2)
 
     x = torch.randn(2, 3, *(12, 12))
     res = block(x)
