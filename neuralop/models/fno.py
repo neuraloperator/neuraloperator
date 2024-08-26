@@ -12,7 +12,12 @@ from ..layers.complex import ComplexValued
 from .base_model import BaseModel
 
 class FNO(BaseModel, name='FNO'):
-    """N-Dimensional Fourier Neural Operator
+    """N-Dimensional Fourier Neural Operator. The FNO learns a mapping between
+    spaces of functions discretized over regular grids. The key component of an FNO
+    is its Spectral Convolution layers (see `neuralop.layers.spectral_convolution`), which
+    work similarly to a standard CNN conv layer but operate in the frequency domain.
+
+    For more information, refer to :ref:`fno_guide`.
 
     Parameters
     ----------
@@ -49,6 +54,7 @@ class FNO(BaseModel, name='FNO'):
         )
         )
             ... torch.nn.Module printout truncated ...
+
 
     Other parameters
     -------------------------
@@ -130,8 +136,8 @@ class FNO(BaseModel, name='FNO'):
         in_channels,
         out_channels,
         hidden_channels=256,
-        lifting_channels=256,
-        projection_channels=256,
+        lifting_channel_ratio=2,
+        projection_channel_ratio=2,
         n_layers=4,
         max_n_modes=None,
         positional_embedding="grid",
@@ -161,16 +167,23 @@ class FNO(BaseModel, name='FNO'):
     ):
         super().__init__()
         self.n_dim = len(n_modes)
-
-        # See the class' property for underlying mechanism
+        
+        # n_modes is a special property - see the class' property for underlying mechanism
         # When updated, change should be reflected in fno blocks
         self._n_modes = n_modes
+
         self.hidden_channels = hidden_channels
-        self.lifting_channels = lifting_channels
-        self.projection_channels = projection_channels
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.n_layers = n_layers
+
+        # init lifting and projection channels using ratios w.r.t hidden channels
+        self.lifting_channel_ratio = lifting_channel_ratio
+        self.lifting_channels = lifting_channel_ratio * self.hidden_channels
+
+        self.projection_channel_ratio = projection_channel_ratio
+        self.projection_channels = projection_channel_ratio * self.hidden_channels
+
         self.joint_factorization = joint_factorization
         self.non_linearity = non_linearity
         self.rank = rank
