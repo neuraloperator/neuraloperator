@@ -1,5 +1,6 @@
 from functools import partialmethod
 
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -28,12 +29,16 @@ class FNO(BaseModel, name='FNO'):
         Number of channels in input function
     out_channels : int
         Number of channels in output function
-    hidden_channels : int, optional
+    hidden_channels : int
         width of the FNO (i.e. number of channels), by default 256
-    lifting_channels : int, optional
-        number of hidden channels of the lifting block of the FNO, by default 256
-    projection_channels : int, optional
-        number of hidden channels of the projection block of the FNO, by default 256
+    lifting_channel_ratio : int, optional
+        ratio of lifting channels to hidden_channels, by default 2
+        The number of liting channels in the lifting block of the FNO is
+        lifting_channel_ratio * hidden_channels (e.g. default 512)
+    projection_channel_ratio : int, optional
+        ratio of projection channels to hidden_channels, by default 2
+        The number of liting channels in the projection block of the FNO is
+        projection_channel_ratio * hidden_channels (e.g. default 512)
     n_layers : int, optional
         Number of Fourier Layers, by default 4
 
@@ -78,8 +83,8 @@ class FNO(BaseModel, name='FNO'):
         Non-Linear activation function module to use, by default F.gelu
     norm : Literal["ada_in", "group_norm", "instance_norm"], optional
         Normalization layer to use, by default None
-    complex_data: bool, optional
-        whether FNO data takes on complex values in the spatial domain, by default False
+    dtype : torch.dtype, optional
+        dtype of input data (e.g. torch.float32 or torch.cfloat)
     fno_skip : {'linear', 'identity', 'soft-gating'}, optional
         Type of skip connection to use in FNO layers, by default 'linear'
     channel_mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
@@ -132,7 +137,7 @@ class FNO(BaseModel, name='FNO'):
         n_modes,
         in_channels,
         out_channels,
-        hidden_channels=256,
+        hidden_channels,
         lifting_channel_ratio=2,
         projection_channel_ratio=2,
         n_layers=4,
@@ -140,8 +145,7 @@ class FNO(BaseModel, name='FNO'):
         positional_embedding="grid",
         non_linearity=F.gelu,
         norm=None,
-        complex_data=False,
-        fno_block_precision="full",
+        dtype=torch.float32,
         use_channel_mlp=False,
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
@@ -190,7 +194,18 @@ class FNO(BaseModel, name='FNO'):
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation
-        self.fno_block_precision = fno_block_precision
+
+        self.dtype = dtype
+        # handle dtype and mixed_precision
+        if dtype in [torch.cfloat, torch.complex64, torch.cdouble, torch.complex128]:
+            self.complex_data = True
+            self.fno_block_precision = 'full'
+        else:
+            self.complex_data = False
+            if dtype in [torch.float16, torch.bfloat16, torch.half]:
+                self.fno_block_precision = 'half'
+            else:
+                self.fno_block_precision = 'full'
 
         if positional_embedding == "grid":
             spatial_grid_boundaries = [[0., 1.]] * self.n_dim
