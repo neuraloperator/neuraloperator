@@ -111,3 +111,20 @@ plt.tripcolor(grid_out[0], grid_out[1], out.squeeze().detach(), cmap=cmap, shadi
 plt.xlim(0,2)
 plt.ylim(0,3)
 plt.show()
+
+# %% do the same but on an equidistant grid:
+
+from neuralop.layers.discrete_continuous_convolution import EquidistantDiscreteContinuousConv2d
+
+conv = EquidistantDiscreteContinuousConv2d(1, 1, (90, 120), (60, 120), kernel_shape=[2,4], radius_cutoff=0.1)
+
+# initialize a kernel resembling an edge filter
+w = torch.zeros_like(conv.weight)
+w[0,0,1] = 1.0
+w[0,0,3] = -1.0
+conv.weight = nn.Parameter(w)
+
+data = nn.functional.interpolate(torch.from_numpy(img).unsqueeze(0).unsqueeze(0), size=(120,90)).float()
+
+plt.figure(figsize=(4,6), )
+plt.imshow(conv(data)[0,0].detach().cpu(), cmap=cmap)
