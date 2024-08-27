@@ -38,7 +38,6 @@ def test_tfno(
         width = 16
         fc_channels = 16
         batch_size = 4
-        use_channel_mlp = True
         n_layers = 4
     else:
         device = "cpu"
@@ -50,7 +49,6 @@ def test_tfno(
         batch_size = 3
         n_layers = 2
 
-        use_channel_mlp = True
 
     rank = 0.2
     size = (s,) * n_dim
@@ -65,7 +63,6 @@ def test_tfno(
         rank=rank,
         fixed_rank_modes=False,
         n_layers=n_layers,
-        use_channel_mlp=use_channel_mlp,
         stabilizer=stabilizer,
         fc_channels=fc_channels,
         lifting_channel_ratio=lifting_channel_ratio,
@@ -114,7 +111,6 @@ def test_fno_superresolution(resolution_scaling_factor):
     fc_channels = 32
     batch_size = 3
     n_layers = 3
-    use_channel_mlp = True
     n_dim = 2
     rank = 0.2
     size = (s,) * n_dim
@@ -130,7 +126,6 @@ def test_fno_superresolution(resolution_scaling_factor):
         rank=rank,
         resolution_scaling_factor=resolution_scaling_factor,
         n_layers=n_layers,
-        use_channel_mlp=use_channel_mlp,
         fc_channels=fc_channels,
     ).to(device)
 
