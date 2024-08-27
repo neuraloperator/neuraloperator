@@ -40,23 +40,6 @@ class FNO(BaseModel, name='FNO'):
 
     Documentation for more advanced parameters is below.
 
-    Examples
-    ---------
-    
-    >>> from neuralop.models import FNO
-    >>> model = FNO(n_modes=(12,12), in_channels=1, out_channels=1, hidden_channels=64)
-    >>> model
-    FNO(
-    (positional_embedding): GridEmbeddingND()
-    (fno_blocks): FNOBlocks(
-        (convs): SpectralConv(
-        (weight): ModuleList(
-            (0-3): 4 x DenseTensor(shape=torch.Size([64, 64, 12, 7]), rank=None)
-        )
-        )
-            ... torch.nn.Module printout truncated ...
-
-
     Other parameters
     ------------------
     lifting_channel_ratio : int, optional
@@ -148,6 +131,24 @@ class FNO(BaseModel, name='FNO'):
         whether to compute FNO forward pass with resnet-style preactivation, by default False
     conv_module : nn.Module, optional
         module to use for FNOBlock's convolutions, by default SpectralConv
+    
+    Examples
+    ---------
+    
+    >>> from neuralop.models import FNO
+    >>> model = FNO(n_modes=(12,12), in_channels=1, out_channels=1, hidden_channels=64)
+    >>> model
+    FNO(
+    (positional_embedding): GridEmbeddingND()
+    (fno_blocks): FNOBlocks(
+        (convs): SpectralConv(
+        (weight): ModuleList(
+            (0-3): 4 x DenseTensor(shape=torch.Size([64, 64, 12, 7]), rank=None)
+        )
+        )
+            ... torch.nn.Module printout truncated ...
+
+
     """
 
     def __init__(
