@@ -10,7 +10,6 @@ from tltorch.factorized_tensors.core import FactorizedTensor
 
 from neuralop.utils import validate_scaling_factor
 from .base_spectral_conv import BaseSpectralConv
-from .spectral_convolution import SubConv
 
 tl.set_backend("pytorch")
 use_opt_einsum("optimal")

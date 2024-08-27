@@ -473,33 +473,6 @@ class SpectralConv(BaseSpectralConv):
 
         return x
 
-
-class SubConv(nn.Module):
-    """Class representing one of the convolutions from the mother joint
-    factorized convolution.
-
-    Notes
-    -----
-    This relies on the fact that nn.Parameters are not duplicated:
-    if the same nn.Parameter is assigned to multiple modules, they all point to
-    the same data, which is shared.
-    """
-
-    def __init__(self, main_conv, indices):
-        super().__init__()
-        self.main_conv = main_conv
-        self.indices = indices
-
-    def forward(self, x, **kwargs):
-        return self.main_conv.forward(x, self.indices, **kwargs)
-
-    def transform(self, x, **kwargs):
-        return self.main_conv.transform(x, self.indices, **kwargs)
-
-    @property
-    def weight(self):
-        return self.main_conv.get_weight(indices=self.indices)
-
 class SpectralConv1d(SpectralConv):
     """1D Spectral Conv
 
