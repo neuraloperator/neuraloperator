@@ -39,8 +39,6 @@ class FNOBlocks(nn.Module):
         maximum number of modes to keep along each dimension, by default None
     fno_block_precision : str, optional
         floating point precision to use for computations, by default "full"
-    use_channel_mlp : bool, optional
-        whether to use mlp layers to parameterize skip connections, by default False
     channel_mlp_dropout : int, optional
         dropout parameter for self.channel_mlp, by default 0
     channel_mlp_expansion : float, optional
@@ -95,7 +93,6 @@ class FNOBlocks(nn.Module):
         n_layers=1,
         max_n_modes=None,
         fno_block_precision="full",
-        use_channel_mlp=False,
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
         non_linearity=F.gelu,
@@ -145,7 +142,6 @@ class FNOBlocks(nn.Module):
         else:
             self.complex_data = False
 
-        self.use_channel_mlp = use_channel_mlp
         self.channel_mlp_expansion = channel_mlp_expansion
         self.channel_mlp_dropout = channel_mlp_dropout
         self.implementation = implementation
@@ -193,42 +189,39 @@ class FNOBlocks(nn.Module):
                 [ComplexValued(x) for x in self.fno_skips]
                 )
 
-        if use_channel_mlp:
+        self.channel_mlp = nn.ModuleList(
+            [
+                ChannelMLP(
+                    in_channels=self.out_channels,
+                    hidden_channels=round(self.out_channels * channel_mlp_expansion),
+                    dropout=channel_mlp_dropout,
+                    n_dim=self.n_dim,
+                )
+                for _ in range(n_layers)
+            ]
+        )
+        if self.complex_data:
             self.channel_mlp = nn.ModuleList(
-                [
-                    ChannelMLP(
-                        in_channels=self.out_channels,
-                        hidden_channels=round(self.out_channels * channel_mlp_expansion),
-                        dropout=channel_mlp_dropout,
-                        n_dim=self.n_dim,
-                    )
-                    for _ in range(n_layers)
-                ]
+                [ComplexValued(x) for x in self.channel_mlp]
             )
-            if self.complex_data:
-                self.channel_mlp = nn.ModuleList(
-                    [ComplexValued(x) for x in self.channel_mlp]
+        self.channel_mlp_skips = nn.ModuleList(
+            [
+                skip_connection(
+                    self.in_channels,
+                    self.out_channels,
+                    skip_type=channel_mlp_skip,
+                    n_dim=self.n_dim,
                 )
+                for _ in range(n_layers)
+            ]
+        )
+        if self.complex_data:
             self.channel_mlp_skips = nn.ModuleList(
-                [
-                    skip_connection(
-                        self.in_channels,
-                        self.out_channels,
-                        skip_type=channel_mlp_skip,
-                        n_dim=self.n_dim,
-                    )
-                    for _ in range(n_layers)
-                ]
+                [ComplexValued(x) for x in self.channel_mlp_skips]
             )
-            if self.complex_data:
-                self.channel_mlp_skips = nn.ModuleList(
-                    [ComplexValued(x) for x in self.channel_mlp_skips]
-                )
-        else:
-            self.channel_mlp = None
 
         # Each block will have 2 norms if we also use a ChannelMLP
-        self.n_norms = 1 if self.channel_mlp is None else 2
+        self.n_norms = 2
         if norm is None:
             self.norm = None
         elif norm == "instance_norm":
@@ -285,9 +278,8 @@ class FNOBlocks(nn.Module):
         x_skip_fno = self.fno_skips[index](x)
         x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
 
-        if self.channel_mlp is not None:
-            x_skip_channel_mlp = self.channel_mlp_skips[index](x)
-            x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
+        x_skip_channel_mlp = self.channel_mlp_skips[index](x)
+        x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
             if self.complex_data:
@@ -303,17 +295,16 @@ class FNOBlocks(nn.Module):
 
         x = x_fno + x_skip_fno
 
-        if (self.channel_mlp is not None) or (index < (self.n_layers - 1)):
+        if (index < (self.n_layers - 1)):
             x = self.non_linearity(x)
 
-        if self.channel_mlp is not None:
-            x = self.channel_mlp[index](x) + x_skip_channel_mlp
+        x = self.channel_mlp[index](x) + x_skip_channel_mlp
 
-            if self.norm is not None:
-                x = self.norm[self.n_norms * index + 1](x)
+        if self.norm is not None:
+            x = self.norm[self.n_norms * index + 1](x)
 
-            if index < (self.n_layers - 1):
-                x = self.non_linearity(x)
+        if index < (self.n_layers - 1):
+            x = self.non_linearity(x)
 
         return x
 
@@ -328,9 +319,8 @@ class FNOBlocks(nn.Module):
         x_skip_fno = self.fno_skips[index](x)
         x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
 
-        if self.channel_mlp is not None:
-            x_skip_channel_mlp = self.channel_mlp_skips[index](x)
-            x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
+        x_skip_channel_mlp = self.channel_mlp_skips[index](x)
+        x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
             if self.complex_data:
@@ -342,14 +332,13 @@ class FNOBlocks(nn.Module):
 
         x = x_fno + x_skip_fno
 
-        if self.channel_mlp is not None:
-            if index < (self.n_layers - 1):
-                x = self.non_linearity(x)
+        if index < (self.n_layers - 1):
+            x = self.non_linearity(x)
 
-            if self.norm is not None:
-                x = self.norm[self.n_norms * index + 1](x)
+        if self.norm is not None:
+            x = self.norm[self.n_norms * index + 1](x)
 
-            x = self.channel_mlp[index](x) + x_skip_channel_mlp
+        x = self.channel_mlp[index](x) + x_skip_channel_mlp
 
         return x
 
