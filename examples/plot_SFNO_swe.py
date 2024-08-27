@@ -35,7 +35,7 @@ model = SFNO(n_modes=(32, 32),
              in_channels=3,
              out_channels=3,
              hidden_channels=32,
-             projection_channels=64,
+             projection_channel_ratio=2,
              factorization='dense')
 model = model.to(device)
 

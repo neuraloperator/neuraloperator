@@ -22,7 +22,7 @@ fno = FNO(n_modes=(64,64),
           in_channels=1, 
           out_channels=1, 
           hidden_channels=64, 
-          projection_channels=64)
+          projection_channel_ratio=1)
 
 batch_size = 4
 model_input = torch.randn(batch_size, 1, 128, 128)

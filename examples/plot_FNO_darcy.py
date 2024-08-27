@@ -39,7 +39,7 @@ model = FNO(n_modes=(16, 16),
              in_channels=1, 
              out_channels=1,
              hidden_channels=32, 
-             projection_channels=64)
+             projection_channel_ratio=2)
 model = model.to(device)
 
 n_params = count_model_params(model)
