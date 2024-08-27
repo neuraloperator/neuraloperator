@@ -1,5 +1,7 @@
 from functools import partialmethod
-from typing import Tuple, List
+from typing import Tuple, List, Union
+
+Number = Union[float, int]
 
 import torch
 import torch.nn as nn
@@ -23,7 +25,9 @@ class FNO(BaseModel, name='FNO'):
 
     Parameters
     ----------
-    n_modes : int tuple
+    Parameters
+    ----------
+    n_modes : Tuple[int]
         number of modes to keep in Fourier Layer, along each dimension
         The dimensionality of the FNO is inferred from ``len(n_modes)``
     in_channels : int
@@ -32,14 +36,6 @@ class FNO(BaseModel, name='FNO'):
         Number of channels in output function
     hidden_channels : int
         width of the FNO (i.e. number of channels), by default 256
-    lifting_channel_ratio : int, optional
-        ratio of lifting channels to hidden_channels, by default 2
-        The number of liting channels in the lifting block of the FNO is
-        lifting_channel_ratio * hidden_channels (e.g. default 512)
-    projection_channel_ratio : int, optional
-        ratio of projection channels to hidden_channels, by default 2
-        The number of liting channels in the projection block of the FNO is
-        projection_channel_ratio * hidden_channels (e.g. default 512)
     n_layers : int, optional
         Number of Fourier Layers, by default 4
 
@@ -63,79 +59,97 @@ class FNO(BaseModel, name='FNO'):
 
 
     Other parameters
-    -------------------------
-    max_n_modes : None or int tuple, default is None
-        * If not None, this allows to incrementally increase the number of
-          modes in Fourier domain during training. Has to verify n <= N
-          for (n, m) in zip(max_n_modes, n_modes).
+    ------------------
+    lifting_channel_ratio : int, optional
+        ratio of lifting channels to hidden_channels, by default 2
+        The number of liting channels in the lifting block of the FNO is
+        lifting_channel_ratio * hidden_channels (e.g. default 512)
+    projection_channel_ratio : int, optional
+        ratio of projection channels to hidden_channels, by default 2
+        The number of projection channels in the projection block of the FNO is
+        projection_channel_ratio * hidden_channels (e.g. default 512)
+    positional_embedding : Union[str, nn.Module], optional
+        Positional embedding to apply to last channels of raw input
+        before being passed through the FNO. Defaults to "grid"
 
-        * If None, all the n_modes are used.
-
-        This can be updated dynamically during training.
-    
-    positional_embedding : str literal | GridEmbedding2D | GridEmbeddingND | None, default "grid"
-        if "grid", appends a grid positional embedding with default settings to 
+        * If "grid", appends a grid positional embedding with default settings to 
         the last channels of raw input. Assumes the inputs are discretized
         over a grid with entry [0,0,...] at the origin and side lengths of 1.
-        If an initialized GridEmbedding, uses this module directly
-        See :mod:`neuralop.embeddings.GridEmbeddingND` for details
-        if None, does nothing
+
+        * If an initialized GridEmbedding module, uses this module directly
+        See :mod:`neuralop.embeddings.GridEmbeddingND` for details.
+
+        * If None, does nothing
+
     non_linearity : nn.Module, optional
         Non-Linear activation function module to use, by default F.gelu
-    norm : Literal["ada_in", "group_norm", "instance_norm"], optional
+    norm : str {"ada_in", "group_norm", "instance_norm"}, optional
         Normalization layer to use, by default None
     dtype : torch.dtype, optional
-        dtype of input data (e.g. torch.float32 or torch.cfloat)
-    fno_block_precision : str literal ['full', 'half', 'mixed'], optional, by default 'full'
-
-        * if 'full' or 'half', implements standard convolution
-        
-        * if 'mixed', spectral convolution handles mixed-precision explicitly
-
-    fno_skip : {'linear', 'identity', 'soft-gating'}, optional
-        Type of skip connection to use in FNO layers, by default 'linear'
-    channel_mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
-        Type of skip connection to use in channel-mixing mlp, by default 'soft-gating'
-    channel_mlp_dropout : float , optional
-        droupout parameter of ChannelMLP layer, by default 0
+        dtype of input data, by default torch.float32
+        if complex dtype, initializes complex-valued modules.
+    channel_mlp_dropout : float, optional
+        dropout parameter for ChannelMLP in FNO Block, by default 0
     channel_mlp_expansion : float, optional
-        expansion parameter of ChannelMLP layer, by default 0.5
-    preactivation : bool, default is False
-        if True, use resnet-style preactivation in the FNO block's forward pass
-    stabilizer : str {'tanh'} or None, optional
-        By default None, otherwise tanh is used before FFT in the FNO block
-    output_shape : list
-        single output shape or a list of output shapes per layer
-        to scale up model output shape for e.g. superresolution 
-    domain_padding : None, float, or List[float], optional
+        expansion parameter for ChannelMLP in FNO Block, by default 0.5
+    channel_mlp_skip : str {'linear', 'identity', 'soft-gating'}, optional
+        Type of skip connection to use in channel-mixing mlp, by default 'soft-gating'
+    fno_skip : str {'linear', 'identity', 'soft-gating'}, optional
+        Type of skip connection to use in FNO layers, by default 'linear'
+    resolution_scaling_factor : Union[Number, List[Number]], optional
+        layer-wise factor by which to scale the domain resolution of function, by default None
+        
+        * If a single number n, scales resolution by n at each layer
+
+        * if a list of numbers [n_0, n_1,...] scales layer i's resolution by n_i.
+    domain_padding : Union[Number, List[Number]], optional
         If not None, percentage of padding to use, by default None
         To vary the percentage of padding used along each input dimension,
         pass in a list of percentages e.g. [p1, p2, ..., pN] such that
         p1 corresponds to the percentage of padding along dim 1, etc.
-    domain_padding_mode : {'symmetric', 'one-sided'}, optional
+    domain_padding_mode : str {'symmetric', 'one-sided'}, optional
         How to perform domain padding, by default 'one-sided'
-    separable : bool, default is False
-        if True, use a depthwise separable spectral convolution
-    factorization : str or None, {'tucker', 'cp', 'tt'}
+    fno_block_precision : str {'full', 'half', 'mixed'}, optional
+        precision mode in which to perform spectral convolution, by default "full"
+    stabilizer : str {'tanh'} | None, optional
+        whether to use a tanh stabilizer in FNO block, by default None
+
+        Note: stabilizer greatly improves performance in the case
+        `fno_block_precision='mixed'`. 
+
+    max_n_modes : Tuple[int] | None, optional
+
+        * If not None, this allows to incrementally increase the number of
+        modes in Fourier domain during training. Has to verify n <= N
+        for (n, m) in zip(max_n_modes, n_modes).
+
+        * If None, all the n_modes are used.
+
+        This can be updated dynamically during training.
+    factorization : str, optional
         Tensor factorization of the FNO layer weights to use, by default None.
+
         * If None, a dense tensor parametrizes the Spectral convolutions
+
         * Otherwise, the specified tensor factorization is used.
-    rank : float or rank, optional
-        Rank of the tensor factorization of the Fourier weights, by default 1.0
+    rank : float, optional
+        tensor rank to use in above factorization, by default 1.0
     fixed_rank_modes : bool, optional
         Modes to not factorize, by default False
-    implementation : {'factorized', 'reconstructed'}, optional, default is 'factorized'
-        If factorization is not None, forward mode to use::
-        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass
-        * `factorized` : the input is directly contracted with the factors of
-        the decomposition
-    decomposition_kwargs : dict, optional, default is {}
-        Optionaly additional parameters to pass to the tensor decomposition
-    conv_module : BaseConv, optional
-        Module to use for convolutions in FNO, by default SpectralConv
-    complex_data: bool, optional
-        whether FNO data takes on complex values 
-        in the spatial domain, by default False
+    implementation : str {'factorized', 'reconstructed'}, optional
+
+        * If 'factorized', implements tensor contraction with the individual factors
+        of the decomposition 
+        
+        * If 'reconstructed', implements with the reconstructed full tensorized weight.
+    separable : bool, optional
+        if True, use a depthwise separable spectral convolution, by default False
+    decomposition_kwargs : dict, optional
+        extra kwargs for tensor decomposition (see `tltorch.FactorizedTensor`), by default dict()
+    preactivation : bool, optional (**DEACTIVATED**)
+        whether to compute FNO forward pass with resnet-style preactivation, by default False
+    conv_module : nn.Module, optional
+        module to use for FNOBlock's convolutions, by default SpectralConv
     """
 
     def __init__(
@@ -147,31 +161,31 @@ class FNO(BaseModel, name='FNO'):
         n_layers: int=4,
         lifting_channel_ratio: int=2,
         projection_channel_ratio: int=2,
-        max_n_modes: Tuple[int]=None,
-        positional_embedding="grid",
+        positional_embedding: Union[str, nn.Module]="grid",
         non_linearity: nn.Module=F.gelu,
         norm: str=None,
         dtype: torch.dtype=torch.float32,
+        channel_mlp_dropout: float=0,
+        channel_mlp_expansion: float=0.5,
+        channel_mlp_skip: str="soft-gating",
+        fno_skip: str="linear",
+        resolution_scaling_factor: Union[Number, List[Number]]=None,
+        domain_padding: Union[Number, List[Number]]=None,
+        domain_padding_mode: str="one-sided",
         fno_block_precision: str="full",
-        channel_mlp_dropout=0,
-        channel_mlp_expansion=0.5,
-        stabilizer=None,
-        fno_skip="linear",
-        channel_mlp_skip="soft-gating",
-        preactivation=False,
-        resolution_scaling_factor=None,
-        domain_padding=None,
-        domain_padding_mode="one-sided",
-        separable=False,
-        factorization=None,
-        rank=1.0,
-        fixed_rank_modes=False,
-        implementation="factorized",
-        decomposition_kwargs=dict(),
-        conv_module=SpectralConv,
+        stabilizer: str=None,
+        max_n_modes: Tuple[int]=None,
+        factorization: str=None,
+        rank: float=1.0,
+        fixed_rank_modes: bool=False,
+        implementation: str="factorized",
+        separable: bool=False,
+        decomposition_kwargs: dict=dict(),
+        preactivation: bool=False,
+        conv_module: nn.Module=SpectralConv,
         **kwargs
     ):
-    
+        
         super().__init__()
         self.n_dim = len(n_modes)
         
