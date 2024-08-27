@@ -39,6 +39,7 @@ model = UNO(in_channels=1,
             uno_n_modes=[[16,16],[8,8],[8,8],[8,8],[16,16]],
             uno_scalings=[[1.0,1.0],[0.5,0.5],[1,1],[2,2],[1,1]],
             horizontal_skips_map=None,
+            channel_mlp_skip="linear",
             n_layers = 5,
             domain_padding=0.2)
 
