@@ -1,3 +1,4 @@
+.. _fno-guide:
 ========================
 Fourier Neural Operators
 ========================

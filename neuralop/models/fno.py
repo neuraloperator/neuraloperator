@@ -17,11 +17,12 @@ from .base_model import BaseModel
 
 class FNO(BaseModel, name='FNO'):
     """N-Dimensional Fourier Neural Operator. The FNO learns a mapping between
-    spaces of functions discretized over regular grids. The key component of an FNO
-    is its Spectral Convolution layers (see `neuralop.layers.spectral_convolution`), which
-    work similarly to a standard CNN conv layer but operate in the frequency domain.
+    spaces of functions discretized over regular grids. 
+    
+    The key component of an FNO is its SpectralConv layer (see ``neuralop.layers.spectral_convolution``), which
+    is similar to a standard CNN conv layer but operates in the frequency domain.
 
-    For more information, refer to :ref:`fno_guide`.
+    For more information, refer to :ref:`fno-guide`.
 
     Parameters
     ----------
@@ -136,8 +137,7 @@ class FNO(BaseModel, name='FNO'):
         Modes to not factorize, by default False
     implementation : str {'factorized', 'reconstructed'}, optional
 
-        * If 'factorized', implements tensor contraction with the individual factors
-        of the decomposition 
+        * If 'factorized', implements tensor contraction with the individual factors of the decomposition 
         
         * If 'reconstructed', implements with the reconstructed full tensorized weight.
     separable : bool, optional
@@ -331,7 +331,7 @@ class FNO(BaseModel, name='FNO'):
         1. Applies optional positional encoding
 
         2. Sends inputs through a lifting layer to a high-dimensional latent
-        space
+            space
 
         3. Applies optional domain padding to high-dimensional intermediate function representation
 
