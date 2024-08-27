@@ -84,7 +84,7 @@ class FNO(BaseModel, name='FNO'):
         Non-Linear activation function module to use, by default F.gelu
     norm : str {"ada_in", "group_norm", "instance_norm"}, optional
         Normalization layer to use, by default None
-    complex : bool, optional
+    complex_data : bool, optional
         Whether data is complex-valued (default False)
         if True, initializes complex-valued modules.
     channel_mlp_dropout : float, optional
@@ -162,7 +162,7 @@ class FNO(BaseModel, name='FNO'):
         positional_embedding: Union[str, nn.Module]="grid",
         non_linearity: nn.Module=F.gelu,
         norm: str=None,
-        complex: bool=False,
+        complex_data: bool=False,
         channel_mlp_dropout: float=0,
         channel_mlp_expansion: float=0.5,
         channel_mlp_skip: str="soft-gating",
@@ -213,7 +213,7 @@ class FNO(BaseModel, name='FNO'):
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation
-        self.complex = complex
+        self.complex_data = complex_data
         self.fno_block_precision = fno_block_precision
         
         if positional_embedding == "grid":
@@ -245,7 +245,7 @@ class FNO(BaseModel, name='FNO'):
             self.domain_padding = None
 
         self.domain_padding_mode = domain_padding_mode
-        self.complex = self.complex
+        self.complex_data = self.complex_data
 
         if resolution_scaling_factor is not None:
             if isinstance(resolution_scaling_factor, (float, int)):
@@ -265,7 +265,7 @@ class FNO(BaseModel, name='FNO'):
             preactivation=preactivation,
             fno_skip=fno_skip,
             channel_mlp_skip=channel_mlp_skip,
-            complex=complex,
+            complex_data=complex_data,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             rank=rank,
@@ -304,8 +304,8 @@ class FNO(BaseModel, name='FNO'):
                 n_dim=self.n_dim,
                 non_linearity=non_linearity
             )
-        # Convert lifting to a complex ChannelMLP if self.complex==True
-        if self.complex:
+        # Convert lifting to a complex ChannelMLP if self.complex_data==True
+        if self.complex_data:
             self.lifting = ComplexValued(self.lifting)
 
         self.projection = ChannelMLP(
@@ -316,7 +316,7 @@ class FNO(BaseModel, name='FNO'):
             n_dim=self.n_dim,
             non_linearity=non_linearity,
         )
-        if self.complex:
+        if self.complex_data:
             self.projection = ComplexValued(self.projection)
 
     def forward(self, x, output_shape=None, **kwargs):
@@ -408,7 +408,7 @@ class FNO1d(FNO):
         resolution_scaling_factor=None,
         non_linearity=F.gelu,
         stabilizer=None,
-        complex=False,
+        complex_data=False,
         fno_block_precision="full",
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
@@ -436,7 +436,7 @@ class FNO1d(FNO):
             resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            complex=complex,
+            complex_data=complex_data,
             fno_block_precision=fno_block_precision,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
@@ -483,7 +483,7 @@ class FNO2d(FNO):
         max_n_modes=None,
         non_linearity=F.gelu,
         stabilizer=None,
-        complex=False,
+        complex_data=False,
         fno_block_precision="full",
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
@@ -511,7 +511,7 @@ class FNO2d(FNO):
             resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            complex=complex,
+            complex_data=complex_data,
             fno_block_precision=fno_block_precision,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
@@ -562,7 +562,7 @@ class FNO3d(FNO):
         max_n_modes=None,
         non_linearity=F.gelu,
         stabilizer=None,
-        complex=False,
+        complex_data=False,
         fno_block_precision="full",
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
@@ -590,7 +590,7 @@ class FNO3d(FNO):
             resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            complex=complex,
+            complex_data=complex_data,
             fno_block_precision=fno_block_precision,
             max_n_modes=max_n_modes,
             channel_mlp_dropout=channel_mlp_dropout,

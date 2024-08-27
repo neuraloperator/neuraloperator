@@ -88,7 +88,7 @@ def test_FNOBlock_complex_data(n_dim):
     block = FNOBlocks(
         3, 4, modes[:n_dim], n_layers=1,
         channel_mlp_dropout=channel_mlp_dropout, channel_mlp_expansion=mlp_expansion, 
-        channel_mlp_skip=channel_mlp_skip, complex=True)
+        channel_mlp_skip=channel_mlp_skip, complex_data=True)
 
     x = torch.randn(2, 3, *size[:n_dim], dtype=torch.cfloat)
     res = block(x)

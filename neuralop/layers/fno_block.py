@@ -65,7 +65,7 @@ class FNOBlocks(nn.Module):
     SpectralConv Params
     -------------------
 
-    complex : bool, optional
+    complex_data : bool, optional
         whether the FNO's data takes on complex values in space, by default False
     separable : bool, optional
         separable parameter for SpectralConv, by default False
@@ -102,7 +102,7 @@ class FNOBlocks(nn.Module):
         preactivation=False,
         fno_skip="linear",
         channel_mlp_skip="soft-gating",
-        complex=False,
+        complex_data=False,
         separable=False,
         factorization=None,
         rank=1.0,
@@ -134,7 +134,7 @@ class FNOBlocks(nn.Module):
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = fno_skip
         self.channel_mlp_skip = channel_mlp_skip
-        self.complex = complex
+        self.complex_data = complex_data
 
         self.channel_mlp_expansion = channel_mlp_expansion
         self.channel_mlp_dropout = channel_mlp_dropout
@@ -144,7 +144,7 @@ class FNOBlocks(nn.Module):
         self.ada_in_features = ada_in_features
 
         # apply real nonlin if data is real, otherwise CGELU
-        if self.complex:
+        if self.complex_data:
             self.non_linearity = CGELU
         else:
             self.non_linearity = non_linearity
@@ -163,7 +163,7 @@ class FNOBlocks(nn.Module):
                 factorization=factorization,
                 fno_block_precision=fno_block_precision,
                 decomposition_kwargs=decomposition_kwargs,
-                complex=complex
+                complex_data=complex_data
             ) 
             for i in range(n_layers)])
 
@@ -178,7 +178,7 @@ class FNOBlocks(nn.Module):
                 for _ in range(n_layers)
             ]
         )
-        if self.complex:
+        if self.complex_data:
             self.fno_skips = nn.ModuleList(
                 [ComplexValued(x) for x in self.fno_skips]
                 )
@@ -194,7 +194,7 @@ class FNOBlocks(nn.Module):
                 for _ in range(n_layers)
             ]
         )
-        if self.complex:
+        if self.complex_data:
             self.channel_mlp = nn.ModuleList(
                 [ComplexValued(x) for x in self.channel_mlp]
             )
@@ -209,7 +209,7 @@ class FNOBlocks(nn.Module):
                 for _ in range(n_layers)
             ]
         )
-        if self.complex:
+        if self.complex_data:
             self.channel_mlp_skips = nn.ModuleList(
                 [ComplexValued(x) for x in self.channel_mlp_skips]
             )
@@ -276,7 +276,7 @@ class FNOBlocks(nn.Module):
         x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
-            if self.complex:
+            if self.complex_data:
                 x = ctanh(x)
             else:
                 x = torch.tanh(x)
@@ -317,7 +317,7 @@ class FNOBlocks(nn.Module):
         x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
-            if self.complex:
+            if self.complex_data:
                 x = ctanh(x)
             else:
                 x = torch.tanh(x)

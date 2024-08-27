@@ -10,8 +10,8 @@ from ..spectral_convolution import (SpectralConv3d, SpectralConv2d,
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
 @pytest.mark.parametrize('separable', [False, True])
 @pytest.mark.parametrize('dim', [1,2,3,4])
-@pytest.mark.parametrize('complex', [False, True])
-def test_SpectralConv(factorization, implementation, separable, dim, complex):
+@pytest.mark.parametrize('complex_data', [False, True])
+def test_SpectralConv(factorization, implementation, separable, dim, complex_data):
     """Test for SpectralConv of any order
     
     Compares Factorized and Dense convolution output
@@ -23,7 +23,7 @@ def test_SpectralConv(factorization, implementation, separable, dim, complex):
     """
     modes = (10, 8, 6, 6)
     incremental_modes = (6, 6, 4, 4)
-    dtype = torch.cfloat if complex else torch.float32
+    dtype = torch.cfloat if complex_data else torch.float32
 
     # Test for Conv1D to Conv4D
     conv = SpectralConv(
@@ -31,7 +31,7 @@ def test_SpectralConv(factorization, implementation, separable, dim, complex):
         bias=False,
         implementation=implementation,
         factorization=factorization,
-        complex=complex,
+        complex_data=complex_data,
         separable=separable,
         dtype=dtype)
 
@@ -40,7 +40,7 @@ def test_SpectralConv(factorization, implementation, separable, dim, complex):
         bias=False,
         implementation='reconstructed',
         factorization=None,
-        complex=complex,
+        complex_data=complex_data,
         dtype=dtype)
 
     x = torch.randn(2, 3, *(12, )*dim, dtype=dtype)
