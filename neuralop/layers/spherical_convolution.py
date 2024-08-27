@@ -323,6 +323,7 @@ class SphericalConv(BaseSpectralConv):
         sht_grids="equiangular",
         device=None,
         dtype=torch.float32,
+        complex=False # dummy param until we unify dtype interface
     ):
         super().__init__(dtype=dtype, device=device)
 
