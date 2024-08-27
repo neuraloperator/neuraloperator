@@ -84,9 +84,9 @@ class FNO(BaseModel, name='FNO'):
         Non-Linear activation function module to use, by default F.gelu
     norm : str {"ada_in", "group_norm", "instance_norm"}, optional
         Normalization layer to use, by default None
-    dtype : torch.dtype, optional
-        dtype of input data, by default torch.float32
-        if complex dtype, initializes complex-valued modules.
+    complex : bool, optional
+        Whether data is complex-valued (default False)
+        if True, initializes complex-valued modules.
     channel_mlp_dropout : float, optional
         dropout parameter for ChannelMLP in FNO Block, by default 0
     channel_mlp_expansion : float, optional
@@ -140,10 +140,10 @@ class FNO(BaseModel, name='FNO'):
         * If 'factorized', implements tensor contraction with the individual factors of the decomposition 
         
         * If 'reconstructed', implements with the reconstructed full tensorized weight.
-    separable : bool, optional
-        if True, use a depthwise separable spectral convolution, by default False
     decomposition_kwargs : dict, optional
         extra kwargs for tensor decomposition (see `tltorch.FactorizedTensor`), by default dict()
+    separable : bool, optional (**DEACTIVATED**)
+        if True, use a depthwise separable spectral convolution, by default False   
     preactivation : bool, optional (**DEACTIVATED**)
         whether to compute FNO forward pass with resnet-style preactivation, by default False
     conv_module : nn.Module, optional
@@ -162,7 +162,7 @@ class FNO(BaseModel, name='FNO'):
         positional_embedding: Union[str, nn.Module]="grid",
         non_linearity: nn.Module=F.gelu,
         norm: str=None,
-        dtype: torch.dtype=torch.float32,
+        complex: bool=False,
         channel_mlp_dropout: float=0,
         channel_mlp_expansion: float=0.5,
         channel_mlp_skip: str="soft-gating",
@@ -177,8 +177,8 @@ class FNO(BaseModel, name='FNO'):
         rank: float=1.0,
         fixed_rank_modes: bool=False,
         implementation: str="factorized",
-        separable: bool=False,
         decomposition_kwargs: dict=dict(),
+        separable: bool=False,
         preactivation: bool=False,
         conv_module: nn.Module=SpectralConv,
         **kwargs
@@ -213,13 +213,7 @@ class FNO(BaseModel, name='FNO'):
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation
-
-        self.dtype = dtype
-        # handle dtype and mixed_precision
-        if dtype in [torch.cfloat, torch.complex64, torch.cdouble, torch.complex128]:
-            self.complex_data = True
-        else:
-            self.complex_data = False
+        self.complex = complex
         self.fno_block_precision = fno_block_precision
         
         if positional_embedding == "grid":
@@ -251,7 +245,7 @@ class FNO(BaseModel, name='FNO'):
             self.domain_padding = None
 
         self.domain_padding_mode = domain_padding_mode
-        self.complex_data = self.complex_data
+        self.complex = self.complex
 
         if resolution_scaling_factor is not None:
             if isinstance(resolution_scaling_factor, (float, int)):
@@ -271,7 +265,7 @@ class FNO(BaseModel, name='FNO'):
             preactivation=preactivation,
             fno_skip=fno_skip,
             channel_mlp_skip=channel_mlp_skip,
-            dtype=dtype,
+            complex=complex,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
             rank=rank,
@@ -310,8 +304,8 @@ class FNO(BaseModel, name='FNO'):
                 n_dim=self.n_dim,
                 non_linearity=non_linearity
             )
-        # Convert lifting to a complex ChannelMLP if self.complex_data==True
-        if self.complex_data:
+        # Convert lifting to a complex ChannelMLP if self.complex==True
+        if self.complex:
             self.lifting = ComplexValued(self.lifting)
 
         self.projection = ChannelMLP(
@@ -322,7 +316,7 @@ class FNO(BaseModel, name='FNO'):
             n_dim=self.n_dim,
             non_linearity=non_linearity,
         )
-        if self.complex_data:
+        if self.complex:
             self.projection = ComplexValued(self.projection)
 
     def forward(self, x, output_shape=None, **kwargs):
@@ -414,7 +408,7 @@ class FNO1d(FNO):
         resolution_scaling_factor=None,
         non_linearity=F.gelu,
         stabilizer=None,
-        dtype=torch.float32,
+        complex=torch.float32,
         fno_block_precision="full",
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
@@ -442,7 +436,7 @@ class FNO1d(FNO):
             resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            dtype=dtype,
+            complex=complex,
             fno_block_precision=fno_block_precision,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
@@ -489,7 +483,7 @@ class FNO2d(FNO):
         max_n_modes=None,
         non_linearity=F.gelu,
         stabilizer=None,
-        dtype=torch.float32,
+        complex=torch.float32,
         fno_block_precision="full",
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
@@ -517,7 +511,7 @@ class FNO2d(FNO):
             resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            dtype=dtype,
+            complex=complex,
             fno_block_precision=fno_block_precision,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
@@ -568,7 +562,7 @@ class FNO3d(FNO):
         max_n_modes=None,
         non_linearity=F.gelu,
         stabilizer=None,
-        dtype=torch.float32,
+        complex=torch.float32,
         fno_block_precision="full",
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
@@ -596,7 +590,7 @@ class FNO3d(FNO):
             resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            dtype=dtype,
+            complex=complex,
             fno_block_precision=fno_block_precision,
             max_n_modes=max_n_modes,
             channel_mlp_dropout=channel_mlp_dropout,

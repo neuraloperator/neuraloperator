@@ -20,7 +20,7 @@ tenalg.set_backend("einsum")
 @pytest.mark.parametrize("stabilizer", [None, "tanh"])
 @pytest.mark.parametrize("lifting_channel_ratio", [1, 2])
 @pytest.mark.parametrize("preactivation", [False, True])
-@pytest.mark.parametrize("dtype", [torch.float32, torch.cfloat])
+@pytest.mark.parametrize("complex", [True, False])
 def test_tfno(
     factorization,
     implementation,
@@ -29,7 +29,7 @@ def test_tfno(
     stabilizer,
     lifting_channel_ratio,
     preactivation,
-    dtype
+    complex
 ):
     if torch.has_cuda:
         device = "cuda"
@@ -49,7 +49,7 @@ def test_tfno(
         batch_size = 3
         n_layers = 2
 
-
+    dtype = torch.cfloat if complex else torch.float32
     rank = 0.2
     size = (s,) * n_dim
     n_modes = (modes,) * n_dim
@@ -67,7 +67,7 @@ def test_tfno(
         fc_channels=fc_channels,
         lifting_channel_ratio=lifting_channel_ratio,
         preactivation=preactivation,
-        dtype=dtype,
+        complex=complex,
         fno_block_precision=fno_block_precision
     ).to(device)
 

@@ -239,7 +239,7 @@ class SpectralConv(BaseSpectralConv):
     decomposition_kwargs : dict, optional, default is {}
         Optionaly additional parameters to pass to the tensor decomposition
         Ignored if ``factorization is None``
-    complex_data: bool, optional
+    complex: bool, optional
         whether data takes on complex values in the spatial domain, by default False
         if True, uses different logic for FFT contraction and uses full FFT instead of real-valued
     """
@@ -249,6 +249,7 @@ class SpectralConv(BaseSpectralConv):
         in_channels,
         out_channels,
         n_modes,
+        complex=False,
         max_n_modes=None,
         bias=True,
         separable=False,
@@ -270,11 +271,7 @@ class SpectralConv(BaseSpectralConv):
         self.out_channels = out_channels
 
         self.dtype = dtype
-        # handle dtype and mixed_precision
-        if dtype in [torch.cfloat, torch.complex64, torch.cdouble, torch.complex128]:
-            self.complex_data = True
-        else:
-            self.complex_data = False
+        self.complex = complex
 
         # n_modes is the total number of modes kept along each dimension
         self.n_modes = n_modes
@@ -376,7 +373,7 @@ class SpectralConv(BaseSpectralConv):
         # the real FFT is skew-symmetric, so the last mode has a redundacy if our data is real in space 
         # As a design choice we do the operation here to avoid users dealing with the +1
         # if we use the full FFT we cannot cut off informtion from the last mode
-        if not self.complex_data:
+        if not self.complex:
             n_modes[-1] = n_modes[-1] // 2 + 1
         self._n_modes = n_modes
 
@@ -397,14 +394,14 @@ class SpectralConv(BaseSpectralConv):
         batchsize, channels, *mode_sizes = x.shape
 
         fft_size = list(mode_sizes)
-        if not self.complex_data:
+        if not self.complex:
             fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient in real spatial data
         fft_dims = list(range(-self.order, 0))
 
         if self.fno_block_precision == "half":
             x = x.half()
 
-        if self.complex_data:
+        if self.complex:
             x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
         else: 
             x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
@@ -432,7 +429,7 @@ class SpectralConv(BaseSpectralConv):
             slices_w = [slice(None)] # channels
         else:
             slices_w =  [slice(None), slice(None)] # in_channels, out_channels
-        if self.complex_data:
+        if self.complex:
             slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
         else:
             # The last mode already has redundant half removed in real FFT
@@ -450,7 +447,7 @@ class SpectralConv(BaseSpectralConv):
         starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[weight_start_idx:]))]
         slices_x =  [slice(None), slice(None)] # Batch_size, channels
 
-        if self.complex_data:
+        if self.complex:
             slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
         else:
             slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
@@ -466,7 +463,7 @@ class SpectralConv(BaseSpectralConv):
         if self.order > 1:
             out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
         
-        if self.complex_data:
+        if self.complex:
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
         else:
             x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)

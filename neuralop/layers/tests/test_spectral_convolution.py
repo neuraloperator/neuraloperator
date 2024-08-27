@@ -10,8 +10,8 @@ from ..spectral_convolution import (SpectralConv3d, SpectralConv2d,
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])
 @pytest.mark.parametrize('separable', [False, True])
 @pytest.mark.parametrize('dim', [1,2,3,4])
-@pytest.mark.parametrize('dtype', [torch.float32, torch.cfloat])
-def test_SpectralConv(factorization, implementation, separable, dim, dtype):
+@pytest.mark.parametrize('complex', [False, True])
+def test_SpectralConv(factorization, implementation, separable, dim, complex):
     """Test for SpectralConv of any order
     
     Compares Factorized and Dense convolution output
@@ -23,13 +23,25 @@ def test_SpectralConv(factorization, implementation, separable, dim, dtype):
     """
     modes = (10, 8, 6, 6)
     incremental_modes = (6, 6, 4, 4)
+    dtype = torch.cfloat if complex else torch.float32
 
     # Test for Conv1D to Conv4D
     conv = SpectralConv(
-        3, 3, modes[:dim], bias=False, implementation=implementation, factorization=factorization, separable=separable, dtype=dtype)
+        3, 3, modes[:dim],
+        bias=False,
+        implementation=implementation,
+        factorization=factorization,
+        complex=complex,
+        separable=separable,
+        dtype=dtype)
 
     conv_dense = SpectralConv(
-        3, 3, modes[:dim], bias=False, implementation='reconstructed', factorization=None, dtype=dtype)
+        3, 3, modes[:dim],
+        bias=False,
+        implementation='reconstructed',
+        factorization=None,
+        complex=complex,
+        dtype=dtype)
 
     x = torch.randn(2, 3, *(12, )*dim, dtype=dtype)
 
@@ -38,7 +50,9 @@ def test_SpectralConv(factorization, implementation, separable, dim, dtype):
 
     # this closeness test only works if the weights in full form have the same shape
     if not separable:
-        conv_dense.weight = FactorizedTensor.from_tensor(conv.weight.to_tensor(), rank=None, factorization='ComplexDense')
+        conv_dense.weight = FactorizedTensor.from_tensor(conv.weight.to_tensor(),
+                                                         rank=None,
+                                                         factorization='ComplexDense')
     
     res_dense = conv_dense(x)
     res = conv(x)
