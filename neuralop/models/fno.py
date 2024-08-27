@@ -25,8 +25,6 @@ class FNO(BaseModel, name='FNO'):
 
     Parameters
     ----------
-    Parameters
-    ----------
     n_modes : Tuple[int]
         number of modes to keep in Fourier Layer, along each dimension
         The dimensionality of the FNO is inferred from ``len(n_modes)``
