@@ -1,4 +1,5 @@
 name: Build documentation
+# Action adapted from https://github.com/tensorly/tensorly
 
 on: [push, pull_request]
 
@@ -46,17 +47,24 @@ jobs:
     - name: Push docs on main update
       if: success() && github.ref == 'refs/heads/main'
       run: |
+        # Add deploy key and clone through ssh
+        eval "$(ssh-agent -s)"
+        mkdir ~/.ssh
+        echo "${{ secrets.DOC_DEPLOY_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -t rsa github.com
+        echo 'Documentation was successfully built, updating the website.'
         # See https://github.community/t/github-actions-bot-email-address/17204/5
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions"
-        git fetch origin gh-pages
-        git checkout gh-pages
-        [ -d dev ] || mkdir dev
-        rm -rf dev/*
-        cp -r doc/build/html/* dev
+        git clone "git@github.com:neuraloperator/neuraloperator.github.io.git" doc_folder
+        echo "-- Updating the content"
+        cd doc_folder
+        git rm -r dev/*
+        mkdir -p dev
+        echo "Copying to folder"
+        cp -r ../doc/_build/html/* dev/
+        echo "Pushing to git"
         git add dev
-        touch dev/.nojekyll
-        # If the doc is up to date, the script shouldn't fail, hence --allow-empty
-        # Might be a cleaner way to check 
-        git commit --allow-empty -m "Deployed to GitHub Pages"
-        git push --force origin gh-pages
+        git commit -m "Github action: auto-update."
+        git push --force origin main
