@@ -1,4 +1,5 @@
 name: Build documentation
+# Action adapted from https://github.com/tensorly/tensorly
 
 on: [push, pull_request]
 
