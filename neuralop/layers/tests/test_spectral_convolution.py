@@ -32,16 +32,14 @@ def test_SpectralConv(factorization, implementation, separable, dim, complex_dat
         implementation=implementation,
         factorization=factorization,
         complex_data=complex_data,
-        separable=separable,
-        dtype=dtype)
+        separable=separable)
 
     conv_dense = SpectralConv(
         3, 3, modes[:dim],
         bias=False,
         implementation='reconstructed',
         factorization=None,
-        complex_data=complex_data,
-        dtype=dtype)
+        complex_data=complex_data)
 
     x = torch.randn(2, 3, *(12, )*dim, dtype=dtype)
 
