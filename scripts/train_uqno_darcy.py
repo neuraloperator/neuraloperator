@@ -4,7 +4,6 @@ import copy
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 import numpy as np
 import torch
-from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 import wandb
 
@@ -102,6 +101,7 @@ test_loaders = {
 data_processor = solution_dataset.data_processor
 
 # split the training set up into train, residual_train, residual_calibration
+
 solution_train_db = TensorDataset(**train_db[:config.data.n_train_solution])
 residual_train_db = TensorDataset(**train_db[config.data.n_train_solution:config.data.n_train_solution +\
                                   config.data.n_train_residual])
@@ -210,6 +210,7 @@ if config.opt.solution.n_epochs > 0:
     else:
         resume_dir = None
     
+    # save the best solution model
 
     trainer.train(
         train_loader=solution_train_loader,
@@ -222,14 +223,11 @@ if config.opt.solution.n_epochs > 0:
         save_best="421_l2",
         save_dir="./solution_ckpts",
         resume_from_dir=resume_dir
-
     )
 
-#solution_model.save_checkpoint(save_folder="./ckpt",save_name=config.soln_checkpoint)
-
-######
-# UQ #
-######
+#############################
+# UQ Training and Utilities #
+#############################
 
 def loader_to_residual_db(model, data_processor, loader, device, train_val_split=True):
     """
@@ -528,7 +526,6 @@ val_ratios = torch.stack(val_ratio_list)
 
 vr_view = val_ratios.view(val_ratios.shape[0], -1)
 
-
 def eval_coverage_bandwidth(test_loader, alpha, device="cuda"):
     """
     Get percentage of instances hitting target-percentage pointwise coverage
@@ -586,5 +583,3 @@ for alpha in [0.02, 0.05, 0.1]:
             
 if config.wandb.log and is_logger:
     wandb.finish()
-
-
