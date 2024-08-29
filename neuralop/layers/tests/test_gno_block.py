@@ -5,6 +5,7 @@ from tensorly import tenalg
 
 tenalg.set_backend("einsum")
 
+from ..embeddings import SinusoidalEmbedding2D
 from ..gno_block import GNOBlock
 
 # Fixed variables
@@ -42,13 +43,12 @@ def test_gno_block(gno_transform_type, gno_coord_dim, gno_coord_dim_embed, batch
         device = torch.device("cpu:0")
     
     use_open3d = use_open3d and (gno_coord_dim == 3)
-    
+    gno_pos_embed = SinusoidalEmbedding2D(gno_coord_dim_embed, max_positions=10000,)
     gno_block = GNOBlock(
         in_channels=in_channels,
         out_channels=out_channels, # dummy var currently
         coord_dim=gno_coord_dim,
-        sinusoidal_coord_embed_dim=gno_coord_dim_embed,
-        sinusoidal_embed_max_positions=10000,
+        pos_embedding=gno_pos_embed,
         radius=0.25,
         channel_mlp_layers=mlp_hidden_layers,
         transform_type=gno_transform_type,
