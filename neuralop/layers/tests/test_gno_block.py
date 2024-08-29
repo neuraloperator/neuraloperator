@@ -43,7 +43,11 @@ def test_gno_block(gno_transform_type, gno_coord_dim, gno_coord_dim_embed, batch
         device = torch.device("cpu:0")
     
     use_open3d = use_open3d and (gno_coord_dim == 3)
-    gno_pos_embed = SinusoidalEmbedding2D(gno_coord_dim_embed, max_positions=10000,)
+    if gno_coord_dim_embed is not None:
+        gno_pos_embed = SinusoidalEmbedding2D(gno_coord_dim_embed, max_positions=10000,)
+    else:
+        gno_pos_embed = None
+        
     gno_block = GNOBlock(
         in_channels=in_channels,
         out_channels=out_channels, # dummy var currently

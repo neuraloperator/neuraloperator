@@ -99,15 +99,6 @@ class GNOBlock(nn.Module):
         # Apply sinusoidal positional embedding
         self.pos_embedding = pos_embedding
                     
-        '''self.sinusoidal_coord_embed_dim = sinusoidal_coord_embed_dim
-        self.sinusoidal_embed_max_positions = sinusoidal_embed_max_positions
-        
-        if self.sinusoidal_coord_embed_dim:
-            self.pos_embedding = SinusoidalEmbedding2D(num_channels=self.sinusoidal_coord_embed_dim,
-                                                       max_positions=self.sinusoidal_embed_max_positions)
-        else:
-            self.pos_embedding = None'''
-        
         # Create in-to-out nb search module
         if use_open3d_neighbor_search:
             assert self.coord_dim == 3, f"Error: open3d is only designed for 3d data, \
