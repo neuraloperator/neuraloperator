@@ -19,6 +19,7 @@ class GridEmbedding2D(nn.Module):
         self.grid_boundaries = grid_boundaries
         self._grid = None
         self._res = None
+        self.out_channels = 2 # concatenates 2 output channels
 
     def grid(self, spatial_dims, device, dtype):
         """grid generates 2D grid needed for pos encoding
@@ -86,6 +87,7 @@ class GridEmbeddingND(nn.Module):
         self.grid_boundaries = grid_boundaries
         self._grid = None
         self._res = None
+        self.out_channels = self.dim
 
     def grid(self, spatial_dims: torch.Size, device: str, dtype: torch.dtype):
         """grid generates ND grid needed for pos encoding
@@ -155,6 +157,7 @@ class SinusoidalEmbedding2D(nn.Module):
         self.num_channels = num_channels
         self.max_positions = max_positions
         self.endpoint = endpoint
+        self.out_channels = num_channels
 
     def forward(self, x):
         freqs = torch.arange(
@@ -178,6 +181,7 @@ class RotaryEmbedding2D(nn.Module):
         self.min_freq = min_freq
         self.scale = scale
         self.register_buffer('inv_freq', inv_freq, persistent=False)
+        self.out_channels = 2
 
     def forward(self, coordinates):
         """coordinates is tensor of [batch_size, num_points]"""
