@@ -231,13 +231,19 @@ class FNOGNO(BaseModel, name="FNOGNO"):
 
         self.gno_radius = gno_radius
         
+        # create pos embedding if it exists
+        if gno_coord_embed_dim is not None:
+            pos_embed = SinusoidalEmbedding2D(num_channels=gno_coord_embed_dim,
+                                              max_positions=gno_embed_max_positions)
+        else:
+            pos_embed = None
+
         self.gno = GNOBlock(
             in_channels=fno_hidden_channels,
             out_channels=fno_hidden_channels,
             radius=gno_radius,
             coord_dim=self.gno_coord_dim,
-            sinusoidal_coord_embed_dim=gno_coord_embed_dim,
-            sinusoidal_embed_max_positions=gno_embed_max_positions,
+            pos_embedding = pos_embed,
             channel_mlp_layers=gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=gno_transform_type,

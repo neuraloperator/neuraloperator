@@ -157,7 +157,7 @@ class SinusoidalEmbedding2D(nn.Module):
         self.num_channels = num_channels
         self.max_positions = max_positions
         self.endpoint = endpoint
-        self.out_channels = num_channels
+        self._out_channels = num_channels
 
     def forward(self, x):
         freqs = torch.arange(
@@ -169,6 +169,9 @@ class SinusoidalEmbedding2D(nn.Module):
         x = torch.cat([x.cos(), x.sin()], dim=1)
         return x
 
+    @property
+    def out_channels(self):
+        return self._out_channels
 
 class RotaryEmbedding2D(nn.Module):
     def __init__(self, dim, min_freq=1/64, scale=1.):
