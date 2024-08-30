@@ -6,7 +6,7 @@ from tensorly import tenalg
 tenalg.set_backend("einsum")
 
 from ..fnogno import FNOGNO
-
+from neuralop.layers.embeddings import SinusoidalEmbedding2D
 
 @pytest.mark.parametrize(
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
@@ -24,12 +24,18 @@ def test_fnogno(gno_transform_type, fno_n_modes, gno_batched, gno_coord_embed_di
     out_channels = 2
     batch_size = 4
     n_dim = len(fno_n_modes)
+
+    if gno_coord_embed_dim is not None:
+        pos_embedding = SinusoidalEmbedding2D(num_channels=gno_coord_embed_dim, max_positions=10000)
+    else:
+        pos_embedding = None
+    
     model = FNOGNO(
         in_channels=in_channels,
         out_channels=out_channels,
         gno_radius=0.2,
         gno_coord_dim=n_dim,
-        gno_coord_embed_dim=gno_coord_embed_dim,
+        gno_pos_embedding=pos_embedding,
         gno_transform_type=gno_transform_type,
         gno_batched=gno_batched,
         fno_n_modes=fno_n_modes,

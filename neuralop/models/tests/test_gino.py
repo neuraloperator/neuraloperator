@@ -2,9 +2,9 @@ import torch
 from torch.autograd import grad
 import pytest
 from tensorly import tenalg
-
 tenalg.set_backend("einsum")
 
+from neuralop.layers.embeddings import SinusoidalEmbedding2D
 from ..gino import GINO
 
 # Fixed variables
@@ -25,12 +25,19 @@ latent_density = 8
 @pytest.mark.parametrize(
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
 )
-@pytest.mark.parametrize("gno_coord_dim_embed", [None, 32])
-def test_gino(gno_transform_type, gno_coord_dim, gno_coord_dim_embed, batch_size):
+@pytest.mark.parametrize("gno_coord_embed_dim", [None, 32])
+def test_gino(gno_transform_type, gno_coord_dim, gno_coord_embed_dim, batch_size):
     if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")
     else:
         device = torch.device("cpu:0")
+
+    # create pos embedding if one is passed
+    if gno_coord_embed_dim is not None:
+        pos_embed = SinusoidalEmbedding2D(num_channels=gno_coord_embed_dim,
+                                          max_positions=10000)
+    else:
+        pos_embed = None
 
     model = GINO(
         in_channels=in_channels,
@@ -38,8 +45,7 @@ def test_gino(gno_transform_type, gno_coord_dim, gno_coord_dim_embed, batch_size
         gno_radius=0.3,# make this large to ensure neighborhoods fit
         projection_channels=projection_channels,
         gno_coord_dim=gno_coord_dim,
-        gno_coord_embed_dim=gno_coord_dim_embed,
-        gno_embed_max_positions=10000,
+        gno_pos_embedding=pos_embed,
         in_gno_mlp_hidden_layers=[16,16],
         out_gno_mlp_hidden_layers=[16,16],
         in_gno_transform_type=gno_transform_type,

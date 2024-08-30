@@ -25,10 +25,13 @@ class GINO(nn.Module):
             number of channels in FNO pointwise projection
         gno_coord_dim : int, optional
             geometric dimension of input/output queries, by default 3
-        gno_coord_embed_dim : int, optional
-            dimension of positional embedding for gno coordinates, by default None
-        gno_embed_max_positions : int, optional
-            max positions for use in gno positional embedding, by default None
+        gno_pos_embedding : nn.Module, defaults to None
+            if passed, applies a positional embedding to
+            input and output query points before passing into
+            the GNOBlock's kernel integral.
+
+            A common choice is ``neuralop.layers.embeddings.SinusoidalEmbedding2D``.
+
         gno_radius : float, optional
             radius in input/output space for GNO neighbor search, by default 0.033
         in_gno_channel_mlp_hidden_layers : list, optional
@@ -121,8 +124,7 @@ class GINO(nn.Module):
             out_channels,
             projection_channels=256,
             gno_coord_dim=3,
-            gno_coord_embed_dim=None,
-            gno_embed_max_positions=None,
+            gno_pos_embedding=None,
             gno_radius=0.033,
             in_gno_channel_mlp_hidden_layers=[80, 80, 80],
             out_gno_channel_mlp_hidden_layers=[512, 256],
@@ -240,12 +242,9 @@ class GINO(nn.Module):
         self.gno_radius = gno_radius
         self.out_gno_tanh = out_gno_tanh
 
-        if gno_coord_embed_dim is not None:
-            self.gno_coord_dim_embed = self.gno_out_coord_dim*gno_coord_embed_dim # gno input and output may use separate dims
-            pos_embed = SinusoidalEmbedding2D(num_channels=gno_coord_embed_dim,
-                                              max_positions=gno_embed_max_positions)
+        if gno_pos_embedding is not None:
+            self.gno_coord_dim_embed = self.gno_out_coord_dim*gno_pos_embedding.out_channels # gno input and output may use separate dims
         else:
-            pos_embed = None
             self.gno_coord_dim_embed = self.gno_out_coord_dim
 
         ### input GNO
@@ -256,7 +255,7 @@ class GINO(nn.Module):
             in_channels=in_channels,
             out_channels=fno_in_channels,
             coord_dim=self.gno_coord_dim,
-            pos_embedding=pos_embed,
+            pos_embedding=gno_pos_embedding,
             radius=gno_radius,
             channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
@@ -272,7 +271,7 @@ class GINO(nn.Module):
             out_channels=fno_hidden_channels,
             coord_dim=self.gno_coord_dim,
             radius=self.gno_radius,
-            pos_embedding=pos_embed,
+            pos_embedding=gno_pos_embedding,
             channel_mlp_layers=out_gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=out_gno_transform_type,
