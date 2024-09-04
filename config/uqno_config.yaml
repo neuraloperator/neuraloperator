@@ -22,8 +22,8 @@ default: &DEFAULT
     hidden_channels: 128
     projection_channels: 256
     n_layers: 4
-    domain_padding: None #0.078125
-    domain_padding_mode: 'one-sided' #symmetric
+    domain_padding: None
+    domain_padding_mode: 'one-sided'
     fft_norm: 'forward'
     norm: 'group_norm'
     skip: 'linear'
@@ -75,9 +75,9 @@ default: &DEFAULT
 
   # Dataset related
   data:
-    root: /home/dave/data/darcy
+    root: YOUR_ROOT
     batch_size: 4
-    n_train_total: 5000
+    n_train_total: 4000
     n_train_solution: 2500
     n_train_residual: 1000
     n_calib_residual: 500
