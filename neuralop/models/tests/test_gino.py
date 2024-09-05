@@ -25,8 +25,9 @@ latent_density = 8
 @pytest.mark.parametrize(
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
 )
+@pytest.mark.parametrize("latent_feature_dim", [None, 2])
 @pytest.mark.parametrize("gno_coord_embed_dim", [None, 32])
-def test_gino(gno_transform_type, gno_coord_dim, gno_coord_embed_dim, batch_size):
+def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_coord_embed_dim, batch_size):
     if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")
     else:
@@ -42,6 +43,7 @@ def test_gino(gno_transform_type, gno_coord_dim, gno_coord_embed_dim, batch_size
     model = GINO(
         in_channels=in_channels,
         out_channels=out_channels,
+        latent_feature_channels=latent_feature_dim,
         gno_radius=0.3,# make this large to ensure neighborhoods fit
         projection_channels=projection_channels,
         gno_coord_dim=gno_coord_dim,
@@ -60,6 +62,11 @@ def test_gino(gno_transform_type, gno_coord_dim, gno_coord_embed_dim, batch_size
     latent_geom = torch.stack(torch.meshgrid([torch.linspace(0,1,latent_density)] * gno_coord_dim, indexing='xy'))
     latent_geom = latent_geom.permute(*list(range(1,gno_coord_dim+1)),0).to(device)
 
+    if latent_feature_dim is not None:
+        latent_features_shape = [batch_size, *latent_geom.shape[:-1], latent_feature_dim]
+        latent_features = torch.randn(*latent_features_shape, device=device)
+    else:
+        latent_features = None
     # create input geometry and output queries
     input_geom_shape = [n_in, gno_coord_dim]
     input_geom = torch.randn(*input_geom_shape, device=device)
@@ -79,6 +86,7 @@ def test_gino(gno_transform_type, gno_coord_dim, gno_coord_embed_dim, batch_size
                 input_geom=input_geom,
                 latent_queries=latent_geom,
                 output_queries=output_queries,
+                latent_features=latent_features,
                 ada_in=ada_in)
 
     # Check output size
