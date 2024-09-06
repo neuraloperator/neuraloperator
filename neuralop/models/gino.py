@@ -13,7 +13,9 @@ from ..layers.spectral_convolution import SpectralConv
 from ..layers.gno_block import GNOBlock
 
 class GINO(nn.Module):
-    """GINO: Geometry-informed Neural Operator
+    """GINO: Geometry-informed Neural Operator. Learns a mapping between
+        functions defined over arbitrary coordinate meshes with spectral convolution
+        layers in an intermediate latent space, as described in [1]_.
 
         Parameters
         ----------
@@ -121,6 +123,16 @@ class GINO(nn.Module):
             Optionaly additional parameters to pass to the tensor decomposition.
         fno_conv_module : nn.Module, defaults to SpectralConv
             Spectral Convolution module to use.
+        
+            
+        References
+        -----------
+        .. _[1] : 
+        
+        Li, Z., Kovachki, N., Choy, C., Li, B., Kossaifi, J., Otta, S., 
+            Nabian, M., Stadler, M., Hundt, C., Azizzadenesheli, K., Anandkumar, A. (2023)
+            Geometry-Informed Neural Operator for Large-Scale 3D PDEs. NeurIPS 2023,
+            https://proceedings.neurips.cc/paper_files/paper/2023/hash/70518ea42831f02afc3a2828993935ad-Abstract-Conference.html
         """
     def __init__(
             self,
