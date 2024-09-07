@@ -48,12 +48,15 @@ class LpLoss(object):
             self.reduce_dims = reduce_dims
         
         if self.reduce_dims is not None:
+            allowed_reductions = ["sum", "mean"]
             if isinstance(reductions, str):
-                assert reductions == 'sum' or reductions == 'mean'
+                assert reductions == 'sum' or reductions == 'mean',\
+                f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions}"
                 self.reductions = [reductions]*len(self.reduce_dims)
             else:
                 for j in range(len(reductions)):
-                    assert reductions[j] == 'sum' or reductions[j] == 'mean'
+                    assert reductions[j] == 'sum' or reductions[j] == 'mean',\
+                        f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions[j]}"
                 self.reductions = reductions
 
         if isinstance(L, float):
@@ -404,7 +407,7 @@ class H1Loss(object):
 
 class PointwiseQuantileLoss(object):
     def __init__(self, alpha, reduce_dims = 0, reductions='sum'):
-        """PointwiseQuantileLoss computes Quantile Loss described in [1]
+        """PointwiseQuantileLoss computes Quantile Loss described in [1]_
 
         Parameters
         ----------
@@ -419,8 +422,11 @@ class PointwiseQuantileLoss(object):
             how to apply reduction (sum or mean), by default 'sum'
 
         References
-        1. Calibrated Uncertainty Quantification for Operator Learning via Conformal Prediction
-            Ma, Z., Azizzadenesheli, K., Anandkumar, A., 2024. https://arxiv.org/html/2402.01960v1
+        -----------
+        .. _[1]:
+        Ma, Z., Azizzadenesheli, K., Anandkumar, A., (2024).
+            Calibrated Uncertainty Quantification for Operator Learning via Conformal Prediction
+            ArXiV preprint, https://arxiv.org/html/2402.01960v1
         """
         
         super().__init__()
@@ -433,12 +439,15 @@ class PointwiseQuantileLoss(object):
             self.reduce_dims = reduce_dims
 
         if self.reduce_dims is not None:
+            allowed_reductions = ["sum", "mean"]
             if isinstance(reductions, str):
-                assert reductions == 'sum' or reductions == 'mean'
+                assert reductions == 'sum' or reductions == 'mean',\
+                f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions}"
                 self.reductions = [reductions]*len(self.reduce_dims)
             else:
                 for j in range(len(reductions)):
-                    assert reductions[j] == 'sum' or reductions[j] == 'mean'
+                    assert reductions[j] == 'sum' or reductions[j] == 'mean',\
+                        f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions[j]}"
                 self.reductions = reductions
 
     def reduce_all(self, x):
@@ -461,11 +470,12 @@ class PointwiseQuantileLoss(object):
         quantile = 1 - self.alpha
         y_abs = torch.abs(y)
         diff = y_abs - y_pred
-        yscale,_ = torch.max(y_abs, dim=0)
+        yscale, _ = torch.max(y_abs, dim=0)
         yscale = yscale + eps
         ptwise_loss = torch.max(quantile * diff, -(1-quantile) * diff)
-        # scale this, above with prob 1-q it's weighed by q and q weighed by 1-q
-        ptwise_loss_scaled = ptwise_loss/2/quantile/(1-quantile)/yscale
+
+        # scale pointwise loss: with prob 1-q it's weighed by q and prob q weighed by 1-q
+        ptwise_loss_scaled = ptwise_loss / 2 / quantile / (1 - quantile) / yscale
         ptavg_loss = ptwise_loss_scaled.view(ptwise_loss_scaled.shape[0], -1).mean(1, keepdim=True)
 
         if self.reduce_dims is not None:
