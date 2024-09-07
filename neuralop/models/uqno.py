@@ -23,6 +23,7 @@ class UQNO(BaseModel, name="UQNO"):
     def __init__(self,
                  base_model: nn.Module,
                  residual_model: nn.Module=None,
+                 **kwargs
                  ):
         super().__init__()
 
@@ -45,15 +46,3 @@ class UQNO(BaseModel, name="UQNO"):
         quantile = self.residual_model(*args, **kwargs)
         return (solution, quantile)
     
-    def save_checkpoint(self, save_folder, save_name):
-        # weights of solution model are frozen
-        # save state of residual model for later
-        self.residual_model.save_checkpoint(save_folder, save_name)
-    
-    def from_checkpoint(self, save_folder, save_name):
-        self.residual_model = self.residual_model.from_checkpoint(save_folder, save_name)
-        return self
-    
-    def eval(self):
-        self.base_model.eval()
-        self.residual_model.eval()
