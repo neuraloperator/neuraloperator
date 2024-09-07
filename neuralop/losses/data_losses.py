@@ -48,12 +48,15 @@ class LpLoss(object):
             self.reduce_dims = reduce_dims
         
         if self.reduce_dims is not None:
+            allowed_reductions = ["sum", "mean"]
             if isinstance(reductions, str):
-                assert reductions == 'sum' or reductions == 'mean'
+                assert reductions == 'sum' or reductions == 'mean',\
+                f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions}"
                 self.reductions = [reductions]*len(self.reduce_dims)
             else:
                 for j in range(len(reductions)):
-                    assert reductions[j] == 'sum' or reductions[j] == 'mean'
+                    assert reductions[j] == 'sum' or reductions[j] == 'mean',\
+                        f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions[j]}"
                 self.reductions = reductions
 
         if isinstance(L, float):
@@ -391,7 +394,6 @@ class H1Loss(object):
 
     def __call__(self, y_pred, y, h=None, **kwargs):
         """
-
         Parameters
         ----------
         y_pred : torch.Tensor
@@ -402,6 +404,84 @@ class H1Loss(object):
             normalization constant for reduction, by default None
         """
         return self.rel(y_pred, y, h=h)
+
+class PointwiseQuantileLoss(object):
+    def __init__(self, alpha, reduce_dims = 0, reductions='sum'):
+        """PointwiseQuantileLoss computes Quantile Loss described in [1]_
+
+        Parameters
+        ----------
+        alpha : float
+            value, between 0 and 1, of the proportion of points
+            in the output domain expected to fall within predicted quantiles
+        reduce_dims : int, optional
+            dimensions to reduce when summing, by default 0
+            This loss was formulated for functions with a co-domain in R, 
+            so for now only 0 is supported
+        reductions : str, optional
+            how to apply reduction (sum or mean), by default 'sum'
+
+        References
+        -----------
+        .. _[1]:
+        Ma, Z., Azizzadenesheli, K., Anandkumar, A., (2024).
+            Calibrated Uncertainty Quantification for Operator Learning via Conformal Prediction
+            ArXiV preprint, https://arxiv.org/html/2402.01960v1
+        """
+        
+        super().__init__()
+
+        self.alpha = alpha
+
+        if isinstance(reduce_dims, int):
+            self.reduce_dims = [reduce_dims]
+        else:
+            self.reduce_dims = reduce_dims
+
+        if self.reduce_dims is not None:
+            allowed_reductions = ["sum", "mean"]
+            if isinstance(reductions, str):
+                assert reductions == 'sum' or reductions == 'mean',\
+                f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions}"
+                self.reductions = [reductions]*len(self.reduce_dims)
+            else:
+                for j in range(len(reductions)):
+                    assert reductions[j] == 'sum' or reductions[j] == 'mean',\
+                        f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions[j]}"
+                self.reductions = reductions
+
+    def reduce_all(self, x):
+        for j in range(len(self.reduce_dims)):
+            if self.reductions[j] == 'sum':
+                x = torch.sum(x, dim=self.reduce_dims[j], keepdim=True)
+            else:
+                x = torch.mean(x, dim=self.reduce_dims[j], keepdim=True)
+
+        return x
+
+    def __call__(self, y_pred, y, eps=1e-7, **kwargs):
+        """
+        y_pred : torch.tensor
+            predicted pointwise quantile widths
+        y : torch.tensor
+            true pointwise diffs (model pred - ytrue)
+        """
+
+        quantile = 1 - self.alpha
+        y_abs = torch.abs(y)
+        diff = y_abs - y_pred
+        yscale, _ = torch.max(y_abs, dim=0)
+        yscale = yscale + eps
+        ptwise_loss = torch.max(quantile * diff, -(1-quantile) * diff)
+
+        # scale pointwise loss: with prob 1-q it's weighed by q and prob q weighed by 1-q
+        ptwise_loss_scaled = ptwise_loss / 2 / quantile / (1 - quantile) / yscale
+        ptavg_loss = ptwise_loss_scaled.view(ptwise_loss_scaled.shape[0], -1).mean(1, keepdim=True)
+
+        if self.reduce_dims is not None:
+            loss_batch = self.reduce_all(ptavg_loss).squeeze()
+
+        return loss_batch
     
 class MSELoss(object):
     """
