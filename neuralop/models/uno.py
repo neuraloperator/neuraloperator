@@ -237,7 +237,7 @@ class UNO(nn.Module):
             self.domain_padding = DomainPadding(
                 domain_padding=domain_padding,
                 padding_mode=domain_padding_mode,
-                output_scaling_factor=self.end_to_end_scaling_factor,
+                output_scaling_factor=1,
             )
         else:
             self.domain_padding = None
