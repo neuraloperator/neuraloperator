@@ -40,10 +40,10 @@ class GNOBlock(nn.Module):
         dimension of domain on which x and y are defined
     radius : float
         radius in which to search for neighbors
-    sinusoidal_coord_embed_dim : int, optional
-        number of channels per coordinate channel for sinusoidal positional encoding
-    sinusoidal_embed_max_positions : int, optional
-        number of max positions in sinusoidal embeddings
+    pos_embedding : nn.Module, optional
+        positional embedding module to apply before passing
+        inputs and queries to the IntegralTransform layer
+        default None
     channel_mlp : nn.Module, optional
         ChannelMLP parametrizing the kernel k. Input dimension
         should be dim x + dim y or dim x + dim y + dim f.
@@ -118,8 +118,11 @@ class GNOBlock(nn.Module):
             if isinstance(self.pos_embedding, SinusoidalEmbedding2D):
                 kernel_in_dim *= self.pos_embedding.out_channels
             # Grid pos_embedding channels are added to the end of inputs
-            elif isinstance(self.pos_embedding, GridEmbedding2D) or isinstance(self.pos, GridEmbeddingND):
+            elif isinstance(self.pos_embedding, GridEmbedding2D) or isinstance(self.pos_embedding, GridEmbeddingND):
                 kernel_in_dim += self.pos_embedding.out_channels
+            else:
+                raise ValueError(f"Error: module {self.pos_embedding}  not currently supported. \
+                                 GNO positional embedding currently supports modules in neuralop.layers.embeddings.")
             
             kernel_in_dim_str = "dim(y_embed) + dim(x_embed)"
 
