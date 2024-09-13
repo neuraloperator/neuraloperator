@@ -1,9 +1,20 @@
+from abc import ABC, abstractmethod
 from typing import List
 
 import torch
 from torch import nn
 
-class GridEmbedding2D(nn.Module):
+
+class Embedding(nn.Module, ABC):
+    def __init__(self):
+        super().__init__()
+    
+    @property
+    @abstractmethod
+    def out_channels(self, in_channels):
+        pass
+
+class GridEmbedding2D(Embedding):
     """A simple positional embedding as a regular 2D grid
     """
     def __init__(self, grid_boundaries=[[0, 1], [0, 1]]):
@@ -65,7 +76,7 @@ class GridEmbedding2D(nn.Module):
         else:
             return out
 
-class GridEmbeddingND(nn.Module):
+class GridEmbeddingND(Embedding):
     """A positional embedding as a regular ND grid
     """
     def __init__(self, dim: int=2, grid_boundaries=[[0, 1], [0, 1]]):
@@ -137,10 +148,86 @@ class GridEmbeddingND(nn.Module):
         out =  torch.cat((data, *grids),
                          dim=1)
         return out
+
+class NeRFEmbedding(Embedding):
+    """NeRFEmbedding 
+
+    Each input channel value p is embedded via a function g 
+        with 2L channels such that g(p) is a 2L-dim vector:
+            g(p)_k = sin(2^(k) * Pi * p) if i is odd
+                   = cos(2^(k) * Pi * p) if i is even
+    Parameters
+    ----------
+    nn : _type_
+        _description_
+    """
+    def __init__(self, num_frequencies):
+        super().__init__()
+        self.num_frequencies = num_frequencies
     
-class SinusoidalEmbedding2D(nn.Module):
+    @property
+    def out_channels(self, channels):
+        return 2 * self.num_frequencies * channels
+
+    def forward(self, x):
+        """
+        x: torch.Tensor, shape (n_in, out_channels)
+        
+        """
+        assert x.ndim in [2,3], f"Error: expected inputs of shape (batch, n_in, channels)\
+            or (n_in, channels), got inputs with ndim=={x.ndim}, shape={x.shape}"
+        if x.ndim == 2:
+            batched = False
+            x = x.unsqueeze(0)
+        else:
+            batched = True
+        batch_size, n_in, in_channels = x.shape
+
+        #x = x.view(batch_size, -1) # unroll x for easy outer prod
+        print(f"unroll {x.shape=}")
+        freqs = 2 ** torch.arange(0, self.num_frequencies) * torch.pi
+        #freqs = freqs.repeat(in_channels) # repeat for channels
+        print(f"{freqs.shape=}")
+
+        # shape b, n_in * channels, len(freqs)
+        freqs = torch.einsum('bij, k -> bijk', x, freqs)
+        ##print(f"{freqs=}")
+        print(f"After outer {freqs.shape=}")
+
+        # shape len(x), 2, len(freqs)
+        freqs = torch.stack((freqs.sin(),freqs.cos()), dim=-1)
+        #freqs = torch.stack((freqs,freqs*0.33333), dim=-1)
+        print(f"After stack {freqs.shape=}")
+        print(freqs)
+
+        # transpose the inner per-entry matrix and ravel to interleave sin and cos
+        freqs = freqs.view(batch_size, n_in, in_channels, -1)
+        print(f"{freqs.shape=}")
+        #print(f"{freqs=}")
+        # end result is (sin(2^0 * pi * 0), cos(2^0 * pi * 0), ...cos(2^k * pi * k))
+
+        # known correct for unbatched:
+        '''
+        freqs = 2 ** torch.arange(0, self.num_frequencies) * torch.pi
+        #freqs = freqs.repeat(in_channels) # repeat for channels
+
+        # shape len(x), len(freqs)
+        freqs = torch.outer(x, freqs.to(x.dtype))
+
+        # shape len(x), 2, len(freqs)
+        freqs = torch.stack((freqs.sin(),freqs.cos()), dim=1)
+        
+        # transpose the inner per-entry matrix and ravel to interleave sin and cos
+        freqs = freqs.transpose(1,2).contiguous().view(freqs.shape[0], -1)
+        # end result is (sin(2^0 * pi * 0), cos(2^0 * pi * 0), ...cos(2^k * pi * k))'''
+        if not batched:
+            freqs = freqs.squeeze(0)
+        return freqs
+    
+class TransformerSinusoidalEmbedding(Embedding):
     def __init__(self, num_channels, max_positions=10000, endpoint=False):
-        """SinusoidalEmbedding2D applies a 2d sinusoidal positional encoding 
+        """TransformerSinusoidalEmbedding applies a sinusoidal positional encoding 
+        to inputs:
 
         Parameters
         ----------
