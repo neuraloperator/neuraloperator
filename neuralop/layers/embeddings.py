@@ -201,7 +201,7 @@ class NeRFEmbedding(Embedding):
         print(freqs)
 
         # transpose the inner per-entry matrix and ravel to interleave sin and cos
-        freqs = freqs.view(batch_size, n_in, in_channels, -1)
+        freqs = freqs.view(batch_size, n_in, -1)
         print(f"{freqs.shape=}")
         #print(f"{freqs=}")
         # end result is (sin(2^0 * pi * 0), cos(2^0 * pi * 0), ...cos(2^k * pi * k))
