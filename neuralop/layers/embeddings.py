@@ -9,7 +9,6 @@ class Embedding(nn.Module, ABC):
     def __init__(self):
         super().__init__()
     
-    @property
     @abstractmethod
     def out_channels(self, in_channels):
         pass
@@ -30,6 +29,9 @@ class GridEmbedding2D(Embedding):
         self.grid_boundaries = grid_boundaries
         self._grid = None
         self._res = None
+    
+    def out_channels(self, in_channels):
+        return 2 + in_channels
 
     def grid(self, spatial_dims, device, dtype):
         """grid generates 2D grid needed for pos encoding
@@ -97,6 +99,9 @@ class GridEmbeddingND(Embedding):
         self.grid_boundaries = grid_boundaries
         self._grid = None
         self._res = None
+    
+    def out_channels(self, in_channels):
+        return self.dim + in_channels
 
     def grid(self, spatial_dims: torch.Size, device: str, dtype: torch.dtype):
         """grid generates ND grid needed for pos encoding
@@ -165,7 +170,6 @@ class NeRFEmbedding(Embedding):
         super().__init__()
         self.num_frequencies = num_frequencies
     
-    @property
     def out_channels(self, channels):
         return 2 * self.num_frequencies * channels
 
@@ -217,6 +221,9 @@ class TransformerSinusoidalEmbedding(Embedding):
         self.num_channels = num_channels
         self.max_positions = max_positions
         self.endpoint = endpoint
+    
+    def out_channels(self, in_channels):
+        return self.num_channels * in_channels * 2
 
     def forward(self, x):
         freqs = torch.arange(
