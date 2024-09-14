@@ -155,16 +155,20 @@ class GridEmbeddingND(Embedding):
         return out
 
 class NeRFEmbedding(Embedding):
-    """NeRFEmbedding 
+    """NeRFEmbedding implements the positional encoding from [1]_. 
 
     Each input channel value p is embedded via a function g 
         with 2L channels such that g(p) is a 2L-dim vector:
             g(p)_k = sin(2^(k) * Pi * p) if i is odd
                    = cos(2^(k) * Pi * p) if i is even
-    Parameters
-    ----------
-    nn : _type_
-        _description_
+    References
+    -----------
+    
+    .. _[1]: 
+    
+    Mildenhall, B. et al (2020). 
+        "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis".
+        ArXiv, https://arxiv.org/pdf/2003.08934. 
     """
     def __init__(self, num_frequencies):
         super().__init__()
