@@ -181,45 +181,20 @@ class NeRFEmbedding(Embedding):
             x = x.unsqueeze(0)
         else:
             batched = True
-        batch_size, n_in, in_channels = x.shape
+        batch_size, n_in, _ = x.shape
 
-        #x = x.view(batch_size, -1) # unroll x for easy outer prod
-        print(f"unroll {x.shape=}")
         freqs = 2 ** torch.arange(0, self.num_frequencies) * torch.pi
-        #freqs = freqs.repeat(in_channels) # repeat for channels
-        print(f"{freqs.shape=}")
 
         # shape b, n_in * channels, len(freqs)
         freqs = torch.einsum('bij, k -> bijk', x, freqs)
-        ##print(f"{freqs=}")
-        print(f"After outer {freqs.shape=}")
 
         # shape len(x), 2, len(freqs)
         freqs = torch.stack((freqs.sin(),freqs.cos()), dim=-1)
-        #freqs = torch.stack((freqs,freqs*0.33333), dim=-1)
-        print(f"After stack {freqs.shape=}")
-        print(freqs)
 
         # transpose the inner per-entry matrix and ravel to interleave sin and cos
         freqs = freqs.view(batch_size, n_in, -1)
-        print(f"{freqs.shape=}")
-        #print(f"{freqs=}")
         # end result is (sin(2^0 * pi * 0), cos(2^0 * pi * 0), ...cos(2^k * pi * k))
-
-        # known correct for unbatched:
-        '''
-        freqs = 2 ** torch.arange(0, self.num_frequencies) * torch.pi
-        #freqs = freqs.repeat(in_channels) # repeat for channels
-
-        # shape len(x), len(freqs)
-        freqs = torch.outer(x, freqs.to(x.dtype))
-
-        # shape len(x), 2, len(freqs)
-        freqs = torch.stack((freqs.sin(),freqs.cos()), dim=1)
         
-        # transpose the inner per-entry matrix and ravel to interleave sin and cos
-        freqs = freqs.transpose(1,2).contiguous().view(freqs.shape[0], -1)
-        # end result is (sin(2^0 * pi * 0), cos(2^0 * pi * 0), ...cos(2^k * pi * k))'''
         if not batched:
             freqs = freqs.squeeze(0)
         return freqs
