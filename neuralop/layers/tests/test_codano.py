@@ -1,7 +1,6 @@
 import pytest
 import torch
-from ..fno_block import FNOBlocks
-from ..codano import *
+from ..codano import TnoBlock2d
 from ..spectral_convolution import *
 
 
