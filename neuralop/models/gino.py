@@ -7,7 +7,7 @@ from torch import nn
 
 
 from ..layers.channel_mlp import ChannelMLP
-from ..layers.embeddings import SinusoidalEmbedding2D
+from ..layers.embeddings import TransformerSinusoidalEmbedding
 from ..layers.fno_block import FNOBlocks
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.integral_transform import IntegralTransform
@@ -189,7 +189,7 @@ class GINO(nn.Module):
 
         if fno_norm == "ada_in":
             if fno_ada_in_features is not None:
-                self.adain_pos_embed = SinusoidalEmbedding2D(fno_ada_in_features, 
+                self.adain_pos_embed = TransformerSinusoidalEmbedding(fno_ada_in_features, 
                                                            max_positions=gno_embed_max_positions)
                 self.ada_in_dim = fno_ada_in_dim*fno_ada_in_features
             else:
@@ -242,7 +242,7 @@ class GINO(nn.Module):
         self.out_gno_tanh = out_gno_tanh
 
         if gno_coord_embed_dim is not None:
-            self.pos_embed = SinusoidalEmbedding2D(gno_coord_embed_dim, 
+            self.pos_embed = TransformerSinusoidalEmbedding(gno_coord_embed_dim, 
                                                  max_positions=gno_embed_max_positions)
             self.gno_coord_dim_embed = self.gno_out_coord_dim*gno_coord_embed_dim # gno input and output may use separate dims
         else:

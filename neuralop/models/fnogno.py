@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from .base_model import BaseModel
 
 from ..layers.channel_mlp import ChannelMLP
-from ..layers.embeddings import SinusoidalEmbedding2D
+from ..layers.embeddings import TransformerSinusoidalEmbedding
 from ..layers.fno_block import FNOBlocks
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.integral_transform import IntegralTransform
@@ -180,7 +180,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
 
         if fno_norm == "ada_in":
             if fno_ada_in_features is not None:
-                self.adain_pos_embed = SinusoidalEmbedding2D(fno_ada_in_features)
+                self.adain_pos_embed = TransformerSinusoidalEmbedding(fno_ada_in_features)
                 self.ada_in_dim = fno_ada_in_dim * fno_ada_in_features
             else:
                 self.ada_in_dim = fno_ada_in_dim
@@ -232,7 +232,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         self.gno_radius = gno_radius
 
         if gno_coord_embed_dim is not None:
-            self.pos_embed = SinusoidalEmbedding2D(gno_coord_embed_dim)
+            self.pos_embed = TransformerSinusoidalEmbedding(gno_coord_embed_dim)
             self.gno_coord_dim_embed = gno_coord_dim * gno_coord_embed_dim
         else:
             self.pos_embed = None
