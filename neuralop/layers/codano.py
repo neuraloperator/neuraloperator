@@ -15,7 +15,41 @@ AffineNormalizer3D = partial(nn.InstanceNorm3d, affine=True)
 
 # Codomain Attention Blocks
 
+
 class CODABlocks(nn.Module):
+    """ Class for the Co-domain Attention Blocks (CODABlocks)
+
+    Args:
+        n_modes (list): Number of modes for each dimension  used in K,Q,V operator.
+        n_head (int): Number of heads for the attention mechanism.
+        token_codimension (int): Co-dimension of each variable or number of channels associated with each variables.
+        output_scaling_factor (float): Scaling factor for the output.
+        incremental_n_modes (list): Incremental number of modes for each dimension (for incremental training).
+        head_codimension (int): Co-dimension of each of output token for each head.
+
+        # config for FNO_blocks used as K,Q,V operator
+        use_channel_mlp (bool): whether to use mlp layers to parameterize skip connections, by default False
+        non_linearity (callable): Non-linearity function to be used.
+        preactivation (bool): whether to use preactivation, by default False.
+        fno_skip (str): Type of skip connection to be used, by default 'linear'.
+        mlp_skip (str):  module to use for ChannelMLP skip connections, by default "soft-gating".
+        channel_mlp_expansion (float): expansion parameter for self.channel_mlp, by default 0.5.
+        separable (bool): whether to use separable convolutions, by default False.
+        factorization (str): Type of factorization to be used, by default 'tucker'.
+        rank (float): Rank of the factorization, by default 1.0.
+        SpectralConvolution (callable): Spectral convolution module to be used.
+        joint_factorization (bool): whether to factorize all spectralConv weights as one tensor, by default False
+
+        # Normalization
+        Normalizer (callable): Normalization module to be used.
+
+        codimension_size (int): Size of the codimension for whole function, only used for permutation_eq = False.
+        per_channel_attention (bool): whether to use per channel attention, by default True (overwrite token_codimension to 1).
+        permutation_eq (bool): whether to use permutation equivariant mixer layer  after attention mechanism.
+        temperature (float): Temperature parameter for attention mechanism.
+        kqv_non_linear (bool): whether to use non-linear activation for K,Q,V operator.
+    """
+
     def __init__(
         self,
         n_modes,
@@ -24,13 +58,12 @@ class CODABlocks(nn.Module):
         output_scaling_factor=None,
         incremental_n_modes=None,
         head_codimension=None,
-        use_mlp=False,
-        mlp=None,
+        use_channel_mlp=False,
         non_linearity=F.gelu,
         preactivation=False,
         fno_skip='linear',
-        mlp_skip='soft-gating',
-        mlp_expansion=1.0,
+        channel_mlp_skip='soft-gating',
+        channel_mlp_expansion=1.0,
         separable=False,
         factorization='tucker',
         rank=1.0,
@@ -46,7 +79,6 @@ class CODABlocks(nn.Module):
         permutation_eq=True,
         temperature=1.0,
         kqv_non_linear=False,
-        logger=None,
         **_kwargs,
     ):
         super().__init__()
@@ -62,11 +94,6 @@ class CODABlocks(nn.Module):
         self.n_head = n_head  # number of heads
         self.output_scaling_factor = output_scaling_factor
         self.temperature = temperature
-
-        if logger is None:
-            logger = logging.getLogger()
-        self.logger = logger
-
 
         # K,Q,V operator with or without non_lin
 
@@ -95,33 +122,17 @@ class CODABlocks(nn.Module):
 
         mixer_modes = [i // scale for i in n_modes]
 
-        self.logger.debug(
-            f"\n {rank=}"
-            f"\n {factorization=}"
-            f"\n {self.head_codimension=}"
-            f"\n {scale=}"
-            f"\n {mixer_modes=}"
-        )
-
-        if not per_channel_attention:
-            self.logger.debug(
-                f"\n {self.token_codimension=}"
-                f"\n {self.n_head=}"
-                f"\n {self.head_codimension=}"
-            )
-
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
         common_args = dict(
-            use_mlp=use_mlp,
-            mlp=mlp,
+            use_channel_mlp=use_channel_mlp,
             preactivation=preactivation,
-            mlp_skip=mlp_skip,
+            channel_mlp_skip=channel_mlp_skip,
             mlp_dropout=0,
             incremental_n_modes=incremental_n_modes,
             rank=rank,
             fft_norm=fft_norm,
-            mlp_expansion=mlp_expansion,
+            channel_mlp_expansion=channel_mlp_expansion,
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
             separable=separable,
@@ -193,10 +204,6 @@ class CODABlocks(nn.Module):
         # operator per variable or applying the operator on the whole channel
         # (like regular FNO).
         if permutation_eq:
-            logger.debug(
-                f"\n {permutation_eq=}"
-                f"\n {self.mixer_token_codimension=}"
-            )
             self.mixer = FNOBlocks(
                 in_channels=self.mixer_token_codimension,
                 out_channels=self.mixer_token_codimension,
@@ -297,7 +304,7 @@ class CODABlocks2D(CODABlocks):
         if self.proj is not None:
             attention = self.proj(attention)
 
-        attention = self.attention_normalizer(attention+xa)
+        attention = self.attention_normalizer(attention + xa)
         attention = rearrange(
             attention, '(b t) d h w -> b (t d) h w', b=batch_size)
         # print("{attention.shape=}")
@@ -360,7 +367,6 @@ class CODABlocks3D(CODABlocks):
         k = self.K(xa)
         q = self.Q(xa)
         v = self.V(xa)
-        # self.logger.(f"{v.shape=}")
 
         v_duration, v_height, v_width = v.shape[-3:]
 
@@ -378,7 +384,6 @@ class CODABlocks3D(CODABlocks):
         dprod = (torch.matmul(q, k.transpose(-1, -2)) /
                  (self.temperature * np.sqrt(k.shape[-1])))
         dprod = F.softmax(dprod, dim=-1)
-        # self.logger.debug(f"{dprod.shape=}")
 
         attention = torch.matmul(dprod, v)
         attention = rearrange(
@@ -418,18 +423,15 @@ class CODABlocks3D(CODABlocks):
             '(b k) d t h w -> b (k d) t h w',
             b=batch_size,
         )
-        # self.logger.debug(f"{attention.shape=}")
         attention = rearrange(
             attention,
             'b (k d) t h w -> (b k) d t h w',
             d=self.mixer_token_codimension)
-        # self.logger.debug(f"{attention.shape=}")
 
         attention_normalized = self.norm2(attention)
         output = self.mixer(attention_normalized, output_shape=output_shape)
 
         output = self.mixer_out_normalizer(output) + attention
-        # self.logger.debug(f"{output.shape=}")
         output = rearrange(
             output, '(b k) d t h w -> b (k d) t h w', b=batch_size)
 

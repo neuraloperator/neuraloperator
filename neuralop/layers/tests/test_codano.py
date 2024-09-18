@@ -4,31 +4,31 @@ from ..codano import CODABlocks2D, CODABlocks3D
 from ..spectral_convolution import *
 
 
-@pytest.mark.parametrize('token_codimension', 
-                         [1,2,5])
+@pytest.mark.parametrize('token_codimension',
+                         [1, 2, 5])
 def test_Codano(token_codimension):
     """
-    Test CoDA-NO layers 
+    Test CoDA-NO layers
     """
     n_modes_2D = [100, 100]
     n_modes_3D = [100, 100, 100]
-    n_head=3
-    token_codimension=2
-    output_scaling_factor=None
-    incremental_n_modes=None
-    head_codimension=1
-    SpectralConvolution=SpectralConv
-    Normalizer=None
-    joint_factorization=False
-    fixed_rank_modes=False
-    implementation='factorized'
-    decomposition_kwargs=None
-    fft_norm='forward'
-    codimension_size=None
-    per_channel_attention=True
-    permutation_eq=True
-    temperature=1.0
-    kqv_non_linear=False
+    n_head = 3
+    token_codimension = 2
+    output_scaling_factor = None
+    incremental_n_modes = None
+    head_codimension = 1
+    SpectralConvolution = SpectralConv
+    Normalizer = None
+    joint_factorization = False
+    fixed_rank_modes = False
+    implementation = 'factorized'
+    decomposition_kwargs = None
+    fft_norm = 'forward'
+    codimension_size = None
+    per_channel_attention = True
+    permutation_eq = True
+    temperature = 1.0
+    kqv_non_linear = False
 
     layer = CODABlocks2D(
         n_modes=n_modes_2D,
@@ -83,5 +83,3 @@ def test_Codano(token_codimension):
     out = layer(x)
 
     assert out.shape == x.shape
-    
-    
