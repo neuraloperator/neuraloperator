@@ -133,5 +133,7 @@ plt.imshow(out_equi.squeeze().detach(), cmap=cmap)
 plt.colorbar()
 plt.show()
 
-print(out_equi.shape)
 # %%
+
+plt.figure(figsize=(4,6), )
+plt.imshow(conv_equi.get_psi()[0].detach(), cmap=cmap)
