@@ -10,12 +10,8 @@ from .fno_block import FNOBlocks
 from .spectral_convolution import SpectralConv1d, SpectralConv2d, SpectralConv3d
 
 
-AffineNormalizer2D = partial(nn.InstanceNorm2d, affine=True)
-AffineNormalizer3D = partial(nn.InstanceNorm3d, affine=True)
 
 # Codomain Attention Blocks
-
-
 class CODABlocks(nn.Module):
     """ Class for the Co-domain Attention Blocks (CODABlocks)
 
@@ -103,10 +99,6 @@ class CODABlocks(nn.Module):
             kqv_activation = torch.nn.Identity()
 
         self.permutation_eq = permutation_eq
-
-        # if self.n_head is not None:
-        #     # recalculating the value of `head_codim`
-        #     self.head_codimension = max(token_codimension // self.n_head, 1)
 
         self.codimension_size = codimension_size
         self.mixer_token_codimension = token_codimension
@@ -238,7 +230,7 @@ class CODABlocks2D(CODABlocks):
     def __init__(self, *args, **kwargs):
         Normalizer = kwargs.get("Normalizer")
         if Normalizer is None:
-            Normalizer = AffineNormalizer2D
+            Normalizer = partial(nn.InstanceNorm2d, affine=True)
         kwargs["Normalizer"] = Normalizer
 
         Convolution = kwargs.get("SpectralConvolution")
@@ -276,15 +268,14 @@ class CODABlocks2D(CODABlocks):
         attention = torch.matmul(dprod, v)
         attention = rearrange(
             attention,
-            'b a t (d h w) -> b t a d h w',
+            'b a t (d h w) -> (b t) (a d) h w',
             d=self.head_codimension,
             h=value_x,
             w=value_y,
         )
-        attention = rearrange(attention, 'b t a d h w -> (b t) (a d) h w')
         return attention
 
-    def forward(self, x, output_shape=None):
+    def forward(self, x):
         if self.permutation_eq:
             return self._forward_equivariant(x)
         else:
@@ -349,7 +340,7 @@ class CODABlocks3D(CODABlocks):
     def __init__(self, *args, **kwargs):
         Normalizer = kwargs.get("Normalizer")
         if Normalizer is None:
-            Normalizer = AffineNormalizer3D
+            Normalizer = partial(nn.InstanceNorm3d, affine=True)
         kwargs["Normalizer"] = Normalizer
 
         Convolution = kwargs.get("SpectralConvolution")
@@ -388,16 +379,15 @@ class CODABlocks3D(CODABlocks):
         attention = torch.matmul(dprod, v)
         attention = rearrange(
             attention,
-            'b a k (d t h w) -> b k a d t h w',
+            'b a k (d t h w) -> (b k) (a d) t h w',
             d=self.head_codimension,
             t=v_duration,
             h=v_height,
             w=v_width,
         )
-        attention = rearrange(attention, 'b k a d t h w -> (b k) (a d) t h w')
         return attention
 
-    def forward(self, x, output_shape=None):
+    def forward(self, x):
         if self.permutation_eq:
             return self._forward_equivariant(x)
         else:
