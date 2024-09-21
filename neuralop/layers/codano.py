@@ -2,13 +2,11 @@ from functools import partial
 import logging
 import numpy as np
 import torch
-from einops import rearrange
 import torch
 from torch import nn
 import torch.nn.functional as F
 from .fno_block import FNOBlocks
 from .spectral_convolution import SpectralConv1d, SpectralConv2d, SpectralConv3d
-
 
 
 # Codomain Attention Blocks
@@ -252,27 +250,51 @@ class CODABlocks2D(CODABlocks):
 
         value_x, value_y = v.shape[-2], v.shape[-1]
 
-        rearrangement = dict(
-            pattern='(b t) (a d) h w -> b a t (d h w)',
-            b=batch_size,
-            a=self.n_head,
-        )
-        k = rearrange(k, **rearrangement)
-        q = rearrange(q, **rearrangement)
-        v = rearrange(v, **rearrangement)
+        t = k.size(0) // batch_size  # Compute the time dimension `t`
+        d = k.size(1) // self.n_head  # Compute the dimension `d`
+
+        k = k.view(batch_size, t, self.n_head, d, k.size(-2),
+                   k.size(-1))
+        q = q.view(batch_size, t, self.n_head, d, q.size(-2),
+                   q.size(-1))
+        v = v.view(batch_size, t, self.n_head, d, v.size(-2),
+                   v.size(-1))
+        k = k.permute(0, 2, 1, 3, 4, 5).contiguous()
+        q = q.permute(0, 2, 1, 3, 4, 5).contiguous()
+        v = v.permute(0, 2, 1, 3, 4, 5).contiguous()
+
+        k = k.view(batch_size, self.n_head, t, d * k.size(-2)
+                   * k.size(-1))
+        q = q.view(batch_size, self.n_head, t, d * q.size(-2)
+                   * q.size(-1))
+        v = v.view(batch_size, self.n_head, t, d * v.size(-2)
+                   * v.size(-1))
 
         dprod = (torch.matmul(q, k.transpose(-1, -2)) /
                  (np.sqrt(k.shape[-1]) * self.temperature))
         dprod = F.softmax(dprod, dim=-1)
 
         attention = torch.matmul(dprod, v)
-        attention = rearrange(
-            attention,
-            'b a t (d h w) -> (b t) (a d) h w',
-            d=self.head_codimension,
-            h=value_x,
-            w=value_y,
-        )
+
+        # Reshape from (b, a, t, d * h * w) to (b, a, t, d, h, w)
+        attention = attention.view(
+            attention.size(0),
+            attention.size(1),
+            attention.size(2),
+            self.head_codimension,
+            value_x,
+            value_y)
+
+        # Permute the dimensions to rearrange into (b * t, a * d, h, w)
+        attention = attention.permute(
+            0, 2, 1, 3, 4, 5).contiguous()  # (b, t, a, d, h, w)
+
+        # Reshape to flatten the first and second dimensions (b * t) and the
+        # third and fourth dimensions (a * d)
+        attention = attention.view(attention.size(0) * attention.size(1),
+                                   attention.size(2) * attention.size(3),
+                                   value_x, value_y)  # (b * t, a * d, h, w)
+
         return attention
 
     def forward(self, x):
@@ -287,30 +309,45 @@ class CODABlocks2D(CODABlocks):
 
         assert x.shape[1] % self.token_codimension == 0
 
-        xa = rearrange(x, 'b (t d) h w -> (b t) d h w',
-                       d=self.token_codimension)
-        xa_norm = self.norm1(xa)
+        # reshape 'b (t d) h w -> (b t) d h w'
+        t = x.size(1) // self.token_codimension
+        xa = x.view(
+            x.size(0),
+            t,
+            self.token_codimension,
+            x.size(2),
+            x.size(3))  # (b, t, d, h, w)
 
+        xa = xa.permute(0, 1, 2, 3, 4).contiguous()
+        xa = xa.view(
+            x.size(0) * t,
+            self.token_codimension,
+            x.size(2),
+            x.size(3))  # (b * t, d, h, w)
+        xa_norm = self.norm1(xa)
         attention = self.compute_attention(xa_norm, batch_size)
         if self.proj is not None:
             attention = self.proj(attention)
 
         attention = self.attention_normalizer(attention + xa)
-        attention = rearrange(
-            attention, '(b t) d h w -> b (t d) h w', b=batch_size)
-        # print("{attention.shape=}")
-        attention = rearrange(
-            attention,
-            'b (t d) h w -> (b t) d h w',
-            d=self.mixer_token_codimension)
-        # print("{attention.shape=}")
-
         attention_normalized = self.norm2(attention)
         output = self.mixer(attention_normalized, output_shape=output_shape)
 
         output = self.mixer_out_normalizer(output) + attention
-        # print(f"{output.shape=}")
-        output = rearrange(output, '(b t) d h w -> b (t d) h w', b=batch_size)
+
+        # reshaped '(b t) d h w -> b (t d) h w'
+        t = output.size(0) // batch_size
+        output = output.view(
+            batch_size,
+            t,
+            output.size(1),
+            output.size(2),
+            output.size(3))
+        output = output.view(
+            batch_size,
+            t * output.size(2),
+            output.size(3),
+            output.size(4))
 
         return output
 
@@ -321,15 +358,34 @@ class CODABlocks2D(CODABlocks):
         assert x.shape[1] % self.token_codimension == 0
 
         x_norm = self.norm1(x)
-        xa = rearrange(x_norm, 'b (t d) h w -> (b t) d h w',
-                       d=self.token_codimension)
+        # Compute time dimension t
+        t = x_norm.size(1) // self.token_codimension
+        xa = x_norm.view(
+            x_norm.size(0),
+            t,
+            self.token_codimension,
+            x_norm.size(2),
+            x_norm.size(3))  # (b, t, d, h, w)
+        xa = xa.view(
+            x_norm.size(0) * t,
+            self.token_codimension,
+            x_norm.size(2),
+            x_norm.size(3))  # (b * t, d, h, w)
 
         attention = self.compute_attention(xa, batch_size)
         if self.proj is not None:
             attention = self.proj(attention)
 
-        attention = rearrange(
-            attention, '(b t) d h w -> b (t d) h w', b=batch_size)
+        # (b t) d h w -> b (t d) h w
+        t = attention.size(0) // batch_size  # Compute the time dimension `t`
+        attention = attention.view(batch_size, t, attention.size(
+            1), attention.size(2), attention.size(3))  # (b, t, d, h, w)
+        attention = attention.view(
+            batch_size,
+            t * attention.size(2),
+            attention.size(3),
+            attention.size(4))  # (b, t * d, h, w)
+
         attention_normalized = self.norm2(attention)
         output = self.mixer(attention_normalized, output_shape=output_shape)
 
@@ -361,30 +417,87 @@ class CODABlocks3D(CODABlocks):
 
         v_duration, v_height, v_width = v.shape[-3:]
 
-        rearrangement = dict(
-            # index `k` counts the number of variables.
-            # index `d` becomes the variable embedding dimensionality per head.
-            pattern='(b k) (a d) t h w -> b a k (d t h w)',
-            b=batch_size,
-            a=self.n_head,
-        )
-        k = rearrange(k, **rearrangement)
-        q = rearrange(q, **rearrangement)
-        v = rearrange(v, **rearrangement)
+        # (b k) (a d) t h w -> b a k (d t h w)
+        k_size = k.size(0) // batch_size
+        d_size = k.size(1) // self.n_head
+        k = k.view(
+            batch_size,
+            k_size,
+            self.n_head,
+            d_size,
+            k.size(2),
+            k.size(3),
+            k.size(4))  # (b, k, a, d, t, h, w)
+        q = q.view(
+            batch_size,
+            k_size,
+            self.n_head,
+            d_size,
+            q.size(2),
+            q.size(3),
+            q.size(4))  # (b, k, a, d, t, h, w)
+        v = v.view(
+            batch_size,
+            k_size,
+            self.n_head,
+            d_size,
+            v.size(2),
+            v.size(3),
+            v.size(4))  # (b, k, a, d, t, h, w)
+        k = k.permute(0, 2, 1, 3, 4, 5, 6).contiguous()
+        q = q.permute(0, 2, 1, 3, 4, 5, 6).contiguous()
+        v = v.permute(0, 2, 1, 3, 4, 5, 6).contiguous()
+        k = k.view(
+            batch_size,
+            self.n_head,
+            k_size,
+            d_size *
+            k.size(4) *
+            k.size(5) *
+            k.size(6))  # (b, a, k, d * t * h * w)
+        q = q.view(
+            batch_size,
+            self.n_head,
+            k_size,
+            d_size *
+            q.size(4) *
+            q.size(5) *
+            q.size(6))  # (b, a, k, d * t * h * w)
+        v = v.view(
+            batch_size,
+            self.n_head,
+            k_size,
+            d_size *
+            v.size(4) *
+            v.size(5) *
+            v.size(6))  # (b, a, k, d * t * h * w)
 
         dprod = (torch.matmul(q, k.transpose(-1, -2)) /
                  (self.temperature * np.sqrt(k.shape[-1])))
         dprod = F.softmax(dprod, dim=-1)
 
         attention = torch.matmul(dprod, v)
-        attention = rearrange(
-            attention,
-            'b a k (d t h w) -> (b k) (a d) t h w',
-            d=self.head_codimension,
-            t=v_duration,
-            h=v_height,
-            w=v_width,
+
+        # 'b a k (d t h w) -> (b k) (a d) t h w',
+        attention = attention.view(
+            attention.size(0),  # b
+            attention.size(1),  # a
+            attention.size(2),  # k
+            self.head_codimension,  # d
+            v_duration,          # t
+            v_height,            # h
+            v_width              # w
         )
+        attention = attention.permute(
+            0, 2, 1, 3, 4, 5, 6).contiguous()  # (b, k, a, d, t, h, w)
+        attention = attention.view(
+            attention.size(0) * attention.size(1),  # (b * k)
+            attention.size(2) * attention.size(3),  # (a * d)
+            attention.size(4),                      # t
+            attention.size(5),                      # h
+            attention.size(6)                       # w
+        )
+
         return attention
 
     def forward(self, x):
@@ -399,8 +512,23 @@ class CODABlocks3D(CODABlocks):
 
         assert x.shape[1] % self.token_codimension == 0
 
-        xa = rearrange(x, 'b (k d) t h w -> (b k) d t h w',
-                       d=self.token_codimension)
+        # 'b (k d) t h w -> (b k) d t h w'
+        k_size = x.size(1) // self.token_codimension
+        xa = x.view(
+            x.size(0),
+            k_size,
+            self.token_codimension,
+            x.size(2),
+            x.size(3),
+            x.size(4))
+        xa = xa.permute(0, 1, 2, 3, 4, 5).contiguous()
+        xa = xa.view(
+            x.size(0) * k_size,
+            self.token_codimension,
+            x.size(2),
+            x.size(3),
+            x.size(4))
+
         xa_norm = self.norm1(xa)
 
         attention = self.compute_attention(xa_norm, batch_size)
@@ -408,22 +536,25 @@ class CODABlocks3D(CODABlocks):
             attention = self.proj(attention)
 
         attention = self.attention_normalizer(attention + xa)
-        attention = rearrange(
-            attention,
-            '(b k) d t h w -> b (k d) t h w',
-            b=batch_size,
-        )
-        attention = rearrange(
-            attention,
-            'b (k d) t h w -> (b k) d t h w',
-            d=self.mixer_token_codimension)
-
         attention_normalized = self.norm2(attention)
         output = self.mixer(attention_normalized, output_shape=output_shape)
 
         output = self.mixer_out_normalizer(output) + attention
-        output = rearrange(
-            output, '(b k) d t h w -> b (k d) t h w', b=batch_size)
+        # '(b k) d t h w -> b (k d) t h w'
+        k_size = output.size(0) // batch_size
+        output = output.view(
+            batch_size,
+            k_size,
+            output.size(1),
+            output.size(2),
+            output.size(3),
+            output.size(4))  # (b, k, d, t, h, w)
+        output = output.view(
+            batch_size,
+            k_size * output.size(2),
+            output.size(3),
+            output.size(4),
+            output.size(5))  # (b, k * d, t, h, w)
 
         return output
 
@@ -434,18 +565,42 @@ class CODABlocks3D(CODABlocks):
         assert x.shape[1] % self.token_codimension == 0
 
         x_norm = self.norm1(x)
-        xa = rearrange(x_norm, 'b (k d) t h w -> (b k) d t h w',
-                       d=self.token_codimension)
+        # 'b (k d) t h w -> (b k) d t h w'
+        k_size = x_norm.size(1) // self.token_codimension
+        xa = x_norm.view(
+            x_norm.size(0),
+            k_size,
+            self.token_codimension,
+            x_norm.size(2),
+            x_norm.size(3),
+            x_norm.size(4))  # (b, k, d, t, h, w)
+        xa = xa.view(
+            x_norm.size(0) * k_size,
+            self.token_codimension,
+            x_norm.size(2),
+            x_norm.size(3),
+            x_norm.size(4))  # (b * k, d, t, h, w)
 
         attention = self.compute_attention(xa, batch_size)
         if self.proj is not None:
             attention = self.proj(attention)
 
-        attention = rearrange(
-            attention,
-            '(b k) d t h w -> b (k d) t h w',
-            b=batch_size,
-        )
+        # '(b k) d t h w -> b (k d) t h w'
+        k_size = output.size(0) // batch_size
+        output = output.view(
+            batch_size,
+            k_size,
+            output.size(1),
+            output.size(2),
+            output.size(3),
+            output.size(4))
+        output = output.view(
+            batch_size,
+            k_size * output.size(2),
+            output.size(3),
+            output.size(4),
+            output.size(5))  # (b, k * d, t, h, w)
+
         attention_normalized = self.norm2(attention)
         output = self.mixer(attention_normalized, output_shape=output_shape)
 

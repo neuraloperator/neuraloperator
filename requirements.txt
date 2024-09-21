@@ -8,4 +8,3 @@ matplotlib
 opt-einsum
 h5py
 zarr
-einops

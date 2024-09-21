@@ -13,10 +13,9 @@ def test_Codano(token_codimension):
     n_modes_2D = [100, 100]
     n_modes_3D = [100, 100, 100]
     n_head = 3
-    token_codimension = 2
     output_scaling_factor = None
     incremental_n_modes = None
-    head_codimension = 1
+    head_codimension = 3
     SpectralConvolution = SpectralConv
     Normalizer = None
     joint_factorization = False
@@ -25,7 +24,7 @@ def test_Codano(token_codimension):
     decomposition_kwargs = None
     fft_norm = 'forward'
     codimension_size = None
-    per_channel_attention = True
+    per_channel_attention = False
     permutation_eq = True
     temperature = 1.0
     kqv_non_linear = False
