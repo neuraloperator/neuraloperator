@@ -189,8 +189,9 @@ class GINO(nn.Module):
 
         if fno_norm == "ada_in":
             if fno_ada_in_features is not None:
-                self.adain_pos_embed = TransformerSinusoidalEmbedding(fno_ada_in_features, 
-                                                           max_positions=gno_embed_max_positions)
+                self.adain_pos_embed = TransformerSinusoidalEmbedding(in_channels=self.ada_in_dim,
+                                                                      num_freqs=fno_ada_in_features,
+                                                                      max_positions=gno_embed_max_positions)
                 self.ada_in_dim = fno_ada_in_dim*fno_ada_in_features
             else:
                 self.ada_in_dim = fno_ada_in_dim

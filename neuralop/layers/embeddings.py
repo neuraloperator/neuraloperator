@@ -9,29 +9,34 @@ class Embedding(nn.Module, ABC):
     def __init__(self):
         super().__init__()
     
+    @property
     @abstractmethod
-    def out_channels(self, in_channels):
+    def out_channels(self):
         pass
 
 class GridEmbedding2D(Embedding):
     """A simple positional embedding as a regular 2D grid
     """
-    def __init__(self, grid_boundaries=[[0, 1], [0, 1]]):
+    def __init__(self, in_channels: int, grid_boundaries=[[0, 1], [0, 1]]):
         """GridEmbedding2D applies a simple positional 
         embedding as a regular 2D grid
 
         Parameters
         ----------
+        in_channels : int
+            number of channels in input. Fixed for output channel interface
         grid_boundaries : list, optional
             coordinate boundaries of input grid, by default [[0, 1], [0, 1]]
         """
         super().__init__()
+        self.in_channels = in_channels
         self.grid_boundaries = grid_boundaries
         self._grid = None
         self._res = None
     
-    def out_channels(self, in_channels):
-        return 2 + in_channels
+    @property
+    def out_channels(self):
+        return self.in_channels + 2
 
     def grid(self, spatial_dims, device, dtype):
         """grid generates 2D grid needed for pos encoding
@@ -78,21 +83,24 @@ class GridEmbedding2D(Embedding):
         else:
             return out
 
-class GridEmbeddingND(Embedding):
+class GridEmbeddingND(nn.Module):
     """A positional embedding as a regular ND grid
     """
-    def __init__(self, dim: int=2, grid_boundaries=[[0, 1], [0, 1]]):
+    def __init__(self, in_channels: int, dim: int=2, grid_boundaries=[[0, 1], [0, 1]]):
         """GridEmbeddingND applies a simple positional 
         embedding as a regular ND grid
 
         Parameters
         ----------
-        dim: int
+        in_channels : int
+            number of channels in input
+        dim : int
             dimensions of positional encoding to apply
         grid_boundaries : list, optional
             coordinate boundaries of input grid along each dim, by default [[0, 1], [0, 1]]
         """
         super().__init__()
+        self.in_channels = in_channels
         self.dim = dim
         assert self.dim == len(grid_boundaries), f"Error: expected grid_boundaries to be\
             an iterable of length {self.dim}, received {grid_boundaries}"
@@ -100,8 +108,9 @@ class GridEmbeddingND(Embedding):
         self._grid = None
         self._res = None
     
-    def out_channels(self, in_channels):
-        return self.dim + in_channels
+    @property
+    def out_channels(self):
+        return self.in_channels + self.dim
 
     def grid(self, spatial_dims: torch.Size, device: str, dtype: torch.dtype):
         """grid generates ND grid needed for pos encoding
@@ -170,12 +179,14 @@ class NeRFEmbedding(Embedding):
         "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis".
         ArXiv, https://arxiv.org/pdf/2003.08934. 
     """
-    def __init__(self, num_frequencies):
+    def __init__(self, in_channels, num_frequencies):
         super().__init__()
+        self.in_channels = in_channels
         self.num_frequencies = num_frequencies
     
-    def out_channels(self, channels):
-        return 2 * self.num_frequencies * channels
+    @property
+    def out_channels(self):
+        return 2 * self.num_frequencies * self.in_channels
 
     def forward(self, x):
         """
@@ -208,7 +219,7 @@ class NeRFEmbedding(Embedding):
         return freqs
     
 class TransformerSinusoidalEmbedding(Embedding):
-    def __init__(self, num_channels, max_positions=10000, endpoint=False):
+    def __init__(self, in_channels, num_freqs, max_positions=10000, endpoint=False):
         """TransformerSinusoidalEmbedding applies a sinusoidal positional encoding 
         to inputs:
 
@@ -222,18 +233,20 @@ class TransformerSinusoidalEmbedding(Embedding):
             whether to set endpoint, by default False
         """
         super().__init__()
-        self.num_channels = num_channels
+        self.in_channels = in_channels
+        self.num_freqs = num_freqs
         self.max_positions = max_positions
         self.endpoint = endpoint
     
-    def out_channels(self, in_channels):
-        return self.num_channels * in_channels * 2
+    @property
+    def out_channels(self):
+        return 2 * self.num_frequencies * self.in_channels
 
     def forward(self, x):
         freqs = torch.arange(
-            start=0, end=self.num_channels // 2, dtype=torch.float32, device=x.device
+            start=0, end=self.num_freqs // 2, dtype=torch.float32, device=x.device
         )
-        freqs = freqs / (self.num_channels // 2 - (1 if self.endpoint else 0))
+        freqs = freqs / (self.num_freqs // 2 - (1 if self.endpoint else 0))
         freqs = (1 / self.max_positions) ** freqs
         x = x.ger(freqs.to(x.dtype))
         x = torch.cat([x.cos(), x.sin()], dim=1)
