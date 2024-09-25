@@ -14,7 +14,7 @@ from ..fnogno import FNOGNO
 @pytest.mark.parametrize("fno_n_modes", [(8,), (8, 8), (8, 8, 8)])
 @pytest.mark.parametrize("gno_batched", [False, True])
 @pytest.mark.parametrize("gno_coord_embed_dim", [None, 32])
-def test_fnogno(gno_transform_type, fno_n_modes, gno_batched, gno_coord_embed_dim):
+def test_fnogno(gno_transform_type, fno_n_modes, gno_batched, gno_coord_embed_dim, fno_norm):
     if torch.has_cuda:
         device = torch.device("cuda:0")
     else:
