@@ -182,16 +182,17 @@ class SinusoidalEmbedding(Embedding):
         
         * 'nerf' : NERF-style encoding.  
 
-            g(p)_k = sin(2^(k) * Pi * p) if i is even
+            g(p)_k = sin(2^(k) * Pi * p)
 
-                   = cos(2^(k) * Pi * p) if i is odd
+            g(p)_{k+1} = cos(2^(k) * Pi * p)
 
         * 'transformer' for transformer-style encoding.
             Let z = `p / max_positions`. Then:
 
-            g(p)_k = sin((p / max_positions) ^ {2k / N}) if i is even
+            g(p)_k = sin((p / max_positions) ^ {k / N})
 
-                   = cos((p / max_positions) ^ {2k / N}) if i is odd
+            g(p)_{k+1} = cos((p / max_positions) ^ {k / N})
+
     max_positions : int, optional
         Maximum number of positions for the encoding, default 10000
         Only used if `embedding == transformer`.
@@ -238,10 +239,10 @@ class SinusoidalEmbedding(Embedding):
         """
         Parameters 
         -----------
-        x: torch.Tensor, shape (n_in, out_channels) or (batch, n_in, out_channels)
+        x: torch.Tensor, shape (n_in, self.in_channels) or (batch, n_in, self.in_channels)
         """
-        assert x.ndim in [2,3], f"Error: expected inputs of shape (batch, n_in, channels)\
-            or (n_in, channels), got inputs with ndim=={x.ndim}, shape={x.shape}"
+        assert x.ndim in [2,3], f"Error: expected inputs of shape (batch, n_in, {self.in_channels})\
+            or (n_in, channels), got inputs with ndim={x.ndim}, shape={x.shape}"
         if x.ndim == 2:
             batched = False
             x = x.unsqueeze(0)
@@ -264,10 +265,6 @@ class SinusoidalEmbedding(Embedding):
         freqs = torch.stack((freqs.sin(),freqs.cos()), dim=-1)
 
         # transpose the inner per-entry matrix and ravel to interleave sin and cos
-        # for nerf, end result is (sin(2^0 * pi * p_0), 
-        #   cos(2^0 * pi * p_0), ...cos(2^k * pi * p_N))
-        # for transformer, end result is (sin(p_0/max_positions^{2k/N}), 
-        #   cos(p_0/max_positions^{2k/N}), ...cos(p_N/max_positions^{2k/N}))
         freqs = freqs.view(batch_size, n_in, -1)
         
         if not batched:
