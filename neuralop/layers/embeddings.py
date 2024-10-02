@@ -187,7 +187,6 @@ class SinusoidalEmbedding(Embedding):
             g(p)_{k+1} = cos(2^(k) * Pi * p)
 
         * 'transformer' for transformer-style encoding.
-            Let z = `p / max_positions`. Then:
 
             g(p)_k = sin((p / max_positions) ^ {k / N})
 
