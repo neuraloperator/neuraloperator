@@ -1,11 +1,13 @@
-import torch
-from torch.cuda import amp
-from torch import nn
 from timeit import default_timer
 from pathlib import Path
 from typing import Union
 import sys
 
+import torch
+from torch.cuda import amp
+from torch import nn
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
 # Only import wandb and use if installed
 wandb_available = False
 try:
@@ -95,7 +97,9 @@ class Trainer:
         save_dir: Union[str, Path]="./ckpt",
         resume_from_dir: Union[str, Path]=None,
     ):
-        """Trains the given model on the given datasets.
+        """Trains the given model on the given dataset.
+
+        If a device is provided, the model and data processor are loaded to device here. 
 
         Parameters
         -----------
@@ -154,6 +158,17 @@ class Trainer:
         self.save_best = save_best
         if resume_from_dir is not None:
             self.resume_state_from_dir(resume_from_dir)
+
+        # Load model and data_processor to device
+        self.model = self.model.to(self.device)
+
+        if self.use_distributed and dist.is_initialized():
+            device_id = dist.get_rank()
+            self.model = DDP(self.model, device_ids=[device_id], output_device=device_id)
+
+        if self.data_processor is not None:
+            self.data_processor = self.data_processor.to(self.device)
+        
         # ensure save_best is a metric we collect
         if self.save_best is not None:
             metrics = []
@@ -304,7 +319,13 @@ class Trainer:
         errors : dict
             dict[f'{log_prefix}_{loss_name}] = loss for loss in loss_dict
         """
+        # Ensure model and data processor are loaded to the proper device
 
+        if self.model.device != self.device:
+            self.model = self.model.to(self.device)
+        if self.data_processor is not None and self.data_processor.device != self.device:
+            self.data_processor = self.data_processor.to(self.device)
+        
         self.model.eval()
         if self.data_processor:
             self.data_processor.eval()
