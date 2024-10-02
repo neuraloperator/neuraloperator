@@ -1,6 +1,6 @@
 import pytest
 import torch
-from ..codano import CODABlocks2D, CODABlocks3D
+from ..coda_blocks import CODABlocks2D, CODABlocks3D
 from ..spectral_convolution import *
 
 
@@ -10,13 +10,13 @@ def test_Codano(token_codimension):
     """
     Test CoDA-NO layers
     """
-    n_modes_2D = [100, 100]
-    n_modes_3D = [100, 100, 100]
+    n_modes_2D = [64, 64]
+    n_modes_3D = [64, 64, 64]
     n_head = 3
     output_scaling_factor = None
     incremental_n_modes = None
     head_codimension = 3
-    SpectralConvolution = SpectralConv
+    spectral_convolution = SpectralConv
     Normalizer = None
     joint_factorization = False
     fixed_rank_modes = False
@@ -36,7 +36,7 @@ def test_Codano(token_codimension):
         output_scaling_factor=output_scaling_factor,
         incremental_n_modes=incremental_n_modes,
         head_codimension=head_codimension,
-        SpectralConvolution=SpectralConvolution,
+        spectral_convolution=spectral_convolution,
         Normalizer=Normalizer,
         joint_factorization=joint_factorization,
         fixed_rank_modes=fixed_rank_modes,
@@ -51,10 +51,15 @@ def test_Codano(token_codimension):
     )
 
     x = torch.randn(2, 10, 128, 128)
-
     out = layer(x)
-
     assert out.shape == x.shape
+
+    # test different spatial resolution 
+    x = torch.randn(2, 10, 100, 100)
+    out = layer(x)
+    assert out.shape == x.shape
+
+    
 
     layer = CODABlocks3D(
         n_modes=n_modes_3D,
@@ -63,7 +68,7 @@ def test_Codano(token_codimension):
         output_scaling_factor=output_scaling_factor,
         incremental_n_modes=incremental_n_modes,
         head_codimension=head_codimension,
-        SpectralConvolution=SpectralConvolution,
+        spectral_convolution=spectral_convolution,
         Normalizer=Normalizer,
         joint_factorization=joint_factorization,
         fixed_rank_modes=fixed_rank_modes,
@@ -78,7 +83,10 @@ def test_Codano(token_codimension):
     )
 
     x = torch.randn(2, 10, 128, 128, 128)
-
     out = layer(x)
+    assert out.shape == x.shape
 
+    # test different spato-temporal resolution
+    x = torch.randn(2, 10, 100, 100, 100)
+    out = layer(x)
     assert out.shape == x.shape

@@ -6,7 +6,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from .fno_block import FNOBlocks
-from .spectral_convolution import SpectralConv1d, SpectralConv2d, SpectralConv3d
+from .spectral_convolution import SpectralConv
 
 
 # Codomain Attention Blocks
@@ -15,7 +15,7 @@ class CODABlocks(nn.Module):
 
     Args:
         n_modes (list): Number of modes for each dimension  used in K,Q,V operator.
-        n_head (int): Number of heads for the attention mechanism.
+        n_heads (int): Number of heads for the attention mechanism.
         token_codimension (int): Co-dimension of each variable or number of channels associated with each variables.
         output_scaling_factor (float): Scaling factor for the output.
         incremental_n_modes (list): Incremental number of modes for each dimension (for incremental training).
@@ -31,7 +31,7 @@ class CODABlocks(nn.Module):
         separable (bool): whether to use separable convolutions, by default False.
         factorization (str): Type of factorization to be used, by default 'tucker'.
         rank (float): Rank of the factorization, by default 1.0.
-        SpectralConvolution (callable): Spectral convolution module to be used.
+        spectral_convolution (callable): Spectral convolution module to be used.
         joint_factorization (bool): whether to factorize all spectralConv weights as one tensor, by default False
 
         # Normalization
@@ -47,7 +47,7 @@ class CODABlocks(nn.Module):
     def __init__(
         self,
         n_modes,
-        n_head=1,
+        n_heads=1,
         token_codimension=1,
         output_scaling_factor=None,
         incremental_n_modes=None,
@@ -61,7 +61,7 @@ class CODABlocks(nn.Module):
         separable=False,
         factorization='tucker',
         rank=1.0,
-        SpectralConvolution=None,
+        spectral_convolution=None,
         Normalizer=None,
         joint_factorization=False,
         fixed_rank_modes=False,
@@ -85,7 +85,7 @@ class CODABlocks(nn.Module):
         self.head_codimension = (head_codimension
                                  if head_codimension is not None
                                  else token_codimension)
-        self.n_head = n_head  # number of heads
+        self.n_heads = n_heads  # number of heads
         self.output_scaling_factor = output_scaling_factor
         self.temperature = temperature
 
@@ -108,7 +108,7 @@ class CODABlocks(nn.Module):
 
         # this scale used for downsampling Q,K functions
         scale = 2 if per_channel_attention else 1
-        scale = min(self.n_head, scale)
+        scale = min(self.n_heads, scale)
 
         mixer_modes = [i // scale for i in n_modes]
 
@@ -133,7 +133,7 @@ class CODABlocks(nn.Module):
 
         kqv_args = dict(
             in_channels=self.token_codimension,
-            out_channels=self.n_head * self.head_codimension,
+            out_channels=self.n_heads * self.head_codimension,
             n_modes=mixer_modes,
             # args below are shared with Projection block
             non_linearity=kqv_activation,
@@ -144,26 +144,26 @@ class CODABlocks(nn.Module):
         )
         self.K = FNOBlocks(
             output_scaling_factor=1 / scale,
-            conv_module=SpectralConvolution,
+            conv_module=spectral_convolution,
             **kqv_args,
             **common_args,
         )
         self.Q = FNOBlocks(
             output_scaling_factor=1 / scale,
-            conv_module=SpectralConvolution,
+            conv_module=spectral_convolution,
             **kqv_args,
             **common_args,
         )
         self.V = FNOBlocks(
             output_scaling_factor=1,
-            conv_module=SpectralConvolution,
+            conv_module=spectral_convolution,
             **kqv_args,
             **common_args,
         )
 
-        if self.n_head * self.head_codimension != self.token_codimension:
+        if self.n_heads * self.head_codimension != self.token_codimension:
             self.proj = FNOBlocks(
-                in_channels=self.n_head * self.head_codimension,
+                in_channels=self.n_heads * self.head_codimension,
                 out_channels=self.token_codimension,
                 n_modes=n_modes,
                 output_scaling_factor=1,
@@ -172,7 +172,7 @@ class CODABlocks(nn.Module):
                 non_linearity=torch.nn.Identity(),
                 fno_skip='linear',
                 norm=None,
-                conv_module=SpectralConvolution,
+                conv_module=spectral_convolution,
                 n_layers=1,
                 **common_args,
             )
@@ -187,7 +187,7 @@ class CODABlocks(nn.Module):
             non_linearity=non_linearity,
             norm='instance_norm',
             fno_skip=fno_skip,
-            conv_module=SpectralConvolution,
+            conv_module=spectral_convolution,
         )
         # We have an option to make the last operator (MLP in regular
         # Transformer block) permutation equivariant. i.e., applying the
@@ -231,14 +231,13 @@ class CODABlocks2D(CODABlocks):
             Normalizer = partial(nn.InstanceNorm2d, affine=True)
         kwargs["Normalizer"] = Normalizer
 
-        Convolution = kwargs.get("SpectralConvolution")
+        Convolution = kwargs.get("spectral_convolution")
         if Convolution is None:
-            Convolution = SpectralConv2d
-        kwargs["SpectralConvolution"] = Convolution
+            Convolution = SpectralConv
+        kwargs["spectral_convolution"] = Convolution
 
         super().__init__(*args, **kwargs)
 
-    # XXX rewrite comments on TNO*3D
     def compute_attention(self, xa, batch_size):
         """Compute the key-query-value variant of the attention matrix.
 
@@ -250,24 +249,28 @@ class CODABlocks2D(CODABlocks):
 
         value_x, value_y = v.shape[-2], v.shape[-1]
 
-        t = k.size(0) // batch_size  # Compute the time dimension `t`
-        d = k.size(1) // self.n_head  # Compute the dimension `d`
+        assert k.size(
+            1) % self.n_heads == 0, "Number of channels in k, q, and v should be divisible by number of heads"
 
-        k = k.view(batch_size, t, self.n_head, d, k.size(-2),
+        # reshaping '(b t) (a d) h w -> b a t (d h w)'
+        t = k.size(0) // batch_size  # Compute the time dimension `t`
+        d = k.size(1) // self.n_heads  # Compute the dimension `d`
+
+        k = k.view(batch_size, t, self.n_heads, d, k.size(-2),
                    k.size(-1))
-        q = q.view(batch_size, t, self.n_head, d, q.size(-2),
+        q = q.view(batch_size, t, self.n_heads, d, q.size(-2),
                    q.size(-1))
-        v = v.view(batch_size, t, self.n_head, d, v.size(-2),
+        v = v.view(batch_size, t, self.n_heads, d, v.size(-2),
                    v.size(-1))
         k = k.permute(0, 2, 1, 3, 4, 5).contiguous()
         q = q.permute(0, 2, 1, 3, 4, 5).contiguous()
         v = v.permute(0, 2, 1, 3, 4, 5).contiguous()
 
-        k = k.view(batch_size, self.n_head, t, d * k.size(-2)
+        k = k.view(batch_size, self.n_heads, t, d * k.size(-2)
                    * k.size(-1))
-        q = q.view(batch_size, self.n_head, t, d * q.size(-2)
+        q = q.view(batch_size, self.n_heads, t, d * q.size(-2)
                    * q.size(-1))
-        v = v.view(batch_size, self.n_head, t, d * v.size(-2)
+        v = v.view(batch_size, self.n_heads, t, d * v.size(-2)
                    * v.size(-1))
 
         dprod = (torch.matmul(q, k.transpose(-1, -2)) /
@@ -304,10 +307,14 @@ class CODABlocks2D(CODABlocks):
             return self._forward_non_equivariant(x)
 
     def _forward_equivariant(self, x):
+        '''
+        uses permutation equivariant mixer layer after attention mechanism. We share the same mixer layer
+        for all the varibales.
+        '''
         batch_size = x.shape[0]
         output_shape = x.shape[-2:]
 
-        assert x.shape[1] % self.token_codimension == 0
+        assert x.shape[1] % self.token_codimension == 0, "Number of channels in x should be divisible by token_codimension"
 
         # reshape 'b (t d) h w -> (b t) d h w'
         t = x.size(1) // self.token_codimension
@@ -352,6 +359,9 @@ class CODABlocks2D(CODABlocks):
         return output
 
     def _forward_non_equivariant(self, x):
+        '''
+        Uses non-permutation equivariant mixer layer after attention mechanism.
+        '''
         batch_size = x.shape[0]
         output_shape = x.shape[-2:]
 
@@ -399,10 +409,10 @@ class CODABlocks3D(CODABlocks):
             Normalizer = partial(nn.InstanceNorm3d, affine=True)
         kwargs["Normalizer"] = Normalizer
 
-        Convolution = kwargs.get("SpectralConvolution")
+        Convolution = kwargs.get("spectral_convolution")
         if Convolution is None:
-            Convolution = SpectralConv3d
-        kwargs["SpectralConvolution"] = Convolution
+            Convolution = SpectralConv
+        kwargs["spectral_convolution"] = Convolution
 
         super().__init__(*args, **kwargs)
 
@@ -419,11 +429,11 @@ class CODABlocks3D(CODABlocks):
 
         # (b k) (a d) t h w -> b a k (d t h w)
         k_size = k.size(0) // batch_size
-        d_size = k.size(1) // self.n_head
+        d_size = k.size(1) // self.n_heads
         k = k.view(
             batch_size,
             k_size,
-            self.n_head,
+            self.n_heads,
             d_size,
             k.size(2),
             k.size(3),
@@ -431,7 +441,7 @@ class CODABlocks3D(CODABlocks):
         q = q.view(
             batch_size,
             k_size,
-            self.n_head,
+            self.n_heads,
             d_size,
             q.size(2),
             q.size(3),
@@ -439,7 +449,7 @@ class CODABlocks3D(CODABlocks):
         v = v.view(
             batch_size,
             k_size,
-            self.n_head,
+            self.n_heads,
             d_size,
             v.size(2),
             v.size(3),
@@ -449,7 +459,7 @@ class CODABlocks3D(CODABlocks):
         v = v.permute(0, 2, 1, 3, 4, 5, 6).contiguous()
         k = k.view(
             batch_size,
-            self.n_head,
+            self.n_heads,
             k_size,
             d_size *
             k.size(4) *
@@ -457,7 +467,7 @@ class CODABlocks3D(CODABlocks):
             k.size(6))  # (b, a, k, d * t * h * w)
         q = q.view(
             batch_size,
-            self.n_head,
+            self.n_heads,
             k_size,
             d_size *
             q.size(4) *
@@ -465,7 +475,7 @@ class CODABlocks3D(CODABlocks):
             q.size(6))  # (b, a, k, d * t * h * w)
         v = v.view(
             batch_size,
-            self.n_head,
+            self.n_heads,
             k_size,
             d_size *
             v.size(4) *
