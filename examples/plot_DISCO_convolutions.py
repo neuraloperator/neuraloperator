@@ -30,8 +30,8 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # Let's start by loading an example image
 os.system("curl https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Albert_Einstein_Head.jpg/360px-Albert_Einstein_Head.jpg -o ./einstein.jpg")
 
-nx = 90
-ny = 120
+nx = 120
+ny = 180
 
 img = iio.imread('./einstein.jpg')
 data = nn.functional.interpolate(torch.from_numpy(img).unsqueeze(0).unsqueeze(0), size=(ny,nx)).squeeze()
@@ -77,8 +77,8 @@ plt.show()
 
 # %%
 # For the convolution output we require an output mesh
-nxo = 45
-nyo = 60
+nxo = 120
+nyo = 180
 
 x_out = torch.linspace(0, 2, nxo)
 y_out = torch.linspace(0, 3, nyo)
@@ -105,18 +105,25 @@ psi = conv.get_psi()
 # in order to compute the convolved image, we need to first bring it into the right shape with `batch_size x n_channels x n_grid_points`
 out = conv(data.reshape(1, 1, -1))
 
+# plt.figure(figsize=(4,6), )
+# plt.tripcolor(grid_out[0], grid_out[1], out.squeeze().detach(), cmap=cmap, shading="flat")
+# plt.colorbar()
+# plt.xlim(0,2)
+# plt.ylim(0,3)
+# plt.show()
+
 plt.figure(figsize=(4,6), )
-plt.tripcolor(grid_out[0], grid_out[1], out.squeeze().detach(), cmap=cmap, shading="flat")
+plt.imshow(torch.flip(out.squeeze().detach().reshape(nxo, nyo).transpose(0,1), dims=(-2, )), cmap=cmap)
 plt.colorbar()
-plt.xlim(0,2)
-plt.ylim(0,3)
 plt.show()
+
+out1= torch.flip(out.squeeze().detach().reshape(nxo, nyo).transpose(0,1), dims=(-2, ))
 
 # %% do the same but on an equidistant grid:
 
 from neuralop.layers.discrete_continuous_convolution import EquidistantDiscreteContinuousConv2d
 
-conv_equi = EquidistantDiscreteContinuousConv2d(1, 1, (nx, ny), (nxo, nyo), kernel_shape=[2,4], radius_cutoff=3/nyo)
+conv_equi = EquidistantDiscreteContinuousConv2d(1, 1, (nx, ny), (nxo, nyo), kernel_shape=[2,4], radius_cutoff=3/nyo, domain_length=[2,3])
 
 # initialize a kernel resembling an edge filter
 w = torch.zeros_like(conv.weight)
@@ -124,7 +131,7 @@ w[0,0,1] = 1.0
 w[0,0,3] = -1.0
 conv_equi.weight = nn.Parameter(w)
 
-data = nn.functional.interpolate(torch.from_numpy(img).unsqueeze(0).unsqueeze(0), size=(120,90)).float()
+data = nn.functional.interpolate(torch.from_numpy(img).unsqueeze(0).unsqueeze(0), size=(nyo,nxo)).float()
 
 out_equi = conv_equi(data)
 
@@ -133,7 +140,21 @@ plt.imshow(out_equi.squeeze().detach(), cmap=cmap)
 plt.colorbar()
 plt.show()
 
+out2 = out_equi.squeeze().detach()
+
 # %%
 
 plt.figure(figsize=(4,6), )
 plt.imshow(conv_equi.get_psi()[0].detach(), cmap=cmap)
+plt.colorbar()
+
+# %%
+
+print(out1.shape)
+
+print(out2.shape)
+
+plt.figure(figsize=(4,6), )
+plt.imshow(out1 - out2, cmap=cmap)
+plt.colorbar()
+plt.show()
