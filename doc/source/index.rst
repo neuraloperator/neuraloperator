@@ -139,7 +139,7 @@ of an equivalent, dense Fourier Neural Operator!
    :hidden:
 
    install
-   user_guide/index
+   user_guide/quickstart
    modules/api
    auto_examples/index
 
