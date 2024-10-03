@@ -44,7 +44,6 @@ def test_gino(gno_transform_type, gno_coord_dim, batch_size):
         fno_n_modes=fno_n_modes[:gno_coord_dim],
         # keep the FNO model small for runtime
         fno_lifting_channels=lifting_channels,
-        fno_projection_channels=projection_channels,
         fno_norm="ada_in", #TODO: Parametrize this
     ).to(device)
 

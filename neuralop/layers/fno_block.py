@@ -5,6 +5,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from .channel_mlp import ChannelMLP
+from .complex import CGELU, apply_complex, ctanh, ComplexValued
 from .normalization_layers import AdaIN, InstanceNorm
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
@@ -18,73 +19,69 @@ class FNOBlocks(nn.Module):
     """FNOBlocks implements a sequence of Fourier layers
     as described in "Fourier Neural Operator for Parametric
     Partial Differential Equations (Li et al., 2021).
+
     Parameters
     ----------
-    Parameters
-        ----------
-        in_channels : int
-            input channels to Fourier layers
-        out_channels : int
-            output channels after Fourier layers
-        n_modes : int, List[int]
-            number of modes to keep along each dimension 
-            in frequency space. Can either be specified as
-            an int (for all dimensions) or an iterable with one
-            number per dimension
-        output_scaling_factor : Optional[Union[Number, List[Number]]], optional
-            factor by which to scale outputs for super-resolution, by default None
-        n_layers : int, optional
-            number of Fourier layers to apply in sequence, by default 1
-        max_n_modes : int, List[int], optional
-            maximum number of modes to keep along each dimension, by default None
-        fno_block_precision : str, optional
-            floating point precision to use for computations, by default "full"
-        use_channel_mlp : bool, optional
-            whether to use mlp layers to parameterize skip connections, by default False
-        channel_mlp_dropout : int, optional
-            dropout parameter for self.channel_mlp, by default 0
-        channel_mlp_expansion : float, optional
-            expansion parameter for self.channel_mlp, by default 0.5
-        non_linearity : torch.nn.F module, optional
-            nonlinear activation function to use between layers, by default F.gelu
-        stabilizer : Literal["tanh"], optional
-            stabilizing module to use between certain layers, by default None
-            if "tanh", use tanh
-        norm : Literal["ada_in", "group_norm", "instance_norm"], optional
-            Normalization layer to use, by default None
-        ada_in_features : int, optional
-            number of features for adaptive instance norm above, by default None
-        preactivation : bool, optional
-            whether to call forward pass with pre-activation, by default False
-            if True, call nonlinear activation and norm before Fourier convolution
-            if False, call activation and norms after Fourier convolutions
-        fno_skip : str, optional
-            module to use for FNO skip connections, by default "linear"
-            see layers.skip_connections for more details
-        channel_mlp_skip : str, optional
-            module to use for ChannelMLP skip connections, by default "soft-gating"
-            see layers.skip_connections for more details
-        SpectralConv Params
-        -------------------
-        separable : bool, optional
-            separable parameter for SpectralConv, by default False
-        factorization : str, optional
-            factorization parameter for SpectralConv, by default None
-        rank : float, optional
-            rank parameter for SpectralConv, by default 1.0
-        SpectralConv : BaseConv, optional
-            module to use for SpectralConv, by default SpectralConv
-        joint_factorization : bool, optional
-            whether to factorize all spectralConv weights as one tensor, by default False
-        fixed_rank_modes : bool, optional
-            fixed_rank_modes parameter for SpectralConv, by default False
-        implementation : str, optional
-            implementation parameter for SpectralConv, by default "factorized"
-        decomposition_kwargs : _type_, optional
-            kwargs for tensor decomposition in SpectralConv, by default dict()
-        fft_norm : str, optional
-            how to normalize discrete fast Fourier transform, by default "forward"
-            if "forward", normalize just the forward direction F(v(x)) by 1/n (number of total modes)
+    in_channels : int
+        input channels to Fourier layers
+    out_channels : int
+        output channels after Fourier layers
+    n_modes : int, List[int]
+        number of modes to keep along each dimension 
+        in frequency space. Can either be specified as
+        an int (for all dimensions) or an iterable with one
+        number per dimension
+    output_scaling_factor : Optional[Union[Number, List[Number]]], optional
+        factor by which to scale outputs for super-resolution, by default None
+    n_layers : int, optional
+        number of Fourier layers to apply in sequence, by default 1
+    max_n_modes : int, List[int], optional
+        maximum number of modes to keep along each dimension, by default None
+    fno_block_precision : str, optional
+        floating point precision to use for computations, by default "full"
+    use_channel_mlp : bool, optional
+        whether to use mlp layers to parameterize skip connections, by default False
+    channel_mlp_dropout : int, optional
+        dropout parameter for self.channel_mlp, by default 0
+    channel_mlp_expansion : float, optional
+        expansion parameter for self.channel_mlp, by default 0.5
+    non_linearity : torch.nn.F module, optional
+        nonlinear activation function to use between layers, by default F.gelu
+    stabilizer : Literal["tanh"], optional
+        stabilizing module to use between certain layers, by default None
+        if "tanh", use tanh
+    norm : Literal["ada_in", "group_norm", "instance_norm"], optional
+        Normalization layer to use, by default None
+    ada_in_features : int, optional
+        number of features for adaptive instance norm above, by default None
+    preactivation : bool, optional
+        whether to call forward pass with pre-activation, by default False
+        if True, call nonlinear activation and norm before Fourier convolution
+        if False, call activation and norms after Fourier convolutions
+    fno_skip : str, optional
+        module to use for FNO skip connections, by default "linear"
+        see layers.skip_connections for more details
+    channel_mlp_skip : str, optional
+        module to use for ChannelMLP skip connections, by default "soft-gating"
+        see layers.skip_connections for more details
+    complex_data : bool, optional
+        whether the FNO's data takes on complex values in space, by default False
+    separable : bool, optional
+        separable parameter for SpectralConv, by default False
+    factorization : str, optional
+        factorization parameter for SpectralConv, by default None
+    rank : float, optional
+        rank parameter for SpectralConv, by default 1.0
+    conv_module : BaseConv, optional
+        module to use for convolutions in FNO block, by default SpectralConv
+    joint_factorization : bool, optional
+        whether to factorize all spectralConv weights as one tensor, by default False
+    fixed_rank_modes : bool, optional
+        fixed_rank_modes parameter for SpectralConv, by default False
+    implementation : str, optional
+        implementation parameter for SpectralConv, by default "factorized"
+    decomposition_kwargs : _type_, optional
+        kwargs for tensor decomposition in SpectralConv, by default dict()
     """
     def __init__(
         self,
@@ -105,15 +102,15 @@ class FNOBlocks(nn.Module):
         preactivation=False,
         fno_skip="linear",
         channel_mlp_skip="soft-gating",
+        complex_data=False,
         separable=False,
         factorization=None,
         rank=1.0,
-        SpectralConv=SpectralConv,
+        conv_module=SpectralConv,
         joint_factorization=False,
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
-        fft_norm="forward",
         **kwargs,
     ):
         super().__init__()
@@ -132,7 +129,6 @@ class FNOBlocks(nn.Module):
         self.out_channels = out_channels
         self.n_layers = n_layers
         self.joint_factorization = joint_factorization
-        self.non_linearity = non_linearity
         self.stabilizer = stabilizer
         self.rank = rank
         self.factorization = factorization
@@ -140,16 +136,29 @@ class FNOBlocks(nn.Module):
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = fno_skip
         self.channel_mlp_skip = channel_mlp_skip
+        self.complex_data = complex_data
         self.use_channel_mlp = use_channel_mlp
         self.channel_mlp_expansion = channel_mlp_expansion
         self.channel_mlp_dropout = channel_mlp_dropout
-        self.fft_norm = fft_norm
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation
         self.ada_in_features = ada_in_features
 
-        self.convs = SpectralConv(
+        # apply real nonlin if data is real, otherwise CGELU
+        if complex_data:
+            self.non_linearity = CGELU
+        else:
+            self.non_linearity = non_linearity
+    
+        # TODO: eventually support complex data in SphericalConv and SFNO
+        # remove these lines once support is added
+        if conv_module == SpectralConv:
+            complex_kwarg = {'complex_data': complex_data}
+        else:
+            complex_kwarg = dict()
+
+        self.convs = conv_module(
             self.in_channels,
             self.out_channels,
             self.n_modes,
@@ -163,6 +172,7 @@ class FNOBlocks(nn.Module):
             decomposition_kwargs=decomposition_kwargs,
             joint_factorization=joint_factorization,
             n_layers=n_layers,
+            **complex_kwarg
         )
 
         self.fno_skips = nn.ModuleList(
@@ -176,6 +186,10 @@ class FNOBlocks(nn.Module):
                 for _ in range(n_layers)
             ]
         )
+        if self.complex_data:
+            self.fno_skips = nn.ModuleList(
+                [ComplexValued(x) for x in self.fno_skips]
+                )
 
         if use_channel_mlp:
             self.channel_mlp = nn.ModuleList(
@@ -189,6 +203,10 @@ class FNOBlocks(nn.Module):
                     for _ in range(n_layers)
                 ]
             )
+            if self.complex_data:
+                self.channel_mlp = nn.ModuleList(
+                    [ComplexValued(x) for x in self.channel_mlp]
+                )
             self.channel_mlp_skips = nn.ModuleList(
                 [
                     skip_connection(
@@ -200,6 +218,10 @@ class FNOBlocks(nn.Module):
                     for _ in range(n_layers)
                 ]
             )
+            if self.complex_data:
+                self.channel_mlp_skips = nn.ModuleList(
+                    [ComplexValued(x) for x in self.channel_mlp_skips]
+                )
         else:
             self.channel_mlp = None
 
@@ -272,7 +294,10 @@ class FNOBlocks(nn.Module):
             x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
-            x = torch.tanh(x)
+            if self.complex_data:
+                x = ctanh(x)
+            else:
+                x = torch.tanh(x)
 
         x_fno = self.convs(x, index, output_shape=output_shape)
 
@@ -311,7 +336,10 @@ class FNOBlocks(nn.Module):
             x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
-            x = torch.tanh(x)
+            if self.complex_data:
+                x = ctanh(x)
+            else:
+                x = torch.tanh(x)
 
         x_fno = self.convs(x, index, output_shape=output_shape)
         x = x_fno + x_skip_fno

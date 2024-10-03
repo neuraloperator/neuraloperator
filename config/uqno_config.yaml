@@ -1,0 +1,100 @@
+default: &DEFAULT
+
+  #General
+  # For computing compression
+  n_params_baseline: None
+  verbose: True
+  arch: 'tfno2d'
+
+  #Distributed computing
+  distributed:
+    use_distributed: False
+    wireup_info: 'mpi'
+    wireup_store: 'tcp'
+    model_parallel_size: 2
+    seed: 666
+
+  # FNO related
+  tfno2d:
+    data_channels: 1
+    n_modes_height: 64
+    n_modes_width: 64
+    hidden_channels: 128
+    projection_channels: 256
+    n_layers: 4
+    domain_padding: None
+    domain_padding_mode: 'one-sided'
+    fft_norm: 'forward'
+    norm: 'group_norm'
+    skip: 'linear'
+    implementation: 'factorized'
+    separable: 0
+    preactivation: 0
+    use_channel_mlp: 1
+    channel_mlp_expansion: 0.5
+    channel_mlp_dropout: 0
+    factorization: None
+    rank: 1.0
+    fixed_rank_modes: None
+    dropout: 0.0
+    tensor_lasso_penalty: 0.0
+    joint_factorization: False
+    fno_block_precision: 'full' # or 'half', 'mixed'
+    stabilizer: None # or 'tanh'
+
+  # Optimizer
+  opt:
+    # uq
+    alpha: 0.9
+    delta: 0.95
+    solution:
+      n_epochs: 300 #300
+      resume: False
+      learning_rate: 5e-3
+      training_loss: 'h1'
+      weight_decay: 1e-4
+      amp_autocast: False
+
+      scheduler_T_max: 500 # For cosine only, typically take n_epochs
+      scheduler_patience: 5 # For ReduceLROnPlateau only
+      scheduler: 'StepLR' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
+      step_size: 60
+      gamma: 0.5
+    residual:
+      n_epochs: 300 #300
+      learning_rate: 5e-3
+      training_loss: 'h1'
+      weight_decay: 1e-4
+      amp_autocast: False
+
+      scheduler_T_max: 500 # For cosine only, typically take n_epochs
+      scheduler_patience: 5 # For ReduceLROnPlateau only
+      scheduler: 'StepLR' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
+      step_size: 60
+      gamma: 0.5
+
+  # Dataset related
+  data:
+    root: YOUR_ROOT
+    batch_size: 4
+    n_train_total: 4000
+    n_train_solution: 2500
+    n_train_residual: 1000
+    n_calib_residual: 500
+    train_resolution: 421
+    n_test: 1000
+    test_resolution: 421
+    test_batch_size: 4
+    encode_input: True
+    encode_output: True
+
+  # Weights and biases
+  wandb:
+    log: True
+    name: train-uqno # If None, config will be used but you can override it here
+    group: '' 
+    project: "uqno-darcy"
+    entity: "YOUR_NAME" # put your username here
+    sweep: False
+    log_output: True
+    eval_interval: 1
