@@ -1,7 +1,7 @@
 NeuralOperator User Guide
 ===========
 
-*NeuralOperator* aims to provide you with all the tools 
+NeuralOperator provides all the tools you need 
 to easily use, build and train neural operators for your own applications
 and learn mapping between function spaces, in PyTorch.
 
@@ -9,16 +9,16 @@ Intro to operator learning
 ----------------------------
 To get a better feel for the theory behind our neural operator models, see :ref:`neuralop_intro`. 
 Once you're comfortable with the concept of operator learning, check out specific details of our
-Fourier Neural Operator (FNO) in :ref:`fno_intro`. Finally, to learn more about the model training and
-saving utilities we provide, check out :ref:`training_nos`.
+Fourier Neural Operator (FNO) in :ref:`fno_intro`. Finally, to learn more about the model training
+ utilities we provide, check out :ref:`training_nos`.
 
 ~~~~~~~~~~~~
 
 Interactive examples with code
 ----------------------------
-We also provide interactive examples that show our library and FNO models in action. 
+We also provide interactive examples that show our library and neural operator models in action. 
 To get up to speed on the code, and look through some interactive examples to help you hit the ground running,
-check out :ref:`gallery_examples`.
+check out our :ref:`gallery_examples`.
 
 ~~~~~~~~~~~~
 
