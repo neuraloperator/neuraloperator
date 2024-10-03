@@ -1,3 +1,5 @@
+.. _fno_intro:
+
 ========================
 Fourier Neural Operators
 ========================

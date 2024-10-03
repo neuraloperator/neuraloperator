@@ -1,3 +1,4 @@
+.. _training_nos:
 ================================
 Training neural operator models
 ================================
