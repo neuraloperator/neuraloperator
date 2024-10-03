@@ -43,19 +43,19 @@ def get_world_size():
         return dist.get_world_size()
 
 
-def get_world_rank():
+def get_local_rank():
     if not dist.is_initialized():
         return 0
     else:
         return dist.get_rank()
 
 
-def get_local_rank():
+def get_global_rank():
     if not dist.is_initialized():
         return 0
     else:
-        return get_world_rank() % torch.cuda.device_count()
-
+        return dist.get_global_rank(group=_DATA_PARALLEL_GROUP,
+                                   group_rank=get_local_rank())
 
 # data parallel
 def get_data_parallel_size():
@@ -97,25 +97,27 @@ def get_model_parallel_group():
     return _MODEL_PARALLEL_GROUP  
 
 # get 
-def init(config, verbose = False):
+def init(dist_method: str,
+         model_parallel_size:  int=1,
+         wireup_info: str=None,
+         wireup_store: str=None,
+         verbose = False):
     
     # set up global and local communicator
-    if config.distributed == "env":
-
-        world_size = int(os.getenv('WORLD_SIZE', 1))
-        world_rank = int(os.getenv('WORLD_RANK', 0))
-        port = int(os.getenv('MASTER_PORT', 0))
-        master_address = os.getenv('MASTER_ADDRESS')
+    # torchrun initializes rank env vars by default and uses its own wireup logic
+    if dist_method == "torchrun":
+        local_rank = os.getenv("LOCAL_RANK", 0)
+        global_rank = os.getenv("RANK", 0)
     
-    
-    elif config.distributed.wireup_info == "mpi":
+    # TODO: this is legacy. Should we remove?
+    if wireup_info == "mpi":
 
         import socket
         from mpi4py import MPI
 
         mpi_comm = MPI.COMM_WORLD.Dup()
         world_size = mpi_comm.Get_size()
-        world_rank = mpi_comm.Get_rank()
+        local_rank = mpi_comm.Get_rank()
         my_host = '127.0.0.1'
         port = 29500
         master_address = mpi_comm.bcast(my_host, root=0)
@@ -123,45 +125,42 @@ def init(config, verbose = False):
         os.environ["MASTER_PORT"] = str(port)
 
     else:
-        raise ValueError(f"Error, wireup-info {config.distributed.wireup_info} not supported")
-    
-    # set local rank to 0 for now
-    local_rank = 0
+        raise ValueError(f"Error, wireup-info {wireup_info} not supported")
     
     if world_size > 1:
         with disable_logging():
-            if config.distributed.wireup_store == "file":
+            if wireup_store == "file":
 
                 wireup_file_path = os.getenv('WIREUP_FILE_PATH')
                 wireup_store = dist.FileStore(wireup_file_path, world_size)
             
-            elif config.distributed.wireup_store == "tcp":
+            elif wireup_store == "tcp":
                 # create tcp store
                 wireup_store = dist.TCPStore(host_name = master_address,
                                              port = port,
                                              world_size = world_size,
-                                             is_master = (world_rank == 0),
+                                             is_master = (local_rank == 0),
                                              timeout = dt.timedelta(seconds=900))
                 
             # initialize process groups
             dist.init_process_group(backend = 'nccl',
-                                    rank = world_rank,
+                                    rank = local_rank,
                                     world_size = world_size,
                                     store = wireup_store)
         
             # get sizes
             world_size = get_world_size()
-            world_rank = get_world_rank()
+            global_rank = get_global_rank()
             local_rank = get_local_rank()
 
             # barrier
             dist.barrier(device_ids=[local_rank])
 
     # process 0 is logger 
-    is_logger = (get_world_rank() == 0)
+    is_logger = (get_global_rank() == 0)
 
     # get model groups
-    model_group_size = config.distributed.model_parallel_size
+    model_group_size = model_parallel_size
     
     # compute data parallel size 
     data_group_size = world_size // model_group_size
@@ -206,18 +205,18 @@ def init(config, verbose = False):
                 # data groups
                 for grp in data_groups:
                     tmp_group = dist.new_group(ranks = grp)
-                    if world_rank in grp:
+                    if global_rank in grp:
                         _DATA_PARALLEL_GROUP = tmp_group
                 # model groups
                 for grp in model_groups:
                     tmp_group = dist.new_group(ranks = grp)
-                    if world_rank in grp:
+                    if global_rank in grp:
                         _MODEL_PARALLEL_GROUP = tmp_group
                                 
         else:
             # technically unnecessary but we do it to be clean
             with disable_logging():
-                _MODEL_PARALLEL_GROUP = dist.new_group(ranks = [world_rank])
+                _MODEL_PARALLEL_GROUP = dist.new_group(ranks = [global_rank])
                 _SPATIAL_PARALLEL_GROUP = _MODEL_PARALLEL_GROUP
                 _MATMUL_PARALLEL_GROUP = _MODEL_PARALLEL_GROUP
                 _DATA_PARALLEL_GROUP = dist.new_group(ranks = list(range(world_size)))
