@@ -224,6 +224,9 @@ class SinusoidalEmbedding(Embedding):
         assert embedding_type in allowed_embeddings, \
             f"Error: embedding_type expected one of {allowed_embeddings}, received {embedding_type}"
         self.embedding_type = embedding_type
+        if self.embedding_type == "transformer":
+            assert max_positions is not None, "Error: max_positions must have an int value for \
+                transformer embedding."
         self.max_positions = max_positions
     
     
