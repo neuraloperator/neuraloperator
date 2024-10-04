@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-# only install open3d if imported
+# only import open3d if built
 open3d_built = False
 try:
     from open3d.ml.torch.layers import FixedRadiusSearch
@@ -9,8 +9,7 @@ try:
 except:
     pass
 
-#Requires either open3d torch instalation or torch_cluster
-#Uses open3d by default which, as of 07/23/2023, requires torch 1.13.1
+# Uses open3d by default which, as of October 2024, requires torch 2.0 and cuda11.*
 class NeighborSearch(nn.Module):
     """
     Neighborhood search between two arbitrary coordinate meshes.
