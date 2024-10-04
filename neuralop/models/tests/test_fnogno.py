@@ -6,15 +6,16 @@ from tensorly import tenalg
 tenalg.set_backend("einsum")
 
 from ..fnogno import FNOGNO
-from neuralop.layers.embeddings import SinusoidalEmbedding2D
+from neuralop.layers.embeddings import SinusoidalEmbedding
 
 @pytest.mark.parametrize(
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
 )
 @pytest.mark.parametrize("fno_n_modes", [(8,), (8, 8), (8, 8, 8)])
 @pytest.mark.parametrize("gno_batched", [False, True])
-@pytest.mark.parametrize("gno_coord_embed_dim", [None, 32])
-def test_fnogno(gno_transform_type, fno_n_modes, gno_batched, gno_coord_embed_dim):
+@pytest.mark.parametrize("gno_pos_embed_type", [None, 'transformer'])
+@pytest.mark.parametrize("fno_norm", [None, 'ada_in'])
+def test_fnogno(gno_transform_type, fno_n_modes, gno_batched, gno_pos_embed_type, fno_norm):
     if torch.has_cuda:
         device = torch.device("cuda:0")
     else:
@@ -24,18 +25,13 @@ def test_fnogno(gno_transform_type, fno_n_modes, gno_batched, gno_coord_embed_di
     out_channels = 2
     batch_size = 4
     n_dim = len(fno_n_modes)
-
-    if gno_coord_embed_dim is not None:
-        pos_embedding = SinusoidalEmbedding2D(num_channels=gno_coord_embed_dim, max_positions=10000)
-    else:
-        pos_embedding = None
     
     model = FNOGNO(
         in_channels=in_channels,
         out_channels=out_channels,
         gno_radius=0.2,
         gno_coord_dim=n_dim,
-        gno_pos_embedding=pos_embedding,
+        gno_pos_embed_type=gno_pos_embed_type,
         gno_transform_type=gno_transform_type,
         gno_batched=gno_batched,
         fno_n_modes=fno_n_modes,

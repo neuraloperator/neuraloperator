@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from .channel_mlp import LinearChannelMLP
 from .integral_transform import IntegralTransform
 from .neighbor_search import NeighborSearch
-from .embeddings import SinusoidalEmbedding2D, GridEmbedding2D, GridEmbeddingND
+from .embeddings import SinusoidalEmbedding
 
 
 class GNOBlock(nn.Module):
@@ -40,10 +40,15 @@ class GNOBlock(nn.Module):
         dimension of domain on which x and y are defined
     radius : float
         radius in which to search for neighbors
-    pos_embedding : nn.Module, optional
-        positional embedding module to apply before passing
-        inputs and queries to the IntegralTransform layer
-        default None
+    pos_embedding_type: literal {'transformer', 'nerf'} | None
+        type of positional embedding to use during the kernel integral transform.
+        see `neuralop.layers.embeddings.SinusoidalEmbedding` for more details.
+        default `'transformer'`
+    pos_embedding_channels : int
+        per-channel dimension of optional positional embedding to use, by default 32
+    pos_embedding_max_positions: int
+        `max_positions` parameter for SinusoidalEmbedding of type `'transformer'`. If
+        `pos_embedding_type != 'transformer'`, this value is not used. Default 10000
     channel_mlp : nn.Module, optional
         ChannelMLP parametrizing the kernel k. Input dimension
         should be dim x + dim y or dim x + dim y + dim f.
@@ -81,7 +86,9 @@ class GNOBlock(nn.Module):
                  out_channels: int,
                  coord_dim: int,
                  radius: float,
-                 pos_embedding: nn.Module=None,
+                 pos_embedding_type: str='transformer',
+                 pos_embedding_channels: int=32,
+                 pos_embedding_max_positions: int=10000,
                  channel_mlp: nn.Module=None,
                  channel_mlp_layers: List[int]=None,
                  channel_mlp_non_linearity=F.gelu,
@@ -97,7 +104,16 @@ class GNOBlock(nn.Module):
         self.radius = radius
 
         # Apply sinusoidal positional embedding
-        self.pos_embedding = pos_embedding
+        self.pos_embedding_type = pos_embedding_type
+        if self.pos_embedding_type is not None:
+            self.pos_embedding = SinusoidalEmbedding(
+                in_channels=coord_dim,
+                num_frequencies=pos_embedding_channels,
+                embedding_type=pos_embedding_type,
+                max_positions=pos_embedding_max_positions
+            )
+        else:
+            self.pos_embedding = None
                     
         # Create in-to-out nb search module
         if use_open3d_neighbor_search:
@@ -106,26 +122,15 @@ class GNOBlock(nn.Module):
         self.neighbor_search = NeighborSearch(use_open3d=use_open3d_neighbor_search)
 
         # create proper kernel input channel dim
-        # if nonlinear of either type, add in_features dim
-        # otherwise just add x and y dim
-       
-        kernel_in_dim = self.coord_dim * 2
-        kernel_in_dim_str = "dim(y) + dim(x)"
-
-         # x and y dim will be embedding dim if pos embedding is applied
-        if self.pos_embedding is not None:
-            # Sinusoidal pos_embedding channels are multiplicative
-            if isinstance(self.pos_embedding, SinusoidalEmbedding2D):
-                kernel_in_dim *= self.pos_embedding.out_channels
-            # Grid pos_embedding channels are added to the end of inputs
-            elif isinstance(self.pos_embedding, GridEmbedding2D) or isinstance(self.pos_embedding, GridEmbeddingND):
-                kernel_in_dim += self.pos_embedding.out_channels
-            else:
-                raise ValueError(f"Error: module {self.pos_embedding}  not currently supported. \
-                                 GNO positional embedding currently supports modules in neuralop.layers.embeddings.")
-            
+        if self.pos_embedding is None:
+            # x and y dim will be coordinate dim if no pos embedding is applied
+            kernel_in_dim = self.coord_dim * 2
+            kernel_in_dim_str = "dim(y) + dim(x)"
+        else:
+            # x and y dim will be embedding dim if pos embedding is applied
+            kernel_in_dim = self.pos_embedding.out_channels * 2
             kernel_in_dim_str = "dim(y_embed) + dim(x_embed)"
-
+            
         if transform_type == "nonlinear" or transform_type == "nonlinear_kernelonly":
             kernel_in_dim += self.in_channels
             kernel_in_dim_str += " + dim(f_y)"
@@ -183,13 +188,9 @@ class GNOBlock(nn.Module):
 
         neighbors_dict = self.neighbor_search(data=y, queries=x, radius=self.radius)
         
-        if self.pos_embedding:
-            if isinstance(self.pos_embedding, SinusoidalEmbedding2D):
-                y_embed = self.pos_embedding(y.reshape(-1, )).reshape((n_in, -1))
-                x_embed = self.pos_embedding(x.reshape(-1, )).reshape((n_out, -1))
-            elif isinstance(self.pos_embedding, GridEmbedding2D) or isinstance(self.pos_embedding, GridEmbeddingND):
-                y_embed = self.pos_embedding(y)
-                x_embed = self.pos_embedding(x)
+        if self.pos_embedding is not None:
+            y_embed = self.pos_embedding(y)
+            x_embed = self.pos_embedding(x)
         else:
             y_embed = y
             x_embed = x

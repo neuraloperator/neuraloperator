@@ -7,7 +7,7 @@ from torch import nn
 
 
 from ..layers.channel_mlp import ChannelMLP
-from ..layers.embeddings import SinusoidalEmbedding2D
+from ..layers.embeddings import SinusoidalEmbedding
 from ..layers.fno_block import FNOBlocks
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.gno_block import GNOBlock
@@ -31,13 +31,15 @@ class GINO(nn.Module):
             number of channels in FNO pointwise projection
         gno_coord_dim : int, optional
             geometric dimension of input/output queries, by default 3
-        gno_pos_embedding : nn.Module, defaults to None
-            if passed, applies a positional embedding to
-            input and output query points before passing into
-            the GNOBlock's kernel integral.
-
-            A common choice is ``neuralop.layers.embeddings.SinusoidalEmbedding2D``.
-
+        gno_pos_embed_type : literal `{'transformer', 'nerf'}` | None
+            type of optional sinusoidal positional embedding to use in GNOBlock,
+            by default `'transformer'`
+        gno_embed_channels: int
+            dimension of optional per-channel embedding to use in GNOBlock,
+            by default 32
+        gno_embed_max_positions: int
+            max positions of optional per-channel embedding to use in GNOBlock,
+            by default 10000. If `gno_pos_embed_type != 'transformer'`, value is unused.
         gno_radius : float, optional
             radius in input/output space for GNO neighbor search, by default 0.033
         in_gno_channel_mlp_hidden_layers : list, optional
@@ -141,7 +143,9 @@ class GINO(nn.Module):
             latent_feature_channels=None,
             projection_channels=256,
             gno_coord_dim=3,
-            gno_pos_embedding=None,
+            gno_pos_embed_type='transformer',
+            gno_embed_channels=32,
+            gno_embed_max_positions=10000,
             gno_radius=0.033,
             in_gno_channel_mlp_hidden_layers=[80, 80, 80],
             out_gno_channel_mlp_hidden_layers=[512, 256],
@@ -214,11 +218,14 @@ class GINO(nn.Module):
         # channels starting at 2 to permute everything after channel and batch dims
         self.in_coord_dim_reverse_order = [j + 2 for j in self.in_coord_dim_forward_order]
 
-        if fno_norm == "ada_in":
+        self.fno_norm = fno_norm
+        if self.fno_norm == "ada_in":
             if fno_ada_in_features is not None:
-                self.adain_pos_embed = SinusoidalEmbedding2D(fno_ada_in_features, 
-                                                           max_positions=10000)
-                self.ada_in_dim = fno_ada_in_dim*fno_ada_in_features
+                self.adain_pos_embed = SinusoidalEmbedding(in_channels=fno_ada_in_dim,
+                                                           num_frequencies=fno_ada_in_features, 
+                                                           max_positions=10000,
+                                                           embedding_type='transformer')
+                self.ada_in_dim = self.adain_pos_embed.out_channels
             else:
                 self.ada_in_dim = fno_ada_in_dim
                 self.adain_pos_embed = None
@@ -229,11 +236,6 @@ class GINO(nn.Module):
         self.gno_radius = gno_radius
         self.out_gno_tanh = out_gno_tanh
 
-        if gno_pos_embedding is not None:
-            self.gno_coord_dim_embed = self.gno_out_coord_dim*gno_pos_embedding.out_channels # gno input and output may use separate dims
-        else:
-            self.gno_coord_dim_embed = self.gno_out_coord_dim
-
         ### input GNO
         # input to the first GNO ChannelMLP: x pos encoding,
         # y (integrand) pos encoding, potentially f_y
@@ -242,7 +244,9 @@ class GINO(nn.Module):
             in_channels=in_channels,
             out_channels=in_gno_out_channels,
             coord_dim=self.gno_coord_dim,
-            pos_embedding=gno_pos_embedding,
+            pos_embedding_type=gno_pos_embed_type,
+            pos_embedding_channels=gno_embed_channels,
+            pos_embedding_max_positions=gno_embed_max_positions,
             radius=gno_radius,
             channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
@@ -297,7 +301,9 @@ class GINO(nn.Module):
             out_channels=fno_hidden_channels,
             coord_dim=self.gno_coord_dim,
             radius=self.gno_radius,
-            pos_embedding=gno_pos_embedding,
+            pos_embedding_type=gno_pos_embed_type,
+            pos_embedding_channels=gno_embed_channels,
+            pos_embedding_max_positions=gno_embed_max_positions,
             channel_mlp_layers=out_gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=out_gno_transform_type,
@@ -325,11 +331,11 @@ class GINO(nn.Module):
             if ada_in.ndim == 2:
                 ada_in = ada_in.squeeze(0)
             if self.adain_pos_embed is not None:
-                ada_in_embed = self.adain_pos_embed(ada_in)
+                ada_in_embed = self.adain_pos_embed(ada_in.unsqueeze(0)).squeeze(0)
             else:
                 ada_in_embed = ada_in
-
-            self.fno_blocks.set_ada_in_embeddings(ada_in_embed)
+            if self.fno_norm == "ada_in":
+                self.fno_blocks.set_ada_in_embeddings(ada_in_embed)
 
         #Apply FNO blocks
         in_p = self.lifting(in_p)

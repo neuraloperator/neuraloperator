@@ -5,7 +5,6 @@ from tensorly import tenalg
 
 tenalg.set_backend("einsum")
 
-from ..embeddings import SinusoidalEmbedding2D
 from ..gno_block import GNOBlock
 
 # Fixed variables
@@ -31,28 +30,25 @@ else:
 
 @pytest.mark.parametrize("batch_size", [1,4])
 @pytest.mark.parametrize("gno_coord_dim", [2,3])
-@pytest.mark.parametrize("gno_coord_dim_embed", [None, 32])
+@pytest.mark.parametrize("gno_pos_embed_type", ['nerf', 'transformer', None])
 @pytest.mark.parametrize(
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
 )
 @pytest.mark.parametrize('use_open3d', use_open3d_parametrize)
-def test_gno_block(gno_transform_type, gno_coord_dim, gno_coord_dim_embed, batch_size, use_open3d):
+def test_gno_block(gno_transform_type, gno_coord_dim, gno_pos_embed_type, batch_size, use_open3d):
     if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")
     else:
         device = torch.device("cpu:0")
     
     use_open3d = use_open3d and (gno_coord_dim == 3)
-    if gno_coord_dim_embed is not None:
-        gno_pos_embed = SinusoidalEmbedding2D(gno_coord_dim_embed, max_positions=10000,)
-    else:
-        gno_pos_embed = None
-        
+    
+
     gno_block = GNOBlock(
         in_channels=in_channels,
         out_channels=out_channels, # dummy var currently
         coord_dim=gno_coord_dim,
-        pos_embedding=gno_pos_embed,
+        pos_embedding_type=gno_pos_embed_type,
         radius=0.25,
         channel_mlp_layers=mlp_hidden_layers,
         transform_type=gno_transform_type,

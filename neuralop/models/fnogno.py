@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from .base_model import BaseModel
 
 from ..layers.channel_mlp import ChannelMLP
-from ..layers.embeddings import SinusoidalEmbedding2D
+from ..layers.embeddings import SinusoidalEmbedding
 from ..layers.fno_block import FNOBlocks
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.gno_block import GNOBlock
@@ -20,15 +20,15 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         number of output channels
     projection_channels : int, defaults to 256
          number of hidden channels in embedding block of FNO.
-    gno_coord_dim : int, defaults to 3
-        dimension of GNO input data
-    gno_pos_embedding : nn.Module, defaults to None
-        if passed, applies a positional embedding to
-        input and output query points before passing into
-        the GNOBlock's kernel integral.
-
-        A common choice is ``neuralop.layers.embeddings.SinusoidalEmbedding2D``.
-
+    gno_pos_embed_type : literal `{'transformer', 'nerf'}` | None
+        type of optional sinusoidal positional embedding to use in GNOBlock,
+        by default `'transformer'`
+    gno_embed_channels: int
+        dimension of optional per-channel embedding to use in GNOBlock,
+        by default 32
+    gno_embed_max_positions: int
+        max positions of optional per-channel embedding to use in GNOBlock,
+        by default 10000. If `gno_pos_embed_type != 'transformer'`, value is unused.
     gno_radius : float, defaults to 0.033
         radius parameter to construct graph.
     gno_channel_mlp_hidden_layers : list, defaults to [512, 256]
@@ -113,7 +113,9 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         out_channels,
         projection_channels=256,
         gno_coord_dim=3,
-        gno_pos_embedding=None,
+        gno_pos_embed_type='transformer',
+        gno_embed_channels=32,
+        gno_embed_max_positions=10000,
         gno_radius=0.033,
         gno_channel_mlp_hidden_layers=[512, 256],
         gno_channel_mlp_non_linearity=F.gelu,
@@ -183,8 +185,13 @@ class FNOGNO(BaseModel, name="FNOGNO"):
 
         if fno_norm == "ada_in":
             if fno_ada_in_features is not None:
-                self.adain_pos_embed = SinusoidalEmbedding2D(fno_ada_in_features)
-                self.ada_in_dim = fno_ada_in_dim * fno_ada_in_features
+                self.adain_pos_embed = SinusoidalEmbedding(in_channels=fno_ada_in_dim,
+                                                           num_frequencies=fno_ada_in_features,
+                                                           embedding_type='transformer',
+                                                           )
+                # if ada_in positional embedding is provided, set the input dimension
+                # of the ada_in norm to the output channels of positional embedding
+                self.ada_in_dim = self.adain_pos_embed.out_channels
             else:
                 self.ada_in_dim = fno_ada_in_dim
         else:
@@ -238,7 +245,9 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             out_channels=fno_hidden_channels,
             radius=gno_radius,
             coord_dim=self.gno_coord_dim,
-            pos_embedding = gno_pos_embedding,
+            pos_embedding_type=gno_pos_embed_type,
+            pos_embedding_channels=gno_embed_channels,
+            pos_embedding_max_positions=gno_embed_max_positions,
             channel_mlp_layers=gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=gno_transform_type,
@@ -280,7 +289,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         # Update Ada IN embedding
         if ada_in is not None:
             if self.adain_pos_embed is not None:
-                ada_in_embed = self.adain_pos_embed(ada_in)
+                ada_in_embed = self.adain_pos_embed(ada_in.unsqueeze(0)).squeeze(0)
             else:
                 ada_in_embed = ada_in
 

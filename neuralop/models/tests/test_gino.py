@@ -4,7 +4,6 @@ import pytest
 from tensorly import tenalg
 tenalg.set_backend("einsum")
 
-from neuralop.layers.embeddings import SinusoidalEmbedding2D
 from ..gino import GINO
 
 # Fixed variables
@@ -18,28 +17,22 @@ fno_n_modes = (8,8,8)
 n_in = 100
 n_out = 100
 latent_density = 8
-
+fno_ada_in_dim = 1
+fno_ada_in_features = 4
 
 @pytest.mark.parametrize("batch_size", [1,4])
 @pytest.mark.parametrize("gno_coord_dim", [2,3])
+@pytest.mark.parametrize("gno_pos_embed_type", [None, 'transformer'])
+@pytest.mark.parametrize("fno_norm", [None, "ada_in"])
 @pytest.mark.parametrize(
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
 )
 @pytest.mark.parametrize("latent_feature_dim", [None, 2])
-@pytest.mark.parametrize("gno_coord_embed_dim", [None, 32])
-def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_coord_embed_dim, batch_size):
+def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_embed_type, batch_size, fno_norm):
     if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")
     else:
         device = torch.device("cpu:0")
-
-    # create pos embedding if one is passed
-    if gno_coord_embed_dim is not None:
-        pos_embed = SinusoidalEmbedding2D(num_channels=gno_coord_embed_dim,
-                                          max_positions=10000)
-    else:
-        pos_embed = None
-
     model = GINO(
         in_channels=in_channels,
         out_channels=out_channels,
@@ -47,15 +40,17 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_coord_e
         gno_radius=0.3,# make this large to ensure neighborhoods fit
         projection_channels=projection_channels,
         gno_coord_dim=gno_coord_dim,
-        gno_pos_embedding=pos_embed,
+        gno_pos_embed_type=gno_pos_embed_type,
         in_gno_mlp_hidden_layers=[16,16],
         out_gno_mlp_hidden_layers=[16,16],
         in_gno_transform_type=gno_transform_type,
         out_gno_transform_type=gno_transform_type,
         fno_n_modes=fno_n_modes[:gno_coord_dim],
+        fno_norm=fno_norm,
+        fno_ada_in_dim=fno_ada_in_dim,
+        fno_ada_in_features=fno_ada_in_features,
         # keep the FNO model small for runtime
         fno_lifting_channels=lifting_channels,
-        fno_norm="ada_in", #TODO: Parametrize this
     ).to(device)
 
     # create grid of latent queries on the unit cube
