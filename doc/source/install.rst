@@ -16,11 +16,13 @@ If you are starting with Python or generally want a pain-free experience, we rec
 install the `Anaconda distribiution <https://www.anaconda.com/download/>`_. It comes ready to use with all prerequisite packages.
 
 
-Installing with pip (recommended)
+Installing with pip
 =================================
 
+We periodically package `neuraloperator` for release on PyPI. This version is not guaranteed to be up-to-date with
+the latest changes to our code. 
 
-Simply run, in your terminal::
+To install via pip, simply run, in your terminal::
 
    pip install -U neuraloperator
 
