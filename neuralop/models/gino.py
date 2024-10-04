@@ -14,8 +14,9 @@ from ..layers.gno_block import GNOBlock
 
 class GINO(nn.Module):
     """GINO: Geometry-informed Neural Operator. Learns a mapping between
-        functions defined over arbitrary coordinate meshes with spectral convolution
-        layers in an intermediate latent space, as described in [1]_.
+       functions presented over arbitrary coordinate meshes. The model carries
+       global integration through spectral convolution layers in an intermediate
+       latent space, as described in [1]_.
 
         Parameters
         ----------
