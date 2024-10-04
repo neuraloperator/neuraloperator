@@ -1,3 +1,5 @@
+.. _api_ref:
+
 #############
 API reference
 #############
@@ -192,8 +194,21 @@ Find neighborhoods on arbitrary coordinate meshes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Other resolution invariant operations
+Other resolution-invariant operations
 -------------------------------------
+
+Positional embedding layers:
+
+.. automodule:: neuralop.layers.embeddings
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    GridEmbeddingND
+    SinusoidalEmbedding
 
 Automatically apply resolution dependent domain padding: 
 

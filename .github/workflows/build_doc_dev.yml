@@ -63,7 +63,7 @@ jobs:
         git rm -r dev/*
         mkdir -p dev
         echo "Copying to folder"
-        cp -r ../doc/_build/html/* dev/.
+        cp -r ../doc/build/html/* dev/
         echo "Pushing to git"
         git add dev
         git commit -m "Github action: auto-update."

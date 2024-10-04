@@ -68,7 +68,7 @@ jobs:
       fi
       mkdir -p stable
       echo "Copying to folder"
-      cp -r ../doc/_build/html/* stable/.
+      cp -r ../doc/build/html/* stable/
       echo "Pushing to git"
       git add dev
       git commit -m "Github action: auto-update."

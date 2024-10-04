@@ -1,24 +1,42 @@
+from abc import ABC, abstractmethod
 from typing import List
 
 import torch
 from torch import nn
 
-class GridEmbedding2D(nn.Module):
+
+class Embedding(nn.Module, ABC):
+    def __init__(self):
+        super().__init__()
+    
+    @property
+    @abstractmethod
+    def out_channels(self):
+        pass
+
+class GridEmbedding2D(Embedding):
     """A simple positional embedding as a regular 2D grid
     """
-    def __init__(self, grid_boundaries=[[0, 1], [0, 1]]):
+    def __init__(self, in_channels: int, grid_boundaries=[[0, 1], [0, 1]]):
         """GridEmbedding2D applies a simple positional 
         embedding as a regular 2D grid
 
         Parameters
         ----------
+        in_channels : int
+            number of channels in input. Fixed for output channel interface
         grid_boundaries : list, optional
             coordinate boundaries of input grid, by default [[0, 1], [0, 1]]
         """
         super().__init__()
+        self.in_channels = in_channels
         self.grid_boundaries = grid_boundaries
         self._grid = None
         self._res = None
+    
+    @property
+    def out_channels(self):
+        return self.in_channels + 2
 
     def grid(self, spatial_dims, device, dtype):
         """grid generates 2D grid needed for pos encoding
@@ -68,24 +86,31 @@ class GridEmbedding2D(nn.Module):
 class GridEmbeddingND(nn.Module):
     """A positional embedding as a regular ND grid
     """
-    def __init__(self, dim: int=2, grid_boundaries=[[0, 1], [0, 1]]):
+    def __init__(self, in_channels: int, dim: int=2, grid_boundaries=[[0, 1], [0, 1]]):
         """GridEmbeddingND applies a simple positional 
         embedding as a regular ND grid
 
         Parameters
         ----------
-        dim: int
+        in_channels : int
+            number of channels in input
+        dim : int
             dimensions of positional encoding to apply
         grid_boundaries : list, optional
             coordinate boundaries of input grid along each dim, by default [[0, 1], [0, 1]]
         """
         super().__init__()
+        self.in_channels = in_channels
         self.dim = dim
         assert self.dim == len(grid_boundaries), f"Error: expected grid_boundaries to be\
             an iterable of length {self.dim}, received {grid_boundaries}"
         self.grid_boundaries = grid_boundaries
         self._grid = None
         self._res = None
+    
+    @property
+    def out_channels(self):
+        return self.in_channels + self.dim
 
     def grid(self, spatial_dims: torch.Size, device: str, dtype: torch.dtype):
         """grid generates ND grid needed for pos encoding
@@ -137,35 +162,116 @@ class GridEmbeddingND(nn.Module):
         out =  torch.cat((data, *grids),
                          dim=1)
         return out
-    
-class SinusoidalEmbedding2D(nn.Module):
-    def __init__(self, num_channels, max_positions=10000, endpoint=False):
-        """SinusoidalEmbedding2D applies a 2d sinusoidal positional encoding 
 
-        Parameters
-        ----------
-        num_channels : int
-            number of input channels
-        max_positions : int, optional
-            maximum positions to encode, by default 10000
-        endpoint : bool, optional
-            whether to set endpoint, by default False
-        """
+class SinusoidalEmbedding(Embedding):
+    """
+    SinusoidalEmbedding provides a unified sinusoidal positional embedding
+    in the styles of Transformers :ref:`[1]` and Neural Radiance Fields (NERFs) :ref:`[2]`.
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels to embed
+    num_freqs : int, optional
+        Number of frequencies in positional embedding.
+        By default, set to the number of input channels
+    embedding : {'transformer', 'nerf'}
+        Type of embedding to apply. For a function with N input channels, 
+        each channel value p is embedded via a function g with 2L channels 
+        such that g(p) is a 2L-dim vector. For 0 <= k < L:
+
+        * 'transformer' for transformer-style encoding.
+
+            g(p)_k = sin((p / max_positions) ^ {k / N})
+
+            g(p)_{k+1} = cos((p / max_positions) ^ {k / N})
+
+        * 'nerf' : NERF-style encoding.  
+
+            g(p)_k = sin(2^(k) * Pi * p)
+
+            g(p)_{k+1} = cos(2^(k) * Pi * p)
+
+    max_positions : int, optional
+        Maximum number of positions for the encoding, default 10000
+        Only used if `embedding == transformer`.
+
+    References
+    -----------
+    .. _[1]: 
+
+    Vaswani, A. et al (2017)
+        "Attention Is All You Need". 
+        NeurIPS 2017, https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf. 
+
+    .. _[2]: 
+    
+    Mildenhall, B. et al (2020)
+        "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis".
+        ArXiv, https://arxiv.org/pdf/2003.08934. 
+    """
+    def __init__(self, 
+                 in_channels: int,
+                 num_frequencies: int=None, 
+                 embedding_type: str='transformer', 
+                 max_positions: int=10000):
         super().__init__()
-        self.num_channels = num_channels
+        self.in_channels = in_channels
+        self.num_frequencies = num_frequencies
+        
+        # verify embedding type
+        allowed_embeddings = ['nerf', 'transformer']
+        assert embedding_type in allowed_embeddings, \
+            f"Error: embedding_type expected one of {allowed_embeddings}, received {embedding_type}"
+        self.embedding_type = embedding_type
+        if self.embedding_type == "transformer":
+            assert max_positions is not None, "Error: max_positions must have an int value for \
+                transformer embedding."
         self.max_positions = max_positions
-        self.endpoint = endpoint
+    
+    
+    @property
+    def out_channels(self):
+        """
+        out_channels: required property for linking/composing model layers 
+        """
+        return 2 * self.num_frequencies * self.in_channels
 
     def forward(self, x):
-        freqs = torch.arange(
-            start=0, end=self.num_channels // 2, dtype=torch.float32, device=x.device
-        )
-        freqs = freqs / (self.num_channels // 2 - (1 if self.endpoint else 0))
-        freqs = (1 / self.max_positions) ** freqs
-        x = x.ger(freqs.to(x.dtype))
-        x = torch.cat([x.cos(), x.sin()], dim=1)
-        return x
+        """
+        Parameters 
+        -----------
+        x: torch.Tensor, shape (n_in, self.in_channels) or (batch, n_in, self.in_channels)
+        """
+        assert x.ndim in [2,3], f"Error: expected inputs of shape (batch, n_in, {self.in_channels})\
+            or (n_in, channels), got inputs with ndim={x.ndim}, shape={x.shape}"
+        if x.ndim == 2:
+            batched = False
+            x = x.unsqueeze(0)
+        else:
+            batched = True
+        batch_size, n_in, _ = x.shape
+        
+        if self.embedding_type == 'nerf':
+            freqs = 2 ** torch.arange(0, self.num_frequencies, device=x.device) * torch.pi
+        
+        elif self.embedding_type == 'transformer':
+            freqs = torch.arange(0, self.num_frequencies, device=x.device) / self.in_channels
+            freqs = (1 / self.max_positions) ** freqs
+        
+        # outer product of wavenumbers and position coordinates
+        # shape b, n_in * channels, len(freqs)
+        freqs = torch.einsum('bij, k -> bijk', x, freqs)
 
+        # shape len(x), 2, len(freqs)
+        freqs = torch.stack((freqs.sin(),freqs.cos()), dim=-1)
+
+        # transpose the inner per-entry matrix and ravel to interleave sin and cos
+        freqs = freqs.view(batch_size, n_in, -1)
+        
+        if not batched:
+            freqs = freqs.squeeze(0)
+        return freqs
 
 class RotaryEmbedding2D(nn.Module):
     def __init__(self, dim, min_freq=1/64, scale=1.):

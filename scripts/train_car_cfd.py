@@ -174,7 +174,7 @@ trainer = Trainer(model=model,
                   )
 
 if config.wandb.log:
-    wandb.log({'time_to_distance': data_module.time_to_distance})
+    wandb.log({'time_to_distance': data_module.time_to_distance}, commit=False)
 
 trainer.train(
               train_loader=train_loader,
