@@ -175,22 +175,22 @@ class SinusoidalEmbedding(Embedding):
     num_freqs : int, optional
         Number of frequencies in positional embedding.
         By default, set to the number of input channels
-    embedding : {'nerf', 'transformer'}
+    embedding : {'transformer', 'nerf'}
         Type of embedding to apply. For a function with N input channels, 
         each channel value p is embedded via a function g with 2L channels 
         such that g(p) is a 2L-dim vector. For 0 <= k < L:
-        
-        * 'nerf' : NERF-style encoding.  
-
-            g(p)_k = sin(2^(k) * Pi * p)
-
-            g(p)_{k+1} = cos(2^(k) * Pi * p)
 
         * 'transformer' for transformer-style encoding.
 
             g(p)_k = sin((p / max_positions) ^ {k / N})
 
             g(p)_{k+1} = cos((p / max_positions) ^ {k / N})
+
+        * 'nerf' : NERF-style encoding.  
+
+            g(p)_k = sin(2^(k) * Pi * p)
+
+            g(p)_{k+1} = cos(2^(k) * Pi * p)
 
     max_positions : int, optional
         Maximum number of positions for the encoding, default 10000
@@ -213,7 +213,7 @@ class SinusoidalEmbedding(Embedding):
     def __init__(self, 
                  in_channels: int,
                  num_frequencies: int=None, 
-                 embedding_type: str='nerf', 
+                 embedding_type: str='transformer', 
                  max_positions: int=10000):
         super().__init__()
         self.in_channels = in_channels

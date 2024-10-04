@@ -29,7 +29,7 @@ class GINO(nn.Module):
         gno_coord_embed_dim : int, optional
             dimension of positional embedding for gno coordinates, by default None
         gno_embed_max_positions : int, optional
-            max positions for use in gno positional embedding, by default None
+            max positions for use in gno positional embedding, by default 10000
         gno_radius : float, optional
             radius in input/output space for GNO neighbor search, by default 0.033
         in_gno_channel_mlp_hidden_layers : list, optional
@@ -123,7 +123,7 @@ class GINO(nn.Module):
             projection_channels=256,
             gno_coord_dim=3,
             gno_coord_embed_dim=None,
-            gno_embed_max_positions=None,
+            gno_embed_max_positions=100000,
             gno_radius=0.033,
             in_gno_channel_mlp_hidden_layers=[80, 80, 80],
             out_gno_channel_mlp_hidden_layers=[512, 256],
@@ -192,7 +192,7 @@ class GINO(nn.Module):
             if fno_ada_in_features is not None:
                 self.adain_pos_embed = SinusoidalEmbedding(in_channels=fno_ada_in_dim,
                                                            num_frequencies=fno_ada_in_features,
-                                                           embedding_type='nerf',
+                                                           embedding_type='transformer',
                                                            max_positions=gno_embed_max_positions)
                 self.ada_in_dim = self.adain_pos_embed.out_channels
             else:
@@ -247,7 +247,7 @@ class GINO(nn.Module):
         if gno_coord_embed_dim is not None:
             self.pos_embed = SinusoidalEmbedding(in_channels=gno_coord_dim,
                                                  num_frequencies=gno_coord_embed_dim, 
-                                                 embedding_type='nerf',
+                                                 embedding_type='transformer',
                                                  max_positions=gno_embed_max_positions)
             self.gno_coord_dim_embed = self.pos_embed.out_channels
         else:
