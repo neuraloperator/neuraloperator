@@ -589,7 +589,8 @@ class Trainer:
 
     def checkpoint(self, save_dir):
         """checkpoint saves current training state
-        to a directory for resuming later.
+        to a directory for resuming later. Only saves 
+        training state on the first GPU. 
         See neuralop.training.training_state
 
         Parameters
@@ -597,18 +598,19 @@ class Trainer:
         save_dir : str | Path
             directory in which to save training state
         """
-        if self.save_best is not None:
-            save_name = 'best_model'
-        else:
-            save_name = "model"
-        save_training_state(save_dir=save_dir, 
-                            save_name=save_name,
-                            model=self.model,
-                            optimizer=self.optimizer,
-                            scheduler=self.scheduler,
-                            regularizer=self.regularizer
-                            )
-        if self.verbose:
-            print(f"Saved training state to {save_dir}")
+        if comm.get_local_rank() == 0:
+            if self.save_best is not None:
+                save_name = 'best_model'
+            else:
+                save_name = "model"
+            save_training_state(save_dir=save_dir, 
+                                save_name=save_name,
+                                model=self.model,
+                                optimizer=self.optimizer,
+                                scheduler=self.scheduler,
+                                regularizer=self.regularizer
+                                )
+            if self.verbose:
+                print(f"Saved training state to {save_dir}")
 
        
