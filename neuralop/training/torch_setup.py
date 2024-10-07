@@ -20,7 +20,8 @@ def setup(config):
         is_logger : bool
     """
     if config.distributed.use_distributed:
-        comm.init(config, verbose=config.verbose)
+        comm.init(model_parallel_size=config.distributed.get('model_parallel_size', 1),
+                  verbose=config.verbose)
 
         #Set process 0 to log screen and wandb
         is_logger = (comm.get_world_rank() == 0)
@@ -43,7 +44,7 @@ def setup(config):
         #Ensure batch can be evenly split among the data-parallel group
         #NOTE: Distributed sampler NOT implemented: set model_parallel_size = # of GPUS
         assert (config.data.batch_size % comm.get_data_parallel_size() == 0), (
-                f'Batch of size {config.data.batch_size} can be evenly split among the data-parallel group={comm.get_data_parallel_size()}.'
+                f'Batch of size {config.data.batch_size} can be evenly split among the data-parallel group of {comm.get_data_parallel_size()} GPUs.'
         )
         config.data.batch_size = config.data.batch_size // comm.get_data_parallel_size()
 

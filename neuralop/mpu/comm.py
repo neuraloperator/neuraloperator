@@ -97,38 +97,21 @@ def get_model_parallel_group():
     return _MODEL_PARALLEL_GROUP  
 
 # get 
-def init(dist_method: str,
-         model_parallel_size:  int=1,
-         wireup_store: str=None,
+def init(model_parallel_size:  int=1,
          verbose = False):
     
     # set up global and local communicator
     # torchrun initializes rank env vars by default and uses its own wireup logic
-    if dist_method == "torchrun":
-        local_rank = os.getenv("LOCAL_RANK", 0)
-        global_rank = os.getenv("RANK", 0)
+    local_rank = os.getenv("LOCAL_RANK", 0)
+    global_rank = os.getenv("RANK", 0)
 
     
     if world_size > 1:
         with disable_logging():
-            if wireup_store == "file":
-
-                wireup_file_path = os.getenv('WIREUP_FILE_PATH')
-                wireup_store = dist.FileStore(wireup_file_path, world_size)
-            
-            elif wireup_store == "tcp":
-                # create tcp store
-                wireup_store = dist.TCPStore(host_name = master_address,
-                                             port = port,
-                                             world_size = world_size,
-                                             is_master = (local_rank == 0),
-                                             timeout = dt.timedelta(seconds=900))
-                
             # initialize process groups
             dist.init_process_group(backend = 'nccl',
                                     rank = local_rank,
-                                    world_size = world_size,
-                                    store = wireup_store)
+                                    world_size = world_size)
         
             # get sizes
             world_size = get_world_size()
