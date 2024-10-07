@@ -2,13 +2,15 @@ import sys
 
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 import torch
-from torch.nn.parallel import DistributedDataParallel as DDP
+
+from torch.utils.data import DataLoader, DistributedSampler
 import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.training import setup, AdamW
+from neuralop.mpu.comm import get_local_rank
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -90,12 +92,22 @@ if config.patching.levels > 0:
 
 model = get_model(config)
 
-# Use distributed data parallel
+# Reconfigure DataLoaders to use a DistributedSampler 
+# if in distributed data parallel mode
 if config.distributed.use_distributed:
-    model = DDP(
-        model, device_ids=[device.index], output_device=device.index, static_graph=True
-    )
-
+    train_db = train_loader.dataset
+    train_sampler = DistributedSampler(train_db, rank=get_local_rank())
+    train_loader = DataLoader(dataset=train_db,
+                              batch_size=config.data.batch_size,
+                              sampler=train_sampler)
+    for (res, loader), batch_size in zip(test_loaders.items(), config.data.test_batch_sizes):
+        
+        test_db = loader.dataset
+        test_sampler = DistributedSampler(test_db, rank=get_local_rank())
+        test_loaders[res] = DataLoader(dataset=test_db,
+                              batch_size=batch_size,
+                              shuffle=False,
+                              sampler=test_sampler)
 # Create the optimizer
 optimizer = AdamW(
     model.parameters(),
