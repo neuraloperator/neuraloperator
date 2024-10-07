@@ -212,12 +212,7 @@ Find neighborhoods on arbitrary coordinate meshes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-<<<<<<< HEAD
-
-Other resolution invariant operations
-=======
 Other resolution-invariant operations
->>>>>>> main
 -------------------------------------
 
 Positional embedding layers:
