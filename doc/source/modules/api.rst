@@ -186,7 +186,7 @@ Apply positional embeddings as additional channels on a function:
 
     GridEmbeddingND
     GridEmbedding2D
-    SinusoidalEmbedding2D
+    SinusoidalEmbedding
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
