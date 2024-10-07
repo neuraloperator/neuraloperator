@@ -24,7 +24,7 @@ def setup(config):
                   verbose=config.verbose)
 
         #Set process 0 to log screen and wandb
-        is_logger = (comm.get_world_rank() == 0)
+        is_logger = (comm.get_local_rank() == 0)
 
         #Set device and random seed
         device = torch.device(f"cuda:{comm.get_local_rank()}")

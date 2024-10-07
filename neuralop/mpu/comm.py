@@ -122,7 +122,6 @@ def init(model_parallel_size:  int=1,
         
             # once initialized, get true values for rank and size using torch.distributed
             world_size = get_world_size()
-            global_rank = get_global_rank()
             local_rank = get_local_rank()
 
             # set a barrier until all processes reach this point
