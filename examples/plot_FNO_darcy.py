@@ -155,7 +155,7 @@ fig.show()
 
 # %%
 # .. zero_shot :
-# Zero-shot super-resolution
+# Zero-shot super-evaluation
 # ---------------------------
 # In addition to training and making predictions on the same input size, 
 # the FNO's invariance to the discretization of input data means we 
