@@ -99,7 +99,6 @@ def get_model_parallel_group():
 # get 
 def init(dist_method: str,
          model_parallel_size:  int=1,
-         wireup_info: str=None,
          wireup_store: str=None,
          verbose = False):
     
@@ -108,24 +107,7 @@ def init(dist_method: str,
     if dist_method == "torchrun":
         local_rank = os.getenv("LOCAL_RANK", 0)
         global_rank = os.getenv("RANK", 0)
-    
-    # TODO: this is legacy. Should we remove?
-    if wireup_info == "mpi":
 
-        import socket
-        from mpi4py import MPI
-
-        mpi_comm = MPI.COMM_WORLD.Dup()
-        world_size = mpi_comm.Get_size()
-        local_rank = mpi_comm.Get_rank()
-        my_host = '127.0.0.1'
-        port = 29500
-        master_address = mpi_comm.bcast(my_host, root=0)
-        os.environ["MASTER_ADDRESS"] = master_address
-        os.environ["MASTER_PORT"] = str(port)
-
-    else:
-        raise ValueError(f"Error, wireup-info {wireup_info} not supported")
     
     if world_size > 1:
         with disable_logging():
