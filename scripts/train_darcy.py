@@ -87,10 +87,8 @@ if config.patching.levels > 0:
                                              padding_fraction=config.patching.padding,
                                              stitching=config.patching.stitching,
                                              levels=config.patching.levels)
-data_processor = data_processor.to(device)
 
 model = get_model(config)
-model = model.to(device)
 
 # Use distributed data parallel
 if config.distributed.use_distributed:
