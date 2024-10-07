@@ -18,33 +18,40 @@ fno_n_modes = (8,8,8)
 n_in = 100
 n_out = 100
 latent_density = 8
-
+fno_ada_in_dim = 1
+fno_ada_in_features = 4
 
 @pytest.mark.parametrize("batch_size", [1,4])
 @pytest.mark.parametrize("gno_coord_dim", [2,3])
+@pytest.mark.parametrize("gno_coord_embed_dim", [None, 32])
+@pytest.mark.parametrize("fno_norm", [None, "ada_in"])
 @pytest.mark.parametrize(
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
 )
-def test_gino(gno_transform_type, gno_coord_dim, batch_size):
-    if torch.backends.cuda.is_built():
+def test_gino(gno_transform_type, gno_coord_dim, gno_coord_embed_dim, batch_size, fno_norm):
+    '''if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")
     else:
         device = torch.device("cpu:0")
-    
+    '''
+    device = "cpu"
     model = GINO(
         in_channels=in_channels,
         out_channels=out_channels,
         gno_radius=0.3,# make this large to ensure neighborhoods fit
         projection_channels=projection_channels,
         gno_coord_dim=gno_coord_dim,
+        gno_coord_embed_dim=gno_coord_embed_dim,
         in_gno_mlp_hidden_layers=[16,16],
         out_gno_mlp_hidden_layers=[16,16],
         in_gno_transform_type=gno_transform_type,
         out_gno_transform_type=gno_transform_type,
         fno_n_modes=fno_n_modes[:gno_coord_dim],
+        fno_norm=fno_norm,
+        fno_ada_in_dim=fno_ada_in_dim,
+        fno_ada_in_features=fno_ada_in_features,
         # keep the FNO model small for runtime
         fno_lifting_channels=lifting_channels,
-        fno_norm="ada_in", #TODO: Parametrize this
     ).to(device)
 
     # create grid of latent queries on the unit cube

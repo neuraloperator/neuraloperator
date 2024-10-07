@@ -180,7 +180,9 @@ class UNO(nn.Module):
         # create positional embedding at the beginning of the model
         if positional_embedding == "grid":
             spatial_grid_boundaries = [[0., 1.]] * self.n_dim
-            self.positional_embedding = GridEmbeddingND(dim=self.n_dim, grid_boundaries=spatial_grid_boundaries)
+            self.positional_embedding = GridEmbeddingND(in_channels=self.in_channels,
+                                                        dim=self.n_dim,
+                                                        grid_boundaries=spatial_grid_boundaries)
         elif isinstance(positional_embedding, GridEmbedding2D):
             if self.n_dim == 2:
                 self.positional_embedding = positional_embedding

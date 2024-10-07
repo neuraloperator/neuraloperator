@@ -44,7 +44,8 @@ so your trained operator can be applied on data of any resolution.
 Quickstart
 ==========
 
-This guide will walk you through the standard ML workflow of loading data, creating a neural operator, training it on your data and saving the trained model for later use.
+This guide will walk you through the standard ML workflow of loading data, creating a neural operator, 
+training it on the data and saving the trained model for later use. (Check out :ref:`gallery_examples` for more info)
 
 First install the library ``pip install neuraloperator`` (see :doc:`install` for more options).
 
