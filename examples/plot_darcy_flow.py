@@ -56,7 +56,7 @@ data = data_processor.preprocess(data, batched=False)
 # The first step of the default FNO model is a grid-based
 # positional embedding. We will add it manually here to
 # visualize the channels appended by this embedding.
-positional_embedding = GridEmbedding2D()
+positional_embedding = GridEmbedding2D(in_channels=1)
 # at train time, data will be collated with a batch dim.
 # we create a batch dim to pass into the embedding, then re-squeeze
 x = positional_embedding(data['x'].unsqueeze(0)).squeeze(0)

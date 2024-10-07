@@ -11,7 +11,8 @@ from ..embeddings import GridEmbedding2D, GridEmbeddingND
 
 def test_GridEmbedding2D():
     grid_boundaries = [[0,1], [0,1]]
-    pos_embed = GridEmbedding2D(grid_boundaries=grid_boundaries)
+    pos_embed = GridEmbedding2D(in_channels=1,
+                                grid_boundaries=grid_boundaries)
 
     input_res = (20,20)
     x = torch.randn(1,1,*input_res)
@@ -25,7 +26,8 @@ def test_GridEmbedding2D():
 @pytest.mark.parametrize('dim', [1,2,3,4])
 def test_GridEmbeddingND(dim):
     grid_boundaries = [[0,1]] * dim
-    pos_embed = GridEmbeddingND(dim=dim,
+    pos_embed = GridEmbeddingND(in_channels=1,
+                                dim=dim,
                             grid_boundaries=grid_boundaries)
 
     input_res = [20] * dim

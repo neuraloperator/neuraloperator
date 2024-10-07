@@ -1,9 +1,9 @@
 """
-Training an FNO on Darcy-Flow
-=============================
+FNO with zero-shot super-resolution 
+=====================================
 
 In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
-to train a Fourier Neural Operator.
+to train a Fourier-Neural Operator
 """
 
 # %%
@@ -23,7 +23,7 @@ device = 'cpu'
 
 
 # %%
-# Let's load the small Darcy-flow dataset. For more information check :doc:/
+# Loading the Navier-Stokes dataset in 128x128 resolution
 train_loader, test_loaders, data_processor = load_darcy_flow_small(
         n_train=1000, batch_size=32, 
         test_resolutions=[16, 32], n_tests=[100, 50],
