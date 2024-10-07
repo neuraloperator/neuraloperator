@@ -321,7 +321,7 @@ class Trainer:
         """
         # Ensure model and data processor are loaded to the proper device
 
-        if self.model.device != self.device:
+        if self.model.device != self.device or not hasattr(self.model, 'device'):
             self.model = self.model.to(self.device)
         if self.data_processor is not None and self.data_processor.device != self.device:
             self.data_processor = self.data_processor.to(self.device)
