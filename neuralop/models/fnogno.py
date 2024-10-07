@@ -2,10 +2,10 @@ import torch
 import torch.nn.functional as F
 
 from .base_model import BaseModel
-from .fno import FNO
 
 from ..layers.channel_mlp import ChannelMLP
-from ..layers.embeddings import SinusoidalEmbedding2D
+from ..layers.embeddings import SinusoidalEmbedding
+from ..layers.fno_block import FNOBlocks
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.integral_transform import IntegralTransform
 from ..layers.neighbor_search import NeighborSearch
@@ -100,13 +100,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         * `factorized` : the input is directly contracted with the factors of the decomposition
     fno_decomposition_kwargs : dict, defaults to dict()
         Optionaly additional parameters to pass to the tensor decomposition.
-    fno_domain_padding : float | None, defaults to None
-        If not None, percentage of padding to use.
-    fno_domain_padding_mode : str {'symmetric', 'one-sided'}, defaults to 'one-sided'
-        How to perform domain padding.
-    fno_fft_norm : str, defaults to 'forward'
-        normalization parameter of torch.fft to use in FNO. Defaults to 'forward'
-    fno_SpectralConv : nn.Module, defaults to SpectralConv
+    fno_conv_module : nn.Module, defaults to SpectralConv
          Spectral Convolution module to use.
     """
 
@@ -117,6 +111,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         projection_channels=256,
         gno_coord_dim=3,
         gno_coord_embed_dim=None,
+        gno_embed_max_positions=10000,
         gno_radius=0.033,
         gno_channel_mlp_hidden_layers=[512, 256],
         gno_channel_mlp_non_linearity=F.gelu,
@@ -148,10 +143,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         fno_fixed_rank_modes=False,
         fno_implementation="factorized",
         fno_decomposition_kwargs=dict(),
-        fno_domain_padding=None,
-        fno_domain_padding_mode="one-sided",
-        fno_fft_norm="forward",
-        fno_SpectralConv=SpectralConv,
+        fno_conv_module=SpectralConv,
         **kwargs,
     ):
         super().__init__()
@@ -189,56 +181,70 @@ class FNOGNO(BaseModel, name="FNOGNO"):
 
         if fno_norm == "ada_in":
             if fno_ada_in_features is not None:
-                self.adain_pos_embed = SinusoidalEmbedding2D(fno_ada_in_features)
-                self.ada_in_dim = fno_ada_in_dim * fno_ada_in_features
+                self.adain_pos_embed = SinusoidalEmbedding(in_channels=fno_ada_in_dim,
+                                                           num_frequencies=fno_ada_in_features,
+                                                           embedding_type='transformer',
+                                                           )
+                # if ada_in positional embedding is provided, set the input dimension
+                # of the ada_in norm to the output channels of positional embedding
+                self.ada_in_dim = self.adain_pos_embed.out_channels
             else:
                 self.ada_in_dim = fno_ada_in_dim
         else:
             self.adain_pos_embed = None
             self.ada_in_dim = None
 
-        self.fno = FNO(
-            n_modes=fno_n_modes,
-            hidden_channels=fno_hidden_channels,
-            in_channels=in_channels + self.in_coord_dim,
-            out_channels=fno_hidden_channels,
-            positional_embedding=None,
-            lifting_channels=fno_lifting_channels,
-            projection_channels=1,
-            n_layers=fno_n_layers,
-            output_scaling_factor=fno_output_scaling_factor,
-            incremental_n_modes=fno_incremental_n_modes,
-            fno_block_precision=fno_block_precision,
-            use_channel_mlp=fno_use_channel_mlp,
-            channel_mlp={"expansion": fno_channel_mlp_expansion, "dropout": fno_channel_mlp_dropout},
-            non_linearity=fno_non_linearity,
-            stabilizer=fno_stabilizer,
-            norm=fno_norm,
-            ada_in_features=self.ada_in_dim,
-            preactivation=fno_preactivation,
-            fno_skip=fno_skip,
-            channel_mlp_skip=fno_channel_mlp_skip,
-            separable=fno_separable,
-            factorization=fno_factorization,
-            rank=fno_rank,
-            joint_factorization=fno_joint_factorization,
-            fixed_rank_modes=fno_fixed_rank_modes,
-            implementation=fno_implementation,
-            decomposition_kwargs=fno_decomposition_kwargs,
-            domain_padding=fno_domain_padding,
-            domain_padding_mode=fno_domain_padding_mode,
-            fft_norm=fno_fft_norm,
-            SpectralConv=fno_SpectralConv,
-            **kwargs,
+        # Create lifting for FNOBlock separately
+        self.lifting = ChannelMLP(in_channels=in_channels + self.in_coord_dim,
+                                  hidden_channels=fno_lifting_channels,
+                                  out_channels=fno_hidden_channels,
+                                  n_layers=3)
+        
+        self.fno_hidden_channels = fno_hidden_channels
+        self.fno_blocks = FNOBlocks(
+                n_modes=fno_n_modes,
+                hidden_channels=fno_hidden_channels,
+                in_channels=fno_hidden_channels,
+                out_channels=fno_hidden_channels,
+                positional_embedding=None,
+                n_layers=fno_n_layers,
+                output_scaling_factor=fno_output_scaling_factor,
+                incremental_n_modes=fno_incremental_n_modes,
+                fno_block_precision=fno_block_precision,
+                use_channel_mlp=fno_use_channel_mlp,
+                channel_mlp_expansion=fno_channel_mlp_expansion,
+                channel_mlp_dropout=fno_channel_mlp_dropout,
+                non_linearity=fno_non_linearity,
+                stabilizer=fno_stabilizer, 
+                norm=fno_norm,
+                ada_in_features=self.ada_in_dim,
+                preactivation=fno_preactivation,
+                fno_skip=fno_skip,
+                channel_mlp_skip=fno_channel_mlp_skip,
+                separable=fno_separable,
+                factorization=fno_factorization,
+                rank=fno_rank,
+                joint_factorization=fno_joint_factorization, 
+                fixed_rank_modes=fno_fixed_rank_modes,
+                implementation=fno_implementation,
+                decomposition_kwargs=fno_decomposition_kwargs,
+                domain_padding=None,
+                domain_padding_mode=None,
+                conv_module=fno_conv_module,
+                **kwargs
         )
-        del self.fno.projection
 
         self.nb_search_out = NeighborSearch(use_open3d=gno_use_open3d)
         self.gno_radius = gno_radius
 
         if gno_coord_embed_dim is not None:
-            self.pos_embed = SinusoidalEmbedding2D(gno_coord_embed_dim)
-            self.gno_coord_dim_embed = gno_coord_dim * gno_coord_embed_dim
+            self.pos_embed = SinusoidalEmbedding(in_channels=self.gno_coord_dim,
+                                                 num_frequencies=gno_coord_embed_dim,
+                                                 embedding_type='transformer',
+                                                 max_positions=gno_embed_max_positions)
+            # if pos embedding is provided, its outputs will have 
+            # `pos_embed.out_channels` channels when passed to the output GNO
+            self.gno_coord_dim_embed = self.pos_embed.out_channels
         else:
             self.pos_embed = None
             self.gno_coord_dim_embed = gno_coord_dim
@@ -289,23 +295,17 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         # Update Ada IN embedding
         if ada_in is not None:
             if self.adain_pos_embed is not None:
-                ada_in_embed = self.adain_pos_embed(ada_in)
+                ada_in_embed = self.adain_pos_embed(ada_in.unsqueeze(0)).squeeze(0)
             else:
                 ada_in_embed = ada_in
 
-            self.fno.fno_blocks.set_ada_in_embeddings(ada_in_embed)
+            self.fno_blocks.set_ada_in_embeddings(ada_in_embed)
 
         # Apply FNO blocks
 
-        in_p = self.fno.lifting(in_p)
-        if self.fno.domain_padding is not None:
-            in_p = self.fno.domain_padding.pad(in_p)
-
-        for layer_idx in range(self.fno.n_layers):
-            in_p = self.fno.fno_blocks(in_p, layer_idx)
-
-        if self.fno.domain_padding is not None:
-            in_p = self.fno.domain_padding.unpad(in_p)
+        in_p = self.lifting(in_p)
+        for layer_idx in range(self.fno_blocks.n_layers):
+            in_p = self.fno_blocks(in_p, layer_idx)
 
         if self.gno_batched:
             return in_p
@@ -327,10 +327,8 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         n_in = in_p.view(-1, in_p.shape[-1]).shape[0]
         if self.pos_embed is not None:
             in_p_embed = self.pos_embed(
-                in_p.reshape(
-                    -1,
+                in_p.reshape((n_in, -1))
                 )
-            ).reshape((n_in, -1))
         else:
             in_p_embed = in_p.reshape((n_in, -1))
 
@@ -338,10 +336,8 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         n_out = out_p.shape[0]
         if self.pos_embed is not None:
             out_p_embed = self.pos_embed(
-                out_p.reshape(
-                    -1,
-                )
-            ).reshape((n_out, -1))
+                out_p.reshape((n_out, -1))
+            )
         else:
             out_p_embed = out_p  # .reshape((n_out, -1))
 
@@ -352,11 +348,11 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             batch_size = latent_embed.shape[0]
             latent_embed = latent_embed.permute(
                 0, *self.in_coord_dim_reverse_order, 1
-            ).reshape((batch_size, -1, self.fno.hidden_channels))
+            ).reshape((batch_size, -1, self.fno_hidden_channels))
         else:
             latent_embed = latent_embed.permute(
                 *self.in_coord_dim_reverse_order, 0
-            ).reshape((-1, self.fno.hidden_channels))
+            ).reshape((-1, self.fno_hidden_channels))
 
         # (n_out, fno_hidden_channels)
         out = self.gno(

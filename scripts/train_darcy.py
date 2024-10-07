@@ -8,7 +8,7 @@ import wandb
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
-from neuralop.training import setup
+from neuralop.training import setup, AdamW
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -99,7 +99,7 @@ if config.distributed.use_distributed:
     )
 
 # Create the optimizer
-optimizer = torch.optim.Adam(
+optimizer = AdamW(
     model.parameters(),
     lr=config.opt.learning_rate,
     weight_decay=config.opt.weight_decay,
@@ -153,7 +153,7 @@ trainer = Trainer(
     n_epochs=config.opt.n_epochs,
     device=device,
     data_processor=data_processor,
-    amp_autocast=config.opt.amp_autocast,
+    mixed_precision=config.opt.amp_autocast,
     wandb_log=config.wandb.log,
     eval_interval=config.wandb.eval_interval,
     log_output=config.wandb.log_output,
@@ -175,7 +175,7 @@ if is_logger:
             to_log["n_params_baseline"] = (config.n_params_baseline,)
             to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
             to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
-        wandb.log(to_log)
+        wandb.log(to_log, commit=False)
         wandb.watch(model)
 
 trainer.train(
