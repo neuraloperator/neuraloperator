@@ -203,10 +203,10 @@ fig.show()
 # We only trained the model on data at a resolution of 16x16, and with no modifications 
 # or special prompting, we were able to perform inference on higher-resolution input data 
 # and get higher-resolution predictions! In practice, we often want to evaluate neural operators
-# at multiple resolutions to track a model's zero-shot super-resolution performance throughout 
+# at multiple resolutions to track a model's zero-shot super-evaluation performance throughout 
 # training. That's why many of our datasets, including the small Darcy-flow we showcased,
 # are parameterized with a list of `test_resolutions` to choose from. 
 #
 # However, as you can see, these predictions are noisier than we would expect for a model evaluated 
 # at the same resolution at which it was trained. Leveraging the FNO's discretization-invariance, there
-# are other ways to scale the outputs of the FNO to train this super-resolution capability. 
+# are other ways to scale the outputs of the FNO to train a true super-resolution capability. 
