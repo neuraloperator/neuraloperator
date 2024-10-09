@@ -1,6 +1,6 @@
 import pytest
 import torch
-from ..coda_blocks import CODABlocks2D, CODABlocks3D
+from ..coda_blocks import *
 from ..spectral_convolution import *
 
 
@@ -29,7 +29,7 @@ def test_Codano(token_codimension):
     temperature = 1.0
     kqv_non_linear = False
 
-    layer = CODABlocks2D(
+    layer = CODABlocks(
         n_modes=n_modes_2D,
         n_head=n_head,
         token_codimension=token_codimension,
@@ -61,7 +61,7 @@ def test_Codano(token_codimension):
 
     
 
-    layer = CODABlocks3D(
+    layer = CODABlocks(
         n_modes=n_modes_3D,
         n_head=n_head,
         token_codimension=token_codimension,
