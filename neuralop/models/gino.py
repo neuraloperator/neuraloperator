@@ -347,7 +347,8 @@ class GINO(nn.Module):
         return in_p 
     
     def forward(self,  x, input_geom, latent_queries, output_queries, latent_features=None, ada_in=None, **kwargs):
-        """forward pass of GNO --> latent embedding w/FNO --> GNO out
+        """The GINO's forward call:
+        Input GNO --> FNOBlocks --> output GNO + projection to output queries
 
         Parameters
         ----------
