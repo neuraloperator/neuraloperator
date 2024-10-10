@@ -160,6 +160,18 @@ To support geometry-informed (GINO) models, we also offer the ability to integra
 
 **Graph convolutions and kernel integration**:
 
+.. automodule:: neuralop.layers.gno_block
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    GNOBlock
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. automodule:: neuralop.layers.integral_transform
     :no-members:
     :no-inherited-members:

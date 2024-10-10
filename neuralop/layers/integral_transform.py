@@ -34,7 +34,10 @@ class IntegralTransform(nn.Module):
     ----------
     channel_mlp : torch.nn.Module, default None
         MLP parametrizing the kernel k. Input dimension
-        should be dim x + dim y or dim x + dim y + dim f
+        should be dim x + dim y or dim x + dim y + dim f.
+        MLP should not be pointwise and should only operate across
+        channels to preserve the discretization-invariance of the 
+        kernel integral.
     channel_mlp_layers : list, default None
         List of layers sizes speficing a MLP which
         parametrizes the kernel k. The MLP will be
