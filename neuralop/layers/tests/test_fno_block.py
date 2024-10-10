@@ -90,3 +90,21 @@ def test_FNOBlock_complex_data(n_dim):
     res = block(x)
 
     assert(list(res.shape[2:]) == size[:n_dim])
+    
+    
+def test_FNOBlock_max_n_modes_setter():
+    """Test FNOBlocks with updating max_modes
+    """
+    modes = (4, 4, 4)
+    max_n_modes = (6, 6, 6)
+    updated_max_n_modes = (8, 8, 8)
+    for dim in [1, 2, 3]:
+        # Downsample outputs
+        block = FNOBlocks(
+            3, 3, modes[:dim], max_n_modes=max_n_modes[:dim], n_layers=1)
+    
+        assert block.convs.max_n_modes == list(max_n_modes[:dim]) # check defaults
+        
+        block.convs.max_n_modes = updated_max_n_modes[:dim]
+        
+        assert block.convs.max_n_modes == list(updated_max_n_modes[:dim]) # check updated value

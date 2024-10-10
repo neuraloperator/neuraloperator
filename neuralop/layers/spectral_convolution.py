@@ -385,6 +385,10 @@ class SpectralConv(BaseSpectralConv):
     def n_modes(self):
         return self._n_modes
     
+    @property
+    def max_n_modes(self):
+        return self._max_n_modes
+    
     @n_modes.setter
     def n_modes(self, n_modes):
         if isinstance(n_modes, int): # Should happen for 1D FNO only
@@ -397,6 +401,15 @@ class SpectralConv(BaseSpectralConv):
         if not self.complex_data:
             n_modes[-1] = n_modes[-1] // 2 + 1
         self._n_modes = n_modes
+        
+        
+    @max_n_modes.setter
+    def max_n_modes(self, max_n_modes):
+        if isinstance(max_n_modes, int): # Should happen for 1D FNO only
+            max_n_modes = [max_n_modes]
+        else:
+            max_n_modes = list(max_n_modes)
+        self._max_n_modes = max_n_modes
 
     def forward(
         self, x: torch.Tensor, indices=0, output_shape: Optional[Tuple[int]] = None

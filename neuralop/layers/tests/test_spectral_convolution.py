@@ -96,7 +96,24 @@ def test_SpectralConv_output_scaling_factor():
         x = torch.randn(2, 3, *size[:dim])
         res = conv(x)
         assert(list(res.shape[2:]) == [m*2 for m in size[:dim]])
-
+        
+        
+def test_max_n_modes_setter():
+    """Test SpectralConv with updating max_modes
+    """
+    modes = (4, 4, 4, 4)
+    max_n_modes = (6, 6, 6, 6)
+    updated_max_n_modes = (8, 8, 8, 8)
+    for dim in [1, 2, 3, 4]:
+        # Downsample outputs
+        conv = SpectralConv(
+            3, 3, modes[:dim], max_n_modes=max_n_modes[:dim], n_layers=1, output_scaling_factor=0.5)
+    
+        assert conv.max_n_modes == list(max_n_modes[:dim]) # check defaults
+        
+        conv.max_n_modes = updated_max_n_modes[:dim]
+        
+        assert conv.max_n_modes == list(updated_max_n_modes[:dim]) # check updated value
 
 @pytest.mark.parametrize('factorization', ['ComplexCP', 'ComplexTucker'])
 @pytest.mark.parametrize('implementation', ['factorized', 'reconstructed'])

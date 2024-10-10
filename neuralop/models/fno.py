@@ -144,6 +144,7 @@ class FNO(BaseModel, name='FNO'):
         # See the class' property for underlying mechanism
         # When updated, change should be reflected in fno blocks
         self._n_modes = n_modes
+        self._max_n_modes = max_n_modes
         self.hidden_channels = hidden_channels
         self.lifting_channels = lifting_channels
         self.projection_channels = projection_channels
@@ -216,7 +217,7 @@ class FNO(BaseModel, name='FNO'):
             fno_skip=fno_skip,
             channel_mlp_skip=channel_mlp_skip,
             complex_data=complex_data,
-            max_n_modes=max_n_modes,
+            max_n_modes=self.max_n_modes,
             fno_block_precision=fno_block_precision,
             rank=rank,
             fixed_rank_modes=fixed_rank_modes,
@@ -317,7 +318,16 @@ class FNO(BaseModel, name='FNO'):
         self.fno_blocks.n_modes = n_modes
         self._n_modes = n_modes
 
-
+    @property
+    def max_n_modes(self):
+        return self._max_n_modes
+    
+    @max_n_modes.setter
+    def max_n_modes(self, max_n_modes):
+        self.fno_blocks.max_n_modes = max_n_modes
+        self._max_n_modes = max_n_modes
+        
+        
 class FNO1d(FNO):
     """1D Fourier Neural Operator
 

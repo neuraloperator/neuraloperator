@@ -334,13 +334,13 @@ class SphericalConv(BaseSpectralConv):
         if isinstance(n_modes, int):
             n_modes = [n_modes]
         self._n_modes = n_modes
-        self.order = len(n_modes)
+        self.order = len(self._n_modes)
 
         if max_n_modes is None:
             max_n_modes = self.n_modes
         elif isinstance(max_n_modes, int):
             max_n_modes = [max_n_modes]
-        self.max_n_modes = max_n_modes
+        self._max_n_modes = max_n_modes
 
         self.rank = rank
         self.factorization = factorization
@@ -497,6 +497,18 @@ class SphericalConv(BaseSpectralConv):
             n_modes = list(n_modes)
         self._n_modes = n_modes
 
+    @property
+    def max_n_modes(self):
+        return self._max_n_modes
+    
+    @max_n_modes.setter
+    def max_n_modes(self, max_n_modes):
+        if isinstance(max_n_modes, int): # Should happen for 1D FNO only
+            max_n_modes = [max_n_modes]
+        else:
+            max_n_modes = list(max_n_modes)
+        self._max_n_modes = max_n_modes
+        
     def get_conv(self, indices):
         """Returns a sub-convolutional layer from the joint parametrize main-convolution
 
