@@ -225,7 +225,7 @@ class GINO(nn.Module):
                 self.adain_pos_embed = SinusoidalEmbedding(in_channels=fno_ada_in_dim,
                                                            num_frequencies=fno_ada_in_features, 
                                                            max_positions=10000,
-                                                           embedding_type='transformer')
+                                                           embedding_type=gno_pos_embed_type)
                 self.ada_in_dim = self.adain_pos_embed.out_channels
             else:
                 self.ada_in_dim = fno_ada_in_dim
