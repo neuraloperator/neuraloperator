@@ -34,10 +34,6 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
     else:
         device = torch.device("cpu:0")
 
-    # if not using GNO pos embed, turn off ada_in embed
-    if gno_pos_embed_type is None:
-        fno_ada_in_features = None
-
     model = GINO(
         in_channels=in_channels,
         out_channels=out_channels,

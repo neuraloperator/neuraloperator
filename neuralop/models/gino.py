@@ -95,7 +95,7 @@ class GINO(nn.Module):
             By default None, otherwise tanh is used before FFT in the FNO block.
         fno_norm : nn.Module | None, defaults to None
             normalization layer to use in FNO.
-        fno_ada_in_features : int | None, defaults to None
+        fno_ada_in_features : int | None, defaults to 4
             if an adaptive mesh is used, number of channels of its positional embedding.
         fno_ada_in_dim : int, defaults to 1
             dimensions of above FNO adaptive mesh.
@@ -170,7 +170,7 @@ class GINO(nn.Module):
             fno_non_linearity=F.gelu,
             fno_stabilizer=None, 
             fno_norm=None,
-            fno_ada_in_features=None,
+            fno_ada_in_features=4,
             fno_ada_in_dim=1,
             fno_preactivation=False,
             fno_skip='linear',
@@ -221,8 +221,7 @@ class GINO(nn.Module):
 
         self.fno_norm = fno_norm
         if self.fno_norm == "ada_in":
-            if fno_ada_in_features is not None:
-                assert gno_pos_embed_type is not None, "Error: gno_pos_embed_type must be set to embed ada_in"
+            if fno_ada_in_features is not None and gno_pos_embed_type is not None:
                 self.adain_pos_embed = SinusoidalEmbedding(in_channels=fno_ada_in_dim,
                                                         num_frequencies=fno_ada_in_features, 
                                                         max_positions=10000,
