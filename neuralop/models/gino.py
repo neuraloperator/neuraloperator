@@ -97,6 +97,7 @@ class GINO(nn.Module):
             normalization layer to use in FNO.
         fno_ada_in_features : int | None, defaults to 4
             if an adaptive mesh is used, number of channels of its positional embedding.
+            If None, adaptive mesh embedding is not used.
         fno_ada_in_dim : int, defaults to 1
             dimensions of above FNO adaptive mesh.
         fno_preactivation : bool, defaults to False
