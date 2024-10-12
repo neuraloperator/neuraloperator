@@ -228,17 +228,15 @@ def validate_scaling_factor(
             return [float(scaling_factor)] * n_dim
 
         return [[float(scaling_factor)] * n_dim] * n_layers
+    
     if (
         isinstance(scaling_factor, list)
         and len(scaling_factor) > 0
         and all([isinstance(s, (float, int)) for s in scaling_factor])
     ):
-        return [[float(s)] * n_dim for s in scaling_factor]
-    if (
-        isinstance(scaling_factor, list)
-        and len(scaling_factor) > 0
-        and all([isinstance(s, (float, int)) for s in scaling_factor])
-    ):
+        if n_layers is None and len(scaling_factor) == n_dim:
+            # this is a dim-wise scaling
+            return [float(s) for s in scaling_factor]
         return [[float(s)] * n_dim for s in scaling_factor]
 
     if (

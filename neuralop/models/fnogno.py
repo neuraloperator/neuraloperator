@@ -53,7 +53,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         dimension of hidden layers in FNO lifting block.
     fno_n_layers : int, defaults to 4
         number of FNO layers in the block.
-    fno_output_scaling_factor : float | None, defaults to None
+    fno_resolution_scaling_factor : float | None, defaults to None
         factor by which to rescale output predictions in the original domain
     fno_incremental_n_modes : list[int] | None, defaults to None
         if passed, sets n_modes separately for each FNO layer.
@@ -122,10 +122,9 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         fno_hidden_channels=64,
         fno_lifting_channels=256,
         fno_n_layers=4,
-        fno_output_scaling_factor=None,
+        fno_resolution_scaling_factor=None,
         fno_incremental_n_modes=None,
         fno_block_precision="full",
-        fno_use_channel_mlp=False,
         fno_channel_mlp_dropout=0,
         fno_channel_mlp_expansion=0.5,
         fno_non_linearity=F.gelu,
@@ -208,10 +207,9 @@ class FNOGNO(BaseModel, name="FNOGNO"):
                 out_channels=fno_hidden_channels,
                 positional_embedding=None,
                 n_layers=fno_n_layers,
-                output_scaling_factor=fno_output_scaling_factor,
+                resolution_scaling_factor=fno_resolution_scaling_factor,
                 incremental_n_modes=fno_incremental_n_modes,
                 fno_block_precision=fno_block_precision,
-                use_channel_mlp=fno_use_channel_mlp,
                 channel_mlp_expansion=fno_channel_mlp_expansion,
                 channel_mlp_dropout=fno_channel_mlp_dropout,
                 non_linearity=fno_non_linearity,

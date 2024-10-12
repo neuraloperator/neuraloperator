@@ -42,7 +42,7 @@ cfd: &CFD
     fno_rank: 0.4
     fno_domain_padding: 0.125
     fno_channel_mlp_expansion: 1.0
-    fno_output_scaling_factor: 1
+    fno_resolution_scaling_factor: 1
 
   opt:
     n_epochs: 301

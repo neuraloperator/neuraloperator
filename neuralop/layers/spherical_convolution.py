@@ -10,7 +10,6 @@ from tltorch.factorized_tensors.core import FactorizedTensor
 
 from neuralop.utils import validate_scaling_factor
 from .base_spectral_conv import BaseSpectralConv
-from .spectral_convolution import SubConv
 
 tl.set_backend("pytorch")
 use_opt_einsum("optimal")
@@ -309,10 +308,9 @@ class SphericalConv(BaseSpectralConv):
         n_modes,
         max_n_modes=None,
         bias=True,
-        n_layers=1,
         separable=False,
-        output_scaling_factor: Optional[Union[Number, List[Number]]] = None,
-        # fno_block_precision="full",
+        resolution_scaling_factor: Optional[Union[Number, List[Number]]] = None,
+        fno_block_precision="full",
         rank=0.5,
         factorization="cp",
         implementation="reconstructed",
@@ -324,6 +322,7 @@ class SphericalConv(BaseSpectralConv):
         sht_grids="equiangular",
         device=None,
         dtype=torch.float32,
+        complex_data=False # dummy param until we unify dtype interface
     ):
         super().__init__(dtype=dtype, device=device)
 
@@ -344,12 +343,11 @@ class SphericalConv(BaseSpectralConv):
 
         self.rank = rank
         self.factorization = factorization
-        self.n_layers = n_layers
         self.implementation = implementation
 
-        self.output_scaling_factor: Union[
+        self.resolution_scaling_factor: Union[
             None, List[List[float]]
-        ] = validate_scaling_factor(output_scaling_factor, self.order, n_layers)
+        ] = validate_scaling_factor(resolution_scaling_factor, self.order)
 
         if init_std == "auto":
             init_std = (2 / (in_channels + out_channels))**0.5
@@ -380,79 +378,59 @@ class SphericalConv(BaseSpectralConv):
         else:
             weight_shape = (in_channels, out_channels, *self.n_modes[:-1])
         self.separable = separable
+        self.weight = FactorizedTensor.new(
+                    weight_shape,
+                    rank=self.rank,
+                    factorization=factorization,
+                    fixed_rank_modes=fixed_rank_modes,
+                    **decomposition_kwargs,
+                )
+        self.weight.normal_(0, init_std)
 
-        if joint_factorization:
-            self.weight = FactorizedTensor.new(
-                (self.n_layers, *weight_shape),
-                rank=self.rank,
-                factorization=factorization,
-                fixed_rank_modes=fixed_rank_modes,
-                **decomposition_kwargs,
-            )
-            self.weight.normal_(0, init_std)
-        else:
-            self.weight = nn.ModuleList(
-                [
-                    FactorizedTensor.new(
-                        weight_shape,
-                        rank=self.rank,
-                        factorization=factorization,
-                        fixed_rank_modes=fixed_rank_modes,
-                        **decomposition_kwargs,
-                    )
-                    for _ in range(n_layers)
-                ]
-            )
-            for w in self.weight:
-                w.normal_(0, init_std)
         self._contract = get_contract_fun(
-            self.weight[0], implementation=implementation, separable=separable
+            self.weight, implementation=implementation, separable=separable
         )
 
         if bias:
             self.bias = nn.Parameter(
                 init_std
-                * torch.randn(*((n_layers, self.out_channels) + (1,) * self.order))
+                * torch.randn(*(tuple([self.out_channels]) + (1,) * self.order))
             )
         else:
             self.bias = None
 
         self.sht_norm = sht_norm
         if isinstance(sht_grids, str):
-            sht_grids = [sht_grids]*(self.n_layers + 1)
+            sht_grids = [sht_grids]*2
         self.sht_grids = sht_grids
+        print(f"{self.sht_grids=}")
         self.sht_handle = SHT(dtype=self.dtype, device=self.device)
-
-    def _get_weight(self, index):
-        return self.weight[index]
     
-    def transform(self, x, layer_index=0, output_shape=None):
+    def transform(self, x, output_shape=None):
         *_, in_height, in_width = x.shape
 
-        if self.output_scaling_factor is not None and output_shape is None:
-            height = round(in_height * self.output_scaling_factor[layer_index][0])
-            width = round(in_width * self.output_scaling_factor[layer_index][1])
+        if self.resolution_scaling_factor is not None and output_shape is None:
+            height = round(in_height * self.resolution_scaling_factor[0])
+            width = round(in_width * self.resolution_scaling_factor[1])
         elif output_shape is not None:
             height, width = output_shape[0], output_shape[1]
         else:
             height, width = in_height, in_width
 
         # Return the identity if the resolution and grid of the input and output are the same
-        if ((in_height, in_width) == (height, width)) and (self.sht_grids[layer_index] == self.sht_grids[layer_index+1]):
+        if ((in_height, in_width) == (height, width)) and (self.sht_grids[0] == self.sht_grids[1]):
             return x
         else:
-            coefs = self.sht_handle.sht(x, s=self.n_modes, norm=self.sht_norm, grid=self.sht_grids[layer_index])
-            return self.sht_handle.isht(coefs, s=(height, width), norm=self.sht_norm, grid=self.sht_grids[layer_index + 1])
+            coefs = self.sht_handle.sht(x, s=self.n_modes, norm=self.sht_norm, grid=self.sht_grids[0])
+            return self.sht_handle.isht(coefs, s=(height, width), norm=self.sht_norm, grid=self.sht_grids[1])
 
-    def forward(self, x, indices=0, output_shape=None):
+    def forward(self, x, output_shape=None):
         """Generic forward pass for the Factorized Spectral Conv
 
         Parameters
         ----------
         x : torch.Tensor
             input activation of size (batch_size, channels, d1, ..., dN)
-        indices : int, default is 0
-            if joint_factorization, index of the layers for n_layers > 1
 
         Returns
         -------
@@ -460,28 +438,28 @@ class SphericalConv(BaseSpectralConv):
         """
         batchsize, channels, height, width = x.shape
 
-        if self.output_scaling_factor is not None and output_shape is None:
-            scaling_factors = self.output_scaling_factor[indices]
+        if self.resolution_scaling_factor is not None and output_shape is None:
+            scaling_factors = self.resolution_scaling_factor
             height = round(height * scaling_factors[0])
             width = round(width * scaling_factors[1])
         elif output_shape is not None:
             height, width = output_shape[0], output_shape[1]
 
         out_fft = self.sht_handle.sht(x, s=(self.n_modes[0], self.n_modes[1]//2),
-                                      norm=self.sht_norm, grid=self.sht_grids[indices])
+                                      norm=self.sht_norm, grid=self.sht_grids[0])
 
         out_fft = self._contract(
             out_fft[:, :, :self.n_modes[0], :self.n_modes[1]//2],
-            self._get_weight(indices)[:, :, :self.n_modes[0]],
+            self.weight[:, :, :self.n_modes[0]],
             separable=self.separable,
             dhconv=True,
         )
 
         x = self.sht_handle.isht(out_fft, s=(height, width), norm=self.sht_norm,
-                                 grid=self.sht_grids[indices+1])
+                                 grid=self.sht_grids[1])
 
         if self.bias is not None:
-            x = x + self.bias[indices, ...]
+            x = x + self.bias
 
         return x
 
@@ -496,18 +474,3 @@ class SphericalConv(BaseSpectralConv):
         else:
             n_modes = list(n_modes)
         self._n_modes = n_modes
-
-    def get_conv(self, indices):
-        """Returns a sub-convolutional layer from the joint parametrize main-convolution
-
-        The parametrization of sub-convolutional layers is shared with the main one.
-        """
-        if self.n_layers == 1:
-            raise ValueError(
-                "A single convolution is parametrized, directly use the main class."
-            )
-
-        return SubConv(self, indices)
-
-    def __getitem__(self, indices):
-        return self.get_conv(indices)

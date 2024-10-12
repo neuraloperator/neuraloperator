@@ -1,5 +1,9 @@
 from functools import partialmethod
+from typing import Tuple, List, Union
 
+Number = Union[float, int]
+
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -12,145 +16,194 @@ from ..layers.complex import ComplexValued
 from .base_model import BaseModel
 
 class FNO(BaseModel, name='FNO'):
-    """N-Dimensional Fourier Neural Operator
+    """N-Dimensional Fourier Neural Operator. The FNO learns a mapping between
+    spaces of functions discretized over regular grids. 
+    
+    The key component of an FNO is its SpectralConv layer (see ``neuralop.layers.spectral_convolution``), which
+    is similar to a standard CNN conv layer but operates in the frequency domain.
+
+    For more information, refer to :ref:`fno-guide`.
 
     Parameters
     ----------
-    n_modes : int tuple
+    n_modes : Tuple[int]
         number of modes to keep in Fourier Layer, along each dimension
         The dimensionality of the FNO is inferred from ``len(n_modes)``
+    in_channels : int
+        Number of channels in input function
+    out_channels : int
+        Number of channels in output function
     hidden_channels : int
-        width of the FNO (i.e. number of channels)
-    in_channels : int, optional
-        Number of input channels, by default 3
-    out_channels : int, optional
-        Number of output channels, by default 1
-    lifting_channels : int, optional
-        number of hidden channels of the lifting block of the FNO, by default 256
-    projection_channels : int, optional
-        number of hidden channels of the projection block of the FNO, by default 256
+        width of the FNO (i.e. number of channels), by default 256
     n_layers : int, optional
         Number of Fourier Layers, by default 4
-    positional_embedding : str literal | GridEmbedding2D | GridEmbeddingND | None
-        if "grid", appends a grid positional embedding with default settings to 
+
+    Documentation for more advanced parameters is below.
+
+    Other parameters
+    ------------------
+    lifting_channel_ratio : int, optional
+        ratio of lifting channels to hidden_channels, by default 2
+        The number of liting channels in the lifting block of the FNO is
+        lifting_channel_ratio * hidden_channels (e.g. default 512)
+    projection_channel_ratio : int, optional
+        ratio of projection channels to hidden_channels, by default 2
+        The number of projection channels in the projection block of the FNO is
+        projection_channel_ratio * hidden_channels (e.g. default 512)
+    positional_embedding : Union[str, nn.Module], optional
+        Positional embedding to apply to last channels of raw input
+        before being passed through the FNO. Defaults to "grid"
+
+        * If "grid", appends a grid positional embedding with default settings to 
         the last channels of raw input. Assumes the inputs are discretized
         over a grid with entry [0,0,...] at the origin and side lengths of 1.
-        If an initialized GridEmbedding, uses this module directly
-        See `neuralop.embeddings.GridEmbeddingND` for details
-        if None, does nothing
-    max_n_modes : None or int tuple, default is None
-        * If not None, this allows to incrementally increase the number of
-          modes in Fourier domain during training. Has to verify n <= N
-          for (n, m) in zip(max_n_modes, n_modes).
 
-        * If None, all the n_modes are used.
+        * If an initialized GridEmbedding module, uses this module directly
+        See :mod:`neuralop.embeddings.GridEmbeddingND` for details.
 
-        This can be updated dynamically during training.
-    fno_block_precision : str {'full', 'half', 'mixed'}
-        if 'full', the FNO Block runs in full precision
-        if 'half', the FFT, contraction, and inverse FFT run in half precision
-        if 'mixed', the contraction and inverse FFT run in half precision
-    stabilizer : str {'tanh'} or None, optional
-        By default None, otherwise tanh is used before FFT in the FNO block
-    use_channel_mlp : bool, optional
-        Whether to use a ChannelMLP layer after each FNO block, by default False
-    channel_mlp_dropout : float , optional
-        droupout parameter of ChannelMLP layer, by default 0
-    channel_mlp_expansion : float, optional
-        expansion parameter of ChannelMLP layer, by default 0.5
+        * If None, does nothing
+
     non_linearity : nn.Module, optional
-        Non-Linearity module to use, by default F.gelu
-    norm : Literal["ada_in", "group_norm", "instance_norm"], optional
+        Non-Linear activation function module to use, by default F.gelu
+    norm : str {"ada_in", "group_norm", "instance_norm"}, optional
         Normalization layer to use, by default None
-    preactivation : bool, default is False
-        if True, use resnet-style preactivation
-    fno_skip : {'linear', 'identity', 'soft-gating'}, optional
-        Type of skip connection to use in fno, by default 'linear'
-    channel_mlp_skip : {'linear', 'identity', 'soft-gating'}, optional
+    complex_data : bool, optional
+        Whether data is complex-valued (default False)
+        if True, initializes complex-valued modules.
+    channel_mlp_dropout : float, optional
+        dropout parameter for ChannelMLP in FNO Block, by default 0
+    channel_mlp_expansion : float, optional
+        expansion parameter for ChannelMLP in FNO Block, by default 0.5
+    channel_mlp_skip : str {'linear', 'identity', 'soft-gating'}, optional
         Type of skip connection to use in channel-mixing mlp, by default 'soft-gating'
-    separable : bool, default is False
-        if True, use a depthwise separable spectral convolution
-    factorization : str or None, {'tucker', 'cp', 'tt'}
-        Tensor factorization of the parameters weight to use, by default None.
-        * If None, a dense tensor parametrizes the Spectral convolutions
-        * Otherwise, the specified tensor factorization is used.
-    joint_factorization : bool, optional
-        Whether all the Fourier Layers should be parametrized by a single tensor
-        (vs one per layer), by default False
-    rank : float or rank, optional
-        Rank of the tensor factorization of the Fourier weights, by default 1.0
-    fixed_rank_modes : bool, optional
-        Modes to not factorize, by default False
-    implementation : {'factorized', 'reconstructed'}, optional, default is 'factorized'
-        If factorization is not None, forward mode to use::
-        * `reconstructed` : the full weight tensor is reconstructed from the
-          factorization and used for the forward pass
-        * `factorized` : the input is directly contracted with the factors of
-          the decomposition
-    decomposition_kwargs : dict, optional, default is {}
-        Optionaly additional parameters to pass to the tensor decomposition
-    domain_padding : None, float, or List[float], optional
+    fno_skip : str {'linear', 'identity', 'soft-gating'}, optional
+        Type of skip connection to use in FNO layers, by default 'linear'
+    resolution_scaling_factor : Union[Number, List[Number]], optional
+        layer-wise factor by which to scale the domain resolution of function, by default None
+        
+        * If a single number n, scales resolution by n at each layer
+
+        * if a list of numbers [n_0, n_1,...] scales layer i's resolution by n_i.
+    domain_padding : Union[Number, List[Number]], optional
         If not None, percentage of padding to use, by default None
         To vary the percentage of padding used along each input dimension,
         pass in a list of percentages e.g. [p1, p2, ..., pN] such that
         p1 corresponds to the percentage of padding along dim 1, etc.
-    domain_padding_mode : {'symmetric', 'one-sided'}, optional
+    domain_padding_mode : str {'symmetric', 'one-sided'}, optional
         How to perform domain padding, by default 'one-sided'
-    conv_module : BaseConv, optional
-        Module to use for convolutions in FNO, by default SpectralConv
-    complex_data: bool, optional
-        whether FNO data takes on complex values 
-        in the spatial domain, by default False
+    fno_block_precision : str {'full', 'half', 'mixed'}, optional
+        precision mode in which to perform spectral convolution, by default "full"
+    stabilizer : str {'tanh'} | None, optional
+        whether to use a tanh stabilizer in FNO block, by default None
+
+        Note: stabilizer greatly improves performance in the case
+        `fno_block_precision='mixed'`. 
+
+    max_n_modes : Tuple[int] | None, optional
+
+        * If not None, this allows to incrementally increase the number of
+        modes in Fourier domain during training. Has to verify n <= N
+        for (n, m) in zip(max_n_modes, n_modes).
+
+        * If None, all the n_modes are used.
+
+        This can be updated dynamically during training.
+    factorization : str, optional
+        Tensor factorization of the FNO layer weights to use, by default None.
+
+        * If None, a dense tensor parametrizes the Spectral convolutions
+
+        * Otherwise, the specified tensor factorization is used.
+    rank : float, optional
+        tensor rank to use in above factorization, by default 1.0
+    fixed_rank_modes : bool, optional
+        Modes to not factorize, by default False
+    implementation : str {'factorized', 'reconstructed'}, optional
+
+        * If 'factorized', implements tensor contraction with the individual factors of the decomposition 
+        
+        * If 'reconstructed', implements with the reconstructed full tensorized weight.
+    decomposition_kwargs : dict, optional
+        extra kwargs for tensor decomposition (see `tltorch.FactorizedTensor`), by default dict()
+    separable : bool, optional (**DEACTIVATED**)
+        if True, use a depthwise separable spectral convolution, by default False   
+    preactivation : bool, optional (**DEACTIVATED**)
+        whether to compute FNO forward pass with resnet-style preactivation, by default False
+    conv_module : nn.Module, optional
+        module to use for FNOBlock's convolutions, by default SpectralConv
+    
+    Examples
+    ---------
+    
+    >>> from neuralop.models import FNO
+    >>> model = FNO(n_modes=(12,12), in_channels=1, out_channels=1, hidden_channels=64)
+    >>> model
+    FNO(
+    (positional_embedding): GridEmbeddingND()
+    (fno_blocks): FNOBlocks(
+        (convs): SpectralConv(
+        (weight): ModuleList(
+            (0-3): 4 x DenseTensor(shape=torch.Size([64, 64, 12, 7]), rank=None)
+        )
+        )
+            ... torch.nn.Module printout truncated ...
+
+
     """
 
     def __init__(
         self,
-        n_modes,
-        hidden_channels,
-        in_channels=3,
-        out_channels=1,
-        lifting_channels=256,
-        projection_channels=256,
-        n_layers=4,
-        positional_embedding="grid",
-        output_scaling_factor=None,
-        max_n_modes=None,
-        fno_block_precision="full",
-        use_channel_mlp=False,
-        channel_mlp_dropout=0,
-        channel_mlp_expansion=0.5,
-        non_linearity=F.gelu,
-        stabilizer=None,
-        norm=None,
-        preactivation=False,
-        fno_skip="linear",
-        channel_mlp_skip="soft-gating",
-        separable=False,
-        factorization=None,
-        rank=1.0,
-        joint_factorization=False,
-        fixed_rank_modes=False,
-        implementation="factorized",
-        decomposition_kwargs=dict(),
-        domain_padding=None,
-        domain_padding_mode="one-sided",
-        conv_module=SpectralConv,
-        complex_data=False,
+        n_modes: Tuple[int],
+        in_channels: int,
+        out_channels: int,
+        hidden_channels: int,
+        n_layers: int=4,
+        lifting_channel_ratio: int=2,
+        projection_channel_ratio: int=2,
+        positional_embedding: Union[str, nn.Module]="grid",
+        non_linearity: nn.Module=F.gelu,
+        norm: str=None,
+        complex_data: bool=False,
+        channel_mlp_dropout: float=0,
+        channel_mlp_expansion: float=0.5,
+        channel_mlp_skip: str="soft-gating",
+        fno_skip: str="linear",
+        resolution_scaling_factor: Union[Number, List[Number]]=None,
+        domain_padding: Union[Number, List[Number]]=None,
+        domain_padding_mode: str="one-sided",
+        fno_block_precision: str="full",
+        stabilizer: str=None,
+        max_n_modes: Tuple[int]=None,
+        factorization: str=None,
+        rank: float=1.0,
+        fixed_rank_modes: bool=False,
+        implementation: str="factorized",
+        decomposition_kwargs: dict=dict(),
+        separable: bool=False,
+        preactivation: bool=False,
+        conv_module: nn.Module=SpectralConv,
         **kwargs
     ):
+        
         super().__init__()
         self.n_dim = len(n_modes)
-
-        # See the class' property for underlying mechanism
+        
+        # n_modes is a special property - see the class' property for underlying mechanism
         # When updated, change should be reflected in fno blocks
         self._n_modes = n_modes
+
         self.hidden_channels = hidden_channels
-        self.lifting_channels = lifting_channels
-        self.projection_channels = projection_channels
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.n_layers = n_layers
-        self.joint_factorization = joint_factorization
+
+        # init lifting and projection channels using ratios w.r.t hidden channels
+        self.lifting_channel_ratio = lifting_channel_ratio
+        self.lifting_channels = lifting_channel_ratio * self.hidden_channels
+
+        self.projection_channel_ratio = projection_channel_ratio
+        self.projection_channels = projection_channel_ratio * self.hidden_channels
+
         self.non_linearity = non_linearity
         self.rank = rank
         self.factorization = factorization
@@ -161,8 +214,9 @@ class FNO(BaseModel, name='FNO'):
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation
+        self.complex_data = complex_data
         self.fno_block_precision = fno_block_precision
-
+        
         if positional_embedding == "grid":
             spatial_grid_boundaries = [[0., 1.]] * self.n_dim
             self.positional_embedding = GridEmbeddingND(in_channels=self.in_channels,
@@ -188,25 +242,24 @@ class FNO(BaseModel, name='FNO'):
             self.domain_padding = DomainPadding(
                 domain_padding=domain_padding,
                 padding_mode=domain_padding_mode,
-                output_scaling_factor=output_scaling_factor,
+                resolution_scaling_factor=resolution_scaling_factor,
             )
         else:
             self.domain_padding = None
 
         self.domain_padding_mode = domain_padding_mode
-        self.complex_data = complex_data
+        self.complex_data = self.complex_data
 
-        if output_scaling_factor is not None and not joint_factorization:
-            if isinstance(output_scaling_factor, (float, int)):
-                output_scaling_factor = [output_scaling_factor] * self.n_layers
-        self.output_scaling_factor = output_scaling_factor
+        if resolution_scaling_factor is not None:
+            if isinstance(resolution_scaling_factor, (float, int)):
+                resolution_scaling_factor = [resolution_scaling_factor] * self.n_layers
+        self.resolution_scaling_factor = resolution_scaling_factor
 
         self.fno_blocks = FNOBlocks(
             in_channels=hidden_channels,
             out_channels=hidden_channels,
             n_modes=self.n_modes,
-            output_scaling_factor=output_scaling_factor,
-            use_channel_mlp=use_channel_mlp,
+            resolution_scaling_factor=resolution_scaling_factor,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
             non_linearity=non_linearity,
@@ -224,7 +277,6 @@ class FNO(BaseModel, name='FNO'):
             separable=separable,
             factorization=factorization,
             decomposition_kwargs=decomposition_kwargs,
-            joint_factorization=joint_factorization,
             conv_module=conv_module,
             n_layers=n_layers,
             **kwargs
@@ -271,16 +323,33 @@ class FNO(BaseModel, name='FNO'):
             self.projection = ComplexValued(self.projection)
 
     def forward(self, x, output_shape=None, **kwargs):
-        """TFNO's forward pass
+        """FNO's forward pass
+        
+        1. Applies optional positional encoding
+
+        2. Sends inputs through a lifting layer to a high-dimensional latent
+            space
+
+        3. Applies optional domain padding to high-dimensional intermediate function representation
+
+        4. Applies `n_layers` Fourier/FNO layers in sequence (SpectralConvolution + skip connections, nonlinearity) 
+
+        5. If domain padding was applied, domain padding is removed
+
+        6. Projection of intermediate function representation to the output channels
 
         Parameters
         ----------
         x : tensor
             input tensor
+        
         output_shape : {tuple, tuple list, None}, default is None
             Gives the option of specifying the exact output shape for odd shaped inputs.
+            
             * If None, don't specify an output shape
+
             * If tuple, specifies the output-shape of the **last** FNO Block
+
             * If tuple list, specifies the exact output-shape of each FNO Block
         """
 
@@ -338,12 +407,12 @@ class FNO1d(FNO):
         lifting_channels=256,
         projection_channels=256,
         max_n_modes=None,
-        fno_block_precision="full",
         n_layers=4,
-        output_scaling_factor=None,
+        resolution_scaling_factor=None,
         non_linearity=F.gelu,
         stabilizer=None,
-        use_channel_mlp=False,
+        complex_data=False,
+        fno_block_precision="full",
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
         norm=None,
@@ -352,7 +421,6 @@ class FNO1d(FNO):
         preactivation=False,
         factorization=None,
         rank=1.0,
-        joint_factorization=False,
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
@@ -368,21 +436,20 @@ class FNO1d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
-            output_scaling_factor=output_scaling_factor,
+            resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            use_channel_mlp=use_channel_mlp,
+            complex_data=complex_data,
+            fno_block_precision=fno_block_precision,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
             max_n_modes=max_n_modes,
-            fno_block_precision=fno_block_precision,
             norm=norm,
             skip=skip,
             separable=separable,
             preactivation=preactivation,
             factorization=factorization,
             rank=rank,
-            joint_factorization=joint_factorization,
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
@@ -415,12 +482,12 @@ class FNO2d(FNO):
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
-        output_scaling_factor=None,
+        resolution_scaling_factor=None,
         max_n_modes=None,
-        fno_block_precision="full",
         non_linearity=F.gelu,
         stabilizer=None,
-        use_channel_mlp=False,
+        complex_data=False,
+        fno_block_precision="full",
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
         norm=None,
@@ -429,7 +496,6 @@ class FNO2d(FNO):
         preactivation=False,
         factorization=None,
         rank=1.0,
-        joint_factorization=False,
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
@@ -445,21 +511,20 @@ class FNO2d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
-            output_scaling_factor=output_scaling_factor,
+            resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            use_channel_mlp=use_channel_mlp,
+            complex_data=complex_data,
+            fno_block_precision=fno_block_precision,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
             max_n_modes=max_n_modes,
-            fno_block_precision=fno_block_precision,
             norm=norm,
             skip=skip,
             separable=separable,
             preactivation=preactivation,
             factorization=factorization,
             rank=rank,
-            joint_factorization=joint_factorization,
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
@@ -496,12 +561,12 @@ class FNO3d(FNO):
         lifting_channels=256,
         projection_channels=256,
         n_layers=4,
-        output_scaling_factor=None,
+        resolution_scaling_factor=None,
         max_n_modes=None,
-        fno_block_precision="full",
         non_linearity=F.gelu,
         stabilizer=None,
-        use_channel_mlp=False,
+        complex_data=False,
+        fno_block_precision="full",
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
         norm=None,
@@ -510,7 +575,6 @@ class FNO3d(FNO):
         preactivation=False,
         factorization=None,
         rank=1.0,
-        joint_factorization=False,
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
@@ -526,12 +590,12 @@ class FNO3d(FNO):
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
             n_layers=n_layers,
-            output_scaling_factor=output_scaling_factor,
+            resolution_scaling_factor=resolution_scaling_factor,
             non_linearity=non_linearity,
             stabilizer=stabilizer,
-            max_n_modes=max_n_modes,
+            complex_data=complex_data,
             fno_block_precision=fno_block_precision,
-            use_channel_mlp=use_channel_mlp,
+            max_n_modes=max_n_modes,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
             norm=norm,
@@ -540,7 +604,6 @@ class FNO3d(FNO):
             preactivation=preactivation,
             factorization=factorization,
             rank=rank,
-            joint_factorization=joint_factorization,
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,

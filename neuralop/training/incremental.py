@@ -119,36 +119,36 @@ class IncrementalFNOTrainer(Trainer):
             scalar value of epoch's training loss
         """
         self.loss_list.append(loss)
-        self.ndim = len(self.model.fno_blocks.convs.n_modes)
+        self.ndim = len(self.model.fno_blocks.convs[0].n_modes)
 
         # method 1: loss_gap
-        incremental_modes = self.model.fno_blocks.convs.n_modes[0]
-        max_modes = self.model.fno_blocks.convs.max_n_modes[0]
+        incremental_modes = self.model.fno_blocks.convs[0].n_modes[0]
+        max_modes = self.model.fno_blocks.convs[0].max_n_modes[0]
         if len(self.loss_list) > 1:
             if abs(self.loss_list[-1] - self.loss_list[-2]) <= self.incremental_loss_eps:
                 if incremental_modes < max_modes:
                     incremental_modes += 1
         modes_list = tuple([incremental_modes] * self.ndim)
-        self.model.fno_blocks.convs.n_modes = modes_list
+        self.model.fno_blocks.convs[0].n_modes = modes_list
 
     # Algorithm 2: Gradient based explained ratio
     def grad_explained(self):
         # for mode 1
         if not hasattr(self, 'accumulated_grad'):
             self.accumulated_grad = torch.zeros_like(
-                self.model.fno_blocks.convs.weight[0])
+                self.model.fno_blocks.convs[0].weight)
         if not hasattr(self, 'grad_iter'):
             self.grad_iter = 1
             
-        self.ndim = len(self.model.fno_blocks.convs.n_modes)
+        self.ndim = len(self.model.fno_blocks.convs[0].n_modes)
         if self.grad_iter <= self.incremental_grad_max_iter:
             self.grad_iter += 1
-            self.accumulated_grad += self.model.fno_blocks.convs.weight[0]
+            self.accumulated_grad += self.model.fno_blocks.convs[0].weight
         else:
             incremental_final = []
             for i in range(self.ndim):
-                max_modes = self.model.fno_blocks.convs.max_n_modes[i]
-                incremental_modes = self.model.fno_blocks.convs.n_modes[i]
+                max_modes = self.model.fno_blocks.convs[i].max_n_modes[0]
+                incremental_modes = self.model.fno_blocks.convs[0].n_modes[0]
                 weight = self.accumulated_grad
                 strength_vector = []
                 for mode_index in range(
@@ -166,8 +166,8 @@ class IncrementalFNOTrainer(Trainer):
             # update the modes and frequency dimensions
             self.grad_iter = 1
             self.accumulated_grad = torch.zeros_like(
-                self.model.fno_blocks.convs.weight[0])
+                self.model.fno_blocks.convs[0].weight)
             main_modes = incremental_final[0]
             modes_list = tuple([main_modes] * self.ndim)
-            self.model.fno_blocks.convs.n_modes = tuple(modes_list)
+            self.model.fno_blocks.convs[0].n_modes = tuple(modes_list)
         
