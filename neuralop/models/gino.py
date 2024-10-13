@@ -10,11 +10,13 @@ from ..layers.channel_mlp import ChannelMLP
 from ..layers.embeddings import SinusoidalEmbedding
 from ..layers.fno_block import FNOBlocks
 from ..layers.spectral_convolution import SpectralConv
-from ..layers.integral_transform import IntegralTransform
-from ..layers.neighbor_search import NeighborSearch
+from ..layers.gno_block import GNOBlock
 
 class GINO(nn.Module):
-    """GINO: Geometry-informed Neural Operator
+    """GINO: Geometry-informed Neural Operator. Learns a mapping between
+       functions presented over arbitrary coordinate meshes. The model carries
+       global integration through spectral convolution layers in an intermediate
+       latent space, as described in [1]_.
 
         Parameters
         ----------
@@ -22,14 +24,23 @@ class GINO(nn.Module):
             feature dimension of input points
         out_channels : int
             feature dimension of output points
+        latent_feature_channels : int, optional
+            number of channels in optional latent feature map
+            to concatenate onto latent embeddings before 
+            the latent FNO's forward pass, default None
         projection_channels : int, optional
             number of channels in FNO pointwise projection
         gno_coord_dim : int, optional
             geometric dimension of input/output queries, by default 3
-        gno_coord_embed_dim : int, optional
-            dimension of positional embedding for gno coordinates, by default None
-        gno_embed_max_positions : int, optional
-            max positions for use in gno positional embedding, by default 10000
+        gno_pos_embed_type : literal `{'transformer', 'nerf'}` | None
+            type of optional sinusoidal positional embedding to use in GNOBlock,
+            by default `'transformer'`
+        gno_embed_channels: int
+            dimension of optional per-channel embedding to use in GNOBlock,
+            by default 32
+        gno_embed_max_positions: int
+            max positions of optional per-channel embedding to use in GNOBlock,
+            by default 10000. If `gno_pos_embed_type != 'transformer'`, value is unused.
         gno_radius : float, optional
             radius in input/output space for GNO neighbor search, by default 0.033
         in_gno_channel_mlp_hidden_layers : list, optional
@@ -84,8 +95,9 @@ class GINO(nn.Module):
             By default None, otherwise tanh is used before FFT in the FNO block.
         fno_norm : nn.Module | None, defaults to None
             normalization layer to use in FNO.
-        fno_ada_in_features : int | None, defaults to None
+        fno_ada_in_features : int | None, defaults to 4
             if an adaptive mesh is used, number of channels of its positional embedding.
+            If None, adaptive mesh embedding is not used.
         fno_ada_in_dim : int, defaults to 1
             dimensions of above FNO adaptive mesh.
         fno_preactivation : bool, defaults to False
@@ -115,15 +127,27 @@ class GINO(nn.Module):
             Optionaly additional parameters to pass to the tensor decomposition.
         fno_conv_module : nn.Module, defaults to SpectralConv
             Spectral Convolution module to use.
+        
+            
+        References
+        -----------
+        .. _[1] : 
+        
+        Li, Z., Kovachki, N., Choy, C., Li, B., Kossaifi, J., Otta, S., 
+            Nabian, M., Stadler, M., Hundt, C., Azizzadenesheli, K., Anandkumar, A. (2023)
+            Geometry-Informed Neural Operator for Large-Scale 3D PDEs. NeurIPS 2023,
+            https://proceedings.neurips.cc/paper_files/paper/2023/hash/70518ea42831f02afc3a2828993935ad-Abstract-Conference.html
         """
     def __init__(
             self,
             in_channels,
             out_channels,
+            latent_feature_channels=None,
             projection_channels=256,
             gno_coord_dim=3,
-            gno_coord_embed_dim=None,
-            gno_embed_max_positions=100000,
+            gno_pos_embed_type='transformer',
+            gno_embed_channels=32,
+            gno_embed_max_positions=10000,
             gno_radius=0.033,
             in_gno_channel_mlp_hidden_layers=[80, 80, 80],
             out_gno_channel_mlp_hidden_layers=[512, 256],
@@ -147,7 +171,7 @@ class GINO(nn.Module):
             fno_non_linearity=F.gelu,
             fno_stabilizer=None, 
             fno_norm=None,
-            fno_ada_in_features=None,
+            fno_ada_in_features=4,
             fno_ada_in_dim=1,
             fno_preactivation=False,
             fno_skip='linear',
@@ -166,17 +190,26 @@ class GINO(nn.Module):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
+        self.latent_feature_channels = latent_feature_channels
         self.gno_coord_dim = gno_coord_dim
         self.fno_hidden_channels = fno_hidden_channels
 
         self.lifting_channels = lifting_channels
 
         # TODO: make sure this makes sense in all contexts
-        fno_in_channels = self.in_channels
-        self.fno_in_channels = fno_in_channels
+        if in_gno_transform_type in ["nonlinear", "nonlinear_kernelonly"]:
+            in_gno_out_channels = self.in_channels
+        else:
+            in_gno_out_channels = fno_in_channels
+
+        self.fno_in_channels = in_gno_out_channels
+
+        if latent_feature_channels is not None:
+            self.fno_in_channels += latent_feature_channels
 
         if self.gno_coord_dim != 3 and gno_use_open3d:
             print(f'Warning: GNO expects {self.gno_coord_dim}-d data but Open3d expects 3-d data')
+            gno_use_open3d = False
 
         self.in_coord_dim = len(fno_n_modes)
         self.gno_out_coord_dim = len(fno_n_modes) # gno output and fno will use same dimensions
@@ -189,11 +222,11 @@ class GINO(nn.Module):
 
         self.fno_norm = fno_norm
         if self.fno_norm == "ada_in":
-            if fno_ada_in_features is not None:
+            if fno_ada_in_features is not None and gno_pos_embed_type is not None:
                 self.adain_pos_embed = SinusoidalEmbedding(in_channels=fno_ada_in_dim,
-                                                           num_frequencies=fno_ada_in_features,
-                                                           embedding_type='transformer',
-                                                           max_positions=gno_embed_max_positions)
+                                                        num_frequencies=fno_ada_in_features, 
+                                                        max_positions=10000,
+                                                        embedding_type=gno_pos_embed_type)                    
                 self.ada_in_dim = self.adain_pos_embed.out_channels
             else:
                 self.ada_in_dim = fno_ada_in_dim
@@ -201,6 +234,29 @@ class GINO(nn.Module):
         else:
             self.adain_pos_embed = None
             self.ada_in_dim = None
+        
+        self.gno_radius = gno_radius
+        self.out_gno_tanh = out_gno_tanh
+
+        ### input GNO
+        # input to the first GNO ChannelMLP: x pos encoding,
+        # y (integrand) pos encoding, potentially f_y
+
+        self.gno_in = GNOBlock(
+            in_channels=in_channels,
+            out_channels=in_gno_out_channels,
+            coord_dim=self.gno_coord_dim,
+            pos_embedding_type=gno_pos_embed_type,
+            pos_embedding_channels=gno_embed_channels,
+            pos_embedding_max_positions=gno_embed_max_positions,
+            radius=gno_radius,
+            channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
+            channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
+            transform_type=in_gno_transform_type,
+            use_open3d_neighbor_search=gno_use_open3d,
+            use_torch_scatter_reduce=gno_use_torch_scatter,
+        )
+
 
         self.lifting = ChannelMLP(in_channels=self.fno_in_channels,
                                   hidden_channels=lifting_channels,
@@ -240,47 +296,21 @@ class GINO(nn.Module):
                 **kwargs
         )
 
-        self.nb_search_out = NeighborSearch(use_open3d=gno_use_open3d)
-        self.gno_radius = gno_radius
-        self.out_gno_tanh = out_gno_tanh
-
-        if gno_coord_embed_dim is not None:
-            self.pos_embed = SinusoidalEmbedding(in_channels=gno_coord_dim,
-                                                 num_frequencies=gno_coord_embed_dim, 
-                                                 embedding_type='transformer',
-                                                 max_positions=gno_embed_max_positions)
-            self.gno_coord_dim_embed = self.pos_embed.out_channels
-        else:
-            self.pos_embed = None
-            self.gno_coord_dim_embed = self.gno_out_coord_dim
-        
-
-        ### input GNO
-        # input to the first GNO ChannelMLP: x pos encoding, y (integrand) pos encoding
-        in_kernel_in_dim = self.gno_coord_dim * 2
-        # add f_y features if input GNO uses a nonlinear kernel
-        if in_gno_transform_type == "nonlinear" or in_gno_transform_type == "nonlinear_kernelonly":
-            in_kernel_in_dim += self.in_channels
-            
-        in_gno_channel_mlp_hidden_layers.insert(0, in_kernel_in_dim)
-        in_gno_channel_mlp_hidden_layers.append(fno_in_channels) 
-        self.gno_in = IntegralTransform(
-            channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
-            channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
-            transform_type=in_gno_transform_type,
-            use_torch_scatter=gno_use_torch_scatter
-        )
-
         ### output GNO
-        out_kernel_in_dim = 2 * self.gno_coord_dim_embed 
-        out_kernel_in_dim += fno_hidden_channels if out_gno_transform_type != 'linear' else 0
-        out_gno_channel_mlp_hidden_layers.insert(0, out_kernel_in_dim)
-        out_gno_channel_mlp_hidden_layers.append(fno_hidden_channels)
-        self.gno_out = IntegralTransform(
-                    channel_mlp_layers=out_gno_channel_mlp_hidden_layers,
-                    channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
-                    transform_type=out_gno_transform_type,
-                    use_torch_scatter=gno_use_torch_scatter
+
+        self.gno_out = GNOBlock(
+            in_channels=fno_hidden_channels, # number of channels in f_y
+            out_channels=fno_hidden_channels,
+            coord_dim=self.gno_coord_dim,
+            radius=self.gno_radius,
+            pos_embedding_type=gno_pos_embed_type,
+            pos_embedding_channels=gno_embed_channels,
+            pos_embedding_max_positions=gno_embed_max_positions,
+            channel_mlp_layers=out_gno_channel_mlp_hidden_layers,
+            channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
+            transform_type=out_gno_transform_type,
+            use_open3d_neighbor_search=gno_use_open3d,
+            use_torch_scatter_reduce=gno_use_torch_scatter
         )
 
         self.projection = ChannelMLP(in_channels=fno_hidden_channels, 
@@ -289,9 +319,6 @@ class GINO(nn.Module):
                               n_layers=2, 
                               n_dim=1, 
                               non_linearity=fno_non_linearity) 
-
-
-    # out_p : (n_out, gno_coord_dim)
 
     #returns: (fno_hidden_channels, n_1, n_2, ...)
     def latent_embedding(self, in_p, ada_in=None):
@@ -319,52 +346,10 @@ class GINO(nn.Module):
             in_p = self.fno_blocks(in_p, idx)
 
         return in_p 
-
-    def integrate_latent(self, in_p, out_p, latent_embed):
-        batch_size = latent_embed.shape[0]
-
-        # output shape: (batch, n_out, out_channels) or (n_out, out_channels)
-        in_to_out_nb = self.nb_search_out(
-            in_p.view(-1, in_p.shape[-1]), 
-            out_p,
-            self.gno_radius,
-            )
     
-        #Embed input points
-        n_in = in_p.view(-1, in_p.shape[-1]).shape[0]
-        if self.pos_embed is not None:
-            in_p_embed = self.pos_embed(in_p.reshape((n_in, -1)))
-        else:
-            in_p_embed = in_p.reshape((n_in, -1))
-        
-        #Embed output points
-        n_out = out_p.shape[0]
-        if self.pos_embed is not None:
-            out_p_embed = self.pos_embed(out_p.reshape((n_out, -1)))
-        else:
-            out_p_embed = out_p #.reshape((n_out, -1))
-                
-        #latent_embed shape b, c, n_1, n_2, ..., n_k
-        latent_embed = latent_embed.permute(0, *self.in_coord_dim_reverse_order, 1).reshape(batch_size, -1, self.fno_hidden_channels)
-        # shape b, n_out, channels
-        if self.out_gno_tanh in ['latent_embed', 'both']:
-            latent_embed = torch.tanh(latent_embed)
-        
-        #(n_out, fno_hidden_channels)
-        out = self.gno_out(y=in_p_embed, 
-                    neighbors=in_to_out_nb,
-                    x=out_p_embed,
-                    f_y=latent_embed,)
-                    #weighting_fn=self.gno_weighting_fn)
-        out = out.permute(0, 2, 1)
-        # Project pointwise to out channels
-        #(b, n_in, out_channels)
-        out = self.projection(out).permute(0, 2, 1)  
-
-        return out
-    
-    def forward(self,  x, input_geom, latent_queries, output_queries, ada_in=None, **kwargs):
-        """forward pass of GNO --> latent embedding w/FNO --> GNO out
+    def forward(self,  x, input_geom, latent_queries, output_queries, latent_features=None, ada_in=None, **kwargs):
+        """The GINO's forward call:
+        Input GNO --> FNOBlocks --> output GNO + projection to output queries
 
         Parameters
         ----------
@@ -381,6 +366,10 @@ class GINO(nn.Module):
         output_queries : torch.Tensor
             points at which to query the final GNO layer to get output
             shape (batch, n_out, gno_coord_dim)
+        latent_features : torch.Tensor, optional
+            optional feature map to concatenate onto latent embedding
+            before being passed into the latent FNO, default None
+            if `latent_feature_channels` is set, must be passed
         ada_in : torch.Tensor, optional
             adaptive scalar instance parameter, defaults to None
         """
@@ -388,26 +377,45 @@ class GINO(nn.Module):
 
         input_geom = input_geom.squeeze(0) 
         latent_queries = latent_queries.squeeze(0)
-    
-        spatial_nbrs = self.nb_search_out(input_geom, 
-                                          latent_queries.view((-1, latent_queries.shape[-1])), 
-                                          radius=self.gno_radius)
-        
+
+        # Pass through input GNOBlock 
         in_p = self.gno_in(y=input_geom,
                            x=latent_queries.view((-1, latent_queries.shape[-1])),
-                           f_y=x,
-                           neighbors=spatial_nbrs)
+                           f_y=x)
         
         grid_shape = latent_queries.shape[:-1] # disregard positional encoding dim
         
-        # shape (batch, grid1, ...gridn, fno_in_channels)
-        in_p = in_p.view((batch_size, *grid_shape, self.fno_in_channels))
+        # shape (batch_size, grid1, ...gridn, -1)
+        in_p = in_p.view((batch_size, *grid_shape, -1))
         
+        if latent_features is not None:
+            assert latent_features.shape[-1] == self.latent_feature_channels
+            # latent features must have the same shape (except channels) as latent_queries 
+            if latent_features.shape[0] != batch_size:
+                latent_features = latent_features.repeat(batch_size, *[1]*(latent_features.ndim-1))
+            in_p = torch.cat((in_p, latent_features), dim=-1)
         # take apply fno in latent space
         latent_embed = self.latent_embedding(in_p=in_p, 
                                              ada_in=ada_in)
 
         # Integrate latent space to output queries
-        out = self.integrate_latent(latent_queries, output_queries, latent_embed)
+        #latent_embed shape (b, c, n_1, n_2, ..., n_k)
+        batch_size = latent_embed.shape[0]
+        # permute to (b, n_1, n_2, ...n_k, c)
+        # then reshape to (b, n_1 * n_2 * ...n_k, out_channels)
+        latent_embed = latent_embed.permute(0, *self.in_coord_dim_reverse_order, 1).reshape(batch_size, -1, self.fno_hidden_channels)
+        
+        if self.out_gno_tanh in ['latent_embed', 'both']:
+            latent_embed = torch.tanh(latent_embed)
+        
+        # latent queries is of shape (d_1 x d_2 x... d_n x n), reshape to n_out x n
+        out = self.gno_out(y=latent_queries.reshape((-1, latent_queries.shape[-1])), 
+                    x=output_queries,
+                    f_y=latent_embed,)
+        out = out.permute(0, 2, 1)
 
+        # Project pointwise to out channels
+        #(b, n_in, out_channels)
+        out = self.projection(out).permute(0, 2, 1)  
+        
         return out
