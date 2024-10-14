@@ -1,7 +1,9 @@
 """
-Training a neural operator on Darcy-Flow - Author Robert Joseph George
-========================================
-In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package on Incremental FNO and Incremental Resolution
+Training an FNO with incremental meta-learning
+===============================================
+In this example, we demonstrate how to use the small Darcy-Flow 
+example we ship with the package to demonstrate the Incremental FNO
+meta-learning algorithm
 """
 
 # %%

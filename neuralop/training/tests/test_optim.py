@@ -24,4 +24,3 @@ def test_correct_complex_adam_momentum(adam_optimizer_cls):
     # exp_avg_sq should be empty, meaning it is just momentum * (1-beta2)
     momentum = optimizer.state[param]["exp_avg_sq"]
     assert_close(momentum, (2 * x**2).to(torch.cfloat))
-
