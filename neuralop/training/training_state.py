@@ -53,6 +53,14 @@ def load_training_state(save_dir: Union[str, Path],
 
     if isinstance(save_dir, str):
         save_dir = Path(save_dir)
+    save_dir = save_dir.absolute().as_posix()
+
+    # optionally load epoch 
+    epoch = None
+    manifest_pth = save_dir / "manifest.pt"
+    if manifest_pth.exists():
+        manifest = torch.load(manifest_pth)
+        epoch = manifest.get('epoch')
     
     if dist.is_initialized():
         # To minimize CUDA memory overhead during checkpoint loading,
@@ -88,7 +96,7 @@ def load_training_state(save_dir: Union[str, Path],
         else:
             print(f"Warning: requested to load regularizer state, but no saved regularizer state exists in {save_dir}.")
     
-    return model
+    return model, optimizer, scheduler, regularizer, epoch
 
 
 def save_training_state(save_dir: Union[str, Path], save_name: str,

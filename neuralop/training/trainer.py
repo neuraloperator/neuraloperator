@@ -579,12 +579,20 @@ class Trainer:
         else:
             raise FileNotFoundError("Error: resume_from_dir expects a model\
                                         state dict named model.pt or best_model.pt.")
-        # returns model, loads other modules in-place if provided
-        self.model = load_training_state(save_dir=save_dir, save_name=save_name,
+        # returns model, loads other modules if provided
+        self.model, self.optimizer, self.scheduler, self.regularizer, resume_epoch =\
+            load_training_state(save_dir=save_dir, save_name=save_name,
                                                 model=self.model,
                                                 optimizer=self.optimizer,
                                                 regularizer=self.regularizer,
                                                 scheduler=self.scheduler)
+
+        if resume_epoch is not None:
+            if resume_epoch > self.epoch:
+                self.epoch = resume_epoch
+                if self.verbose:
+                    print(f"Trainer resuming from epoch {resume_epoch}")
+
 
     def checkpoint(self, save_dir):
         """checkpoint saves current training state
@@ -607,9 +615,10 @@ class Trainer:
                                 model=self.model,
                                 optimizer=self.optimizer,
                                 scheduler=self.scheduler,
-                                regularizer=self.regularizer
+                                regularizer=self.regularizer,
+                                epoch=self.epoch
                                 )
             if self.verbose:
-                print(f"Saved training state to {save_dir}")
+                print(f"[Rank 0]: saved training state to {save_dir}")
 
        
