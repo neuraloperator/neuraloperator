@@ -79,14 +79,13 @@ To import the data:
 .. code-block:: python
 
    import torch
-   from neuralop.datasets import load_darcy_flow_small
+   from neuralop.data.datasets import load_darcy_flow_small
 
    train_loader, test_loaders, data_processor = load_darcy_flow_small(
         n_train=1000, batch_size=32, 
         test_resolutions=[32], n_tests=[100],
         test_batch_sizes=[32],
-        positional_encoding=True
-)
+   )
 
 Similar to the API provided by ``torchvision``, this dataset includes training and test data for use in standard PyTorch training loops,
 as well as a ``preprocessor`` object that automates the transforms to convert the data into the form best understood by the model. 
@@ -100,9 +99,6 @@ We provide a ``Trainer`` object that automates the logic of a basic neural opera
    # Create the trainer
    trainer = Trainer(model=model, n_epochs=20,
                      data_processor=data_processor,
-                     wandb_log=False,
-                     eval_interval=3,
-                     use_distributed=False,
                      verbose=True)
 
    # train the model
@@ -114,7 +110,7 @@ We provide a ``Trainer`` object that automates the logic of a basic neural opera
               training_loss=train_loss,
               eval_losses=eval_losses)
 
-Tensorization is also provided out of the box: you can improve the previous models
+Weight tensorization is also provided out of the box: you can improve the previous models
 by simply using a Tucker Tensorized FNO with just a few parameters:
 
 .. code-block:: python
