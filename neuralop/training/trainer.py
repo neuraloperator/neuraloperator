@@ -82,6 +82,9 @@ class Trainer:
                 self.autocast_device_type = "cpu"
         self.mixed_precision = mixed_precision
         self.data_processor = data_processor
+    
+        # Track starting epoch for checkpointing/resuming
+        self.start_epoch = 0
 
     def train(
         self,
@@ -187,7 +190,7 @@ class Trainer:
                   f'         on resolutions {[name for name in test_loaders]}.')
             sys.stdout.flush()
         
-        for epoch in range(self.n_epochs):
+        for epoch in range(self.start_epoch, self.n_epochs):
             train_err, avg_loss, avg_lasso_loss, epoch_train_time =\
                   self.train_one_epoch(epoch, train_loader, training_loss)
             epoch_metrics = dict(
@@ -388,7 +391,6 @@ class Trainer:
         self.optimizer.zero_grad(set_to_none=True)
         if self.regularizer:
             self.regularizer.reset()
-
         if self.data_processor is not None:
             sample = self.data_processor.preprocess(sample)
         else:
@@ -570,6 +572,7 @@ class Trainer:
         """
         if isinstance(save_dir, str):
             save_dir = Path(save_dir)
+        print(f"{save_dir=} {type(save_dir)}")
 
         # check for save model exists
         if (save_dir / "best_model_state_dict.pt").exists():
@@ -588,8 +591,8 @@ class Trainer:
                                                 scheduler=self.scheduler)
 
         if resume_epoch is not None:
-            if resume_epoch > self.epoch:
-                self.epoch = resume_epoch
+            if resume_epoch > self.start_epoch:
+                self.start_epoch = resume_epoch
                 if self.verbose:
                     print(f"Trainer resuming from epoch {resume_epoch}")
 
