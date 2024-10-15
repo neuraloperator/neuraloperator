@@ -302,8 +302,8 @@ class MeshDataModule:
 
         return global_min, global_max
 
-    def train_dataloader(self, **kwargs):
+    def train_loader(self, **kwargs):
         return DataLoader(self.train_data, **kwargs)
 
-    def test_dataloader(self, **kwargs):
+    def test_loader(self, **kwargs):
         return DataLoader(self.test_data, **kwargs)

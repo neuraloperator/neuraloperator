@@ -7,6 +7,7 @@ from .dict_dataset import DictDataset
 # only import MeshDataModule if open3d is built locally
 try:
     from .mesh_datamodule import MeshDataModule
+    from .car_cfd_dataset import CarCFDDataset
 except ModuleNotFoundError:
     pass
 

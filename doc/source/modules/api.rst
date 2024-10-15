@@ -339,6 +339,37 @@ We also ship a small dataset for testing:
 
     load_darcy_flow_small
 
+We provide downloadable datasets for Darcy-Flow, Navier-Stokes, and Car-CFD.
+
+.. automodule:: neuralop.data.datasets.darcy
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    DarcyDataset
+
+.. automodule:: neuralop.data.datasets.navier_stokes
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    NavierStokesDataset
+
+.. automodule:: neuralop.data.datasets.car_cfd_dataset
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    CarCFDDataset
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 DataProcessors

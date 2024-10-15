@@ -7,7 +7,7 @@ from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
 from neuralop.losses.data_losses import LpLoss
 from neuralop.training.trainer import Trainer
-from neuralop.data.datasets import MeshDataModule
+from neuralop.data.datasets import CarCFDDataset
 from neuralop.data.transforms.data_processors import DataProcessor
 from copy import deepcopy
 
@@ -49,20 +49,18 @@ if config.wandb.log and is_logger:
     wandb.init(**wandb_init_args)
 
 #Load CFD body data
-data_module = MeshDataModule(config.data.path, 
-                             config.data.entity_name, 
+data_module = CarCFDDataset(root_dir=config.data.root, 
                              query_res=[config.data.sdf_query_resolution]*3, 
                              n_train=config.data.n_train, 
                              n_test=config.data.n_test, 
-                             attributes=config.data.load_attributes,
+                             download=True
                              )
 
 
-train_loader = data_module.train_dataloader(batch_size=1, shuffle=True)
-test_loader = data_module.test_dataloader(batch_size=1, shuffle=False)
+train_loader = data_module.train_loader(batch_size=1, shuffle=True)
+test_loader = data_module.test_loader(batch_size=1, shuffle=False)
 
 model = get_model(config)
-model = model.to(device)
 
 #Create the optimizer
 optimizer = AdamW(model.parameters(), 
