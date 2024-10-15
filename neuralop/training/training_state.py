@@ -53,7 +53,6 @@ def load_training_state(save_dir: Union[str, Path],
 
     if isinstance(save_dir, str):
         save_dir = Path(save_dir)
-    save_dir = save_dir.absolute().as_posix()
 
     # optionally load epoch 
     epoch = None
@@ -72,27 +71,27 @@ def load_training_state(save_dir: Union[str, Path],
         model = model.to(device=f"cuda:{device_id}")
         torch.cuda.empty_cache()
     else:
-        model = model.from_checkpoint(save_dir, save_name, map_location=map_location)
+        model = model.from_checkpoint(save_dir.absolute().as_posix(), save_name, map_location=map_location)
     
     # load optimizer if state exists
     if optimizer is not None:
         optimizer_pth = save_dir / "optimizer.pt"
         if optimizer_pth.exists():
-            optimizer.load_state_dict(torch.load(optimizer_pth, map_location=map_location))
+            optimizer.load_state_dict(torch.load(optimizer_pth.absolute().as_posix(), map_location=map_location))
         else:
             print(f"Warning: requested to load optimizer state, but no saved optimizer state exists in {save_dir}.")
     
     if scheduler is not None:
         scheduler_pth = save_dir / "scheduler.pt"
         if scheduler_pth.exists():
-            scheduler.load_state_dict(torch.load(scheduler_pth, map_location=map_location))
+            scheduler.load_state_dict(torch.load(scheduler_pth.absolute().as_posix(), map_location=map_location))
         else:
             print(f"Warning: requested to load scheduler state, but no saved scheduler state exists in {save_dir}.")
     
     if regularizer is not None:
         regularizer_pth = save_dir / "regularizer.pt"
         if regularizer_pth.exists():
-            regularizer.load_state_dict(torch.load(regularizer_pth, map_location=map_location))
+            regularizer.load_state_dict(torch.load(regularizer_pth.absolute().as_posix(), map_location=map_location))
         else:
             print(f"Warning: requested to load regularizer state, but no saved regularizer state exists in {save_dir}.")
     
