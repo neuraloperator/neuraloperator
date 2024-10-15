@@ -31,7 +31,6 @@ config_name = pipe.steps[-1].config_name
 
 # Set-up distributed communication, if using
 device, is_logger = setup(config)
-print(f"xxxxxxxxxxxxx {is_logger=} xxxxxxxxxxxxxx")
 # Set up WandB logging
 wandb_init_args = None
 if config.wandb.log and is_logger:
@@ -45,12 +44,11 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.fno2d.n_layers,
-                config.fno2d.n_modes_width,
-                config.fno2d.n_modes_height,
-                config.fno2d.hidden_channels,
-                config.fno2d.factorization,
-                config.fno2d.rank,
+                config.fno.n_layers,
+                config.fno.n_modes,
+                config.fno.hidden_channels,
+                config.fno.factorization,
+                config.fno.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
