@@ -57,8 +57,8 @@ data_module = CarCFDDataset(root_dir=config.data.root,
                              )
 
 
-train_loader = data_module.train_dataloader(batch_size=1, shuffle=True)
-test_loader = data_module.test_dataloader(batch_size=1, shuffle=False)
+train_loader = data_module.train_loader(batch_size=1, shuffle=True)
+test_loader = data_module.test_loader(batch_size=1, shuffle=False)
 
 model = get_model(config)
 

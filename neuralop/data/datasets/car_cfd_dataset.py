@@ -1,8 +1,6 @@
 from typing import List, Union
 from pathlib import Path
 
-import torch
-
 from .mesh_datamodule import MeshDataModule
 from .web_utils import download_from_zenodo_record
 
@@ -12,6 +10,14 @@ class CarCFDDataset(MeshDataModule):
     into training and testing sets, as well as remove instances that are corrupted.
 
     Data source: https://zenodo.org/records/13936501
+
+    Attributes
+    ----------
+    train_loader: torch.utils.data.DataLoader
+        dataloader of training examples
+
+    test_loader: torch.utils.data.DataLoader
+        dataloader of testing examples
 
     References
     ----------
@@ -29,7 +35,7 @@ class CarCFDDataset(MeshDataModule):
         query_res: List[int] = [32,32,32],
         download: bool=True
         ):
-        """__init__ _summary_
+        """Initialize the CarCFDDataset.
 
         Parameters
         ----------
