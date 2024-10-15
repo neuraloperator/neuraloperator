@@ -42,12 +42,12 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.tfno2d.n_layers,
-                config.tfno2d.hidden_channels,
-                config.tfno2d.n_modes_width,
-                config.tfno2d.n_modes_height,
-                config.tfno2d.factorization,
-                config.tfno2d.rank,
+                config.fno.n_layers,
+                config.fno.hidden_channels,
+                config.fno.n_modes_width,
+                config.fno.n_modes[0],
+                config.fno.factorization,
+                config.fno.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
@@ -82,15 +82,18 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
     encode_input=False,
     encode_output=False,
 )
+model = get_model(config)
+
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:
-    data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
+    data_processor = MGPatchingDataProcessor(model=model,
+                                             in_normalizer=data_processor.in_normalizer,
                                              out_normalizer=data_processor.out_normalizer,
                                              padding_fraction=config.patching.padding,
                                              stitching=config.patching.stitching,
-                                             levels=config.patching.levels)
-
-model = get_model(config)
+                                             levels=config.patching.levels,
+                                             use_distributed=config.distributed.use_distributed,
+                                             device=device)
 
 # Reconfigure DataLoaders to use a DistributedSampler 
 # if in distributed data parallel mode
@@ -188,6 +191,7 @@ if is_logger:
         wandb.log(to_log, commit=False)
         wandb.watch(model)
 
+# Train the model
 trainer.train(
     train_loader=train_loader,
     test_loaders=test_loaders,
