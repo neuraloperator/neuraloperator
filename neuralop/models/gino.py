@@ -56,7 +56,7 @@ class GINO(nn.Module):
             transform type parameter for output GNO, by default 'linear'
             see neuralop.layers.IntegralTransform
         gno_use_open3d : bool, optional
-            whether to use open3d neighbor search, by default False
+            whether to use open3d neighbor search, by default True
             if False, uses pure-PyTorch fallback neighbor search
         gno_use_torch_scatter : bool, optional
             whether to use torch_scatter's neighborhood reduction function
@@ -71,8 +71,10 @@ class GINO(nn.Module):
             to use in FNO, by default (16, 16, 16)
         fno_hidden_channels : int, optional
             hidden channels for use in FNO, by default 64
-        lifting_channels : int, optional
-            number of channels in FNO's pointwise lifting, by default 256
+        lifting_channel_ratio : int, optional
+            ratio of lifting channels to `fno_hidden_channels`, by default 2
+            The number of liting channels in the lifting block of the FNO is
+            lifting_channel_ratio * hidden_channels (e.g. default 512)
         fno_n_layers : int, optional
             number of layers in FNO, by default 4
         fno_resolution_scaling_factor : float | None, optional
@@ -137,52 +139,57 @@ class GINO(nn.Module):
             https://proceedings.neurips.cc/paper_files/paper/2023/hash/70518ea42831f02afc3a2828993935ad-Abstract-Conference.html
         """
     def __init__(
-            self,
-            in_channels,
-            out_channels,
-            latent_feature_channels=None,
-            projection_channels=256,
-            gno_coord_dim=3,
-            gno_pos_embed_type='transformer',
-            gno_embed_channels=32,
-            gno_embed_max_positions=10000,
-            gno_radius=0.033,
-            in_gno_channel_mlp_hidden_layers=[80, 80, 80],
-            out_gno_channel_mlp_hidden_layers=[512, 256],
-            gno_channel_mlp_non_linearity=F.gelu, 
-            in_gno_transform_type='linear',
-            out_gno_transform_type='linear',
-            gno_use_open3d=False,
-            gno_use_torch_scatter=True,
-            out_gno_tanh=None,
-            fno_in_channels=3,
-            fno_n_modes=(16, 16, 16), 
-            fno_hidden_channels=64,
-            lifting_channels=256,
-            fno_n_layers=4,
-            fno_resolution_scaling_factor=None,
-            fno_incremental_n_modes=None,
-            fno_block_precision='full',
-            fno_use_channel_mlp=True, 
-            fno_channel_mlp_dropout=0,
-            fno_channel_mlp_expansion=0.5,
-            fno_non_linearity=F.gelu,
-            fno_stabilizer=None, 
-            fno_norm=None,
-            fno_ada_in_features=4,
-            fno_ada_in_dim=1,
-            fno_preactivation=False,
-            fno_skip='linear',
-            fno_channel_mlp_skip='soft-gating',
-            fno_separable=False,
-            fno_factorization=None,
-            fno_rank=1.0,
-            fno_joint_factorization=False, 
-            fno_fixed_rank_modes=False,
-            fno_implementation='factorized',
-            fno_decomposition_kwargs=dict(),
-            fno_conv_module=SpectralConv,
-            **kwargs
+        self,
+        in_channels,
+        out_channels,
+        latent_feature_channels=None, # potentially mark as other
+        projection_channels=256,
+        gno_coord_dim=3,
+        gno_radius=0.033,
+        in_gno_transform_type='linear',
+        out_gno_transform_type='linear',
+        gno_pos_embed_type='transformer',
+        fno_in_channels=3,
+        fno_n_modes=(16, 16, 16), 
+        fno_hidden_channels=64,
+        fno_lifting_channel_ratio=2,
+        fno_n_layers=4,
+
+        # Other GNO Params
+        gno_embed_channels=32,
+        gno_embed_max_positions=10000,
+        in_gno_channel_mlp_hidden_layers=[80, 80, 80],
+        out_gno_channel_mlp_hidden_layers=[512, 256],
+        gno_channel_mlp_non_linearity=F.gelu, 
+        gno_use_open3d=True,
+        gno_use_torch_scatter=True,
+        out_gno_tanh=None,
+
+
+        # Other FNO Params
+        fno_resolution_scaling_factor=None,
+        fno_incremental_n_modes=None,
+        fno_block_precision='full',
+        fno_use_channel_mlp=True, 
+        fno_channel_mlp_dropout=0,
+        fno_channel_mlp_expansion=0.5,
+        fno_non_linearity=F.gelu,
+        fno_stabilizer=None, 
+        fno_norm=None,
+        fno_ada_in_features=4,
+        fno_ada_in_dim=1,
+        fno_preactivation=False,
+        fno_skip='linear',
+        fno_channel_mlp_skip='soft-gating',
+        fno_separable=False,
+        fno_factorization=None,
+        fno_rank=1.0,
+        fno_joint_factorization=False, 
+        fno_fixed_rank_modes=False,
+        fno_implementation='factorized',
+        fno_decomposition_kwargs=dict(),
+        fno_conv_module=SpectralConv,
+        **kwargs
         ):
         
         super().__init__()
@@ -192,7 +199,7 @@ class GINO(nn.Module):
         self.gno_coord_dim = gno_coord_dim
         self.fno_hidden_channels = fno_hidden_channels
 
-        self.lifting_channels = lifting_channels
+        self.lifting_channels = fno_lifting_channel_ratio * fno_hidden_channels
 
         # TODO: make sure this makes sense in all contexts
         if in_gno_transform_type in ["nonlinear", "nonlinear_kernelonly"]:
@@ -237,8 +244,8 @@ class GINO(nn.Module):
         self.out_gno_tanh = out_gno_tanh
 
         ### input GNO
-        # input to the first GNO ChannelMLP: x pos encoding,
-        # y (integrand) pos encoding, potentially f_y
+        # input to the first GNO ChannelMLP: `x` pos encoding,
+        # `y` (integrand) pos encoding, potentially `f_y`
 
         self.gno_in = GNOBlock(
             in_channels=in_channels,
@@ -255,12 +262,15 @@ class GINO(nn.Module):
             use_torch_scatter_reduce=gno_use_torch_scatter,
         )
 
-
+        ### Lifting layer before FNOBlocks
         self.lifting = ChannelMLP(in_channels=self.fno_in_channels,
-                                  hidden_channels=lifting_channels,
+                                  hidden_channels=self.lifting_channels,
                                   out_channels=fno_hidden_channels,
                                   n_layers=3)
         
+        ### FNOBlocks in latent space
+        # input: `in_p` intermediate embeddings,
+        # possibly concatenated feature channels `latent_features` 
         self.fno_blocks = FNOBlocks(
                 n_modes=fno_n_modes,
                 hidden_channels=fno_hidden_channels,
