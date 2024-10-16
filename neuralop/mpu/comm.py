@@ -70,13 +70,6 @@ def get_data_parallel_rank():
         return 0
     else:
         return dist.get_rank(group=_DATA_PARALLEL_GROUP)
-    
-def get_num_worlds():
-    if not dist.is_initialized():
-        return 1
-    else:
-        return dist.get
-
 
 def get_data_parallel_group():
     assert dist.is_initialized(), "Error, initialize torch.distributed first"
