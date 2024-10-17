@@ -284,6 +284,7 @@ class RotaryEmbedding2D(nn.Module):
         self.min_freq = min_freq
         self.scale = scale
         self.register_buffer('inv_freq', inv_freq, persistent=False)
+        self.out_channels = 2
 
     def forward(self, coordinates):
         """coordinates is tensor of [batch_size, num_points]"""

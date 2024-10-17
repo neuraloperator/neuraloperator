@@ -36,7 +36,7 @@ class LocalFNOBlocks(nn.Module):
             in frequency space. Can either be specified as
             an int (for all dimensions) or an iterable with one
             number per dimension
-        output_scaling_factor : Optional[Union[Number, List[Number]]], optional
+        resolution_scaling_factor : Optional[Union[Number, List[Number]]], optional
             factor by which to scale outputs for super-resolution, by default None
         n_layers : int, optional
             number of Fourier layers to apply in sequence, by default 1
@@ -79,8 +79,6 @@ class LocalFNOBlocks(nn.Module):
             rank parameter for SpectralConv, by default 1.0
         SpectralConv : BaseConv, optional
             module to use for SpectralConv, by default SpectralConv
-        joint_factorization : bool, optional
-            whether to factorize all spectralConv weights as one tensor, by default False
         fixed_rank_modes : bool, optional
             fixed_rank_modes parameter for SpectralConv, by default False
         implementation : str, optional
@@ -114,7 +112,7 @@ class LocalFNOBlocks(nn.Module):
         in_channels,
         out_channels,
         n_modes,
-        output_scaling_factor=None,
+        resolution_scaling_factor=None,
         n_layers=1,
         diff_layers=[True],
         fin_diff_implementation='subtract_middle',
@@ -137,8 +135,7 @@ class LocalFNOBlocks(nn.Module):
         separable=False,
         factorization=None,
         rank=1.0,
-        SpectralConv=SpectralConv,
-        joint_factorization=False,
+        conv_module=SpectralConv,
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
@@ -155,16 +152,15 @@ class LocalFNOBlocks(nn.Module):
             
         self.n_dim = len(n_modes)
 
-        self.output_scaling_factor: Union[
+        self.resolution_scaling_factor: Union[
             None, List[List[float]]
-        ] = validate_scaling_factor(output_scaling_factor, self.n_dim, n_layers)
+        ] = validate_scaling_factor(resolution_scaling_factor, self.n_dim, n_layers)
 
         self.max_n_modes = max_n_modes
         self.fno_block_precision = fno_block_precision
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.n_layers = n_layers
-        self.joint_factorization = joint_factorization
         self.non_linearity = non_linearity
         self.stabilizer = stabilizer
         self.rank = rank
@@ -191,20 +187,22 @@ class LocalFNOBlocks(nn.Module):
 
         assert len(diff_layers) == n_layers, "Length of diff_layers must be n_layers"
 
-        self.convs = SpectralConv(
-            self.in_channels,
-            self.out_channels,
-            self.n_modes,
-            output_scaling_factor=output_scaling_factor,
-            max_n_modes=max_n_modes,
-            rank=rank,
-            fixed_rank_modes=fixed_rank_modes,
-            implementation=implementation,
-            separable=separable,
-            factorization=factorization,
-            decomposition_kwargs=decomposition_kwargs,
-            joint_factorization=joint_factorization,
-            n_layers=n_layers,
+        self.convs = nn.ModuleList(
+            [
+                conv_module(
+                    self.in_channels,
+                    self.out_channels,
+                    self.n_modes,
+                    resolution_scaling_factor=None if resolution_scaling_factor is None else self.resolution_scaling_factor[i],
+                    max_n_modes=max_n_modes,
+                    rank=rank,
+                    fixed_rank_modes=fixed_rank_modes,
+                    implementation=implementation,
+                    separable=separable,
+                    factorization=factorization,
+                    decomposition_kwargs=decomposition_kwargs,
+                ) for i in range(n_layers)
+            ]
         )
 
         self.fno_skips = nn.ModuleList(
@@ -285,13 +283,6 @@ class LocalFNOBlocks(nn.Module):
                     for _ in range(n_layers * self.n_norms)
                 ]
             )
-        # elif norm == 'layer_norm':
-        #     self.norm = nn.ModuleList(
-        #         [
-        #             nn.LayerNorm(elementwise_affine=False)
-        #             for _ in range(n_layers*self.n_norms)
-        #         ]
-        #     )
         elif norm == "ada_in":
             self.norm = nn.ModuleList(
                 [
@@ -341,7 +332,7 @@ class LocalFNOBlocks(nn.Module):
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
 
-        x_fno = self.convs(x, index, output_shape=output_shape)
+        x_fno = self.convs[index](x, output_shape=output_shape)
 
         if self.differential_idx_list[index] != -1:
             grid_width_scaling_factor = 1 / (x.shape[-1] / self.default_grid_res)
@@ -395,7 +386,7 @@ class LocalFNOBlocks(nn.Module):
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
 
-        x_fno = self.convs(x, index, output_shape=output_shape)
+        x_fno = self.convs[index](x, output_shape=output_shape)
 
         x = x_fno + x_skip_fno_diff
 
@@ -416,7 +407,8 @@ class LocalFNOBlocks(nn.Module):
 
     @n_modes.setter
     def n_modes(self, n_modes):
-        self.convs.n_modes = n_modes
+        for i in range(self.n_layers):
+            self.convs[i].n_modes = n_modes
         self._n_modes = n_modes
 
     def get_block(self, indices):

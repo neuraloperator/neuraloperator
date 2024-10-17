@@ -7,9 +7,7 @@ from ..layers.channel_mlp import ChannelMLP
 from ..layers.embeddings import SinusoidalEmbedding
 from ..layers.fno_block import FNOBlocks
 from ..layers.spectral_convolution import SpectralConv
-from ..layers.integral_transform import IntegralTransform
-from ..layers.neighbor_search import NeighborSearch
-
+from ..layers.gno_block import GNOBlock
 
 class FNOGNO(BaseModel, name="FNOGNO"):
     """FNOGNO: Fourier/Geometry Neural Operator
@@ -22,10 +20,15 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         number of output channels
     projection_channels : int, defaults to 256
          number of hidden channels in embedding block of FNO.
-    gno_coord_dim : int, defaults to 3
-        dimension of GNO input data.
-    gno_coord_embed_dim : int | None, defaults to none
-        dimension of embeddings of GNO coordinates.
+    gno_pos_embed_type : literal `{'transformer', 'nerf'}` | None
+        type of optional sinusoidal positional embedding to use in GNOBlock,
+        by default `'transformer'`
+    gno_embed_channels: int
+        dimension of optional per-channel embedding to use in GNOBlock,
+        by default 32
+    gno_embed_max_positions: int
+        max positions of optional per-channel embedding to use in GNOBlock,
+        by default 10000. If `gno_pos_embed_type != 'transformer'`, value is unused.
     gno_radius : float, defaults to 0.033
         radius parameter to construct graph.
     gno_channel_mlp_hidden_layers : list, defaults to [512, 256]
@@ -53,7 +56,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         dimension of hidden layers in FNO lifting block.
     fno_n_layers : int, defaults to 4
         number of FNO layers in the block.
-    fno_output_scaling_factor : float | None, defaults to None
+    fno_resolution_scaling_factor : float | None, defaults to None
         factor by which to rescale output predictions in the original domain
     fno_incremental_n_modes : list[int] | None, defaults to None
         if passed, sets n_modes separately for each FNO layer.
@@ -110,7 +113,8 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         out_channels,
         projection_channels=256,
         gno_coord_dim=3,
-        gno_coord_embed_dim=None,
+        gno_pos_embed_type='transformer',
+        gno_embed_channels=32,
         gno_embed_max_positions=10000,
         gno_radius=0.033,
         gno_channel_mlp_hidden_layers=[512, 256],
@@ -122,10 +126,9 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         fno_hidden_channels=64,
         fno_lifting_channels=256,
         fno_n_layers=4,
-        fno_output_scaling_factor=None,
+        fno_resolution_scaling_factor=None,
         fno_incremental_n_modes=None,
         fno_block_precision="full",
-        fno_use_channel_mlp=False,
         fno_channel_mlp_dropout=0,
         fno_channel_mlp_expansion=0.5,
         fno_non_linearity=F.gelu,
@@ -208,10 +211,9 @@ class FNOGNO(BaseModel, name="FNOGNO"):
                 out_channels=fno_hidden_channels,
                 positional_embedding=None,
                 n_layers=fno_n_layers,
-                output_scaling_factor=fno_output_scaling_factor,
+                resolution_scaling_factor=fno_resolution_scaling_factor,
                 incremental_n_modes=fno_incremental_n_modes,
                 fno_block_precision=fno_block_precision,
-                use_channel_mlp=fno_use_channel_mlp,
                 channel_mlp_expansion=fno_channel_mlp_expansion,
                 channel_mlp_dropout=fno_channel_mlp_dropout,
                 non_linearity=fno_non_linearity,
@@ -234,31 +236,21 @@ class FNOGNO(BaseModel, name="FNOGNO"):
                 **kwargs
         )
 
-        self.nb_search_out = NeighborSearch(use_open3d=gno_use_open3d)
         self.gno_radius = gno_radius
 
-        if gno_coord_embed_dim is not None:
-            self.pos_embed = SinusoidalEmbedding(in_channels=self.gno_coord_dim,
-                                                 num_frequencies=gno_coord_embed_dim,
-                                                 embedding_type='transformer',
-                                                 max_positions=gno_embed_max_positions)
-            # if pos embedding is provided, its outputs will have 
-            # `pos_embed.out_channels` channels when passed to the output GNO
-            self.gno_coord_dim_embed = self.pos_embed.out_channels
-        else:
-            self.pos_embed = None
-            self.gno_coord_dim_embed = gno_coord_dim
-
-        kernel_in_dim = 2 * self.gno_coord_dim_embed
-        kernel_in_dim += fno_hidden_channels if gno_transform_type != "linear" else 0
-
-        gno_channel_mlp_hidden_layers.insert(0, kernel_in_dim)
-        gno_channel_mlp_hidden_layers.append(fno_hidden_channels)
-
-        self.gno = IntegralTransform(
+        self.gno = GNOBlock(
+            in_channels=fno_hidden_channels,
+            out_channels=fno_hidden_channels,
+            radius=gno_radius,
+            coord_dim=self.gno_coord_dim,
+            pos_embedding_type=gno_pos_embed_type,
+            pos_embedding_channels=gno_embed_channels,
+            pos_embedding_max_positions=gno_embed_max_positions,
             channel_mlp_layers=gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=gno_transform_type,
+            use_open3d_neighbor_search=gno_use_open3d,
+            use_torch_scatter_reduce=True,
         )
 
         self.projection = ChannelMLP(
@@ -317,30 +309,6 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         Compute integration region for each output point
         """
 
-        # find neighbors, data points are latent geometry
-        # and queries are output geometry
-        in_to_out_nb = self.nb_search_out(
-            in_p.view(-1, in_p.shape[-1]), out_p, self.gno_radius
-        )
-
-        # Embed input points
-        n_in = in_p.view(-1, in_p.shape[-1]).shape[0]
-        if self.pos_embed is not None:
-            in_p_embed = self.pos_embed(
-                in_p.reshape((n_in, -1))
-                )
-        else:
-            in_p_embed = in_p.reshape((n_in, -1))
-
-        # Embed output points
-        n_out = out_p.shape[0]
-        if self.pos_embed is not None:
-            out_p_embed = self.pos_embed(
-                out_p.reshape((n_out, -1))
-            )
-        else:
-            out_p_embed = out_p  # .reshape((n_out, -1))
-
         # (n_1*n_2*..., fno_hidden_channels)
         # if batched, (b, n1*n2*..., fno_hidden_channels)
 
@@ -355,12 +323,13 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             ).reshape((-1, self.fno_hidden_channels))
 
         # (n_out, fno_hidden_channels)
+        
         out = self.gno(
-            y=in_p_embed,
-            neighbors=in_to_out_nb,
-            x=out_p_embed,
+            y=in_p.reshape(-1, in_p.shape[-1]),
+            x=out_p,
             f_y=latent_embed,
         )
+        
         # if self.gno is variable and not batched
         if out.ndim == 2:
             out = out.unsqueeze(0)
