@@ -220,12 +220,10 @@ class MultigridPatching2D(nn.Module):
         self.padding_width = padding[1]
 
         patched = make_patches(x, n=2**self.levels, p=padding)
-        print(f"{patched.shape=}")
         s1_patched = patched.size(-2) - 2 * padding[0]
         s2_patched = patched.size(-1) - 2 * padding[1]
 
         for level in range(1, levels + 1):
-            print(f"{level=}")
             sub_sample = 2**level
             s1_stride = s1_patched // sub_sample
             s2_stride = s2_patched // sub_sample
@@ -339,7 +337,6 @@ def make_patches(x, n, p=0):
     if isinstance(p, int):
         p = [p, p]
 
-    print(f"padding={p}")
     # Pad
     if p[0] > 0 or p[1] > 0:
         if d == 1:
@@ -362,7 +359,6 @@ def make_patches(x, n, p=0):
     # Patch
     for j in range(d):
         patch_size = size[-(j + 1)] // n[-(j + 1)]
-        print(f"{patch_size=}")
         x = x.unfold(-(2 * j + 1), patch_size + 2 * p[-(j + 1)], patch_size)
 
     x = x.permute(0, 2, 3, 4, 5, 1)
