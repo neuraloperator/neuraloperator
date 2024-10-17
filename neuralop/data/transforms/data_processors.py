@@ -307,11 +307,11 @@ class MGPatchingDataProcessor(DataProcessor):
         model: nn.Module
             model to wrap in MultigridPatching2D
         levels : int
-            mg_patching level parameter for MultigridPatching2D
+            number of multi-grid patching levels to use
         padding_fraction : float
-            mg_padding_fraction parameter for MultigridPatching2D
-        stitching : float
-            mg_patching_stitching parameter for MultigridPatching2D
+            fraction by which to pad inputs in multigrid-patching
+        stitching : bool
+            whether to always perform stitching in multigrid-patching
         in_normalizer : neuralop.datasets.transforms.Transform, optional
             OutputEncoder to decode model inputs, by default None
         in_normalizer : neuralop.datasets.transforms.Transform, optional
@@ -389,9 +389,7 @@ class MGPatchingDataProcessor(DataProcessor):
             model output predictions
         """
         y = data_dict["y"]
-        print(f"pre-unpatch {y.shape=}, {out.shape=}")
         out, y = self.patcher.unpatch(out, y, evaluation=not self.training)
-        print(f"post-unpatch {y.shape=} {out.shape=}")
 
         if self.out_normalizer:
             y = self.out_normalizer.inverse_transform(y)
