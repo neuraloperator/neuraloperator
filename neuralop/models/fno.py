@@ -22,7 +22,7 @@ class FNO(BaseModel, name='FNO'):
     The key component of an FNO is its SpectralConv layer (see ``neuralop.layers.spectral_convolution``), which
     is similar to a standard CNN conv layer but operates in the frequency domain.
 
-    For more information, refer to :ref:`fno-guide`.
+    For more information, refer to :ref:`fno_intro`.
 
     Parameters
     ----------
