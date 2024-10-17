@@ -39,12 +39,13 @@ def test_full_mgp2d(levels, padding_fraction):
     n_patches = 2 ** levels
     padding = int(round(side_len * padding_fraction))
     patched_padded_side_len = int((side_len // n_patches) + (2 * padding))
-    unpatch_side_len = int(side_len - (2 * padding))
+    unpatch_side_len = int(side_len // n_patches)
 
     assert patched_x.shape ==\
           ((n_patches ** 2) * batch_size, channels + levels, patched_padded_side_len, patched_padded_side_len)
     
-    patched_out_shape = (patched_x.shape[0], 1, *patched_x.shape[2:])
+    # mimic output after scattering x to model parallel region
+    patched_out_shape = (batch_size, 1, *patched_x.shape[2:])
     patched_out = torch.randn(patched_out_shape)
     
     unpatched_x, unpatched_y = patcher.unpatch(patched_out, patched_y)
