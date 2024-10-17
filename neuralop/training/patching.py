@@ -307,9 +307,24 @@ class MultigridPatching2D(nn.Module):
         ].contiguous()
 
 
-# x : (batch, C, s) or (batch, C, h, w)
-# y : (n*batch, C, s/n + 2p) or (n1*n2*batch, C, h/n1 + 2*p1, w/n2 + 2*p2)
 def make_patches(x, n, p=0):
+    """make_patches splits `x` into `n` equally-sized patches
+    with padding fraction `p`. Stacks patches along the batch dimension.
+
+    Starting with an input tensor of shape (batch, C, s) or (batch, C, h, w),
+    returns a corresponding patched output tensor of shape (n * batch, C, s / n + 2p) 
+    or (n1 * n2 * batch, C, h / n1 + 2 * p1, w / n2 + 2 * p2)
+
+
+    Parameters
+    ----------
+    x : torch.tensor
+        input tensor, before patching
+    n : int
+        number of patches into which to split each example in `x`
+    p : int, optional
+        number of pixels to use when padding `x`, by default 0
+    """
 
     size = x.size()
 
@@ -324,6 +339,7 @@ def make_patches(x, n, p=0):
     if isinstance(p, int):
         p = [p, p]
 
+    print(f"padding={p}")
     # Pad
     if p[0] > 0 or p[1] > 0:
         if d == 1:

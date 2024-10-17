@@ -10,7 +10,7 @@ channels = 1
 side_len = 128
 
 @pytest.mark.parametrize('levels', [1, 2, 3])
-@pytest.mark.parametrize('padding_fraction', [0, 0.5])
+@pytest.mark.parametrize('padding_fraction', [0, 0.1, 0.2])
 def test_make_patches(levels, padding_fraction):
     x = torch.randn(batch_size, channels, side_len, side_len)
     n_patches = 2 ** levels
@@ -22,13 +22,9 @@ def test_make_patches(levels, padding_fraction):
     assert patched_x.shape == ((n_patches ** 2) * batch_size, channels, patched_side_len, patched_side_len)
 
 @pytest.mark.parametrize('levels', [1, 2, 3])
-@pytest.mark.parametrize('padding_fraction', [0, 0.5])
+@pytest.mark.parametrize('padding_fraction', [0, 0.1, 0.2])
 @pytest.mark.parametrize('stitching', [False, True])
 def test_full_mgp2d(levels, padding_fraction, stitching):
-    # increase side len so the sides are big enough
-    '''global side_len
-
-    side_len *= 2**(levels-1)'''
 
     model = DummyModel(16)
     patcher = MultigridPatching2D(model=model,
