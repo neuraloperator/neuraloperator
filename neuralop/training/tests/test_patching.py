@@ -23,14 +23,13 @@ def test_make_patches(levels, padding_fraction):
 
 @pytest.mark.parametrize('levels', [1, 2, 3])
 @pytest.mark.parametrize('padding_fraction', [0, 0.1, 0.2])
-@pytest.mark.parametrize('stitching', [False, True])
-def test_full_mgp2d(levels, padding_fraction, stitching):
+def test_full_mgp2d(levels, padding_fraction):
 
     model = DummyModel(16)
     patcher = MultigridPatching2D(model=model,
                                   levels=levels,
                                   padding_fraction=padding_fraction,
-                                  stitching=stitching,
+                                  stitching=False, # cpu-only, single process
                                   use_distributed=False)
     
     x = torch.randn(batch_size, channels, side_len, side_len)
@@ -39,7 +38,12 @@ def test_full_mgp2d(levels, padding_fraction, stitching):
     patched_x, patched_y = patcher.patch(x,y)
     n_patches = 2 ** levels
     padding = int(round(side_len * padding_fraction))
-    patched_side_len = int((side_len // n_patches) + (2 * padding))
+    patched_padded_side_len = int((side_len // n_patches) + (2 * padding))
+    unpatch_side_len = int(side_len - (2 * padding))
 
     assert patched_x.shape ==\
-          ((n_patches ** 2) * batch_size, channels + levels, patched_side_len, patched_side_len)
+          ((n_patches ** 2) * batch_size, channels + levels, patched_padded_side_len, patched_padded_side_len)
+    
+    unpatched_x, unpatched_y = patcher.unpatch(x,y)
+        
+    assert unpatched_x.shape == (batch_size, channels, unpatch_side_len, unpatch_side_len)
