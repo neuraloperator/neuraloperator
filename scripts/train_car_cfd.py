@@ -62,7 +62,6 @@ train_loader = data_module.train_dataloader(batch_size=1, shuffle=True)
 test_loader = data_module.test_dataloader(batch_size=1, shuffle=False)
 
 model = get_model(config)
-model = model.to(device)
 
 #Create the optimizer
 optimizer = AdamW(model.parameters(), 

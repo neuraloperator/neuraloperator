@@ -294,6 +294,7 @@ class MGPatchingDataProcessor(DataProcessor):
         padding_fraction: float,
         stitching: float,
         device: str = "cpu",
+        use_distributed: bool=False,
         in_normalizer=None,
         out_normalizer=None,
     ):
@@ -327,6 +328,7 @@ class MGPatchingDataProcessor(DataProcessor):
             levels=self.levels,
             padding_fraction=self.padding_fraction,
             stitching=self.stitching,
+            use_distributed=use_distributed,
         )
         self.device = device
 
@@ -336,7 +338,7 @@ class MGPatchingDataProcessor(DataProcessor):
             self.in_normalizer = in_normalizer.to(self.device)
         if out_normalizer:
             self.out_normalizer = out_normalizer.to(self.device)
-        self.model = None
+        self.model = model
 
     def to(self, device):
         self.device = device
@@ -367,7 +369,10 @@ class MGPatchingDataProcessor(DataProcessor):
         if self.in_normalizer:
             x = self.in_normalizer.transform(x)
             y = self.out_normalizer.transform(y)
+        print(f"patching: {x.shape=} {y.shape=}")
         data_dict["x"], data_dict["y"] = self.patcher.patch(x, y)
+        print(f"post patching: {data_dict['x'].shape=} {data_dict['y'].shape=}")
+
         return data_dict
 
     def postprocess(self, out, data_dict):
@@ -384,7 +389,9 @@ class MGPatchingDataProcessor(DataProcessor):
             model output predictions
         """
         y = data_dict["y"]
-        out, y = self.patcher.unpatch(out, y)
+        print(f"pre-unpatch {y.shape=}, {out.shape=}")
+        out, y = self.patcher.unpatch(out, y, evaluation=not self.training)
+        print(f"post-unpatch {y.shape=} {out.shape=}")
 
         if self.out_normalizer:
             y = self.out_normalizer.inverse_transform(y)
