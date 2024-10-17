@@ -66,7 +66,7 @@ class CODABlocks(nn.Module):
         factorization='tucker',
         rank=1.0,
         spectral_convolution=None,
-        Normalizer=None,
+        norm="instance_norm",
         joint_factorization=False,
         fixed_rank_modes=False,
         implementation='factorized',
@@ -95,9 +95,13 @@ class CODABlocks(nn.Module):
         self.temperature = temperature
         self.num_dims = len(n_modes)
 
-        if Normalizer is None:
+        if norm is None:
+            Normalizer = torch.nn.Identity
+        elif norm == "instance_norm":
             Normalizer = partial(nn.InstanceNorm2d, affine=True) if self.num_dims == 2 else partial(
                 nn.InstanceNorm3d, affine=True)
+        else:
+            raise ValueError(f"Unknown normalization type {norm}")
 
         if spectral_convolution is None:
             spectral_convolution = SpectralConv
@@ -155,19 +159,19 @@ class CODABlocks(nn.Module):
             apply_skip=True,
             n_layers=1,
         )
-        self.K = FNOBlocks(
+        self.Key = FNOBlocks(
             output_scaling_factor=1 / scale,
             conv_module=spectral_convolution,
             **kqv_args,
             **common_args,
         )
-        self.Q = FNOBlocks(
+        self.Query = FNOBlocks(
             output_scaling_factor=1 / scale,
             conv_module=spectral_convolution,
             **kqv_args,
             **common_args,
         )
-        self.V = FNOBlocks(
+        self.Value = FNOBlocks(
             output_scaling_factor=1,
             conv_module=spectral_convolution,
             **kqv_args,
@@ -232,48 +236,41 @@ class CODABlocks(nn.Module):
             self.norm2 = Normalizer(codimension_size)
             self.mixer_out_normalizer = Normalizer(codimension_size)
 
-    def compute_attention(self, xa, batch_size):
+    def compute_attention(self, T, batch_size):
         """
-        Compute the key-query-value variant of the attention matrix.
+        Compute the key-query-value variant of the attention matrix for input token functions T.
 
-        Assumes input ``xa`` has been normalized.
-        xa: torch.tensor. Has shape (b * t, d, h, w, ...) where,
+        Assumes input ``T`` has been normalized.
+        T: torch.tensor. Has shape (b * t, d, h, w, ...) where,
                         b is the batch_size,
                         t is the number of tokens,
                         d is the token codimension,
                         and h, w, .. are the domain dimensions.
         """
 
-        k = self.K(xa)
-        q = self.Q(xa)
-        v = self.V(xa)
+        k = self.Key(T)
+        q = self.Query(T)
+        v = self.Value(T)
         assert k.size(
             1) % self.n_heads == 0, "Number of channels in k, q, and v should be divisible by number of heads"
 
-        # reshaping '(b t) (n d) h w -> b n t (d h w ...)'
-
+        # reshape from (b*t) (n*d) h w -> b n t (d*h*w ...)
         t = k.size(0) // batch_size  # Compute the number of tokens `t`
         # Computer per head token codimension `d`
         d = k.size(1) // self.n_heads
 
-        # reshaping '(b t) (n d) h w -> b n t d h w ...'
+        # reshape from (b*t) (n*d) h w ... to b n t d h w ...
         k = k.view(batch_size, t, self.n_heads, d, *k.shape[-self.num_dims:])
         q = q.view(batch_size, t, self.n_heads, d, *q.shape[-self.num_dims:])
         v = v.view(batch_size, t, self.n_heads, d, *v.shape[-self.num_dims:])
 
-        # permuating 'b n t d h w -> b t n d h w ...'
-        rearrangement = dict(
-            pattern=f'b t n d {" ".join(einsum_symbols[-i] for i in range(self.num_dims))} -> b n t d {" ".join(einsum_symbols[-i] for i in range(self.num_dims))}')
-        k = torch.einsum(rearrangement["pattern"], k)
-        q = torch.einsum(rearrangement["pattern"], q)
-        v = torch.einsum(rearrangement["pattern"], v)
+        k = torch.transpose(k,1,2)
+        q = torch.transpose(q,1,2)
+        v = torch.transpose(v,1,2) 
         # resahpe
-        k = k.view(batch_size, self.n_heads, t, d *
-                   math.prod(k.shape[-self.num_dims:]))
-        q = q.view(batch_size, self.n_heads, t, d *
-                   math.prod(q.shape[-self.num_dims:]))
-        v = v.view(batch_size, self.n_heads, t, d *
-                   math.prod(v.shape[-self.num_dims:]))
+        k = k.view(batch_size, self.n_heads, t, -1)
+        q = q.view(batch_size, self.n_heads, t, -1)
+        v = v.view(batch_size, self.n_heads, t, -1)
 
         # attention mechanism
         dprod = (torch.matmul(q, k.transpose(-1, -2)) /
@@ -288,12 +285,11 @@ class CODABlocks(nn.Module):
             attention.size(1),
             attention.size(2),
             d,
-            *xa.shape[-self.num_dims:])
-        attention = torch.einsum(
-            f'b n t d {" ".join(einsum_symbols[-i] for i in range(self.num_dims))} -> b t n d {" ".join(einsum_symbols[-i] for i in range(self.num_dims))}', attention)
+            *T.shape[-self.num_dims:])
+        attention = torch.transpose(attention, 1,2) 
         attention = attention.view(attention.size(0) * attention.size(1),
                                    attention.size(2) * attention.size(3),
-                                   *attention.shape[-self.num_dims:])  # (b * t, a * d, h, w, ...)
+                                   *attention.shape[-self.num_dims:])  # shape (b * t, a * d, h, w, ...)
 
         return attention
 
@@ -313,39 +309,29 @@ class CODABlocks(nn.Module):
 
         assert x.shape[1] % self.token_codimension == 0, "Number of channels in x should be divisible by token_codimension"
 
-        # reshape 'b (t d) h w -> (b t) d h w ...'
+        # reshape from shape b (t*d) h w ... to (b*t) d h w ...
         t = x.size(1) // self.token_codimension
-        xa = x.view(
-            x.size(0),
-            t,
+        T = x.view(
+            x.size(0)*t,
             self.token_codimension,
-            *x.shape[-self.num_dims:])  # (b, t, d, h, w, ...)
-        xa = xa.view(
-            x.size(0) * t,
-            self.token_codimension,
-            *x.shape[-self.num_dims:])
+            *x.shape[-self.num_dims:])  
 
         # normalization and attention mechanism
-        xa_norm = self.norm1(xa)
-        attention = self.compute_attention(xa_norm, batch_size)
+        T_norm = self.norm1(T)
+        attention = self.compute_attention(T_norm, batch_size)
         if self.proj is not None:
             attention = self.proj(attention)
-        attention = self.attention_normalizer(attention + xa)
+        attention = self.attention_normalizer(attention + T)
         attention_normalized = self.norm2(attention)
         output = self.mixer(attention_normalized, output_shape=output_shape)
         output = self.mixer_out_normalizer(output) + attention
 
-        # reshaped '(b t) d h w -> b (t d) h w ...'
+        # reshape from shape (b*t) d h w... to b (t d) h w ...
         t = output.size(0) // batch_size
         output = output.view(
             batch_size,
-            t,
-            output.size(1),
-            *output.shape[-self.num_dims:])  # reshape to (b, t, d, h, w, ...)
-        output = output.view(
-            batch_size,
-            t * output.size(2),
-            *output.shape[-self.num_dims:])
+            t*output.size(1),
+            *output.shape[-self.num_dims:]) 
 
         return output
 
@@ -359,34 +345,24 @@ class CODABlocks(nn.Module):
 
         assert x.shape[1] % self.token_codimension == 0, "Number of channels in x should be divisible by token_codimension"
 
-        # reshape 'b (t d) h w -> (b t) d h w ...'
+        # reshape from shape b (t*d) h w ... to (b*t) d h w ...
         t = x.size(1) // self.token_codimension
         # Normalize the input first
-        xa = self.norm1(x)
-        xa = x.view(
-            x.size(0),
-            t,
-            self.token_codimension,
-            *x.shape[-self.num_dims:])  # (b, t, d, h, w, ...)
-        xa = xa.view(
+        T = self.norm1(x)
+        T = T.view(
             x.size(0) * t,
             self.token_codimension,
             *x.shape[-self.num_dims:])
 
         # apply attention mechanism
-        attention = self.compute_attention(xa, batch_size)
+        attention = self.compute_attention(T, batch_size)
         if self.proj is not None:
             attention = self.proj(attention)
 
-        attention = self.attention_normalizer(attention + xa)
+        attention = self.attention_normalizer(attention + T)
 
-        # reshaped '(b t) d h w -> b (t d) h w ...'
+        # reshape for shape '(b*t) d h w.." to "b (t*d) h w ...'
         t = attention.size(0) // batch_size
-        attention = attention.view(
-            batch_size,
-            t,
-            attention.size(1),
-            *attention.shape[-self.num_dims:])  # reshape to (b, t, d, h, w, ...)
         attention = attention.view(
             batch_size,
             t * attention.size(2),
@@ -394,5 +370,7 @@ class CODABlocks(nn.Module):
 
         attention_normalized = self.norm2(attention)
         output = self.mixer(attention_normalized, output_shape=output_shape)
+
+        output = self.mixer_out_normalizer(output) + attention
 
         return output
