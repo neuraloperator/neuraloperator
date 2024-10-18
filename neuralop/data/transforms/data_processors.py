@@ -311,7 +311,7 @@ class MGPatchingDataProcessor(DataProcessor):
         padding_fraction : float
             fraction by which to pad inputs in multigrid-patching
         stitching : bool
-            whether to always perform stitching in multigrid-patching
+            whether to stitch back the output from the multi-grid patches 
         in_normalizer : neuralop.datasets.transforms.Transform, optional
             OutputEncoder to decode model inputs, by default None
         in_normalizer : neuralop.datasets.transforms.Transform, optional
