@@ -23,15 +23,20 @@ from neuralop import LpLoss, H1Loss
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # %%
-# Loading the Navier-Stokes dataset in 128x128 resolution
+# Loading the Spherical Shallow Water Equations in multiple resolutions
 train_loader, test_loaders = load_spherical_swe(n_train=200, batch_size=4, train_resolution=(32, 64),
                                                 test_resolutions=[(32, 64), (64, 128)], n_tests=[50, 50], test_batch_sizes=[10, 10],)
 
 
 # %%
-# We create a tensorized FNO model
+# We create a spherical FNO model
 
-model = SFNO(n_modes=(32, 32), in_channels=3, out_channels=3, hidden_channels=32, projection_channels=64, factorization='dense')
+model = SFNO(n_modes=(32, 32),
+             in_channels=3,
+             out_channels=3,
+             hidden_channels=32,
+             projection_channel_ratio=2,
+             factorization='dense')
 model = model.to(device)
 
 n_params = count_model_params(model)
@@ -79,7 +84,7 @@ trainer = Trainer(model=model, n_epochs=20,
 
 
 # %%
-# Actually train the model on our small Darcy-Flow dataset
+# Train the model on the spherical SWE dataset
 
 trainer.train(train_loader=train_loader,
               test_loaders=test_loaders,

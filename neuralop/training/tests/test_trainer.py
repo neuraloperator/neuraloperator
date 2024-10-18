@@ -208,8 +208,8 @@ def test_incremental():
     
     # assert that the model has increased in frequency modes
     for i in range(len(initial_n_modes)):
-        assert model.fno_blocks.convs.n_modes[i] > initial_n_modes[i]
+        assert model.fno_blocks.convs[0].n_modes[i] > initial_n_modes[i]
     
     # assert that the model has not changed the max modes
     for i in range(len(initial_max_modes)):
-        assert model.fno_blocks.convs.max_n_modes[i] == initial_max_modes[i]
+        assert model.fno_blocks.convs[0].max_n_modes[i] == initial_max_modes[i]

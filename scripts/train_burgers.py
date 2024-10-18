@@ -194,7 +194,7 @@ if is_logger:
             to_log["n_params_baseline"] = (config.n_params_baseline,)
             to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
             to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
-        wandb.log(to_log)
+        wandb.log(to_log, commit=False)
         wandb.watch(model)
 
 

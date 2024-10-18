@@ -344,6 +344,7 @@ class MGPatchingDataProcessor(DataProcessor):
             self.in_normalizer = self.in_normalizer.to(self.device)
         if self.out_normalizer:
             self.out_normalizer = self.out_normalizer.to(self.device)
+        return self
 
     def preprocess(self, data_dict, batched=True):
         """
