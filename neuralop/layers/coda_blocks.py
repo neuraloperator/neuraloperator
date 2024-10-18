@@ -236,21 +236,21 @@ class CODABlocks(nn.Module):
             self.norm2 = Normalizer(codimension_size)
             self.mixer_out_normalizer = Normalizer(codimension_size)
 
-    def compute_attention(self, T, batch_size):
+    def compute_attention(self, tokens, batch_size):
         """
-        Compute the key-query-value variant of the attention matrix for input token functions T.
+        Compute the key-query-value variant of the attention matrix for input token functions tokens.
 
-        Assumes input ``T`` has been normalized.
-        T: torch.tensor. Has shape (b * t, d, h, w, ...) where,
+        Assumes input ``tokens`` has been normalized.
+        tokens: torch.tensor. Has shape (b * t, d, h, w, ...) where,
                         b is the batch_size,
                         t is the number of tokens,
                         d is the token codimension,
                         and h, w, .. are the domain dimensions.
         """
 
-        k = self.Key(T)
-        q = self.Query(T)
-        v = self.Value(T)
+        k = self.Key(tokens)
+        q = self.Query(tokens)
+        v = self.Value(tokens)
         assert k.size(
             1) % self.n_heads == 0, "Number of channels in k, q, and v should be divisible by number of heads"
 
@@ -285,7 +285,7 @@ class CODABlocks(nn.Module):
             attention.size(1),
             attention.size(2),
             d,
-            *T.shape[-self.num_dims:])
+            *tokens.shape[-self.num_dims:])
         attention = torch.transpose(attention, 1,2) 
         attention = attention.view(attention.size(0) * attention.size(1),
                                    attention.size(2) * attention.size(3),
@@ -303,6 +303,8 @@ class CODABlocks(nn.Module):
         '''
         uses permutation equivariant mixer layer after attention mechanism. We share the same mixer layer
         for all the varibales.
+        inputs:
+            x: torch.tensor. Has shape (b, t*d, h, w, ...) where, t = number of tokens, d = token codimension
         '''
         batch_size = x.shape[0]
         output_shape = x.shape[-self.num_dims:]
@@ -311,17 +313,17 @@ class CODABlocks(nn.Module):
 
         # reshape from shape b (t*d) h w ... to (b*t) d h w ...
         t = x.size(1) // self.token_codimension
-        T = x.view(
+        tokens = x.view(
             x.size(0)*t,
             self.token_codimension,
             *x.shape[-self.num_dims:])  
 
         # normalization and attention mechanism
-        T_norm = self.norm1(T)
-        attention = self.compute_attention(T_norm, batch_size)
+        tokens_norm = self.norm1(tokens)
+        attention = self.compute_attention(tokens_norm, batch_size)
         if self.proj is not None:
             attention = self.proj(attention)
-        attention = self.attention_normalizer(attention + T)
+        attention = self.attention_normalizer(attention + tokens)
         attention_normalized = self.norm2(attention)
         output = self.mixer(attention_normalized, output_shape=output_shape)
         output = self.mixer_out_normalizer(output) + attention
@@ -338,6 +340,8 @@ class CODABlocks(nn.Module):
     def _forward_non_equivariant(self, x):
         """
         uses non-permuatation equivariant mixer layer and normalizations.
+        inputs:
+        x: torch.tensor. Has shape (b, t*d, h, w, ...) where, t = number of tokens, d = token codimension
         """
 
         batch_size = x.shape[0]
@@ -348,18 +352,18 @@ class CODABlocks(nn.Module):
         # reshape from shape b (t*d) h w ... to (b*t) d h w ...
         t = x.size(1) // self.token_codimension
         # Normalize the input first
-        T = self.norm1(x)
-        T = T.view(
+        tokens = self.norm1(x)
+        tokens = tokens.view(
             x.size(0) * t,
             self.token_codimension,
             *x.shape[-self.num_dims:])
 
         # apply attention mechanism
-        attention = self.compute_attention(T, batch_size)
+        attention = self.compute_attention(tokens, batch_size)
         if self.proj is not None:
             attention = self.proj(attention)
 
-        attention = self.attention_normalizer(attention + T)
+        attention = self.attention_normalizer(attention + tokens)
 
         # reshape for shape '(b*t) d h w.." to "b (t*d) h w ...'
         t = attention.size(0) // batch_size
