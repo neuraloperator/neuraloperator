@@ -23,7 +23,8 @@ def test_make_patches(levels, padding_fraction):
 
 @pytest.mark.parametrize('levels', [1, 2, 3])
 @pytest.mark.parametrize('padding_fraction', [0, 0.1, 0.2])
-def test_full_mgp2d(levels, padding_fraction):
+@pytest.mark.parametrize('stitch_outputs', [True, False])
+def test_full_mgp2d(levels, padding_fraction, stitch_outputs):
 
     model = DummyModel(16)
     patcher = MultigridPatching2D(model=model,
@@ -50,12 +51,13 @@ def test_full_mgp2d(levels, padding_fraction):
     
     # if padding is not applied, return without stitching
     # otherwise unpad and stitch
-    if padding > 0:
+    if padding > 0 and stitch_outputs:
         unpatch_shape = input_shape
     else:
         unpatch_side_len = int(side_len // n_patches)
         unpatch_shape = (patched_x.shape[0], channels, unpatch_side_len, unpatch_side_len)
 
-    unpatched_x, unpatched_y = patcher.unpatch(patched_out, patched_y, evaluation=True)
+    # test stitching here in cases where padding is applied
+    unpatched_x, unpatched_y = patcher.unpatch(patched_out, patched_y, evaluation=stitch_outputs)
         
     assert unpatched_x.shape == unpatch_shape
