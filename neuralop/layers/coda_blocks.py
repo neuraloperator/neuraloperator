@@ -60,7 +60,7 @@ class CODABlocks(nn.Module):
         non_linearity=F.gelu,
         preactivation=False,
         fno_skip='linear',
-        channel_mlp_skip='soft-gating',
+        channel_mlp_skip='linear',
         channel_mlp_expansion=1.0,
         separable=False,
         factorization='tucker',
