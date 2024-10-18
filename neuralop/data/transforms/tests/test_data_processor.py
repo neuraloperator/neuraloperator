@@ -1,7 +1,10 @@
-from ..data_processors import DefaultDataProcessor, IncrementalDataProcessor
-from ..normalizers import UnitGaussianNormalizer
+import pytest
+
 import torch
 from torch.testing import assert_close
+
+from ..data_processors import DefaultDataProcessor, IncrementalDataProcessor, MGPatchingDataProcessor
+from ..normalizers import UnitGaussianNormalizer
 
 from neuralop.tests.test_utils import DummyModel
 
@@ -59,9 +62,6 @@ def test_DefaultDataProcessor_train_eval():
     assert not wrapped_model.training
     assert not wrapped_model.model.training
 
-    
-    
-
 # ensure that the data processor incrementally increases the resolution
 def test_incremental_resolution():
     if torch.backends.cuda.is_built():
@@ -92,3 +92,39 @@ def test_incremental_resolution():
     for i in indice_list:
         assert x_new.shape[i] < x.shape[i]
         assert y_new.shape[i] < y.shape[i]
+
+@pytest.mark.parametrize('levels', [1, 2])
+@pytest.mark.parametrize('padding_fraction', [0, 0.1])
+def test_full_mgp2d(levels, padding_fraction):
+    batch_size = 16
+    channels = 1
+    side_len = 32
+
+    model = DummyModel(16)
+    processor = MGPatchingDataProcessor(model=model,
+                                        levels=levels,
+                                        padding_fraction=padding_fraction,
+                                        stitching=False, # cpu-only, single process
+                                        use_distributed=False)
+    processor.train()
+    
+    x = torch.randn(batch_size, channels, side_len, side_len)
+    y = torch.randn(batch_size, channels, side_len, side_len)
+    sample = {'x': x, 'y': y}
+    patched_sample = processor.preprocess(sample)
+
+    n_patches = 2 ** levels
+    padding = int(round(side_len * padding_fraction))
+    patched_padded_side_len = int((side_len // n_patches) + (2 * padding))
+    unpatch_side_len = int(side_len // n_patches)
+
+    assert patched_sample['x'].shape ==\
+          ((n_patches ** 2) * batch_size, channels + levels, patched_padded_side_len, patched_padded_side_len)
+    
+    # mimic output after scattering x to model parallel region
+    patched_out_shape = (batch_size, 1, *patched_sample['x'].shape[2:])
+    patched_out = torch.randn(patched_out_shape)
+    
+    unpatched_out, unpatched_y = processor.postprocess(patched_out, patched_sample)
+        
+    assert unpatched_out.shape == (batch_size, channels, unpatch_side_len, unpatch_side_len)
