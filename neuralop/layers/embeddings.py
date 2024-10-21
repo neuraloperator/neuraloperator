@@ -166,7 +166,7 @@ class GridEmbeddingND(nn.Module):
 class SinusoidalEmbedding(Embedding):
     """
     SinusoidalEmbedding provides a unified sinusoidal positional embedding
-    in the styles of Transformers :ref:`[1]` and Neural Radiance Fields (NERFs) :ref:`[2]`.
+    in the styles of Transformers [1]_ and Neural Radiance Fields (NERFs) [2]_.
 
     Parameters
     ----------
@@ -198,13 +198,13 @@ class SinusoidalEmbedding(Embedding):
 
     References
     -----------
-    .. _[1]: 
+    .. [1] : 
 
     Vaswani, A. et al (2017)
         "Attention Is All You Need". 
         NeurIPS 2017, https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf. 
 
-    .. _[2]: 
+    .. [2] : 
     
     Mildenhall, B. et al (2020)
         "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis".

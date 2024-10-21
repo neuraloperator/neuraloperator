@@ -69,6 +69,7 @@ class LocalFNOBlocks(nn.Module):
         channel_mlp_skip : str, optional
             module to use for MLP skip connections, by default "soft-gating"
             see layers.skip_connections for more details
+        
         SpectralConv Params
         -------------------
         separable : bool, optional
