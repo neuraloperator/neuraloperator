@@ -16,11 +16,11 @@ class IncrementalFNOTrainer(Trainer):
     References
     -----------
     
-    .. _[1]: 
+    .. [1]: 
     
     George, R., Zhao, J., Kossaifi, J., Li, Z., and Anandkumar, A. (2024)
         "Incremental Spatial and Spectral Learning of Neural Operators for Solving Large-Scale PDEs".
-        ArXiv preprint, https://arxiv.org/pdf/2211.15188
+        TMLR, https://openreview.net/pdf?id=xI6cPQObp0.
     """
     def __init__(self,
                 model: nn.Module,

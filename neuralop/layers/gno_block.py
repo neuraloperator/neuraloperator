@@ -12,7 +12,7 @@ from .embeddings import SinusoidalEmbedding
 
 
 class GNOBlock(nn.Module):
-    """GNOBlock implements a Graph Neural Operator layer as described in _[1].
+    """GNOBlock implements a Graph Neural Operator layer as described in [1]_.
 
     A GNO layer is a resolution-invariant operator that maps a function defined
     over one coordinate mesh to another defined over another coordinate mesh using 
@@ -77,9 +77,11 @@ class GNOBlock(nn.Module):
 
     References
     -----------
-    [1]_ Neural Operator: Graph Kernel Network for Partial Differential Equations.
-        Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, 
-        Anima Anandkumar. ArXiV, 2020 
+    .. [1] : 
+    
+    Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, 
+        Anima Anandkumar (2020). "Neural Operator: Graph Kernel Network for 
+        Partial Differential Equations." ArXiV, https://arxiv.org/pdf/2003.03485.
     """
     def __init__(self,
                  in_channels: int,
