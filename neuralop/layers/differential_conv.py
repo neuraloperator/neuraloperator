@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class FiniteDifferenceConvolution(nn.Module):
-    """Finite Difference Convolution Layer introduced in
+    """Finite Difference Convolution Layer introduced in [1]_.
         "Neural Operators with Localized Integral and Differential Kernels" (ICML 2024)
             https://arxiv.org/abs/2402.16845 
 
@@ -12,16 +12,32 @@ class FiniteDifferenceConvolution(nn.Module):
 
         Parameters
         ----------
-        in_channels : num of in_channels
-        out_channels : num of out_channels
-        num_dim : number of dimensions in the input domain
-        kernel_size : odd kernel size used for convolutional finite difference stencil
-        groups :  splitting number of channels
-        padding : type of padding to use on input
-        implementation : to use 'subtract_middle' or 'subtract_all'
+        in_channels : int
+            number of in_channels
+        out_channels : int
+            number of out_channels
+        num_dim : int
+            number of dimensions in the input domain
+        kernel_size : int
+            odd kernel size used for convolutional finite difference stencil
+        groups : int
+            splitting number of channels
+        padding : literal {'periodic', 'replicate', 'reflect', 'zeros'}
+            mode of padding to use on input. 
+            See `torch.nn.functional.padding`. 
+        implementation : literal {'subtract_middle', 'subtract_all'}
             for kernel c,
-                'subtract_middle' computes 1/h \cdot (c * f - f(middle) \cdot \sum_{c_i})
-                'subtract_all' computes 1/h \cdot (c_i - mean(c)) * f
+
+            * 'subtract_middle' computes 1/h \cdot (c * f - f(middle) \cdot \sum_{c_i})
+            
+            * 'subtract_all' computes 1/h \cdot (c_i - mean(c)) * f
+
+        References
+        ----------
+        .. [1] : Liu-Schiaffini, M., et al. (2024). "Neural Operators with 
+            Localized Integral and Differential Kernels". 
+            ICML 2024, https://arxiv.org/abs/2402.16845. 
+
         """
     def __init__(
             self, 
