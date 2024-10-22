@@ -1,3 +1,4 @@
+.. _fno_intro :
 ========================
 Fourier Neural Operators
 ========================
@@ -122,6 +123,7 @@ They help to recover the Higher frequency modes and non-periodic boundary
 which are left out in the Fourier layers.
 Therefore it’s necessary to the Fourier transform and its inverse at each layer.
 
+.. _fourier_layer_impl :
 Implementation
 ==============
 
@@ -182,20 +184,21 @@ where the input :code:`x` has the shape (N,C,H,W),
 and :code:`compl_mul2d()` is the matrix multiplication for complex numbers.
 
 Note in the forward call above that :code:`torch.fft.rfft()` returns a matrix
-of size `n` along each dim that indexes Fourier modes `0, 1, 2, ... n//2, -n//2, -n//2 - 1, ...-1`. Since our
+of size `n` along each dim that indexes Fourier modes :code:`0, 1, 2, ... n//2, -n//2, -n//2 - 1, ...-1`. Since our
 inputs are real-valued, we take the real-valued FFT, which is skew-symmetric, so information is repeated across 
 one axis. Therefore it is sufficient to keep only two of the four corners of the FFT matrix. 
 
-Equivalently, we could also apply a periodic FFT-shift using `torch.fft.fftshift` to move the zero-frequency component 
-to the center of the FFT matrix, such that the matrix would be indexed with modes `-n//2, -n//2 + 1, ...-1, 0, 1, ...` 
+Equivalently, we could also apply a periodic FFT-shift using :code:`torch.fft.fftshift` to move the zero-frequency component 
+to the center of the FFT matrix, such that the matrix would be indexed with modes :code:`-n//2, -n//2 + 1, ...-1, 0, 1, ...` 
 as shown below:
 
 .. image:: /_static/images/fft_shift.png
-    :width: 800
+    :width: 500
 
 (source: [3]_)
 
 **Convolutional Filters in Fourier Space**
+
 .. image:: /_static/images/filters.jpg
   :width: 800
 

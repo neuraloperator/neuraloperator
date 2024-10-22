@@ -180,7 +180,7 @@ Number = Union[int, float]
 
 class SpectralConv(BaseSpectralConv):
     """SpectralConv implements the Spectral Convolution component of a Fourier layer
-    described in [1]_.
+    described in [1]_ and [2]_.
 
     Parameters
     ----------
@@ -197,8 +197,8 @@ class SpectralConv(BaseSpectralConv):
             of size I_1, ..., I_N, please provide modes M_K that are I_1 < M_K <= I_N
             We will automatically keep the right amount of modes: specifically, for the 
             last mode only, if you specify M_N modes we will use M_N // 2 + 1 modes 
-            as the real FFT is redundant along that last dimension. See [2]_ for a full
-            discussion of mode truncation
+            as the real FFT is redundant along that last dimension. For more information on 
+            mode truncation, refer to :ref:`fourier_layer_impl`
 
             
         .. note::
