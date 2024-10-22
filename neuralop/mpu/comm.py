@@ -96,13 +96,12 @@ def get_model_parallel_group():
     return _MODEL_PARALLEL_GROUP  
 
 
+def init(model_parallel_size: int=1, verbose: bool=False):
+    """
+    Set up global and local communicator.
+    `torchrun` initializes rank env vars by default and uses its own wireup logic
+    """
 
-# get 
-def init(model_parallel_size:  int=1,
-         verbose = False):
-    
-    # set up global and local communicator
-    # torchrun initializes rank env vars by default and uses its own wireup logic
     local_rank = int(os.getenv("LOCAL_RANK", 0))
     global_rank = int(os.getenv("RANK", 0))
     world_size = torch.cuda.device_count()
@@ -110,8 +109,7 @@ def init(model_parallel_size:  int=1,
     if world_size > 1:
         with disable_logging():
             # initialize process groups
-            dist.init_process_group(backend = 'nccl',
-                                    rank = local_rank)
+            dist.init_process_group(backend='nccl', rank=local_rank)
         
             # once initialized, get true values for rank and size using torch.distributed
             world_size = get_world_size()
