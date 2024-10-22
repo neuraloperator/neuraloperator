@@ -369,9 +369,7 @@ class MGPatchingDataProcessor(DataProcessor):
         if self.in_normalizer:
             x = self.in_normalizer.transform(x)
             y = self.out_normalizer.transform(y)
-        print(f"patching: {x.shape=} {y.shape=}")
         data_dict["x"], data_dict["y"] = self.patcher.patch(x, y)
-        print(f"post patching: {data_dict['x'].shape=} {data_dict['y'].shape=}")
 
         return data_dict
 
