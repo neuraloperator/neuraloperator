@@ -76,7 +76,7 @@ will be efficient by contracting directly the inputs with the factors
 of the decomposition. The Fourier layers will have 5% of the parameters
 of an equivalent, dense Fourier Neural Operator!
 
-Checkout the `documentation <https://neuraloperator.github.io/neuraloperator/dev/index.html>`_ for more!
+Checkout the `documentation <https://neuraloperator.github.io/dev/index.html>`_ for more!
 
 Using with weights and biases
 -----------------------------
