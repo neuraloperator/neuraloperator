@@ -18,6 +18,23 @@ class CarCFDDataset(MeshDataModule):
 
     Data is also stored on Zenodo: https://zenodo.org/records/13936501
 
+    Parameters
+    ----------
+    root_dir : Union[str, Path]
+        root directory at which data is stored.
+    n_train : int, optional
+        Number of training instances to load, by default 1
+    n_test : int, optional
+        Number of testing instances to load, by default 1
+    query_res : List[int], optional
+        Dimension-wise resolution of SDF query cube, by default [32,32,32]
+    download : bool, optional
+        Whether to download data from Zenodo, by default True
+    
+    .. warn : 
+    `CarCFDDataset` inherits from `MeshDataModule`, which requires the optional `open3d` dependency.
+    See 
+
     Attributes
     ----------
     train_loader: torch.utils.data.DataLoader
@@ -43,19 +60,6 @@ class CarCFDDataset(MeshDataModule):
         download: bool=True
         ):
         """Initialize the CarCFDDataset.
-
-        Parameters
-        ----------
-        root_dir : Union[str, Path]
-            root directory at which data is stored.
-        n_train : int, optional
-            Number of training instances to load, by default 1
-        n_test : int, optional
-            Number of testing instances to load, by default 1
-        query_res : List[int], optional
-            Dimension-wise resolution of SDF query cube, by default [32,32,32]
-        download : bool, optional
-            Whether to download data from Zenodo, by default True
         """
         self.zenodo_record_id = "13936501"
 
