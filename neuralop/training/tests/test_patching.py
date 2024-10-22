@@ -23,14 +23,16 @@ def test_make_patches(levels, padding_fraction):
 
 @pytest.mark.parametrize('levels', [1, 2, 3])
 @pytest.mark.parametrize('padding_fraction', [0, 0.1, 0.2])
-@pytest.mark.parametrize('stitch_outputs', [True, False])
-def test_full_mgp2d(levels, padding_fraction, stitch_outputs):
+@pytest.mark.parametrize('stitching', [True, False])
+@pytest.mark.parametrize('evaluation', [True, False])
+
+def test_full_mgp2d(levels, padding_fraction, stitching, evaluation):
 
     model = DummyModel(16)
     patcher = MultigridPatching2D(model=model,
                                   levels=levels,
                                   padding_fraction=padding_fraction,
-                                  stitching=False, # cpu-only, single process
+                                  stitching=stitching, # cpu-only, single process
                                   use_distributed=False)
     
     input_shape = (batch_size, channels, side_len, side_len)
@@ -51,13 +53,22 @@ def test_full_mgp2d(levels, padding_fraction, stitch_outputs):
     
     # if padding is not applied, return without stitching
     # otherwise unpad and stitch
-    if padding > 0 and stitch_outputs:
+
+    if stitching or evaluation:
         unpatch_shape = input_shape
     else:
         unpadded_patch_size = int(side_len // n_patches)
         unpatch_shape = (patched_x.shape[0], channels, unpadded_patch_size, unpadded_patch_size)
+    '''else:
+    if padding > 0 and stitching:
+        if evaluation:
+            unpatch_shape = input_shape
+    else:
+        unpadded_patch_size = int(side_len // n_patches)
+        unpatch_shape = (patched_x.shape[0], channels, unpadded_patch_size, unpadded_patch_size)'''
 
     # test stitching here in cases where padding is applied
-    unpatched_x, unpatched_y = patcher.unpatch(patched_out, patched_y, evaluation=stitch_outputs)
+    unpatched_x, unpatched_y = patcher.unpatch(patched_out, patched_y, evaluation=evaluation)
         
     assert unpatched_x.shape == unpatch_shape
+    assert unpatched_y.shape == unpatch_shape

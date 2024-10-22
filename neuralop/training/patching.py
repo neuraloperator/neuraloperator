@@ -43,8 +43,6 @@ class MultigridPatching2D(nn.Module):
 
         super().__init__()
 
-        self.skip_padding = (padding_fraction is None) or (padding_fraction <= 0)
-
         self.levels = levels
 
         if isinstance(padding_fraction, (float, int)):
@@ -89,9 +87,11 @@ class MultigridPatching2D(nn.Module):
         y : _type_
             model output function
         """
-        # If not stitching, scatter truth, otherwise keep on every GPU
-        if self.use_distributed and not self.stitching:
+        # if not stitching in single-device, create patches for y
+        if not self.stitching:
             y = make_patches(y, n=self.n_patches, p=0)
+        # If not stitching, scatter truth, otherwise keep on every GPU
+        if self.use_distributed:
             y = scatter_to_model_parallel_region(y, 0)
 
         # Create padded patches in batch dimension (identity if levels=0)
@@ -102,7 +102,8 @@ class MultigridPatching2D(nn.Module):
         return x, y
 
     def unpatch(self, x, y, evaluation=False):
-        """unpatch tensors created by `self.patch`. 
+        """unpatch tensors created by `self.patch`. Stitch patches together if in
+        evaluation mode, or if stitching is applied. 
 
         Parameters
         ----------
@@ -112,14 +113,12 @@ class MultigridPatching2D(nn.Module):
             Shape (b * n^2, c, h / n + 2 * pad_h, w / n + 2 * pad_w)
         y : torch.tensor
             tensor of patched ground-truth `y`. 
-            Shape (b * n^2, c, h / n, w / n)
+            Shape (b * n^2, c, h / n, w / n) or (b, c, h, w) when not stitched
         evaluation : bool, optional
-            _description_, by default False
+            whether in evaluation mode, by default False.
+            If True, `x` and `y` are both evaluated after stitching, 
+            regardless of other settings. 
         """
-        #Always stitch during evaluation
-        if self.skip_padding:
-            return x, y
-
         # Remove padding in the output
         if self.padding_height > 0 or self.padding_width > 0:
             x = self._unpad(x)
@@ -127,12 +126,15 @@ class MultigridPatching2D(nn.Module):
         # Gather patches if they are to be stitched back together
         if self.use_distributed and self.stitching:
             x = gather_from_model_parallel_region(x, dim=0)
-        else:
-            x = x
 
         # Stich patches or patch the truth if output left unstitched
         if self.stitching or evaluation:
             x = self._stitch(x)
+        
+        # if x is not stitched during training, y is patched
+        # re-stitch y during evaluation only
+        if evaluation and not self.stitching:
+            y = self._stitch(y)
 
         return x, y
 
@@ -154,8 +156,6 @@ class MultigridPatching2D(nn.Module):
             shape (batch * n^2, c, h / n, w / n)
             
         """
-        if self.skip_padding:
-            return x
 
         # Only 1D and 2D supported
         assert x.ndim == 4, f"Only 2D patch supported but got input with {x.ndim} dims."
