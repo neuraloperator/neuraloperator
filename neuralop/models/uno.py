@@ -11,7 +11,7 @@ from ..layers.embeddings import GridEmbedding2D, GridEmbeddingND
 
 
 class UNO(nn.Module):
-    """U-Shaped Neural Operator [1]_
+    """U-Shaped Neural Operator, as described in  [1]_.
 
     Parameters
     ----------
@@ -93,7 +93,12 @@ class UNO(nn.Module):
     fft_norm : str, optional
         by default 'forward'
 
-    [1] : U-NO: U-shaped Neural Operators, Md Ashiqur Rahman, Zachary E Ross, Kamyar Azizzadenesheli, TMLR 2022
+    References
+    -----------
+    .. [1] :
+
+    Rahman, M.A., Ross, Z., Azizzadenesheli, K. "U-NO: U-shaped 
+        Neural Operators" (2022). TMLR 2022, https://arxiv.org/pdf/2204.11127.
     """
 
     def __init__(

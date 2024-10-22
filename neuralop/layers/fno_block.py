@@ -16,9 +16,9 @@ Number = Union[int, float]
 
 
 class FNOBlocks(nn.Module):
-    """FNOBlocks implements a sequence of Fourier layers
-    as described in "Fourier Neural Operator for Parametric
-    Partial Differential Equations (Li et al., 2021).
+    """FNOBlocks implements a sequence of Fourier layers, the operations of which 
+    are first described in [1]_. The exact implementation details of the Fourier 
+    layer architecture are discussed in [2]_.
 
     Parameters
     ----------
@@ -62,9 +62,9 @@ class FNOBlocks(nn.Module):
     channel_mlp_skip : str, optional
         module to use for ChannelMLP skip connections, by default "soft-gating"
         see layers.skip_connections for more details
-    SpectralConv Params
-    -------------------
 
+    Other Parameters
+    -------------------
     complex_data : bool, optional
         whether the FNO's data takes on complex values in space, by default False
     separable : bool, optional
@@ -83,6 +83,19 @@ class FNOBlocks(nn.Module):
         implementation parameter for SpectralConv, by default "factorized"
     decomposition_kwargs : _type_, optional
         kwargs for tensor decomposition in SpectralConv, by default dict()
+    
+    References
+    -----------
+    .. [1] :
+
+    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
+        Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
+    
+    .. [2] :
+
+    Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
+        Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024). 
+        TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
     """
     def __init__(
         self,

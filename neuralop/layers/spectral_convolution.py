@@ -179,7 +179,8 @@ Number = Union[int, float]
 
 
 class SpectralConv(BaseSpectralConv):
-    """Generic N-Dimensional Fourier Neural Operator
+    """SpectralConv implements the Spectral Convolution component of a Fourier layer
+    described in [1]_ and [2]_.
 
     Parameters
     ----------
@@ -196,7 +197,8 @@ class SpectralConv(BaseSpectralConv):
             of size I_1, ..., I_N, please provide modes M_K that are I_1 < M_K <= I_N
             We will automatically keep the right amount of modes: specifically, for the 
             last mode only, if you specify M_N modes we will use M_N // 2 + 1 modes 
-            as the real FFT is redundant along that last dimension.
+            as the real FFT is redundant along that last dimension. For more information on 
+            mode truncation, refer to :ref:`fourier_layer_impl`
 
             
         .. note::
@@ -242,6 +244,19 @@ class SpectralConv(BaseSpectralConv):
     complex_data: bool, optional
         whether data takes on complex values in the spatial domain, by default False
         if True, uses different logic for FFT contraction and uses full FFT instead of real-valued
+    
+    References
+    -----------
+    .. [1] :
+
+    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
+        Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
+    
+    .. [2] :
+
+    Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
+        Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024). 
+        TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
     """
 
     def __init__(
