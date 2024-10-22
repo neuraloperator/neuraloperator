@@ -29,4 +29,4 @@ so all you need to do on a multi-GPU system is the following:
     torchrun --standalone --nproc_per_node <NUM_GPUS> script.py
 
 You may need to adjust the batch size, model parallel size and world size in 
-accordance with your specific use case. 
+accordance with your specific use case. See the `torchrun documentation <https://pytorch.org/docs/stable/elastic/run.html>`_ for more details.
