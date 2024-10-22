@@ -6,10 +6,17 @@ from .web_utils import download_from_zenodo_record
 
 class CarCFDDataset(MeshDataModule):
     """CarCFDDataset is a processed version of the dataset introduced in 
-    [1]_. We add additional manifest files to split the provided examples
+    [1]_, which encodes a triangular mesh over the surface of a 3D model car
+    and provides the air pressure at each centroid and vertex of the mesh when
+    the car is placed in a simulated wind tunnel with a recorded inlet velocity. 
+    In our case, inputs are a signed distance function evaluated over a regular
+    3D grid of query points, as well as the inlet velocity. Outputs are pressure 
+    values at each centroid of the triangle mesh.
+    
+    We also add additional manifest files to split the provided examples
     into training and testing sets, as well as remove instances that are corrupted.
 
-    Data source: https://zenodo.org/records/13936501
+    Data is also stored on Zenodo: https://zenodo.org/records/13936501
 
     Attributes
     ----------
@@ -21,7 +28,7 @@ class CarCFDDataset(MeshDataModule):
 
     References
     ----------
-    .. _[1] : 
+    .. [1] :
     
     Umetani, N. and Bickel, B. (2018). "Learning three-dimensional flow for interactive 
         aerodynamic design". ACM Transactions on Graphics, 2018. 
