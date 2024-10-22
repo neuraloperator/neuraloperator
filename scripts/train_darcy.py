@@ -2,13 +2,15 @@ import sys
 
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 import torch
-from torch.nn.parallel import DistributedDataParallel as DDP
+
+from torch.utils.data import DataLoader, DistributedSampler
 import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.training import setup, AdamW
+from neuralop.mpu.comm import get_local_rank
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -40,12 +42,12 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.tfno2d.n_layers,
-                config.tfno2d.hidden_channels,
-                config.tfno2d.n_modes_width,
-                config.tfno2d.n_modes_height,
-                config.tfno2d.factorization,
-                config.tfno2d.rank,
+                config.fno.n_layers,
+                config.fno.hidden_channels,
+                config.fno.n_modes_width,
+                config.fno.n_modes[0],
+                config.fno.factorization,
+                config.fno.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
@@ -80,24 +82,35 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
     encode_input=False,
     encode_output=False,
 )
+model = get_model(config)
+
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:
-    data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
+    data_processor = MGPatchingDataProcessor(model=model,
+                                             in_normalizer=data_processor.in_normalizer,
                                              out_normalizer=data_processor.out_normalizer,
                                              padding_fraction=config.patching.padding,
                                              stitching=config.patching.stitching,
-                                             levels=config.patching.levels)
-data_processor = data_processor.to(device)
+                                             levels=config.patching.levels,
+                                             use_distributed=config.distributed.use_distributed,
+                                             device=device)
 
-model = get_model(config)
-model = model.to(device)
-
-# Use distributed data parallel
+# Reconfigure DataLoaders to use a DistributedSampler 
+# if in distributed data parallel mode
 if config.distributed.use_distributed:
-    model = DDP(
-        model, device_ids=[device.index], output_device=device.index, static_graph=True
-    )
-
+    train_db = train_loader.dataset
+    train_sampler = DistributedSampler(train_db, rank=get_local_rank())
+    train_loader = DataLoader(dataset=train_db,
+                              batch_size=config.data.batch_size,
+                              sampler=train_sampler)
+    for (res, loader), batch_size in zip(test_loaders.items(), config.data.test_batch_sizes):
+        
+        test_db = loader.dataset
+        test_sampler = DistributedSampler(test_db, rank=get_local_rank())
+        test_loaders[res] = DataLoader(dataset=test_db,
+                              batch_size=batch_size,
+                              shuffle=False,
+                              sampler=test_sampler)
 # Create the optimizer
 optimizer = AdamW(
     model.parameters(),
@@ -178,6 +191,7 @@ if is_logger:
         wandb.log(to_log, commit=False)
         wandb.watch(model)
 
+# Train the model
 trainer.train(
     train_loader=train_loader,
     test_loaders=test_loaders,

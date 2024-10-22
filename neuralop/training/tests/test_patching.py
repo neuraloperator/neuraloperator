@@ -59,13 +59,6 @@ def test_full_mgp2d(levels, padding_fraction, stitching, evaluation):
     else:
         unpadded_patch_size = int(side_len // n_patches)
         unpatch_shape = (patched_x.shape[0], channels, unpadded_patch_size, unpadded_patch_size)
-    '''else:
-    if padding > 0 and stitching:
-        if evaluation:
-            unpatch_shape = input_shape
-    else:
-        unpadded_patch_size = int(side_len // n_patches)
-        unpatch_shape = (patched_x.shape[0], channels, unpadded_patch_size, unpadded_patch_size)'''
 
     # test stitching here in cases where padding is applied
     unpatched_x, unpatched_y = patcher.unpatch(patched_out, patched_y, evaluation=evaluation)
