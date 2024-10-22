@@ -32,6 +32,9 @@ class GINO(nn.Module):
             number of channels in FNO pointwise projection
         gno_coord_dim : int, optional
             geometric dimension of input/output queries, by default 3
+
+
+            
         gno_pos_embed_type : literal `{'transformer', 'nerf'}` | None
             type of optional sinusoidal positional embedding to use in GNOBlock,
             by default `'transformer'`
