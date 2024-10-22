@@ -17,12 +17,14 @@ from .base_model import BaseModel
 
 class FNO(BaseModel, name='FNO'):
     """N-Dimensional Fourier Neural Operator. The FNO learns a mapping between
-    spaces of functions discretized over regular grids. 
+    spaces of functions discretized over regular grids using Fourier convolutions, 
+    as described in [1]_.
     
-    The key component of an FNO is its SpectralConv layer (see ``neuralop.layers.spectral_convolution``), which
-    is similar to a standard CNN conv layer but operates in the frequency domain.
+    The key component of an FNO is its SpectralConv layer (see 
+    ``neuralop.layers.spectral_convolution``), which is similar to a standard CNN 
+    conv layer but operates in the frequency domain.
 
-    For more information, refer to :ref:`fno_intro`.
+    For a deeper dive into the FNO architecture, refer to :ref:`fno_intro`.
 
     Parameters
     ----------
@@ -148,6 +150,12 @@ class FNO(BaseModel, name='FNO'):
         )
             ... torch.nn.Module printout truncated ...
 
+    References
+    -----------
+    .. [1] :
+
+    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
+        Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
 
     """
 
