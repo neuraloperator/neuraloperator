@@ -192,10 +192,11 @@ Equivalently, we could also apply a periodic FFT-shift using :code:`torch.fft.ff
 to the center of the FFT matrix, such that the matrix would be indexed with modes :code:`-n//2, -n//2 + 1, ...-1, 0, 1, ...` 
 as shown below:
 
-.. image:: /_static/images/fft_shift.png
-    :width: 500
-
-(source: [3]_)
+.. figure:: /_static/images/fft_shift.png
+    :width: 800
+    
+    Using :code:`torch.fft.fftshift`, we move the zero-frequency mode to the center and truncate modes 
+    from the middle out. For more details, see the source paper [3]_.
 
 **Convolutional Filters in Fourier Space**
 
