@@ -80,7 +80,6 @@ train_loader, test_loaders, output_encoder = load_burgers_1dtime(data_path=confi
         )
 
 model = get_model(config)
-model = model.to(device)
 
 # Use distributed data parallel
 if config.distributed.use_distributed:
