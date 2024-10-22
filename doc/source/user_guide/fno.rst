@@ -1,5 +1,3 @@
-.. _fno_intro:
-
 ========================
 Fourier Neural Operators
 ========================
@@ -134,7 +132,7 @@ We can easily create a 2d Fourier layer using `neuralop` as follows:
     from neuralop.models.spectral_convolution import FactorizedSpectralConv
     fourier_layer = FactorizedSpectralConv(in_channels=in_channels, out_channels=out_channels, n_modes=(modes1, modes2))
 
-To illustrate the implementation details of the Fourier layer, we provide a simple implementation from scratch that is equivalent to the above code based on PyTorch's fast Fourier transform :code:`torch.fft.rfft()` and :code:`torch.fft.irfft()`. 
+To illustrate the implementation details of the Fourier layer, we provide a simple implementation from scratch that is equivalent to the above code based on PyTorch's fast Fourier transform (FFT) :code:`torch.fft.rfft()` and :code:`torch.fft.irfft()`. 
 
 .. code:: python
 
@@ -164,8 +162,8 @@ To illustrate the implementation details of the Fourier layer, we provide a simp
             x_ft = torch.fft.rfft2(x)
 
             # Multiply relevant Fourier modes
-            out_ft = torch.zeros(batchsize, self.out_channels,  x.size(-2), x.size(-1)//2 + 1, dtype=torch.cfloat, device=x.device)
-            out_ft[:, :, :self.modes1, :self.modes2] = \
+            out_ft = torch.zeros(batchsize, self.out_channels,  x.size(-2), x.size(-1)//2 + 1, dtype=torch.cfloat, device=x.device) 
+            out_ft[:, :, :self.modes1, :self.modes2] = \ 
                 self.compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
             out_ft[:, :, -self.modes1:, :self.modes2] = \
                 self.compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
@@ -183,6 +181,21 @@ where the input :code:`x` has the shape (N,C,H,W),
 :code:`self.mode1` and :code:`self.mode2` truncate the lower frequency modes;
 and :code:`compl_mul2d()` is the matrix multiplication for complex numbers.
 
+Note in the forward call above that :code:`torch.fft.rfft()` returns a matrix
+of size `n` along each dim that indexes Fourier modes `0, 1, 2, ... n//2, -n//2, -n//2 - 1, ...-1`. Since our
+inputs are real-valued, we take the real-valued FFT, which is skew-symmetric, so information is repeated across 
+one axis. Therefore it is sufficient to keep only two of the four corners of the FFT matrix. 
+
+Equivalently, we could also apply a periodic FFT-shift using `torch.fft.fftshift` to move the zero-frequency component 
+to the center of the FFT matrix, such that the matrix would be indexed with modes `-n//2, -n//2 + 1, ...-1, 0, 1, ...` 
+as shown below:
+
+.. image:: /_static/images/fft_shift.png
+    :width: 800
+
+(source: [3]_)
+
+**Convolutional Filters in Fourier Space**
 .. image:: /_static/images/filters.jpg
   :width: 800
 
@@ -404,3 +417,7 @@ References
 
 .. [2] Hao, K. (2021, October 20). Ai has cracked a key mathematical puzzle for understanding our world. 
        MIT Technology Review. https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/
+    
+.. [3] Multi-Grid Tensorized Fourier Neural Operator for High-Resolution PDEs,
+       Jean Kossaifi, Nikola Kovachki, Kamyar Azizzadenesheli, Anima Anandkumar, 2024. 
+       TMLR 2024. https://openreview.net/pdf?id=AWiDlO63bH
