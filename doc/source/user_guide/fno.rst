@@ -195,8 +195,10 @@ as shown below:
 .. figure:: /_static/images/fft_shift.png
     :width: 800
     
+    Visualizing the Fourier coefficients as returned by the Real Fast Fourier Transform implementation in PyTorch. 
     Using :code:`torch.fft.fftshift`, we move the zero-frequency mode to the center and truncate modes 
-    from the middle out. For more details, see the source paper [3]_.
+    from the middle out. Note that the last half of modes are only redundant when using the real-valued Fourier
+    transform. For more details, see the source paper [3]_.
 
 **Convolutional Filters in Fourier Space**
 
