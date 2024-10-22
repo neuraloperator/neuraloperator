@@ -294,6 +294,7 @@ class MGPatchingDataProcessor(DataProcessor):
         padding_fraction: float,
         stitching: float,
         device: str = "cpu",
+        use_distributed: bool=False,
         in_normalizer=None,
         out_normalizer=None,
     ):
@@ -306,11 +307,11 @@ class MGPatchingDataProcessor(DataProcessor):
         model: nn.Module
             model to wrap in MultigridPatching2D
         levels : int
-            mg_patching level parameter for MultigridPatching2D
+            number of multi-grid patching levels to use
         padding_fraction : float
-            mg_padding_fraction parameter for MultigridPatching2D
-        stitching : float
-            mg_patching_stitching parameter for MultigridPatching2D
+            fraction by which to pad inputs in multigrid-patching
+        stitching : bool
+            whether to stitch back the output from the multi-grid patches 
         in_normalizer : neuralop.datasets.transforms.Transform, optional
             OutputEncoder to decode model inputs, by default None
         in_normalizer : neuralop.datasets.transforms.Transform, optional
@@ -327,6 +328,7 @@ class MGPatchingDataProcessor(DataProcessor):
             levels=self.levels,
             padding_fraction=self.padding_fraction,
             stitching=self.stitching,
+            use_distributed=use_distributed,
         )
         self.device = device
 
@@ -336,7 +338,7 @@ class MGPatchingDataProcessor(DataProcessor):
             self.in_normalizer = in_normalizer.to(self.device)
         if out_normalizer:
             self.out_normalizer = out_normalizer.to(self.device)
-        self.model = None
+        self.model = model
 
     def to(self, device):
         self.device = device
@@ -368,6 +370,7 @@ class MGPatchingDataProcessor(DataProcessor):
             x = self.in_normalizer.transform(x)
             y = self.out_normalizer.transform(y)
         data_dict["x"], data_dict["y"] = self.patcher.patch(x, y)
+
         return data_dict
 
     def postprocess(self, out, data_dict):
@@ -384,7 +387,7 @@ class MGPatchingDataProcessor(DataProcessor):
             model output predictions
         """
         y = data_dict["y"]
-        out, y = self.patcher.unpatch(out, y)
+        out, y = self.patcher.unpatch(out, y, evaluation=not self.training)
 
         if self.out_normalizer:
             y = self.out_normalizer.inverse_transform(y)

@@ -88,17 +88,18 @@ train_loader, test_loaders, data_processor = load_navier_stokes_pt(
     encode_output=config.data.encode_output,
 )
 
+model = get_model(config)
+model = model.to(device)
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:
-    data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
+    data_processor = MGPatchingDataProcessor(model=model,
+                                             in_normalizer=data_processor.in_normalizer,
                                              out_normalizer=data_processor.out_normalizer,
                                              padding_fraction=config.patching.padding,
                                              stitching=config.patching.stitching,
-                                             levels=config.patching.levels)
-
+                                             levels=config.patching.levels,
+                                             use_distributed=config.distributed.use_distributed)
 data_processor = data_processor.to(device)
-model = get_model(config)
-model = model.to(device)
 
 # Use distributed data parallel
 if config.distributed.use_distributed:
