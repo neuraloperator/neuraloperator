@@ -4,7 +4,7 @@ default: &DEFAULT
   # For computing compression
   n_params_baseline: None #If None, will be computed
   verbose: True
-  arch: 'fno2d'
+  arch: 'fno'
 
   #Distributed computing
   distributed:
@@ -15,10 +15,10 @@ default: &DEFAULT
     seed: 666
 
   # FNO related
-  fno2d:
+  fno:
     data_channels: 1
-    n_modes_height: 64
-    n_modes_width: 64
+    out_channels: 1
+    n_modes: [64,64]
     hidden_channels: 64
     projection_channel_ratio: 4
     n_layers: 4
@@ -44,7 +44,7 @@ default: &DEFAULT
 
   # Optimizer
   opt:
-    n_epochs: 3000
+    n_epochs: 500
     learning_rate: 3e-4
     training_loss: 'h1'
     weight_decay: 1e-4
@@ -60,11 +60,11 @@ default: &DEFAULT
   data:
     folder: data/navier_stokes/
     batch_size: 8
-    n_train: 8000
+    n_train: 10000
     train_resolution: 128
     n_tests: [2000] #, 1000] #, 1000]
     test_resolutions: [128] #, 1024] #, 1024] 
-    test_batch_sizes: [16] #, 4] #, 1]
+    test_batch_sizes: [8] #, 4] #, 1]
     encode_input: True
     encode_output: True
 
@@ -72,7 +72,7 @@ default: &DEFAULT
   patching:
     levels: 0 #1
     padding: 0 #0.078125
-    stitching: True
+    stitching: False #True
 
   # Weights and biases
   wandb:
