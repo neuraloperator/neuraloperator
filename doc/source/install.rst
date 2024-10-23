@@ -57,7 +57,11 @@ Fast 3D spatial computing with Open3D
 
 To accelerate spatial computing for 3D applications, we include 
 `Open3D <https://github.com/isl-org/Open3D>`_ as an optional dependency. Open3D includes
-utilities for reading 3D mesh files and fast 3D neighbor search. However, Open3D is only
+utilities for reading 3D mesh files and fast 3D neighbor search. To install::
+
+   pip install open3d
+
+Note that Open3D is only
 compatible with specific builds of PyTorch and CUDA. Check the sub-package 
 `Open3D-ML <https://github.com/isl-org/Open3D-ML>`_ documentation for more details. 
 
