@@ -1,7 +1,6 @@
 matplotlib
 myst-nb
 numpydoc
-open3d
 sphinx
 sphinx-gallery
 tensorly_sphinx_theme
