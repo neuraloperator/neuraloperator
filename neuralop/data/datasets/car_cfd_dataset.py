@@ -13,6 +13,11 @@ class CarCFDDataset(MeshDataModule):
     3D grid of query points, as well as the inlet velocity. Outputs are pressure 
     values at each centroid of the triangle mesh.
     
+    .. warning:: 
+
+    ``CarCFDDataset`` inherits from ``MeshDataModule``, which requires the optional ``open3d`` dependency.
+    See :ref:`open3d_dependency` for more information. 
+
     We also add additional manifest files to split the provided examples
     into training and testing sets, as well as remove instances that are corrupted.
 
@@ -27,13 +32,11 @@ class CarCFDDataset(MeshDataModule):
     n_test : int, optional
         Number of testing instances to load, by default 1
     query_res : List[int], optional
-        Dimension-wise resolution of SDF query cube, by default [32,32,32]
+        Dimension-wise resolution of signed distance function 
+        (SDF) query cube, by default [32,32,32]
     download : bool, optional
         Whether to download data from Zenodo, by default True
     
-    .. warn : 
-    `CarCFDDataset` inherits from `MeshDataModule`, which requires the optional `open3d` dependency.
-    See 
 
     Attributes
     ----------
