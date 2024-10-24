@@ -18,7 +18,7 @@ import numpy as np
 import math
 from functools import partial
 
-import imageio.v3 as iio
+from matplotlib import image
 
 from torch_harmonics.quadrature import legendre_gauss_weights, lobatto_weights, clenshaw_curtiss_weights
 
@@ -36,7 +36,7 @@ os.system("curl https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Albert
 nx = 90
 ny = 120
 
-img = iio.imread('./einstein.jpg')
+img = image.imread('./einstein.jpg')
 data = nn.functional.interpolate(torch.from_numpy(img).unsqueeze(0).unsqueeze(0), size=(ny,nx)).squeeze()
 plt.imshow(data, cmap=cmap)
 plt.show()
