@@ -235,7 +235,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         # extract shape
         B, C, _ = x.shape
 
-        # bring into the right shape for the bmm and perform it
+        # bring x into the right shape for the bmm (batch_size x channels, n_in) and pre-apply psi to x
         x = x.reshape(B * C, self.n_in).permute(1, 0).contiguous()
         x = torch.mm(psi, x)
         x = x.permute(1, 0).reshape(B, C, self.kernel_size, self.n_out)
@@ -387,7 +387,7 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         # extract shape
         B, C, _ = x.shape
 
-        # bring into the right shape for the bmm and perform it
+        # bring x into the right shape for the bmm (batch_size x channels, n_in) and pre-apply psi to x
         x = x.reshape(B * C, self.n_in).permute(1, 0).contiguous()
         x = torch.mm(psi, x)
         x = x.permute(1, 0).reshape(B, C, self.kernel_size, self.n_out)
