@@ -27,46 +27,22 @@ class GINO(nn.Module):
         latent_feature_channels : int, optional
             number of channels in optional latent feature map
             to concatenate onto latent embeddings before 
-            the latent FNO's forward pass, default None
+            the FNO's forward pass, default None
         projection_channels : int, optional
             number of channels in FNO pointwise projection
         gno_coord_dim : int, optional
             geometric dimension of input/output queries, by default 3
-
-
-            
+        gno_radius : float, optional
+            radius in input/output space for GNO neighbor search, by default 0.033
+        in_gno_transform_type : str, optional
+            transform type parameter for input GNO, by default 'linear'
+            see neuralop.layers.gno_block for more details
+        out_gno_transform_type : str, optional
+            transform type parameter for output GNO, by default 'linear'
+            see neuralop.layers.gno_block for more details
         gno_pos_embed_type : literal `{'transformer', 'nerf'}` | None
             type of optional sinusoidal positional embedding to use in GNOBlock,
             by default `'transformer'`
-        gno_embed_channels: int
-            dimension of optional per-channel embedding to use in GNOBlock,
-            by default 32
-        gno_embed_max_positions: int
-            max positions of optional per-channel embedding to use in GNOBlock,
-            by default 10000. If `gno_pos_embed_type != 'transformer'`, value is unused.
-        gno_radius : float, optional
-            radius in input/output space for GNO neighbor search, by default 0.033
-        in_gno_channel_mlp_hidden_layers : list, optional
-            widths of hidden layers in input GNO, by default [80, 80, 80]
-        out_gno_channel_mlp_hidden_layers : list, optional
-            widths of hidden layers in output GNO, by default [512, 256]
-        gno_channel_mlp_non_linearity : nn.Module, optional
-            nonlinearity to use in gno ChannelMLP, by default F.gelu
-        in_gno_transform_type : str, optional
-            transform type parameter for input GNO, by default 'linear'
-            see neuralop.layers.IntegralTransform
-        out_gno_transform_type : str, optional
-            transform type parameter for output GNO, by default 'linear'
-            see neuralop.layers.IntegralTransform
-        gno_use_open3d : bool, optional
-            whether to use open3d neighbor search, by default True
-            if False, uses pure-PyTorch fallback neighbor search
-        gno_use_torch_scatter : bool, optional
-            whether to use torch_scatter's neighborhood reduction function
-            or the native PyTorch implementation in IntegralTransform layers.
-            If False, uses the fallback PyTorch version.
-        out_gno_tanh : bool, optional
-            whether to use tanh to stabilize outputs of the output GNO, by default False
         fno_in_channels : int, optional
             number of input channels for FNO, by default 26
         fno_n_modes : tuple, optional
@@ -80,6 +56,30 @@ class GINO(nn.Module):
             lifting_channel_ratio * hidden_channels (e.g. default 512)
         fno_n_layers : int, optional
             number of layers in FNO, by default 4
+        
+        Other Parameters
+        ----------------
+        gno_embed_channels: int
+            dimension of optional per-channel embedding to use in GNOBlock,
+            by default 32
+        gno_embed_max_positions: int
+            max positions of optional per-channel embedding to use in GNOBlock,
+            by default 10000. If `gno_pos_embed_type != 'transformer'`, value is unused.
+        in_gno_channel_mlp_hidden_layers : list, optional
+            widths of hidden layers in input GNO, by default [80, 80, 80]
+        out_gno_channel_mlp_hidden_layers : list, optional
+            widths of hidden layers in output GNO, by default [512, 256]
+        gno_channel_mlp_non_linearity : nn.Module, optional
+            nonlinearity to use in gno ChannelMLP, by default F.gelu
+        gno_use_open3d : bool, optional
+            whether to use open3d neighbor search, by default True
+            if False, uses pure-PyTorch fallback neighbor search
+        gno_use_torch_scatter : bool, optional
+            whether to use torch_scatter's neighborhood reduction function
+            or the native PyTorch implementation in IntegralTransform layers.
+            If False, uses the fallback PyTorch version.
+        out_gno_tanh : bool, optional
+            whether to use tanh to stabilize outputs of the output GNO, by default False
         fno_resolution_scaling_factor : float | None, optional
             factor by which to scale output of FNO, by default None
         fno_incremental_n_modes : list[int] | None, defaults to None
@@ -145,7 +145,7 @@ class GINO(nn.Module):
         self,
         in_channels,
         out_channels,
-        latent_feature_channels=None, # potentially mark as other
+        latent_feature_channels=None,
         projection_channels=256,
         gno_coord_dim=3,
         gno_radius=0.033,
@@ -157,7 +157,6 @@ class GINO(nn.Module):
         fno_hidden_channels=64,
         fno_lifting_channel_ratio=2,
         fno_n_layers=4,
-
         # Other GNO Params
         gno_embed_channels=32,
         gno_embed_max_positions=10000,
@@ -167,8 +166,6 @@ class GINO(nn.Module):
         gno_use_open3d=True,
         gno_use_torch_scatter=True,
         out_gno_tanh=None,
-
-
         # Other FNO Params
         fno_resolution_scaling_factor=None,
         fno_incremental_n_modes=None,
