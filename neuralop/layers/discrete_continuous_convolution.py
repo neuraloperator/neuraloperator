@@ -468,7 +468,7 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         # precompute psi using conventional routines onto the local grid
         idx, vals = _precompute_convolution_tensor_2d(grid_in, grid_out, self.kernel_shape, quad_weights, radius_cutoff=radius_cutoff, periodic=False, normalize=True)
 
-        # extract the local psi
+        # extract the local psi as a dense representation
         psi_loc = torch.zeros(self.kernel_size, self.psi_local_h*self.psi_local_w)
         for ie in range(len(vals)):
             f = idx[0, ie]; j = idx[2, ie]; v = vals[ie]
@@ -580,7 +580,7 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         # idx, vals = _precompute_convolution_tensor_2d(grid_out, grid_in, self.kernel_shape, quad_weights, radius_cutoff=radius_cutoff, periodic=False, normalize=False, transpose_normalization=True)
         idx, vals = _precompute_convolution_tensor_2d(grid_in, grid_out, self.kernel_shape, quad_weights, radius_cutoff=radius_cutoff, periodic=False, normalize=True, transpose_normalization=False)
 
-        # extract the local psi
+        # extract the local psi as a dense representation
         psi_loc = torch.zeros(self.kernel_size, self.psi_local_h*self.psi_local_w)
         for ie in range(len(vals)):
             f = idx[0, ie]; j = idx[2, ie]; v = vals[ie]

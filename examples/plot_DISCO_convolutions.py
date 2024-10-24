@@ -79,8 +79,8 @@ plt.show()
 
 # %%
 # For the convolution output we require an output mesh
-nxo = 30
-nyo = 40
+nxo = 90
+nyo = 120
 
 x_out = torch.linspace(0, 2, nxo)
 y_out = torch.linspace(0, 3, nyo)
@@ -166,7 +166,8 @@ w[0,0,2] = 1.0
 w[0,0,3] = 1.0
 convt.weight = nn.Parameter(w)
 
-out = convt(out)
+data = nn.functional.interpolate(torch.from_numpy(img).unsqueeze(0).unsqueeze(0), size=(ny,nx)).squeeze().float().permute(1,0).flip(1).reshape(-1)
+out = convt(data.reshape(1, 1, -1))
 
 print(out.shape)
 
@@ -188,7 +189,8 @@ w[0,0,2] = 1.0
 w[0,0,3] = 1.0
 convt_equi.weight = nn.Parameter(w)
 
-out_equi = convt_equi(out_equi)
+data = nn.functional.interpolate(torch.from_numpy(img).unsqueeze(0).unsqueeze(0), size=(nyo,nxo)).float()
+out_equi = convt_equi(data)
 
 print(out_equi.shape)
 
