@@ -10,7 +10,8 @@ from ..layers.spectral_convolution import SpectralConv
 from ..layers.gno_block import GNOBlock
 
 class FNOGNO(BaseModel, name="FNOGNO"):
-    """FNOGNO: Fourier/Geometry Neural Operator
+    """FNOGNO: Fourier/Geometry Neural Operator. The FNOGNO
+    maps from a regular N-d grid to an arbitrary query point cloud.
 
     Parameters
     ----------
@@ -20,21 +21,13 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         number of output channels
     projection_channels : int, defaults to 256
          number of hidden channels in embedding block of FNO.
+    gno_coord_dim : int, defaults to 3
+        dimension of coordinate space where GNO is computed
     gno_pos_embed_type : literal `{'transformer', 'nerf'}` | None
         type of optional sinusoidal positional embedding to use in GNOBlock,
         by default `'transformer'`
-    gno_embed_channels: int
-        dimension of optional per-channel embedding to use in GNOBlock,
-        by default 32
-    gno_embed_max_positions: int
-        max positions of optional per-channel embedding to use in GNOBlock,
-        by default 10000. If `gno_pos_embed_type != 'transformer'`, value is unused.
     gno_radius : float, defaults to 0.033
         radius parameter to construct graph.
-    gno_channel_mlp_hidden_layers : list, defaults to [512, 256]
-        dimension of hidden ChannelMLP layers of GNO.
-    gno_channel_mlp_non_linearity : nn.Module, defaults to F.gelu
-        nonlinear activation function between layers
     gno_transform_type : str, defaults to 'linear'
         type of kernel integral transform to apply in GNO.
         kernel k(x,y): parameterized as ChannelMLP MLP integrated over a neighborhood of x
@@ -42,20 +35,33 @@ class FNOGNO(BaseModel, name="FNOGNO"):
                     'linear' : integrand is k(x, y) * f(y)
                     'nonlinear_kernelonly' : integrand is k(x, y, f(y))
                     'nonlinear' : integrand is k(x, y, f(y)) * f(y)
-    gno_use_open3d : bool, defaults to False
+    fno_n_modes : tuple, defaults to (16, 16, 16)
+        number of modes to keep along each spectral dimension of FNO block
+    fno_hidden_channels : int, defaults to 64
+        number of hidden channels of fno block.
+    fno_lifting_channel_ratio : int, defaults to 4
+        ratio of lifting channels to FNO hidden channels.
+    fno_n_layers : int, defaults to 4
+        number of FNO layers in the block.
+
+    Other Parameters
+    ----------------
+    gno_embed_channels: int
+        dimension of optional per-channel embedding to use in GNOBlock,
+        by default 32
+    gno_embed_max_positions: int
+        max positions of optional per-channel embedding to use in GNOBlock,
+        by default 10000. If `gno_pos_embed_type != 'transformer'`, value is unused.
+    gno_channel_mlp_hidden_layers : list, defaults to [512, 256]
+        dimension of hidden ChannelMLP layers of GNO.
+    gno_channel_mlp_non_linearity : nn.Module, defaults to F.gelu
+        nonlinear activation function between layers
+    gno_use_open3d : bool, defaults to True
         whether to use Open3D functionality
         if False, uses simple fallback neighbor search
     gno_batched: bool, defaults to False
         whether to use IntegralTransform/GNO layer in
         "batched" mode. If False, sets batched=False.
-    fno_n_modes : tuple, defaults to (16, 16, 16)
-        number of modes to keep along each spectral dimension of FNO block
-    fno_hidden_channels : int, defaults to 64
-        number of hidden channels of fno block.
-    fno_lifting_channels : int, defaults to 256
-        dimension of hidden layers in FNO lifting block.
-    fno_n_layers : int, defaults to 4
-        number of FNO layers in the block.
     fno_resolution_scaling_factor : float | None, defaults to None
         factor by which to rescale output predictions in the original domain
     fno_incremental_n_modes : list[int] | None, defaults to None
@@ -114,18 +120,20 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         projection_channels=256,
         gno_coord_dim=3,
         gno_pos_embed_type='transformer',
+        gno_transform_type="linear",
+        fno_n_modes=(16, 16, 16),
+        fno_hidden_channels=64,
+        fno_lifting_channel_ratio=4,
+        fno_n_layers=4,
+        # Other GNO params
         gno_embed_channels=32,
         gno_embed_max_positions=10000,
         gno_radius=0.033,
         gno_channel_mlp_hidden_layers=[512, 256],
         gno_channel_mlp_non_linearity=F.gelu,
-        gno_transform_type="linear",
-        gno_use_open3d=False,
+        gno_use_open3d=True,
         gno_batched=False,
-        fno_n_modes=(16, 16, 16),
-        fno_hidden_channels=64,
-        fno_lifting_channels=256,
-        fno_n_layers=4,
+        # Other FNO params
         fno_resolution_scaling_factor=None,
         fno_incremental_n_modes=None,
         fno_block_precision="full",
@@ -198,6 +206,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             self.ada_in_dim = None
 
         # Create lifting for FNOBlock separately
+        fno_lifting_channels = fno_lifting_channel_ratio * fno_hidden_channels
         self.lifting = ChannelMLP(in_channels=in_channels + self.in_coord_dim,
                                   hidden_channels=fno_lifting_channels,
                                   out_channels=fno_hidden_channels,
