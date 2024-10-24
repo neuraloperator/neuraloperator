@@ -320,6 +320,8 @@ training a machine learning model to minimize a loss function on a dataset:
     LpLoss
     H1Loss
     MSELoss
+    WeightedSumLoss
+    ShakeShakeLoss
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

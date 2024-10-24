@@ -1,5 +1,6 @@
-
+import numpy as np
 import torch
+from .data_losses import H1Loss, LpLoss
 
 class FieldwiseAggregatorLoss(object):
     """
@@ -87,3 +88,78 @@ class WeightedSumLoss(object):
         for loss, weight in self.losses:
             description += f"{loss} (weight: {weight}) "
         return description
+
+class ShakeShakeLoss(object):
+    def __init__(self, losses, weights=None, 
+                 weight_update_start=30,
+                 weight_update_type='linear',
+                 weight_update_slope=100):
+        """
+        Performs shake-shake regularization on a sum 
+
+        Parameters
+        ----------
+        losses: List[loss]
+            list of loss objects, all must implement __call__
+        weights: torch.Tensor, optional
+            optional weights to multiply with losses before shake-shake is applied
+        """
+        self.losses = losses
+        if weights:
+            self.weights = weights
+        else:
+            self.weights = torch.tensor([1.] * len(self.losses))
+        
+        self.weight_update_start = weight_update_start
+        self.weight_update_slope = weight_update_slope
+        self.weight_update_type = weight_update_type
+    
+    def sample_from_simplex(self, d: int):
+        '''
+        Draw a sample uniformly from the d-dim probability simplex as in [1]_.
+
+        References
+        -----------
+        _[1]. Rubin, The Bayesian bootstrap. Ann. Statist. 9, 1981, 130-134.
+        '''
+
+        return torch.distributions.dirichlet.Dirichlet(torch.tensor([1.] * d)).sample()
+    
+    def __call__(self, *args, **kwargs):
+        """ take a random interpolation of all losses in self.losses
+            from the probability simplex"""
+        weighted_loss = 0.
+        shake_shake_weights = self.sample_from_simplex(len(self.losses))
+
+        for i, loss in enumerate(self.losses):
+            weighted_loss += shake_shake_weights[i] * loss(*args, **kwargs) * self.weights[i]
+        
+        return weighted_loss
+    
+    def update_weights(self, epoch, threshold=0.001):
+        '''
+        Update shake-shake relative weighting 
+        '''
+
+        if (not self.weight_update_type) or epoch < self.weight_update_start:
+            return
+
+        assert self.weight_update_type == 'linear'
+        losses = []
+        updated_weights = []
+        # update weights
+        for loss, weight in self.losses:
+            losses.append(loss)
+            if isinstance(loss, LpLoss) or isinstance(loss, H1Loss):
+                new_weight = weight - (weight / self.weight_update_slope)
+                if new_weight < threshold:
+                    new_weight = 0.
+                    print('loss no longer used:', loss)
+                updated_weights.append(new_weight)
+            else:
+                updated_weights.append(weight)
+
+        # renormalize weights
+        updated_weights = np.array(updated_weights) / np.sum(updated_weights)
+        print('weights are', updated_weights)
+        self.losses = list(zip(losses, updated_weights))
