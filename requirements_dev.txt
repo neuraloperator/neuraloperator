@@ -1,3 +1,4 @@
 black
 flaky
 pytest
+imageio
