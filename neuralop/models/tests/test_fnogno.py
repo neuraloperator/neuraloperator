@@ -37,6 +37,7 @@ def test_fnogno(gno_transform_type, fno_n_modes, gno_batched, gno_pos_embed_type
         fno_n_modes=fno_n_modes,
         fno_norm="ada_in",
         fno_ada_in_features=4,
+        gno_use_open3d=False
     ).to(device)
 
     in_p_shape = [
