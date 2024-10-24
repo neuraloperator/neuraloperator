@@ -21,19 +21,12 @@ can easily be implemented. For more specific documentation, check the API refere
 Distributed Training
 =====================
 We also provide a simple way to use PyTorch's :code:`DistributedDataParallel`
-functionality to hold data across multiple GPUs. We use PyTorch's MPI backend,
+functionality to hold data across multiple GPUs. We use PyTorch's :code:`torchrun` elastic launcher,
 so all you need to do on a multi-GPU system is the following:
 
 ::
     
-    pip install mpi4py
-
-    mpiexec --allow-run-as-root -n N_GPUS python my_script.py
+    torchrun --standalone --nproc_per_node <NUM_GPUS> script.py
 
 You may need to adjust the batch size, model parallel size and world size in 
-accordance with your specific use case. 
-
-
- 
-
-
+accordance with your specific use case. See the `torchrun documentation <https://pytorch.org/docs/stable/elastic/run.html>`_ for more details.
