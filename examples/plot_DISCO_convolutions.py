@@ -1,9 +1,10 @@
 """
-Training a SFNO on the spherical Shallow Water equations
+Visualization of discrete-continuous convolutions
 ==========================================================
 
-In this example, we demonstrate how to use the small Spherical Shallow Water Equations example we ship with the package
-to train a Spherical Fourier-Neural Operator
+In this example, we demonstrate the usage of the discrete-continuous (DISCO) convolutions
+used in the localized neural operator framework. These modules can be used on both equidistant
+and unstructured grids.
 """
 
 # %%

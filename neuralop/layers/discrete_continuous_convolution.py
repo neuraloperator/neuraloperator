@@ -103,13 +103,15 @@ def _precompute_convolution_tensor_2d(grid_in, grid_out, kernel_shape, quad_weig
 
 class DiscreteContinuousConv2d(DiscreteContinuousConv):
     """
-    Discrete-continuous convolutions (DISCO) on arbitrary 2d grids as implemented for [1].
+    Discrete-continuous convolutions (DISCO) on arbitrary 2d grids as implemented for [1]. To evaluate continuous convolutions on a computer, they can be evaluated semi-discretely, where the translation operation is performet continuously, and the qudrature/projection is performed discretely on a grid [2]. They are the main building blocks for local Neural Operators [1]. Forward call expects an input of shape batch_size x num_channels x num_grid_points.
 
-    [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
-    [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
+    References
+    ----------
+    .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
+    .. [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
 
     Parameters
-        ----------
+    ----------
         in_channels: int
             input channels to DISCO convolution
         out_channels: int
@@ -243,13 +245,15 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
 
 class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     """
-    Transpose Discrete-continuous convolutions (DISCO) on arbitrary 2d grids as implemented for [1]
+    Transpose variant of discrete-continuous convolutions on arbitrary 2d grids as implemented for [1]. Forward call expects an input of shape batch_size x num_channels x num_grid_points.
 
-    [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
-    [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
+    References
+    ----------
+    .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
+    .. [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
 
     Parameters
-        ----------
+    ----------
         in_channels: int
             input channels to DISCO convolution
         out_channels: int
@@ -385,13 +389,15 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
 
 class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
     """
-    Discrete-continuous convolutions (DISCO) on equidistant 2d grids as implemented for [1]. This implementation maps to 2d convolution kernels which makes it more efficient than the unstructured implementation above. Due to the mapping to an equidistant grid, the domain lengths need to be specified in order to compute the effective resolution and the corresponding cutoff radius.
+    Discrete-continuous convolutions (DISCO) on equidistant 2d grids as implemented for [1]. This implementation maps to 2d convolution kernels which makes it more efficient than the unstructured implementation above. Due to the mapping to an equidistant grid, the domain lengths need to be specified in order to compute the effective resolution and the corresponding cutoff radius. Forward call expects an input of shape batch_size x num_channels x in_shape[0] x in_shape[1].
 
-    [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
-    [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
+    References
+    ----------
+    .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
+    .. [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
 
     Parameters
-        ----------
+    ----------
         in_channels: int
             input channels to DISCO convolution
         out_channels: int
@@ -496,13 +502,15 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
 
 class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     """
-    Transpose Discrete-continuous convolutions (DISCO) on equidistant 2d grids as implemented for [1]. This implementation maps to 2d convolution kernels which makes it more efficient than the unstructured implementation above. Due to the mapping to an equidistant grid, the domain lengths need to be specified in order to compute the effective resolution and the corresponding cutoff radius.
+    Transpose Discrete-continuous convolutions (DISCO) on equidistant 2d grids as implemented for [1]. This implementation maps to 2d convolution kernels which makes it more efficient than the unstructured implementation above. Due to the mapping to an equidistant grid, the domain lengths need to be specified in order to compute the effective resolution and the corresponding cutoff radius. Forward call expects an input of shape batch_size x num_channels x in_shape[0] x in_shape[1].
 
-    [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
-    [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
+    References
+    ----------
+    .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
+    .. [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
 
     Parameters
-        ----------
+    ----------
         in_channels: int
             input channels to DISCO convolution
         out_channels: int
