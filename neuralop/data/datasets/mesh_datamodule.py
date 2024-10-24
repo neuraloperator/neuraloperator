@@ -8,9 +8,8 @@ import numpy as np
 # the class will build, but no files will be loaded.
 try:
     import open3d as o3d
-    open3d_available = True
 except ModuleNotFoundError:
-    open3d_available = False
+    print("Warning: you are attempting to run MeshDataModule without the required dependency open3d.")
 
 import torch
 from torch.utils.data import DataLoader
@@ -92,12 +91,11 @@ class MeshDataModule:
         # Load all meshes
 
         meshes = []
-        if open3d_available:
-            for ind in mesh_ind:
-                mesh = o3d.io.read_triangle_mesh(
-                    str(data_dir / (item_dir_name + ind + "/tri_mesh.ply"))
-                )
-                meshes.append(mesh)
+        for ind in mesh_ind:
+            mesh = o3d.io.read_triangle_mesh(
+                str(data_dir / (item_dir_name + ind + "/tri_mesh.ply"))
+            )
+            meshes.append(mesh)
 
         # Dataset wide bounding box
         min_b, max_b = self.get_global_bounding_box(meshes)
@@ -277,10 +275,9 @@ class MeshDataModule:
         return centroids, areas
 
     def compute_distances(self, mesh, query_points, signed_distance):
-        if open3d_available:
-            mesh = o3d.t.geometry.TriangleMesh.from_legacy(mesh)
-            scene = o3d.t.geometry.RaycastingScene()
-            _ = scene.add_triangles(mesh)
+        mesh = o3d.t.geometry.TriangleMesh.from_legacy(mesh)
+        scene = o3d.t.geometry.RaycastingScene()
+        _ = scene.add_triangles(mesh)
 
         if signed_distance:
             dist = scene.compute_signed_distance(query_points).numpy()

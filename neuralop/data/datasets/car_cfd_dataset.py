@@ -5,18 +5,18 @@ from .mesh_datamodule import MeshDataModule
 from .web_utils import download_from_zenodo_record
 
 class CarCFDDataset(MeshDataModule):
-    """CarCFDDataset is a processed version of the dataset introduced in 
+    """CarCFDDataset is a processed version of the dataset introduced in
     [1]_, which encodes a triangular mesh over the surface of a 3D model car
     and provides the air pressure at each centroid and vertex of the mesh when
-    the car is placed in a simulated wind tunnel with a recorded inlet velocity. 
+    the car is placed in a simulated wind tunnel with a recorded inlet velocity.
     In our case, inputs are a signed distance function evaluated over a regular
     3D grid of query points, as well as the inlet velocity. Outputs are pressure 
     values at each centroid of the triangle mesh.
     
-    .. warning:: 
+        .. warning:: 
 
-    ``CarCFDDataset`` inherits from ``MeshDataModule``, which requires the optional ``open3d`` dependency.
-    See :ref:`open3d_dependency` for more information. 
+        ``CarCFDDataset`` inherits from ``MeshDataModule``, which requires the optional ``open3d`` dependency.
+        See :ref:`open3d_dependency` for more information. 
 
     We also add additional manifest files to split the provided examples
     into training and testing sets, as well as remove instances that are corrupted.
@@ -42,7 +42,6 @@ class CarCFDDataset(MeshDataModule):
     ----------
     train_loader: torch.utils.data.DataLoader
         dataloader of training examples
-
     test_loader: torch.utils.data.DataLoader
         dataloader of testing examples
 
