@@ -7,7 +7,7 @@ to train a Spherical Fourier-Neural Operator
 """
 
 # %%
-#
+# Preparation
 
 
 import os
@@ -26,12 +26,14 @@ import matplotlib.pyplot as plt
 cmap="inferno"
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
+from neuralop.layers.discrete_continuous_convolution import DiscreteContinuousConv2d, DiscreteContinuousConvTranspose2d, EquidistantDiscreteContinuousConv2d, EquidistantDiscreteContinuousConvTranspose2d
+
 # %%
 # Let's start by loading an example image
 os.system("curl https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Albert_Einstein_Head.jpg/360px-Albert_Einstein_Head.jpg -o ./einstein.jpg")
 
-nx = 120
-ny = 180
+nx = 90
+ny = 120
 
 img = iio.imread('./einstein.jpg')
 data = nn.functional.interpolate(torch.from_numpy(img).unsqueeze(0).unsqueeze(0), size=(ny,nx)).squeeze()
@@ -51,7 +53,7 @@ grid_in = torch.stack([x_in.reshape(-1), y_in.reshape(-1)])
 # IMPORTANT: this needs to be done right in order for the DISCO convolution to be normalized proeperly
 w_x = 2*torch.ones_like(x_in) / nx
 w_y = 3*torch.ones_like(y_in) / ny
-quad_weights = (w_x * w_y).reshape(-1)
+q_in = (w_x * w_y).reshape(-1)
 
 # %%
 # Visualize the grid
@@ -77,8 +79,8 @@ plt.show()
 
 # %%
 # For the convolution output we require an output mesh
-nxo = 120
-nyo = 180
+nxo = 30
+nyo = 40
 
 x_out = torch.linspace(0, 2, nxo)
 y_out = torch.linspace(0, 3, nyo)
@@ -86,13 +88,14 @@ y_out = torch.linspace(0, 3, nyo)
 x_out, y_out = torch.meshgrid(x_out, y_out)
 grid_out = torch.stack([x_out.reshape(-1), y_out.reshape(-1)])
 
+# compute the correct quadrature weights
+w_x = 2*torch.ones_like(x_out) / nxo
+w_y = 3*torch.ones_like(y_out) / nyo
+q_out = (w_x * w_y).reshape(-1)
+
 # %%
 # Initialize the convolution and set the weights to something resembling an edge filter/finit differences
-
-from neuralop.layers.discrete_continuous_convolution import DiscreteContinuousConv2d, DiscreteContinuousConvTranspose2d
-
-# initialize convolution module
-conv = DiscreteContinuousConv2d(1, 1, grid_in=grid_in, grid_out=grid_out, quad_weights=quad_weights, kernel_shape=[2,4], radius_cutoff=3/nyo, periodic=False).float()
+conv = DiscreteContinuousConv2d(1, 1, grid_in=grid_in, grid_out=grid_out, quad_weights=q_in, kernel_shape=[2,4], radius_cutoff=3/nyo, periodic=False).float()
 
 # initialize a kernel resembling an edge filter
 w = torch.zeros_like(conv.weight)
@@ -105,24 +108,16 @@ psi = conv.get_psi()
 # in order to compute the convolved image, we need to first bring it into the right shape with `batch_size x n_channels x n_grid_points`
 out = conv(data.reshape(1, 1, -1))
 
-# plt.figure(figsize=(4,6), )
-# plt.tripcolor(grid_out[0], grid_out[1], out.squeeze().detach(), cmap=cmap, shading="flat")
-# plt.colorbar()
-# plt.xlim(0,2)
-# plt.ylim(0,3)
-# plt.show()
+print(out.shape)
 
 plt.figure(figsize=(4,6), )
 plt.imshow(torch.flip(out.squeeze().detach().reshape(nxo, nyo).transpose(0,1), dims=(-2, )), cmap=cmap)
 plt.colorbar()
 plt.show()
 
-out1= torch.flip(out.squeeze().detach().reshape(nxo, nyo).transpose(0,1), dims=(-2, ))
+out1 = torch.flip(out.squeeze().detach().reshape(nxo, nyo).transpose(0,1), dims=(-2, ))
 
 # %% do the same but on an equidistant grid:
-
-from neuralop.layers.discrete_continuous_convolution import EquidistantDiscreteContinuousConv2d
-
 conv_equi = EquidistantDiscreteContinuousConv2d(1, 1, (nx, ny), (nxo, nyo), kernel_shape=[2,4], radius_cutoff=3/nyo, domain_length=[2,3])
 
 # initialize a kernel resembling an edge filter
@@ -131,9 +126,11 @@ w[0,0,1] = 1.0
 w[0,0,3] = -1.0
 conv_equi.weight = nn.Parameter(w)
 
-data = nn.functional.interpolate(torch.from_numpy(img).unsqueeze(0).unsqueeze(0), size=(nyo,nxo)).float()
+data = nn.functional.interpolate(torch.from_numpy(img).unsqueeze(0).unsqueeze(0), size=(ny,nx)).float()
 
 out_equi = conv_equi(data)
+
+print(out_equi.shape)
 
 plt.figure(figsize=(4,6), )
 plt.imshow(out_equi.squeeze().detach(), cmap=cmap)
@@ -142,19 +139,60 @@ plt.show()
 
 out2 = out_equi.squeeze().detach()
 
+print(out2.shape)
+
 # %%
 
 plt.figure(figsize=(4,6), )
 plt.imshow(conv_equi.get_psi()[0].detach(), cmap=cmap)
 plt.colorbar()
 
-# %%
+# # %%
 
-print(out1.shape)
+# print("plt the error:")
+# plt.figure(figsize=(4,6), )
+# plt.imshow(out1 - out2, cmap=cmap)
+# plt.colorbar()
+# plt.show()
 
-print(out2.shape)
+# %% test the transpose convolution
+convt = DiscreteContinuousConvTranspose2d(1, 1, grid_in=grid_out, grid_out=grid_in, quad_weights=q_out, kernel_shape=[2,4], radius_cutoff=3/nyo, periodic=False).float()
+
+# initialize a flat
+w = torch.zeros_like(conv.weight)
+w[0,0,0] = 1.0
+w[0,0,1] = 1.0
+w[0,0,2] = 1.0
+w[0,0,3] = 1.0
+convt.weight = nn.Parameter(w)
+
+out = convt(out)
+
+print(out.shape)
 
 plt.figure(figsize=(4,6), )
-plt.imshow(out1 - out2, cmap=cmap)
+plt.imshow(torch.flip(out.squeeze().detach().reshape(nx, ny).transpose(0,1), dims=(-2, )), cmap=cmap)
+plt.colorbar()
+plt.show()
+
+
+
+# %% test the equidistant transpose convolution
+convt_equi = EquidistantDiscreteContinuousConvTranspose2d(1, 1, (nxo, nyo), (nx, ny), kernel_shape=[2,4], radius_cutoff=3/nyo, domain_length=[2,3])
+
+# initialize a flat
+w = torch.zeros_like(convt_equi.weight)
+w[0,0,0] = 1.0
+w[0,0,1] = 1.0
+w[0,0,2] = 1.0
+w[0,0,3] = 1.0
+convt_equi.weight = nn.Parameter(w)
+
+out_equi = convt_equi(out_equi)
+
+print(out_equi.shape)
+
+plt.figure(figsize=(4,6), )
+plt.imshow(out_equi.squeeze().detach(), cmap=cmap)
 plt.colorbar()
 plt.show()

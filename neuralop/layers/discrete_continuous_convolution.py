@@ -385,7 +385,7 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
 
 class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
     """
-    Discrete-continuous convolutions (DISCO) on equidistant 2d grids as implemented for [1]. This implementation maps to 2d convolution kernels which makes it more efficient than the unstructured implementation above.
+    Discrete-continuous convolutions (DISCO) on equidistant 2d grids as implemented for [1]. This implementation maps to 2d convolution kernels which makes it more efficient than the unstructured implementation above. Due to the mapping to an equidistant grid, the domain lengths need to be specified in order to compute the effective resolution and the corresponding cutoff radius.
 
     [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
     [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
@@ -431,7 +431,7 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
 
         # to ensure compatibility with the unstructured code, only constant zero and periodic padding are supported currently
-        self.padding_mode = "circular" if periodic else "constant"
+        self.padding_mode = "circular" if periodic else "zeros"
 
         # if domain length is not specified we use
         self.domain_length = [2, 2] if domain_length is None else domain_length
@@ -476,8 +476,6 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
 
         # compute local version of the filter matrix
         psi_loc = psi_loc.reshape(self.kernel_size, self.psi_local_h, self.psi_local_w)
-        # normalization still needs to be sorted out using the quadrature weights
-        # psi_loc = psi_loc / psi_loc.sum(dim=(-2,-1), keepdim=True) / self.q_weight
 
         self.register_buffer("psi_loc", psi_loc, persistent=False)
 
@@ -488,18 +486,17 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
 
         kernel = torch.einsum("kxy,ogk->ogxy", self.get_psi(), self.weight)
 
-        top_pad = self.psi_local_h // 2
-        bottom_pad = (self.psi_local_h+1) // 2 - 1
-        left_pad = self.psi_local_w // 2
-        right_pad = (self.psi_local_w+1) // 2 - 1
-        x = nn.functional.pad(x, (left_pad, right_pad, top_pad, bottom_pad), mode=self.padding_mode)
-        out = nn.functional.conv2d(self.q_weight * x, kernel, self.bias, stride=[self.scale_h, self.scale_w], dilation=1, padding=0, groups=self.groups)
+        # padding is rounded down to give the right result when even kernels are applied
+        # Check https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html for output shape math
+        h_pad = (self.psi_local_h+1) // 2 - 1
+        w_pad = (self.psi_local_w+1) // 2 - 1
+        out = nn.functional.conv2d(self.q_weight * x, kernel, self.bias, stride=[self.scale_h, self.scale_w], dilation=1, padding=[h_pad, w_pad], groups=self.groups)
 
         return out
 
 class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     """
-    Transpose Discrete-continuous convolutions (DISCO) on equidistant 2d grids as implemented for [1]. This implementation maps to 2d convolution kernels which makes it more efficient than the unstructured implementation above.
+    Transpose Discrete-continuous convolutions (DISCO) on equidistant 2d grids as implemented for [1]. This implementation maps to 2d convolution kernels which makes it more efficient than the unstructured implementation above. Due to the mapping to an equidistant grid, the domain lengths need to be specified in order to compute the effective resolution and the corresponding cutoff radius.
 
     [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
     [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
@@ -516,6 +513,8 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
             shape of the (regular) output grid.
         kernel_shape: Union[int, List[int]]
             kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
+        domain_length: torch.Tensor, optional
+            extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
         periodic: bool, optional
             whether the domain is periodic
         groups: int, optional
@@ -533,6 +532,7 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         in_shape: Tuple[int],
         out_shape: Tuple[int],
         kernel_shape: Union[int, List[int]],
+        domain_length: Optional[Tuple[float]] = None,
         periodic: Optional[bool] = False,
         groups: Optional[int] = 1,
         bias: Optional[bool] = True,
@@ -542,37 +542,43 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
 
         # to ensure compatibility with the unstructured code, only constant zero and periodic padding are supported currently
-        self.padding_mode = "circular" if periodic else "constant"
+        self.padding_mode = "circular" if periodic else "zeros"
+
+        # if domain length is not specified we use
+        self.domain_length = [2, 2] if domain_length is None else domain_length
 
         # compute the cutoff radius based on the assumption that the grid is [-1, 1]^2
         # this still assumes a quadratic domain
         if radius_cutoff is None:
-            radius_cutoff = 2 / float(max(*in_shape))
+            radius_cutoff = max([self.domain_length[i] / float(in_shape[i]) for i in (0,1)])
 
         if radius_cutoff <= 0.0:
             raise ValueError("Error, radius_cutoff has to be positive.")
 
         # compute how big the discrete kernel needs to be for the 2d convolution kernel to work
-        # TODO: check if this hsould be in or out shape here
-        self.psi_local_h = math.floor(2*radius_cutoff * in_shape[0] / 2) + 1
-        self.psi_local_w = math.floor(2*radius_cutoff * in_shape[1] / 2) + 1
+        self.psi_local_h = math.floor(2*radius_cutoff * out_shape[0] / self.domain_length[0]) + 1
+        self.psi_local_w = math.floor(2*radius_cutoff * out_shape[1] / self.domain_length[1]) + 1
 
         # compute the scale_factor
-        assert (in_shape[0] < out_shape[0]) and (out_shape[0] % in_shape[0] == 0)
+        assert (in_shape[0] <= out_shape[0]) and (out_shape[0] % in_shape[0] == 0)
         self.scale_h = out_shape[0] // in_shape[0]
-        assert (in_shape[1] < out_shape[1]) and (out_shape[1] % in_shape[1] == 0)
+        assert (in_shape[1] <= out_shape[1]) and (out_shape[1] % in_shape[1] == 0)
         self.scale_w = out_shape[1] // in_shape[1]
 
         # psi_local is essentially the support of the hat functions evaluated locally
-        x = torch.linspace(-radius_cutoff, radius_cutoff, in_shape[0])
-        y = torch.linspace(-radius_cutoff, radius_cutoff, in_shape[1])
+        x = torch.linspace(-radius_cutoff, radius_cutoff, self.psi_local_h)
+        y = torch.linspace(-radius_cutoff, radius_cutoff, self.psi_local_w)
         x, y = torch.meshgrid(x, y)
         grid_in = torch.stack([x.reshape(-1), y.reshape(-1)])
-        quad_weights = torch.ones(out_shape[0] * out_shape[1])
         grid_out = torch.Tensor([[0.0], [0.0]])
 
+        # compute quadrature weights on the incoming grid
+        self.q_weight = self.domain_length[0] * self.domain_length[1] / out_shape[0] / out_shape[1]
+        quad_weights = self.q_weight * torch.ones(self.psi_local_h * self.psi_local_w)
+
         # precompute psi using conventional routines onto the local grid
-        idx, vals = _precompute_convolution_tensor_2d(grid_out, grid_in, self.kernel_shape, quad_weights, radius_cutoff=radius_cutoff, periodic=False, normalize=False, transpose_normalization=True)
+        # idx, vals = _precompute_convolution_tensor_2d(grid_out, grid_in, self.kernel_shape, quad_weights, radius_cutoff=radius_cutoff, periodic=False, normalize=False, transpose_normalization=True)
+        idx, vals = _precompute_convolution_tensor_2d(grid_in, grid_out, self.kernel_shape, quad_weights, radius_cutoff=radius_cutoff, periodic=False, normalize=True, transpose_normalization=False)
 
         # extract the local psi
         psi_loc = torch.zeros(self.kernel_size, self.psi_local_h*self.psi_local_w)
@@ -582,8 +588,6 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
 
         # compute local version of the filter matrix
         psi_loc = psi_loc.reshape(self.kernel_size, self.psi_local_h, self.psi_local_w)
-        # # normalization still needs to be sorted out using the quadrature weights
-        # psi_loc = psi_loc / psi_loc.sum(dim=(-2,-1), keepdim=True)
 
         self.register_buffer("psi_loc", psi_loc, persistent=False)
 
@@ -594,11 +598,14 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
 
         kernel = torch.einsum("kxy,ogk->ogxy", self.get_psi(), self.weight)
 
-        top_pad = self.psi_local_h // 2
-        bottom_pad = (self.psi_local_h+1) // 2 - 1
-        left_pad = self.psi_local_w // 2
-        right_pad = (self.psi_local_w+1) // 2 - 1
-        x = nn.functional.pad(x, (left_pad, right_pad, top_pad, bottom_pad), mode=self.padding_mode)
-        out = nn.functional.conv_transpose2d(x, kernel, self.bias, stride=[self.scale_h, self.scale_w], dilation=1, padding=0, groups=self.groups)
+        # padding is rounded down to give the right result when even kernels are applied
+        # Check https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html for output shape math
+        h_pad = (self.psi_local_h+1) // 2 - 1
+        w_pad = (self.psi_local_w+1) // 2 - 1
+        # additional one-sided padding. See https://discuss.pytorch.org/t/question-of-2d-transpose-convolution/99419
+        h_pad_out = self.scale_h - (self.psi_local_h // 2 - h_pad) - 1
+        w_pad_out = self.scale_w - (self.psi_local_w // 2 - w_pad) - 1
+
+        out = nn.functional.conv_transpose2d(self.q_weight * x, kernel, self.bias, stride=[self.scale_h, self.scale_w], dilation=[1,1], padding=[h_pad, w_pad], output_padding=[h_pad_out, w_pad_out], groups=self.groups)
 
         return out
