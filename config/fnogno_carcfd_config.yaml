@@ -18,8 +18,8 @@ cfd: &CFD
     entity_name: ''
     load_attributes: ['press']
     sdf_query_resolution: 32
-    n_train: 1
-    n_test: 1
+    n_train: 500
+    n_test: 50
     input_points: 'query_points'
     input_fields: ['distance']
     output_points: 'centroids'

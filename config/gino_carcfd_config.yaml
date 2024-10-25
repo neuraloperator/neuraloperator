@@ -16,8 +16,8 @@ cfd: &CFD
   data:
     root: /home/dave/data/car-pressure-data/
     sdf_query_resolution: 32
-    n_train: 1
-    n_test: 1
+    n_train: 50
+    n_test: 500
     download: False
 
   gino:
