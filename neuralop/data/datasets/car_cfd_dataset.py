@@ -75,10 +75,10 @@ class CarCFDDataset(MeshDataModule):
             download_from_zenodo_record(record_id=self.zenodo_record_id,
                                         root=root_dir)
         super().__init__(
-            root_dir=root_dir / "processed-car-pressure-data",
+            root_dir=root_dir,
             item_dir_name='',
             n_train=n_train,
             n_test=n_test,
             query_res=query_res,
-            attributes='press'
+            attributes=['press']
         )
