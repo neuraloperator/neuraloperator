@@ -105,38 +105,37 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
     """
     Discrete-continuous convolutions (DISCO) on arbitrary 2d grids as implemented for [1]. To evaluate continuous convolutions on a computer, they can be evaluated semi-discretely, where the translation operation is performet continuously, and the qudrature/projection is performed discretely on a grid [2]. They are the main building blocks for local Neural Operators [1]. Forward call expects an input of shape batch_size x in_channels x n_in.
 
+    Parameters
+    ----------
+    in_channels: int
+        input channels to DISCO convolution
+    out_channels: int
+        output channels of DISCO convolution
+    grid_in: torch.Tensor or str
+        input grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
+    grid_out: torch.Tensor or str
+        output grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
+    kernel_shape: Union[int, List[int]]
+        kernel shape. Expects either a signle integer for isotropic kernels or two integers for anisotropic kernels
+    n_in: Tuple[int], optional
+        number of input points
+    n_out: Tuple[int], optional
+        number of output points
+    quad_weights: torch.Tensor, optional
+        quadrature weights on the input grid
+    periodic: bool, optional
+        whether the domain is periodic
+    groups: int, optional
+        number of groups in the convolution
+    bias: bool, optional
+        whether to use a bias
+    radius_cutoff: float, optional
+        cutoff radius for the kernel
+
     References
     ----------
     .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
     .. [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
-
-    Parameters
-    ----------
-        in_channels: int
-            input channels to DISCO convolution
-        out_channels: int
-            output channels of DISCO convolution
-        grid_in: torch.Tensor or str
-            input grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
-        grid_out: torch.Tensor or str
-            output grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
-        kernel_shape: Union[int, List[int]]
-            kernel shape. Expects either a signle integer for isotropic kernels or two integers for anisotropic kernels
-        n_in: Tuple[int], optional
-            number of input points
-        n_out: Tuple[int], optional
-            number of output points
-        quad_weights: torch.Tensor, optional
-            quadrature weights on the input grid
-        periodic: bool, optional
-            whether the domain is periodic
-        groups: int, optional
-            number of groups in the convolution
-        bias: bool, optional
-            whether to use a bias
-        radius_cutoff: float, optional
-            cutoff radius for the kernel
-
     """
 
     def __init__(
@@ -255,37 +254,37 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     """
     Transpose variant of discrete-continuous convolutions on arbitrary 2d grids as implemented for [1]. Forward call expects an input of shape batch_size x in_channels x n_in.
 
+    Parameters
+    ----------
+    in_channels: int
+        input channels to DISCO convolution
+    out_channels: int
+        output channels of DISCO convolution
+    grid_in: torch.Tensor or str
+        input grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
+    grid_out: torch.Tensor or str
+        output grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
+    kernel_shape: Union[int, List[int]]
+        kernel shape. Expects either a signle integer for isotropic kernels or two integers for anisotropic kernels
+    n_in: Tuple[int], optional
+        number of input points
+    n_out: Tuple[int], optional
+        number of output points
+    quad_weights: torch.Tensor, optional
+        quadrature weights on the input grid
+    periodic: bool, optional
+        whether the domain is periodic
+    groups: int, optional
+        number of groups in the convolution
+    bias: bool, optional
+        whether to use a bias
+    radius_cutoff: float, optional
+        cutoff radius for the kernel
+
     References
     ----------
     .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
     .. [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
-
-    Parameters
-    ----------
-        in_channels: int
-            input channels to DISCO convolution
-        out_channels: int
-            output channels of DISCO convolution
-        grid_in: torch.Tensor or str
-            input grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
-        grid_out: torch.Tensor or str
-            output grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
-        kernel_shape: Union[int, List[int]]
-            kernel shape. Expects either a signle integer for isotropic kernels or two integers for anisotropic kernels
-        n_in: Tuple[int], optional
-            number of input points
-        n_out: Tuple[int], optional
-            number of output points
-        quad_weights: torch.Tensor, optional
-            quadrature weights on the input grid
-        periodic: bool, optional
-            whether the domain is periodic
-        groups: int, optional
-            number of groups in the convolution
-        bias: bool, optional
-            whether to use a bias
-        radius_cutoff: float, optional
-            cutoff radius for the kernel
     """
 
     def __init__(
@@ -407,33 +406,33 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
     """
     Discrete-continuous convolutions (DISCO) on equidistant 2d grids as implemented for [1]. This implementation maps to 2d convolution kernels which makes it more efficient than the unstructured implementation above. Due to the mapping to an equidistant grid, the domain lengths need to be specified in order to compute the effective resolution and the corresponding cutoff radius. Forward call expects an input of shape batch_size x in_channels x in_shape[0] x in_shape[1].
 
+    Parameters
+    ----------
+    in_channels: int
+        input channels to DISCO convolution
+    out_channels: int
+        output channels of DISCO convolution
+    in_shape: Tuple[int]
+        shape of the (regular) input grid.
+    out_shape: torch.Tensor or str
+        shape of the (regular) output grid.
+    kernel_shape: Union[int, List[int]]
+        kernel shape. Expects either a signle integer for isotropic kernels or two integers for anisotropic kernels
+    domain_length: torch.Tensor, optional
+        extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
+    periodic: bool, optional
+        whether the domain is periodic
+    groups: int, optional
+        number of groups in the convolution
+    bias: bool, optional
+        whether to use a bias
+    radius_cutoff: float, optional
+        cutoff radius for the kernel
+
     References
     ----------
     .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
     .. [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
-
-    Parameters
-    ----------
-        in_channels: int
-            input channels to DISCO convolution
-        out_channels: int
-            output channels of DISCO convolution
-        in_shape: Tuple[int]
-            shape of the (regular) input grid.
-        out_shape: torch.Tensor or str
-            shape of the (regular) output grid.
-        kernel_shape: Union[int, List[int]]
-            kernel shape. Expects either a signle integer for isotropic kernels or two integers for anisotropic kernels
-        domain_length: torch.Tensor, optional
-            extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
-        periodic: bool, optional
-            whether the domain is periodic
-        groups: int, optional
-            number of groups in the convolution
-        bias: bool, optional
-            whether to use a bias
-        radius_cutoff: float, optional
-            cutoff radius for the kernel
     """
 
     def __init__(
@@ -527,33 +526,33 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     """
     Transpose Discrete-continuous convolutions (DISCO) on equidistant 2d grids as implemented for [1]. This implementation maps to 2d convolution kernels which makes it more efficient than the unstructured implementation above. Due to the mapping to an equidistant grid, the domain lengths need to be specified in order to compute the effective resolution and the corresponding cutoff radius. Forward call expects an input of shape batch_size x in_channels x in_shape[0] x in_shape[1].
 
+    Parameters
+    ----------
+    in_channels: int
+        input channels to DISCO convolution
+    out_channels: int
+        output channels of DISCO convolution
+    in_shape: Tuple[int]
+        shape of the (regular) input grid.
+    out_shape: torch.Tensor or str
+        shape of the (regular) output grid.
+    kernel_shape: Union[int, List[int]]
+        kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
+    domain_length: torch.Tensor, optional
+        extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
+    periodic: bool, optional
+        whether the domain is periodic
+    groups: int, optional
+        number of groups in the convolution
+    bias: bool, optional
+        whether to use a bias
+    radius_cutoff: float, optional
+        cutoff radius for the kernel
+
     References
     ----------
     .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
     .. [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
-
-    Parameters
-    ----------
-        in_channels: int
-            input channels to DISCO convolution
-        out_channels: int
-            output channels of DISCO convolution
-        in_shape: Tuple[int]
-            shape of the (regular) input grid.
-        out_shape: torch.Tensor or str
-            shape of the (regular) output grid.
-        kernel_shape: Union[int, List[int]]
-            kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
-        domain_length: torch.Tensor, optional
-            extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
-        periodic: bool, optional
-            whether the domain is periodic
-        groups: int, optional
-            number of groups in the convolution
-        bias: bool, optional
-            whether to use a bias
-        radius_cutoff: float, optional
-            cutoff radius for the kernel
     """
 
     def __init__(
