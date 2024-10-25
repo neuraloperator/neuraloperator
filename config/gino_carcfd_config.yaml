@@ -14,7 +14,7 @@ cfd: &CFD
 
   # Dataset related
   data:
-    root: /home/dave/data/car-pressure-2/
+    root: /home/dave/data/car-pressure-data/
     sdf_query_resolution: 32
     n_train: 1
     n_test: 1

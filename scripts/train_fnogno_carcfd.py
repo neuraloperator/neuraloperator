@@ -14,7 +14,7 @@ from copy import deepcopy
 # query points is [sdf_query_resolution] * 3 (taken from config ahmed)
 # Read the configuration
 config_name = 'cfd'
-pipe = ConfigPipeline([YamlConfig('./car_cfd_config.yaml', config_name=config_name, config_folder='../config'),
+pipe = ConfigPipeline([YamlConfig('./fnogno_carcfd_config.yaml', config_name=config_name, config_folder='../config'),
                        ArgparseConfig(infer_types=True, config_name=None, config_file=None),
                        YamlConfig(config_folder='../config')
                       ])
@@ -103,6 +103,7 @@ class CFDDataProcessor(DataProcessor):
         super().__init__()
         self.normalizer = normalizer
         self.device = device
+        self.model = None
 
     def preprocess(self, sample):
         # Turn a data dictionary returned by MeshDataModule's DictDataset
@@ -151,6 +152,7 @@ class CFDDataProcessor(DataProcessor):
     def to(self, device):
         self.device = device
         self.normalizer = self.normalizer.to(device)
+        return self
     
     def wrap(self, model):
         self.model = model
@@ -168,7 +170,8 @@ trainer = Trainer(model=model,
                   n_epochs=config.opt.n_epochs,
                   data_processor=data_processor,
                   device=device,
-                  wandb_log=config.wandb.log
+                  wandb_log=config.wandb.log,
+                  verbose=is_logger
                   )
 
 if config.wandb.log:
