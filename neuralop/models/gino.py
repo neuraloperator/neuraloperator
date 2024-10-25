@@ -3,8 +3,7 @@ import torch
 import torch.nn.functional as F
 import time
 
-from torch import nn
-
+from .base_model import BaseModel
 
 from ..layers.channel_mlp import ChannelMLP
 from ..layers.embeddings import SinusoidalEmbedding
@@ -12,7 +11,7 @@ from ..layers.fno_block import FNOBlocks
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.gno_block import GNOBlock
 
-class GINO(nn.Module):
+class GINO(BaseModel):
     """GINO: Geometry-informed Neural Operator. Learns a mapping between
        functions presented over arbitrary coordinate meshes. The model carries
        global integration through spectral convolution layers in an intermediate
