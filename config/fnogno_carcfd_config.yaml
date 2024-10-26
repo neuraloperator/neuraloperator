@@ -14,7 +14,7 @@ cfd: &CFD
 
   # Dataset related
   data:
-    root: /home/dave/data/car-pressure-data/
+    root: /home/YOURNAME/data/car-pressure-data/
     entity_name: ''
     load_attributes: ['press']
     sdf_query_resolution: 32
