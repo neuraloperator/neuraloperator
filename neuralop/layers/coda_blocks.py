@@ -10,44 +10,62 @@ from .fno_block import FNOBlocks
 from .spectral_convolution import SpectralConv
 
 einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-# Codomain Attention Blocks
-
 
 class CODABlocks(nn.Module):
-    """ Class for the Co-domain Attention Blocks (CODABlocks)
+    """Class for the Co-domain Attention Blocks (CODABlocks).
 
-    Args:
-        n_modes (list): Number of modes for each dimension  used in K,Q,V operator.
-        n_heads (int): Number of heads for the attention mechanism.
-        token_codimension (int): Co-dimension of each variable or number of channels associated with each variables.
-        output_scaling_factor (float): Scaling factor for the output.
-        incremental_n_modes (list): Incremental number of modes for each dimension (for incremental training).
-        head_codimension (int): Co-dimension of each of output token for each head.
-
-        # config for FNO_blocks used as K,Q,V operator
-        use_channel_mlp (bool): whether to use mlp layers to parameterize skip connections, by default False
-        non_linearity (callable): Non-linearity function to be used.
-        preactivation (bool): whether to use preactivation, by default False.
-        fno_skip (str): Type of skip connection to be used, by default 'linear'.
-        mlp_skip (str):  module to use for ChannelMLP skip connections, by default "soft-gating".
-        channel_mlp_expansion (float): expansion parameter for self.channel_mlp, by default 0.5.
-        separable (bool): whether to use separable convolutions, by default False.
-        factorization (str): Type of factorization to be used, by default 'tucker'.
-        rank (float): Rank of the factorization, by default 1.0.
-        spectral_convolution (callable): Spectral convolution module to be used.
-        joint_factorization (bool): whether to factorize all spectralConv weights as one tensor, by default False
-
-        # Normalization
-        Normalizer (callable): Normalization module to be used.
-
-        codimension_size (int): Size of the codimension for whole function, only used for permutation_eq = False.
-        per_channel_attention (bool): whether to use per channel attention, by default True (overwrite token_codimension to 1).
-        permutation_eq (bool): whether to use permutation equivariant mixer layer  after attention mechanism.
-        temperature (float): Temperature parameter for attention mechanism.
-        nonlinear_attention (bool): whether to use non-linear activation for K,Q,V operator.
-        scale (int): Scale for downsampling Q,K functions before calculating the attention matrix. Higher scale will downsample more.
+    Parameters
+    ----------
+    n_modes : list
+        Number of modes for each dimension used in K, Q, V operator.
+    n_heads : int
+        Number of heads for the attention mechanism.
+    token_codimension : int
+        Co-dimension of each variable or number of channels associated with each variable.
+    output_scaling_factor : float
+        Scaling factor for the output.
+    incremental_n_modes : list
+        Incremental number of modes for each dimension (for incremental training).
+    head_codimension : int
+        Co-dimension of each output token for each head.
+    use_channel_mlp : bool, optional
+        Whether to use MLP layers to parameterize skip connections. Default is False.
+    non_linearity : callable
+        Non-linearity function to be used.
+    preactivation : bool, optional
+        Whether to use preactivation. Default is False.
+    fno_skip : str, optional
+        Type of skip connection to be used. Default is 'linear'.
+    mlp_skip : str, optional
+        Module to use for ChannelMLP skip connections. Default is "soft-gating".
+    channel_mlp_expansion : float, optional
+        Expansion parameter for self.channel_mlp. Default is 0.5.
+    separable : bool, optional
+        Whether to use separable convolutions. Default is False.
+    factorization : str, optional
+        Type of factorization to be used. Default is 'tucker'.
+    rank : float, optional
+        Rank of the factorization. Default is 1.0.
+    spectral_convolution : callable
+        Spectral convolution module to be used.
+    joint_factorization : bool, optional
+        Whether to factorize all spectralConv weights as one tensor. Default is False.
+    Normalizer : callable
+        Normalization module to be used.
+    codimension_size : int
+        Size of the codimension for the whole function. Only used for permutation_eq = False.
+    per_channel_attention : bool, optional
+        Whether to use per-channel attention. Default is True (overwrites token_codimension to 1).
+    permutation_eq : bool, optional
+        Whether to use permutation equivariant mixer layer after the attention mechanism.
+    temperature : float
+        Temperature parameter for the attention mechanism.
+    nonlinear_attention : bool, optional
+        Whether to use non-linear activation for K, Q, V operator.
+    scale : int
+        Scale for downsampling Q, K functions before calculating the attention matrix.
+        Higher scale will downsample more.
     """
-
     def __init__(
         self,
         n_modes,
@@ -98,8 +116,11 @@ class CODABlocks(nn.Module):
         if norm is None:
             Normalizer = torch.nn.Identity
         elif norm == "instance_norm":
-            Normalizer = partial(nn.InstanceNorm2d, affine=True) if self.num_dims == 2 else partial(
-                nn.InstanceNorm3d, affine=True)
+            Normalizer = partial(
+                nn.InstanceNorm2d,
+                affine=True) if self.num_dims == 2 else partial(
+                nn.InstanceNorm3d,
+                affine=True)
         else:
             raise ValueError(f"Unknown normalization type {norm}")
 
@@ -179,7 +200,7 @@ class CODABlocks(nn.Module):
         )
 
         if self.n_heads * self.head_codimension != self.token_codimension:
-            self.proj = FNOBlocks(
+            self.multi_head_proj = FNOBlocks(
                 in_channels=self.n_heads * self.head_codimension,
                 out_channels=self.token_codimension,
                 n_modes=n_modes,
@@ -194,7 +215,7 @@ class CODABlocks(nn.Module):
                 **common_args,
             )
         else:
-            self.proj = None
+            self.multi_head_proj = None
 
         self.attention_normalizer = Normalizer(self.token_codimension)
 
@@ -238,14 +259,20 @@ class CODABlocks(nn.Module):
 
     def compute_attention(self, tokens, batch_size):
         """
-        Compute the key-query-value variant of the attention matrix for input token functions tokens.
+        Compute the key-query-value variant of the attention matrix for input token functions.
 
-        Assumes input ``tokens`` has been normalized.
-        tokens: torch.tensor. Has shape (b * t, d, h, w, ...) where,
-                        b is the batch_size,
-                        t is the number of tokens,
-                        d is the token codimension,
-                        and h, w, .. are the domain dimensions.
+        Parameters
+        ----------
+        tokens : torch.Tensor
+            Input tokens with shape (b * t, d, h, w, ...), where:
+            b is the batch size,
+            t is the number of tokens,
+            d is the token codimension,
+            and h, w, ... are the domain dimensions.
+            Assumes input tokens have been normalized.
+        
+        batch_size : int
+            The size of the batch.
         """
 
         k = self.Key(tokens)
@@ -264,9 +291,9 @@ class CODABlocks(nn.Module):
         q = q.view(batch_size, t, self.n_heads, d, *q.shape[-self.num_dims:])
         v = v.view(batch_size, t, self.n_heads, d, *v.shape[-self.num_dims:])
 
-        k = torch.transpose(k,1,2)
-        q = torch.transpose(q,1,2)
-        v = torch.transpose(v,1,2) 
+        k = torch.transpose(k, 1, 2)
+        q = torch.transpose(q, 1, 2)
+        v = torch.transpose(v, 1, 2)
         # resahpe
         k = k.view(batch_size, self.n_heads, t, -1)
         q = q.view(batch_size, self.n_heads, t, -1)
@@ -286,26 +313,31 @@ class CODABlocks(nn.Module):
             attention.size(2),
             d,
             *tokens.shape[-self.num_dims:])
-        attention = torch.transpose(attention, 1,2) 
+        attention = torch.transpose(attention, 1, 2)
         attention = attention.view(attention.size(0) * attention.size(1),
                                    attention.size(2) * attention.size(3),
-                                   *attention.shape[-self.num_dims:])  # shape (b * t, a * d, h, w, ...)
+                                   *attention.shape[-self.num_dims:]) 
 
         return attention
 
-    def forward(self, x, output_shape=None):
+    def forward(self, x):
         if self.permutation_eq:
             return self._forward_equivariant(x)
         else:
             return self._forward_non_equivariant(x)
 
     def _forward_equivariant(self, x):
-        '''
-        uses permutation equivariant mixer layer after attention mechanism. We share the same mixer layer
-        for all the varibales.
-        inputs:
-            x: torch.tensor. Has shape (b, t*d, h, w, ...) where, t = number of tokens, d = token codimension
-        '''
+        """Use permutation equivariant mixer layer after the attention mechanism. 
+        Shares the same mixer layer for all the variables.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor with shape (b, t * d, h, w, ...), where:
+            b is the batch size,
+            t is the number of tokens,
+            and d is the token codimension.
+        """
         batch_size = x.shape[0]
         output_shape = x.shape[-self.num_dims:]
 
@@ -314,15 +346,15 @@ class CODABlocks(nn.Module):
         # reshape from shape b (t*d) h w ... to (b*t) d h w ...
         t = x.size(1) // self.token_codimension
         tokens = x.view(
-            x.size(0)*t,
+            x.size(0) * t,
             self.token_codimension,
-            *x.shape[-self.num_dims:])  
+            *x.shape[-self.num_dims:])
 
         # normalization and attention mechanism
         tokens_norm = self.norm1(tokens)
         attention = self.compute_attention(tokens_norm, batch_size)
-        if self.proj is not None:
-            attention = self.proj(attention)
+        if self.multi_head_proj is not None:
+            attention = self.multi_head_proj(attention)
         attention = self.attention_normalizer(attention + tokens)
         attention_normalized = self.norm2(attention)
         output = self.mixer(attention_normalized, output_shape=output_shape)
@@ -332,16 +364,19 @@ class CODABlocks(nn.Module):
         t = output.size(0) // batch_size
         output = output.view(
             batch_size,
-            t*output.size(1),
-            *output.shape[-self.num_dims:]) 
+            t * output.size(1),
+            *output.shape[-self.num_dims:])
 
         return output
 
     def _forward_non_equivariant(self, x):
-        """
-        uses non-permuatation equivariant mixer layer and normalizations.
-        inputs:
-        x: torch.tensor. Has shape (b, t*d, h, w, ...) where, t = number of tokens, d = token codimension
+        """uses non-permuatation equivariant mixer
+        layer and normalizations.
+        Parameters
+        ----------
+        x: torch.tensor. 
+        Has shape (b, t*d, h, w, ...) 
+        where, t = number of tokens, d = token codimension
         """
 
         batch_size = x.shape[0]
@@ -360,8 +395,8 @@ class CODABlocks(nn.Module):
 
         # apply attention mechanism
         attention = self.compute_attention(tokens, batch_size)
-        if self.proj is not None:
-            attention = self.proj(attention)
+        if self.multi_head_proj is not None:
+            attention = self.multi_head_proj(attention)
 
         attention = self.attention_normalizer(attention + tokens)
 
