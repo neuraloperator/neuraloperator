@@ -103,7 +103,7 @@ def _precompute_convolution_tensor_2d(grid_in, grid_out, kernel_shape, quad_weig
 
 class DiscreteContinuousConv2d(DiscreteContinuousConv):
     """
-    Discrete-continuous convolutions (DISCO) on arbitrary 2d grids as implemented for [1]. To evaluate continuous convolutions on a computer, they can be evaluated semi-discretely, where the translation operation is performet continuously, and the qudrature/projection is performed discretely on a grid [2]. They are the main building blocks for local Neural Operators [1]. Forward call expects an input of shape batch_size x in_channels x n_in.
+    Discrete-continuous convolutions (DISCO) on arbitrary 2d grids as implemented for [1]. To evaluate continuous convolutions on a computer, they can be evaluated semi-discretely, where the translation operation is performed continuously, and the quadrature/projection is performed discretely on a grid [2]. They are the main building blocks for local Neural Operators [1]. Forward call expects an input of shape batch_size x in_channels x n_in.
 
     Parameters
     ----------
