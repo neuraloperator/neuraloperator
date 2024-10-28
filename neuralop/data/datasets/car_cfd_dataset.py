@@ -80,5 +80,5 @@ class CarCFDDataset(MeshDataModule):
             n_train=n_train,
             n_test=n_test,
             query_res=query_res,
-            attributes='press'
+            attributes=['press']
         )

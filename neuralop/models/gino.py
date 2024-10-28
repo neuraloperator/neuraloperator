@@ -3,8 +3,7 @@ import torch
 import torch.nn.functional as F
 import time
 
-from torch import nn
-
+from .base_model import BaseModel
 
 from ..layers.channel_mlp import ChannelMLP
 from ..layers.embeddings import SinusoidalEmbedding
@@ -12,7 +11,7 @@ from ..layers.fno_block import FNOBlocks
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.gno_block import GNOBlock
 
-class GINO(nn.Module):
+class GINO(BaseModel):
     """GINO: Geometry-informed Neural Operator. Learns a mapping between
        functions presented over arbitrary coordinate meshes. The model carries
        global integration through spectral convolution layers in an intermediate
@@ -355,15 +354,12 @@ class GINO(nn.Module):
 
         return in_p 
     
-    def forward(self,  x, input_geom, latent_queries, output_queries, latent_features=None, ada_in=None, **kwargs):
+    def forward(self, input_geom, latent_queries, output_queries, x=None, latent_features=None, ada_in=None, **kwargs):
         """The GINO's forward call:
         Input GNO --> FNOBlocks --> output GNO + projection to output queries
 
         Parameters
         ----------
-        x : torch.Tensor
-            input function a defined on the input domain `input_geom`
-            shape (batch, n_in, in_channels) 
         input_geom : torch.Tensor
             input domain coordinate mesh
             shape (1, n_in, gno_coord_dim)
@@ -374,6 +370,9 @@ class GINO(nn.Module):
         output_queries : torch.Tensor
             points at which to query the final GNO layer to get output
             shape (batch, n_out, gno_coord_dim)
+        x : torch.Tensor, optional
+            input function a defined on the input domain `input_geom`
+            shape (batch, n_in, in_channels). Default None
         latent_features : torch.Tensor, optional
             optional feature map to concatenate onto latent embedding
             before being passed into the latent FNO, default None
@@ -381,7 +380,26 @@ class GINO(nn.Module):
         ada_in : torch.Tensor, optional
             adaptive scalar instance parameter, defaults to None
         """
-        batch_size = x.shape[0]
+
+        # Ensure input functions on the input geom and latent geom
+        # have compatible batch sizes
+        if x is None:
+            batch_size = 1
+        else:
+            batch_size = x.shape[0]
+        
+        if latent_features is not None:
+            assert self.latent_feature_channels is not None,\
+                  "if passing latent features, latent_feature_channels must be set."
+            assert latent_features.shape[-1] == self.latent_feature_channels
+
+            # batch, n_gridpts_1, .... n_gridpts_n, gno_coord_dim
+            assert latent_features.ndim == self.gno_coord_dim + 2,\
+                f"Latent features must be of shape (batch, n_gridpts_1, ...n_gridpts_n, gno_coord_dim), got {latent_features.shape}"
+            # latent features must have the same shape (except channels) as latent_queries 
+            if latent_features.shape[0] != batch_size:
+                if latent_features.shape[0] == 1:
+                    latent_features = latent_features.repeat(batch_size, *[1]*(latent_features.ndim-1))
 
         input_geom = input_geom.squeeze(0) 
         latent_queries = latent_queries.squeeze(0)
@@ -397,10 +415,6 @@ class GINO(nn.Module):
         in_p = in_p.view((batch_size, *grid_shape, -1))
         
         if latent_features is not None:
-            assert latent_features.shape[-1] == self.latent_feature_channels
-            # latent features must have the same shape (except channels) as latent_queries 
-            if latent_features.shape[0] != batch_size:
-                latent_features = latent_features.repeat(batch_size, *[1]*(latent_features.ndim-1))
             in_p = torch.cat((in_p, latent_features), dim=-1)
         # take apply fno in latent space
         latent_embed = self.latent_embedding(in_p=in_p, 

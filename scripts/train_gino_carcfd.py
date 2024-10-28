@@ -14,7 +14,7 @@ from copy import deepcopy
 # query points is [sdf_query_resolution] * 3 (taken from config ahmed)
 # Read the configuration
 config_name = 'cfd'
-pipe = ConfigPipeline([YamlConfig('./fnogno_carcfd_config.yaml', config_name=config_name, config_folder='../config'),
+pipe = ConfigPipeline([YamlConfig('./gino_carcfd_config.yaml', config_name=config_name, config_folder='../config'),
                        ArgparseConfig(infer_types=True, config_name=None, config_file=None),
                        YamlConfig(config_folder='../config')
                       ])
@@ -23,8 +23,8 @@ config = pipe.read_conf()
 #Set-up distributed communication, if using
 device, is_logger = setup(config)
 
-if config.data.sdf_query_resolution < config.fnogno.fno_n_modes[0]:
-    config.fnogno.fno_n_modes = [config.data.sdf_query_resolution]*3
+if config.data.sdf_query_resolution < config.gino.fno_n_modes[0]:
+    config.gino.fno_n_modes = [config.data.sdf_query_resolution]*3
 
 #Set up WandB logging
 wandb_init_args = {}
@@ -53,7 +53,7 @@ data_module = CarCFDDataset(root_dir=config.data.root,
                              query_res=[config.data.sdf_query_resolution]*3, 
                              n_train=config.data.n_train, 
                              n_test=config.data.n_test, 
-                             download=True
+                             download=config.data.download
                              )
 
 
@@ -91,12 +91,12 @@ if config.opt.testing_loss == 'l2':
 else:
     raise ValueError(f'Got {config.opt.testing_loss=}')
 
-# Handle data preprocessing to FNOGNO 
+# Handle data preprocessing to gino 
 
-class CFDDataProcessor(DataProcessor):
+class GINOCFDDataProcessor(DataProcessor):
     """
     Implements logic to preprocess data/handle model outputs
-    to train an FNOGNO on the CFD car-pressure dataset
+    to train an GINO on the CFD car-pressure dataset
     """
 
     def __init__(self, normalizer, device='cuda'):
@@ -107,39 +107,36 @@ class CFDDataProcessor(DataProcessor):
 
     def preprocess(self, sample):
         # Turn a data dictionary returned by MeshDataModule's DictDataset
-        # into the form expected by the FNOGNO
+        # into the form expected by the GINO
         
-        in_p = sample['query_points'].squeeze(0).to(self.device)
-        out_p = sample['centroids'].squeeze(0).to(self.device)
-
-        f = sample['distance'].squeeze(0).to(self.device)
-
-        weights = sample['triangle_areas'].squeeze(0).to(self.device)
+        # input geometry: just vertices
+        in_p = sample['vertices'].squeeze(0).to(self.device)
+        latent_queries = sample['query_points'].squeeze(0).to(self.device)
+        out_p = sample['vertices'].squeeze(0).to(self.device)
+        f = sample['distance'].to(self.device)
 
         #Output data
         truth = sample['press'].squeeze(0).unsqueeze(-1)
 
         # Take the first 3682 vertices of the output mesh to correspond to pressure
+        # if there are less than 3682 vertices, take the maximum number of truth points
         output_vertices = truth.shape[1]
         if out_p.shape[0] > output_vertices:
             out_p = out_p[:output_vertices,:]
+        elif out_p.shape[0] < output_vertices:
+            truth = truth[:, out_p.shape[0], ...]
 
         truth = truth.to(device)
 
-        inward_normals = -sample['triangle_normals'].squeeze(0).to(self.device)
-        flow_normals = torch.zeros((sample['triangle_areas'].shape[1], 3)).to(self.device)
-        flow_normals[:,0] = -1.0
-        batch_dict = dict(in_p = in_p,
-                        out_p=out_p,
-                        f=f,
-                        y=truth,
-                        inward_normals=inward_normals,
-                        flow_normals=flow_normals,
-                        flow_speed=None,
-                        vol_elm=weights,
-                        reference_area=None)
+        batch_dict = dict(input_geom=in_p,
+                          latent_queries=latent_queries,
+                          output_queries=out_p,
+                          latent_features=f,
+                          y=truth,
+                          x=None)
 
         sample.update(batch_dict)
+
         return sample
     
     def postprocess(self, out, sample):
@@ -164,7 +161,7 @@ class CFDDataProcessor(DataProcessor):
         return out, sample
 
 output_encoder = deepcopy(data_module.normalizers['press']).to(device)
-data_processor = CFDDataProcessor(normalizer=output_encoder, device=device)
+data_processor = GINOCFDDataProcessor(normalizer=output_encoder, device=device)
 
 trainer = Trainer(model=model, 
                   n_epochs=config.opt.n_epochs,
@@ -179,7 +176,7 @@ if config.wandb.log:
 
 trainer.train(
               train_loader=train_loader,
-              test_loaders={'':test_loader},
+              test_loaders={'test':test_loader},
               optimizer=optimizer,
               scheduler=scheduler,
               training_loss=train_loss_fn,
