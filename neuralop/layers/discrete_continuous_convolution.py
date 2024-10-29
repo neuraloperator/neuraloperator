@@ -1,3 +1,4 @@
+import abc
 import math
 import numpy
 
@@ -10,7 +11,6 @@ from functools import partial
 # import the base class from torch-harmonics
 from torch_harmonics.quadrature import _precompute_grid
 from torch_harmonics.convolution import _compute_support_vals_isotropic, _compute_support_vals_anisotropic
-from torch_harmonics.convolution import DiscreteContinuousConv
 
 
 def _normalize_convolution_tensor_2d(psi_idx,
@@ -120,6 +120,80 @@ def _precompute_convolution_tensor_2d(grid_in,
 
     return idx, vals
 
+class DiscreteContinuousConv(nn.Module, metaclass=abc.ABCMeta):
+    """
+    Abstract base class for DISCO convolutions, reproduced with permission
+    from ``torch_harmonics.convolution``. If you use DISCO convs, please cite
+    [1]_ and [2]_.
+
+    Parameters
+    ----------
+    in_channels : int
+        number of input channels
+    out_channels : int
+        number of output channels
+    kernel_shape : int or [int, int]
+        shape of convolution kernel
+        
+        * If a single int is passed, kernel will isotropic
+
+        * If a list of two nonequal ints are passed, kernel will be anisotropic.
+    groups : int, optional
+        number of groups in the convolution, default 1
+    bias : bool, optional
+        whether to create a separate bias parameter, default True
+    
+    References
+    ----------
+    .. [1] : Bonev B., Kurth T., Hundt C., Pathak J., Baust M., Kashinath K., Anandkumar A.
+        Spherical Neural Operators: Learning Stable Dynamics on the Sphere; arxiv:2306.03838
+
+    .. [2] : Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.
+        Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_shape: Union[int, List[int]],
+        groups: Optional[int] = 1,
+        bias: Optional[bool] = True,
+    ):
+        super().__init__()
+
+        if isinstance(kernel_shape, int):
+            self.kernel_shape = [kernel_shape]
+        else:
+            self.kernel_shape = kernel_shape
+
+        if len(self.kernel_shape) == 1:
+            self.kernel_size = self.kernel_shape[0]
+        elif len(self.kernel_shape) == 2:
+            self.kernel_size = (self.kernel_shape[0] - 1) * self.kernel_shape[1] + 1
+        else:
+            raise ValueError("kernel_shape should be either one- or two-dimensional.")
+
+        # groups
+        self.groups = groups
+
+        # weight tensor
+        if in_channels % self.groups != 0:
+            raise ValueError("Error, the number of input channels has to be an integer multiple of the group size")
+        if out_channels % self.groups != 0:
+            raise ValueError("Error, the number of output channels has to be an integer multiple of the group size")
+        self.groupsize = in_channels // self.groups
+        scale = math.sqrt(1.0 / self.groupsize)
+        self.weight = nn.Parameter(scale * torch.randn(out_channels, self.groupsize, self.kernel_size))
+
+        if bias:
+            self.bias = nn.Parameter(torch.zeros(out_channels))
+        else:
+            self.bias = None
+
+    @abc.abstractmethod
+    def forward(self, x: torch.Tensor):
+        raise NotImplementedError
 
 class DiscreteContinuousConv2d(DiscreteContinuousConv):
     """
