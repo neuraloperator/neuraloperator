@@ -220,7 +220,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         Can also pass a string to generate a regular (tensor) grid.
         For exact options see ``torch_harmonics.quadrature``.
     kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a signle integer for isotropic
+        kernel shape. Expects either a single integer for isotropic
         kernels or two integers for anisotropic kernels
     n_in: Tuple[int], optional
         number of input points
@@ -229,13 +229,13 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
     quad_weights: torch.Tensor, optional
         quadrature weights on the input grid
     periodic: bool, optional
-        whether the domain is periodic
+        whether the domain is periodic, by default False
     groups: int, optional
-        number of groups in the convolution
+        number of groups in the convolution, by default 1
     bias: bool, optional
-        whether to use a bias
+        whether to use a bias, by default True
     radius_cutoff: float, optional
-        cutoff radius for the kernel
+        cutoff radius for the kernel, by default None
 
     References
     ----------
@@ -388,7 +388,7 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         Can also pass a string to generate a regular (tensor) grid.
         For exact options see ``torch_harmonics.quadrature``.
     kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a signle integer for isotropic kernels or two integers for anisotropic kernels
+        kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
     n_in: Tuple[int], optional
         number of input points
     n_out: Tuple[int], optional
@@ -396,13 +396,13 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     quad_weights: torch.Tensor, optional
         quadrature weights on the input grid
     periodic: bool, optional
-        whether the domain is periodic
+        whether the domain is periodic, by default False
     groups: int, optional
-        number of groups in the convolution
+        number of groups in the convolution, by default 1
     bias: bool, optional
-        whether to use a bias
+        whether to use a bias, by default True
     radius_cutoff: float, optional
-        cutoff radius for the kernel
+        cutoff radius for the kernel, by default None
 
     References
     ----------
@@ -549,19 +549,22 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
     in_shape: Tuple[int]
         shape of the (regular) input grid.
     out_shape: torch.Tensor or str
-        shape of the (regular) output grid.
+        shape of the (regular) output grid. Note that the side lengths
+        of out_shape must be greater than or equal to the side lengths
+        of in_shape, and must be integer multiples of the corresponding
+        in_shape side lengths.
     kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a signle integer for isotropic kernels or two integers for anisotropic kernels
+        kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
     domain_length: torch.Tensor, optional
         extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
     periodic: bool, optional
-        whether the domain is periodic
+        whether the domain is periodic, by default False
     groups: int, optional
-        number of groups in the convolution
+        number of groups in the convolution, by default 1
     bias: bool, optional
-        whether to use a bias
+        whether to use a bias, by default True
     radius_cutoff: float, optional
-        cutoff radius for the kernel
+        cutoff radius for the kernel, by default None
 
     References
     ----------
@@ -689,19 +692,22 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     in_shape: Tuple[int]
         shape of the (regular) input grid.
     out_shape: torch.Tensor or str
-        shape of the (regular) output grid.
+        shape of the (regular) output grid. Note that the side lengths
+        of out_shape must be greater than or equal to the side lengths
+        of in_shape, and must be integer multiples of the corresponding
+        in_shape side lengths.
     kernel_shape: Union[int, List[int]]
         kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
     domain_length: torch.Tensor, optional
         extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
     periodic: bool, optional
-        whether the domain is periodic
+        whether the domain is periodic, by default False
     groups: int, optional
-        number of groups in the convolution
+        number of groups in the convolution, by default 1
     bias: bool, optional
-        whether to use a bias
+        whether to use a bias, by default True
     radius_cutoff: float, optional
-        cutoff radius for the kernel
+        cutoff radius for the kernel, by default None
 
     References
     ----------
