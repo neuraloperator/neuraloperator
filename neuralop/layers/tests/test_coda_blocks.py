@@ -3,8 +3,8 @@ import torch
 from ..coda_blocks import *
 from ..spectral_convolution import *
 
-#device = 'cuda' if torch.backends.cuda.is_built() else 'cpu'
-device = 'cpu'
+device = 'cuda' if torch.backends.cuda.is_built() else 'cpu'
+#device = 'cpu'
 
 @pytest.mark.parametrize('token_codimension', [1, 2, 5])
 @pytest.mark.parametrize('n_dim', [2, 3])
