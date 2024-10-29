@@ -12,7 +12,8 @@ from .spectral_convolution import SpectralConv
 einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 class CODABlocks(nn.Module):
-    """Class for the Co-domain Attention Blocks (CODABlocks).
+    """Co-domain Attention Blocks (CODABlocks) implement the transformer
+    architecture in the operator learning framework. 
 
     Parameters
     ----------
@@ -21,43 +22,20 @@ class CODABlocks(nn.Module):
     n_heads : int
         Number of heads for the attention mechanism.
     token_codimension : int
-        Co-dimension of each variable or number of channels associated with each variable.
-    output_scaling_factor : float
-        Scaling factor for the output.
-    incremental_n_modes : list
-        Incremental number of modes for each dimension (for incremental training).
+        Co-dimension of each variable, i.e. number of
+        output channels associated with each variable.
     head_codimension : int
         Co-dimension of each output token for each head.
-    use_channel_mlp : bool, optional
-        Whether to use MLP layers to parameterize skip connections. Default is False.
-    non_linearity : callable
-        Non-linearity function to be used.
-    preactivation : bool, optional
-        Whether to use preactivation. Default is False.
-    fno_skip : str, optional
-        Type of skip connection to be used. Default is 'linear'.
-    mlp_skip : str, optional
-        Module to use for ChannelMLP skip connections. Default is "soft-gating".
-    channel_mlp_expansion : float, optional
-        Expansion parameter for self.channel_mlp. Default is 0.5.
-    separable : bool, optional
-        Whether to use separable convolutions. Default is False.
-    factorization : str, optional
-        Type of factorization to be used. Default is 'tucker'.
-    rank : float, optional
-        Rank of the factorization. Default is 1.0.
-    spectral_convolution : callable
-        Spectral convolution module to be used.
-    joint_factorization : bool, optional
-        Whether to factorize all spectralConv weights as one tensor. Default is False.
-    Normalizer : callable
-        Normalization module to be used.
     codimension_size : int
         Size of the codimension for the whole function. Only used for permutation_eq = False.
     per_channel_attention : bool, optional
         Whether to use per-channel attention. Default is True (overwrites token_codimension to 1).
     permutation_eq : bool, optional
         Whether to use permutation equivariant mixer layer after the attention mechanism.
+    norm : literal `{'instance_norm'}` or None
+        Normalization module to be used. If 'instance_norm', instance normalization
+        is applied to the token outputs of the attention module.
+        Defaults to `'instance_norm'`
     temperature : float
         Temperature parameter for the attention mechanism.
     nonlinear_attention : bool, optional
@@ -65,37 +43,65 @@ class CODABlocks(nn.Module):
     scale : int
         Scale for downsampling Q, K functions before calculating the attention matrix.
         Higher scale will downsample more.
+    output_scaling_factor : float
+        Scaling factor for the output.
+    
+    Other Parameters
+    ----------------
+    incremental_n_modes : list
+        Incremental number of modes for each dimension (for incremental training).
+    use_channel_mlp : bool, optional
+        Whether to use MLP layers to parameterize skip connections. Default is True.
+    channel_mlp_expansion : float, optional
+        Expansion parameter for self.channel_mlp. Default is 0.5.
+    non_linearity : callable
+        Non-linearity function to be used.
+    preactivation : bool, optional
+        Whether to use preactivation. Default is False.
+    fno_skip : str, optional
+        Type of skip connection to be used. Default is 'linear'.
+    channel_mlp_skip : str, optional
+        Module to use for ChannelMLP skip connections. Default is "linear".
+    separable : bool, optional
+        Whether to use separable convolutions. Default is False.
+    factorization : str, optional
+        Type of factorization to be used. Default is 'tucker'.
+    rank : float, optional
+        Rank of the factorization. Default is 1.0.
+    conv_module : callable
+        Spectral convolution module to be used.
+    joint_factorization : bool, optional
+        Whether to factorize all spectralConv weights as one tensor. Default is False.
     """
     def __init__(
         self,
         n_modes,
         n_heads=1,
         token_codimension=1,
-        output_scaling_factor=None,
-        incremental_n_modes=None,
         head_codimension=None,
-        use_channel_mlp=False,
-        non_linearity=F.gelu,
-        preactivation=False,
-        fno_skip='linear',
-        channel_mlp_skip='linear',
-        channel_mlp_expansion=1.0,
-        separable=False,
-        factorization='tucker',
-        rank=1.0,
-        spectral_convolution=None,
-        norm="instance_norm",
-        joint_factorization=False,
-        fixed_rank_modes=False,
-        implementation='factorized',
-        decomposition_kwargs=None,
-        fft_norm='forward',
         codimension_size=None,
         per_channel_attention=True,
         permutation_eq=True,
+        norm="instance_norm",
         temperature=1.0,
         nonlinear_attention=False,
         scale=None,
+        output_scaling_factor=None,
+        incremental_n_modes=None,
+        non_linearity=F.gelu,
+        use_channel_mlp=True,
+        channel_mlp_expansion=1.0,
+        fno_skip='linear',
+        channel_mlp_skip='linear',
+        preactivation=False,
+        separable=False,
+        factorization='tucker',
+        rank=1.0,
+        joint_factorization=False,
+        conv_module=SpectralConv,
+        fixed_rank_modes=False,
+        implementation='factorized',
+        decomposition_kwargs=None,
         **_kwargs,
     ):
         super().__init__()
@@ -111,21 +117,18 @@ class CODABlocks(nn.Module):
         self.n_heads = n_heads  # number of heads
         self.output_scaling_factor = output_scaling_factor
         self.temperature = temperature
-        self.num_dims = len(n_modes)
+        self.n_dim = len(n_modes)
 
         if norm is None:
-            Normalizer = torch.nn.Identity
+            norm_module = torch.nn.Identity
         elif norm == "instance_norm":
-            Normalizer = partial(
+            norm_module = partial(
                 nn.InstanceNorm2d,
-                affine=True) if self.num_dims == 2 else partial(
+                affine=True) if self.n_dim == 2 else partial(
                 nn.InstanceNorm3d,
                 affine=True)
         else:
             raise ValueError(f"Unknown normalization type {norm}")
-
-        if spectral_convolution is None:
-            spectral_convolution = SpectralConv
 
         # K,Q,V operator with or without non_liniarity
         if nonlinear_attention:
@@ -159,7 +162,6 @@ class CODABlocks(nn.Module):
             mlp_dropout=0,
             incremental_n_modes=incremental_n_modes,
             rank=rank,
-            fft_norm=fft_norm,
             channel_mlp_expansion=channel_mlp_expansion,
             fixed_rank_modes=fixed_rank_modes,
             implementation=implementation,
@@ -182,19 +184,19 @@ class CODABlocks(nn.Module):
         )
         self.Key = FNOBlocks(
             output_scaling_factor=1 / scale,
-            conv_module=spectral_convolution,
+            conv_module=conv_module,
             **kqv_args,
             **common_args,
         )
         self.Query = FNOBlocks(
             output_scaling_factor=1 / scale,
-            conv_module=spectral_convolution,
+            conv_module=conv_module,
             **kqv_args,
             **common_args,
         )
         self.Value = FNOBlocks(
             output_scaling_factor=1,
-            conv_module=spectral_convolution,
+            conv_module=conv_module,
             **kqv_args,
             **common_args,
         )
@@ -210,14 +212,14 @@ class CODABlocks(nn.Module):
                 non_linearity=torch.nn.Identity(),
                 fno_skip='linear',
                 norm=None,
-                conv_module=spectral_convolution,
+                conv_module=conv_module,
                 n_layers=1,
                 **common_args,
             )
         else:
             self.multi_head_proj = None
 
-        self.attention_normalizer = Normalizer(self.token_codimension)
+        self.attention_normalizer = norm_module(self.token_codimension)
 
         mixer_args = dict(
             n_modes=n_modes,
@@ -225,7 +227,7 @@ class CODABlocks(nn.Module):
             non_linearity=non_linearity,
             norm='instance_norm',
             fno_skip=fno_skip,
-            conv_module=spectral_convolution,
+            conv_module=conv_module,
         )
         # We have an option to make the last operator (MLP in regular
         # Transformer block) permutation equivariant. i.e., applying the
@@ -240,9 +242,9 @@ class CODABlocks(nn.Module):
                 **mixer_args,
                 **common_args,
             )
-            self.norm1 = Normalizer(self.token_codimension)
-            self.norm2 = Normalizer(self.mixer_token_codimension)
-            self.mixer_out_normalizer = Normalizer(
+            self.norm1 = norm_module(self.token_codimension)
+            self.norm2 = norm_module(self.mixer_token_codimension)
+            self.mixer_out_normalizer = norm_module(
                 self.mixer_token_codimension)
 
         else:
@@ -253,9 +255,9 @@ class CODABlocks(nn.Module):
                 **mixer_args,
                 **common_args,
             )
-            self.norm1 = Normalizer(codimension_size)
-            self.norm2 = Normalizer(codimension_size)
-            self.mixer_out_normalizer = Normalizer(codimension_size)
+            self.norm1 = norm_module(codimension_size)
+            self.norm2 = norm_module(codimension_size)
+            self.mixer_out_normalizer = norm_module(codimension_size)
 
     def compute_attention(self, tokens, batch_size):
         """
@@ -287,9 +289,9 @@ class CODABlocks(nn.Module):
         d = k.size(1) // self.n_heads
 
         # reshape from (b*t) (n*d) h w ... to b n t d h w ...
-        k = k.view(batch_size, t, self.n_heads, d, *k.shape[-self.num_dims:])
-        q = q.view(batch_size, t, self.n_heads, d, *q.shape[-self.num_dims:])
-        v = v.view(batch_size, t, self.n_heads, d, *v.shape[-self.num_dims:])
+        k = k.view(batch_size, t, self.n_heads, d, *k.shape[-self.n_dim:])
+        q = q.view(batch_size, t, self.n_heads, d, *q.shape[-self.n_dim:])
+        v = v.view(batch_size, t, self.n_heads, d, *v.shape[-self.n_dim:])
 
         k = torch.transpose(k, 1, 2)
         q = torch.transpose(q, 1, 2)
@@ -312,11 +314,11 @@ class CODABlocks(nn.Module):
             attention.size(1),
             attention.size(2),
             d,
-            *tokens.shape[-self.num_dims:])
+            *tokens.shape[-self.n_dim:])
         attention = torch.transpose(attention, 1, 2)
-        attention = attention.view(attention.size(0) * attention.size(1),
+        attention = attention.reshape(attention.size(0) * attention.size(1),
                                    attention.size(2) * attention.size(3),
-                                   *attention.shape[-self.num_dims:]) 
+                                   *attention.shape[-self.n_dim:]) 
 
         return attention
 
@@ -339,7 +341,7 @@ class CODABlocks(nn.Module):
             and d is the token codimension.
         """
         batch_size = x.shape[0]
-        output_shape = x.shape[-self.num_dims:]
+        output_shape = x.shape[-self.n_dim:]
 
         assert x.shape[1] % self.token_codimension == 0, "Number of channels in x should be divisible by token_codimension"
 
@@ -348,7 +350,7 @@ class CODABlocks(nn.Module):
         tokens = x.view(
             x.size(0) * t,
             self.token_codimension,
-            *x.shape[-self.num_dims:])
+            *x.shape[-self.n_dim:])
 
         # normalization and attention mechanism
         tokens_norm = self.norm1(tokens)
@@ -365,7 +367,7 @@ class CODABlocks(nn.Module):
         output = output.view(
             batch_size,
             t * output.size(1),
-            *output.shape[-self.num_dims:])
+            *output.shape[-self.n_dim:])
 
         return output
 
@@ -380,7 +382,7 @@ class CODABlocks(nn.Module):
         """
 
         batch_size = x.shape[0]
-        output_shape = x.shape[-self.num_dims:]
+        output_shape = x.shape[-self.n_dim:]
 
         assert x.shape[1] % self.token_codimension == 0, "Number of channels in x should be divisible by token_codimension"
 
@@ -391,7 +393,7 @@ class CODABlocks(nn.Module):
         tokens = tokens.view(
             x.size(0) * t,
             self.token_codimension,
-            *x.shape[-self.num_dims:])
+            *x.shape[-self.n_dim:])
 
         # apply attention mechanism
         attention = self.compute_attention(tokens, batch_size)
@@ -405,7 +407,7 @@ class CODABlocks(nn.Module):
         attention = attention.view(
             batch_size,
             t * attention.size(2),
-            *attention.shape[-self.num_dims:])
+            *attention.shape[-self.n_dim:])
 
         attention_normalized = self.norm2(attention)
         output = self.mixer(attention_normalized, output_shape=output_shape)
