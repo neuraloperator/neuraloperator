@@ -211,12 +211,17 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         input channels to DISCO convolution
     out_channels: int
         output channels of DISCO convolution
-    grid_in: torch.Tensor or str
-        input grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
-    grid_out: torch.Tensor or str
-        output grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
+    grid_in: torch.Tensor or literal ``{'equidistant', 'legendre-gauss', 'equiangular', 'lobatto'}``
+        input grid in the form of a point cloud of shape (n_in, 2).
+        Can also pass a string to generate a regular (tensor) grid.
+        For exact options see ``torch_harmonics.quadrature``.
+    grid_out: torch.Tensor or literal ``{'equidistant', 'legendre-gauss', 'equiangular', 'lobatto'}``
+        output grid in the form of a point cloud (n_out, 2).
+        Can also pass a string to generate a regular (tensor) grid.
+        For exact options see ``torch_harmonics.quadrature``.
     kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a signle integer for isotropic kernels or two integers for anisotropic kernels
+        kernel shape. Expects either a signle integer for isotropic
+        kernels or two integers for anisotropic kernels
     n_in: Tuple[int], optional
         number of input points
     n_out: Tuple[int], optional
@@ -374,10 +379,14 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         input channels to DISCO convolution
     out_channels: int
         output channels of DISCO convolution
-    grid_in: torch.Tensor or str
-        input grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
-    grid_out: torch.Tensor or str
-        output grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
+    grid_in: torch.Tensor or literal ``{'equidistant', 'legendre-gauss', 'equiangular', 'lobatto'}``
+        input grid in the form of a point cloud of shape (n_in, 2).
+        Can also pass a string to generate a regular (tensor) grid.
+        For exact options see ``torch_harmonics.quadrature``.
+    grid_out: torch.Tensor or literal ``{'equidistant', 'legendre-gauss', 'equiangular', 'lobatto'}``
+        output grid in the form of a point cloud (n_out, 2).
+        Can also pass a string to generate a regular (tensor) grid.
+        For exact options see ``torch_harmonics.quadrature``.
     kernel_shape: Union[int, List[int]]
         kernel shape. Expects either a signle integer for isotropic kernels or two integers for anisotropic kernels
     n_in: Tuple[int], optional
@@ -482,7 +491,11 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
 
     def get_psi(self):
         """
-        Returns Psi
+        Returns the precomputed local convolution filter matrix Psi.
+        Psi parameterizes the kernel function as triangular basis functions 
+        evaluated on pairs of points on the convolution's input and output grids,
+        such that Psi[l, i, j] is the l-th basis function evaluated on point i in
+        the output grid and point j in the input grid.
         """
 
         psi = torch.sparse_coo_tensor(self.psi_idx, self.psi_vals, size=(self.kernel_size * self.n_out, self.n_in))
