@@ -3,13 +3,15 @@ import sys
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from pathlib import Path
 import torch
-from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import DataLoader, DistributedSampler
+import torch.distributed as dist
 import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
 from neuralop.data.datasets.navier_stokes import load_navier_stokes_pt
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.utils import get_wandb_api_key, count_model_params
+from neuralop.mpu.comm import get_local_rank
 from neuralop.training import setup, AdamW
 
 
@@ -29,7 +31,6 @@ config_name = pipe.steps[-1].config_name
 
 # Set-up distributed communication, if using
 device, is_logger = setup(config)
-
 # Set up WandB logging
 wandb_init_args = None
 if config.wandb.log and is_logger:
@@ -43,12 +44,11 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.fno2d.n_layers,
-                config.fno2d.n_modes_width,
-                config.fno2d.n_modes_height,
-                config.fno2d.hidden_channels,
-                config.fno2d.factorization,
-                config.fno2d.rank,
+                config.fno.n_layers,
+                config.fno.n_modes,
+                config.fno.hidden_channels,
+                config.fno.factorization,
+                config.fno.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
@@ -88,23 +88,37 @@ train_loader, test_loaders, data_processor = load_navier_stokes_pt(
     encode_output=config.data.encode_output,
 )
 
+model = get_model(config)
+model = model.to(device)
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:
-    data_processor = MGPatchingDataProcessor(in_normalizer=data_processor.in_normalizer,
+    data_processor = MGPatchingDataProcessor(model=model,
+                                             in_normalizer=data_processor.in_normalizer,
                                              out_normalizer=data_processor.out_normalizer,
                                              padding_fraction=config.patching.padding,
                                              stitching=config.patching.stitching,
-                                             levels=config.patching.levels)
-
+                                             levels=config.patching.levels,
+                                             use_distributed=config.distributed.use_distributed)
 data_processor = data_processor.to(device)
-model = get_model(config)
-model = model.to(device)
 
 # Use distributed data parallel
+
+# Reconfigure DataLoaders to use a DistributedSampler 
+# if in distributed data parallel mode
 if config.distributed.use_distributed:
-    model = DDP(
-        model, device_ids=[device.index], output_device=device.index, static_graph=True
-    )
+    train_db = train_loader.dataset
+    train_sampler = DistributedSampler(train_db, rank=get_local_rank())
+    train_loader = DataLoader(dataset=train_db,
+                              batch_size=config.data.batch_size,
+                              sampler=train_sampler)
+    for (res, loader), batch_size in zip(test_loaders.items(), config.data.test_batch_sizes):
+        
+        test_db = loader.dataset
+        test_sampler = DistributedSampler(test_db, rank=get_local_rank())
+        test_loaders[res] = DataLoader(dataset=test_db,
+                              batch_size=batch_size,
+                              shuffle=False,
+                              sampler=test_sampler)
 
 # Create the optimizer
 optimizer = AdamW(
@@ -200,3 +214,6 @@ trainer.train(
 
 if config.wandb.log and is_logger:
     wandb.finish()
+
+if dist.is_initialized():
+    dist.destroy_process_group()

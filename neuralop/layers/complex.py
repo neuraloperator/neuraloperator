@@ -11,10 +11,22 @@ import torch.nn.functional as F
 
 def CGELU(x: torch.Tensor):
     """Complex GELU activation function
-    Follows the formulation of CReLU from Deep Complex Networks (https://openreview.net/pdf?id=H1T2hmZAb)
-    apply GELU is real and imag part of the input separately, then combine as complex number
-    Args:
-        x: complex tensor
+    Follows the formulation of CReLU from [1]_.
+    Applies GELU to real and imaginary parts of the input 
+    separately, then combine as complex number
+
+
+    Parameters
+    -----------
+    x : torch.tensor (dtype=complex)
+        pre-activation inputs
+    
+    References
+    ----------
+    .. [1] : 
+
+    Trabelsi, C., et al. (2018). "Deep Complex Networks". 
+        ICLR 2018, https://openreview.net/pdf?id=H1T2hmZAb. 
     """
 
     return F.gelu(x.real).type(torch.cfloat) + 1j * F.gelu(x.imag).type(
