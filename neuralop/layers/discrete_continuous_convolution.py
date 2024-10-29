@@ -550,8 +550,8 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         shape of the (regular) input grid.
     out_shape: torch.Tensor or str
         shape of the (regular) output grid. Note that the side lengths
-        of out_shape must be greater than or equal to the side lengths
-        of in_shape, and must be integer multiples of the corresponding
+        of out_shape must be less than or equal to the side lengths
+        of in_shape, and must be integer divisions of the corresponding
         in_shape side lengths.
     kernel_shape: Union[int, List[int]]
         kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
