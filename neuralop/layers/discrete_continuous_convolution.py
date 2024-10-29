@@ -142,7 +142,8 @@ class DiscreteContinuousConv(nn.Module, metaclass=abc.ABCMeta):
         number of groups in the convolution, default 1
     bias : bool, optional
         whether to create a separate bias parameter, default True
-    
+    transpose : bool, optional
+        whether conv is a transpose conv, default False
     References
     ----------
     .. [1] : Bonev B., Kurth T., Hundt C., Pathak J., Baust M., Kashinath K., Anandkumar A.
@@ -159,6 +160,7 @@ class DiscreteContinuousConv(nn.Module, metaclass=abc.ABCMeta):
         kernel_shape: Union[int, List[int]],
         groups: Optional[int] = 1,
         bias: Optional[bool] = True,
+        transpose: bool = False
     ):
         super().__init__()
 
@@ -182,9 +184,18 @@ class DiscreteContinuousConv(nn.Module, metaclass=abc.ABCMeta):
             raise ValueError("Error, the number of input channels has to be an integer multiple of the group size")
         if out_channels % self.groups != 0:
             raise ValueError("Error, the number of output channels has to be an integer multiple of the group size")
-        self.groupsize = in_channels // self.groups
+        
+        if transpose:
+            self.groupsize = out_channels // self.groups
+        else:
+            self.groupsize = in_channels // self.groups
+        
         scale = math.sqrt(1.0 / self.groupsize)
-        self.weight = nn.Parameter(scale * torch.randn(out_channels, self.groupsize, self.kernel_size))
+        
+        if transpose:
+            self.weight = nn.Parameter(scale * torch.randn(in_channels, self.groupsize, self.kernel_size))
+        else:
+            self.weight = nn.Parameter(scale * torch.randn(out_channels, self.groupsize, self.kernel_size))
 
         if bias:
             self.bias = nn.Parameter(torch.zeros(out_channels))
@@ -261,7 +272,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         bias: Optional[bool] = True,
         radius_cutoff: Optional[float] = None,
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
+        super().__init__(in_channels, out_channels, kernel_shape, groups, bias, transpose=False)
 
         # the instantiator supports convenience constructors for the input and output grids
         if isinstance(grid_in, torch.Tensor):
@@ -586,7 +597,7 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         radius_cutoff: Optional[float] = None,
         **kwargs
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
+        super().__init__(in_channels, out_channels, kernel_shape, groups, bias, transpose=False)
 
         # to ensure compatibility with the unstructured code, only constant zero and periodic padding are supported currently
         self.padding_mode = "circular" if periodic else "zeros"
@@ -660,7 +671,6 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         """
 
         kernel = torch.einsum("kxy,ogk->ogxy", self.get_psi(), self.weight)
-
         # padding is rounded down to give the right result when even kernels are applied
         # Check https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html for output shape math
         h_pad = (self.psi_local_h+1) // 2 - 1
@@ -729,7 +739,7 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         radius_cutoff: Optional[float] = None,
         **kwargs
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
+        super().__init__(in_channels, out_channels, kernel_shape, groups, bias, transpose=True)
 
         # to ensure compatibility with the unstructured code, only constant zero and periodic padding are supported currently
         self.padding_mode = "circular" if periodic else "zeros"
@@ -812,6 +822,8 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         h_pad_out = self.scale_h - (self.psi_local_h // 2 - h_pad) - 1
         w_pad_out = self.scale_w - (self.psi_local_w // 2 - w_pad) - 1
 
+        print(f"{kernel.shape=}")
+        print(f"{x.shape=}")
         out = nn.functional.conv_transpose2d(self.q_weight * x, kernel, self.bias, stride=[self.scale_h, self.scale_w], dilation=[1,1], padding=[h_pad, w_pad], output_padding=[h_pad_out, w_pad_out], groups=self.groups)
 
         return out

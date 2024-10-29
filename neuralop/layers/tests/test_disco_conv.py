@@ -9,16 +9,16 @@ from ..embeddings import regular_grid_2d
 
 # global params
 batch_size = 4
-in_channels = 3
-out_channels = 1
+in_channels = 6
+out_channels = 2
 side_length_in = 64
 side_length_out = 48
 
 device = "cuda" if torch.backends.cuda.is_built() else "cpu"
 
-@pytest.mark.parametrize('conv_type', [DiscreteContinuousConv2d,
-                                       DiscreteContinuousConvTranspose2d])
-def test_regular_disco_conv2d(conv_type):
+@pytest.mark.parametrize('conv_type', [DiscreteContinuousConv2d, DiscreteContinuousConvTranspose2d])
+@pytest.mark.parametrize('groups', [1,3])
+def test_regular_disco_conv2d(conv_type, groups):
     # create regular grids of in and output coords
     grid_in = torch.stack(regular_grid_2d(spatial_dims=[side_length_in, side_length_in]))
     grid_out = torch.stack(regular_grid_2d(spatial_dims=[side_length_out, side_length_out]))
@@ -36,7 +36,8 @@ def test_regular_disco_conv2d(conv_type):
         grid_in=grid_in,
         grid_out=grid_out,
         kernel_shape=3,
-        quad_weights=quad_weights
+        quad_weights=quad_weights,
+        groups=groups
     )
 
     # start with a grid, pass to forward as a point cloud
@@ -48,7 +49,8 @@ def test_regular_disco_conv2d(conv_type):
 
 @pytest.mark.parametrize('conv_type', [EquidistantDiscreteContinuousConv2d,
                                        EquidistantDiscreteContinuousConvTranspose2d])
-def test_equidistant_disco_conv2d(conv_type):
+@pytest.mark.parametrize('groups', [1,2])
+def test_equidistant_disco_conv2d(conv_type, groups):
 
     in_shape = (side_length_in, side_length_in)
     if conv_type == EquidistantDiscreteContinuousConv2d:
@@ -62,6 +64,7 @@ def test_equidistant_disco_conv2d(conv_type):
         in_shape=in_shape,
         out_shape=out_shape,
         kernel_shape=3,
+        groups=groups
     )
 
     # start with a grid, pass to forward as a grid
