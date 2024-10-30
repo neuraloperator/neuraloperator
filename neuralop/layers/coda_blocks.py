@@ -306,18 +306,12 @@ class CODABlocks(nn.Module):
 
         attention = torch.matmul(dprod, v)
 
-        # Reshape from (b, n, t, d * h * w) to (b, n, t, d, h, w, ...)
-        attention = attention.view(
-            attention.size(0),
-            attention.size(1),
-            attention.size(2),
-            d,
-            *tokens.shape[-self.num_dims:])
-        attention = torch.transpose(attention, 1, 2)
+        # Reshape from (b, n, t, d * h * w...) to ((b*t), (n*d), h, w, ...)
+        attention = attention.transpose(1, 2)
         attention = attention.view(attention.size(0) * attention.size(1),
-                                   attention.size(2) * attention.size(3),
-                                   *attention.shape[-self.num_dims:]) 
-
+                                      attention.size(2) * d,
+                                      *tokens.shape[-self.num_dims:])
+        
         return attention
 
     def forward(self, x):
