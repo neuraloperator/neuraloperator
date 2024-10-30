@@ -184,6 +184,20 @@ To support geometry-informed (GINO) models, we also offer the ability to integra
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+We also provide additional layers that implement standard deep learning architectures as neural operators.
+
+**Miscellaneous layers**
+
+.. automodule:: neuralop.layers.coda_blocks
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    CODABlocks
+
 **Embeddings**
 
 Apply positional embeddings as additional channels on a function:
