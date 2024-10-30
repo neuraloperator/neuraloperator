@@ -317,8 +317,8 @@ class CODABlocks(nn.Module):
             *tokens.shape[-self.n_dim:])
         attention = torch.transpose(attention, 1, 2)
         attention = attention.reshape(attention.size(0) * attention.size(1),
-                                   attention.size(2) * attention.size(3),
-                                   *attention.shape[-self.n_dim:])
+                                      attention.size(2) * d,
+                                      *tokens.shape[-self.n_dim:])
 
         return attention
 
