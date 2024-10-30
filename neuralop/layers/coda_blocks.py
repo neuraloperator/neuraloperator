@@ -13,7 +13,7 @@ einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 class CODABlocks(nn.Module):
     """Co-domain Attention Blocks (CODABlocks) implement the transformer
-    architecture in the operator learning framework. 
+    architecture in the operator learning framework, as described in [1]_.
 
     Parameters
     ----------
@@ -72,6 +72,13 @@ class CODABlocks(nn.Module):
         Spectral convolution module to be used.
     joint_factorization : bool, optional
         Whether to factorize all spectralConv weights as one tensor. Default is False.
+    
+    References
+    ----------
+    .. [1]: M. Rahman, R. George, M. Elleithy, D. Leibovici, Z. Li, B. Bonev, 
+        C. White, J. Berner, R. Yeh, J. Kossaifi, K. Azizzadenesheli, A. Anandkumar (2024).
+        "Pretraining Codomain Attention Neural Operators for Solving Multiphysics PDEs."
+        arxiv:2403.12553
     """
     def __init__(
         self,
@@ -326,13 +333,20 @@ class CODABlocks(nn.Module):
         """
         CoDANO's forward pass. 
 
-        * If ``self.permutation_eq == True``, computes the permutation-equivariant
-        forward pass, where the mixer FNO block is applied to each token separately, making
-        the final result equivariant to any permutation of tokens.
+        * If ``self.permutation_eq == True``, computes the permutation-equivariant forward pass,\
+            where the mixer FNO block is applied to each token separately, making\
+            the final result equivariant to any permutation of tokens.
 
-        * If ``self.permutation_eq == True``, the mixer is applied to the whole function together,
-        and tokens are treated as channels within the same function.
+        * If ``self.permutation_eq == True``, the mixer is applied to the whole function together,\
+            and tokens are treated as channels within the same function.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor with shape (b, t * d, h, w, ...), where
+            b is the batch size, t is the number of tokens, and d is the token codimension.
         """
+
         if self.permutation_eq:
             return self._forward_equivariant(x)
         else:
