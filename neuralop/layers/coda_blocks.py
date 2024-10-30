@@ -296,7 +296,7 @@ class CODABlocks(nn.Module):
         k = torch.transpose(k, 1, 2)
         q = torch.transpose(q, 1, 2)
         v = torch.transpose(v, 1, 2)
-        # resahpe
+        # reshape
         k = k.view(batch_size, self.n_heads, t, -1)
         q = q.view(batch_size, self.n_heads, t, -1)
         v = v.view(batch_size, self.n_heads, t, -1)
@@ -323,22 +323,32 @@ class CODABlocks(nn.Module):
         return attention
 
     def forward(self, x):
+        """
+        CoDANO's forward pass. 
+
+        * If ``self.permutation_eq == True``, computes the permutation-equivariant
+        forward pass, where the mixer FNO block is applied to each token separately, making
+        the final result equivariant to any permutation of tokens.
+
+        * If ``self.permutation_eq == True``, the mixer is applied to the whole function together,
+        and tokens are treated as channels within the same function.
+        """
         if self.permutation_eq:
             return self._forward_equivariant(x)
         else:
             return self._forward_non_equivariant(x)
 
     def _forward_equivariant(self, x):
-        """Use permutation equivariant mixer layer after the attention mechanism. 
-        Shares the same mixer layer for all the variables.
+        """
+        Forward pass with a permutation equivariant mixer layer after the
+        attention mechanism. Shares the same mixer layer for all tokens, meaning
+        that outputs are equivariant to permutations of the tokens.
 
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor with shape (b, t * d, h, w, ...), where:
-            b is the batch size,
-            t is the number of tokens,
-            and d is the token codimension.
+            Input tensor with shape (b, t * d, h, w, ...), where
+            b is the batch size, t is the number of tokens, and d is the token codimension.
         """
         batch_size = x.shape[0]
         output_shape = x.shape[-self.n_dim:]
@@ -372,13 +382,16 @@ class CODABlocks(nn.Module):
         return output
 
     def _forward_non_equivariant(self, x):
-        """uses non-permuatation equivariant mixer
-        layer and normalizations.
+        """
+        Forward pass with a non-permuatation equivariant mixer layer and normalizations.
+        After attention, the tokens are stacked along the channel dimension before mixing,
+        meaning that the outputs are not equivariant to the ordering of the tokens.
+
         Parameters
         ----------
         x: torch.tensor. 
-        Has shape (b, t*d, h, w, ...) 
-        where, t = number of tokens, d = token codimension
+            Has shape (b, t*d, h, w, ...) 
+            where, t = number of tokens, d = token codimension
         """
 
         batch_size = x.shape[0]
