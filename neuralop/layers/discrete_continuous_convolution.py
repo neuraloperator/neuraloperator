@@ -436,7 +436,7 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         bias: Optional[bool] = True,
         radius_cutoff: Optional[float] = None,
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
+        super().__init__(in_channels, out_channels, kernel_shape, groups, bias, transpose=True)
 
         # the instantiator supports convenience constructors for the input and output grids
         if isinstance(grid_in, torch.Tensor):
@@ -524,15 +524,17 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
 
         # extract shape
         B, C, _ = x.shape
+        print(f"{x.shape=}")
 
         # bring x into the right shape for the bmm (batch_size x channels, n_in) and pre-apply psi to x
         x = x.reshape(B * C, self.n_in).permute(1, 0).contiguous()
         x = torch.mm(psi, x)
         x = x.permute(1, 0).reshape(B, C, self.kernel_size, self.n_out)
-        x = x.reshape(B, self.groups, self.groupsize, self.kernel_size, self.n_out)
 
         # do weight multiplication
-        out = torch.einsum("bgckx,gock->bgox", x, self.weight.reshape(self.groups, -1, self.weight.shape[1], self.weight.shape[2]))
+        # weight: shape in_c, out_c/groups, kernel shape
+        out = torch.einsum("bckx,cg->bgox", x, self.weight.reshape(self.groups, -1, self.weight.shape[1], self.weight.shape[2]))
+        #out = torch.einsum("bgckx,gock->bgox", x, self.weight.reshape(self.groups, -1, self.weight.shape[1], self.weight.shape[2]))
         out = out.reshape(out.shape[0], -1, out.shape[-1])
 
         if self.bias is not None:

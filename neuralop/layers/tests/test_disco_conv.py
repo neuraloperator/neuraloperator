@@ -10,7 +10,7 @@ from ..embeddings import regular_grid_2d
 # global params
 batch_size = 4
 in_channels = 6
-out_channels = 2
+out_channels = 3
 side_length_in = 64
 side_length_out = 48
 
@@ -49,7 +49,7 @@ def test_regular_disco_conv2d(conv_type, groups):
 
 @pytest.mark.parametrize('conv_type', [EquidistantDiscreteContinuousConv2d,
                                        EquidistantDiscreteContinuousConvTranspose2d])
-@pytest.mark.parametrize('groups', [1,2])
+@pytest.mark.parametrize('groups', [1,3])
 def test_equidistant_disco_conv2d(conv_type, groups):
 
     in_shape = (side_length_in, side_length_in)
