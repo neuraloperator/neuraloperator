@@ -249,7 +249,7 @@ class SpectralConv(BaseSpectralConv):
         bias=True,
         n_layers=1,
         separable=False,
-        output_scaling_factor: Optional[Union[Number, List[Number]]] = None,
+        resolution_scaling_factor: Optional[Union[Number, List[Number]]] = None,
         fno_block_precision="full",
         rank=0.5,
         factorization=None,
@@ -293,9 +293,9 @@ class SpectralConv(BaseSpectralConv):
         self.n_layers = n_layers
         self.implementation = implementation
 
-        self.output_scaling_factor: Union[
+        self.resolution_scaling_factor: Union[
             None, List[List[float]]
-        ] = validate_scaling_factor(output_scaling_factor, self.order, n_layers)
+        ] = validate_scaling_factor(resolution_scaling_factor, self.order, n_layers)
 
         if init_std == "auto":
             init_std = (2 / (in_channels + out_channels))**0.5
@@ -402,11 +402,11 @@ class SpectralConv(BaseSpectralConv):
     def transform(self, x, layer_index=0, output_shape=None):
         in_shape = list(x.shape[2:])
 
-        if self.output_scaling_factor is not None and output_shape is None:
+        if self.resolution_scaling_factor is not None and output_shape is None:
             out_shape = tuple(
                 [
                     round(s * r)
-                    for (s, r) in zip(in_shape, self.output_scaling_factor[layer_index])
+                    for (s, r) in zip(in_shape, self.resolution_scaling_factor[layer_index])
                 ]
             )
         elif output_shape is not None:
@@ -489,11 +489,11 @@ class SpectralConv(BaseSpectralConv):
                 separable=self.separable,
             )
 
-        if self.output_scaling_factor is not None and output_shape is None:
+        if self.resolution_scaling_factor is not None and output_shape is None:
             mode_sizes = tuple(
                 [
                     round(s * r)
-                    for (s, r) in zip(mode_sizes, self.output_scaling_factor[indices])
+                    for (s, r) in zip(mode_sizes, self.resolution_scaling_factor[indices])
                 ]
             )
 
@@ -576,8 +576,8 @@ class SpectralConv1d(SpectralConv):
             x[slices], self._get_weight(indices), separable=self.separable
         )
 
-        if self.output_scaling_factor is not None:
-            width = round(width * self.output_scaling_factor[0])
+        if self.resolution_scaling_factor is not None:
+            width = round(width * self.resolution_scaling_factor[0])
 
         x = torch.fft.irfft(out_fft, n=width, norm=self.fft_norm)
 
@@ -629,9 +629,9 @@ class SpectralConv2d(SpectralConv):
             x[slices1], self._get_weight(2 * indices + 1), separable=self.separable
         )
 
-        if self.output_scaling_factor is not None:
-            width = round(width * self.output_scaling_factor[indices][0])
-            height = round(height * self.output_scaling_factor[indices][1])
+        if self.resolution_scaling_factor is not None:
+            width = round(width * self.resolution_scaling_factor[indices][0])
+            height = round(height * self.resolution_scaling_factor[indices][1])
 
         x = torch.fft.irfft2(
             out_fft, s=(height, width), dim=(-2, -1), norm=self.fft_norm
@@ -710,10 +710,10 @@ class SpectralConv3d(SpectralConv):
             x[slices3], self._get_weight(4 * indices + 3), separable=self.separable
         )
 
-        if self.output_scaling_factor is not None:
-            width = round(width * self.output_scaling_factor[0])
-            height = round(height * self.output_scaling_factor[1])
-            depth = round(depth * self.output_scaling_factor[2])
+        if self.resolution_scaling_factor is not None:
+            width = round(width * self.resolution_scaling_factor[0])
+            height = round(height * self.resolution_scaling_factor[1])
+            depth = round(depth * self.resolution_scaling_factor[2])
 
         x = torch.fft.irfftn(out_fft, s=(height, width, depth), norm=self.fft_norm)
 

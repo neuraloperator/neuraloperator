@@ -1,7 +1,9 @@
 """
-Training a neural operator on Darcy-Flow - Author Robert Joseph George
-========================================
-In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package on Incremental FNO and Incremental Resolution
+Training an FNO with incremental meta-learning
+===============================================
+In this example, we demonstrate how to use the small Darcy-Flow 
+example we ship with the package to demonstrate the Incremental FNO
+meta-learning algorithm
 """
 
 # %%
@@ -13,6 +15,7 @@ import sys
 from neuralop.models import FNO
 from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
+from neuralop.training import AdamW
 from neuralop.training.incremental import IncrementalFNOTrainer
 from neuralop.data.transforms.data_processors import IncrementalDataProcessor
 from neuralop import LpLoss, H1Loss
@@ -56,7 +59,7 @@ n_params = count_model_params(model)
 
 # %%
 # Set up the optimizer and scheduler
-optimizer = torch.optim.Adam(model.parameters(), lr=8e-3, weight_decay=1e-4)
+optimizer = AdamW(model.parameters(), lr=8e-3, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 

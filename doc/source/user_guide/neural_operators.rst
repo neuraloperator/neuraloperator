@@ -1,3 +1,5 @@
+.. _neuralop_intro:
+
 =================================
 Neural Operators: an Introduction
 =================================

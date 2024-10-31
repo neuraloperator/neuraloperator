@@ -13,8 +13,9 @@ the small Darcy-Flow example we ship with the package
 import torch
 import matplotlib.pyplot as plt
 import sys
-from neuralop.models import TFNO, UNO
+from neuralop.models import UNO
 from neuralop import Trainer
+from neuralop.training import AdamW
 from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
@@ -30,11 +31,18 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
         test_batch_sizes=[32, 32],
 )
 
+model = UNO(in_channels=1, 
+            out_channels=1, 
+            hidden_channels=64, 
+            projection_channels=64,
+            uno_out_channels=[32,64,64,64,32],
+            uno_n_modes=[[16,16],[8,8],[8,8],[8,8],[16,16]],
+            uno_scalings=[[1.0,1.0],[0.5,0.5],[1,1],[2,2],[1,1]],
+            horizontal_skips_map=None,
+            channel_mlp_skip="linear",
+            n_layers = 5,
+            domain_padding=0.2)
 
-
-model = UNO(in_channels=1, out_channels=1, hidden_channels=64, projection_channels=64,uno_out_channels = [32,64,64,64,32], \
-            uno_n_modes= [[16,16],[8,8],[8,8],[8,8],[16,16]], uno_scalings=  [[1.0,1.0],[0.5,0.5],[1,1],[2,2],[1,1]],\
-            horizontal_skips_map = None, n_layers = 5, domain_padding = 0.2)
 model = model.to(device)
 
 n_params = count_model_params(model)
@@ -44,7 +52,7 @@ sys.stdout.flush()
 
 # %%
 #Create the optimizer
-optimizer = torch.optim.Adam(model.parameters(), 
+optimizer = AdamW(model.parameters(), 
                                 lr=8e-3, 
                                 weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)

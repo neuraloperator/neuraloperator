@@ -10,7 +10,7 @@ default: &DEFAULT
     n_modes_height: 8
     n_modes_width: 8
     hidden_channels: 32
-    projection_channels: 32
+    projection_channel_ratio: 1
     n_layers: 2
     domain_padding: 0
     domain_padding_mode: 'symmetric'
@@ -29,7 +29,6 @@ default: &DEFAULT
     dropout: 0.0
     tensor_lasso_penalty: 0.0
     joint_factorization: False
-    fno_block_precision: 'full' #or 'half', 'mixed'
     stabilizer: None #or 'tanh'
   
   data:

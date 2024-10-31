@@ -20,32 +20,15 @@ def setup(config):
         is_logger : bool
     """
     if config.distributed.use_distributed:
-        comm.init(config, verbose=config.verbose)
+        comm.init(model_parallel_size=config.distributed.get('model_parallel_size', 1),
+                  verbose=config.verbose)
 
         #Set process 0 to log screen and wandb
-        is_logger = (comm.get_world_rank() == 0)
+        is_logger = (comm.get_local_rank() == 0)
 
         #Set device and random seed
         device = torch.device(f"cuda:{comm.get_local_rank()}")
         seed = config.distributed.seed + comm.get_data_parallel_rank()
-
-        #Ensure every iteration has the same amount of data 
-        assert(config.data.n_train % config.data.batch_size == 0), (
-            f'The number of training samples={config.data.n_train} cannot be divided by the batch_size={config.data.batch_size}.'
-        )
-        for j in range(len(config.data.test_batch_sizes)):
-            assert(config.data.n_tests[j] % config.data.test_batch_sizes[j] == 0), (
-                f'The number of training samples={config.data.n_tests[j]}'
-                f' cannot be divided by the batch_size={config.data.test_batch_sizes[j]}'
-                f' for test resolution {config.data.test_resolutions[j]}.'
-            )
-
-        #Ensure batch can be evenly split among the data-parallel group
-        #NOTE: Distributed sampler NOT implemented: set model_parallel_size = # of GPUS
-        assert (config.data.batch_size % comm.get_data_parallel_size() == 0), (
-                f'Batch of size {config.data.batch_size} can be evenly split among the data-parallel group={comm.get_data_parallel_size()}.'
-        )
-        config.data.batch_size = config.data.batch_size // comm.get_data_parallel_size()
 
         #Ensure batch can be evenly split among the model-parallel group
         if config.patching.levels > 0:

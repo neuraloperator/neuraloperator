@@ -1,8 +1,15 @@
 import torch
 from torch import nn
 
-#Requires either open3d torch instalation or torch_cluster
-#Uses open3d by default which, as of 07/23/2023, requires torch 1.13.1
+# only import open3d if built
+open3d_built = False
+try:
+    from open3d.ml.torch.layers import FixedRadiusSearch
+    open3d_built = True
+except:
+    pass
+
+# Uses open3d by default which, as of October 2024, requires torch 2.0 and cuda11.*
 class NeighborSearch(nn.Module):
     """
     Neighborhood search between two arbitrary coordinate meshes.
@@ -17,8 +24,7 @@ class NeighborSearch(nn.Module):
     """
     def __init__(self, use_open3d=True):
         super().__init__()
-        if use_open3d: # slightly faster, works on GPU in 3d only
-            from open3d.ml.torch.layers import FixedRadiusSearch
+        if use_open3d and open3d_built: # slightly faster, works on GPU in 3d only
             self.search_fn = FixedRadiusSearch()
             self.use_open3d = use_open3d
         else: # slower fallback, works on GPU and CPU
@@ -27,7 +33,8 @@ class NeighborSearch(nn.Module):
         
         
     def forward(self, data, queries, radius):
-        """Find the neighbors, in data, of each point in queries
+        """
+        Find the neighbors, in data, of each point in queries
         within a ball of radius. Returns in CRS format.
 
         Parameters

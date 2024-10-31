@@ -11,7 +11,7 @@ from ..layers.embeddings import GridEmbedding2D, GridEmbeddingND
 
 
 class UNO(nn.Module):
-    """U-Shaped Neural Operator [1]_
+    """U-Shaped Neural Operator, as described in  [1]_.
 
     Parameters
     ----------
@@ -56,11 +56,10 @@ class UNO(nn.Module):
         * If None, all the n_modes are used.
 
         This can be updated dynamically during training.
-    use_channel_mlp : bool, optional
-        Whether to use an ChannelMLP layer after each FNO block, by default False
-    ChannelMLP : dict, optional
-        Parameters of the ChannelMLP, by default None
-        {'expansion': float, 'dropout': float}
+    channel_mlp_dropout: float, optional
+        dropout parameter for channelMLP after each FNO Block
+    channel_mlp_expansions: float, optional
+        expansion parameter for channelMLP after each FNO block
     non_linearity : nn.Module, optional
         Non-Linearity module to use, by default F.gelu
     norm : F.module, optional
@@ -94,7 +93,12 @@ class UNO(nn.Module):
     fft_norm : str, optional
         by default 'forward'
 
-    [1] : U-NO: U-shaped Neural Operators, Md Ashiqur Rahman, Zachary E Ross, Kamyar Azizzadenesheli, TMLR 2022
+    References
+    -----------
+    .. [1] :
+
+    Rahman, M.A., Ross, Z., Azizzadenesheli, K. "U-NO: U-shaped 
+        Neural Operators" (2022). TMLR 2022, https://arxiv.org/pdf/2204.11127.
     """
 
     def __init__(
@@ -111,19 +115,17 @@ class UNO(nn.Module):
         uno_scalings=None,
         horizontal_skips_map=None,
         incremental_n_modes=None,
-        use_channel_mlp=False,
-        channel_mlpdropout=0,
-        channel_mlpexpansion=0.5,
+        channel_mlp_dropout=0,
+        channel_mlp_expansion=0.5,
         non_linearity=F.gelu,
         norm=None,
         preactivation=False,
         fno_skip="linear",
         horizontal_skip="linear",
-        channel_mlpskip="soft-gating",
+        channel_mlp_skip="soft-gating",
         separable=False,
         factorization=None,
         rank=1.0,
-        joint_factorization=False,
         fixed_rank_modes=False,
         integral_operator=SpectralConv,
         operator_block=FNOBlocks,
@@ -131,8 +133,6 @@ class UNO(nn.Module):
         decomposition_kwargs=dict(),
         domain_padding=None,
         domain_padding_mode="one-sided",
-        fft_norm="forward",
-        normalizer=None,
         verbose=False,
         **kwargs
     ):
@@ -161,15 +161,13 @@ class UNO(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.horizontal_skips_map = horizontal_skips_map
-        self.joint_factorization = joint_factorization
         self.non_linearity = non_linearity
         self.rank = rank
         self.factorization = factorization
         self.fixed_rank_modes = fixed_rank_modes
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = (fno_skip,)
-        self.channel_mlpskip = (channel_mlpskip,)
-        self.fft_norm = fft_norm
+        self.channel_mlp_skip = (channel_mlp_skip,)
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation
@@ -180,7 +178,9 @@ class UNO(nn.Module):
         # create positional embedding at the beginning of the model
         if positional_embedding == "grid":
             spatial_grid_boundaries = [[0., 1.]] * self.n_dim
-            self.positional_embedding = GridEmbeddingND(dim=self.n_dim, grid_boundaries=spatial_grid_boundaries)
+            self.positional_embedding = GridEmbeddingND(in_channels=self.in_channels,
+                                                        dim=self.n_dim,
+                                                        grid_boundaries=spatial_grid_boundaries)
         elif isinstance(positional_embedding, GridEmbedding2D):
             if self.n_dim == 2:
                 self.positional_embedding = positional_embedding
@@ -237,7 +237,7 @@ class UNO(nn.Module):
             self.domain_padding = DomainPadding(
                 domain_padding=domain_padding,
                 padding_mode=domain_padding_mode,
-                output_scaling_factor=self.end_to_end_scaling_factor,
+                resolution_scaling_factor=self.end_to_end_scaling_factor,
             )
         else:
             self.domain_padding = None
@@ -260,31 +260,29 @@ class UNO(nn.Module):
                     prev_out + self.uno_out_channels[self.horizontal_skips_map[i]]
                 )
 
+            print(f"{fno_skip=}")
+            print(f"{channel_mlp_skip=}")
             self.fno_blocks.append(
                 self.operator_block(
                     in_channels=prev_out,
                     out_channels=self.uno_out_channels[i],
                     n_modes=self.uno_n_modes[i],
-                    use_channel_mlp=use_channel_mlp,
-                    channel_mlpdropout=channel_mlpdropout,
-                    channel_mlpexpansion=channel_mlpexpansion,
-                    output_scaling_factor=[self.uno_scalings[i]],
+                    channel_mlp_dropout=channel_mlp_dropout,
+                    channel_mlp_expansion=channel_mlp_expansion,
+                    resolution_scaling_factor=[self.uno_scalings[i]],
                     non_linearity=non_linearity,
                     norm=norm,
                     preactivation=preactivation,
                     fno_skip=fno_skip,
-                    channel_mlpskip=channel_mlpskip,
+                    channel_mlp_skip=channel_mlp_skip,
                     incremental_n_modes=incremental_n_modes,
                     rank=rank,
                     SpectralConv=self.integral_operator,
-                    fft_norm=fft_norm,
                     fixed_rank_modes=fixed_rank_modes,
                     implementation=implementation,
                     separable=separable,
                     factorization=factorization,
                     decomposition_kwargs=decomposition_kwargs,
-                    joint_factorization=joint_factorization,
-                    normalizer=normalizer,
                 )
             )
 
@@ -326,12 +324,12 @@ class UNO(nn.Module):
             
             if layer_idx in self.horizontal_skips_map.keys():
                 skip_val = skip_outputs[self.horizontal_skips_map[layer_idx]]
-                output_scaling_factors = [
+                resolution_scaling_factors = [
                     m / n for (m, n) in zip(x.shape, skip_val.shape)
                 ]
-                output_scaling_factors = output_scaling_factors[-1 * self.n_dim :]
+                resolution_scaling_factors = resolution_scaling_factors[-1 * self.n_dim :]
                 t = resample(
-                    skip_val, output_scaling_factors, list(range(-self.n_dim, 0))
+                    skip_val, resolution_scaling_factors, list(range(-self.n_dim, 0))
                 )
                 x = torch.cat([x, t], dim=1)
 

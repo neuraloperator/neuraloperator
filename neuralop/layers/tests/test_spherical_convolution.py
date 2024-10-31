@@ -19,12 +19,12 @@ def test_SphericalConv(factorization, implementation):
     n_modes = (6, 6)
 
     conv = SphericalConv(
-        3, 3, n_modes, n_layers=1, bias=False, implementation=implementation, factorization=factorization)
+        3, 3, n_modes, bias=False, implementation=implementation, factorization=factorization)
 
     conv_dense = SphericalConv(
-        3, 3, n_modes, n_layers=1, bias=False, implementation='reconstructed', factorization=None)
+        3, 3, n_modes, bias=False, implementation='reconstructed', factorization=None)
 
-    conv_dense.weight[0] = FactorizedTensor.from_tensor(conv.weight[0].to_tensor(), rank=None, factorization='ComplexDense')
+    conv_dense.weight = FactorizedTensor.from_tensor(conv.weight.to_tensor(), rank=None, factorization='ComplexDense')
     x = torch.randn(2, 3, *(12, 12))
 
     res_dense = conv_dense(x)
@@ -34,7 +34,7 @@ def test_SphericalConv(factorization, implementation):
 
     # Downsample outputs
     block = SphericalConv(
-        3, 4, n_modes, n_layers=1, output_scaling_factor=0.5)
+        3, 4, n_modes, resolution_scaling_factor=0.5)
 
     x = torch.randn(2, 3, *(12, 12))
     res = block(x)
@@ -42,7 +42,7 @@ def test_SphericalConv(factorization, implementation):
 
     # Upsample outputs
     block = SphericalConv(
-        3, 4, n_modes, n_layers=1, output_scaling_factor=2)
+        3, 4, n_modes, resolution_scaling_factor=2)
 
     x = torch.randn(2, 3, *(12, 12))
     res = block(x)
@@ -50,15 +50,19 @@ def test_SphericalConv(factorization, implementation):
     assert(list(res.shape[2:]) == [12*2, 12*2])
 
     # Test change of grid
-    block = SphericalConv(
-        4, 4, n_modes, n_layers=2, sht_grids=["equiangular", "legendre-gauss", "equiangular"])
+    block_0 = SphericalConv(
+        4, 4, n_modes, sht_grids=["equiangular", "legendre-gauss"])
+    
+    block_1 = SphericalConv(
+        4, 4, n_modes, sht_grids=["legendre-gauss", "equiangular"])
+    
     x = torch.randn(2, 4, *(12, 12))
-    res = block[0](x)
-    res = block[1](res)
+    res = block_0(x)
+    res = block_1(res)
     assert(res.shape[2:] == x.shape[2:])
 
-    res = block[0].transform(x)
-    res = block[1].transform(res)
+    res = block_0.transform(x)
+    res = block_1.transform(res)
     assert(res.shape[2:] == x.shape[2:])
 
 
