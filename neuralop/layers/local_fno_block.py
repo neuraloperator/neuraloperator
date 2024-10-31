@@ -145,7 +145,7 @@ class LocalFNOBlocks(nn.Module):
         disco_layers=[True],
         disco_kernel_shape=[2,4],
         radius_cutoff=None,
-        domain_length=[-1,1],
+        domain_length=[2,2],
         disco_groups=1,
         disco_bias=True,
         diff_layers=[True],
@@ -277,10 +277,9 @@ class LocalFNOBlocks(nn.Module):
             ]
         )
 
-        out_shape = tuple([output_scaling_factor[i] * self.default_in_shape[i] for i in range(len(self.default_in_shape))]) if (output_scaling_factor is not None and output_scaling_factor < 1.) else self.default_in_shape
         self.local_convs = nn.ModuleList(
             [
-                EquidistantDiscreteContinuousConv2d(self.in_channels, self.out_channels, in_shape=self.default_in_shape, out_shape=out_shape,
+                EquidistantDiscreteContinuousConv2d(self.in_channels, self.out_channels, in_shape=self.default_in_shape, out_shape=self.default_in_shape,
                                                     kernel_shape=self.disco_kernel_shape, domain_length=self.domain_length,
                                                     radius_cutoff=self.radius_cutoff, periodic=self.periodic, groups=self.disco_groups, bias=self.disco_bias)
                 for _ in range(sum(self.disco_layers))
@@ -419,6 +418,7 @@ class LocalFNOBlocks(nn.Module):
 
         if self.disco_idx_list[index] != -1:
             x_localconv = self.local_convs[self.disco_idx_list[index]](x)
+            x_localconv = self.convs[index].transform(x_localconv, output_shape=output_shape)
         else:
             x_localconv = 0
 
