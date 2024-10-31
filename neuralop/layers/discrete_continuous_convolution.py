@@ -1,3 +1,4 @@
+import abc
 import math
 import numpy
 
@@ -10,10 +11,16 @@ from functools import partial
 # import the base class from torch-harmonics
 from torch_harmonics.quadrature import _precompute_grid
 from torch_harmonics.convolution import _compute_support_vals_isotropic, _compute_support_vals_anisotropic
-from torch_harmonics.convolution import DiscreteContinuousConv
 
 
-def _normalize_convolution_tensor_2d(psi_idx, psi_vals, grid_in, grid_out, kernel_shape, quad_weights, transpose_normalization=False, eps=1e-9):
+def _normalize_convolution_tensor_2d(psi_idx,
+                                     psi_vals,
+                                     grid_in,
+                                     grid_out,
+                                     kernel_shape,
+                                     quad_weights,
+                                     transpose_normalization=False,
+                                     eps=1e-9):
     """
     Discretely normalizes the convolution tensor.
     """
@@ -58,7 +65,14 @@ def _normalize_convolution_tensor_2d(psi_idx, psi_vals, grid_in, grid_out, kerne
     return psi_vals
 
 
-def _precompute_convolution_tensor_2d(grid_in, grid_out, kernel_shape, quad_weights, normalize=True, radius_cutoff=0.01, periodic=False, transpose_normalization=False):
+def _precompute_convolution_tensor_2d(grid_in,
+                                      grid_out,
+                                      kernel_shape,
+                                      quad_weights,
+                                      normalize=True,
+                                      radius_cutoff=0.01,
+                                      periodic=False,
+                                      transpose_normalization=False):
     """
     Precomputes the translated filters at positions $T^{-1}_j \omega_i = T^{-1}_j T_i \nu$. Similar to the S2 routine,
     only that it assumes a non-periodic subset of the euclidean plane
@@ -96,14 +110,111 @@ def _precompute_convolution_tensor_2d(grid_in, grid_out, kernel_shape, quad_weig
     idx = idx.permute(1, 0)
 
     if normalize:
-        vals = _normalize_convolution_tensor_2d(idx, vals, grid_in, grid_out, kernel_shape, quad_weights, transpose_normalization=transpose_normalization)
+        vals = _normalize_convolution_tensor_2d(idx,
+                                                vals,
+                                                grid_in,
+                                                grid_out,
+                                                kernel_shape,
+                                                quad_weights,
+                                                transpose_normalization=transpose_normalization)
 
     return idx, vals
 
+class DiscreteContinuousConv(nn.Module, metaclass=abc.ABCMeta):
+    """
+    Abstract base class for DISCO convolutions, reproduced with permission
+    from ``torch_harmonics.convolution``. If you use DISCO convs, please cite
+    [1]_ and [2]_.
+
+    Parameters
+    ----------
+    in_channels : int
+        number of input channels
+    out_channels : int
+        number of output channels
+    kernel_shape : int or [int, int]
+        shape of convolution kernel
+        
+        * If a single int is passed, kernel will isotropic
+
+        * If a list of two nonequal ints are passed, kernel will be anisotropic.
+    groups : int, optional
+        number of groups in the convolution, default 1
+    bias : bool, optional
+        whether to create a separate bias parameter, default True
+    transpose : bool, optional
+        whether conv is a transpose conv, default False
+    References
+    ----------
+    .. [1] : Bonev B., Kurth T., Hundt C., Pathak J., Baust M., Kashinath K., Anandkumar A.
+        Spherical Neural Operators: Learning Stable Dynamics on the Sphere; arxiv:2306.03838
+
+    .. [2] : Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.
+        Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_shape: Union[int, List[int]],
+        groups: Optional[int] = 1,
+        bias: Optional[bool] = True,
+        transpose: bool = False
+    ):
+        super().__init__()
+
+        if isinstance(kernel_shape, int):
+            self.kernel_shape = [kernel_shape]
+        else:
+            self.kernel_shape = kernel_shape
+
+        if len(self.kernel_shape) == 1:
+            self.kernel_size = self.kernel_shape[0]
+        elif len(self.kernel_shape) == 2:
+            self.kernel_size = (self.kernel_shape[0] - 1) * self.kernel_shape[1] + 1
+        else:
+            raise ValueError("kernel_shape should be either one- or two-dimensional.")
+
+        # groups
+        self.groups = groups
+
+        # weight tensor
+        if in_channels % self.groups != 0:
+            raise ValueError("Error, the number of input channels has to be an integer multiple of the group size")
+        if out_channels % self.groups != 0:
+            raise ValueError("Error, the number of output channels has to be an integer multiple of the group size")
+        
+        if transpose:
+            self.groupsize = out_channels // self.groups
+        else:
+            self.groupsize = in_channels // self.groups
+        
+        scale = math.sqrt(1.0 / self.groupsize)
+        
+        if transpose:
+            self.weight = nn.Parameter(scale * torch.randn(in_channels, self.groupsize, self.kernel_size))
+        else:
+            self.weight = nn.Parameter(scale * torch.randn(out_channels, self.groupsize, self.kernel_size))
+
+        if bias:
+            self.bias = nn.Parameter(torch.zeros(out_channels))
+        else:
+            self.bias = None
+
+    @abc.abstractmethod
+    def forward(self, x: torch.Tensor):
+        raise NotImplementedError
 
 class DiscreteContinuousConv2d(DiscreteContinuousConv):
     """
-    Discrete-continuous convolutions (DISCO) on arbitrary 2d grids as implemented for [1]. To evaluate continuous convolutions on a computer, they can be evaluated semi-discretely, where the translation operation is performed continuously, and the quadrature/projection is performed discretely on a grid [2]. They are the main building blocks for local Neural Operators [1]. Forward call expects an input of shape batch_size x in_channels x n_in.
+    Discrete-continuous convolutions (DISCO) on arbitrary 2d grids 
+    as implemented in [1]_. To evaluate continuous convolutions on a
+    computer, they can be evaluated semi-discretely, where the translation
+    operation is performed continuously, and the quadrature/projection is
+    performed discretely on a grid [2]_. They are the main building blocks
+    for local Neural Operators [1]_. Forward call expects an input of shape
+    (batch_size, in_channels, n_in).
 
     Parameters
     ----------
@@ -111,12 +222,17 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         input channels to DISCO convolution
     out_channels: int
         output channels of DISCO convolution
-    grid_in: torch.Tensor or str
-        input grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
-    grid_out: torch.Tensor or str
-        output grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
+    grid_in: torch.Tensor or literal ``{'equidistant', 'legendre-gauss', 'equiangular', 'lobatto'}``
+        input grid in the form of a point cloud of shape (n_in, 2).
+        Can also pass a string to generate a regular (tensor) grid.
+        For exact options see ``torch_harmonics.quadrature``.
+    grid_out: torch.Tensor or literal ``{'equidistant', 'legendre-gauss', 'equiangular', 'lobatto'}``
+        output grid in the form of a point cloud (n_out, 2).
+        Can also pass a string to generate a regular (tensor) grid.
+        For exact options see ``torch_harmonics.quadrature``.
     kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a signle integer for isotropic kernels or two integers for anisotropic kernels
+        kernel shape. Expects either a single integer for isotropic
+        kernels or two integers for anisotropic kernels
     n_in: Tuple[int], optional
         number of input points
     n_out: Tuple[int], optional
@@ -124,18 +240,21 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
     quad_weights: torch.Tensor, optional
         quadrature weights on the input grid
     periodic: bool, optional
-        whether the domain is periodic
+        whether the domain is periodic, by default False
     groups: int, optional
-        number of groups in the convolution
+        number of groups in the convolution, by default 1
     bias: bool, optional
-        whether to use a bias
+        whether to use a bias, by default True
     radius_cutoff: float, optional
-        cutoff radius for the kernel
+        cutoff radius for the kernel, by default None
 
     References
     ----------
-    .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
-    .. [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
+    .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.
+        Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
+
+    .. [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by
+        discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
     """
 
     def __init__(
@@ -153,7 +272,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         bias: Optional[bool] = True,
         radius_cutoff: Optional[float] = None,
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
+        super().__init__(in_channels, out_channels, kernel_shape, groups, bias, transpose=False)
 
         # the instantiator supports convenience constructors for the input and output grids
         if isinstance(grid_in, torch.Tensor):
@@ -204,7 +323,12 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         # integration weights
         self.register_buffer("quad_weights", quad_weights, persistent=False)
 
-        idx, vals = _precompute_convolution_tensor_2d(grid_in, grid_out, self.kernel_shape, quad_weights, radius_cutoff=radius_cutoff, periodic=periodic)
+        idx, vals = _precompute_convolution_tensor_2d(grid_in,
+                                                      grid_out,
+                                                      self.kernel_shape,
+                                                      quad_weights,
+                                                      radius_cutoff=radius_cutoff,
+                                                      periodic=periodic)
 
         # to improve performance, we make psi a matrix by merging the first two dimensions
         # This has to be accounted for in the forward pass
@@ -215,7 +339,11 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
 
     def get_psi(self):
         """
-        Returns Psi
+        Returns the precomputed local convolution filter matrix Psi.
+        Psi parameterizes the kernel function as triangular basis functions 
+        evaluated on pairs of points on the convolution's input and output grids,
+        such that Psi[l, i, j] is the l-th basis function evaluated on point i in
+        the output grid and point j in the input grid.
         """
 
         psi = torch.sparse_coo_tensor(self.psi_idx, self.psi_vals, size=(self.kernel_size * self.n_out, self.n_in))
@@ -252,7 +380,9 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
 
 class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     """
-    Transpose variant of discrete-continuous convolutions on arbitrary 2d grids as implemented for [1]. Forward call expects an input of shape batch_size x in_channels x n_in.
+    Transpose variant of discrete-continuous convolutions on arbitrary
+    2d grids as implemented for [1]_. Forward call expects an input of shape
+    (batch_size, in_channels, n_in).
 
     Parameters
     ----------
@@ -260,12 +390,16 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         input channels to DISCO convolution
     out_channels: int
         output channels of DISCO convolution
-    grid_in: torch.Tensor or str
-        input grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
-    grid_out: torch.Tensor or str
-        output grid in the form of a point cloud. Can also pass a string to generate a regular (tensor) grid.
+    grid_in: torch.Tensor or literal ``{'equidistant', 'legendre-gauss', 'equiangular', 'lobatto'}``
+        input grid in the form of a point cloud of shape (n_in, 2).
+        Can also pass a string to generate a regular (tensor) grid.
+        For exact options see ``torch_harmonics.quadrature``.
+    grid_out: torch.Tensor or literal ``{'equidistant', 'legendre-gauss', 'equiangular', 'lobatto'}``
+        output grid in the form of a point cloud (n_out, 2).
+        Can also pass a string to generate a regular (tensor) grid.
+        For exact options see ``torch_harmonics.quadrature``.
     kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a signle integer for isotropic kernels or two integers for anisotropic kernels
+        kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
     n_in: Tuple[int], optional
         number of input points
     n_out: Tuple[int], optional
@@ -273,18 +407,18 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     quad_weights: torch.Tensor, optional
         quadrature weights on the input grid
     periodic: bool, optional
-        whether the domain is periodic
+        whether the domain is periodic, by default False
     groups: int, optional
-        number of groups in the convolution
+        number of groups in the convolution, by default 1
     bias: bool, optional
-        whether to use a bias
+        whether to use a bias, by default True
     radius_cutoff: float, optional
-        cutoff radius for the kernel
+        cutoff radius for the kernel, by default None
 
     References
     ----------
-    .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
-    .. [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
+    .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.;
+        Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
     """
 
     def __init__(
@@ -302,7 +436,7 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         bias: Optional[bool] = True,
         radius_cutoff: Optional[float] = None,
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
+        super().__init__(in_channels, out_channels, kernel_shape, groups, bias, transpose=True)
 
         # the instantiator supports convenience constructors for the input and output grids
         if isinstance(grid_in, torch.Tensor):
@@ -355,7 +489,8 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
 
         # precompute the transposed tensor
         idx, vals = _precompute_convolution_tensor_2d(
-            grid_out, grid_in, self.kernel_shape, quad_weights, radius_cutoff=radius_cutoff, periodic=periodic, transpose_normalization=True
+            grid_out, grid_in, self.kernel_shape, quad_weights, 
+            radius_cutoff=radius_cutoff, periodic=periodic, transpose_normalization=True
         )
 
         # to improve performance, we make psi a matrix by merging the first two dimensions
@@ -367,7 +502,11 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
 
     def get_psi(self):
         """
-        Returns Psi
+        Returns the precomputed local convolution filter matrix Psi.
+        Psi parameterizes the kernel function as triangular basis functions 
+        evaluated on pairs of points on the convolution's input and output grids,
+        such that Psi[l, i, j] is the l-th basis function evaluated on point i in
+        the output grid and point j in the input grid.
         """
 
         psi = torch.sparse_coo_tensor(self.psi_idx, self.psi_vals, size=(self.kernel_size * self.n_out, self.n_in))
@@ -389,11 +528,12 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         # bring x into the right shape for the bmm (batch_size x channels, n_in) and pre-apply psi to x
         x = x.reshape(B * C, self.n_in).permute(1, 0).contiguous()
         x = torch.mm(psi, x)
-        x = x.permute(1, 0).reshape(B, C, self.kernel_size, self.n_out)
-        x = x.reshape(B, self.groups, self.groupsize, self.kernel_size, self.n_out)
 
+        # new x shape: k*x, b*c --> b, c, k, x
+        x = x.permute(1, 0).reshape(B, C, self.kernel_size, self.n_out)
         # do weight multiplication
-        out = torch.einsum("bgckx,gock->bgox", x, self.weight.reshape(self.groups, -1, self.weight.shape[1], self.weight.shape[2]))
+        # repeat weight by number of groups
+        out = torch.einsum("bckx,gcok->bgox", x, self.weight.repeat(self.groups, *[1]*(self.weight.ndim)))
         out = out.reshape(out.shape[0], -1, out.shape[-1])
 
         if self.bias is not None:
@@ -404,7 +544,13 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
 
 class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
     """
-    Discrete-continuous convolutions (DISCO) on equidistant 2d grids as implemented for [1]. This implementation maps to 2d convolution kernels which makes it more efficient than the unstructured implementation above. Due to the mapping to an equidistant grid, the domain lengths need to be specified in order to compute the effective resolution and the corresponding cutoff radius. Forward call expects an input of shape batch_size x in_channels x in_shape[0] x in_shape[1].
+    Discrete-continuous convolutions (DISCO) on equidistant 2d grids
+    as implemented for [1]_. This implementation maps to 2d convolution
+    kernels which makes it more efficient than the unstructured implementation
+    above. Due to the mapping to an equidistant grid, the domain lengths need
+    to be specified in order to compute the effective resolution and the
+    corresponding cutoff radius. Forward call expects an input of shape 
+    (batch_size, in_channels, in_shape[0], in_shape[1]).
 
     Parameters
     ----------
@@ -415,24 +561,27 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
     in_shape: Tuple[int]
         shape of the (regular) input grid.
     out_shape: torch.Tensor or str
-        shape of the (regular) output grid.
+        shape of the (regular) output grid. Note that the side lengths
+        of out_shape must be less than or equal to the side lengths
+        of in_shape, and must be integer divisions of the corresponding
+        in_shape side lengths.
     kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a signle integer for isotropic kernels or two integers for anisotropic kernels
+        kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
     domain_length: torch.Tensor, optional
         extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
     periodic: bool, optional
-        whether the domain is periodic
+        whether the domain is periodic, by default False
     groups: int, optional
-        number of groups in the convolution
+        number of groups in the convolution, by default 1
     bias: bool, optional
-        whether to use a bias
+        whether to use a bias, by default True
     radius_cutoff: float, optional
-        cutoff radius for the kernel
+        cutoff radius for the kernel, by default None
 
     References
     ----------
-    .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
-    .. [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
+    .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.;
+        Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
     """
 
     def __init__(
@@ -449,7 +598,7 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         radius_cutoff: Optional[float] = None,
         **kwargs
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
+        super().__init__(in_channels, out_channels, kernel_shape, groups, bias, transpose=False)
 
         # to ensure compatibility with the unstructured code, only constant zero and periodic padding are supported currently
         self.padding_mode = "circular" if periodic else "zeros"
@@ -487,7 +636,13 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         grid_out = torch.Tensor([[0.0], [0.0]])
 
         # precompute psi using conventional routines onto the local grid
-        idx, vals = _precompute_convolution_tensor_2d(grid_in, grid_out, self.kernel_shape, quad_weights, radius_cutoff=radius_cutoff, periodic=False, normalize=True)
+        idx, vals = _precompute_convolution_tensor_2d(grid_in,
+                                                      grid_out,
+                                                      self.kernel_shape,
+                                                      quad_weights,
+                                                      radius_cutoff=radius_cutoff,
+                                                      periodic=False,
+                                                      normalize=True)
 
         # extract the local psi as a dense representation
         psi_loc = torch.zeros(self.kernel_size, self.psi_local_h*self.psi_local_w)
@@ -502,7 +657,11 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
 
     def get_psi(self):
         """
-        Returns Psi
+        Returns the precomputed local convolution filter matrix Psi.
+        Psi parameterizes the kernel function as triangular basis functions 
+        evaluated on pairs of points on the convolution's input and output grids,
+        such that Psi[l, i, j] is the l-th basis function evaluated on point i in
+        the output grid and point j in the input grid.
         """
 
         return self.psi_loc.permute(0, 2, 1).flip(dims=(-1,-2))
@@ -513,18 +672,27 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         """
 
         kernel = torch.einsum("kxy,ogk->ogxy", self.get_psi(), self.weight)
-
         # padding is rounded down to give the right result when even kernels are applied
         # Check https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html for output shape math
         h_pad = (self.psi_local_h+1) // 2 - 1
         w_pad = (self.psi_local_w+1) // 2 - 1
-        out = nn.functional.conv2d(self.q_weight * x, kernel, self.bias, stride=[self.scale_h, self.scale_w], dilation=1, padding=[h_pad, w_pad], groups=self.groups)
+        out = nn.functional.conv2d(self.q_weight * x, kernel, self.bias,
+                                   stride=[self.scale_h, self.scale_w],
+                                   dilation=1,
+                                   padding=[h_pad, w_pad],
+                                   groups=self.groups)
 
         return out
 
 class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     """
-    Transpose Discrete-continuous convolutions (DISCO) on equidistant 2d grids as implemented for [1]. This implementation maps to 2d convolution kernels which makes it more efficient than the unstructured implementation above. Due to the mapping to an equidistant grid, the domain lengths need to be specified in order to compute the effective resolution and the corresponding cutoff radius. Forward call expects an input of shape batch_size x in_channels x in_shape[0] x in_shape[1].
+    Transpose Discrete-continuous convolutions (DISCO) on equidistant 2d grids
+    as implemented for [1]_. This implementation maps to 2d convolution kernels
+    which makes it more efficient than the unstructured implementation above.
+    Due to the mapping to an equidistant grid, the domain lengths need to be
+    specified in order to compute the effective resolution and the corresponding
+    cutoff radius. Forward call expects an input of shape
+    (batch_size, in_channels, in_shape[0], in_shape[1]).
 
     Parameters
     ----------
@@ -535,24 +703,27 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     in_shape: Tuple[int]
         shape of the (regular) input grid.
     out_shape: torch.Tensor or str
-        shape of the (regular) output grid.
+        shape of the (regular) output grid. Note that the side lengths
+        of out_shape must be greater than or equal to the side lengths
+        of in_shape, and must be integer multiples of the corresponding
+        in_shape side lengths.
     kernel_shape: Union[int, List[int]]
         kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
     domain_length: torch.Tensor, optional
         extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
     periodic: bool, optional
-        whether the domain is periodic
+        whether the domain is periodic, by default False
     groups: int, optional
-        number of groups in the convolution
+        number of groups in the convolution, by default 1
     bias: bool, optional
-        whether to use a bias
+        whether to use a bias, by default True
     radius_cutoff: float, optional
-        cutoff radius for the kernel
+        cutoff radius for the kernel, by default None
 
     References
     ----------
-    .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.; Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
-    .. [2] Ocampo J., Price M.A. , McEwen J.D.; Scalable and equivariant spherical CNNs by discrete-continuous (DISCO) convolutions, ICLR (2023), arXiv:2209.13603
+    .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.;
+        Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
     """
 
     def __init__(
@@ -569,7 +740,7 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         radius_cutoff: Optional[float] = None,
         **kwargs
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
+        super().__init__(in_channels, out_channels, kernel_shape, groups, bias, transpose=True)
 
         # to ensure compatibility with the unstructured code, only constant zero and periodic padding are supported currently
         self.padding_mode = "circular" if periodic else "zeros"
@@ -607,8 +778,13 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         quad_weights = self.q_weight * torch.ones(self.psi_local_h * self.psi_local_w)
 
         # precompute psi using conventional routines onto the local grid
-        # idx, vals = _precompute_convolution_tensor_2d(grid_out, grid_in, self.kernel_shape, quad_weights, radius_cutoff=radius_cutoff, periodic=False, normalize=False, transpose_normalization=True)
-        idx, vals = _precompute_convolution_tensor_2d(grid_in, grid_out, self.kernel_shape, quad_weights, radius_cutoff=radius_cutoff, periodic=False, normalize=True, transpose_normalization=False)
+        idx, vals = _precompute_convolution_tensor_2d(grid_in, 
+                                                      grid_out,
+                                                      self.kernel_shape,
+                                                      quad_weights,
+                                                      radius_cutoff=radius_cutoff,
+                                                      periodic=False, normalize=True,
+                                                      transpose_normalization=False)
 
         # extract the local psi as a dense representation
         psi_loc = torch.zeros(self.kernel_size, self.psi_local_h*self.psi_local_w)
@@ -623,7 +799,11 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
 
     def get_psi(self):
         """
-        Returns Psi
+        Returns the precomputed local convolution filter matrix Psi.
+        Psi parameterizes the kernel function as triangular basis functions 
+        evaluated on pairs of points on the convolution's input and output grids,
+        such that Psi[l, i, j] is the l-th basis function evaluated on point i in
+        the output grid and point j in the input grid.
         """
 
         return self.psi_loc.permute(0, 2, 1).flip(dims=(-1,-2))
