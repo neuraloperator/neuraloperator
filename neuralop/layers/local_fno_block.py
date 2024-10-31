@@ -1,4 +1,5 @@
 from typing import List, Optional, Union
+import warnings
 
 import torch
 from torch import nn
@@ -7,6 +8,7 @@ import torch.nn.functional as F
 from .channel_mlp import ChannelMLP
 from .fno_block import SubModule
 from .differential_conv import FiniteDifferenceConvolution
+from .discrete_continuous_convolution import EquidistantDiscreteContinuousConv2d
 from .normalization_layers import AdaIN, InstanceNorm
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
@@ -19,107 +21,136 @@ Number = Union[int, float]
 class LocalFNOBlocks(nn.Module):
     """LocalFNOBlocks implements a sequence of Fourier layers
     as described in "Fourier Neural Operator for Parametric
-    Partial Differential Equations (Li et al., 2021).
+    Partial Differential Equations (Li et al., 2020) [1].
 
     The Fourier layers are placed in parallel with differential 
-    kernel layers from "Neural Operators with Localized Integral 
-    and Differential Kernels" (Liu-Schiaffini et al., 2024).
+    kernel layers and local integral layers from "Neural Operators 
+    with Localized Integral and Differential Kernels" 
+    (Liu-Schiaffini et al., 2024) [2].
     
     Parameters
-        ----------
-        in_channels : int
-            input channels to Fourier layers
-        out_channels : int
-            output channels after Fourier layers
-        n_modes : int, List[int]
-            number of modes to keep along each dimension 
-            in frequency space. Can either be specified as
-            an int (for all dimensions) or an iterable with one
-            number per dimension
-        output_scaling_factor : Optional[Union[Number, List[Number]]], optional
-            factor by which to scale outputs for super-resolution, by default None
-        n_layers : int, optional
-            number of Fourier layers to apply in sequence, by default 1
-        max_n_modes : int, List[int], optional
-            maximum number of modes to keep along each dimension, by default None
-        fno_block_precision : str, optional
-            floating point precision to use for computations, by default "full"
-        use_channel_mlp : bool, optional
-            whether to use mlp layers to parameterize skip connections, by default False
-        channel_mlp_dropout : int, optional
-            dropout parameter for self.mlp, by default 0
-        channel_mlp_expansion : float, optional
-            expansion parameter for self.mlp, by default 0.5
-        non_linearity : torch.nn.F module, optional
-            nonlinear activation function to use between layers, by default F.gelu
-        stabilizer : Literal["tanh"], optional
-            stabilizing module to use between certain layers, by default None
-            if "tanh", use tanh
-        norm : Literal["ada_in", "group_norm", "instance_norm"], optional
-            Normalization layer to use, by default None
-        ada_in_features : int, optional
-            number of features for adaptive instance norm above, by default None
-        preactivation : bool, optional
-            whether to call forward pass with pre-activation, by default False
-            if True, call nonlinear activation and norm before Fourier convolution
-            if False, call activation and norms after Fourier convolutions
-        fno_skip : str, optional
-            module to use for FNO skip connections, by default "linear"
-            see layers.skip_connections for more details
-        channel_mlp_skip : str, optional
-            module to use for MLP skip connections, by default "soft-gating"
-            see layers.skip_connections for more details
-        SpectralConv Params
-        -------------------
-        separable : bool, optional
-            separable parameter for SpectralConv, by default False
-        factorization : str, optional
-            factorization parameter for SpectralConv, by default None
-        rank : float, optional
-            rank parameter for SpectralConv, by default 1.0
-        SpectralConv : BaseConv, optional
-            module to use for SpectralConv, by default SpectralConv
-        joint_factorization : bool, optional
-            whether to factorize all spectralConv weights as one tensor, by default False
-        fixed_rank_modes : bool, optional
-            fixed_rank_modes parameter for SpectralConv, by default False
-        implementation : str, optional
-            implementation parameter for SpectralConv, by default "factorized"
-        decomposition_kwargs : _type_, optional
-            kwargs for tensor decomposition in SpectralConv, by default dict()
-        fft_norm : str, optional
-            how to normalize discrete fast Fourier transform, by default "forward"
-            if "forward", normalize just the forward direction F(v(x)) by 1/n (number of total modes)
-        FiniteDifferenceConvolution Params
-        ----------------------------------
-        diff_layers : bool list, optional
-            Must be same length as n_layers, dictates whether to include a
-            differential kernel parallel connection at each layer
-        fin_diff_implementation : str in ['subtract_middle', 'subtract_all'], optional
-            Implementation type for FiniteDifferenceConvolution.
-            See differential_conv.py.
-        conv_padding_mode : str in ['periodic', 'circular', 'replicate', 'reflect', 'zeros'], optional
-            Padding mode for spatial convolution kernels.
-        default_grid_res : int or None, optional
-            Proportional to default input shape of last spatial dimension. If 
-            None, inferred from data. This is used for defining the appropriate
-            scaling of the differential kernel.
-        fin_diff_kernel_size : odd int, optional
-            Conv kernel size for finite difference convolution.
-        mix_derivatives : bool, optional
-            Whether to mix derivatives across channels
+    ----------
+    in_channels : int
+        input channels to Fourier layers
+    out_channels : int
+        output channels after Fourier layers
+    n_modes : int, List[int]
+        number of modes to keep along each dimension 
+        in frequency space. Can either be specified as
+        an int (for all dimensions) or an iterable with one
+        number per dimension
+    output_scaling_factor : Optional[Union[Number, List[Number]]], optional
+        factor by which to scale outputs for super-resolution, by default None
+    n_layers : int, optional
+        number of Fourier layers to apply in sequence, by default 1
+    max_n_modes : int, List[int], optional
+        maximum number of modes to keep along each dimension, by default None
+    fno_block_precision : str, optional
+        floating point precision to use for computations, by default "full"
+    use_channel_mlp : bool, optional
+        whether to use mlp layers to parameterize skip connections, by default False
+    channel_mlp_dropout : int, optional
+        dropout parameter for self.mlp, by default 0
+    channel_mlp_expansion : float, optional
+        expansion parameter for self.mlp, by default 0.5
+    non_linearity : torch.nn.F module, optional
+        nonlinear activation function to use between layers, by default F.gelu
+    stabilizer : Literal["tanh"], optional
+        stabilizing module to use between certain layers, by default None
+        if "tanh", use tanh
+    norm : Literal["ada_in", "group_norm", "instance_norm"], optional
+        Normalization layer to use, by default None
+    ada_in_features : int, optional
+        number of features for adaptive instance norm above, by default None
+    preactivation : bool, optional
+        whether to call forward pass with pre-activation, by default False
+        if True, call nonlinear activation and norm before Fourier convolution
+        if False, call activation and norms after Fourier convolutions
+    fno_skip : str, optional
+        module to use for FNO skip connections, by default "linear"
+        see layers.skip_connections for more details
+    channel_mlp_skip : str, optional
+        module to use for MLP skip connections, by default "soft-gating"
+        see layers.skip_connections for more details
+    SpectralConv Params
+    -------------------
+    separable : bool, optional
+        separable parameter for SpectralConv, by default False
+    factorization : str, optional
+        factorization parameter for SpectralConv, by default None
+    rank : float, optional
+        rank parameter for SpectralConv, by default 1.0
+    SpectralConv : BaseConv, optional
+        module to use for SpectralConv, by default SpectralConv
+    joint_factorization : bool, optional
+        whether to factorize all spectralConv weights as one tensor, by default False
+    fixed_rank_modes : bool, optional
+        fixed_rank_modes parameter for SpectralConv, by default False
+    implementation : str, optional
+        implementation parameter for SpectralConv, by default "factorized"
+    decomposition_kwargs : _type_, optional
+        kwargs for tensor decomposition in SpectralConv, by default dict()
+    fft_norm : str, optional
+        how to normalize discrete fast Fourier transform, by default "forward"
+        if "forward", normalize just the forward direction F(v(x)) by 1/n (number of total modes)
+    FiniteDifferenceConvolution Params
+    ----------------------------------
+    diff_layers : bool list, optional
+        Must be same length as n_layers, dictates whether to include a
+        differential kernel parallel connection at each layer
+    fin_diff_implementation : str in ['subtract_middle', 'subtract_all'], optional
+        Implementation type for FiniteDifferenceConvolution.
+        See differential_conv.py.
+    conv_padding_mode : str in ['periodic', 'circular', 'replicate', 'reflect', 'zeros'], optional
+        Padding mode for spatial convolution kernels.
+    default_in_shape : Tuple[int]
+        Default input shape on spatiotemporal dimensions. Repeated above for differential kernel.
+    fin_diff_kernel_size : odd int, optional
+        Conv kernel size for finite difference convolution.
+    mix_derivatives : bool, optional
+        Whether to mix derivatives across channels
+    EquidistantDiscreteContinuousConv2d Params
+    ------------------------------------------
+    disco_layers : bool list, optional
+        Must be same length as n_layers, dictates whether to include a
+        local integral kernel parallel connection at each layer
+    disco_kernel_shape: Union[int, List[int]]
+        kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
+    default_in_shape : Tuple[int]
+        Default input shape on spatiotemporal dimensions. Repeated above for differential kernel.
+    domain_length: torch.Tensor, optional
+        extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
+    disco_groups: int, optional
+        number of groups in the convolution, by default 1
+    disco_bias: bool, optional
+        whether to use a bias, by default True
+    radius_cutoff: float, optional
+        cutoff radius (with respect to domain_length) for the kernel, by default None
+    
+    References
+    ----------
+    .. [1] Li, Z., Kovachki, N. B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., & Anandkumar, A.;
+        Fourier Neural Operator for Parametric Partial Differential Equations; ICLR 2021.
+    .. [2] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.;
+        Neural Operators with Localized Integral and Differential Kernels;  ICML 2024.
     """
     def __init__(
         self,
         in_channels,
         out_channels,
         n_modes,
+        default_in_shape,
         output_scaling_factor=None,
         n_layers=1,
+        disco_layers=[True],
+        disco_kernel_shape=[2,4],
+        radius_cutoff=None,
+        domain_length=[-1,1],
+        disco_groups=1,
+        disco_bias=True,
         diff_layers=[True],
         fin_diff_implementation='subtract_middle',
         conv_padding_mode='periodic',
-        default_grid_res=None,
         fin_diff_kernel_size=3,
         mix_derivatives=True,
         max_n_modes=None,
@@ -150,9 +181,17 @@ class LocalFNOBlocks(nn.Module):
             n_modes = [n_modes]
         self._n_modes = n_modes
 
+        assert len(n_modes) == len(default_in_shape), "Spatiotemporal dimensions must be consistent"
+
         if len(n_modes) > 3 and True in diff_layers:
             NotImplementedError("Differential convs not implemented for dimensions higher than 3.")
+
+        if len(n_modes) != 2 and True in disco_layers:
+            NotImplementedError("Local conv layers only implemented for dimension 2.")
             
+        if conv_padding_mode not in ['circular', 'periodic', 'zeros'] and True in disco_layers:
+            warnings.warn("Local conv layers only support periodic or zero padding, defaulting to zero padding for local convs.")
+        
         self.n_dim = len(n_modes)
 
         self.output_scaling_factor: Union[
@@ -185,11 +224,20 @@ class LocalFNOBlocks(nn.Module):
         self.diff_layers = diff_layers
         self.fin_diff_implementation = fin_diff_implementation
         self.conv_padding_mode = conv_padding_mode
-        self.default_grid_res = default_grid_res
+        self.default_in_shape = default_in_shape
         self.fin_diff_kernel_size = fin_diff_kernel_size
         self.mix_derivatives = mix_derivatives
 
+        self.disco_layers = disco_layers
+        self.disco_kernel_shape = disco_kernel_shape
+        self.radius_cutoff = radius_cutoff
+        self.domain_length = domain_length
+        self.disco_groups = disco_groups
+        self.disco_bias = disco_bias
+        self.periodic = (self.conv_padding_mode in ['circular', 'periodic'])
+
         assert len(diff_layers) == n_layers, "Length of diff_layers must be n_layers"
+        assert len(disco_layers) == n_layers, "Length of disco_layers must be n_layers"
 
         self.convs = SpectralConv(
             self.in_channels,
@@ -219,13 +267,23 @@ class LocalFNOBlocks(nn.Module):
             ]
         )
 
-        self.groups = 1 if mix_derivatives else in_channels
+        self.diff_groups = 1 if mix_derivatives else in_channels
         self.differential = nn.ModuleList(
             [
                 FiniteDifferenceConvolution(self.in_channels, self.out_channels,
                                             self.n_dim, self.fin_diff_kernel_size, 
-                                            self.groups, self.conv_padding_mode, fin_diff_implementation)
+                                            self.diff_groups, self.conv_padding_mode, fin_diff_implementation)
                 for _ in range(sum(self.diff_layers))
+            ]
+        )
+
+        out_shape = tuple([output_scaling_factor[i] * self.default_in_shape[i] for i in range(len(self.default_in_shape))]) if (output_scaling_factor is not None and output_scaling_factor < 1.) else self.default_in_shape
+        self.local_convs = nn.ModuleList(
+            [
+                EquidistantDiscreteContinuousConv2d(self.in_channels, self.out_channels, in_shape=self.default_in_shape, out_shape=out_shape,
+                                                    kernel_shape=self.disco_kernel_shape, domain_length=self.domain_length,
+                                                    radius_cutoff=self.radius_cutoff, periodic=self.periodic, groups=self.disco_groups, bias=self.disco_bias)
+                for _ in range(sum(self.disco_layers))
             ]
         )
 
@@ -240,6 +298,18 @@ class LocalFNOBlocks(nn.Module):
                 self.differential_idx_list.append(-1)
 
         assert max(self.differential_idx_list) == sum(self.diff_layers) - 1
+
+        # Helper for calling local conv layers
+        self.disco_idx_list = []
+        j = 0
+        for i in range(n_layers):
+            if self.disco_layers[i]:
+                self.disco_idx_list.append(j)
+                j += 1
+            else:
+                self.disco_idx_list.append(-1)
+
+        assert max(self.disco_idx_list) == sum(self.disco_layers) - 1
 
         if use_channel_mlp:
             self.mlp = nn.ModuleList(
@@ -322,9 +392,6 @@ class LocalFNOBlocks(nn.Module):
                 norm.set_embedding(embedding)
 
     def forward(self, x, index=0, output_shape=None):
-        if self.default_grid_res is None:
-            self.default_grid_res = x.shape[-1]
-
         if self.preactivation:
             return self.forward_with_preactivation(x, index, output_shape)
         else:
@@ -344,18 +411,23 @@ class LocalFNOBlocks(nn.Module):
         x_fno = self.convs(x, index, output_shape=output_shape)
 
         if self.differential_idx_list[index] != -1:
-            grid_width_scaling_factor = 1 / (x.shape[-1] / self.default_grid_res)
+            grid_width_scaling_factor = 1 / (x.shape[-1] / self.default_in_shape[0])
             x_differential = self.differential[self.differential_idx_list[index]](x, grid_width_scaling_factor)
             x_differential = self.convs[index].transform(x_differential, output_shape=output_shape)
         else:
             x_differential = 0
 
-        x_fno_diff = x_fno + x_differential
+        if self.disco_idx_list[index] != -1:
+            x_localconv = self.local_convs[self.disco_idx_list[index]](x)
+        else:
+            x_localconv = 0
+
+        x_fno_diff_disco = x_fno + x_differential + x_localconv
 
         if self.norm is not None:
-            x_fno_diff = self.norm[self.n_norms * index](x_fno_diff)
+            x_fno_diff_disco = self.norm[self.n_norms * index](x_fno_diff_disco)
 
-        x = x_fno_diff + x_skip_fno
+        x = x_fno_diff_disco + x_skip_fno
 
         if (self.mlp is not None) or (index < (self.n_layers - 1)):
             x = self.non_linearity(x)
@@ -385,8 +457,13 @@ class LocalFNOBlocks(nn.Module):
         else:
             x_differential = 0
 
+        if self.disco_idx_list[index] != -1:
+            x_localconv = self.local_convs[self.disco_idx_list[index]](x)
+        else:
+            x_localconv = 0
+
         x_skip_fno = self.fno_skips[index](x)
-        x_skip_fno_diff = self.convs[index].transform(x_skip_fno + x_differential, output_shape=output_shape)
+        x_skip_fno_diff_disco = self.convs[index].transform(x_skip_fno + x_differential + x_localconv, output_shape=output_shape)
 
         if self.mlp is not None:
             x_skip_mlp = self.channel_mlp_skips[index](x)
@@ -397,7 +474,7 @@ class LocalFNOBlocks(nn.Module):
 
         x_fno = self.convs(x, index, output_shape=output_shape)
 
-        x = x_fno + x_skip_fno_diff
+        x = x_fno + x_skip_fno_diff_disco
 
         if self.mlp is not None:
             if index < (self.n_layers - 1):
