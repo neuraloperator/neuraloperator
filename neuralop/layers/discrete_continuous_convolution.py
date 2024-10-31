@@ -524,17 +524,17 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
 
         # extract shape
         B, C, _ = x.shape
-        print(f"{x.shape=}")
+        
 
         # bring x into the right shape for the bmm (batch_size x channels, n_in) and pre-apply psi to x
         x = x.reshape(B * C, self.n_in).permute(1, 0).contiguous()
         x = torch.mm(psi, x)
-        x = x.permute(1, 0).reshape(B, C, self.kernel_size, self.n_out)
 
+        # new x shape: k*x, b*c --> b, c, k, x
+        x = x.permute(1, 0).reshape(B, C, self.kernel_size, self.n_out)
         # do weight multiplication
-        # weight: shape in_c, out_c/groups, kernel shape
-        out = torch.einsum("bckx,cg->bgox", x, self.weight.reshape(self.groups, -1, self.weight.shape[1], self.weight.shape[2]))
-        #out = torch.einsum("bgckx,gock->bgox", x, self.weight.reshape(self.groups, -1, self.weight.shape[1], self.weight.shape[2]))
+        # repeat weight by number of groups
+        out = torch.einsum("bckx,gcok->bgox", x, self.weight.repeat(self.groups, *[1]*(self.weight.ndim)))
         out = out.reshape(out.shape[0], -1, out.shape[-1])
 
         if self.bias is not None:
@@ -824,8 +824,6 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         h_pad_out = self.scale_h - (self.psi_local_h // 2 - h_pad) - 1
         w_pad_out = self.scale_w - (self.psi_local_w // 2 - w_pad) - 1
 
-        print(f"{kernel.shape=}")
-        print(f"{x.shape=}")
         out = nn.functional.conv_transpose2d(self.q_weight * x, kernel, self.bias, stride=[self.scale_h, self.scale_w], dilation=[1,1], padding=[h_pad, w_pad], output_padding=[h_pad_out, w_pad_out], groups=self.groups)
 
         return out
