@@ -198,6 +198,21 @@ We also provide additional layers that implement standard deep learning architec
 
     CODABlocks
 
+.. automodule:: neuralop.layers.discrete_continuous_convolution
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    DiscreteContinuousConv2d
+    DiscreteContinuousConvTranspose2d
+    EquidistantDiscreteContinuousConv2d
+    EquidistantDiscreteContinuousConvTranspose2d
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 **Embeddings**
 
 Apply positional embeddings as additional channels on a function:
