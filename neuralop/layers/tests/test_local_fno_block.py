@@ -14,7 +14,7 @@ def test_LocalFNOBlock_output_scaling_factor():
     mlp_skip='linear'
     for dim in [1, 2, 3]:
         block = LocalFNOBlocks(
-            3, 4, max_n_modes[:dim], max_n_modes=max_n_modes[:dim], n_layers=1, diff_layers=[True])
+            3, 4, default_in_shape=size[:dim], n_modes=max_n_modes[:dim], max_n_modes=max_n_modes[:dim], n_layers=1, diff_layers=[True], disco_layers=[(dim == 2)])
         
         assert block.convs.n_modes[:-1] == max_n_modes[:dim-1]
         assert block.convs.n_modes[-1] == max_n_modes[dim-1]//2 + 1
@@ -29,7 +29,7 @@ def test_LocalFNOBlock_output_scaling_factor():
 
         # Downsample outputs
         block = LocalFNOBlocks(
-            3, 4, n_modes[:dim], n_layers=1, diff_layers=[True], output_scaling_factor=0.5, 
+            3, 4, n_modes[:dim], default_in_shape=size[:dim], n_layers=1, diff_layers=[True], disco_layers=[(dim == 2)], output_scaling_factor=0.5, 
             use_mlp=True, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion, mlp_skip=mlp_skip)
 
         x = torch.randn(2, 3, *size[:dim])
@@ -38,7 +38,7 @@ def test_LocalFNOBlock_output_scaling_factor():
         
         # Upsample outputs
         block = LocalFNOBlocks(
-            3, 4, n_modes[:dim], n_layers=1, diff_layers=[True], output_scaling_factor=2,
+            3, 4, n_modes[:dim], default_in_shape=size[:dim], n_layers=1, diff_layers=[True], output_scaling_factor=2,
             use_mlp=True, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion, mlp_skip=mlp_skip)
 
         x = torch.randn(2, 3, *size[:dim])
@@ -49,7 +49,7 @@ def test_LocalFNOBlock_output_scaling_factor():
 @pytest.mark.parametrize('norm', 
                          ['instance_norm', 'ada_in', 'group_norm'])
 def test_LocalFNOBlock_norm(norm):
-    """Test SpectralConv with upsampled or downsampled outputs
+    """Test LocalFNOBlock with normalization
     """
     modes = (8, 8, 8)
     size = [10]*3
@@ -59,7 +59,7 @@ def test_LocalFNOBlock_norm(norm):
     dim = 2
     ada_in_features = 4
     block = LocalFNOBlocks(
-        3, 4, modes[:dim], n_layers=1, diff_layers=[True], use_mlp=True, norm=norm, ada_in_features=ada_in_features,
+        3, 4, modes[:dim], default_in_shape=size[:dim], n_layers=1, diff_layers=[True], disco_layers=[(dim == 2)], use_mlp=True, norm=norm, ada_in_features=ada_in_features,
         mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion, mlp_skip=mlp_skip)
 
     if norm == 'ada_in':
