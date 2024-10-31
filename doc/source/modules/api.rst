@@ -1,3 +1,5 @@
+.. _api_ref:
+
 #############
 API reference
 #############
@@ -111,7 +113,7 @@ In addition to the full architectures, we also provide
 in :mod:`neuralop.layers` building blocks,
 in the form of PyTorch layers, that you can use to build your own models:
 
-Neural operator Layers
+Neural operator layers
 ------------------------
 
 **Spectral convolutions** (in Fourier domain):
@@ -158,6 +160,18 @@ To support geometry-informed (GINO) models, we also offer the ability to integra
 
 **Graph convolutions and kernel integration**:
 
+.. automodule:: neuralop.layers.gno_block
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    GNOBlock
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. automodule:: neuralop.layers.integral_transform
     :no-members:
     :no-inherited-members:
@@ -169,6 +183,53 @@ To support geometry-informed (GINO) models, we also offer the ability to integra
     IntegralTransform
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We also provide additional layers that implement standard deep learning architectures as neural operators.
+
+**Miscellaneous layers**
+
+.. automodule:: neuralop.layers.coda_blocks
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    CODABlocks
+
+.. automodule:: neuralop.layers.discrete_continuous_convolution
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    DiscreteContinuousConv2d
+    DiscreteContinuousConvTranspose2d
+    EquidistantDiscreteContinuousConv2d
+    EquidistantDiscreteContinuousConvTranspose2d
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Embeddings**
+
+Apply positional embeddings as additional channels on a function:
+
+.. automodule:: neuralop.layers.embeddings
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    GridEmbeddingND
+    GridEmbedding2D
+    SinusoidalEmbedding
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Neighbor search**
 
@@ -192,8 +253,21 @@ Find neighborhoods on arbitrary coordinate meshes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Other resolution invariant operations
+Other resolution-invariant operations
 -------------------------------------
+
+Positional embedding layers:
+
+.. automodule:: neuralop.layers.embeddings
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    GridEmbeddingND
+    SinusoidalEmbedding
 
 Automatically apply resolution dependent domain padding: 
 
@@ -294,6 +368,37 @@ We also ship a small dataset for testing:
 
     load_darcy_flow_small
 
+We provide downloadable datasets for Darcy-Flow, Navier-Stokes, and Car-CFD.
+
+.. automodule:: neuralop.data.datasets.darcy
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    DarcyDataset
+
+.. automodule:: neuralop.data.datasets.navier_stokes
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    NavierStokesDataset
+
+.. automodule:: neuralop.data.datasets.car_cfd_dataset
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    CarCFDDataset
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 DataProcessors
