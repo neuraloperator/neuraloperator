@@ -14,12 +14,12 @@ cfd: &CFD
 
   # Dataset related
   data:
-    path: /home/YOUR_NAME_HERE/data/car-cfd/
+    root: /home/YOURNAME/data/car-pressure-data/
     entity_name: ''
     load_attributes: ['press']
     sdf_query_resolution: 32
-    n_train: 1
-    n_test: 1
+    n_train: 500
+    n_test: 50
     input_points: 'query_points'
     input_fields: ['distance']
     output_points: 'centroids'
@@ -42,7 +42,7 @@ cfd: &CFD
     fno_rank: 0.4
     fno_domain_padding: 0.125
     fno_channel_mlp_expansion: 1.0
-    fno_output_scaling_factor: 1
+    fno_resolution_scaling_factor: 1
 
   opt:
     n_epochs: 301

@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Trainer, get_model
 from neuralop.data.datasets import load_burgers_1dtime
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
-from neuralop.training import setup
+from neuralop.training import setup, AdamW
 from neuralop.utils import get_wandb_api_key, count_model_params
 
 
@@ -80,7 +80,6 @@ train_loader, test_loaders, output_encoder = load_burgers_1dtime(data_path=confi
         )
 
 model = get_model(config)
-model = model.to(device)
 
 # Use distributed data parallel
 if config.distributed.use_distributed:
@@ -89,7 +88,7 @@ if config.distributed.use_distributed:
     )
 
 # Create the optimizer
-optimizer = torch.optim.Adam(
+optimizer = AdamW(
     model.parameters(),
     lr=config.opt.learning_rate,
     weight_decay=config.opt.weight_decay,
@@ -172,7 +171,7 @@ trainer = Trainer(
     n_epochs=config.opt.n_epochs,
     data_processor=data_processor,
     device=device,
-    amp_autocast=config.opt.amp_autocast,
+    mixed_precision=config.opt.amp_autocast,
     eval_interval=config.wandb.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
@@ -194,7 +193,7 @@ if is_logger:
             to_log["n_params_baseline"] = (config.n_params_baseline,)
             to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
             to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
-        wandb.log(to_log)
+        wandb.log(to_log, commit=False)
         wandb.watch(model)
 
 
