@@ -395,9 +395,11 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     kernel_shape: Union[int, List[int]]
         kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
     n_in: Tuple[int], optional
-        number of input points
+        number of input points along each dimension. Only used
+        if grid_in is passed as a str. See ``torch_harmonics.quadrature``.
     n_out: Tuple[int], optional
-        number of output points
+        number of output points along each dimension. Only used
+        if grid_out is passed as a str. See ``torch_harmonics.quadrature``.
     quad_weights: torch.Tensor, optional
         quadrature weights on the input grid
         expects a tensor of shape (n_in,)
