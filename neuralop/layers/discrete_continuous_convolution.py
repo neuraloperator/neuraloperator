@@ -232,6 +232,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         number of output points
     quad_weights: torch.Tensor, optional
         quadrature weights on the input grid
+        expects a tensor of shape (n_in,)
     periodic: bool, optional
         whether the domain is periodic, by default False
     groups: int, optional
@@ -399,6 +400,7 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         number of output points
     quad_weights: torch.Tensor, optional
         quadrature weights on the input grid
+        expects a tensor of shape (n_in,)
     periodic: bool, optional
         whether the domain is periodic, by default False
     groups: int, optional
