@@ -19,15 +19,11 @@ Number = Union[int, float]
 
 
 class LocalFNOBlocks(nn.Module):
-    """LocalFNOBlocks implements a sequence of Fourier layers
-    as described in "Fourier Neural Operator for Parametric
-    Partial Differential Equations (Li et al., 2020) [1].
+    """LocalFNOBlocks implements a sequence of Fourier layers, the operations of which 
+    are first described in [1]_. The exact implementation details of the Fourier 
+    layer architecture are discussed in [2]_. The Fourier layers are placed in parallel 
+    with differential kernel layers and local integral layers, as described in [3]_.
 
-    The Fourier layers are placed in parallel with differential 
-    kernel layers and local integral layers from "Neural Operators 
-    with Localized Integral and Differential Kernels" 
-    (Liu-Schiaffini et al., 2024) [2].
-    
     Parameters
     ----------
     in_channels : int
@@ -43,16 +39,40 @@ class LocalFNOBlocks(nn.Module):
         factor by which to scale outputs for super-resolution, by default None
     n_layers : int, optional
         number of Fourier layers to apply in sequence, by default 1
+    default_in_shape : Tuple[int]
+        Default input shape on spatiotemporal dimensions.
+    disco_layers : bool list, optional
+        Must be same length as n_layers, dictates whether to include a
+        local integral kernel parallel connection at each layer
+    disco_kernel_shape: Union[int, List[int]]
+        kernel shape for local integral. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
+    domain_length: torch.Tensor, optional
+        extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
+    disco_groups: int, optional
+        number of groups in the local integral convolution, by default 1
+    disco_bias: bool, optional
+        whether to use a bias for the integral kernel, by default True
+    radius_cutoff: float, optional
+        cutoff radius (with respect to domain_length) for the local integral kernel, by default None
+    diff_layers : bool list, optional
+        Must be same length as n_layers, dictates whether to include a
+        differential kernel parallel connection at each layer
+    fin_diff_implementation : str in ['subtract_middle', 'subtract_all'], optional
+        Implementation type for FiniteDifferenceConvolution. See differential_conv.py.
+    conv_padding_mode : str in ['periodic', 'circular', 'replicate', 'reflect', 'zeros'], optional
+        Padding mode for spatial convolution kernels.
+    fin_diff_kernel_size : odd int, optional
+        Conv kernel size for finite difference convolution.
+    mix_derivatives : bool, optional
+        Whether to mix derivatives across channels.
     max_n_modes : int, List[int], optional
         maximum number of modes to keep along each dimension, by default None
     fno_block_precision : str, optional
         floating point precision to use for computations, by default "full"
-    use_channel_mlp : bool, optional
-        whether to use mlp layers to parameterize skip connections, by default False
     channel_mlp_dropout : int, optional
-        dropout parameter for self.mlp, by default 0
+        dropout parameter for self.channel_mlp, by default 0
     channel_mlp_expansion : float, optional
-        expansion parameter for self.mlp, by default 0.5
+        expansion parameter for self.channel_mlp, by default 0.5
     non_linearity : torch.nn.F module, optional
         nonlinear activation function to use between layers, by default F.gelu
     stabilizer : Literal["tanh"], optional
@@ -70,18 +90,21 @@ class LocalFNOBlocks(nn.Module):
         module to use for FNO skip connections, by default "linear"
         see layers.skip_connections for more details
     channel_mlp_skip : str, optional
-        module to use for MLP skip connections, by default "soft-gating"
+        module to use for ChannelMLP skip connections, by default "soft-gating"
         see layers.skip_connections for more details
-    SpectralConv Params
+
+    Other Parameters
     -------------------
+    complex_data : bool, optional
+        whether the FNO's data takes on complex values in space, by default False
     separable : bool, optional
         separable parameter for SpectralConv, by default False
     factorization : str, optional
         factorization parameter for SpectralConv, by default None
     rank : float, optional
         rank parameter for SpectralConv, by default 1.0
-    SpectralConv : BaseConv, optional
-        module to use for SpectralConv, by default SpectralConv
+    conv_module : BaseConv, optional
+        module to use for convolutions in FNO block, by default SpectralConv
     joint_factorization : bool, optional
         whether to factorize all spectralConv weights as one tensor, by default False
     fixed_rank_modes : bool, optional
@@ -90,49 +113,25 @@ class LocalFNOBlocks(nn.Module):
         implementation parameter for SpectralConv, by default "factorized"
     decomposition_kwargs : _type_, optional
         kwargs for tensor decomposition in SpectralConv, by default dict()
-    fft_norm : str, optional
-        how to normalize discrete fast Fourier transform, by default "forward"
-        if "forward", normalize just the forward direction F(v(x)) by 1/n (number of total modes)
-    FiniteDifferenceConvolution Params
-    ----------------------------------
-    diff_layers : bool list, optional
-        Must be same length as n_layers, dictates whether to include a
-        differential kernel parallel connection at each layer
-    fin_diff_implementation : str in ['subtract_middle', 'subtract_all'], optional
-        Implementation type for FiniteDifferenceConvolution.
-        See differential_conv.py.
-    conv_padding_mode : str in ['periodic', 'circular', 'replicate', 'reflect', 'zeros'], optional
-        Padding mode for spatial convolution kernels.
-    default_in_shape : Tuple[int]
-        Default input shape on spatiotemporal dimensions. Repeated above for differential kernel.
-    fin_diff_kernel_size : odd int, optional
-        Conv kernel size for finite difference convolution.
-    mix_derivatives : bool, optional
-        Whether to mix derivatives across channels
-    EquidistantDiscreteContinuousConv2d Params
-    ------------------------------------------
-    disco_layers : bool list, optional
-        Must be same length as n_layers, dictates whether to include a
-        local integral kernel parallel connection at each layer
-    disco_kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
-    default_in_shape : Tuple[int]
-        Default input shape on spatiotemporal dimensions. Repeated above for differential kernel.
-    domain_length: torch.Tensor, optional
-        extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
-    disco_groups: int, optional
-        number of groups in the convolution, by default 1
-    disco_bias: bool, optional
-        whether to use a bias, by default True
-    radius_cutoff: float, optional
-        cutoff radius (with respect to domain_length) for the kernel, by default None
     
     References
-    ----------
-    .. [1] Li, Z., Kovachki, N. B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., & Anandkumar, A.;
-        Fourier Neural Operator for Parametric Partial Differential Equations; ICLR 2021.
-    .. [2] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.;
-        Neural Operators with Localized Integral and Differential Kernels;  ICML 2024.
+    -----------
+    .. [1] :
+
+    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
+        Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
+    
+    .. [2] :
+
+    Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
+        Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024). 
+        TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
+
+    .. [3] :
+
+    Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.;
+        "Neural Operators with Localized Integral and Differential Kernels" (2024).  
+        ICML 2024, https://arxiv.org/pdf/2402.16845.
     """
     def __init__(
         self,
