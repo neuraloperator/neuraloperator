@@ -2,7 +2,7 @@ import pytest
 import torch
 from ..local_fno_block import LocalFNOBlocks
 
-def test_LocalFNOBlock_output_scaling_factor():
+def test_LocalFNOBlock_resolution_scaling_factor():
     """Test LocalFNOBlocks with upsampled or downsampled outputs
     """
     max_n_modes = [8, 8, 8]
@@ -16,20 +16,20 @@ def test_LocalFNOBlock_output_scaling_factor():
         block = LocalFNOBlocks(
             3, 4, default_in_shape=tuple(size[:dim]), n_modes=max_n_modes[:dim], max_n_modes=max_n_modes[:dim], n_layers=1, diff_layers=[True], disco_layers=[(dim == 2)])
         
-        assert block.convs.n_modes[:-1] == max_n_modes[:dim-1]
-        assert block.convs.n_modes[-1] == max_n_modes[dim-1]//2 + 1
+        assert block.convs[0].n_modes[:-1] == max_n_modes[:dim-1]
+        assert block.convs[0].n_modes[-1] == max_n_modes[dim-1]//2 + 1
 
         block.n_modes = n_modes[:dim]
-        assert block.convs.n_modes[:-1] == n_modes[:dim-1]
-        assert block.convs.n_modes[-1] == n_modes[dim-1]//2 + 1
+        assert block.convs[0].n_modes[:-1] == n_modes[:dim-1]
+        assert block.convs[0].n_modes[-1] == n_modes[dim-1]//2 + 1
 
         block.n_modes = max_n_modes[:dim]
-        assert block.convs.n_modes[:-1] == max_n_modes[:dim-1]
-        assert block.convs.n_modes[-1] == max_n_modes[dim-1]//2 + 1
+        assert block.convs[0].n_modes[:-1] == max_n_modes[:dim-1]
+        assert block.convs[0].n_modes[-1] == max_n_modes[dim-1]//2 + 1
 
         # Downsample outputs
         block = LocalFNOBlocks(
-            3, 4, n_modes[:dim], default_in_shape=tuple(size[:dim]), n_layers=1, diff_layers=[True], disco_layers=[(dim == 2)], output_scaling_factor=0.5, 
+            3, 4, n_modes[:dim], default_in_shape=tuple(size[:dim]), n_layers=1, diff_layers=[True], disco_layers=[(dim == 2)], resolution_scaling_factor=0.5, 
             use_mlp=True, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion, mlp_skip=mlp_skip)
 
         x = torch.randn(2, 3, *size[:dim])
@@ -38,7 +38,7 @@ def test_LocalFNOBlock_output_scaling_factor():
         
         # Upsample outputs
         block = LocalFNOBlocks(
-            3, 4, n_modes[:dim], default_in_shape=tuple(size[:dim]), n_layers=1, diff_layers=[True], disco_layers=[(dim == 2)], output_scaling_factor=2,
+            3, 4, n_modes[:dim], default_in_shape=tuple(size[:dim]), n_layers=1, diff_layers=[True], disco_layers=[(dim == 2)], resolution_scaling_factor=2,
             use_mlp=True, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion, mlp_skip=mlp_skip)
 
         x = torch.randn(2, 3, *size[:dim])
@@ -69,9 +69,3 @@ def test_LocalFNOBlock_norm(norm):
     x = torch.randn(2, 3, *size[:dim])
     res = block(x)
     assert(list(res.shape[2:]) == size[:dim])
-
-
-test_LocalFNOBlock_output_scaling_factor()
-test_LocalFNOBlock_norm('instance_norm')
-test_LocalFNOBlock_norm('ada_in')
-test_LocalFNOBlock_norm('group_norm')

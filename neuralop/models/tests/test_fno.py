@@ -18,16 +18,16 @@ tenalg.set_backend("einsum")
 @pytest.mark.parametrize("n_dim", [1, 2, 3, 4])
 @pytest.mark.parametrize("fno_block_precision", ["full", "half", "mixed"])
 @pytest.mark.parametrize("stabilizer", [None, "tanh"])
-@pytest.mark.parametrize("lifting_channels", [None, 32])
+@pytest.mark.parametrize("lifting_channel_ratio", [1, 2])
 @pytest.mark.parametrize("preactivation", [False, True])
-@pytest.mark.parametrize("complex_data", [False, True])
+@pytest.mark.parametrize("complex_data", [True, False])
 def test_tfno(
     factorization,
     implementation,
     n_dim,
     fno_block_precision,
     stabilizer,
-    lifting_channels,
+    lifting_channel_ratio,
     preactivation,
     complex_data
 ):
@@ -38,7 +38,6 @@ def test_tfno(
         width = 16
         fc_channels = 16
         batch_size = 4
-        use_channel_mlp = True
         n_layers = 4
     else:
         device = "cpu"
@@ -50,33 +49,29 @@ def test_tfno(
         batch_size = 3
         n_layers = 2
 
-        use_channel_mlp = True
-
+    dtype = torch.cfloat if complex_data else torch.float32
     rank = 0.2
     size = (s,) * n_dim
     n_modes = (modes,) * n_dim
     model = TFNO(
+        in_channels=3,
+        out_channels=1,
         hidden_channels=width,
         n_modes=n_modes,
         factorization=factorization,
         implementation=implementation,
         rank=rank,
         fixed_rank_modes=False,
-        joint_factorization=False,
         n_layers=n_layers,
-        fno_block_precision=fno_block_precision,
-        use_channel_mlp=use_channel_mlp,
         stabilizer=stabilizer,
         fc_channels=fc_channels,
-        lifting_channels=lifting_channels,
+        lifting_channel_ratio=lifting_channel_ratio,
         preactivation=preactivation,
-        complex_data=complex_data
+        complex_data=complex_data,
+        fno_block_precision=fno_block_precision
     ).to(device)
 
-    if complex_data:
-        in_data = torch.randn(batch_size, 3, *size, dtype=torch.cfloat).to(device)
-    else:
-        in_data = torch.randn(batch_size, 3, *size).to(device)
+    in_data = torch.randn(batch_size, 3, *size, dtype=dtype).to(device)
 
     # Test forward pass
     out = model(in_data)
@@ -87,7 +82,7 @@ def test_tfno(
     # Check backward pass
     loss = out.sum()
     # take the modulus if data is complex-valued to create grad
-    if complex_data:
+    if dtype == torch.cfloat:
         loss = (loss.real ** 2 + loss.imag ** 2) ** 0.5
     loss.backward()
 
@@ -99,7 +94,7 @@ def test_tfno(
 
 
 @pytest.mark.parametrize(
-    "output_scaling_factor",
+    "resolution_scaling_factor",
     [
         [2, 1, 1],
         [1, 2, 1],
@@ -108,7 +103,7 @@ def test_tfno(
         [1, 0.5, 1],
     ],
 )
-def test_fno_superresolution(output_scaling_factor):
+def test_fno_superresolution(resolution_scaling_factor):
     device = "cpu"
     s = 16
     modes = 5
@@ -116,31 +111,31 @@ def test_fno_superresolution(output_scaling_factor):
     fc_channels = 32
     batch_size = 3
     n_layers = 3
-    use_channel_mlp = True
     n_dim = 2
     rank = 0.2
     size = (s,) * n_dim
     n_modes = (modes,) * n_dim
 
     model = FNO(
-        n_modes,
-        hidden_channels,
         in_channels=3,
         out_channels=1,
+        n_modes=n_modes,
+        hidden_channels=hidden_channels,
         factorization="cp",
         implementation="reconstructed",
         rank=rank,
-        output_scaling_factor=output_scaling_factor,
+        resolution_scaling_factor=resolution_scaling_factor,
         n_layers=n_layers,
-        use_channel_mlp=use_channel_mlp,
         fc_channels=fc_channels,
     ).to(device)
+
+    print(f"{model.resolution_scaling_factor=}")
 
     in_data = torch.randn(batch_size, 3, *size).to(device)
     # Test forward pass
     out = model(in_data)
 
     # Check output size
-    factor = prod(output_scaling_factor)
+    factor = prod(resolution_scaling_factor)
 
     assert list(out.shape) == [batch_size, 1] + [int(round(factor * s)) for s in size]

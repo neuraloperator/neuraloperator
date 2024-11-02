@@ -160,7 +160,6 @@ class DiscreteContinuousConv(nn.Module, metaclass=abc.ABCMeta):
         kernel_shape: Union[int, List[int]],
         groups: Optional[int] = 1,
         bias: Optional[bool] = True,
-        transpose: bool = False
     ):
         super().__init__()
 
@@ -185,17 +184,11 @@ class DiscreteContinuousConv(nn.Module, metaclass=abc.ABCMeta):
         if out_channels % self.groups != 0:
             raise ValueError("Error, the number of output channels has to be an integer multiple of the group size")
         
-        if transpose:
-            self.groupsize = out_channels // self.groups
-        else:
-            self.groupsize = in_channels // self.groups
+        self.groupsize = in_channels // self.groups
         
         scale = math.sqrt(1.0 / self.groupsize)
         
-        if transpose:
-            self.weight = nn.Parameter(scale * torch.randn(in_channels, self.groupsize, self.kernel_size))
-        else:
-            self.weight = nn.Parameter(scale * torch.randn(out_channels, self.groupsize, self.kernel_size))
+        self.weight = nn.Parameter(scale * torch.randn(out_channels, self.groupsize, self.kernel_size))
 
         if bias:
             self.bias = nn.Parameter(torch.zeros(out_channels))
@@ -234,11 +227,14 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         kernel shape. Expects either a single integer for isotropic
         kernels or two integers for anisotropic kernels
     n_in: Tuple[int], optional
-        number of input points
+        number of input points along each dimension. Only used
+        if grid_in is passed as a str. See ``torch_harmonics.quadrature``.
     n_out: Tuple[int], optional
-        number of output points
+        number of output points along each dimension. Only used
+        if grid_out is passed as a str. See ``torch_harmonics.quadrature``.
     quad_weights: torch.Tensor, optional
         quadrature weights on the input grid
+        expects a tensor of shape (n_in,)
     periodic: bool, optional
         whether the domain is periodic, by default False
     groups: int, optional
@@ -272,7 +268,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         bias: Optional[bool] = True,
         radius_cutoff: Optional[float] = None,
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias, transpose=False)
+        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
 
         # the instantiator supports convenience constructors for the input and output grids
         if isinstance(grid_in, torch.Tensor):
@@ -401,11 +397,14 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
     kernel_shape: Union[int, List[int]]
         kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
     n_in: Tuple[int], optional
-        number of input points
+        number of input points along each dimension. Only used
+        if grid_in is passed as a str. See ``torch_harmonics.quadrature``.
     n_out: Tuple[int], optional
-        number of output points
+        number of output points along each dimension. Only used
+        if grid_out is passed as a str. See ``torch_harmonics.quadrature``.
     quad_weights: torch.Tensor, optional
         quadrature weights on the input grid
+        expects a tensor of shape (n_in,)
     periodic: bool, optional
         whether the domain is periodic, by default False
     groups: int, optional
@@ -436,7 +435,7 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         bias: Optional[bool] = True,
         radius_cutoff: Optional[float] = None,
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias, transpose=True)
+        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
 
         # the instantiator supports convenience constructors for the input and output grids
         if isinstance(grid_in, torch.Tensor):
@@ -524,17 +523,18 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
 
         # extract shape
         B, C, _ = x.shape
-        print(f"{x.shape=}")
 
         # bring x into the right shape for the bmm (batch_size x channels, n_in) and pre-apply psi to x
         x = x.reshape(B * C, self.n_in).permute(1, 0).contiguous()
         x = torch.mm(psi, x)
+
         x = x.permute(1, 0).reshape(B, C, self.kernel_size, self.n_out)
+        x = x.reshape(B, self.groups, self.groupsize, self.kernel_size, self.n_out)
 
         # do weight multiplication
-        # weight: shape in_c, out_c/groups, kernel shape
-        out = torch.einsum("bckx,cg->bgox", x, self.weight.reshape(self.groups, -1, self.weight.shape[1], self.weight.shape[2]))
-        #out = torch.einsum("bgckx,gock->bgox", x, self.weight.reshape(self.groups, -1, self.weight.shape[1], self.weight.shape[2]))
+        out = torch.einsum("bgckx,gock->bgox", x, self.weight.reshape(self.groups, -1,
+                                                                      self.weight.shape[1],
+                                                                      self.weight.shape[2]))
         out = out.reshape(out.shape[0], -1, out.shape[-1])
 
         if self.bias is not None:
@@ -599,7 +599,7 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         radius_cutoff: Optional[float] = None,
         **kwargs
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias, transpose=False)
+        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
 
         # to ensure compatibility with the unstructured code, only constant zero and periodic padding are supported currently
         self.padding_mode = "circular" if periodic else "zeros"
@@ -741,7 +741,12 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         radius_cutoff: Optional[float] = None,
         **kwargs
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias, transpose=True)
+        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
+        # torch ConvTranspose2d expects grouped weights stacked along the out_channels
+        # shape (in_channels, out_channels/groups, h, w)
+        self.weight = nn.Parameter(self.weight.permute(1,0,2).reshape(self.groupsize * self.groups,
+                                                                      -1,
+                                                                      self.weight.shape[-1]))
 
         # to ensure compatibility with the unstructured code, only constant zero and periodic padding are supported currently
         self.padding_mode = "circular" if periodic else "zeros"
@@ -813,7 +818,6 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         """
         Forward call. Expects an input of shape batch_size x in_channels x in_shape[0] x in_shape[1].
         """
-
         kernel = torch.einsum("kxy,ogk->ogxy", self.get_psi(), self.weight)
 
         # padding is rounded down to give the right result when even kernels are applied
@@ -824,8 +828,6 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         h_pad_out = self.scale_h - (self.psi_local_h // 2 - h_pad) - 1
         w_pad_out = self.scale_w - (self.psi_local_w // 2 - w_pad) - 1
 
-        print(f"{kernel.shape=}")
-        print(f"{x.shape=}")
         out = nn.functional.conv_transpose2d(self.q_weight * x, kernel, self.bias, stride=[self.scale_h, self.scale_w], dilation=[1,1], padding=[h_pad, w_pad], output_padding=[h_pad_out, w_pad_out], groups=self.groups)
 
         return out

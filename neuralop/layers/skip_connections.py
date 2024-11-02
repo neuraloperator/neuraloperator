@@ -70,7 +70,7 @@ class SoftGating(nn.Module):
         super().__init__()
         if out_features is not None and in_features != out_features:
             raise ValueError(
-                f"Got in_features={in_features} and out_features={out_features}"
+                f"Got in_features={in_features} and out_features={out_features}, "
                 "but these two must be the same for soft-gating"
             )
         self.in_features = in_features

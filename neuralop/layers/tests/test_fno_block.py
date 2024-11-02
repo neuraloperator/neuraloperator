@@ -2,35 +2,36 @@ import pytest
 import torch
 from ..fno_block import FNOBlocks
 
-def test_FNOBlock_output_scaling_factor():
+def test_FNOBlock_resolution_scaling_factor():
     """Test FNOBlocks with upsampled or downsampled outputs
     """
     max_n_modes = [8, 8, 8, 8]
     n_modes = [4, 4, 4, 4]
     
     size = [10]*4
-    mlp_dropout=0
-    mlp_expansion=0.5
-    mlp_skip='linear'
+    channel_mlp_dropout=0
+    channel_mlp_expansion=0.5
+    channel_mlp_skip='linear'
     for dim in [1, 2, 3, 4]:
         block = FNOBlocks(
-            3, 4, max_n_modes[:dim], max_n_modes=max_n_modes[:dim], n_layers=1)
+            3, 4, max_n_modes[:dim], max_n_modes=max_n_modes[:dim], n_layers=1, channel_mlp_skip=channel_mlp_skip)
         
-        assert block.convs.n_modes[:-1] == max_n_modes[:dim-1]
-        assert block.convs.n_modes[-1] == max_n_modes[dim-1]//2 + 1
+        assert block.convs[0].n_modes[:-1] == max_n_modes[:dim-1]
+        assert block.convs[0].n_modes[-1] == max_n_modes[dim-1]//2 + 1
 
         block.n_modes = n_modes[:dim]
-        assert block.convs.n_modes[:-1] == n_modes[:dim-1]
-        assert block.convs.n_modes[-1] == n_modes[dim-1]//2 + 1
+        assert block.convs[0].n_modes[:-1] == n_modes[:dim-1]
+        assert block.convs[0].n_modes[-1] == n_modes[dim-1]//2 + 1
 
         block.n_modes = max_n_modes[:dim]
-        assert block.convs.n_modes[:-1] == max_n_modes[:dim-1]
-        assert block.convs.n_modes[-1] == max_n_modes[dim-1]//2 + 1
+        assert block.convs[0].n_modes[:-1] == max_n_modes[:dim-1]
+        assert block.convs[0].n_modes[-1] == max_n_modes[dim-1]//2 + 1
 
         # Downsample outputs
         block = FNOBlocks(
-            3, 4, n_modes[:dim], n_layers=1, output_scaling_factor=0.5, 
-            use_mlp=True, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion, mlp_skip=mlp_skip)
+            3, 4, n_modes[:dim], n_layers=1, resolution_scaling_factor=0.5, 
+            use_mlp=True, channel_mlp_dropout=channel_mlp_dropout, 
+            channel_mlp_expansion=channel_mlp_expansion, channel_mlp_skip=channel_mlp_skip)
 
         x = torch.randn(2, 3, *size[:dim])
         res = block(x)
@@ -38,8 +39,9 @@ def test_FNOBlock_output_scaling_factor():
         
         # Upsample outputs
         block = FNOBlocks(
-            3, 4, n_modes[:dim], n_layers=1, output_scaling_factor=2,
-            use_mlp=True, mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion, mlp_skip=mlp_skip)
+            3, 4, n_modes[:dim], n_layers=1, resolution_scaling_factor=2, 
+            channel_mlp_dropout=channel_mlp_dropout, channel_mlp_expansion=channel_mlp_expansion, 
+            channel_mlp_skip=channel_mlp_skip)
 
         x = torch.randn(2, 3, *size[:dim])
         res = block(x)
@@ -54,14 +56,15 @@ def test_FNOBlock_norm(norm):
     """
     modes = (8, 8, 8)
     size = [10]*3
-    mlp_dropout=0
-    mlp_expansion=0.5
-    mlp_skip='linear'
+    channel_mlp_dropout=0
+    channel_mlp_expansion=0.5
+    channel_mlp_skip='linear'
     dim = 2
     ada_in_features = 4
     block = FNOBlocks(
-        3, 4, modes[:dim], n_layers=1, use_mlp=True, norm=norm, ada_in_features=ada_in_features,
-        mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion, mlp_skip=mlp_skip)
+        3, 4, modes[:dim], n_layers=1, norm=norm, ada_in_features=ada_in_features,
+        channel_mlp_dropout=channel_mlp_dropout, channel_mlp_expansion=channel_mlp_expansion, 
+        channel_mlp_skip=channel_mlp_skip)
 
     if norm == 'ada_in':
         embedding = torch.randn(ada_in_features)
@@ -78,13 +81,14 @@ def test_FNOBlock_complex_data(n_dim):
     """
     modes = (8, 8, 8)
     size = [10]*3
-    mlp_dropout=0
+    channel_mlp_dropout=0
     mlp_expansion=0.5
-    mlp_skip='linear'
+    channel_mlp_skip='linear'
     # Instantiate a complex-valued FNO block
     block = FNOBlocks(
-        3, 4, modes[:n_dim], n_layers=1, use_mlp=True,
-        mlp_dropout=mlp_dropout, mlp_expansion=mlp_expansion, mlp_skip=mlp_skip, complex_data=True)
+        3, 4, modes[:n_dim], n_layers=1,
+        channel_mlp_dropout=channel_mlp_dropout, channel_mlp_expansion=mlp_expansion, 
+        channel_mlp_skip=channel_mlp_skip, complex_data=True)
 
     x = torch.randn(2, 3, *size[:n_dim], dtype=torch.cfloat)
     res = block(x)

@@ -1,9 +1,8 @@
 """
-Training a TFNO on Darcy-Flow
-=============================
+Checkpointing and loading training states
+=========================================
 
-In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
-to train a Tensorized Fourier-Neural Operator
+In this example, we demonstrate the Trainer's saving and loading functionality, which makes it easy to checkpoint and resume training states. 
 """
 
 # %%
@@ -11,8 +10,9 @@ to train a Tensorized Fourier-Neural Operator
 import torch
 import matplotlib.pyplot as plt
 import sys
-from neuralop.models import TFNO
+from neuralop.models import FNO
 from neuralop import Trainer
+from neuralop.training import AdamW
 from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
@@ -30,9 +30,16 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
 
 
 # %%
-# We create a tensorized FNO model
+# We create an FNO model
 
-model = TFNO(n_modes=(16, 16), in_channels=1, hidden_channels=32, projection_channels=64, factorization='tucker', rank=0.42)
+model = FNO(n_modes=(16, 16),
+             in_channels=1, 
+             out_channels=1, 
+             hidden_channels=32, 
+             projection_channel_ratio=2, 
+             factorization='tucker', 
+             rank=0.42)
+
 model = model.to(device)
 
 n_params = count_model_params(model)
@@ -42,7 +49,7 @@ sys.stdout.flush()
 
 # %%
 #Create the optimizer
-optimizer = torch.optim.Adam(model.parameters(), 
+optimizer = AdamW(model.parameters(), 
                                 lr=8e-3, 
                                 weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
@@ -93,6 +100,7 @@ trainer.train(train_loader=train_loader,
               save_dir="./checkpoints")
 
 
+# .. resume_from_dir:
 # resume training from saved checkpoint at epoch 10
 
 trainer = Trainer(model=model, n_epochs=20,

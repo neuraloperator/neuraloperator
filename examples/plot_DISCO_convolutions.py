@@ -96,7 +96,7 @@ q_out = (w_x * w_y).reshape(-1)
 
 # %%
 # Initialize the convolution and set the weights to something resembling an edge filter/finit differences
-conv = DiscreteContinuousConv2d(1, 1, grid_in=grid_in, grid_out=grid_out, quad_weights=q_in, kernel_shape=[2,4], radius_cutoff=3/nyo, periodic=False).float()
+conv = DiscreteContinuousConv2d(1, 1, grid_in=grid_in, grid_out=grid_out, quad_weights=q_in, kernel_shape=[2,4], radius_cutoff=5/nyo, periodic=False).float()
 
 # initialize a kernel resembling an edge filter
 w = torch.zeros_like(conv.weight)
@@ -119,7 +119,7 @@ plt.show()
 out1 = torch.flip(out.squeeze().detach().reshape(nxo, nyo).transpose(0,1), dims=(-2, ))
 
 # %% do the same but on an equidistant grid:
-conv_equi = EquidistantDiscreteContinuousConv2d(1, 1, (nx, ny), (nxo, nyo), kernel_shape=[2,4], radius_cutoff=3/nyo, domain_length=[2,3])
+conv_equi = EquidistantDiscreteContinuousConv2d(1, 1, (nx, ny), (nxo, nyo), kernel_shape=[2,4], radius_cutoff=5/nyo, domain_length=[2,3])
 
 # initialize a kernel resembling an edge filter
 w = torch.zeros_like(conv.weight)
