@@ -213,6 +213,18 @@ We also provide additional layers that implement standard deep learning architec
     EquidistantDiscreteContinuousConv2d
     EquidistantDiscreteContinuousConvTranspose2d
 
+**Local FNO Blocks**
+
+.. automodule:: neuralop.layers.local_fno_block.py
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    LocalFNOBlocks
+
 **Codomain Attention (Transformer) Blocks**
 
 .. automodule:: neuralop.layers.coda_blocks
