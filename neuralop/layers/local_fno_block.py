@@ -116,22 +116,14 @@ class LocalFNOBlocks(nn.Module):
     
     References
     -----------
-    .. [1] :
-
-    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
-        Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
-    
-    .. [2] :
-
-    Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
-        Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024). 
-        TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
-
-    .. [3] :
-
-    Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.;
-        "Neural Operators with Localized Integral and Differential Kernels" (2024).  
-        ICML 2024, https://arxiv.org/pdf/2402.16845.
+    .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
+           Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
+    .. [2] Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
+           Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024). 
+           TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
+    .. [3] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.;
+           "Neural Operators with Localized Integral and Differential Kernels" (2024).  
+           ICML 2024, https://arxiv.org/pdf/2402.16845.
     """
     def __init__(
         self,
