@@ -215,7 +215,7 @@ We also provide additional layers that implement standard deep learning architec
 
 **Local FNO Blocks**
 
-.. automodule:: neuralop.layers.local_fno_block.py
+.. automodule:: neuralop.layers.local_fno_block
     :no-members:
     :no-inherited-members:
 
