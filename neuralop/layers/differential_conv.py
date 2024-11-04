@@ -16,7 +16,7 @@ class FiniteDifferenceConvolution(nn.Module):
             number of in_channels
         out_channels : int
             number of out_channels
-        num_dim : int
+        n_dim : int
             number of dimensions in the input domain
         kernel_size : int
             odd kernel size used for convolutional finite difference stencil
@@ -43,22 +43,22 @@ class FiniteDifferenceConvolution(nn.Module):
             self, 
             in_channels, 
             out_channels, 
-            num_dim, 
+            n_dim, 
             kernel_size=3, 
             groups=1, 
             padding='periodic', 
             implementation='subtract_middle'):
         super().__init__()
-        conv_module = getattr(nn, f"Conv{num_dim}d")
-        self.F_conv_module = getattr(F, f"conv{num_dim}d")
-        self.conv_function = getattr(F, f"conv{num_dim}d")
+        conv_module = getattr(nn, f"Conv{n_dim}d")
+        self.F_conv_module = getattr(F, f"conv{n_dim}d")
+        self.conv_function = getattr(F, f"conv{n_dim}d")
 
         assert kernel_size % 2 == 1, "Kernel size should be odd"
         self.kernel_size = kernel_size
 
         self.in_channels = in_channels
         self.groups = groups
-        self.num_dim = num_dim
+        self.n_dim = n_dim
 
         if padding == 'periodic':
             self.padding_mode = 'circular'
@@ -77,8 +77,8 @@ class FiniteDifferenceConvolution(nn.Module):
 
         self.implementation = implementation
         if implementation == 'subtract_all':
-            self.conv_kernel = torch.nn.parameter.Parameter(torch.randn(
-                                        out_channels, in_channels // groups, kernel_size, kernel_size))
+            conv_kernel_shape = [out_channels, in_channels // groups] + [kernel_size] * self.n_dim
+            self.conv_kernel = torch.nn.parameter.Parameter(torch.randn(*conv_kernel_shape))
             self.weight = self.conv_kernel
         elif implementation == 'subtract_middle':
             self.conv = conv_module(in_channels, out_channels, kernel_size=kernel_size, 
@@ -90,13 +90,13 @@ class FiniteDifferenceConvolution(nn.Module):
 
     def _forward_subtract_middle(self, x, grid_width):
         conv = self.conv(x)
-        conv_sum = torch.sum(self.conv.weight, dim=tuple([i for i in range(2, 2 + self.num_dim)]), keepdim=True)
+        conv_sum = torch.sum(self.conv.weight, dim=tuple([i for i in range(2, 2 + self.n_dim)]), keepdim=True)
         conv_sum = self.conv_function(x, conv_sum, groups=self.groups)
         return (conv - conv_sum) / grid_width
     def _forward_subtract_all(self, x, grid_width):
         x_pad = F.pad(x, (self.pad_size, self.pad_size, self.pad_size, self.pad_size), self.padding_mode)
-        conv_mean = torch.mean(self.conv_kernel, dim=tuple([i for i in range(2, 2 + self.num_dim)]), keepdim=True)
-        conv_mean = conv_mean.repeat([1 for _ in range(len(conv_mean.shape) - self.num_dim)] + [self.kernel_size for _ in range(self.num_dim)])
+        conv_mean = torch.mean(self.conv_kernel, dim=tuple([i for i in range(2, 2 + self.n_dim)]), keepdim=True)
+        conv_mean = conv_mean.repeat([1 for _ in range(len(conv_mean.shape) - self.n_dim)] + [self.kernel_size for _ in range(self.n_dim)])
         conv_x = self.F_conv_module(input=x_pad, weight=(self.conv_kernel - conv_mean), padding='valid', groups=self.groups)
         return conv_x / grid_width
 
