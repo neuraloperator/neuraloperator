@@ -103,6 +103,8 @@ def test_local_fno_with_disco(
         batch_size = 3
         n_layers = 2
 
+    if isinstance(disco_layers, list):
+        disco_layers = disco_layers[:n_layers]
     rank = 0.2
     size = (s,) * n_dim
     n_modes = (modes,) * n_dim
