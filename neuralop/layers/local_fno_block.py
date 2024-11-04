@@ -59,8 +59,6 @@ class LocalFNOBlocks(nn.Module):
         Must be same length as n_layers, dictates whether to include a
         differential kernel parallel connection at each layer. If a single
         bool, shared for all layers.
-    fin_diff_implementation : str in ['subtract_middle', 'subtract_all'], optional
-        Implementation type for FiniteDifferenceConvolution. See differential_conv.py.
     conv_padding_mode : str in ['periodic', 'circular', 'replicate', 'reflect', 'zeros'], optional
         Padding mode for spatial convolution kernels.
     fin_diff_kernel_size : odd int, optional
@@ -142,7 +140,6 @@ class LocalFNOBlocks(nn.Module):
         disco_groups=1,
         disco_bias=True,
         diff_layers=True,
-        fin_diff_implementation='subtract_middle',
         conv_padding_mode='periodic',
         fin_diff_kernel_size=3,
         mix_derivatives=True,
@@ -219,7 +216,6 @@ class LocalFNOBlocks(nn.Module):
         self.ada_in_features = ada_in_features
 
         self.diff_layers = diff_layers
-        self.fin_diff_implementation = fin_diff_implementation
         self.conv_padding_mode = conv_padding_mode
         self.default_in_shape = default_in_shape
         self.fin_diff_kernel_size = fin_diff_kernel_size
@@ -271,7 +267,7 @@ class LocalFNOBlocks(nn.Module):
             [
                 FiniteDifferenceConvolution(self.in_channels, self.out_channels,
                                             self.n_dim, self.fin_diff_kernel_size, 
-                                            self.diff_groups, self.conv_padding_mode, fin_diff_implementation)
+                                            self.diff_groups, self.conv_padding_mode)
                 for _ in range(sum(self.diff_layers))
             ]
         )

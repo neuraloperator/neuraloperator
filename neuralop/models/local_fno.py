@@ -54,8 +54,6 @@ class LocalFNO(BaseModel, name='LocalFNO'):
         Must be same length as n_layers, dictates whether to include a
         differential kernel parallel connection at each layer. If a single
         bool, shared for all layers.
-    fin_diff_implementation : str in ['subtract_middle', 'subtract_all'], optional
-        Implementation type for FiniteDifferenceConvolution. See differential_conv.py.
     conv_padding_mode : str in ['periodic', 'circular', 'replicate', 'reflect', 'zeros'], optional
         Padding mode for spatial convolution kernels.
     fin_diff_kernel_size : odd int, optional
@@ -190,7 +188,6 @@ class LocalFNO(BaseModel, name='LocalFNO'):
         disco_groups: int=1,
         disco_bias: bool=True,
         diff_layers: Union[bool, List[bool]]=True,
-        fin_diff_implementation: str='subtract_middle',
         conv_padding_mode: str='periodic',
         fin_diff_kernel_size: int=3,
         mix_derivatives: bool=True,
@@ -304,7 +301,6 @@ class LocalFNO(BaseModel, name='LocalFNO'):
             disco_groups=disco_groups,
             disco_bias=disco_bias,
             diff_layers=diff_layers,
-            fin_diff_implementation=fin_diff_implementation,
             conv_padding_mode=conv_padding_mode,
             fin_diff_kernel_size=fin_diff_kernel_size,
             mix_derivatives=mix_derivatives,
