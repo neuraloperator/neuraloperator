@@ -17,7 +17,8 @@ def test_fourier_continuation_1d():
     # Check shape
     assert f_extend_both_sides.shape[-1] == f_extend_one_side.shape[-1] == f.shape[-1] + add_pts
     # Check values of original signal
-    assert f == f_extend_both_sides[add_pts//2:-add_pts//2] == f_extend_one_side[:add_pts]
+    torch.testing.assert_close(f, f_extend_one_side[...,:length_signal])
+    torch.testing.assert_close(f, f_extend_both_sides[...,add_pts//2:-add_pts//2])
     
     # # Plot to verify
     # import matplotlib.pyplot as plt
@@ -54,12 +55,12 @@ def test_fourier_continuation_2d():
 
     # Check shape
     assert f_extend_one_side.shape[-1] == f.shape[-1] + add_pts
-    assert f_extend_one_side.shape[-2] == f.shape[-2]
+    assert f_extend_one_side.shape[-2] == f.shape[-2] + add_pts
     assert f_extend_both_sides.shape[-1] == f.shape[-1] + add_pts
     assert f_extend_both_sides.shape[-2] == f.shape[-2] + add_pts
     # Check values of original signal
-    assert f == f_extend_both_sides[add_pts//2:-add_pts//2, add_pts//2:-add_pts//2] 
-    assert f == f_extend_one_side[:add_pts, :add_pts]
+    torch.testing.assert_close(f, f_extend_both_sides[...,add_pts//2:-add_pts//2, add_pts//2:-add_pts//2])
+    torch.testing.assert_close(f, f_extend_one_side[...,:length_signal, :length_signal])
 
     # # Plot to verify
     # import matplotlib.pyplot as plt
