@@ -229,8 +229,12 @@ class LocalFNOBlocks(nn.Module):
         self.disco_bias = disco_bias
         self.periodic = (self.conv_padding_mode in ['circular', 'periodic'])
 
-        assert len(diff_layers) == n_layers, "Length of diff_layers must be n_layers"
-        assert len(disco_layers) == n_layers, "Length of disco_layers must be n_layers"
+        assert len(diff_layers) == n_layers,\
+            f"diff_layers must either provide a single bool value or a list of booleans of length n_layers,\
+                got {len(diff_layers)=}"
+        assert len(disco_layers) == n_layers,\
+            f"disco_layers must either provide a single bool value or a list of booleans of length n_layers,\
+                    got {len(disco_layers)=}"
 
         self.convs = nn.ModuleList(
             [
