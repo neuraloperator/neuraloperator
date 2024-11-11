@@ -12,8 +12,9 @@ from functools import partial
 from torch_harmonics.quadrature import _precompute_grid
 from torch_harmonics.convolution import _compute_support_vals_isotropic, _compute_support_vals_anisotropic
 
+#def _compute_kernel_basis_isotropic()
 
-def _normalize_convolution_tensor_2d(psi_idx,
+def _normalize_convolution_filter_matrix(psi_idx,
                                      psi_vals,
                                      grid_in,
                                      grid_out,
@@ -65,7 +66,7 @@ def _normalize_convolution_tensor_2d(psi_idx,
     return psi_vals
 
 
-def _precompute_convolution_tensor_2d(grid_in,
+def _precompute_convolution_filter_matrix(grid_in,
                                       grid_out,
                                       kernel_shape,
                                       quad_weights,
@@ -74,8 +75,25 @@ def _precompute_convolution_tensor_2d(grid_in,
                                       periodic=False,
                                       transpose_normalization=False):
     """
-    Precomputes the translated filters at positions $T^{-1}_j \omega_i = T^{-1}_j T_i \nu$. Similar to the S2 routine,
-    only that it assumes a non-periodic subset of the euclidean plane
+    Precomputes the values stored in Psi, the local convolution filter matrix. 
+    The values are the results of a set of kernel basis "hat" functions applied to 
+    pairwise distances between each points on the input and output grids.
+
+    The hat functions are the absolute differences between a squared distance and a
+    multiple of the radius scaled by the kernel size. 
+
+    Assume the kernel is an array of shape ``(k0, k1)``. Then:
+
+    If the kernel is isotropic (``k0 == k1``), the basis functions are a series of
+    ``k0`` distances re-centered around multiples of the discretization size of the
+    convolution's radius. If the kernel is anisotropic, the outputs of these hat
+    functions are then multiplied by the outputs of another series of ``k1`` hat 
+    functions evaluated on the arctangents of these pairwise distances. 
+
+    Compared to the ``torch_harmonics`` routine for spherical support values, this
+    function also returns the translated filters at positions 
+    $T^{-1}_j \omega_i = T^{-1}_j T_i \nu$, but assumes a non-periodic subset of the
+    euclidean plane.
     """
 
     # check that input arrays are valid point clouds in 2D
@@ -110,7 +128,7 @@ def _precompute_convolution_tensor_2d(grid_in,
     idx = idx.permute(1, 0)
 
     if normalize:
-        vals = _normalize_convolution_tensor_2d(idx,
+        vals = _normalize_convolution_filter_matrix(idx,
                                                 vals,
                                                 grid_in,
                                                 grid_out,
@@ -319,7 +337,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         # integration weights
         self.register_buffer("quad_weights", quad_weights, persistent=False)
 
-        idx, vals = _precompute_convolution_tensor_2d(grid_in,
+        idx, vals = _precompute_convolution_filter_matrix(grid_in,
                                                       grid_out,
                                                       self.kernel_shape,
                                                       quad_weights,
@@ -487,7 +505,7 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         self.register_buffer("quad_weights", quad_weights, persistent=False)
 
         # precompute the transposed tensor
-        idx, vals = _precompute_convolution_tensor_2d(
+        idx, vals = _precompute_convolution_filter_matrix(
             grid_out, grid_in, self.kernel_shape, quad_weights, 
             radius_cutoff=radius_cutoff, periodic=periodic, transpose_normalization=True
         )
@@ -637,7 +655,7 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         grid_out = torch.Tensor([[0.0], [0.0]])
 
         # precompute psi using conventional routines onto the local grid
-        idx, vals = _precompute_convolution_tensor_2d(grid_in,
+        idx, vals = _precompute_convolution_filter_matrix(grid_in,
                                                       grid_out,
                                                       self.kernel_shape,
                                                       quad_weights,
@@ -784,7 +802,7 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         quad_weights = self.q_weight * torch.ones(self.psi_local_h * self.psi_local_w)
 
         # precompute psi using conventional routines onto the local grid
-        idx, vals = _precompute_convolution_tensor_2d(grid_in, 
+        idx, vals = _precompute_convolution_filter_matrix(grid_in, 
                                                       grid_out,
                                                       self.kernel_shape,
                                                       quad_weights,
