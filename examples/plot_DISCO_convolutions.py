@@ -103,7 +103,7 @@ w = torch.zeros_like(conv.weight)
 w[0,0,1] = 1.0
 w[0,0,3] = -1.0
 conv.weight = nn.Parameter(w)
-psi = conv.get_psi()
+psi = conv.get_local_filter_matrix()
 
 # %% apply the DISCO convolution to the data and plot it
 # in order to compute the convolved image, we need to first bring it into the right shape with `batch_size x n_channels x n_grid_points`
@@ -145,7 +145,7 @@ print(out2.shape)
 # %%
 
 plt.figure(figsize=(4,6), )
-plt.imshow(conv_equi.get_psi()[0].detach(), cmap=cmap)
+plt.imshow(conv_equi.get_local_filter_matrix()[0].detach(), cmap=cmap)
 plt.colorbar()
 
 # # %%
