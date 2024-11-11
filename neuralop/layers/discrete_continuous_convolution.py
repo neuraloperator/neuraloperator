@@ -354,7 +354,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         self.register_buffer("psi_idx", idx.contiguous(), persistent=False)
         self.register_buffer("psi_vals", vals.contiguous(), persistent=False)
 
-    def get_psi(self):
+    def get_local_filter_matrix(self):
         """
         Returns the precomputed local convolution filter matrix Psi.
         Psi parameterizes the kernel function as triangular basis functions 
@@ -374,7 +374,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         # pre-multiply x with the quadrature weights
         x = self.quadrature_weights * x
 
-        psi = self.get_psi()
+        psi = self.get_local_filter_matrix()
 
         # extract shape
         B, C, _ = x.shape
@@ -523,7 +523,7 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         self.register_buffer("psi_idx", idx.contiguous(), persistent=False)
         self.register_buffer("psi_vals", vals.contiguous(), persistent=False)
 
-    def get_psi(self):
+    def get_local_filter_matrix(self):
         """
         Returns the precomputed local convolution filter matrix Psi.
         Psi parameterizes the kernel function as triangular basis functions 
@@ -543,7 +543,7 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         # pre-multiply x with the quadrature weights
         x = self.quadrature_weights * x
 
-        psi = self.get_psi()
+        psi = self.get_local_filter_matrix()
 
         # extract shape
         B, C, _ = x.shape
@@ -673,17 +673,17 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
                                                       normalize=True)
 
         # extract the local psi as a dense representation
-        psi_loc = torch.zeros(self.kernel_size, self.psi_local_h*self.psi_local_w)
+        local_filter_matrix = torch.zeros(self.kernel_size, self.psi_local_h*self.psi_local_w)
         for ie in range(len(vals)):
             f = idx[0, ie]; j = idx[2, ie]; v = vals[ie]
-            psi_loc[f, j] = v
+            local_filter_matrix[f, j] = v
 
         # compute local version of the filter matrix
-        psi_loc = psi_loc.reshape(self.kernel_size, self.psi_local_h, self.psi_local_w)
+        local_filter_matrix = local_filter_matrix.reshape(self.kernel_size, self.psi_local_h, self.psi_local_w)
 
-        self.register_buffer("psi_loc", psi_loc, persistent=False)
+        self.register_buffer("local_filter_matrix", local_filter_matrix, persistent=False)
 
-    def get_psi(self):
+    def get_local_filter_matrix(self):
         """
         Returns the precomputed local convolution filter matrix Psi.
         Psi parameterizes the kernel function as triangular basis functions 
@@ -692,14 +692,14 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         the output grid and point j in the input grid.
         """
 
-        return self.psi_loc.permute(0, 2, 1).flip(dims=(-1,-2))
+        return self.local_filter_matrix.permute(0, 2, 1).flip(dims=(-1,-2))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward call. Expects an input of shape batch_size x in_channels x in_shape[0] x in_shape[1].
         """
 
-        kernel = torch.einsum("kxy,ogk->ogxy", self.get_psi(), self.weight)
+        kernel = torch.einsum("kxy,ogk->ogxy", self.get_local_filter_matrix(), self.weight)
         # padding is rounded down to give the right result when even kernels are applied
         # Check https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html for output shape math
         h_pad = (self.psi_local_h+1) // 2 - 1
@@ -823,17 +823,17 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
                                                       transpose_normalization=False)
 
         # extract the local psi as a dense representation
-        psi_loc = torch.zeros(self.kernel_size, self.psi_local_h*self.psi_local_w)
+        local_filter_matrix = torch.zeros(self.kernel_size, self.psi_local_h*self.psi_local_w)
         for ie in range(len(vals)):
             f = idx[0, ie]; j = idx[2, ie]; v = vals[ie]
-            psi_loc[f, j] = v
+            local_filter_matrix[f, j] = v
 
         # compute local version of the filter matrix
-        psi_loc = psi_loc.reshape(self.kernel_size, self.psi_local_h, self.psi_local_w)
+        local_filter_matrix = local_filter_matrix.reshape(self.kernel_size, self.psi_local_h, self.psi_local_w)
 
-        self.register_buffer("psi_loc", psi_loc, persistent=False)
+        self.register_buffer("local_filter_matrix", local_filter_matrix, persistent=False)
 
-    def get_psi(self):
+    def get_local_filter_matrix(self):
         """
         Returns the precomputed local convolution filter matrix Psi.
         Psi parameterizes the kernel function as triangular basis functions 
@@ -842,13 +842,13 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         the output grid and point j in the input grid.
         """
 
-        return self.psi_loc.permute(0, 2, 1).flip(dims=(-1,-2))
+        return self.local_filter_matrix.permute(0, 2, 1).flip(dims=(-1,-2))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward call. Expects an input of shape batch_size x in_channels x in_shape[0] x in_shape[1].
         """
-        kernel = torch.einsum("kxy,ogk->ogxy", self.get_psi(), self.weight)
+        kernel = torch.einsum("kxy,ogk->ogxy", self.get_local_filter_matrix(), self.weight)
 
         # padding is rounded down to give the right result when even kernels are applied
         # Check https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html for output shape math
