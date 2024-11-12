@@ -1,5 +1,8 @@
 import pytest
 import torch
+from torch import nn
+from torch.testing import assert_close
+
 from ..discrete_continuous_convolution import (DiscreteContinuousConv2d, 
                                                DiscreteContinuousConvTranspose2d, 
                                                EquidistantDiscreteContinuousConv2d,
@@ -28,7 +31,7 @@ def test_regular_disco_conv2d(conv_type, groups):
     grid_out = grid_out.view(2, -1)
 
     # quad weights: one weight per point
-    quad_weights = torch.randn(grid_in.shape[1])
+    quadrature_weights = torch.randn(grid_in.shape[1])
 
     conv_layer = conv_type(
         in_channels=in_channels,
@@ -36,7 +39,7 @@ def test_regular_disco_conv2d(conv_type, groups):
         grid_in=grid_in,
         grid_out=grid_out,
         kernel_shape=3,
-        quad_weights=quad_weights,
+        quadrature_weights=quadrature_weights,
         groups=groups
     )
 

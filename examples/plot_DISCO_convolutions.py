@@ -96,14 +96,14 @@ q_out = (w_x * w_y).reshape(-1)
 
 # %%
 # Initialize the convolution and set the weights to something resembling an edge filter/finit differences
-conv = DiscreteContinuousConv2d(1, 1, grid_in=grid_in, grid_out=grid_out, quad_weights=q_in, kernel_shape=[2,4], radius_cutoff=5/nyo, periodic=False).float()
+conv = DiscreteContinuousConv2d(1, 1, grid_in=grid_in, grid_out=grid_out, quadrature_weights=q_in, kernel_shape=[2,4], radius_cutoff=5/nyo, periodic=False).float()
 
 # initialize a kernel resembling an edge filter
 w = torch.zeros_like(conv.weight)
 w[0,0,1] = 1.0
 w[0,0,3] = -1.0
 conv.weight = nn.Parameter(w)
-psi = conv.get_psi()
+psi = conv.get_local_filter_matrix()
 
 # %% apply the DISCO convolution to the data and plot it
 # in order to compute the convolved image, we need to first bring it into the right shape with `batch_size x n_channels x n_grid_points`
@@ -145,7 +145,7 @@ print(out2.shape)
 # %%
 
 plt.figure(figsize=(4,6), )
-plt.imshow(conv_equi.get_psi()[0].detach(), cmap=cmap)
+plt.imshow(conv_equi.get_local_filter_matrix()[0].detach(), cmap=cmap)
 plt.colorbar()
 
 # # %%
@@ -157,7 +157,7 @@ plt.colorbar()
 # plt.show()
 
 # %% test the transpose convolution
-convt = DiscreteContinuousConvTranspose2d(1, 1, grid_in=grid_out, grid_out=grid_in, quad_weights=q_out, kernel_shape=[2,4], radius_cutoff=3/nyo, periodic=False).float()
+convt = DiscreteContinuousConvTranspose2d(1, 1, grid_in=grid_out, grid_out=grid_in, quadrature_weights=q_out, kernel_shape=[2,4], radius_cutoff=3/nyo, periodic=False).float()
 
 # initialize a flat
 w = torch.zeros_like(conv.weight)
