@@ -33,7 +33,7 @@ Module                             Description
 :mod:`neuralop`                   Main library 
 :mod:`neuralop.models`            Full ready-to-use neural operators
 :mod:`neuralop.layers`            Individual layers to build neural operators
-:mod:`neuralop.datasets`          Convenience PyTorch data loaders for PDE datasets
+:mod:`neuralop.data`              Convenience PyTorch data loaders for PDE datasets
 :mod:`neuralop.training`          Utilities to train neural operators end-to-end
 ================================= ================================
 
