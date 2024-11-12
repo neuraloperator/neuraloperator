@@ -455,7 +455,7 @@ class LocalFNOBlocks(nn.Module):
             x_localconv = 0
 
         x_skip_fno = self.fno_skips[index](x)
-        x_skip_fno_diff_disco = self.convs[index].transform(x_skip_fno + x_differential + x_localconv, output_shape=output_shape)
+        x_skip_local_fno = self.convs[index].transform(x_skip_fno + x_differential + x_localconv, output_shape=output_shape)
 
         if self.mlp is not None:
             x_skip_mlp = self.channel_mlp_skips[index](x)
@@ -466,7 +466,7 @@ class LocalFNOBlocks(nn.Module):
 
         x_fno = self.convs[index](x, output_shape=output_shape)
 
-        x = x_fno + x_skip_fno_diff_disco
+        x = x_fno + x_skip_local_fno
 
         if self.mlp is not None:
             if index < (self.n_layers - 1):
