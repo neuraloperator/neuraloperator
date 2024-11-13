@@ -23,7 +23,7 @@ class DarcyDataset(PTDataset):
     ----------
     train_db: torch.utils.data.Dataset of training examples
     test_db:  ""                       of test examples
-    data_processor: neuralop.datasets.DataProcessor to process data examples
+    data_processor: neuralop.data.transforms.DataProcessor to process data examples
         optional, default is None
     """
     def __init__(self,
