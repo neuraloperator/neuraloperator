@@ -403,7 +403,6 @@ class SphericalConv(BaseSpectralConv):
         if isinstance(sht_grids, str):
             sht_grids = [sht_grids]*2
         self.sht_grids = sht_grids
-        print(f"{self.sht_grids=}")
         self.sht_handle = SHT(dtype=self.dtype, device=self.device)
     
     def transform(self, x, output_shape=None):

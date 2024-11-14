@@ -33,7 +33,7 @@ To install via pip, simply run, in your terminal::
 Building ``neuraloperator`` from source
 ========================================
 
-First ensure that you are in an environment with Python 3, NumPy, Scipy, PyTorch, TensorLy and TensorLy-Torch. 
+First ensure that you are in an environment with Python 3, NumPy, SciPy, PyTorch, TensorLy and TensorLy-Torch. 
 Then clone the repository and cd there::
 
    git clone https://github.com/neuraloperator/neuraloperator
@@ -45,7 +45,7 @@ Then, install the requirements ::
    pip install -r requirements.txt
 
 
-Then install the package (here in editable mode with `-e`, or equivalently `--editable`::
+Then install the package (here in editable mode with `-e`, or equivalently `--editable`)::
 
    pip install -e .
 
@@ -70,7 +70,7 @@ compatible with specific builds of PyTorch and CUDA. Check the sub-package
 Running the tests
 =================
 
-Uni-testing is an important part of this package.
+Unit-testing is an important part of this package.
 You can run all the tests using `pytest`::
 
    pip install -r requirements_dev.txt
