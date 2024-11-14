@@ -59,6 +59,11 @@ config = {
         ],
     'version': VERSION,
     'install_requires': ['numpy', 'configmypy', 'pytest', 'flaky', 'black', 'tensorly', 'tensorly-torch', 'opt-einsum'],
+    'extras-require': {
+        "dev": [],
+        "doc": [],
+        "all": [],
+    },
     'license': 'Modified BSD',
     'scripts': [],
     'include_package_data': True,
