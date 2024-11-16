@@ -167,13 +167,17 @@ class RNO(BaseModel, name='RNO'):
 
         return pred, final_hidden_states
 
-    def predict(self, x, num_steps): # num_steps is the number of steps ahead to predict
+    def predict(self, x, num_steps, grid_function=None): # num_steps is the number of steps ahead to predict
+        # grid_function is assumed to take in a shape and a device and return the grid
         output = []
         states = [None] * self.n_layers
         
-        for i in range(num_steps):
+        for _ in range(num_steps):
             pred, states = self.forward(x, states)
             output.append(pred)
             x = pred.reshape((pred.shape[0], 1, *pred.shape[1:]))
+            if grid_function:
+                grid = grid_function((x.shape[0], x.shape[1], 1, x.shape[-2], x.shape[-1]), x.device)
+                x = torch.cat((x, grid), dim=2)
 
         return torch.stack(output, dim=1)
