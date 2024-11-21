@@ -112,7 +112,7 @@ class Trainer:
             testing dataloaders
         optimizer: torch.optim.Optimizer
             optimizer to use during training
-        optimizer: torch.optim.lr_scheduler
+        scheduler: torch.optim.lr_scheduler
             learning rate scheduler to use during training
         training_loss: training.losses function
             cost function to minimize

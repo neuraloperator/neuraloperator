@@ -335,8 +335,7 @@ class FNO(BaseModel, name='FNO'):
         
         1. Applies optional positional encoding
 
-        2. Sends inputs through a lifting layer to a high-dimensional latent
-            space
+        2. Sends inputs through a lifting layer to a high-dimensional latent space
 
         3. Applies optional domain padding to high-dimensional intermediate function representation
 

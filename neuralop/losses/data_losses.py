@@ -31,9 +31,9 @@ class LpLoss(object):
         L : float or list, optional
             quadrature weights per dim, by default 2*math.pi
             either single scalar for each dim, or one per dim
-        reduce_dims : int, optional
+        reduce_dims : int or list, optional
             dimensions across which to reduce for loss, by default 0
-        reductions : str, optional
+        reductions : str or list, optional
             whether to reduce each dimension above 
             by summing ('sum') or averaging ('mean')
         """
