@@ -1,6 +1,6 @@
 [project]
-name = "neuralop"
-version = "1.0.0"
+name = "david_neuralop"
+version = "0.0.3"
 description = "NeuralOperator: Learning in Infinite Dimensions"
 authors = [
     {name = "Jean Kossaifi <jean.kossaifi@gmail.com>, David Pitt <david.h.pitt@gmail.com>, Nik Kovachki, Zongyi Li", email="david.h.pitt@gmail.com"},
