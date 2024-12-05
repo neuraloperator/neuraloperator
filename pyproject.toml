@@ -1,6 +1,6 @@
 [project]
-name = "david_neuralop"
-version = "0.0.3"
+name = "neuraloperator"
+version = "0.3.0"
 description = "NeuralOperator: Learning in Infinite Dimensions"
 authors = [
     {name = "Jean Kossaifi <jean.kossaifi@gmail.com>, David Pitt <david.h.pitt@gmail.com>, Nik Kovachki, Zongyi Li", email="david.h.pitt@gmail.com"},
@@ -17,7 +17,7 @@ dependencies = [
     "h5py",
     "zarr",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 readme = "README.rst"
 license = {text = "MIT"}
 
