@@ -34,7 +34,7 @@ jobs:
     - name: Install package
       run: |
         python -m pip install --upgrade pip setuptools
-        python -m pip install -e ./neuralop[dev]
+        python -m pip install -e .[dev]
     - name: Test with pytest
       run: |
         pytest -vvv neuralop
