@@ -21,6 +21,18 @@ requires-python = ">=3.9"
 readme = "README.rst"
 license = {text = "MIT"}
 
+# Required config for build system
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = { find = { where = ["neuralop"] } }
+include-package-data = true
+
+[tool.setuptools.package-data]
+"my_package" = ["neuralop/data/datasets/data/*.pt", "config/*.yml"]
+
 [project.optional-dependencies]
 dev = [
     "pytest",
