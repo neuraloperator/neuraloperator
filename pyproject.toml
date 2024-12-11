@@ -25,16 +25,15 @@ dynamic = ["version"]
 
 # Required config for build system
 [build-system]
-requires = ["setuptools>=64", "setuptools_scm>=8"]
+requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["neuralop"]
 
-# use setuptools-scm to extract the GitHub version tag
-[tool.setuptools_scm]
-version_scheme = "post-release"
-local_scheme = "dirty-tag"
+# Dynamic versioning from neuralop.__init__
+[tool.setuptools.dynamic]
+version = {attr = "neuralop.__version__"}
 
 [project.optional-dependencies]
 dev = [
