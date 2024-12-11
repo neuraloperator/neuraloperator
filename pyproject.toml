@@ -1,6 +1,5 @@
 [project]
 name = "neuraloperator"
-version = "0.3.0"
 description = "NeuralOperator: Learning in Infinite Dimensions"
 authors = [
     {name = "Jean Kossaifi <jean.kossaifi@gmail.com>, David Pitt <david.h.pitt@gmail.com>, Nik Kovachki, Zongyi Li", email="david.h.pitt@gmail.com"},
@@ -21,13 +20,21 @@ requires-python = ">=3.9"
 readme = "README.rst"
 license = {text = "MIT"}
 
+# Dynamic versioning
+dynamic = ["version"]
+
 # Required config for build system
 [build-system]
-requires = ["setuptools >= 61.0"]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["neuralop"]
+
+# use setuptools-scm to extract the GitHub version tag
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "dirty-tag"
 
 [project.optional-dependencies]
 dev = [
