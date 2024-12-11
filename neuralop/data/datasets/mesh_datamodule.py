@@ -8,8 +8,9 @@ import numpy as np
 # the class will build, but no files will be loaded.
 try:
     import open3d as o3d
+    o3d_warn = False
 except ModuleNotFoundError:
-    print("Warning: you are attempting to run MeshDataModule without the required dependency open3d.")
+    o3d_warn = True
 
 import torch
 from torch.utils.data import DataLoader
@@ -51,6 +52,9 @@ class MeshDataModule:
             list of string keys for attributes in the dataset to return
             as keys for each batch dict
         """
+
+        if o3d_warn:
+            print("Warning: you are attempting to run MeshDataModule without the required dependency open3d.")
 
         if isinstance(root_dir, str):
             root_dir = Path(root_dir)
