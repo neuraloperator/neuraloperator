@@ -42,7 +42,7 @@ dev = [
     "flaky",
     "black"
 ]
-docs = [
+doc = [
     "matplotlib",
     "myst-nb",
     "numpydoc",
