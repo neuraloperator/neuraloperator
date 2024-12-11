@@ -31,12 +31,10 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-    - name: Install dependencies
-      run: |
-        python -m pip install -r requirements.txt
     - name: Install package
       run: |
-        python -m pip install -e .
+        python -m pip install --upgrade pip setuptools
+        python -m pip install -e .[dev]
     - name: Test with pytest
       run: |
         pytest -vvv neuralop

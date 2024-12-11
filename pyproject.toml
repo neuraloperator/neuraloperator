@@ -1,6 +1,68 @@
-title = "neuralop"
+[project]
+name = "neuraloperator"
+description = "NeuralOperator: Learning in Infinite Dimensions"
+authors = [
+    {name = "Jean Kossaifi <jean.kossaifi@gmail.com>, David Pitt <david.h.pitt@gmail.com>, Nik Kovachki, Zongyi Li", email="david.h.pitt@gmail.com"},
+]
+dependencies = [
+    "wandb",
+    "ruamel-yaml",
+    "configmypy",
+    "tensorly",
+    "tensorly-torch",
+    "torch-harmonics",
+    "matplotlib",
+    "opt-einsum",
+    "h5py",
+    "zarr",
+]
+requires-python = ">=3.9"
+readme = "README.rst"
+license = {text = "MIT"}
 
-[tool.black]
-    line-length = 88  # Allow for 90-ish characters
-    target-versions = ["py36", "py38", "py310"]
-    include = ["neuralop/layers/*"]
+# Dynamic versioning
+dynamic = ["version"]
+
+# Required config for build system
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["neuralop"]
+
+# Dynamic versioning from neuralop.__init__
+[tool.setuptools.dynamic]
+version = {attr = "neuralop.__version__"}
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "flaky",
+    "black"
+]
+doc = [
+    "matplotlib",
+    "myst-nb",
+    "numpydoc",
+    "sphinx",
+    "sphinx-gallery",
+    "tensorly_sphinx_theme",
+    "torchtnt",
+]
+all = [
+    "pytest",
+    "flaky",
+    "black",
+    "matplotlib",
+    "myst-nb",
+    "numpydoc",
+    "sphinx",
+    "sphinx-gallery",
+    "tensorly_sphinx_theme",
+    "torchtnt",
+    "pytorch",
+    "torchvision",
+    "numpy",
+    "scipy",
+]
