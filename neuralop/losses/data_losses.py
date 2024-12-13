@@ -147,8 +147,7 @@ class LpLoss(object):
 
         diff = diff/ynorm
 
-        if self.reduce_dims is not None:
-            diff = self.reduce_all(diff).squeeze()
+        diff = self.reduce_all(diff).squeeze()
             
         return diff
 
@@ -390,10 +389,6 @@ class PointwiseQuantileLoss(object):
         alpha : float
             value, between 0 and 1, of the proportion of points
             in the output domain expected to fall within predicted quantiles
-        reduce_dims : int, optional
-            dimensions to reduce when summing, by default 0
-            This loss was formulated for functions with a co-domain in R, 
-            so for now only 0 is supported
         reduction : str, optional
         whether to reduce across the batch dimension
         by summing ('sum') or averaging ('mean')
