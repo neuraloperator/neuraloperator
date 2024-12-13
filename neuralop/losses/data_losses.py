@@ -30,13 +30,13 @@ class LpLoss(object):
         quadrature weights per dim, by default 2*math.pi
         either single scalar for each dim, or one per dim
     reduction : str, optional
-        whether to reduce across the batch dimension
+        whether to reduce across the batch and channel dimensions
         by summing ('sum') or averaging ('mean')
 
         .. warning : 
 
             LpLoss always averages over the spatial dimensions. 
-            `reduction` only applies to the batch dimension.
+            `reduction` only applies to the batch and channel dimensions.
 
     Examples
     --------
@@ -94,9 +94,9 @@ class LpLoss(object):
             inputs
         """
         if self.reduction == 'sum':
-            x = torch.sum(x, dim=0, keepdim=True)
+            x = torch.sum(x)
         else:
-            x = torch.mean(x, dim=0, keepdim=True)
+            x = torch.mean(x)
         
         return x
 
@@ -166,13 +166,13 @@ class H1Loss(object):
     L : int or list, optional
         quadrature weights (single or by dimension), by default 2*math.pi
     reduction : str, optional
-        whether to reduce across the batch dimension
+        whether to reduce across the batch and channel dimension
         by summing ('sum') or averaging ('mean')
 
         .. warning : 
 
             H1Loss always averages over the spatial dimensions. 
-            `reduction` only applies to the batch dimension.
+            `reduction` only applies to the batch and channel dimensions.
     fix_x_bnd : bool, optional
         whether to fix finite difference derivative
         computation on the x boundary, by default False
@@ -295,9 +295,9 @@ class H1Loss(object):
             inputs
         """
         if self.reduction == 'sum':
-            x = torch.sum(x, dim=0, keepdim=True)
+            x = torch.sum(x)
         else:
-            x = torch.mean(x, dim=0, keepdim=True)
+            x = torch.mean(x)
         
         return x
         
@@ -390,13 +390,13 @@ class PointwiseQuantileLoss(object):
             value, between 0 and 1, of the proportion of points
             in the output domain expected to fall within predicted quantiles
         reduction : str, optional
-        whether to reduce across the batch dimension
+        whether to reduce across the batch and channel dimensions
         by summing ('sum') or averaging ('mean')
 
         .. warning : 
 
             PointwiseQuantileLoss always averages over the spatial dimensions. 
-            `reduction` only applies to the batch dimension.
+            `reduction` only applies to the batch and channel dimensions.
 
         References
         -----------
@@ -426,9 +426,9 @@ class PointwiseQuantileLoss(object):
             inputs
         """
         if self.reduction == 'sum':
-            x = torch.sum(x, dim=0, keepdim=True)
+            x = torch.sum(x)
         else:
-            x = torch.mean(x, dim=0, keepdim=True)
+            x = torch.mean(x)
         
         return x
 
