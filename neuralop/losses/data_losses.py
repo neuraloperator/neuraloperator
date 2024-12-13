@@ -16,48 +16,44 @@ from .finite_diff import central_diff_1d, central_diff_2d, central_diff_3d
 class LpLoss(object):
     """
     LpLoss provides the L-p norm between two 
-    discretized d-dimensional functions
-    """
-    def __init__(self, d=1, p=2, L=2*math.pi, reduce_dims=0, reductions='sum'):
-        """
+    discretized d-dimensional functions. Note that 
+    LpLoss always averages over the spatial dimensions.
 
-        Parameters
-        ----------
-        d : int, optional
-            dimension of data on which to compute, by default 1
-        p : int, optional
-            order of L-norm, by default 2
-            L-p norm: [\sum_{i=0}^n (x_i - y_i)**p] ** (1/p)
-        L : float or list, optional
-            quadrature weights per dim, by default 2*math.pi
-            either single scalar for each dim, or one per dim
-        reduce_dims : int or list, optional
-            dimensions across which to reduce for loss, by default 0
-        reductions : str or list, optional
-            whether to reduce each dimension above 
-            by summing ('sum') or averaging ('mean')
-        """
+    Parameters
+    ----------
+    d : int, optional
+        dimension of data on which to compute, by default 1
+    p : int, optional
+        order of L-norm, by default 2
+        L-p norm: [\sum_{i=0}^n (x_i - y_i)**p] ** (1/p)
+    L : float or list, optional
+        quadrature weights per dim, by default 2*math.pi
+        either single scalar for each dim, or one per dim
+    reduction : str, optional
+        whether to reduce across the batch dimension
+        by summing ('sum') or averaging ('mean')
+
+        .. warning : 
+
+            LpLoss always averages over the spatial dimensions. 
+            `reduction` only applies to the batch dimension.
+
+    Examples
+    --------
+
+    ```
+    """
+
+    def __init__(self, d=1, p=2, L=2*math.pi, reduction='sum'):
         super().__init__()
 
         self.d = d
         self.p = p
-
-        if isinstance(reduce_dims, int):
-            self.reduce_dims = [reduce_dims]
-        else:
-            self.reduce_dims = reduce_dims
         
-        if self.reduce_dims is not None:
-            allowed_reductions = ["sum", "mean"]
-            if isinstance(reductions, str):
-                assert reductions == 'sum' or reductions == 'mean',\
-                f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions}"
-                self.reductions = [reductions]*len(self.reduce_dims)
-            else:
-                for j in range(len(reductions)):
-                    assert reductions[j] == 'sum' or reductions[j] == 'mean',\
-                        f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions[j]}"
-                self.reductions = reductions
+        allowed_reductions = ["sum", "mean"]
+        assert reduction in allowed_reductions,\
+        f"error: expected `reduction` to be one of {allowed_reductions}, got {reduction}"
+        self.reduction = reduction
 
         if isinstance(L, float):
             self.L = [L]*self.d
@@ -90,19 +86,17 @@ class LpLoss(object):
 
     def reduce_all(self, x):
         """
-        reduce x across all dimensions in self.reduce_dims 
-        according to self.reductions
+        reduce x across the batch according to `self.reduction`
 
         Params
         ------
         x: torch.Tensor
             inputs
         """
-        for j in range(len(self.reduce_dims)):
-            if self.reductions[j] == 'sum':
-                x = torch.sum(x, dim=self.reduce_dims[j], keepdim=True)
-            else:
-                x = torch.mean(x, dim=self.reduce_dims[j], keepdim=True)
+        if self.reduction == 'sum':
+            x = torch.sum(x, dim=0, keepdim=True)
+        else:
+            x = torch.mean(x, dim=0, keepdim=True)
         
         return x
 
@@ -130,8 +124,7 @@ class LpLoss(object):
         diff = const*torch.norm(torch.flatten(x, start_dim=-self.d) - torch.flatten(y, start_dim=-self.d), \
                                               p=self.p, dim=-1, keepdim=False)
 
-        if self.reduce_dims is not None:
-            diff = self.reduce_all(diff).squeeze()
+        diff = self.reduce_all(diff).squeeze()
             
         return diff
 
@@ -166,31 +159,32 @@ class H1Loss(object):
     """
     H1Loss provides the H1 Sobolev norm between
     two d-dimensional discretized functions
-    """
-    def __init__(self, d=1, L=2*math.pi, reduce_dims=0, reductions='sum', fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
-        """
 
-        Parameters
-        ----------
-        d : int, optional
-            dimension of input functions, by default 1
-        L : int or list, optional
-            quadrature weights (single or by dimension), by default 2*math.pi
-        reduce_dims : int, optional
-            dimensions across which to reduce for loss, by default 0
-        reductions : str, optional
-            whether to reduce each dimension above 
-            by summing ('sum') or averaging ('mean')
-        fix_x_bnd : bool, optional
-            whether to fix finite difference derivative
-            computation on the x boundary, by default False
-        fix_y_bnd : bool, optional
-            whether to fix finite difference derivative
-            computation on the y boundary, by default False
-        fix_z_bnd : bool, optional
-            whether to fix finite difference derivative
-            computation on the z boundary, by default False
-        """
+    Parameters
+    ----------
+    d : int, optional
+        dimension of input functions, by default 1
+    L : int or list, optional
+        quadrature weights (single or by dimension), by default 2*math.pi
+    reduction : str, optional
+        whether to reduce across the batch dimension
+        by summing ('sum') or averaging ('mean')
+
+        .. warning : 
+
+            H1Loss always averages over the spatial dimensions. 
+            `reduction` only applies to the batch dimension.
+    fix_x_bnd : bool, optional
+        whether to fix finite difference derivative
+        computation on the x boundary, by default False
+    fix_y_bnd : bool, optional
+        whether to fix finite difference derivative
+        computation on the y boundary, by default False
+    fix_z_bnd : bool, optional
+        whether to fix finite difference derivative
+        computation on the z boundary, by default False
+    """
+    def __init__(self, d=1, L=2*math.pi, reduction='sum', fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
         super().__init__()
 
         assert d > 0 and d < 4, "Currently only implemented for 1, 2, and 3-D."
@@ -199,20 +193,11 @@ class H1Loss(object):
         self.fix_x_bnd = fix_x_bnd
         self.fix_y_bnd = fix_y_bnd
         self.fix_z_bnd = fix_z_bnd
-
-        if isinstance(reduce_dims, int):
-            self.reduce_dims = [reduce_dims]
-        else:
-            self.reduce_dims = reduce_dims
         
-        if self.reduce_dims is not None:
-            if isinstance(reductions, str):
-                assert reductions == 'sum' or reductions == 'mean'
-                self.reductions = [reductions]*len(self.reduce_dims)
-            else:
-                for j in range(len(reductions)):
-                    assert reductions[j] == 'sum' or reductions[j] == 'mean'
-                self.reductions = reductions
+        allowed_reductions = ["sum", "mean"]
+        assert reduction in allowed_reductions,\
+        f"error: expected `reduction` to be one of {allowed_reductions}, got {reduction}"
+        self.reduction = reduction
 
         if isinstance(L, float):
             self.L = [L]*self.d
@@ -237,10 +222,6 @@ class H1Loss(object):
         h : int or list
             discretization size (single or per dim)
 
-        Returns
-        -------
-        _type_
-            _description_
         """
         dict_x = {}
         dict_y = {}
@@ -307,19 +288,17 @@ class H1Loss(object):
     
     def reduce_all(self, x):
         """
-        reduce x across all dimensions in self.reduce_dims 
-        according to self.reductions
+        reduce x across the batch according to `self.reduction`
 
         Params
         ------
         x: torch.Tensor
             inputs
         """
-        for j in range(len(self.reduce_dims)):
-            if self.reductions[j] == 'sum':
-                x = torch.sum(x, dim=self.reduce_dims[j], keepdim=True)
-            else:
-                x = torch.mean(x, dim=self.reduce_dims[j], keepdim=True)
+        if self.reduction == 'sum':
+            x = torch.sum(x, dim=0, keepdim=True)
+        else:
+            x = torch.mean(x, dim=0, keepdim=True)
         
         return x
         
@@ -352,8 +331,7 @@ class H1Loss(object):
         
         diff = diff**0.5
 
-        if self.reduce_dims is not None:
-            diff = self.reduce_all(diff).squeeze()
+        diff = self.reduce_all(diff).squeeze()
             
         return diff
         
@@ -387,8 +365,7 @@ class H1Loss(object):
         
         diff = (diff**0.5)/(ynorm**0.5)
 
-        if self.reduce_dims is not None:
-            diff = self.reduce_all(diff).squeeze()
+        diff = self.reduce_all(diff).squeeze()
             
         return diff
 
@@ -406,8 +383,7 @@ class H1Loss(object):
         return self.rel(y_pred, y, h=h)
 
 class PointwiseQuantileLoss(object):
-    def __init__(self, alpha, reduce_dims = 0, reductions='sum'):
-        """PointwiseQuantileLoss computes Quantile Loss described in [1]_
+    """PointwiseQuantileLoss computes Quantile Loss described in [1]_
 
         Parameters
         ----------
@@ -418,45 +394,47 @@ class PointwiseQuantileLoss(object):
             dimensions to reduce when summing, by default 0
             This loss was formulated for functions with a co-domain in R, 
             so for now only 0 is supported
-        reductions : str, optional
-            how to apply reduction (sum or mean), by default 'sum'
+        reduction : str, optional
+        whether to reduce across the batch dimension
+        by summing ('sum') or averaging ('mean')
+
+        .. warning : 
+
+            PointwiseQuantileLoss always averages over the spatial dimensions. 
+            `reduction` only applies to the batch dimension.
 
         References
         -----------
-        .. _[1]:
-        Ma, Z., Azizzadenesheli, K., Anandkumar, A., (2024).
+        .. _[1] : Ma, Z., Pitt, D., Azizzadenesheli, K., Anandkumar, A., (2024).
             Calibrated Uncertainty Quantification for Operator Learning via Conformal Prediction
-            ArXiV preprint, https://arxiv.org/html/2402.01960v1
+            TMLR 2024, https://openreview.net/pdf?id=cGpegxy12T
         """
+    def __init__(self, alpha, reduction='sum'):
         
         super().__init__()
 
         self.alpha = alpha
 
-        if isinstance(reduce_dims, int):
-            self.reduce_dims = [reduce_dims]
-        else:
-            self.reduce_dims = reduce_dims
 
-        if self.reduce_dims is not None:
-            allowed_reductions = ["sum", "mean"]
-            if isinstance(reductions, str):
-                assert reductions == 'sum' or reductions == 'mean',\
-                f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions}"
-                self.reductions = [reductions]*len(self.reduce_dims)
-            else:
-                for j in range(len(reductions)):
-                    assert reductions[j] == 'sum' or reductions[j] == 'mean',\
-                        f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions[j]}"
-                self.reductions = reductions
-
+        allowed_reductions = ["sum", "mean"]
+        assert reduction in allowed_reductions,\
+        f"error: expected `reduction` to be one of {allowed_reductions}, got {reduction}"
+        self.reduction = reduction
+    
     def reduce_all(self, x):
-        for j in range(len(self.reduce_dims)):
-            if self.reductions[j] == 'sum':
-                x = torch.sum(x, dim=self.reduce_dims[j], keepdim=True)
-            else:
-                x = torch.mean(x, dim=self.reduce_dims[j], keepdim=True)
+        """
+        reduce x across the batch according to `self.reduction`
 
+        Params
+        ------
+        x: torch.Tensor
+            inputs
+        """
+        if self.reduction == 'sum':
+            x = torch.sum(x, dim=0, keepdim=True)
+        else:
+            x = torch.mean(x, dim=0, keepdim=True)
+        
         return x
 
     def __call__(self, y_pred, y, eps=1e-7, **kwargs):
@@ -478,36 +456,6 @@ class PointwiseQuantileLoss(object):
         ptwise_loss_scaled = ptwise_loss / 2 / quantile / (1 - quantile) / yscale
         ptavg_loss = ptwise_loss_scaled.view(ptwise_loss_scaled.shape[0], -1).mean(1, keepdim=True)
 
-        if self.reduce_dims is not None:
-            loss_batch = self.reduce_all(ptavg_loss).squeeze()
+        loss_batch = self.reduce_all(ptavg_loss).squeeze()
 
         return loss_batch
-    
-class MSELoss(object):
-    """
-    MSELoss computes absolute mean-squared error between two tensors.
-    """
-    def __init__(self, reductions='sum'):
-        super().__init__()
-        allowed_reductions = ['sum', 'mean']
-        assert reductions in allowed_reductions, f"error: expected `reductions` to be one of {allowed_reductions}, got {reductions}"
-        self.reductions = reductions
-
-    def __call__(self, y_pred: torch.Tensor, y: torch.Tensor, dim: List[int]=None, **kwargs):
-        """MSE loss call 
-
-        Parameters
-        ----------
-        y_pred : torch.Tensor
-            tensor of predictions
-        y : torch.Tensor
-            ground truth, must be same shape as x
-        dim : List[int], optional
-            dimensions across which to compute MSE, by default None
-        """
-        if dim is None:
-            dim = list(range(1, y_pred.ndim)) # no reduction across batch dim
-        if self.reductions == 'sum':
-            return torch.mean((y_pred - y) ** 2, dim=dim).sum() # sum of MSEs for each element
-        elif self.reductions == 'mean':
-            return torch.mean((y_pred - y) ** 2, dim=dim).mean()
