@@ -54,8 +54,7 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 # %%
 # Creating the losses
-l2loss = LpLoss(d=2, p=2, reduce_dims=(0,1))
-# h1loss = H1Loss(d=2, reduce_dims=(0,1))
+l2loss = LpLoss(d=2, p=2, reduction='sum')
 
 train_loss = l2loss
 eval_losses={'l2': l2loss} #'h1': h1loss, 
