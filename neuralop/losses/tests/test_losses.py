@@ -9,7 +9,7 @@ from neuralop.layers.embeddings import regular_grid_nd
 def test_lploss():
     l2_2d_mean = LpLoss(d=2, p=2, reduction='mean')
     l2_2d_sum = LpLoss(d=2, p=2, reduction='sum')
-    x = torch.randn(10, 4, 4)
+    x = torch.randn(10, 1, 4, 4)
 
     abs_0 = l2_2d_mean.abs(x,x)
     assert abs_0.item() == 0.
@@ -34,6 +34,21 @@ def test_lploss():
 
     sum_abs_l2_err = l2_2d_sum.abs(zeros, ones)
     assert sum_abs_l2_err.item() - 40. * math.pi / 2  <= eps
+
+    # Sanity check: ensure that both sum and mean reduction sum-reduce over spatial dims
+    x = torch.arange(1,5) * torch.ones(4,4)
+    flipped_x = x.T.unsqueeze(0).unsqueeze(0)
+    x = x.unsqueeze(0).unsqueeze(0)
+
+    zeros = torch.zeros_like(x)
+
+    # batch and channel size of 1. squared diff should be 120, unnorm ~= 10.95
+    mean_err = l2_2d_mean.abs(flipped_x, zeros,h=1.)
+    sum_err = l2_2d_sum.abs(x, zeros,h=1.)
+
+    assert mean_err == sum_err
+    assert_close(mean_err, torch.sqrt(torch.tensor(120.)))
+
 
 def test_h1loss():
     h1 = H1Loss(d=2, reduction='mean')
