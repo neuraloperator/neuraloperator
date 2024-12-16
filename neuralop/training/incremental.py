@@ -41,7 +41,7 @@ class IncrementalFNOTrainer(Trainer):
                 incremental_grad_max_iter: int = 10,
                 incremental_loss_eps: float = 0.001,
                 ):
-        assert (isinstance(model, FNO) or isinstance(self.model, TFNO)), f"Error: \
+        assert (isinstance(model, FNO) or isinstance(model, TFNO)), f"Error: \
             IncrementalFNOTrainer is designed to work with FNO or TFNO, instead got\
             a model of type {model.__class__.__name__}"
         
