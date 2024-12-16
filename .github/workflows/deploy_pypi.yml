@@ -1,4 +1,4 @@
-name: Deploy 📦 to Test-Pypi and Pypi 🐍
+name: Deploy neuraloperator to Test-Pypi and Pypi 🐍
 
 on:
   push:
