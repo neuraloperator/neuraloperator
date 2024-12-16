@@ -12,6 +12,7 @@ dependencies = [
     "tensorly-torch",
     "torch-harmonics",
     "matplotlib",
+    "numpy>=1.25",
     "opt-einsum",
     "h5py",
     "zarr",
@@ -45,6 +46,7 @@ doc = [
     "matplotlib",
     "myst-nb",
     "numpydoc",
+    "numpy>=1.25",
     "sphinx",
     "sphinx-gallery",
     "tensorly_sphinx_theme",
@@ -63,6 +65,6 @@ all = [
     "torchtnt",
     "pytorch",
     "torchvision",
-    "numpy",
+    "numpy>=1.25",
     "scipy",
 ]
