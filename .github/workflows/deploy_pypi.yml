@@ -29,8 +29,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          python -m pip install setuptools
           python -m pip install -r requirements.txt
+          python -m pip install -r doc/requirements_doc.txt
           python -m pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch_scatter torch_cluster -f https://data.pyg.org/whl/torch-2.0.0+cpu.html
       - name: Install package
         run: |
           python -m pip install -e .
@@ -43,6 +46,11 @@ jobs:
         with:
           name: python-package-distributions
           path: dist/
+      - name: Make doc
+        run: |
+          cd doc
+          make html
+          cd ..
 
   publish-to-testpypi:
     name: Publish Python 🐍 distribution 📦 to TestPyPI
@@ -89,3 +97,29 @@ jobs:
         path: dist/
     - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
+    - name: Push docs
+      if: success() && github.ref == 'refs/heads/main'
+      run: |
+        # Add deploy key and clone through ssh
+        eval "$(ssh-agent -s)"
+        mkdir ~/.ssh
+        echo "${{ secrets.DOC_DEPLOY_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -t rsa github.com
+        echo 'Documentation was successfully built, updating the website.'
+        # See https://github.community/t/github-actions-bot-email-address/17204/5
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions"
+        git clone "git@github.com:neuraloperator/neuraloperator.github.io.git" doc_folder
+        echo "-- Updating the content"
+        cd doc_folder
+        if [ -d stable ]; then
+          git rm -r stable/*
+        fi
+        mkdir -p stable
+        echo "Copying to folder"
+        cp -r ../doc/build/html/* stable/
+        echo "Pushing to git"
+        git add dev
+        git commit -m "Github action: auto-update."
+        git push --force origin main
