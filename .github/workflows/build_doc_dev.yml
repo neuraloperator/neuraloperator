@@ -35,8 +35,8 @@ jobs:
         python -m pip install setuptools
         # Temporary fix for numpy : https://github.com/numpy/numpy/issues/23808#issuecomment-1722440746
         python -m pip install numpy==1.26.4
-        python -m pip install -r requirements.txt
-        python -m pip install -r doc/requirements_doc.txt
+        python -m pip install --upgrade --upgrade-strategy only-if-needed -r requirements.txt
+        python -m pip install --upgrade --upgrade-strategy only-if-needed -r doc/requirements_doc.txt
         python -m pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
         python -m pip install torch_scatter torch_cluster -f https://data.pyg.org/whl/torch-2.0.0+cpu.html
     - name: Install package
