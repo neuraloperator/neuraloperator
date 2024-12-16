@@ -2,6 +2,7 @@ from timeit import default_timer
 from pathlib import Path
 from typing import Union
 import sys
+import warnings
 
 import torch
 from torch.cuda import amp
@@ -149,6 +150,13 @@ class Trainer:
 
         if training_loss is None:
             training_loss = LpLoss(d=2)
+        
+        # Warn the user if training loss is reducing across the batch
+        if hasattr(training_loss, 'reduction'):
+            if training_loss.reduction == "mean":
+                warnings.warn(f"{training_loss.reduction=}. This means that the loss is "
+                              "initialized to average across the batch dim. The Trainer "
+                              "expects losses to sum across the batch dim.")
 
         if eval_losses is None:  # By default just evaluate on the training loss
             eval_losses = dict(l2=training_loss)
@@ -333,6 +341,14 @@ class Trainer:
             self.data_processor.eval()
 
         errors = {f"{log_prefix}_{loss_name}": 0 for loss_name in loss_dict.keys()}
+
+        # Warn the user if any of the eval losses is reducing across the batch
+        for _, eval_loss in loss_dict.items():
+            if hasattr(eval_loss, 'reduction'):
+                if eval_loss.reduction == "mean":
+                    warnings.warn(f"{eval_loss.reduction=}. This means that the loss is "
+                                "initialized to average across the batch dim. The Trainer "
+                                "expects losses to sum across the batch dim.")
 
         self.n_samples = 0
         with torch.no_grad():
