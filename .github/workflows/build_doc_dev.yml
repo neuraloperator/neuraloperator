@@ -34,7 +34,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install setuptools
         # Temporary fix for numpy : https://github.com/numpy/numpy/issues/23808#issuecomment-1722440746
-        python -m pip install numpy
+        python -m pip install numpy==1.26.4
         python -m pip install -r requirements.txt
         python -m pip install -r doc/requirements_doc.txt
         python -m pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
