@@ -12,6 +12,7 @@ dependencies = [
     "tensorly-torch",
     "torch-harmonics",
     "matplotlib",
+    "numpy>=1.25",
     "opt-einsum",
     "h5py",
     "zarr",
