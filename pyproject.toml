@@ -63,8 +63,6 @@ all = [
     "sphinx-gallery",
     "tensorly_sphinx_theme",
     "torchtnt",
-    "pytorch",
-    "torchvision",
     "numpy>=1.25",
     "scipy",
 ]
