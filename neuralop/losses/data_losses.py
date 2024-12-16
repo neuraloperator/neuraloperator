@@ -27,15 +27,22 @@ class LpLoss(object):
         order of L-norm, by default 2
         L-p norm: [\sum_{i=0}^n (x_i - y_i)**p] ** (1/p)
     L : float or list, optional
-        quadrature weights per dim, by default 2*math.pi
+        quadrature weights per dim, by default 1.0
         either single scalar for each dim, or one per dim
+
+        .. note::
+
+        ``LpLoss`` scales these normalization constants by the size
+        of each spatial dimension of ``x``, and multiplies them with 
+        ||x-y||, such that the final norm is a scaled average over the spatial
+        dimensions of ``x``. 
     reduction : str, optional
         whether to reduce across the batch and channel dimensions
         by summing ('sum') or averaging ('mean')
 
-        .. warning : 
+        .. warning:: 
 
-            LpLoss always averages over the spatial dimensions. 
+            ``LpLoss`` always reduces over the spatial dimensions according to ``self.L``.
             `reduction` only applies to the batch and channel dimensions.
 
     Examples
@@ -44,7 +51,7 @@ class LpLoss(object):
     ```
     """
 
-    def __init__(self, d=1, p=2, L=2*math.pi, reduction='sum'):
+    def __init__(self, d=1, p=2, L=1., reduction='sum'):
         super().__init__()
 
         self.d = d
@@ -65,8 +72,10 @@ class LpLoss(object):
         return f"L{self.p}_{self.d}Dloss"
     
     def uniform_h(self, x):
-        """uniform_h creates default normalization constants
-        if none already exist.
+        """
+        uniform_h creates normalization constants
+        scaled by the spatial size of ``x`` to ensure that 
+        ``LpLoss`` computes the average over spatial dims. 
 
         Parameters
         ----------
@@ -164,7 +173,15 @@ class H1Loss(object):
     d : int, optional
         dimension of input functions, by default 1
     L : int or list, optional
-        quadrature weights (single or by dimension), by default 2*math.pi
+        quadrature weights (single or by dimension), by default 1.0
+
+        .. note::
+
+        ``H1Loss`` scales these normalization constants by the size
+        of each spatial dimension of ``x``, and multiplies them with 
+        ||x-y||, such that the final norm is a scaled average over the spatial
+        dimensions of ``x``. 
+
     reduction : str, optional
         whether to reduce across the batch and channel dimension
         by summing ('sum') or averaging ('mean')
@@ -183,7 +200,7 @@ class H1Loss(object):
         whether to fix finite difference derivative
         computation on the z boundary, by default False
     """
-    def __init__(self, d=1, L=2*math.pi, reduction='sum', fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
+    def __init__(self, d=1, L=1., reduction='sum', fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
         super().__init__()
 
         assert d > 0 and d < 4, "Currently only implemented for 1, 2, and 3-D."
@@ -266,8 +283,10 @@ class H1Loss(object):
         return dict_x, dict_y
 
     def uniform_h(self, x):
-        """uniform_h creates default normalization constants
-        if none already exist.
+        """
+        uniform_h creates normalization constants
+        scaled by the spatial size of ``x`` to ensure that 
+        ``LpLoss`` computes the average over spatial dims. 
 
         Parameters
         ----------
