@@ -12,10 +12,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.12
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: 3.13
       - name: Install TensorLy and TensorLy-Torch dev
         run: |
           git clone https://github.com/tensorly/tensorly
@@ -30,7 +30,7 @@ jobs:
         run: |
           python -m ensurepip --upgrade
           python -m pip install --upgrade setuptools
-          python -m pip install numpy==1.26.4
+          python -m pip install numpy
           python -m pip install -r requirements.txt
           python -m pip install -r doc/requirements_doc.txt
           python -m pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
