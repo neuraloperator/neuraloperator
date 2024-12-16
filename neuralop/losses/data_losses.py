@@ -35,12 +35,12 @@ class LpLoss(object):
         order of L-norm, by default 2
         L-p norm: [\sum_{i=0}^n (x_i - y_i)**p] ** (1/p)
     measure : float or list, optional
-        quadrature weights per dim, by default 1.0
+        measure of the domain, by default 1.0
         either single scalar for each dim, or one per dim
 
         .. note::
 
-        ``LpLoss`` scales these quadrature weights by the size
+        To perform quadrature, ``LpLoss`` scales ``measure`` by the size
         of each spatial dimension of ``x``, and multiplies them with 
         ||x-y||, such that the final norm is a scaled average over the spatial
         dimensions of ``x``. 
@@ -188,12 +188,13 @@ class H1Loss(object):
     ----------
     d : int, optional
         dimension of input functions, by default 1
-    measure : int or list, optional
-        quadrature weights (single or by dimension), by default 1.0
+    measure : float or list, optional
+        measure of the domain, by default 1.0
+        either single scalar for each dim, or one per dim
 
         .. note::
 
-        ``H1Loss`` scales these quadrature weights by the size
+        To perform quadrature, ``H1Loss`` scales ``measure`` by the size
         of each spatial dimension of ``x``, and multiplies them with 
         ||x-y||, such that the final norm is a scaled average over the spatial
         dimensions of ``x``. 
