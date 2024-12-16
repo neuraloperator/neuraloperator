@@ -19,6 +19,14 @@ class LpLoss(object):
     discretized d-dimensional functions. Note that 
     LpLoss always averages over the spatial dimensions.
 
+    .. note :: 
+        In function space, the Lp norm is an integral over the
+        entire domain. To ensure the norm converges to the integral,
+        we scale the matrix norm by quadrature weights along each spatial dimension.
+
+        If no quadrature is passed at a call to LpLoss, we assume a regular 
+        discretization and take ``1 / measure`` as the quadrature weights. 
+
     Parameters
     ----------
     d : int, optional
@@ -26,13 +34,13 @@ class LpLoss(object):
     p : int, optional
         order of L-norm, by default 2
         L-p norm: [\sum_{i=0}^n (x_i - y_i)**p] ** (1/p)
-    L : float or list, optional
+    measure : float or list, optional
         quadrature weights per dim, by default 1.0
         either single scalar for each dim, or one per dim
 
         .. note::
 
-        ``LpLoss`` scales these normalization constants by the size
+        ``LpLoss`` scales these quadrature weights by the size
         of each spatial dimension of ``x``, and multiplies them with 
         ||x-y||, such that the final norm is a scaled average over the spatial
         dimensions of ``x``. 
@@ -42,7 +50,7 @@ class LpLoss(object):
 
         .. warning:: 
 
-            ``LpLoss`` always reduces over the spatial dimensions according to ``self.L``.
+            ``LpLoss`` always reduces over the spatial dimensions according to ``self.measure``.
             `reduction` only applies to the batch and channel dimensions.
 
     Examples
@@ -51,7 +59,7 @@ class LpLoss(object):
     ```
     """
 
-    def __init__(self, d=1, p=2, L=1., reduction='sum'):
+    def __init__(self, d=1, p=2, measure=1., reduction='sum'):
         super().__init__()
 
         self.d = d
@@ -62,18 +70,18 @@ class LpLoss(object):
         f"error: expected `reduction` to be one of {allowed_reductions}, got {reduction}"
         self.reduction = reduction
 
-        if isinstance(L, float):
-            self.L = [L]*self.d
+        if isinstance(measure, float):
+            self.measure = [measure]*self.d
         else:
-            self.L = L
+            self.measure = measure
     
     @property
     def name(self):
         return f"L{self.p}_{self.d}Dloss"
     
-    def uniform_h(self, x):
+    def uniform_quadrature(self, x):
         """
-        uniform_h creates normalization constants
+        uniform_quadrature creates quadrature weights
         scaled by the spatial size of ``x`` to ensure that 
         ``LpLoss`` computes the average over spatial dims. 
 
@@ -84,14 +92,14 @@ class LpLoss(object):
 
         Returns
         -------
-        h : list
-            list of normalization constants per-dim
+        quadrature : list
+            list of quadrature weights per-dim
         """
-        h = [0.0]*self.d
+        quadrature = [0.0]*self.d
         for j in range(self.d, 0, -1):
-            h[-j] = self.L[-j]/x.size(-j)
+            quadrature[-j] = self.measure[-j]/x.size(-j)
         
-        return h
+        return quadrature
 
     def reduce_all(self, x):
         """
@@ -109,7 +117,7 @@ class LpLoss(object):
         
         return x
 
-    def abs(self, x, y, h=None):
+    def abs(self, x, y, quadrature=None):
         """absolute Lp-norm
 
         Parameters
@@ -118,18 +126,18 @@ class LpLoss(object):
             inputs
         y : torch.Tensor
             targets
-        h : float or list, optional
-            normalization constants for reduction
+        quadrature : float or list, optional
+            quadrature weights for integral
             either single scalar or one per dimension
         """
         #Assume uniform mesh
-        if h is None:
-            h = self.uniform_h(x)
+        if quadrature is None:
+            quadrature = self.uniform_quadrature(x)
         else:
-            if isinstance(h, float):
-                h = [h]*self.d
+            if isinstance(quadrature, float):
+                quadrature = [quadrature]*self.d
         
-        const = math.prod(h)**(1.0/self.p)
+        const = math.prod(quadrature)**(1.0/self.p)
         diff = const*torch.norm(torch.flatten(x, start_dim=-self.d) - torch.flatten(y, start_dim=-self.d), \
                                               p=self.p, dim=-1, keepdim=False)
 
@@ -166,18 +174,26 @@ class LpLoss(object):
 class H1Loss(object):
     """
     H1Loss provides the H1 Sobolev norm between
-    two d-dimensional discretized functions
+    two d-dimensional discretized functions.
+
+    .. note :: 
+        In function space, the Sobolev norm is an integral over the
+        entire domain. To ensure the norm converges to the integral,
+        we scale the matrix norm by quadrature weights along each spatial dimension.
+
+        If no quadrature is passed at a call to H1Loss, we assume a regular 
+        discretization and take ``1 / measure`` as the quadrature weights. 
 
     Parameters
     ----------
     d : int, optional
         dimension of input functions, by default 1
-    L : int or list, optional
+    measure : int or list, optional
         quadrature weights (single or by dimension), by default 1.0
 
         .. note::
 
-        ``H1Loss`` scales these normalization constants by the size
+        ``H1Loss`` scales these quadrature weights by the size
         of each spatial dimension of ``x``, and multiplies them with 
         ||x-y||, such that the final norm is a scaled average over the spatial
         dimensions of ``x``. 
@@ -200,7 +216,7 @@ class H1Loss(object):
         whether to fix finite difference derivative
         computation on the z boundary, by default False
     """
-    def __init__(self, d=1, L=1., reduction='sum', fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
+    def __init__(self, d=1, measure=1., reduction='sum', fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
         super().__init__()
 
         assert d > 0 and d < 4, "Currently only implemented for 1, 2, and 3-D."
@@ -215,16 +231,16 @@ class H1Loss(object):
         f"error: expected `reduction` to be one of {allowed_reductions}, got {reduction}"
         self.reduction = reduction
 
-        if isinstance(L, float):
-            self.L = [L]*self.d
+        if isinstance(measure, float):
+            self.measure = [measure]*self.d
         else:
-            self.L = L
+            self.measure = measure
     
     @property
     def name(self):
         return f"H1_{self.d}DLoss"
      
-    def compute_terms(self, x, y, h):
+    def compute_terms(self, x, y, quadrature):
         """compute_terms computes the necessary
         finite-difference derivative terms for computing
         the H1 norm
@@ -235,8 +251,8 @@ class H1Loss(object):
             inputs
         y : torch.Tensor
             targets
-        h : int or list
-            discretization size (single or per dim)
+        quadrature : int or list
+            quadrature weights
 
         """
         dict_x = {}
@@ -246,8 +262,8 @@ class H1Loss(object):
             dict_x[0] = x
             dict_y[0] = y
 
-            x_x = central_diff_1d(x, h[0], fix_x_bnd=self.fix_x_bnd)
-            y_x = central_diff_1d(y, h[0], fix_x_bnd=self.fix_x_bnd)
+            x_x = central_diff_1d(x, quadrature[0], fix_x_bnd=self.fix_x_bnd)
+            y_x = central_diff_1d(y, quadrature[0], fix_x_bnd=self.fix_x_bnd)
 
             dict_x[1] = x_x
             dict_y[1] = y_x
@@ -256,8 +272,8 @@ class H1Loss(object):
             dict_x[0] = torch.flatten(x, start_dim=-2)
             dict_y[0] = torch.flatten(y, start_dim=-2)
 
-            x_x, x_y = central_diff_2d(x, h, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd)
-            y_x, y_y = central_diff_2d(y, h, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd)
+            x_x, x_y = central_diff_2d(x, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd)
+            y_x, y_y = central_diff_2d(y, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd)
 
             dict_x[1] = torch.flatten(x_x, start_dim=-2)
             dict_x[2] = torch.flatten(x_y, start_dim=-2)
@@ -269,8 +285,8 @@ class H1Loss(object):
             dict_x[0] = torch.flatten(x, start_dim=-3)
             dict_y[0] = torch.flatten(y, start_dim=-3)
 
-            x_x, x_y, x_z = central_diff_3d(x, h, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd, fix_z_bnd=self.fix_z_bnd)
-            y_x, y_y, y_z = central_diff_3d(y, h, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd, fix_z_bnd=self.fix_z_bnd)
+            x_x, x_y, x_z = central_diff_3d(x, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd, fix_z_bnd=self.fix_z_bnd)
+            y_x, y_y, y_z = central_diff_3d(y, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd, fix_z_bnd=self.fix_z_bnd)
 
             dict_x[1] = torch.flatten(x_x, start_dim=-3)
             dict_x[2] = torch.flatten(x_y, start_dim=-3)
@@ -282,9 +298,9 @@ class H1Loss(object):
         
         return dict_x, dict_y
 
-    def uniform_h(self, x):
+    def uniform_quadrature(self, x):
         """
-        uniform_h creates normalization constants
+        uniform_quadrature creates quadrature weights
         scaled by the spatial size of ``x`` to ensure that 
         ``LpLoss`` computes the average over spatial dims. 
 
@@ -295,14 +311,14 @@ class H1Loss(object):
 
         Returns
         -------
-        h : list
-            list of normalization constants per-dim
+        quadrature : list
+            list of quadrature weights per-dim
         """
-        h = [0.0]*self.d
+        quadrature = [0.0]*self.d
         for j in range(self.d, 0, -1):
-            h[-j] = self.L[-j]/x.size(-j)
+            quadrature[-j] = self.measure[-j]/x.size(-j)
         
-        return h
+        return quadrature
     
     def reduce_all(self, x):
         """
@@ -320,7 +336,7 @@ class H1Loss(object):
         
         return x
         
-    def abs(self, x, y, h=None):
+    def abs(self, x, y, quadrature=None):
         """absolute H1 norm
 
         Parameters
@@ -329,19 +345,19 @@ class H1Loss(object):
             inputs
         y : torch.Tensor
             targets
-        h : float or list, optional
-            normalization constant for reduction, by default None
+        quadrature : float or list, optional
+            quadrature constant for reduction along each dim, by default None
         """
         #Assume uniform mesh
-        if h is None:
-            h = self.uniform_h(x)
+        if quadrature is None:
+            quadrature = self.uniform_quadrature(x)
         else:
-            if isinstance(h, float):
-                h = [h]*self.d
+            if isinstance(quadrature, float):
+                quadrature = [quadrature]*self.d
             
-        dict_x, dict_y = self.compute_terms(x, y, h)
+        dict_x, dict_y = self.compute_terms(x, y, quadrature)
 
-        const = math.prod(h)
+        const = math.prod(quadrature)
         diff = const*torch.norm(dict_x[0] - dict_y[0], p=2, dim=-1, keepdim=False)**2
 
         for j in range(1, self.d + 1):
@@ -353,7 +369,7 @@ class H1Loss(object):
             
         return diff
         
-    def rel(self, x, y, h=None):
+    def rel(self, x, y, quadrature=None):
         """relative H1-norm
 
         Parameters
@@ -362,17 +378,17 @@ class H1Loss(object):
             inputs
         y : torch.Tensor
             targets
-        h : float or list, optional
-            normalization constant for reduction, by default None
+        quadrature : float or list, optional
+            quadrature constant for reduction along each dim, by default None
         """
         #Assume uniform mesh
-        if h is None:
-            h = self.uniform_h(x)
+        if quadrature is None:
+            quadrature = self.uniform_quadrature(x)
         else:
-            if isinstance(h, float):
-                h = [h]*self.d
+            if isinstance(quadrature, float):
+                quadrature = [quadrature]*self.d
         
-        dict_x, dict_y = self.compute_terms(x, y, h)
+        dict_x, dict_y = self.compute_terms(x, y, quadrature)
 
         diff = torch.norm(dict_x[0] - dict_y[0], p=2, dim=-1, keepdim=False)**2
         ynorm = torch.norm(dict_y[0], p=2, dim=-1, keepdim=False)**2
@@ -387,7 +403,7 @@ class H1Loss(object):
             
         return diff
 
-    def __call__(self, y_pred, y, h=None, **kwargs):
+    def __call__(self, y_pred, y, quadrature=None, **kwargs):
         """
         Parameters
         ----------
@@ -395,10 +411,10 @@ class H1Loss(object):
             inputs
         y : torch.Tensor
             targets
-        h : float or list, optional
+        quadrature : float or list, optional
             normalization constant for reduction, by default None
         """
-        return self.rel(y_pred, y, h=h)
+        return self.rel(y_pred, y, quadrature=quadrature)
 
 class PointwiseQuantileLoss(object):
     """PointwiseQuantileLoss computes Quantile Loss described in [1]_

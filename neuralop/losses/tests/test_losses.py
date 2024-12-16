@@ -7,8 +7,8 @@ from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d
 from neuralop.layers.embeddings import regular_grid_nd
 
 def test_lploss():
-    l2_2d_mean = LpLoss(d=2, p=2, reduction='mean', L=1.)
-    l2_2d_sum = LpLoss(d=2, p=2, reduction='sum', L=1.)
+    l2_2d_mean = LpLoss(d=2, p=2, reduction='mean', measure=1.)
+    l2_2d_sum = LpLoss(d=2, p=2, reduction='sum', measure=1.)
     x = torch.randn(10, 1, 4, 4)
 
     abs_0 = l2_2d_mean.abs(x,x)
@@ -27,10 +27,10 @@ def test_lploss():
     assert sum_abs_l2_err.item() == 10.
 
     # Test quadrature weights: for spatial dims, each weight should
-    # be 1/the corresponding size in x, so that after multi weights,
+    # be 1/the corresponding size in x, so that after applying weights,
     # lploss constitutes an average over spatial dims. 
     d = 2
-    default_quad_weights = l2_2d_mean.uniform_h(x)
+    default_quad_weights = l2_2d_mean.uniform_quadrature(x)
     assert default_quad_weights[-d:] == [1 / s for s in x.shape[-d:]]
     
 
