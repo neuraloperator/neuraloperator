@@ -43,8 +43,8 @@ def load_training_state(save_dir: Union[str, Path],
 
     Returns
     -------
-    dict of training state
-        keyed `{'model': model, etc}`
+    tuple of training state
+        ``model, optimizer, scheduler, regularizer, epoch``
         
     """
     if not map_location:
@@ -71,8 +71,9 @@ def load_training_state(save_dir: Union[str, Path],
         model = model.to(device=f"cuda:{device_id}")
         torch.cuda.empty_cache()
     else:
-        model = model.from_checkpoint(save_dir.absolute().as_posix(), save_name, map_location=map_location)
-    
+        save_pth = save_dir / f"{save_name}_state_dict.pt"
+        model.load_state_dict(torch.load(save_pth.absolute().as_posix()))
+
     # load optimizer if state exists
     if optimizer is not None:
         optimizer_pth = save_dir / "optimizer.pt"
