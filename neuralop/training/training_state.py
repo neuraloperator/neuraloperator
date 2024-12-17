@@ -43,8 +43,8 @@ def load_training_state(save_dir: Union[str, Path],
 
     Returns
     -------
-    dict of training state
-        keyed `{'model': model, etc}`
+    tuple of training state
+        ``model, optimizer, scheduler, regularizer, epoch``
         
     """
     if not map_location:
@@ -71,12 +71,14 @@ def load_training_state(save_dir: Union[str, Path],
         model = model.to(device=f"cuda:{device_id}")
         torch.cuda.empty_cache()
     else:
-        model = model.from_checkpoint(save_dir.absolute().as_posix(), save_name, map_location=map_location)
+        model = model.from_checkpoint(save_dir, save_name)
     
     # load optimizer if state exists
     if optimizer is not None:
         optimizer_pth = save_dir / "optimizer.pt"
         if optimizer_pth.exists():
+            # Reinitialize optimizer with the new loaded model parameters to fix overwriting IDs
+            optimizer = reinit_module(optimizer, model.parameters())
             optimizer.load_state_dict(torch.load(optimizer_pth.absolute().as_posix(), map_location=map_location))
         else:
             print(f"Warning: requested to load optimizer state, but no saved optimizer state exists in {save_dir}.")
@@ -84,6 +86,8 @@ def load_training_state(save_dir: Union[str, Path],
     if scheduler is not None:
         scheduler_pth = save_dir / "scheduler.pt"
         if scheduler_pth.exists():
+            # Reinitialize scheduler with the new loaded opt parameters to fix overwriting IDs
+            scheduler = reinit_module(scheduler, optimizer)
             scheduler.load_state_dict(torch.load(scheduler_pth.absolute().as_posix(), map_location=map_location))
         else:
             print(f"Warning: requested to load scheduler state, but no saved scheduler state exists in {save_dir}.")
@@ -150,3 +154,5 @@ def save_training_state(save_dir: Union[str, Path], save_name: str,
     
     torch.save(manifest, save_dir / "manifest.pt")
     
+def reinit_module(module: nn.Module, *args):
+    return module.__class__(*args, **module.defaults)
