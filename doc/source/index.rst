@@ -162,10 +162,10 @@ of an equivalent, dense Fourier Neural Operator!
             If you use NeuralOperator, please cite the following papers:
          </p>
          <p>
-            <it> Li, Z., Kovachki, N., Azizzadenesheli, K., Liu, B., Bhattacharya, K., Stuart, A., and Anandkumar A. </it>, 
-            <strong> “Fourier Neural Operator for Parametric Partial Differential Equations”</strong>, 
-            ICLR, 2021. 
-            <br/> <a href="https://arxiv.org/abs/2010.08895">https://arxiv.org/abs/2010.08895</a>.
+            <it> Kossaifi, J., Kovachki, N., Li, Z., Pitt, D., Liu-Schiaffini, M., George, R., Bonev, B., Azizzadenesheli, K., Berner, J., and Anandkumar, A. </it>, 
+            <strong>"A Library for Learning Neural Operators"</strong>, 
+            ArXiV, 2024.
+            <br/> <a href="https://arxiv.org/abs/2412.10354">https://arxiv.org/abs/2412.10354</a>.
          </p>
          <p>
             <it> Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar A. </it>,
@@ -175,14 +175,15 @@ of an equivalent, dense Fourier Neural Operator!
          </p>
 
          <blockquote id="bibtex" class="is-hidden">
-            @misc{li2020fourier,<br/>
-            &emsp; title={Fourier Neural Operator for Parametric Partial Differential Equations}, <br/>
-            &emsp; author={Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar},<br/>
-            &emsp; year={2020},<br/>
-            &emsp; eprint={2010.08895},<br/>
-            &emsp; archivePrefix={arXiv},<br/>
-            &emsp; primaryClass={cs.LG}<br/>
-            } <br/> <br/>
+            @misc{kossaifi2024neural,<br/>
+            &emsp;  title         = {A Library for Learning Neural Operators}, 
+            &emsp;  author        = {Jean Kossaifi and Nikola Kovachki and Zongyi Li and Davit Pitt and Miguel Liu-Schiaffini and Robert Joseph George and Boris Bonev and Kamyar Azizzadenesheli and Julius Berner and Anima Anandkumar},<br/>
+            &emsp;  year          = {2024},<br/>
+            &emsp;  eprint        = {2412.10354},<br/>
+            &emsp;  archivePrefix = {arXiv},<br/>
+            &emsp;  primaryClass  = {cs.LG},<br/>
+            } <br/> 
+            <br/>
             @article{kovachki2021neural,<br/>
             &emsp;  author    = {Nikola B. Kovachki and Zongyi Li and Burigede Liu and Kamyar Azizzadenesheli and Kaushik Bhattacharya and Andrew M. Stuart and Anima Anandkumar},<br/>
             &emsp;  title     = {Neural Operator: Learning Maps Between Function Spaces},<br/>
