@@ -588,7 +588,6 @@ class Trainer:
         """
         if isinstance(save_dir, str):
             save_dir = Path(save_dir)
-        print(f"{save_dir=} {type(save_dir)}")
 
         # check for save model exists
         if (save_dir / "best_model_state_dict.pt").exists():

@@ -10,7 +10,7 @@ from neuralop.data.datasets import load_darcy_flow_small
 
 from neuralop import Trainer, LpLoss, H1Loss
 from neuralop.tests.test_utils import DummyDataset, DummyModel
-from neuralop.training import IncrementalFNOTrainer
+from neuralop.training import IncrementalFNOTrainer, AdamW
 
 def test_model_checkpoint_saves():
     save_pth = Path('./test_checkpoints')
@@ -58,9 +58,10 @@ def test_model_checkpoint_and_resume():
 
     trainer = Trainer(model=model,
                       n_epochs=5,
+                      verbose=True
     )
 
-    optimizer = torch.optim.Adam(model.parameters(), 
+    optimizer = AdamW(model.parameters(), 
                                 lr=3e-4, 
                                 weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
@@ -86,25 +87,42 @@ def test_model_checkpoint_and_resume():
         file_pth = save_pth / file_ext
         
         assert file_pth.exists()
-
+    
     # Resume from checkpoint
-    trainer = Trainer(model=model,
-                      n_epochs=5
+
+    new_model = DummyModel(50)
+    new_optimizer = AdamW(new_model.parameters(), 
+                                lr=3e-4, 
+                                weight_decay=1e-4)
+    trainer = Trainer(model=new_model,
+                      n_epochs=10,
+                      verbose=True
     )
     errors = trainer.train(train_loader=train_loader, 
                   test_loaders={'': test_loader}, 
-                  optimizer=optimizer,
+                  optimizer=new_optimizer,
                   scheduler=scheduler,
                   regularizer=None,
                   training_loss=l2loss,
                   eval_losses=eval_losses,
                   resume_from_dir=save_pth
                   )
+
+    # Ensure model and opt parameter IDs match after reloading - otherwise model will not train
+
+    # Get model and optimizer parameters as a set of IDs
+    model_param_ids = {id(p) for p in trainer.model.parameters()}
+    optimizer_param_ids = {id(p) for group in trainer.optimizer.param_groups for p in group['params']}
+
+    # Check for mismatches, assert there are none
+    missing_in_optimizer = model_param_ids - optimizer_param_ids
+    missing_in_model = optimizer_param_ids - model_param_ids
+    
+    assert not missing_in_optimizer and not missing_in_model
     
     # clean up dummy checkpoint directory after testing
     shutil.rmtree(save_pth)
 
-    
 # ensure that model accuracy after loading from checkpoint
 # is comparable to accuracy at time of save
 def test_load_from_checkpoint():
