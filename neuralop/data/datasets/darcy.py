@@ -17,7 +17,7 @@ class DarcyDataset(PTDataset):
     DarcyDataset stores data generated according to Darcy's Law.
     Input is a coefficient function and outputs describe flow. 
 
-    Data source: https://zenodo.org/records/10994262
+    Data source: https://zenodo.org/records/12784353
 
     Attributes
     ----------
@@ -86,7 +86,7 @@ class DarcyDataset(PTDataset):
             root_dir.mkdir(parents=True)
 
         # Zenodo record ID for Darcy-Flow dataset
-        zenodo_record_id = "10994262"
+        zenodo_record_id = "12784353"
 
         # List of resolutions needed for dataset object
         resolutions = set(test_resolutions + [train_resolution])
