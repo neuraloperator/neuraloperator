@@ -151,7 +151,7 @@ Citing
 
 If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
 
-   @misc{kossaifi2024neural
+   @misc{kossaifi2024neural,
       title={A Library for Learning Neural Operators}, 
       author={Jean Kossaifi and Nikola Kovachki and 
       Zongyi Li and Davit Pitt and 
