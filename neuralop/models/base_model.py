@@ -77,16 +77,17 @@ class BaseModel(torch.nn.Module):
 
         return instance
 
-    def state_dict(self, *args, **kwargs):
+    def state_dict(self, **kwargs):
         """
         state_dict subclasses nn.Module.state_dict() and adds a metadata field
         to track the model version and ensure only compatible saves are loaded.
         """
-        state_dict = super().state_dict(self, *args, **kwargs)
-        state_dict['neuralop_metadata'] = self._init_kwargs
+        print("In state dict")
+        state_dict = super().state_dict(**kwargs)
+        state_dict.update({'neuralop_metadata': self._init_kwargs})
         return state_dict
 
-    def load_state_dict(self, state_dict, *args, **kwargs):
+    def load_state_dict(self, state_dict, **kwargs):
         """
         state_dict subclasses nn.Module.load_state_dict() and adds a metadata field
         to track the model version and ensure only compatible saves are loaded.
@@ -98,8 +99,9 @@ class BaseModel(torch.nn.Module):
             if saved_version != self_version:
                 warnings.warn(f"Attempting to load a {self.__class__} of version {saved_version},"
                               f"But current version of {self.__class__} is {saved_version}")
-                state_dict.pop('metadata')
-        return super().load_state_dict(state_dict, *args, **kwargs)
+            # remove state dict metadata at the end to ensure proper loading with PyTorch module
+            del state_dict['neuralop_metadata']
+        return super().load_state_dict(state_dict, **kwargs)
 
     def save_checkpoint(self, save_folder, save_name):
         """Saves the model state and init param in the given folder under the given name
