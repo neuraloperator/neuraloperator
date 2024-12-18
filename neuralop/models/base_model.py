@@ -95,7 +95,7 @@ class BaseModel(torch.nn.Module):
         state_dict subclasses nn.Module.load_state_dict() and adds a metadata field
         to track the model version and ensure only compatible saves are loaded.
         """
-        metadata = state_dict.get('_metadata')
+        metadata = state_dict.pop('_metadata', None)
         if metadata is not None:
 
             saved_version = metadata.get('_version', None)
@@ -106,7 +106,6 @@ class BaseModel(torch.nn.Module):
                 warnings.warn(f"Attempting to load a {self.__class__} of version {saved_version},"
                               f"But current version of {self.__class__} is {saved_version}")
             # remove state dict metadata at the end to ensure proper loading with PyTorch module
-            del state_dict['_metadata']
         return super().load_state_dict(state_dict, **kwargs)
 
     def save_checkpoint(self, save_folder, save_name):
