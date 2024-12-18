@@ -84,7 +84,10 @@ class BaseModel(torch.nn.Module):
         """
         print("In state dict")
         state_dict = super().state_dict(**kwargs)
-        state_dict['_metadata'] = self._init_kwargs
+        if state_dict.get('_metadata') == None:
+            state_dict['_metadata'] = self._init_kwargs
+        else:
+            warnings.warn("Attempting to update metadata for a module with metadata already in self.state_dict()")
         return state_dict
 
     def load_state_dict(self, state_dict, **kwargs):
