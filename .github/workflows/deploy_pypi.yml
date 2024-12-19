@@ -85,7 +85,6 @@ jobs:
     - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
     - name: Push docs
-      if: success() 
       run: |
         # Add deploy key and clone through ssh
         eval "$(ssh-agent -s)"
@@ -107,6 +106,6 @@ jobs:
         echo "Copying to folder"
         cp -r ../doc/build/html/* stable/
         echo "Pushing to git"
-        git add dev
+        git add stable
         git commit -m "Github action: auto-update."
         git push --force origin main
