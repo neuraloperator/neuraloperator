@@ -85,7 +85,7 @@ jobs:
     - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
     - name: Push docs
-      if: success() && github.ref == 'refs/heads/main'
+      if: success() 
       run: |
         # Add deploy key and clone through ssh
         eval "$(ssh-agent -s)"
