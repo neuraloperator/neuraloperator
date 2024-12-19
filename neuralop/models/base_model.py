@@ -96,13 +96,12 @@ class BaseModel(torch.nn.Module):
         to track the model version and ensure only compatible saves are loaded.
         """
         metadata = state_dict.pop('_metadata', None)
-        if metadata is not None:
 
+        if metadata is not None:
             saved_version = metadata.get('_version', None)
             if saved_version is None:
                 warnings.warn(f"Saved instance of {self.__class__} has no stored version attribute.")
-            self_version = self._init_kwargs['_version']
-            if saved_version != self_version:
+            if saved_version != self._version:
                 warnings.warn(f"Attempting to load a {self.__class__} of version {saved_version},"
                               f"But current version of {self.__class__} is {saved_version}")
             # remove state dict metadata at the end to ensure proper loading with PyTorch module
