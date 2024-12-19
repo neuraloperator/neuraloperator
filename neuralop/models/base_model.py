@@ -76,7 +76,37 @@ class BaseModel(torch.nn.Module):
         instance._init_kwargs = kwargs
 
         return instance
-    
+
+    def state_dict(self, **kwargs):
+        """
+        state_dict subclasses nn.Module.state_dict() and adds a metadata field
+        to track the model version and ensure only compatible saves are loaded.
+        """
+        print("In state dict")
+        state_dict = super().state_dict(**kwargs)
+        if state_dict.get('_metadata') == None:
+            state_dict['_metadata'] = self._init_kwargs
+        else:
+            warnings.warn("Attempting to update metadata for a module with metadata already in self.state_dict()")
+        return state_dict
+
+    def load_state_dict(self, state_dict, **kwargs):
+        """
+        state_dict subclasses nn.Module.load_state_dict() and adds a metadata field
+        to track the model version and ensure only compatible saves are loaded.
+        """
+        metadata = state_dict.pop('_metadata', None)
+
+        if metadata is not None:
+            saved_version = metadata.get('_version', None)
+            if saved_version is None:
+                warnings.warn(f"Saved instance of {self.__class__} has no stored version attribute.")
+            if saved_version != self._version:
+                warnings.warn(f"Attempting to load a {self.__class__} of version {saved_version},"
+                              f"But current version of {self.__class__} is {saved_version}")
+            # remove state dict metadata at the end to ensure proper loading with PyTorch module
+        return super().load_state_dict(state_dict, **kwargs)
+
     def save_checkpoint(self, save_folder, save_name):
         """Saves the model state and init param in the given folder under the given name
         """
