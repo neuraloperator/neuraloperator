@@ -44,7 +44,7 @@ class CODABlocks(nn.Module):
     scale : int
         Scale for downsampling Q, K functions before calculating the attention matrix.
         Higher scale will downsample more.
-    output_scaling_factor : float
+    resolution_scaling_factor : float
         Scaling factor for the output.
     
     Other Parameters
@@ -94,7 +94,7 @@ class CODABlocks(nn.Module):
         temperature=1.0,
         nonlinear_attention=False,
         scale=None,
-        output_scaling_factor=None,
+        resolution_scaling_factor=None,
         incremental_n_modes=None,
         non_linearity=F.gelu,
         use_channel_mlp=True,
@@ -129,7 +129,7 @@ class CODABlocks(nn.Module):
                                  else token_codimension)
 
         self.n_heads = n_heads  # number of heads
-        self.output_scaling_factor = output_scaling_factor
+        self.resolution_scaling_factor = resolution_scaling_factor
         self.temperature = temperature
         self.n_dim = len(n_modes)
 
@@ -157,10 +157,10 @@ class CODABlocks(nn.Module):
 
         # this scale used for downsampling Q,K functions
         if scale is None:
-            scale = 2 if per_channel_attention else 1
+            scale = 0.5 if per_channel_attention else 1
             scale = min(self.n_heads, scale)
 
-        mixer_modes = [i // scale for i in n_modes]
+        mixer_modes = [int(i*scale) for i in n_modes]
 
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
@@ -192,19 +192,19 @@ class CODABlocks(nn.Module):
             n_layers=1,
         )
         self.Key = FNOBlocks(
-            output_scaling_factor=1 * scale,
+            resolution_scaling_factor=1 * scale,
             conv_module=conv_module,
             **kqv_args,
             **common_args,
         )
         self.Query = FNOBlocks(
-            output_scaling_factor=1 * scale,
+            resolution_scaling_factor=1 * scale,
             conv_module=conv_module,
             **kqv_args,
             **common_args,
         )
         self.Value = FNOBlocks(
-            output_scaling_factor=1,
+            resolution_scaling_factor=1,
             conv_module=conv_module,
             **kqv_args,
             **common_args,
@@ -215,7 +215,7 @@ class CODABlocks(nn.Module):
                 in_channels=self.n_heads * self.head_codimension,
                 out_channels=self.token_codimension,
                 n_modes=n_modes,
-                output_scaling_factor=1,
+                resolution_scaling_factor=1,
                 # args below are shared with KQV blocks
                 apply_skip=True,
                 non_linearity=torch.nn.Identity(),
@@ -232,7 +232,7 @@ class CODABlocks(nn.Module):
 
         mixer_args = dict(
             n_modes=n_modes,
-            output_scaling_factor=1,
+            resolution_scaling_factor=1,
             non_linearity=non_linearity,
             norm='instance_norm',
             fno_skip=fno_skip,
@@ -349,6 +349,9 @@ class CODABlocks(nn.Module):
             Input tensor with shape (b, t * d, h, w, ...), where
             b is the batch size, t is the number of tokens, and d is the token codimension.
         """
+
+        if self.resolution_scaling_factor is not None and output_shape is None:
+            output_shape = [int(i * j) for (i,j) in zip(x.shape[-self.n_dim:], self.resolution_scaling_factor)]
 
         if self.permutation_eq:
             return self._forward_equivariant(x, output_shape=output_shape)
