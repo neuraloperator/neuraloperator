@@ -82,7 +82,6 @@ class BaseModel(torch.nn.Module):
         state_dict subclasses nn.Module.state_dict() and adds a metadata field
         to track the model version and ensure only compatible saves are loaded.
         """
-        print("In state dict")
         state_dict = super().state_dict(**kwargs)
         if state_dict.get('_metadata') == None:
             state_dict['_metadata'] = self._init_kwargs
