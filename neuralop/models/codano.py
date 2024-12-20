@@ -14,11 +14,66 @@ class CODANO(nn.Module):
     """
     Parameters
     ---
-    
+    output_variable_codimension : int
+        number of output channels corresponding to each variable
+    hidden_variable_codimension : int
+        number of hidden channels corresponding to each variable
+    lifting_variable_codimension : int
+        number of hidden channels in lifting/projection module for each variable
+    use_positional_encoding : bool
+        whether to use varibale specific positional encoding
+    positional_encoding_dim : int
+        dimension (number of channels) of positional encoding
+    static_channel_dim : int
+        number of channels in static channel. These channels contains additional static information of the PDE such as boundary conditions.
+    positional_encoding_modes : list
+        number of Fourier modes used in positional encoding
+    n_variables : int
+        number of variables
+    use_horizontal_skip_connection : bool
+        whether to use horizontal skip connections
+    horizontal_skips_map : dict
+                    a map {...., b: a, ....} denoting horizontal skip connection from a-th layer to
+                    b-th layer.
+                    Example: For a 5 layer UNO architecture, the skip connections can be
+                    horizontal_skips_map ={4:0,3:1}
+    n_layers : int
+        number of layers
+    n_modes : list
+        Number of Fourier Modes to use in integral operations in the CoDA-NO block (along each dimension).
+        Example: For a five layer CODANO with 2D input the n_modes can be: [[16,16],[16,16],[16,16],[16,16],[16,16]]
+    scalings : list
+        the output scaling factor for each layer along each dimension. 
+        For example, for a 2D input, the scalings can be [[1,1],[0.5,0.5],[1,1], [2,2], [1,1]]
+    n_heads : list
+        number of attention heads for each layer
+    attention_scalings : list
+        scaling factor in attention mechanism. For example, for a 5 layer CoDA-NO, the attention_scalings can be [0.5, 0.5, 0.5, 0.5, 0.5].
+    conv_module : nn.Module
+        convolution module to use in the CoDA-NO block
+    nonlinear_attention : bool
+        whether to use non-linear attention mechanism
+    non_linearity : nn.Module
+        non-linearity to use in the CoDA-NO block
+    attention_token_dim : int
+        number of channels for each token for attention mechanism
+    per_channel_attention : bool
+        whether to use per channel attention mechanism
+    layer_kwargs : dict
+        additional arguments for the CODABlocks
+    projection : bool
+        whether to use projection module
+    lifting : bool
+        whether to use lifting module
+    domain_padding : float
+        padding factor for domain padding
+    domain_padding_mode : str
+        domain padding mode (one-sided or two-sided)
+    enable_cls_token : bool
+        whether to use CLS token
     """
     def __init__(
         self,
-        input_variable_codimension=1,
         output_variable_codimension=1,
         hidden_variable_codimension=32,
         lifting_variable_codimension=64,
@@ -39,7 +94,6 @@ class CODANO(nn.Module):
         non_linearity=F.gelu,
         attention_token_dim=1,
         per_channel_attention=True,
-        integral_operator=None,
         layer_kwargs={},
         projection=True,
         lifting=True,
@@ -53,8 +107,13 @@ class CODANO(nn.Module):
         assert len(n_heads) == n_layers, "number of Attention head for all layers are not given"
         assert len(scalings) == n_layers, "scaling for all layers are not given"
         assert len(attention_scalings) == n_layers, "attention scaling for all layers are not given"
-        # assert (positional_encoding_dim > 0) ^ (positional_encoding_modes is not None), "positional encoding modes are not given"
-        # assert (positional_encoding_dim) > 0 ^ (use_positional_encoding is not None),  "positional_encoding_dim havhase to be greater than 0 if use_positional_encoding is True"
+        if use_positional_encoding:
+            assert positional_encoding_dim > 0, "positional encoding dim is not given"
+            assert positional_encoding_modes is not None, "positional encoding modes are not given"
+        else:
+            positional_encoding_dim = 0
+
+        input_variable_codimension=1 # each channel is a variable
 
         self.n_dim = len(n_modes[0])
         self.input_variable_codimension = input_variable_codimension
@@ -70,7 +129,6 @@ class CODANO(nn.Module):
         self.scalings = scalings
         self.non_linearity = non_linearity
         self.n_heads = n_heads
-        self.integral_operator = integral_operator
         self.lifting = lifting
         self.projection = projection
         self.enable_cls_token = enable_cls_token
@@ -180,6 +238,14 @@ class CODANO(nn.Module):
                     )
                 )
     def _extend_positional_encoding(self, num_variables):
+        """
+        Add positional encoding for new variables.
+
+        Parameters
+        ----------
+        num_variables : int
+            number of variables to add
+        """
         for i in range(num_variables):
             self.positional_encoding.append(
                 nn.Parameter(
@@ -199,16 +265,7 @@ class CODANO(nn.Module):
                                                 s=x.shape[-self.n_dim:]))
         
         return torch.stack(encoding_list, dim=1)
-    # def get_output_scaling_factor(self, initial_scale, scalings_per_layer):
-    #     for k in scalings_per_layer:
-    #         initial_scale = np.multiply(initial_scale, k)
-    #     initial_scale = initial_scale.tolist()
-    #     if len(initial_scale) == 1:
-    #         initial_scale = initial_scale[0]
-    #     return initial_scale
-
-    # def get_device(self,):
-    #     return self.cls_token.coefficients_r.device
+    
     def _get_cls_token(self, x):
         cls_token = torch.fft.irfftn(self.cls_token, s=x.shape[-self.n_dim:])
         repeat_shape = [1 for _ in x.shape]
