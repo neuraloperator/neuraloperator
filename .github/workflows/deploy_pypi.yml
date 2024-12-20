@@ -38,6 +38,17 @@ jobs:
           cd doc
           make html
           cd ..
+          if [ -d stable ]; then
+          git rm -r stable/*
+          fi
+          mkdir -p stable
+          echo "Copying to folder"
+          cp -r ../doc/build/html/* stable/
+      - name: Store the built docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-docs
+          path: stable/
 
   publish-to-testpypi:
     name: Publish Python 🐍 distribution 📦 to TestPyPI
@@ -84,6 +95,11 @@ jobs:
         path: dist/
     - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
+    - name: Download the prebuilt docs
+      uses: actions/download-artifact@v4
+      with:
+        name: built-docs
+        path: stable/
     - name: Push docs
       run: |
         # Add deploy key and clone through ssh
@@ -104,7 +120,7 @@ jobs:
         fi
         mkdir -p stable
         echo "Copying to folder"
-        cp -r ../doc/build/html/* stable/
+        cp -r ../stable/* stable/
         echo "Pushing to git"
         git add stable
         git commit -m "Github action: auto-update."
