@@ -46,7 +46,10 @@ class UDNO(BaseModel, name="UDNO"):
 
     References
     ----------
-    .. [1] TODO: add UDNO no-mri paper
+    .. [1] Jatyani, A. S., Wang, J., Wu, Z., Liu-Schiaffini, M., Tolooshams, B., Anandkumar, A.;
+        Unifying Subsampling Pattern Variations for Compressed Sensing MRI with Neural Operators;
+        arxiv:2410.16290, 2024.
+
     .. [2] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.;
         Neural Operators with Localized Integral and Differential Kernels;  arxiv:2402.16845
     """

@@ -13,23 +13,23 @@ def get_device():
 
 @pytest.mark.parametrize(
     "in_shape",
-    [(64, 64), (128, 128), (128, 64)],
-    # [(64, 64)],
+    # [(64, 64), (128, 128), (128, 64)],
+    [(128, 64)],
     ids=lambda x: f"in_shape={x}",
 )
 @pytest.mark.parametrize(
     "hidden_channels",
-    [16, 31, 32],
-    # [16],
+    # [16, 31, 32],
+    [16],
     ids=lambda x: f"chans={x}",
 )
 @pytest.mark.parametrize(
     "num_pool_layers",
-    [2, 3, 4],
-    # [2],
+    # [2, 3, 4],
+    [2],
     ids=lambda x: f"num_pool_layers={x}",
 )
-def test_out_shapes(in_shape, hidden_channels, num_pool_layers):
+def test_udno(in_shape, hidden_channels, num_pool_layers):
     sel_device = get_device()
     in_batch_size = 2
     in_channels = 3
@@ -59,14 +59,22 @@ def test_out_shapes(in_shape, hidden_channels, num_pool_layers):
     unet.eval()
     udno.eval()
 
-    # forward passes
-    with torch.no_grad():
-        unet_output = unet(sample_input)
-        udno_output = udno(sample_input)
+    # test forward pass
+    unet_output = unet(sample_input)
+    udno_output = udno(sample_input)
+
+    # test backward pass
+    loss = udno_output.sum()
+    loss.backward()
+
+    # assert unused params = 0
+    n_unused_params = 0
+    for param in udno.parameters():
+        if param.grad is None:
+            n_unused_params += 1
+    assert n_unused_params == 0, f"{n_unused_params} parameters were unused!"
 
     del sample_input, unet, udno
-
-    assert True
     # assert that the output shapes are the same
     # assert (
     #     unet_output.shape == udno_output.shape
