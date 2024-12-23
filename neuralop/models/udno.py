@@ -6,7 +6,6 @@ from torch.nn import functional as F
 from .base_model import BaseModel
 from ..layers.discrete_continuous_convolution import (
     EquidistantDiscreteContinuousConv2d,
-    EquidistantDiscreteContinuousConvTranspose2d,
 )
 
 
@@ -23,7 +22,8 @@ class UDNO(BaseModel, name="UDNO"):
     out_channels : int
         number of output channels
     in_shape : tupe[int, int]
-        2 dimensional input shape
+        2 dimensional input shape, must be square as DISCO assumes inputs are
+        on a regular square [-1, 1]^2 grid
     disco_radius_cutoff : float, optional
             Value in (0, 1). Controls the effective size of the DISCO kernel.
         Compiled kernels have size (SxS) where S = ceil(max(in_shape[0], in_shape[1]) * disco_radius_cutoff)
@@ -70,7 +70,11 @@ class UDNO(BaseModel, name="UDNO"):
 
         assert (
             len(in_shape) == 2
-        ), "[model:UDNO:__init__] Input shape must be a 2d tuple like Ex: (64, 64)"
+        ), "[model:UDNO:init] Input shape must be a 2d tuple like Ex: (64, 64)"
+
+        assert (
+            in_shape[0] == in_shape[1]
+        ), "[model:UDNO:init] Input shape must be square. DISCO kernels assume inputs are on a [-1, 1] square grid."
 
         if disco_radius_cutoff is None:
             disco_radius_cutoff = 3 / min(in_shape) / 2
@@ -102,6 +106,12 @@ class UDNO(BaseModel, name="UDNO"):
         shape = (in_shape[0] // 2, in_shape[1] // 2)
         disco_radius_cutoff = disco_radius_cutoff * 2
         for _ in range(num_pool_layers - 1):
+            print(shape)
+            if 0 in shape:
+                raise ValueError(
+                    "[models:UDNO:init] The number of pool layers is too many. In each downsampling part of the U-shaped architecture, the spatial dimensions halve. If there are too many downsampling layers (number of pools is too large), the spatial dimensions go to 0. Please pass in a lower number of pool layers and try again."
+                )
+
             self.down_sample_layers.append(
                 DISCOBlock(
                     ch,
@@ -185,6 +195,12 @@ class UDNO(BaseModel, name="UDNO"):
         )
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
+        _, _, h, w = image.shape
+        assert (
+            h == self.in_shape[0] and w == self.in_shape[1]
+        ), "[model:UDNO:forward] tensor passed into forward pass must have same shape as `in_shape`: {self.in_shape}"
+        assert h == w, "[model:UDNO:forward] tensors passed to UDNO must be square"
+
         stack: list[torch.Tensor] = []
         output = image
 
@@ -195,21 +211,31 @@ class UDNO(BaseModel, name="UDNO"):
             output = F.avg_pool2d(output, kernel_size=2, stride=2, padding=0)
 
         # bottleneck
+        print("before bot", output.shape)
         output = self.bottleneck(output)
+        print("after bot", output.shape)
 
         # decoder: apply up-sampling layers
         for transpose, disco in zip(self.up_transpose, self.up):
             downsample_layer = stack.pop()
             output = transpose(output)
 
-            # reflect pad on the right/botton if needed to handle odd input dimensions
-            padding = [0, 0, 0, 0]
-            if output.shape[-1] != downsample_layer.shape[-1]:
-                padding[1] = 1  # padding right
-            if output.shape[-2] != downsample_layer.shape[-2]:
-                padding[3] = 1  # padding bottom
-            if torch.sum(torch.tensor(padding)) != 0:
-                output = F.pad(output, padding, "reflect")
+            print("up:", downsample_layer.shape, output.shape, "->")
+
+            padding = [0, 0, 0, 0]  # [left, right, top, bottom]
+
+            diff_w = downsample_layer.shape[-1] - output.shape[-1]
+            if diff_w > 0:
+                padding[0] = diff_w // 2  # padding left
+                padding[1] = diff_w - padding[0]  # padding right
+
+            diff_h = downsample_layer.shape[-2] - output.shape[-2]
+            if diff_h > 0:
+                padding[2] = diff_h // 2  # padding top
+                padding[3] = diff_h - padding[2]  # padding bottom
+
+            if any(padding):
+                output = F.pad(output, padding, mode="reflect")
 
             output = torch.cat([output, downsample_layer], dim=1)
             output = disco(output)
@@ -281,6 +307,7 @@ class DISCOBlock(nn.Module):
                 # check if padding is required, get h_ (h') and w_ (w')
                 _, _, h_, w_ = image.shape
                 # prev - curr b/c h_ <= h and w_ <= w
+                print("down:", (h, w), "->", (h_, w_))
                 pad_h = h - h_
                 pad_w = w - w_
                 if pad_h > 0 or pad_w > 0:
@@ -326,7 +353,7 @@ class TransposeDISCOBlock(nn.Module):
                 out_shape=(
                     2 * self.in_shape[0],
                     2 * self.in_shape[1],
-                ),  # FIXME: figure out what the output shape should be
+                ),
                 kernel_shape=self.kernel_shape,
                 bias=self.kernel_bias,
                 radius_cutoff=(self.radius_cutoff / 2),

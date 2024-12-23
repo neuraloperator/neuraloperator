@@ -13,20 +13,17 @@ def get_device():
 
 @pytest.mark.parametrize(
     "in_shape",
-    # [(64, 64), (128, 128), (128, 64)],
-    [(128, 64)],
+    [(10, 10), (11, 11), (32, 32), (512, 512)],
     ids=lambda x: f"in_shape={x}",
 )
 @pytest.mark.parametrize(
     "hidden_channels",
-    # [16, 31, 32],
-    [16],
+    [2, 16, 17, 24],
     ids=lambda x: f"chans={x}",
 )
 @pytest.mark.parametrize(
     "num_pool_layers",
-    # [2, 3, 4],
-    [2],
+    [1, 2, 4],
     ids=lambda x: f"num_pool_layers={x}",
 )
 def test_udno(in_shape, hidden_channels, num_pool_layers):
@@ -76,9 +73,9 @@ def test_udno(in_shape, hidden_channels, num_pool_layers):
 
     del sample_input, unet, udno
     # assert that the output shapes are the same
-    # assert (
-    #     unet_output.shape == udno_output.shape
-    # ), f"Output of UDNO is: {udno_output.shape} vs. expected U-Net output: {unet_output.shape}"
+    assert (
+        unet_output.shape == udno_output.shape
+    ), f"Output of UDNO is: {udno_output.shape} vs. expected U-Net output: {unet_output.shape}"
 
 
 """
