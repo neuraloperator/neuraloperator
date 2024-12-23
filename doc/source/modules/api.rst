@@ -101,6 +101,7 @@ U-shaped Neural Operators (U-NO)
 
 U-shaped DISCO Neural Operator (UDNO)
 -------------------------------------
+*Optimized for imaging and other tasks that require learning local features. Ex: accelerated MRI reconstruction*
 
 The UDNO is an in-place neural operator replacement for the U-Net. It's well equipped for tasks that require learning local features such as imaging.
 

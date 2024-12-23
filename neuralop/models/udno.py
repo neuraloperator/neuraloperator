@@ -10,39 +10,55 @@ from ..layers.discrete_continuous_convolution import (
 
 
 class UDNO(BaseModel, name="UDNO"):
-    """2-Dimensional U-shaped DISCO Neural Operator (UDNO) [1]_. This module is
-    meant to be an in-place operator replacement for the U-Net. The model uses
-    Equidistant Discrete-continuous convolutions (DISCO) on equidistant/regular
-    grids [2]_.
+    """2-Dimensional U-shaped DISCO Neural Operator (UDNO) [1]_.
+
+    This module is designed as an in-place replacement for the U-Net, utilizing
+    Equidistant Discrete-continuous convolutions (DISCO) on equidistant/regular grids [2]_.
 
     Parameters
     ----------
     in_channels : int
-        number of input channels
+        Number of input channels.
     out_channels : int
-        number of output channels
-    in_shape : tupe[int, int]
-        2 dimensional input shape, must be square as DISCO assumes inputs are
-        on a regular square [-1, 1]^2 grid
+        Number of output channels.
+    in_shape : tuple[int, int]
+        2-dimensional input shape. Must be square as DISCO assumes inputs
+        lie on a regular square grid `[-1, 1]^2`.
     disco_radius_cutoff : float, optional
-            Value in (0, 1). Controls the effective size of the DISCO kernel.
-        Compiled kernels have size (SxS) where S = ceil(max(in_shape[0], in_shape[1]) * disco_radius_cutoff)
-            DISCO kernels compile to always cover the same relative size of the
-        full input. If you are going to train on one resolution and want to
-        infer at some other resolution, you must pass in this value.
-            For example, with an input shape of (64, 64), a disco_radius_cutoff of
-        0.04 would lead to an effective kernel size of 3 = ceil(64 * 0.04). When
-        using even effective kernel_sizes, outputs are zero-padded so
-        in_shape = out_shape.
+        Value in (0, 1). Defines the effective size of the DISCO kernel.
+        Compiled kernels have size (`S x S`) where S = ceil(max(in_shape[0], in_shape[1]) * disco_radius_cutoff).
+        This ensures the kernel covers a consistent relative portion of the input.
+        Use this parameter if training on one resolution but inferring on another.
+        For example, with an input shape of (64, 64) and disco_radius_cutoff of 0.04,
+        the kernel size becomes 3 = ceil(64 * 0.04). Even kernel sizes result in zero-padded
+        outputs, preserving in_shape = out_shape.
     hidden_channels : int, optional
-        Number of output channels of first DISCO layer. 32 by default.
+        Number of output channels in the first DISCO layer. Default is 32.
     num_pool_layers : int, optional
-        Number of down-sampling and up-sampling layers. 4 by default.
+        Number of down-sampling and up-sampling layers. Default is 4.
     disco_kernel_shape : int | list[int], optional
         Shape of the DISCO kernel.
-        provide two integers for anisotropic kernels: [# rings, # basis functions]
-        provide a single integer for isotropic kernels
-        [3, 4] by default: 3 rings, 4 basis functions
+
+        Either provide two integers for anisotropic kernels: [# rings, # basis functions].
+        Default is [3, 4]: 3 rings and 4 basis functions.
+
+        Or provide a single integer for isotropic kernels.
+
+    Usage
+    -----
+    Initialize the UDNO model with the required parameters:
+
+    >>> model = UDNO(
+    ...     in_channels=1,
+    ...     out_channels=1,
+    ...     in_shape=(64, 64),
+    ...     disco_radius_cutoff=0.04
+    ... )
+
+    Forward pass through the model:
+    # Input shape: (batch_size, in_channels, 64, 64)
+    >>> output = model(input_tensor)
+    # Output shape: (batch_size, out_channels, 64, 64)
 
     References
     ----------
@@ -194,6 +210,19 @@ class UDNO(BaseModel, name="UDNO"):
         )
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
+        """
+        Forward call. Expects an input of shape `in_shape`
+
+        Parameters
+        ----------
+        image : torch.Tensor
+            Tensor with shape matching `self.in_shape` (passed in during initialize) and `in_channels` feature channels. As equispaced DISCO assumes a regular square grid, only square inputs can be passed. Attempts to pass in rectangle inputs will yield an AssertionError.
+
+        Returns
+        -------
+        torch.Tensor
+            Tensor with same spatial dimensions as input image, and `out_channels` feature channels
+        """
         _, _, h, w = image.shape
         assert (
             h == self.in_shape[0] and w == self.in_shape[1]
@@ -240,7 +269,7 @@ class UDNO(BaseModel, name="UDNO"):
 
 class DISCOBlock(nn.Module):
     """
-    A DISCO Encoder Block that consists of two Equidistant DISCO2d layers each
+    A DISCO Encoder Block that consists of two Equidistant DISCO layers each
     followed by instance normalization, LeakyReLU activation and dropout.
     """
 
@@ -320,6 +349,10 @@ class DISCOBlock(nn.Module):
 
 
 class TransposeDISCOBlock(nn.Module):
+    """
+    A DISCO Decoder Block (transpose) that consists  of a bilinear upsample layer, followed by an Equidistant DISCO layer, instance norm, and leaky ReLU.
+    """
+
     def __init__(
         self,
         in_channels: int,
