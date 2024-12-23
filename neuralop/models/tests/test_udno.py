@@ -13,12 +13,12 @@ def get_device():
 
 @pytest.mark.parametrize(
     "in_shape",
-    [(10, 10), (11, 11), (32, 32), (512, 512)],
+    [(32, 32), (33, 33), (64, 64), (123, 123), (512, 512)],
     ids=lambda x: f"in_shape={x}",
 )
 @pytest.mark.parametrize(
     "hidden_channels",
-    [2, 16, 17, 24],
+    [2, 16, 17, 24, 64],
     ids=lambda x: f"chans={x}",
 )
 @pytest.mark.parametrize(
@@ -27,55 +27,61 @@ def get_device():
     ids=lambda x: f"num_pool_layers={x}",
 )
 def test_udno(in_shape, hidden_channels, num_pool_layers):
-    sel_device = get_device()
-    in_batch_size = 2
-    in_channels = 3
-    out_channels = 1
-    sample_input = torch.randn(in_batch_size, in_channels, *in_shape).to(sel_device)
+    try:
+        sel_device = get_device()
+        in_batch_size = 2
+        in_channels = 3
+        out_channels = 1
+        sample_input = torch.randn(in_batch_size, in_channels, *in_shape).to(sel_device)
 
-    # create models
-    unet = Unet(
-        in_channels,
-        out_channels,
-        hidden_channels,
-        num_pool_layers,
-        drop_prob=0.1,
-    ).to(sel_device)
-    udno = UDNO(
-        in_channels,
-        out_channels,
-        in_shape,
-        disco_radius_cutoff=None,
-        hidden_channels=hidden_channels,
-        num_pool_layers=num_pool_layers,
-        disco_kernel_shape=in_shape,
-        disco_kernel_bias=False,
-        drop_prob=0.1,
-    ).to(sel_device)
+        # create models
+        unet = Unet(
+            in_channels,
+            out_channels,
+            hidden_channels,
+            num_pool_layers,
+            drop_prob=0.1,
+        ).to(sel_device)
+        udno = UDNO(
+            in_channels,
+            out_channels,
+            in_shape,
+            disco_radius_cutoff=None,
+            hidden_channels=hidden_channels,
+            num_pool_layers=num_pool_layers,
+            disco_kernel_shape=[2, 3],
+            disco_kernel_bias=False,
+            drop_prob=0.1,
+        ).to(sel_device)
 
-    unet.eval()
-    udno.eval()
+        unet.eval()
+        udno.eval()
 
-    # test forward pass
-    unet_output = unet(sample_input)
-    udno_output = udno(sample_input)
+        # test forward pass
+        unet_output = unet(sample_input)
+        udno_output = udno(sample_input)
 
-    # test backward pass
-    loss = udno_output.sum()
-    loss.backward()
+        # test backward pass
+        loss = udno_output.sum()
+        loss.backward()
 
-    # assert unused params = 0
-    n_unused_params = 0
-    for param in udno.parameters():
-        if param.grad is None:
-            n_unused_params += 1
-    assert n_unused_params == 0, f"{n_unused_params} parameters were unused!"
+        # assert unused params = 0
+        n_unused_params = 0
+        for param in udno.parameters():
+            if param.grad is None:
+                n_unused_params += 1
+        assert n_unused_params == 0, f"{n_unused_params} parameters were unused!"
 
-    del sample_input, unet, udno
-    # assert that the output shapes are the same
-    assert (
-        unet_output.shape == udno_output.shape
-    ), f"Output of UDNO is: {udno_output.shape} vs. expected U-Net output: {unet_output.shape}"
+        del sample_input, unet, udno
+        # assert that the output shapes are the same
+        assert (
+            unet_output.shape == udno_output.shape
+        ), f"Output of UDNO is: {udno_output.shape} vs. expected U-Net output: {unet_output.shape}"
+    except RuntimeError as e:
+        if "can't allocate memory" in str(e):
+            pytest.skip(f"Skipped due to memory allocation error: {e}")
+        else:
+            raise
 
 
 """

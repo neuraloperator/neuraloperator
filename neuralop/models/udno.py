@@ -106,7 +106,6 @@ class UDNO(BaseModel, name="UDNO"):
         shape = (in_shape[0] // 2, in_shape[1] // 2)
         disco_radius_cutoff = disco_radius_cutoff * 2
         for _ in range(num_pool_layers - 1):
-            print(shape)
             if 0 in shape:
                 raise ValueError(
                     "[models:UDNO:init] The number of pool layers is too many. In each downsampling part of the U-shaped architecture, the spatial dimensions halve. If there are too many downsampling layers (number of pools is too large), the spatial dimensions go to 0. Please pass in a lower number of pool layers and try again."
@@ -211,16 +210,12 @@ class UDNO(BaseModel, name="UDNO"):
             output = F.avg_pool2d(output, kernel_size=2, stride=2, padding=0)
 
         # bottleneck
-        print("before bot", output.shape)
         output = self.bottleneck(output)
-        print("after bot", output.shape)
 
         # decoder: apply up-sampling layers
         for transpose, disco in zip(self.up_transpose, self.up):
             downsample_layer = stack.pop()
             output = transpose(output)
-
-            print("up:", downsample_layer.shape, output.shape, "->")
 
             padding = [0, 0, 0, 0]  # [left, right, top, bottom]
 
@@ -307,7 +302,6 @@ class DISCOBlock(nn.Module):
                 # check if padding is required, get h_ (h') and w_ (w')
                 _, _, h_, w_ = image.shape
                 # prev - curr b/c h_ <= h and w_ <= w
-                print("down:", (h, w), "->", (h_, w_))
                 pad_h = h - h_
                 pad_w = w - w_
                 if pad_h > 0 or pad_w > 0:
