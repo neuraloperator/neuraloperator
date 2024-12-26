@@ -11,13 +11,15 @@ import pytest
 @pytest.mark.parametrize("positional_encoding_dim", [4, 8])
 @pytest.mark.parametrize("positional_encoding_modes", [[8, 8], [16, 16]])
 @pytest.mark.parametrize("static_channel_dim", [0, 2])
+@pytest.mark.parametrize("use_cls_token", [True, False])
 def test_CODANO(hidden_variable_codimension,
                 lifting_variable_codimension,
                 use_positional_encoding,
                 n_variables,
                 positional_encoding_dim,
                 positional_encoding_modes,
-                static_channel_dim):
+                static_channel_dim,
+                use_cls_token):
     output_variable_codimension = 1
     n_layers = 5
     n_heads = [2]*n_layers
@@ -42,7 +44,8 @@ def test_CODANO(hidden_variable_codimension,
         n_heads=n_heads,
         n_modes=n_modes,
         attention_scalings=attention_scalings,
-        scalings=scalings
+        scalings=scalings,
+        enable_cls_token=use_cls_token
     )
 
     in_data = torch.randn(2, n_variables, 32, 32)
@@ -58,8 +61,19 @@ def test_CODANO(hidden_variable_codimension,
     # Check output size
     assert list(out.shape) == [2, n_variables, 32, 32]
 
+    # test different resolutions
+    in_data = torch.randn(2, n_variables, 64, 64)
+    if static_channel_dim > 0:
+        static_channels = torch.randn(2, static_channel_dim, 64, 64)
+    else:
+        static_channels = None
+        
+    out = model(in_data, static_channels)
+    assert list(out.shape) == [2, n_variables, 64, 64]
+
     # Test backward pass
     out.sum().backward()
+
 
     
 
