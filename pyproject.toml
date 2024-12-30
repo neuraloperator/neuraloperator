@@ -30,7 +30,10 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["neuralop"]
+include = [
+    "neuralop",
+    "neuralop.*",    
+]
 
 # Dynamic versioning from neuralop.__init__
 [tool.setuptools.dynamic]
