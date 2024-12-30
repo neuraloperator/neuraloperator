@@ -43,7 +43,7 @@ jobs:
           fi
           mkdir -p stable
           echo "Copying to folder"
-          cp -r ../doc/build/html/* stable/
+          cp -r ./doc/build/html/* stable/
       - name: Store the built docs
         uses: actions/upload-artifact@v4
         with:
