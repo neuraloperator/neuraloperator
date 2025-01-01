@@ -407,6 +407,8 @@ class CODANO(nn.Module):
             input tensor of shape (batch_size, num_inp_var, H, W, ...)
         static_channel : torch.Tensor
             static channel tensor of shape (batch_size, static_channel_dim, H, W, ...)
+            These channels provide additional information regarding the physical setup of the system. 
+            Must be provided when `static_channel_dim > 0`.
 
         Returns
         -------
