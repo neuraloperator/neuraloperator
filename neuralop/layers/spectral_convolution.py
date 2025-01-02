@@ -455,27 +455,32 @@ class SpectralConv(BaseSpectralConv):
         print(f"{starts=}", f"{slices_w=}")
         weight = self.weight[slices_w]
 
+        ### Pick proper modes of fft
+
         # if separable conv, weight tensor only has one channel dim
         if self.separable:
             weight_start_idx = 1
         # otherwise drop first two dims (in_channels, out_channels)
         else:
             weight_start_idx = 2
-        print(f"{weight.shape=}")
-        starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(fft_size, list(weight.shape[weight_start_idx:]))]
+        
         slices_x =  [slice(None), slice(None)] # Batch_size, channels
 
-        # when x is even length along any dimension and we select an odd number of modes,
-        # torch.fft.fftshift will place the modes off-center and we prioritize negative frequencies by default
-        # we add a simple check which shifts the indices forward by 1 along each dim where this is the case
-
-        start_shifts = [1 if size % 2 == 0 and modes % 2 == 1 else 0 for size, modes in zip(fft_size, list(weight.shape[weight_start_idx:]))]
-
-        if self.complex_data:
-            slices_x += [slice(start//2 + shift, -start//2  + shift) if start else slice(start, None) for start, shift in zip(starts, start_shifts)]
-        else:
-            slices_x += [slice(start//2 + shift, -start//2 + shift) if start else slice(start, None) for start, shift  in zip(starts[:-1], start_shifts[:-1])]
-            slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+        for all_modes, kept_modes in zip(fft_size, list(weight.shape[weight_start_idx:])):
+            # 0th frequency is located at n // 2 in each direction
+            # we grab n//2 - n_modes // 2, n//2 + n_modes // 2 for each dim
+            # if we keep an odd number of modes, grab one extra positive frequency
+            center = all_modes // 2
+            positive_freqs = negative_freqs = kept_modes // 2
+            if kept_modes % 2 == 0:
+                negative_freqs -= 1
+            slices_x += [slice(center - negative_freqs, center + positive_freqs + 1)]
+        
+        if not self.complex_data:
+            if weight.shape[-1] < fft_size[-1]:
+                slices_x[-1] = slice(None, weight.shape[-1])
+            else:
+                slices_x[-1] = slice(None)
         
         print(f"{starts=}",f"{x.shape=}", f"{slices_x=}")
         print("fftfreq full", torch.fft.fftshift(torch.fft.fftfreq(x.shape[2])))
