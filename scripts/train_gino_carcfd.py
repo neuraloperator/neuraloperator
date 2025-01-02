@@ -124,7 +124,7 @@ class GINOCFDDataProcessor(DataProcessor):
         if out_p.shape[0] > output_vertices:
             out_p = out_p[:output_vertices,:]
         elif out_p.shape[0] < output_vertices:
-            truth = truth[:, out_p.shape[0], ...]
+            truth = truth[:, :out_p.shape[0], ...]
 
         truth = truth.to(device)
 
