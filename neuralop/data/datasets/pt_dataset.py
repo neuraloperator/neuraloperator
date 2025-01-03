@@ -39,7 +39,8 @@ class PTDataset:
                  encoding="channel-wise",
                  input_subsampling_rate=None,
                  output_subsampling_rate=None,
-                 channel_dim=1,):
+                 channel_dim=1,
+                 channels_squeezed=True):
         """PTDataset
 
         Parameters
@@ -76,6 +77,10 @@ class PTDataset:
             rate at which to subsample each output dimension, by default None
         channel_dim : int, optional
             dimension of saved tensors to index data channels, by default 1
+        channels_squeezed : bool, optional
+            whether the channel dim of saved tensors is squeezed in storage
+            Only applies when there is only one data channel, as in our example problems
+            Defaults to True
         """
         
         if isinstance(root_dir, str):
@@ -96,7 +101,9 @@ class PTDataset:
 
         # optionally subsample along data indices
         ## Input subsampling 
-        input_data_dims = data["x"].ndim - 1
+        input_data_dims = data["x"].ndim - 2 # batch and channels
+        if channels_squeezed:
+            input_data_dims += 1
         # convert None and 0 to 1
         if not input_subsampling_rate:
             input_subsampling_rate = 1
@@ -107,7 +114,9 @@ class PTDataset:
         assert len(input_subsampling_rate) == input_data_dims
         
         ## Output subsampling
-        output_data_dims = data["y"].ndim - 1
+        output_data_dims = data["y"].ndim - 2
+        if channels_squeezed:
+            output_data_dims += 1
         # convert None and 0 to 1
         if not input_subsampling_rate:
             output_subsampling_rate = 1
