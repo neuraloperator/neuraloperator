@@ -472,9 +472,9 @@ class SpectralConv(BaseSpectralConv):
             # if we keep an odd number of modes, grab one extra positive frequency
             center = all_modes // 2
             positive_freqs = negative_freqs = kept_modes // 2
-            if kept_modes % 2 == 0:
-                negative_freqs -= 1
-            slices_x += [slice(center - negative_freqs, center + positive_freqs + 1)]
+            if kept_modes % 2 == 1:
+                positive_freqs += 1
+            slices_x += [slice(center - negative_freqs, center + positive_freqs)]
         
         if not self.complex_data:
             if weight.shape[-1] < fft_size[-1]:
