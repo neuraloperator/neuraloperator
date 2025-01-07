@@ -252,7 +252,7 @@ class CODABlocks(nn.Module):
                 **common_args,
             )
             self.norm1 = norm_module(self.token_codimension)
-            self.norm2 = norm_module(self.mixer_token_codimension)
+            self.mixer_in_normalizer = norm_module(self.mixer_token_codimension)
             self.mixer_out_normalizer = norm_module(
                 self.mixer_token_codimension)
             print("print token code dimension", self.token_codimension, self.mixer_token_codimension)
@@ -266,7 +266,7 @@ class CODABlocks(nn.Module):
                 **common_args,
             )
             self.norm1 = norm_module(codimension_size)
-            self.norm2 = norm_module(codimension_size)
+            self.mixer_in_normalizer = norm_module(codimension_size)
             self.mixer_out_normalizer = norm_module(codimension_size)
 
     def compute_attention(self, tokens, batch_size):
@@ -388,7 +388,7 @@ class CODABlocks(nn.Module):
         if self.multi_head_proj is not None:
             attention = self.multi_head_proj(attention)
         attention = self.attention_normalizer(attention + tokens)
-        attention_normalized = self.norm2(attention)
+        attention_normalized = self.mixer_in_normalizer(attention)
         output = self.mixer(attention_normalized, output_shape=input_shape)
         output = self.mixer_out_normalizer(output) + attention
 
@@ -448,7 +448,7 @@ class CODABlocks(nn.Module):
             t * attention.size(2),
             *attention.shape[-self.n_dim:])
 
-        attention_normalized = self.norm2(attention)
+        attention_normalized = self.mixer_in_normalizer(attention)
         output = self.mixer(attention_normalized, output_shape=input_shape)
 
         output = self.mixer_out_normalizer(output) + attention
