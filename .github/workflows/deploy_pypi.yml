@@ -7,7 +7,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -28,6 +27,12 @@ jobs:
       - name: Build a binary wheel and a source tarball
         run: |
           python -m build
+      - name: Install neuralop from built wheel and ensure it passes all tests
+        run: |
+          python -m pip uninstall neuraloperator -yyy
+          WHEEL_FILE=$(ls dist/*.whl | head -1)
+          python -m pip install $WHEEL_FILE
+          pytest neuralop
       - name: Store the distribution packages
         uses: actions/upload-artifact@v4
         with:
