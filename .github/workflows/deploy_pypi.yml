@@ -60,9 +60,6 @@ jobs:
       name: testpypi
       url: https://test.pypi.org/p/neuraloperator
 
-    permissions:
-      id-token: write
-
     steps:
     - name: Download all the dists
       uses: actions/download-artifact@v4
@@ -73,7 +70,8 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
-
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+  
   publish-to-pypi:
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
