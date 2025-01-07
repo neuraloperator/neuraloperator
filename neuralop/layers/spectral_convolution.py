@@ -423,7 +423,6 @@ class SpectralConv(BaseSpectralConv):
         
         if self.order > 1:
             x = torch.fft.fftshift(x, dim=fft_shift_dims)
-        print(f"{fft_dims=}")
 
         if self.fno_block_precision == "mixed":
             # if 'mixed', the above fft runs in full precision, but the
@@ -452,7 +451,6 @@ class SpectralConv(BaseSpectralConv):
             slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
             slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)]
         
-        print(f"{starts=}", f"{slices_w=}")
         weight = self.weight[slices_w]
 
         ### Pick proper modes of fft
@@ -482,10 +480,6 @@ class SpectralConv(BaseSpectralConv):
             else:
                 slices_x[-1] = slice(None)
         
-        print(f"{starts=}",f"{x.shape=}", f"{slices_x=}")
-        print("fftfreq full", torch.fft.fftshift(torch.fft.fftfreq(x.shape[2])))
-        print("fftfreq selected", torch.fft.fftshift(torch.fft.fftfreq(x.shape[2]))[slices_x[2]])
-        print(f"{x[slices_x].shape=}")
         out_fft[slices_x] = self._contract(x[slices_x], weight, separable=self.separable)
 
         if self.resolution_scaling_factor is not None and output_shape is None:
