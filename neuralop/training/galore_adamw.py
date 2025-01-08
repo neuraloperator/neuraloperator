@@ -25,6 +25,10 @@ class GaLoreAdamW(AdamW):
         to preserve, or an list of int ranks corresponding to
         each mode of the tensor. If a single int is given, it is used 
         for all modes (see `neuralop/training/tensor_galore_projector.py`)
+    galore_update_proj_gap : `int`, defaults to 50
+        Number of optimizer steps before projection tensors are recomputed,
+    galore_scale : `float`, defaults to 1.0
+        Additional lr-like scalar by which galore parameters are multiplied before update
     lr : `float`, *optional*, defaults to 0.001:
         The learning rate to use.
     betas : `Tuple[float,float]`, *optional*, defaults to `(0.9, 0.999)`
@@ -35,7 +39,7 @@ class GaLoreAdamW(AdamW):
         Decoupled weight decay to apply.
     correct_bias : `bool`, *optional*, defaults to `True`:
         Whether or not to correct bias in Adam (for instance, in Bert TF repository they use `False`).
-    activation_checkpoint: bool, default True
+    activation_checkpoint: bool, default False
         whether to use activation checkpointing during projection
     no_deprecation_warning : `bool`, *optional*, defaults to `False`:
         A flag used to disable the deprecation warning (set to `True` to disable the warning).
@@ -54,18 +58,22 @@ class GaLoreAdamW(AdamW):
         self,
         params: Iterable[nn.parameter.Parameter],
         galore_params: Iterable[nn.parameter.Parameter],
-        galore_rank: Union[float, int, Tuple[int]], 
+        galore_rank: Union[float, int, Tuple[int]]=1.0, 
+        galore_update_proj_gap: int=50,
+        galore_scale: float=1.0,
         lr: float = 1e-3,
         betas: Tuple[float, float] = (0.9, 0.999),
         eps: float = 1e-6,
         weight_decay: float = 0.0,
         correct_bias: bool = True,
-        activation_checkpoint: bool = True,
-        no_deprecation_warning: bool = False,
+        activation_checkpoint: bool = False,
         warm_restart: bool=True,
     ):
         
-        super().__init__(params, lr, betas, eps, weight_decay, correct_bias, no_deprecation_warning,)
+        super().__init__(params=params,
+                         lr=lr, betas=betas,
+                         eps=eps, weight_decay=weight_decay,
+                         correct_bias=correct_bias, )
         # Keep GaLore parameters separate for projection
         self.add_param_group({'params': galore_params,
                               'rank': galore_rank,
@@ -76,8 +84,11 @@ class GaLoreAdamW(AdamW):
                               'correct_bias': correct_bias,
                               'galore': True
                               })
+        self.galore_rank = galore_rank
         self.activation_checkpoint = activation_checkpoint
         self.warm_restart = warm_restart
+        self.galore_update_proj_gap = galore_update_proj_gap
+        self.galore_scale = galore_scale
 
     @torch.no_grad()
     def step(self, closure: Callable = None):
@@ -108,10 +119,9 @@ class GaLoreAdamW(AdamW):
                 if group.get('galore', False):
                     if "projector" not in state:
                         state["projector"] = TensorGaLoreProjector(
-                            group["rank"], 
-                            update_proj_gap=group["update_proj_gap"],
-                            scale=group["scale"], 
-                            proj_type=group["proj_type"], 
+                            rank=self.galore_rank, 
+                            update_proj_gap=self.galore_update_proj_gap,
+                            scale=self.galore_scale, 
                             activation_checkpoint=self.activation_checkpoint,
                             warm_restart=self.warm_restart)
                     
@@ -134,7 +144,7 @@ class GaLoreAdamW(AdamW):
                 # Decay the first and second moment running average coefficient
                 # In-place operations to update the averages at the same time
                 exp_avg.mul_(beta1).add_(grad, alpha=(1.0 - beta1))
-                if torch.is_complex(grad) and self.support_complex:
+                if torch.is_complex(grad):
                     exp_avg_sq.mul_(beta2).addcmul_(grad, grad.conj(), value=1.0 - beta2)
                 else:
                     exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1.0 - beta2)
