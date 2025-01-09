@@ -84,7 +84,7 @@ class TensorGaLoreProjector:
         else:
             init = 'svd' # default setting
         if self.activation_checkpoint:
-            core, factors = checkpoint(tucker, matrix, rank=rank, init=init)
+            core, factors = checkpoint(tucker, matrix, rank, init)
         else:
             core, factors = tucker(matrix, rank=rank, init=init)
         del core
