@@ -467,20 +467,23 @@ class SpectralConv(BaseSpectralConv):
         slices_x =  [slice(None), slice(None)] # Batch_size, channels
 
         for all_modes, kept_modes in zip(fft_size, list(weight.shape[weight_start_idx:])):
-            # 0th frequency is located at n // 2 in each direction
-            # we grab n//2 - n_modes // 2, n//2 + n_modes // 2 for each dim
+            # After fft-shift, the 0th frequency is located at n // 2 in each direction
+            # We keep n_modes modes around it:
+            # grab n//2 - n_modes // 2, n//2 + n_modes // 2 for each dim
             # if we keep an odd number of modes, grab one extra positive frequency
             center = all_modes // 2
             positive_freqs = negative_freqs = kept_modes // 2
+            # When the number of remaining modes (minus 0) is odd, we 
+            # select one more positive frequency than negative to center the 0th mode.
             if kept_modes % 2 == 1:
                 positive_freqs += 1
+            # this slice represents the index -n // 2 --> 0 --> n // 2 along each dim, with our adjustments
             slices_x += [slice(center - negative_freqs, center + positive_freqs)]
         
-        if not self.complex_data:
-            if weight.shape[-1] < fft_size[-1]:
-                slices_x[-1] = slice(None, weight.shape[-1])
-            else:
-                slices_x[-1] = slice(None)
+        if weight.shape[-1] < fft_size[-1]:
+            slices_x[-1] = slice(None, weight.shape[-1])
+        else:
+            slices_x[-1] = slice(None)
         
         out_fft[slices_x] = self._contract(x[slices_x], weight, separable=self.separable)
 
