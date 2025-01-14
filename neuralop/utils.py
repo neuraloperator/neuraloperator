@@ -139,7 +139,7 @@ def spectrum_2d(signal, n_observations, normalize=True):
         spectrum[:, j - 1] = (signal[:, ind[0], ind[1]].sum(dim=1)).abs() ** 2
 
     spectrum = spectrum.mean(dim=0)
-    return spectrum, index
+    return spectrum
 
 
 Number = Union[float, int]
