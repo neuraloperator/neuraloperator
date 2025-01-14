@@ -419,7 +419,7 @@ class SpectralConv(BaseSpectralConv):
             fft_shift_dims = fft_dims
         else: 
             x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
-            fft_shift_dims = fft_dims[:-1] # for simplicity, don't shift the last dimension when x is real in spatial domain
+            fft_shift_dims = fft_dims[:-1] # When x is real in spatial domain, the last half of the last dim is redundant
         
         if self.order > 1:
             x = torch.fft.fftshift(x, dim=fft_shift_dims)
