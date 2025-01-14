@@ -15,16 +15,10 @@ cfd: &CFD
   # Dataset related
   data:
     root: /home/YOURNAME/data/car-pressure-data/
-    entity_name: ''
-    load_attributes: ['press']
     sdf_query_resolution: 32
     n_train: 500
-    n_test: 50
-    input_points: 'query_points'
-    input_fields: ['distance']
-    output_points: 'centroids'
-    output_fields: ['press']
-    weights: 'triangle_areas' # unused with pressure only
+    n_test: 111
+    download: True
 
   fnogno:
     data_channels: 1
