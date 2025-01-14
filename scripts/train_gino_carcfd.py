@@ -118,13 +118,11 @@ class GINOCFDDataProcessor(DataProcessor):
         #Output data
         truth = sample['press'].squeeze(0).unsqueeze(-1)
 
-        # Take the first 3682 vertices of the output mesh to correspond to pressure
-        # if there are less than 3682 vertices, take the maximum number of truth points
+        # Take the first 3586 vertices of the output mesh to correspond to pressure
+        # if there are less than 3586 vertices, take the maximum number of truth points
         output_vertices = truth.shape[1]
         if out_p.shape[0] > output_vertices:
             out_p = out_p[:output_vertices,:]
-        elif out_p.shape[0] < output_vertices:
-            truth = truth[:, :out_p.shape[0], ...]
 
         truth = truth.to(device)
 
@@ -140,9 +138,10 @@ class GINOCFDDataProcessor(DataProcessor):
         return sample
     
     def postprocess(self, out, sample):
-        out = self.normalizer.inverse_transform(out)
-        y = self.normalizer.inverse_transform(sample['y'].squeeze(0))
-        sample['y'] = y
+        if not self.training:
+            out = self.normalizer.inverse_transform(out)
+            y = self.normalizer.inverse_transform(sample['y'].squeeze(0))
+            sample['y'] = y
 
         return out, sample
     
@@ -180,6 +179,5 @@ trainer.train(
               optimizer=optimizer,
               scheduler=scheduler,
               training_loss=train_loss_fn,
-              #eval_losses={config.opt.testing_loss: test_loss_fn, 'drag': DragLoss},
               eval_losses={config.opt.testing_loss: test_loss_fn},
               regularizer=None,)
