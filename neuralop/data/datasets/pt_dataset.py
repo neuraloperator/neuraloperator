@@ -78,7 +78,8 @@ class PTDataset:
         channel_dim : int, optional
             dimension of saved tensors to index data channels, by default 1
         channels_squeezed : bool, optional
-            whether the channel dim of saved tensors is squeezed in storage
+            If the channels dim is 1, whether that is explicitly kept in the saved tensor. 
+            If not, we need to unsqueeze it to explicitly have a channel dim. 
             Only applies when there is only one data channel, as in our example problems
             Defaults to True
         """
