@@ -356,7 +356,12 @@ class GINO(BaseModel):
     
     def forward(self, input_geom, latent_queries, output_queries, x=None, latent_features=None, ada_in=None, **kwargs):
         """The GINO's forward call:
-        Input GNO --> FNOBlocks --> output GNO + projection to output queries
+        Input GNO --> FNOBlocks --> output GNO + projection to output queries.
+
+        .. note ::
+            GINO currently supports batching **only in cases where the geometry of
+            inputs and outputs is shared across the entire batch**. Inputs can have a batch dim
+            in ``x`` and ``latent_features``, but it must be shared for both. 
 
         Parameters
         ----------
@@ -369,7 +374,7 @@ class GINO(BaseModel):
             shape (1, n_gridpts_1, .... n_gridpts_n, gno_coord_dim)
         output_queries : torch.Tensor
             points at which to query the final GNO layer to get output
-            shape (batch, n_out, gno_coord_dim)
+            shape (n_out, gno_coord_dim)
         x : torch.Tensor, optional
             input function a defined on the input domain `input_geom`
             shape (batch, n_in, in_channels). Default None
