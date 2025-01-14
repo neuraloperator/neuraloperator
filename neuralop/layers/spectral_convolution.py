@@ -416,13 +416,15 @@ class SpectralConv(BaseSpectralConv):
 
         if self.complex_data:
             x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
-            fft_shift_dims = fft_dims
+            dims_to_fft_shift = fft_dims
         else: 
             x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
-            fft_shift_dims = fft_dims[:-1] # When x is real in spatial domain, the last half of the last dim is redundant
+            # When x is real in spatial domain, the last half of the last dim is redundant.
+            # See :ref:`fft_shift_explanation` for discussion of the FFT shift.
+            dims_to_fft_shift = fft_dims[:-1] 
         
         if self.order > 1:
-            x = torch.fft.fftshift(x, dim=fft_shift_dims)
+            x = torch.fft.fftshift(x, dim=dims_to_fft_shift)
 
         if self.fno_block_precision == "mixed":
             # if 'mixed', the above fft runs in full precision, but the
@@ -453,7 +455,7 @@ class SpectralConv(BaseSpectralConv):
         
         weight = self.weight[slices_w]
 
-        ### Pick proper modes of fft
+        ### Pick the first n_modes modes of FFT signal along each dim
 
         # if separable conv, weight tensor only has one channel dim
         if self.separable:
