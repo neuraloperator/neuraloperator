@@ -868,7 +868,7 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
                                                       grid_out,
                                                       self.kernel_shape,
                                                       quadrature_weights,
-                                                      filter_basis=filter_basis
+                                                      filter_basis=filter_basis,
                                                       radius_cutoff=radius_cutoff,
                                                       periodic=False, normalize=True,
                                                       transpose_normalization=False)
