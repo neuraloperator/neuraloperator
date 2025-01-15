@@ -10,9 +10,16 @@ from functools import partial
 
 # import the base class from torch-harmonics
 from torch_harmonics.quadrature import _precompute_grid
-from torch_harmonics.convolution import _compute_support_vals_isotropic, _compute_support_vals_anisotropic
+from torch_harmonics.filter_basis import (FilterBasis, 
+                                          PiecewiseLinearFilterBasis, 
+                                          MorletFilterBasis, 
+                                          ZernikeFilterBasis)
 
-#def _compute_kernel_basis_isotropic()
+filter_basis_classes = {
+    'piecewise_linear': PiecewiseLinearFilterBasis,
+    'morlet': MorletFilterBasis,
+    'zernike': ZernikeFilterBasis
+}
 
 def _normalize_convolution_filter_matrix(psi_idx,
                                      psi_vals,
@@ -71,6 +78,7 @@ def _precompute_convolution_filter_matrix(grid_in,
                                       kernel_shape,
                                       quadrature_weights,
                                       normalize=True,
+                                      filter_basis='piecewise_linear',
                                       radius_cutoff=0.01,
                                       periodic=False,
                                       transpose_normalization=False):
@@ -94,8 +102,35 @@ def _precompute_convolution_filter_matrix(grid_in,
     function also returns the translated filters at positions 
     $T^{-1}_j \omega_i = T^{-1}_j T_i \nu$, but assumes a non-periodic subset of the
     euclidean plane.
-    """
 
+    Parameters
+    ----------
+    grid_in : ``torch.Tensor``
+        coordinate grid on which input function is provided
+    grid_out : ``torch.Tensor``
+        coordinate grid on which output function is queried
+    kernel_shape : ``int`` or tuple ``(int, int)``
+        shape of the convolution kernel. If two distinct integers,
+        the kernel will be anisotropic.
+    quadrature_weights : ``torch.Tensor``
+        _description_
+    normalize : ``bool``, optional
+        _description_, by default True
+    filter_basis : str, optional
+        _description_, by default 'piecewise_linear'
+    radius_cutoff : float, optional
+        _description_, by default 0.01
+    periodic : bool, optional
+        _description_, by default False
+    transpose_normalization : bool, optional
+        _description_, by default False
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+    
     # check that input arrays are valid point clouds in 2D
     assert len(grid_in) == 2
     assert len(grid_out) == 2
@@ -105,12 +140,6 @@ def _precompute_convolution_filter_matrix(grid_in,
     n_in = grid_in.shape[-1]
     n_out = grid_out.shape[-1]
 
-    if len(kernel_shape) == 1:
-        kernel_handle = partial(_compute_support_vals_isotropic, nr=kernel_shape[0], r_cutoff=radius_cutoff)
-    elif len(kernel_shape) == 2:
-        kernel_handle = partial(_compute_support_vals_anisotropic, nr=kernel_shape[0], nphi=kernel_shape[1], r_cutoff=radius_cutoff)
-    else:
-        raise ValueError("kernel_shape should be either one- or two-dimensional.")
 
     grid_in = grid_in.reshape(2, 1, n_in)
     grid_out = grid_out.reshape(2, n_out, 1)
@@ -123,7 +152,10 @@ def _precompute_convolution_filter_matrix(grid_in,
     r = torch.sqrt(diffs[0] ** 2 + diffs[1] ** 2)
     phi = torch.arctan2(diffs[1], diffs[0]) + torch.pi
 
-    idx, vals = kernel_handle(r, phi)
+    if isinstance(filter_basis, str):
+        # if a basis name is provided, instantiate it with the provided kernel shape
+        filter_basis = filter_basis_classes[filter_basis](kernel_shape)
+    idx, vals = filter_basis.compute_support_vals(r, phi, r_cutoff=radius_cutoff)
 
     idx = idx.permute(1, 0)
 
@@ -241,9 +273,11 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         output grid in the form of a point cloud (n_out, 2).
         Can also pass a string to generate a regular (tensor) grid.
         For exact options see ``torch_harmonics.quadrature``.
-    kernel_shape: Union[int, List[int]]
+    kernel_shape: ``Union[int, List[int]]``
         kernel shape. Expects either a single integer for isotropic
         kernels or two integers for anisotropic kernels
+    filter_basis: str literal ``{'piecewise_linear', 'morlet', 'zernike'}``
+        choice of basis functions to use for convolution filter tensor. 
     n_in: Tuple[int], optional
         number of input points along each dimension. Only used
         if grid_in is passed as a str. See ``torch_harmonics.quadrature``.
@@ -281,6 +315,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         grid_in: torch.Tensor,
         grid_out: torch.Tensor,
         kernel_shape: Union[int, List[int]],
+        filter_basis: str="piecewise_linear",
         n_in: Optional[Tuple[int]] = None,
         n_out: Optional[Tuple[int]] = None,
         quadrature_weights: Optional[torch.Tensor] = None,
@@ -344,6 +379,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
                                                       grid_out,
                                                       self.kernel_shape,
                                                       quadrature_weights,
+                                                      filter_basis=filter_basis,
                                                       radius_cutoff=radius_cutoff,
                                                       periodic=periodic)
 
@@ -416,7 +452,10 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         Can also pass a string to generate a regular (tensor) grid.
         For exact options see ``torch_harmonics.quadrature``.
     kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
+        kernel shape. Expects either a single integer for isotropic kernels
+        or two integers for anisotropic kernels
+    filter_basis: str literal ``{'piecewise_linear', 'morlet', 'zernike'}``
+        choice of basis functions to use for convolution filter tensor. 
     n_in: Tuple[int], optional
         number of input points along each dimension. Only used
         if grid_in is passed as a str. See ``torch_harmonics.quadrature``.
@@ -451,6 +490,7 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         grid_in: torch.Tensor,
         grid_out: torch.Tensor,
         kernel_shape: Union[int, List[int]],
+        filter_basis: str="piecewise_linear",
         n_in: Optional[Tuple[int]] = None,
         n_out: Optional[Tuple[int]] = None,
         quadrature_weights: Optional[torch.Tensor] = None,
@@ -513,7 +553,8 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         # precompute the transposed tensor
         idx, vals = _precompute_convolution_filter_matrix(
             grid_out, grid_in, self.kernel_shape, quadrature_weights, 
-            radius_cutoff=radius_cutoff, periodic=periodic, transpose_normalization=True
+            filter_basis=filter_basis, radius_cutoff=radius_cutoff, periodic=periodic, 
+            transpose_normalization=True
         )
 
         # to improve performance, we make psi a matrix by merging the first two dimensions
@@ -591,7 +632,10 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         of in_shape, and must be integer divisions of the corresponding
         in_shape side lengths.
     kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
+        kernel shape. Expects either a single integer for isotropic kernels
+        or two integers for anisotropic kernels
+    filter_basis: str literal ``{'piecewise_linear', 'morlet', 'zernike'}``
+        choice of basis functions to use for convolution filter tensor. 
     domain_length: torch.Tensor, optional
         extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
     periodic: bool, optional
@@ -619,6 +663,7 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         in_shape: Tuple[int],
         out_shape: Tuple[int],
         kernel_shape: Union[int, List[int]],
+        filter_basis: str="piecewise_linear",
         domain_length: Optional[Tuple[float]] = None,
         periodic: Optional[bool] = False,
         groups: Optional[int] = 1,
@@ -668,6 +713,7 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
                                                       grid_out,
                                                       self.kernel_shape,
                                                       quadrature_weights,
+                                                      filter_basis=filter_basis,
                                                       radius_cutoff=radius_cutoff,
                                                       periodic=False,
                                                       normalize=True)
@@ -736,7 +782,10 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         of in_shape, and must be integer multiples of the corresponding
         in_shape side lengths.
     kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
+        kernel shape. Expects either a single integer for isotropic kernels
+        or two integers for anisotropic kernels
+    filter_basis: str literal ``{'piecewise_linear', 'morlet', 'zernike'}``
+        choice of basis functions to use for convolution filter tensor. 
     domain_length: torch.Tensor, optional
         extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
     periodic: bool, optional
@@ -764,6 +813,7 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         in_shape: Tuple[int],
         out_shape: Tuple[int],
         kernel_shape: Union[int, List[int]],
+        filter_basis: str="piecewise_linear",
         domain_length: Optional[Tuple[float]] = None,
         periodic: Optional[bool] = False,
         groups: Optional[int] = 1,
@@ -818,6 +868,7 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
                                                       grid_out,
                                                       self.kernel_shape,
                                                       quadrature_weights,
+                                                      filter_basis=filter_basis
                                                       radius_cutoff=radius_cutoff,
                                                       periodic=False, normalize=True,
                                                       transpose_normalization=False)
