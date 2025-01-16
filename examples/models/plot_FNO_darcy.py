@@ -106,7 +106,7 @@ trainer.train(train_loader=train_loader,
               eval_losses=eval_losses)
 
 # %%
-# .. plot_preds :
+# .. _plot_preds :
 # Visualizing predictions
 # ------------------------
 # Let's take a look at what our model's predicted outputs look like. 
