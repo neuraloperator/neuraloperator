@@ -57,20 +57,19 @@ def subsection_title_order(src_dir: str):
         string name of source path
     """
 
-    sub_folders = [p.name for p in Path(src_dir).iterdir() if p.is_dir()]
+    sub_folders = [p for p in Path(src_dir).iterdir() if p.is_dir()]
     final_order = []
     for sub_folder in sub_folders:
-        subdir_name = f"{src_dir}/{sub_folder}"
-        if sub_folder == "release_highlights":
-            final_order.insert(0, subdir_name)
+        if sub_folder.name == "release_highlights":
+            final_order.insert(0, sub_folder)
         else:
-            final_order.append(subdir_name)
+            final_order.append(sub_folder)
     return ExplicitOrder(final_order)
     
 sphinx_gallery_conf = {
      'examples_dirs': [sg_examples_dir],   # path to your example scripts
      'gallery_dirs': [sg_gallery_dir],  # path to where to save gallery generated output
-     'subsection_order' : subsection_title_order(sg_examples_dir),
+      #'subsection_order' : subsection_title_order(sg_examples_dir), # TODO@DAVID: turns out unneeded
      'nested_sections': True, # ensure we can nest multiple levels in the gallery toctree
 }
 

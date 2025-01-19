@@ -1,3 +1,5 @@
+:no-localtoc:
+
 .. _training_examples :
 
 Training and Meta-Algorithms
