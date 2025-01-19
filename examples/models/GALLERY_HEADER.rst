@@ -1,5 +1,3 @@
-:no-localtoc:
-
 .. _model_examples :
 
 Models

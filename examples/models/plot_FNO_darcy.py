@@ -7,6 +7,7 @@ to train a Fourier Neural Operator.
 
 Note that this dataset is much smaller than one we would use in practice. The small Darcy-flow is an example built to
 be trained on a CPU in a few seconds, whereas normally we would train on one or multiple GPUs. 
+
 """
 
 # %%

@@ -1,6 +1,6 @@
 """
-Understanding the Graph Neural Operator 
-=======================================
+Neighbor search
+================
 
 In this example, we walk through the logic of a graph neural operator.
 """
