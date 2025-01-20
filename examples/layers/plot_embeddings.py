@@ -97,3 +97,21 @@ fig.suptitle('Visualizing one 32x32 input sample', y=0.98)
 plt.tight_layout()
 fig.show()
 # %%
+# %%
+# Let's also embed a 3d tensor.
+# Assuming we have one channel of data discretized on a 5x5x5 cube:
+from neuralop.layers.embeddings import GridEmbeddingND
+cube_len = 5
+x = torch.randn(1, 1, cube_len, cube_len, cube_len)
+embedding_3d = GridEmbeddingND(in_channels=1, dim=3, grid_boundaries=[[0,1]]*3)
+
+x = embedding_3d(x)
+# grab only the appended positional embedding channels
+x = x[0,1:,...].permute(1,2,3,0).view(-1, 3)
+fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+plot = ax.scatter(x[:,0], x[:, 1], x[:, 2], c=x[:, 2])
+fig.colorbar(plot, ax=ax, shrink=0.6)
+ax.set_title("3d positional encoding, color=Z value")
+ax.set_xlabel("X")
+ax.set_ylabel("Y")
+ax.set_zlabel("Z")
