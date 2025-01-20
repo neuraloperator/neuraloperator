@@ -15,19 +15,19 @@ class Embedding(nn.Module, ABC):
         pass
 
 class GridEmbedding2D(Embedding):
-    """A simple positional embedding as a regular 2D grid
+    """
+    ``GridEmbedding2D`` applies a simple positional 
+    embedding as a regular 2D grid. Expects inputs of shape
+    ``(batch, channels, d_1, d_2)``
+
+    Parameters
+    ----------
+    in_channels : ``int``
+        number of channels in input. Fixed for output channel interface
+    grid_boundaries : ``list``, optional
+        coordinate boundaries of input grid, by default [[0, 1], [0, 1]]
     """
     def __init__(self, in_channels: int, grid_boundaries=[[0, 1], [0, 1]]):
-        """GridEmbedding2D applies a simple positional 
-        embedding as a regular 2D grid
-
-        Parameters
-        ----------
-        in_channels : int
-            number of channels in input. Fixed for output channel interface
-        grid_boundaries : list, optional
-            coordinate boundaries of input grid, by default [[0, 1], [0, 1]]
-        """
         super().__init__()
         self.in_channels = in_channels
         self.grid_boundaries = grid_boundaries
@@ -84,21 +84,21 @@ class GridEmbedding2D(Embedding):
             return out
 
 class GridEmbeddingND(nn.Module):
-    """A positional embedding as a regular ND grid
     """
-    def __init__(self, in_channels: int, dim: int=2, grid_boundaries=[[0, 1], [0, 1]]):
-        """GridEmbeddingND applies a simple positional 
-        embedding as a regular ND grid
+    GridEmbeddingND applies a simple positional 
+    embedding as a regular ND grid. Expects inputs of shape 
+    ``(batch, channels, d_1, ..., d_n)``.
 
-        Parameters
-        ----------
-        in_channels : int
-            number of channels in input
-        dim : int
-            dimensions of positional encoding to apply
-        grid_boundaries : list, optional
-            coordinate boundaries of input grid along each dim, by default [[0, 1], [0, 1]]
+    Parameters
+    ----------
+    in_channels : int
+        number of channels in input
+    dim : int
+        dimensions of positional encoding to apply
+    grid_boundaries : list, optional
+        coordinate boundaries of input grid along each dim, by default [[0, 1], [0, 1]]
         """
+    def __init__(self, in_channels: int, dim: int=2, grid_boundaries=[[0, 1], [0, 1]]):
         super().__init__()
         self.in_channels = in_channels
         self.dim = dim
@@ -146,7 +146,7 @@ class GridEmbeddingND(nn.Module):
         Params
         --------
         data: torch.Tensor
-            assumes shape batch (optional), channels, x_1, x_2, ...x_n
+            assumes shape ``(batch (optional), channels, x_1, x_2, ...x_n)``
         batched: bool
             whether data has a batch dim
         """
@@ -168,45 +168,42 @@ class SinusoidalEmbedding(Embedding):
     SinusoidalEmbedding provides a unified sinusoidal positional embedding
     in the styles of Transformers [1]_ and Neural Radiance Fields (NERFs) [2]_.
 
+    Expects inputs of shape ``(batch, n_in, in_channels)`` or ``(n_in, in_channels)``
     Parameters
     ----------
-    in_channels : int
+    in_channels : ``int``
         Number of input channels to embed
-    num_freqs : int, optional
+    num_freqs : ``int``, optional
         Number of frequencies in positional embedding.
         By default, set to the number of input channels
-    embedding : {'transformer', 'nerf'}
+    embedding : ``{'transformer', 'nerf'}``
         Type of embedding to apply. For a function with N input channels, 
         each channel value p is embedded via a function g with 2L channels 
         such that g(p) is a 2L-dim vector. For 0 <= k < L:
 
-        * 'transformer' for transformer-style encoding.
+        * ``'transformer'`` for transformer-style encoding.
 
             g(p)_k = sin((p / max_positions) ^ {k / N})
 
             g(p)_{k+1} = cos((p / max_positions) ^ {k / N})
 
-        * 'nerf' : NERF-style encoding.  
+        * ``'nerf'`` : NERF-style encoding.  
 
             g(p)_k = sin(2^(k) * Pi * p)
 
             g(p)_{k+1} = cos(2^(k) * Pi * p)
 
-    max_positions : int, optional
+    max_positions : ``int``, optional
         Maximum number of positions for the encoding, default 10000
         Only used if `embedding == transformer`.
 
     References
     -----------
-    .. [1] : 
-
-    Vaswani, A. et al (2017)
+    .. [1] : Vaswani, A. et al (2017)
         "Attention Is All You Need". 
         NeurIPS 2017, https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf. 
 
-    .. [2] : 
-    
-    Mildenhall, B. et al (2020)
+    .. [2] : Mildenhall, B. et al (2020)
         "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis".
         ArXiv, https://arxiv.org/pdf/2003.08934. 
     """
@@ -233,7 +230,7 @@ class SinusoidalEmbedding(Embedding):
     @property
     def out_channels(self):
         """
-        out_channels: required property for linking/composing model layers 
+        required property for linking/composing model layers 
         """
         return 2 * self.num_frequencies * self.in_channels
 
@@ -241,7 +238,8 @@ class SinusoidalEmbedding(Embedding):
         """
         Parameters 
         -----------
-        x: torch.Tensor, shape (n_in, self.in_channels) or (batch, n_in, self.in_channels)
+        x: ``torch.Tensor``
+            shape ``(n_in, self.in_channels)`` or ``(batch, n_in, self.in_channels)``
         """
         assert x.ndim in [2,3], f"Error: expected inputs of shape (batch, n_in, {self.in_channels})\
             or (n_in, channels), got inputs with ndim={x.ndim}, shape={x.shape}"
