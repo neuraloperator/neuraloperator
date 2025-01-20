@@ -143,9 +143,10 @@ class CFDDataProcessor(DataProcessor):
         return sample
     
     def postprocess(self, out, sample):
-        out = self.normalizer.inverse_transform(out)
-        y = self.normalizer.inverse_transform(sample['y'].squeeze(0))
-        sample['y'] = y
+        if not self.training:
+            out = self.normalizer.inverse_transform(out)
+            y = self.normalizer.inverse_transform(sample['y'].squeeze(0))
+            sample['y'] = y
 
         return out, sample
     

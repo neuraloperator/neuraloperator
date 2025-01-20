@@ -416,10 +416,15 @@ class SpectralConv(BaseSpectralConv):
 
         if self.complex_data:
             x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
+            dims_to_fft_shift = fft_dims
         else: 
             x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
+            # When x is real in spatial domain, the last half of the last dim is redundant.
+            # See :ref:`fft_shift_explanation` for discussion of the FFT shift.
+            dims_to_fft_shift = fft_dims[:-1] 
+        
         if self.order > 1:
-            x = torch.fft.fftshift(x, dim=fft_dims[:-1])
+            x = torch.fft.fftshift(x, dim=dims_to_fft_shift)
 
         if self.fno_block_precision == "mixed":
             # if 'mixed', the above fft runs in full precision, but the
@@ -435,7 +440,6 @@ class SpectralConv(BaseSpectralConv):
         
         # if current modes are less than max, start indexing modes closer to the center of the weight tensor
         starts = [(max_modes - min(size, n_mode)) for (size, n_mode, max_modes) in zip(fft_size, self.n_modes, self.max_n_modes)]
-
         # if contraction is separable, weights have shape (channels, modes_x, ...)
         # otherwise they have shape (in_channels, out_channels, modes_x, ...)
         if self.separable: 
@@ -451,20 +455,34 @@ class SpectralConv(BaseSpectralConv):
         
         weight = self.weight[slices_w]
 
+        ### Pick the first n_modes modes of FFT signal along each dim
+
         # if separable conv, weight tensor only has one channel dim
         if self.separable:
             weight_start_idx = 1
         # otherwise drop first two dims (in_channels, out_channels)
         else:
             weight_start_idx = 2
-        starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[weight_start_idx:]))]
+        
         slices_x =  [slice(None), slice(None)] # Batch_size, channels
 
-        if self.complex_data:
-            slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
+        for all_modes, kept_modes in zip(fft_size, list(weight.shape[weight_start_idx:])):
+            # After fft-shift, the 0th frequency is located at n // 2 in each direction
+            # We select n_modes modes around the 0th frequency (kept at index n//2) by grabbing indices
+            # n//2 - n_modes//2  to  n//2 + n_modes//2       if n_modes is even
+            # n//2 - n_modes//2  to  n//2 + n_modes//2 + 1   if n_modes is odd
+            center = all_modes // 2
+            negative_freqs = kept_modes // 2
+            positive_freqs = kept_modes // 2  + kept_modes % 2
+
+            # this slice represents the desired indices along each dim
+            slices_x += [slice(center - negative_freqs, center + positive_freqs)]
+        
+        if weight.shape[-1] < fft_size[-1]:
+            slices_x[-1] = slice(None, weight.shape[-1])
         else:
-            slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
-            slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+            slices_x[-1] = slice(None)
+        
         out_fft[slices_x] = self._contract(x[slices_x], weight, separable=self.separable)
 
         if self.resolution_scaling_factor is not None and output_shape is None:
