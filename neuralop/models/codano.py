@@ -25,28 +25,19 @@ class CODANO(nn.Module):
         The number of output channels (or output codomain dimension) corresponding to each input variable (or input channel). Default is 1.
         Example: For a input with 3 variables (channels) and output_variable_codimension=2, the output will have 6 channels (3 variables × 2 codimension).
 
-    lifting : bool
-        Indicates whether to use a lifting module. The lifting module projects each input variable (i.e., each input channel) into a
-        higher-dimensional space. Default is True.
-        If `lifting=False`, the input channels are directly used as tokens for codoamin attention.
-
-        Example: If lifting=True and hidden_variable_codimension=32, each input channel is lifted to 32 channels.
+    lifting_channels : int
+        Number of intermidiate channels in the lifting block. The lifting module projects each input variable (i.e., each input channel) into a
+        higher-dimensional space determied by `hidden_variable_codimension`. Default is 64 (two times the hidden_variable_codimension).
+        If lifting_channels is None, lifting is not performed and the input channels are directly used as tokens for codoamin attention.
 
     hidden_variable_codimension : int
         The number of hidden channels corresponding to each input variable (or channel). Each input channel is independently lifted
-        to `hidden_variable_codimension` channels by the lifting operation. This argument is ignored when `lifting=False`. Default is 32.
+        to `hidden_variable_codimension` channels by the lifting block. Default is 32.
 
-    lifting_channel_ratio : int
-        ratio of lifting channels to hidden_channels, by default 2
-        The number of intermidiate channels in the lifting block of the codano is
-        lifting_channel_ratio * hidden_variable_codimension.
-        This parameter is ignored when `lifting=False` as not lifting is performed.
 
-    projection_channel_ratio : int, optional
-        ratio of projection channels to hidden_channels, by default 2
-        The number of intermidiate channels in the projection block of the codano is
-        projection_channel_ratio * hidden_variable_codimension.
-        This parameter is ignored when `projection=False` and not ptrojection is performed.
+    projection_channels : int. The number of intermidiate channels in the projection block of the codano is, default is 64. if `projection_channels=None`,
+        projection is not performed and the output of the last CoDA block is returned directly.
+
 
     use_positional_encoding : bool
         Indicates whether to use variable-specific positional encoding. If True, a learnable positional encoding is concatenated
@@ -81,18 +72,14 @@ class CODANO(nn.Module):
         components in x and y directions and pressure, respectively. Please note that we consider each input channel as a physical
         variable of the PDE.
 
+        Please note that the 'velocity' varibale is composed of two channels (codimension=2) and we have splitted the velocity field
+        into two components, i.e., u_x and u_y. And this is to be done for all varibale with codimension > 1.
+
         If the dataset consists of multiple PDEs, such as Navier Stokes and Heat equation, the variable_ids=['u_x', 'u_y', 'p', 'T'],
         where 'T' represents the temperature variable for thee Heat equation and 'u_x', 'u_y', 'p' are the velocity components and pressure
         for the Navier Stokes equations. This is required when we aim to learn a single solver for multiple different PDEs.
 
         This parameter is not required when `use_positional_encoding=False`.
-
-    use_horizontal_skip_connection : bool
-        Indicates whether to use horizontal skip connections, similar to U-shaped architectures. Default is False.
-
-    horizontal_skips_map : dict
-        A mapping that specifies horizontal skip connections between layers. Only required when `use_horizontal_skip_connection=True`. Default is None.
-        Example: For a 5-layer architecture, horizontal_skips_map={4: 0, 3: 1} creates skip connections from layer 0 to layer 4 and layer 1 to layer 3.
 
     n_layers : int
         The number of codomain attention layers. Default is 4.
@@ -138,12 +125,24 @@ class CODANO(nn.Module):
     per_channel_attention : bool
         Indicates whether to use a per-channel attention mechanism in Codomain attention layer. Default is False.
 
-    layer_kwargs : dict
-        Additional arguments for the CoDA blocks. Default is an empty dictionary `{}`.
+    enable_cls_token : bool
+        Indicates whether to use a learnable CLASS token during the attention mechanism. We use a function-space generalization of the
+        learnable [class] token used in vision transformers such as ViT, which is learned directly in Fourier space. Default is False.
 
-    projection : bool
-        Indicates whether to use a projection module to map the hidden variables to the output variables. Default is True.
-        if False, the output of the last CoDA block is returned directly.
+        The [class] function is realized on the input grid by performing an inverse Fourier transform of the learned Fourier coefficients.
+        Then, the [class] token function is added to the set of input token functions before passing to the codomain attention layer. It aggregates
+        information from all the other tokens through the attention mechanism. The output token corresponding to the [class] token is discarded in the
+        output of the last CoDA block.
+
+    Other parameters
+    ------------------
+
+    use_horizontal_skip_connection : bool, optional
+        Indicates whether to use horizontal skip connections, similar to U-shaped architectures. Default is False.
+
+    horizontal_skips_map : dict, optional
+        A mapping that specifies horizontal skip connections between layers. Only required when `use_horizontal_skip_connection=True`. Default is None.
+        Example: For a 5-layer architecture, horizontal_skips_map={4: 0, 3: 1} creates skip connections from layer 0 to layer 4 and layer 1 to layer 3.
 
     domain_padding : float
         The padding factor for each input channel. It zero pads each of the channel following the `domain_padding_mode`.  Default is 0.25.
@@ -153,9 +152,8 @@ class CODANO(nn.Module):
         if one-sided, padding is only done along one side of each dimension.
         If two-sided, padding is done on both sides of each dimension.
 
-    enable_cls_token : bool
-        Indicates whether to use a learnable CLASS token during the attention mechanism. We use a function space greneralization of
-        leanable [class] token used in vision transformers such as ViT, which is learned directly in Fourier space. Default is False.
+    layer_kwargs : dict
+        Additional arguments for the CoDA blocks. Default is an empty dictionary `{}`.
 
     References
     -----------
@@ -172,10 +170,9 @@ class CODANO(nn.Module):
     def __init__(
         self,
         output_variable_codimension=1,
-        lifting=True,
+        lifting_channels: int = 64,
         hidden_variable_codimension=32,
-        lifting_channel_ratio: int = 2,
-        projection_channel_ratio: int = 2,
+        projection_channels: int = 64,
         use_positional_encoding=False,
         positional_encoding_dim=8,
         positional_encoding_modes=None,
@@ -194,7 +191,6 @@ class CODANO(nn.Module):
         attention_token_dim=1,
         per_channel_attention=False,
         layer_kwargs={},
-        projection=True,
         domain_padding=0.25,
         domain_padding_mode="one-sided",
         enable_cls_token=False,
@@ -225,8 +221,22 @@ class CODANO(nn.Module):
             attention_scaling_factors = [1] * n_layers
 
         input_variable_codimension = 1  # each channel is a variable
-        if not lifting:
-            hidden_variable_codimension = input_variable_codimension
+        if lifting_channels is None:
+            self.lifting = False
+        else:
+            lifting_variable_codimension = lifting_channels
+            self.lifting = True
+
+        if projection_channels is None:
+            self.projection = False
+        else:
+            projection_variable_codimension = projection_channels
+            self.projection = True
+        extended_variable_codimemsion = (
+            input_variable_codimension + static_channel_dim + positional_encoding_dim
+        )
+        if not self.lifting:
+            hidden_variable_codimension = extended_variable_codimemsion
 
         assert (
             hidden_variable_codimension % attention_token_dim == 0
@@ -247,8 +257,6 @@ class CODANO(nn.Module):
         self.per_layer_scale_factors = per_layer_scaling_factors
         self.non_linearity = non_linearity
         self.n_heads = n_heads
-        self.lifting = lifting
-        self.projection = projection
         self.enable_cls_token = enable_cls_token
         self.positional_encoding_dim = positional_encoding_dim
         self.variable_ids = variable_ids
@@ -260,12 +268,7 @@ class CODANO(nn.Module):
         self.use_horizontal_skip_connection = use_horizontal_skip_connection
         self.horizontal_skips_map = horizontal_skips_map
         self.output_variable_codimension = output_variable_codimension
-        lifting_variable_codimension = int(
-            hidden_variable_codimension * lifting_channel_ratio
-        )
-        projection_variable_codimension = int(
-            hidden_variable_codimension * projection_channel_ratio
-        )
+
         if self.positional_encoding_modes is not None:
             self.positional_encoding_modes[-1] = self.positional_encoding_modes[-1] // 2
 
@@ -294,20 +297,17 @@ class CODANO(nn.Module):
             self.domain_padding = None
         self.domain_padding_mode = domain_padding_mode
 
-        extended_variable_codimemsion = (
-            input_variable_codimension + static_channel_dim + positional_encoding_dim
-        )
         self.extended_variable_codimemsion = extended_variable_codimemsion
         if self.lifting:
             self.lifting = ChannelMLP(
                 in_channels=extended_variable_codimemsion,
-                out_channels=hidden_variable_codimension,
+                out_channels=self.hidden_variable_codimension,
                 hidden_channels=lifting_variable_codimension,
                 n_layers=2,
                 n_dim=self.n_dim,
             )
         else:
-            self.lifting = None
+            self.hidden_variable_codimension = self.extended_variable_codimemsion
 
         self.base = nn.ModuleList([])
 
@@ -334,8 +334,8 @@ class CODANO(nn.Module):
             self.skip_map_module = nn.ModuleDict()
             for k in self.horizontal_skips_map.keys():
                 self.skip_map_module[str(k)] = ChannelMLP(
-                    in_channels=2 * hidden_variable_codimension,
-                    out_channels=hidden_variable_codimension,
+                    in_channels=2 * self.hidden_variable_codimension,
+                    out_channels=self.hidden_variable_codimension,
                     hidden_channels=None,
                     n_layers=1,
                     non_linearity=nn.Identity(),
@@ -344,7 +344,7 @@ class CODANO(nn.Module):
 
         if self.projection:
             self.projection = ChannelMLP(
-                in_channels=hidden_variable_codimension,
+                in_channels=self.hidden_variable_codimension,
                 out_channels=output_variable_codimension,
                 hidden_channels=projection_variable_codimension,
                 n_layers=2,
@@ -356,7 +356,10 @@ class CODANO(nn.Module):
         if enable_cls_token:
             self.cls_token = nn.Parameter(
                 torch.randn(
-                    1, hidden_variable_codimension, *self.n_modes[0], dtype=torch.cfloat
+                    1,
+                    self.hidden_variable_codimension,
+                    *self.n_modes[0],
+                    dtype=torch.cfloat,
                 )
             )
 
@@ -395,6 +398,15 @@ class CODANO(nn.Module):
         self.variable_ids += new_var_ids
 
     def _get_positional_encoding(self, x, input_variable_ids):
+        """
+        Get the positional encoding for the input variables.
+        Parameters
+        ----------
+        x : torch.Tensor
+            input tensor of shape (batch_size, num_inp_var, H, W, ...)
+        input_variable_ids : list[str]
+            The names of the variables corresponding to the channels of input 'x'.
+        """
         encoding_list = []
         for i in input_variable_ids:
             encoding_list.append(
@@ -404,6 +416,14 @@ class CODANO(nn.Module):
         return torch.stack(encoding_list, dim=1)
 
     def _get_cls_token(self, x):
+        """
+        get the learnable cls token for the input variables.
+        Parameters
+        ----------
+        x : torch.Tensor
+            input tensor of shape (batch_size, num_inp_var, H, W, ...)
+            This is used to determine the shape of the cls token.
+        """
         cls_token = torch.fft.irfftn(self.cls_token, s=x.shape[-self.n_dim :])
         repeat_shape = [1 for _ in x.shape]
         repeat_shape[0] = x.shape[0]
@@ -411,6 +431,17 @@ class CODANO(nn.Module):
         return cls_token
 
     def _extend_variables(self, x, static_channel, input_variable_ids):
+        """
+        Extend the input variables by concatenating the static channel and positional encoding.
+        Parameters
+        ----------
+        x : torch.Tensor
+            input tensor of shape (batch_size, num_inp_var, H, W, ...)
+        static_channel : torch.Tensor
+            static channel tensor of shape (batch_size, static_channel_dim, H, W, ...)
+        input_variable_ids : list[str]
+            The names of the variables corresponding to the channels of input 'x'.
+        """
         x = x.unsqueeze(2)
         if static_channel is not None:
             repeat_shape = [1 for _ in x.shape]
@@ -470,6 +501,7 @@ class CODANO(nn.Module):
 
         # position encoding and static channels are concatenated with the input
         # variables
+
         x = self._extend_variables(x, static_channel, input_variable_ids)
 
         # input variables are lifted to a higher-dimensional space
@@ -478,9 +510,9 @@ class CODANO(nn.Module):
                 batch * num_inp_var, self.extended_variable_codimemsion, *spatial_shape
             )
             x = self.lifting(x)
-            x = x.reshape(
-                batch, num_inp_var * self.hidden_variable_codimension, *spatial_shape
-            )
+        x = x.reshape(
+            batch, num_inp_var * self.hidden_variable_codimension, *spatial_shape
+        )
 
         # getting the learnable CLASS token
         if self.enable_cls_token:
