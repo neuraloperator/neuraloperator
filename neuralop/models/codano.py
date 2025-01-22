@@ -399,7 +399,7 @@ class CODANO(nn.Module):
 
     def _get_positional_encoding(self, x, input_variable_ids):
         """
-        Get the positional encoding for the input variables.
+        Returns the positional encoding for the input variables.
         Parameters
         ----------
         x : torch.Tensor
@@ -417,7 +417,7 @@ class CODANO(nn.Module):
 
     def _get_cls_token(self, x):
         """
-        get the learnable cls token for the input variables.
+        Returns the learnable cls token for the input variables.
         Parameters
         ----------
         x : torch.Tensor
