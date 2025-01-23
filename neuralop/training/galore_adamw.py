@@ -46,12 +46,13 @@ class GaLoreAdamW(AdamW):
 
     References
     ----------
-    .. _[1] : Zhao, J. et al. (2024). GaLore: Memory-Efficient LLM Training
-        by Gradient Low-Rank Projection. ICML 2024, https://arxiv.org/abs/2403.03507.
+    .. _[1] : Zhao, J, Zhang, Z., Chen, B., Wang, Z., Anandkumar, A., Tian Y. (2024). 
+        GaLore: Memory-Efficient LLM Training by Gradient Low-Rank Projection. ICML 2024,
+        https://arxiv.org/abs/2403.03507.
     
-    .. _[2] : George, R.J. et al. (2024). Tensor-GaLore: Memory-Efficient
-        Training via Gradient Tensor Decomposition. NeurIPS 2024 OPT workshop, 
-        https://openreview.net/pdf?id=sBaUZzZXJN.
+    .. _[2] : George, R., Pitt, D., Zhao, J., Kossaifi, J., Luo, C., Tian, Y., Anandkumar, A (2024). 
+        Tensor-GaLore: Memory-Efficient Training via Gradient Tensor Decomposition. arXiv preprint, 
+        https://arxiv.org/pdf/2501.02379.
     """
 
     def __init__(
