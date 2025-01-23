@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Literal
 
 from torch import nn
 from torch.nn import functional as F
@@ -13,7 +13,7 @@ class DomainPadding(nn.Module):
     domain_padding : ``float`` or ``list``
         typically, between zero and one, percentage of padding to use
         if a list, make sure if matches the dim of (d1, ..., dN)
-    padding_mode : ``{'symmetric', 'one-sided'}``, optional
+    padding_mode : ``Literal ['symmetric', 'one-sided']``, optional
         whether to pad on both sides, by default ``'symmetric'``
     resolution_scaling_factor : ``int`` ; default is 1
 
@@ -26,8 +26,8 @@ class DomainPadding(nn.Module):
     def __init__(
         self,
         domain_padding: Union[float, list],
-        padding_mode: str="symmetric",
-        resolution_scaling_factor: Union[int, List[int]] = 1,
+        padding_mode: Literal['symmetric', 'one-sided']="symmetric",
+        resolution_scaling_factor: Union[int, List[int]]=1,
     ):
         super().__init__()
         self.domain_padding = domain_padding
