@@ -1,5 +1,5 @@
 from functools import partialmethod
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Literal
 
 Number = Union[float, int]
 
@@ -67,7 +67,7 @@ class FNO(BaseModel, name='FNO'):
 
     non_linearity : nn.Module, optional
         Non-Linear activation function module to use, by default F.gelu
-    norm : str {"ada_in", "group_norm", "instance_norm"}, optional
+    norm : Literal ["ada_in", "group_norm", "instance_norm"], optional
         Normalization layer to use, by default None
     complex_data : bool, optional
         Whether data is complex-valued (default False)
@@ -76,9 +76,9 @@ class FNO(BaseModel, name='FNO'):
         dropout parameter for ChannelMLP in FNO Block, by default 0
     channel_mlp_expansion : float, optional
         expansion parameter for ChannelMLP in FNO Block, by default 0.5
-    channel_mlp_skip : str {'linear', 'identity', 'soft-gating'}, optional
+    channel_mlp_skip : Literal['linear', 'identity', 'soft-gating'], optional
         Type of skip connection to use in channel-mixing mlp, by default 'soft-gating'
-    fno_skip : str {'linear', 'identity', 'soft-gating'}, optional
+    fno_skip : Literal['linear', 'identity', 'soft-gating'], optional
         Type of skip connection to use in FNO layers, by default 'linear'
     resolution_scaling_factor : Union[Number, List[Number]], optional
         layer-wise factor by which to scale the domain resolution of function, by default None
@@ -91,8 +91,8 @@ class FNO(BaseModel, name='FNO'):
         To vary the percentage of padding used along each input dimension,
         pass in a list of percentages e.g. [p1, p2, ..., pN] such that
         p1 corresponds to the percentage of padding along dim 1, etc.
-    domain_padding_mode : str {'symmetric', 'one-sided'}, optional
-        How to perform domain padding, by default 'one-sided'
+    domain_padding_mode : Literal ['symmetric', 'one-sided'], optional
+        How to perform domain padding, by default 'symmetric'
     fno_block_precision : str {'full', 'half', 'mixed'}, optional
         precision mode in which to perform spectral convolution, by default "full"
     stabilizer : str {'tanh'} | None, optional
@@ -170,15 +170,15 @@ class FNO(BaseModel, name='FNO'):
         projection_channel_ratio: int=2,
         positional_embedding: Union[str, nn.Module]="grid",
         non_linearity: nn.Module=F.gelu,
-        norm: str=None,
+        norm: Literal ["ada_in", "group_norm", "instance_norm"]=None,
         complex_data: bool=False,
         channel_mlp_dropout: float=0,
         channel_mlp_expansion: float=0.5,
-        channel_mlp_skip: str="soft-gating",
-        fno_skip: str="linear",
+        channel_mlp_skip: Literal['linear', 'identity', 'soft-gating']="soft-gating",
+        fno_skip: Literal['linear', 'identity', 'soft-gating']="linear",
         resolution_scaling_factor: Union[Number, List[Number]]=None,
         domain_padding: Union[Number, List[Number]]=None,
-        domain_padding_mode: str="one-sided",
+        domain_padding_mode: Literal['symmetric', 'one-sided']="symmetric",
         fno_block_precision: str="full",
         stabilizer: str=None,
         max_n_modes: Tuple[int]=None,
@@ -432,7 +432,7 @@ class FNO1d(FNO):
         implementation="factorized",
         decomposition_kwargs=dict(),
         domain_padding=None,
-        domain_padding_mode="one-sided",
+        domain_padding_mode="symmetric",
         **kwargs
     ):
         super().__init__(
@@ -507,7 +507,7 @@ class FNO2d(FNO):
         implementation="factorized",
         decomposition_kwargs=dict(),
         domain_padding=None,
-        domain_padding_mode="one-sided",
+        domain_padding_mode="symmetric",
         **kwargs
     ):
         super().__init__(
@@ -586,7 +586,7 @@ class FNO3d(FNO):
         implementation="factorized",
         decomposition_kwargs=dict(),
         domain_padding=None,
-        domain_padding_mode="one-sided",
+        domain_padding_mode="symmetric",
         **kwargs
     ):
         super().__init__(
