@@ -1,6 +1,8 @@
 from typing import List, Union
 from pathlib import Path
 
+import torch
+
 from .mesh_datamodule import MeshDataModule
 from .web_utils import download_from_zenodo_record
 
@@ -82,3 +84,11 @@ class CarCFDDataset(MeshDataModule):
             query_res=query_res,
             attributes=['press']
         )
+
+        # process data list to remove specific vertices from pressure to match number of vertices
+        for i, data in enumerate(self.train_data.data_list):
+            press = data['press']
+            self.train_data.data_list[i]['press'] = torch.cat((press[:,0:16], press[:,112:]), axis=1)
+        for i, data in enumerate(self.test_data.data_list):
+            press = data['press']
+            self.test_data.data_list[i]['press'] = torch.cat((press[:,0:16], press[:,112:]), axis=1)

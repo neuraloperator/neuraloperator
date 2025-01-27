@@ -416,10 +416,15 @@ class SpectralConv(BaseSpectralConv):
 
         if self.complex_data:
             x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
+            dims_to_fft_shift = fft_dims
         else: 
             x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
+            # When x is real in spatial domain, the last half of the last dim is redundant.
+            # See :ref:`fft_shift_explanation` for discussion of the FFT shift.
+            dims_to_fft_shift = fft_dims[:-1] 
+        
         if self.order > 1:
-            x = torch.fft.fftshift(x, dim=fft_dims[:-1])
+            x = torch.fft.fftshift(x, dim=dims_to_fft_shift)
 
         if self.fno_block_precision == "mixed":
             # if 'mixed', the above fft runs in full precision, but the
@@ -435,7 +440,6 @@ class SpectralConv(BaseSpectralConv):
         
         # if current modes are less than max, start indexing modes closer to the center of the weight tensor
         starts = [(max_modes - min(size, n_mode)) for (size, n_mode, max_modes) in zip(fft_size, self.n_modes, self.max_n_modes)]
-
         # if contraction is separable, weights have shape (channels, modes_x, ...)
         # otherwise they have shape (in_channels, out_channels, modes_x, ...)
         if self.separable: 
@@ -451,20 +455,34 @@ class SpectralConv(BaseSpectralConv):
         
         weight = self.weight[slices_w]
 
+        ### Pick the first n_modes modes of FFT signal along each dim
+
         # if separable conv, weight tensor only has one channel dim
         if self.separable:
             weight_start_idx = 1
         # otherwise drop first two dims (in_channels, out_channels)
         else:
             weight_start_idx = 2
-        starts = [(size - min(size, n_mode)) for (size, n_mode) in zip(list(x.shape[2:]), list(weight.shape[weight_start_idx:]))]
+        
         slices_x =  [slice(None), slice(None)] # Batch_size, channels
 
-        if self.complex_data:
-            slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
+        for all_modes, kept_modes in zip(fft_size, list(weight.shape[weight_start_idx:])):
+            # After fft-shift, the 0th frequency is located at n // 2 in each direction
+            # We select n_modes modes around the 0th frequency (kept at index n//2) by grabbing indices
+            # n//2 - n_modes//2  to  n//2 + n_modes//2       if n_modes is even
+            # n//2 - n_modes//2  to  n//2 + n_modes//2 + 1   if n_modes is odd
+            center = all_modes // 2
+            negative_freqs = kept_modes // 2
+            positive_freqs = kept_modes // 2  + kept_modes % 2
+
+            # this slice represents the desired indices along each dim
+            slices_x += [slice(center - negative_freqs, center + positive_freqs)]
+        
+        if weight.shape[-1] < fft_size[-1]:
+            slices_x[-1] = slice(None, weight.shape[-1])
         else:
-            slices_x += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
-            slices_x += [slice(None, -starts[-1]) if starts[-1] else slice(None)] # The last mode already has redundant half removed
+            slices_x[-1] = slice(None)
+        
         out_fft[slices_x] = self._contract(x[slices_x], weight, separable=self.separable)
 
         if self.resolution_scaling_factor is not None and output_shape is None:
@@ -484,178 +502,4 @@ class SpectralConv(BaseSpectralConv):
         if self.bias is not None:
             x = x + self.bias
 
-        return x
-
-class SpectralConv1d(SpectralConv):
-    """1D Spectral Conv
-
-    This is provided for reference only,
-    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation
-    """
-
-    def forward(self, x, indices=0):
-        batchsize, channels, width = x.shape
-
-        x = torch.fft.rfft(x, norm=self.fft_norm)
-
-        out_fft = torch.zeros(
-            [batchsize, self.out_channels, width // 2 + 1],
-            device=x.device,
-            dtype=torch.cfloat,
-        )
-        slices = (
-            slice(None),  # Equivalent to: [:,
-            slice(None),  # ............... :,
-            slice(None, self.n_modes[0]), # :half_n_modes[0]]
-        )
-        out_fft[slices] = self._contract(
-            x[slices], self.weight[slices], separable=self.separable
-        )
-
-        if self.resolution_scaling_factor is not None:
-            width = round(width * self.resolution_scaling_factor[0])
-
-        x = torch.fft.irfft(out_fft, n=width, norm=self.fft_norm)
-
-        if self.bias is not None:
-            x = x + self.bias[...]
-
-        return x
-
-
-class SpectralConv2d(SpectralConv):
-    """2D Spectral Conv, see :class:`neuralop.layers.SpectraConv` for the general case
-
-    This is provided for reference only,
-    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation
-    """
-
-    def forward(self, x):
-        batchsize, channels, height, width = x.shape
-
-        x = torch.fft.rfft2(x.float(), norm=self.fft_norm, dim=(-2, -1))
-
-        # The output will be of size (batch_size, self.out_channels,
-        # x.size(-2), x.size(-1)//2 + 1)
-        out_fft = torch.zeros(
-            [batchsize, self.out_channels, height, width // 2 + 1],
-            dtype=x.dtype,
-            device=x.device,
-        )
-
-        slices0 = (
-            slice(None),  # Equivalent to: [:,
-            slice(None),  # ............... :,
-            slice(self.n_modes[0] // 2),  # :half_n_modes[0],
-            slice(self.n_modes[1]),  #      :half_n_modes[1]]
-        )
-        slices1 = (
-            slice(None),  # Equivalent to:        [:,
-            slice(None),  # ...................... :,
-            slice(-self.n_modes[0] // 2, None),  # -half_n_modes[0]:,
-            slice(self.n_modes[1]),  # ......      :half_n_modes[1]]
-        )
-        print(f'2D: {x[slices0].shape=}, {self.weight[slices0].shape=}, {self.weight.shape=}')
-
-        """Upper block (truncate high frequencies)."""
-        out_fft[slices0] = self._contract(
-            x[slices0], self.weight[slices1], separable=self.separable
-        )
-
-        """Lower block"""
-        out_fft[slices1] = self._contract(
-            x[slices1], self.weight[slices0], separable=self.separable
-        )
-
-        if self.resolution_scaling_factor is not None:
-            width = round(width * self.resolution_scaling_factor[0])
-            height = round(height * self.resolution_scaling_factor[1])
-
-        x = torch.fft.irfft2(
-            out_fft, s=(height, width), dim=(-2, -1), norm=self.fft_norm
-        )
-
-        if self.bias is not None:
-            x = x + self.bias
-
-        return x
-
-
-class SpectralConv3d(SpectralConv):
-    """3D Spectral Conv, see :class:`neuralop.layers.SpectraConv` for the general case
-
-    This is provided for reference only,
-    see :class:`neuralop.layers.SpectraConv` for the preferred, general implementation
-    """
-
-    def forward(self, x):
-        batchsize, channels, height, width, depth = x.shape
-
-        x = torch.fft.rfftn(x.float(), norm=self.fft_norm, dim=[-3, -2, -1])
-
-        out_fft = torch.zeros(
-            [batchsize, self.out_channels, height, width, depth // 2 + 1],
-            device=x.device,
-            dtype=torch.cfloat,
-        )
-
-        slices0 = (
-            slice(None),  # Equivalent to: [:,
-            slice(None),  # ............... :,
-            slice(self.n_modes[0] // 2),  # :half_n_modes[0],
-            slice(self.n_modes[1] // 2),  # :half_n_modes[1],
-            slice(self.n_modes[2]),  # :half_n_modes[2]]
-        )
-        slices1 = (
-            slice(None),  # Equivalent to:        [:,
-            slice(None),  # ...................... :,
-            slice(self.n_modes[0] // 2),  # ...... :half_n_modes[0],
-            slice(-self.n_modes[1] // 2, None),  # -half_n_modes[1]:,
-            slice(self.n_modes[2]),  # ......      :half_n_modes[0]]
-        )
-        slices2 = (
-            slice(None),  # Equivalent to:        [:,
-            slice(None),  # ...................... :,
-            slice(-self.n_modes[0] // 2, None),  # -half_n_modes[0]:,
-            slice(self.n_modes[1] // 2),  # ...... :half_n_modes[1],
-            slice(self.n_modes[2]),  # ......      :half_n_modes[2]]
-        )
-        slices3 = (
-            slice(None),  # Equivalent to:        [:,
-            slice(None),  # ...................... :,
-            slice(-self.n_modes[0] // 2, None),  # -half_n_modes[0],
-            slice(-self.n_modes[1] // 2, None),  # -half_n_modes[1],
-            slice(self.n_modes[2]),  # ......      :half_n_modes[2]]
-        )
-
-        """Upper block -- truncate high frequencies."""
-        out_fft[slices0] = self._contract(
-            x[slices0], self.weight[slices3], separable=self.separable
-        )
-
-        """Low-pass filter for indices 2 & 4, and high-pass filter for index 3."""
-        out_fft[slices1] = self._contract(
-            x[slices1], self.weight[slices2], separable=self.separable
-        )
-
-        """Low-pass filter for indices 3 & 4, and high-pass filter for index 2."""
-        out_fft[slices2] = self._contract(
-            x[slices2], self.weight[slices1], separable=self.separable
-        )
-
-        """Lower block -- low-cut filter in indices 2 & 3
-        and high-cut filter in index 4."""
-        out_fft[slices3] = self._contract(
-            x[slices3], self.weight[slices0], separable=self.separable
-        )
-
-        if self.resolution_scaling_factor is not None:
-            width = round(width * self.resolution_scaling_factor[0])
-            height = round(height * self.resolution_scaling_factor[1])
-            depth = round(depth * self.resolution_scaling_factor[2])
-
-        x = torch.fft.irfftn(out_fft, s=(height, width, depth), dim=[-3, -2, -1], norm=self.fft_norm)
-
-        if self.bias is not None:
-            x = x + self.bias
         return x

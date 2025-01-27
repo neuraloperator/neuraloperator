@@ -10,7 +10,7 @@ dependencies = [
     "configmypy",
     "tensorly",
     "tensorly-torch",
-    "torch-harmonics==0.7.3",
+    "torch-harmonics==0.7.4",
     "matplotlib",
     "numpy>=1.25",
     "opt-einsum",

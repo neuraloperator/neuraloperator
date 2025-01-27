@@ -10,9 +10,15 @@ from functools import partial
 
 # import the base class from torch-harmonics
 from torch_harmonics.quadrature import _precompute_grid
-from torch_harmonics.convolution import _compute_support_vals_isotropic, _compute_support_vals_anisotropic
+from torch_harmonics.filter_basis import (PiecewiseLinearFilterBasis, 
+                                          MorletFilterBasis, 
+                                          ZernikeFilterBasis)
 
-#def _compute_kernel_basis_isotropic()
+basis_type_classes = {
+    'piecewise_linear': PiecewiseLinearFilterBasis,
+    'morlet': MorletFilterBasis,
+    'zernike': ZernikeFilterBasis
+}
 
 def _normalize_convolution_filter_matrix(psi_idx,
                                      psi_vals,
@@ -71,6 +77,7 @@ def _precompute_convolution_filter_matrix(grid_in,
                                       kernel_shape,
                                       quadrature_weights,
                                       normalize=True,
+                                      basis_type='piecewise_linear',
                                       radius_cutoff=0.01,
                                       periodic=False,
                                       transpose_normalization=False):
@@ -94,8 +101,34 @@ def _precompute_convolution_filter_matrix(grid_in,
     function also returns the translated filters at positions 
     $T^{-1}_j \omega_i = T^{-1}_j T_i \nu$, but assumes a non-periodic subset of the
     euclidean plane.
-    """
 
+    Parameters
+    ----------
+    grid_in : ``torch.Tensor``
+        coordinate grid on which input function is provided
+    grid_out : ``torch.Tensor``
+        coordinate grid on which output function is queried
+    kernel_shape: ``Union[int, List[int]]``
+        Dimensions of the convolution kernel, either one int or a two-int tuple.
+        If one int k, the kernel will be a square of shape (k,k), meaning the convolution 
+        will be 'isotropic': both directions are equally scaled in feature space
+        If two ints (k1,k2), the kernel will be a rectangle of shape (k1,k2), meaning the convolution
+        will  be 'anisotropic': one direction will be compressed or stretched in feature space.
+    quadrature_weights : ``torch.Tensor``
+        tensor of weights for each grid point in the input
+    normalize : ``bool``, optional
+        whether to normalize the precomputed filter tensor, by default True
+    basis_type: str literal ``{'piecewise_linear', 'morlet', 'zernike'}``
+        choice of basis functions to use for convolution filter tensor. 
+    radius_cutoff : ``float``, optional
+        radius cutoff parameter for computing basis functions, by default 0.01
+    periodic : ``bool``, optional
+        whether the domain is assumed to be periodic, by default False
+    transpose_normalization : ``bool``, optional
+        whether to transpose the normalized filter tensor, by default False
+
+    """
+    
     # check that input arrays are valid point clouds in 2D
     assert len(grid_in) == 2
     assert len(grid_out) == 2
@@ -105,12 +138,6 @@ def _precompute_convolution_filter_matrix(grid_in,
     n_in = grid_in.shape[-1]
     n_out = grid_out.shape[-1]
 
-    if len(kernel_shape) == 1:
-        kernel_handle = partial(_compute_support_vals_isotropic, nr=kernel_shape[0], r_cutoff=radius_cutoff)
-    elif len(kernel_shape) == 2:
-        kernel_handle = partial(_compute_support_vals_anisotropic, nr=kernel_shape[0], nphi=kernel_shape[1], r_cutoff=radius_cutoff)
-    else:
-        raise ValueError("kernel_shape should be either one- or two-dimensional.")
 
     grid_in = grid_in.reshape(2, 1, n_in)
     grid_out = grid_out.reshape(2, n_out, 1)
@@ -123,7 +150,12 @@ def _precompute_convolution_filter_matrix(grid_in,
     r = torch.sqrt(diffs[0] ** 2 + diffs[1] ** 2)
     phi = torch.arctan2(diffs[1], diffs[0]) + torch.pi
 
-    idx, vals = kernel_handle(r, phi)
+    assert basis_type in basis_type_classes.keys(), f"Error: expected one of "
+    f"{basis_type_classes.keys()}, got {basis_type}"
+    
+    # if a basis name is provided, instantiate it with the provided kernel shape
+    basis_type = basis_type_classes[basis_type](kernel_shape)
+    idx, vals = basis_type.compute_support_vals(r, phi, r_cutoff=radius_cutoff)
 
     idx = idx.permute(1, 0)
 
@@ -150,12 +182,13 @@ class DiscreteContinuousConv(nn.Module, metaclass=abc.ABCMeta):
         number of input channels
     out_channels : int
         number of output channels
-    kernel_shape : int or [int, int]
-        shape of convolution kernel
-        
-        * If a single int is passed, kernel will isotropic
+    kernel_shape : ``Union[int, List[int]]``
+        Dimensions of the convolution kernel, either one int or a two-int tuple.
+        * If one int k, the kernel will be a square of shape (k,k), meaning the convolution 
+        will be 'isotropic': both directions are equally scaled in feature space.
 
-        * If a list of two nonequal ints are passed, kernel will be anisotropic.
+        * If two ints (k1,k2), the kernel will be a rectangle of shape (k1,k2), meaning the convolution
+        will  be 'anisotropic': one direction will be compressed or stretched in feature space.
     groups : int, optional
         number of groups in the convolution, default 1
     bias : bool, optional
@@ -241,9 +274,15 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         output grid in the form of a point cloud (n_out, 2).
         Can also pass a string to generate a regular (tensor) grid.
         For exact options see ``torch_harmonics.quadrature``.
-    kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a single integer for isotropic
-        kernels or two integers for anisotropic kernels
+    kernel_shape : ``Union[int, List[int]]``
+        Dimensions of the convolution kernel, either one int or a two-int tuple.
+        * If one int k, the kernel will be a square of shape (k,k), meaning the convolution 
+        will be 'isotropic': both directions are equally scaled in feature space.
+
+        * If two ints (k1,k2), the kernel will be a rectangle of shape (k1,k2), meaning the convolution
+        will  be 'anisotropic': one direction will be compressed or stretched in feature space.
+    basis_type: str literal ``{'piecewise_linear', 'morlet', 'zernike'}``
+        choice of basis functions to use for convolution filter tensor. 
     n_in: Tuple[int], optional
         number of input points along each dimension. Only used
         if grid_in is passed as a str. See ``torch_harmonics.quadrature``.
@@ -281,6 +320,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         grid_in: torch.Tensor,
         grid_out: torch.Tensor,
         kernel_shape: Union[int, List[int]],
+        basis_type: str="piecewise_linear",
         n_in: Optional[Tuple[int]] = None,
         n_out: Optional[Tuple[int]] = None,
         quadrature_weights: Optional[torch.Tensor] = None,
@@ -344,6 +384,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
                                                       grid_out,
                                                       self.kernel_shape,
                                                       quadrature_weights,
+                                                      basis_type=basis_type,
                                                       radius_cutoff=radius_cutoff,
                                                       periodic=periodic)
 
@@ -415,8 +456,15 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         output grid in the form of a point cloud (n_out, 2).
         Can also pass a string to generate a regular (tensor) grid.
         For exact options see ``torch_harmonics.quadrature``.
-    kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
+    kernel_shape : ``Union[int, List[int]]``
+        Dimensions of the convolution kernel, either one int or a two-int tuple.
+        * If one int k, the kernel will be a square of shape (k,k), meaning the convolution 
+        will be 'isotropic': both directions are equally scaled in feature space.
+
+        * If two ints (k1,k2), the kernel will be a rectangle of shape (k1,k2), meaning the convolution
+        will  be 'anisotropic': one direction will be compressed or stretched in feature space.
+    basis_type: str literal ``{'piecewise_linear', 'morlet', 'zernike'}``
+        choice of basis functions to use for convolution filter tensor. 
     n_in: Tuple[int], optional
         number of input points along each dimension. Only used
         if grid_in is passed as a str. See ``torch_harmonics.quadrature``.
@@ -451,6 +499,7 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         grid_in: torch.Tensor,
         grid_out: torch.Tensor,
         kernel_shape: Union[int, List[int]],
+        basis_type: str="piecewise_linear",
         n_in: Optional[Tuple[int]] = None,
         n_out: Optional[Tuple[int]] = None,
         quadrature_weights: Optional[torch.Tensor] = None,
@@ -513,7 +562,8 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         # precompute the transposed tensor
         idx, vals = _precompute_convolution_filter_matrix(
             grid_out, grid_in, self.kernel_shape, quadrature_weights, 
-            radius_cutoff=radius_cutoff, periodic=periodic, transpose_normalization=True
+            basis_type=basis_type, radius_cutoff=radius_cutoff, periodic=periodic, 
+            transpose_normalization=True
         )
 
         # to improve performance, we make psi a matrix by merging the first two dimensions
@@ -590,8 +640,15 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         of out_shape must be less than or equal to the side lengths
         of in_shape, and must be integer divisions of the corresponding
         in_shape side lengths.
-    kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
+    kernel_shape : ``Union[int, List[int]]``
+        Dimensions of the convolution kernel, either one int or a two-int tuple.
+        * If one int k, the kernel will be a square of shape (k,k), meaning the convolution 
+        will be 'isotropic': both directions are equally scaled in feature space.
+
+        * If two ints (k1,k2), the kernel will be a rectangle of shape (k1,k2), meaning the convolution
+        will  be 'anisotropic': one direction will be compressed or stretched in feature space.
+    basis_type: str literal ``{'piecewise_linear', 'morlet', 'zernike'}``
+        choice of basis functions to use for convolution filter tensor. 
     domain_length: torch.Tensor, optional
         extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
     periodic: bool, optional
@@ -619,6 +676,7 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         in_shape: Tuple[int],
         out_shape: Tuple[int],
         kernel_shape: Union[int, List[int]],
+        basis_type: str="piecewise_linear",
         domain_length: Optional[Tuple[float]] = None,
         periodic: Optional[bool] = False,
         groups: Optional[int] = 1,
@@ -668,6 +726,7 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
                                                       grid_out,
                                                       self.kernel_shape,
                                                       quadrature_weights,
+                                                      basis_type=basis_type,
                                                       radius_cutoff=radius_cutoff,
                                                       periodic=False,
                                                       normalize=True)
@@ -735,8 +794,15 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         of out_shape must be greater than or equal to the side lengths
         of in_shape, and must be integer multiples of the corresponding
         in_shape side lengths.
-    kernel_shape: Union[int, List[int]]
-        kernel shape. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
+    kernel_shape : ``Union[int, List[int]]``
+        Dimensions of the convolution kernel, either one int or a two-int tuple.
+        * If one int k, the kernel will be a square of shape (k,k), meaning the convolution 
+        will be 'isotropic': both directions are equally scaled in feature space.
+
+        * If two ints (k1,k2), the kernel will be a rectangle of shape (k1,k2), meaning the convolution
+        will  be 'anisotropic': one direction will be compressed or stretched in feature space.
+    basis_type: str literal ``{'piecewise_linear', 'morlet', 'zernike'}``
+        choice of basis functions to use for convolution filter tensor. 
     domain_length: torch.Tensor, optional
         extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
     periodic: bool, optional
@@ -764,6 +830,7 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         in_shape: Tuple[int],
         out_shape: Tuple[int],
         kernel_shape: Union[int, List[int]],
+        basis_type: str="piecewise_linear",
         domain_length: Optional[Tuple[float]] = None,
         periodic: Optional[bool] = False,
         groups: Optional[int] = 1,
@@ -818,6 +885,7 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
                                                       grid_out,
                                                       self.kernel_shape,
                                                       quadrature_weights,
+                                                      basis_type=basis_type,
                                                       radius_cutoff=radius_cutoff,
                                                       periodic=False, normalize=True,
                                                       transpose_normalization=False)
