@@ -5,7 +5,6 @@ import pytest
 import math
 
 from ..adamw import AdamW
-from ..galore_adamw import GaLoreAdamW
 
 from ..tensor_galore_projector import TensorGaLoreProjector
 
@@ -54,7 +53,7 @@ def test_galore_adamw_rank(galore_param_pct):
     # pick mode-wise rank so that low_rank_grad.numel() / full_rank_grad.numel() == galore_param_pct
     galore_rank = validate_tucker_rank(galore_param.shape, galore_param_pct)
 
-    optimizer = GaLoreAdamW(params=[param],
+    optimizer = AdamW(params=[param],
                             galore_params=[galore_param],
                             galore_rank=galore_rank,
                             betas=(0.5, 0.5))
