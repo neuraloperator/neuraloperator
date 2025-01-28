@@ -1,8 +1,8 @@
 """
-Neighbor search
-================
+Visualizing neighbor search
+=============================
 
-In this example, we walk through the logic of a graph neural operator.
+Understanding the spatial search used to compute neighborhoods for the Graph Neural Operator. 
 """
 
 # %%

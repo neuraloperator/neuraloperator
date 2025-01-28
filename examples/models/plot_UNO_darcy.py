@@ -2,8 +2,7 @@
 U-NO on Darcy-Flow
 ==================
 
-In this example, we demonstrate how to train a U-shaped Neural Operator on 
-the small Darcy-Flow example we ship with the package
+Training a U-shaped Neural Operator on the small Darcy-Flow example we ship with the package
 """
 
 # %%

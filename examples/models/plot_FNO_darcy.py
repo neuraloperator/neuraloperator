@@ -2,8 +2,7 @@
 Training an FNO on Darcy-Flow
 =============================
 
-In this example, we demonstrate how to use the small `Darcy-Flow example <../auto_examples/plot_darcy_flow.html>`_ we ship with the package
-to train a Fourier Neural Operator. 
+We train a Fourier Neural Operator on our small `Darcy-Flow example <../auto_examples/plot_darcy_flow.html>`_ .
 
 Note that this dataset is much smaller than one we would use in practice. The small Darcy-flow is an example built to
 be trained on a CPU in a few seconds, whereas normally we would train on one or multiple GPUs. 
