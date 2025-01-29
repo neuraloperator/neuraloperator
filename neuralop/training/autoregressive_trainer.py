@@ -57,14 +57,17 @@ class AutoregressiveTrainer(Trainer):
         mixed_precision: bool=False,
         data_processor: nn.Module=None,
         eval_interval: int=1,
-        log_output: bool=False,
+        log_output: bool=False, # this currently doesn't work!
         use_distributed: bool=False,
         verbose: bool=False,
-        T, 
-        timestep,
+        T: int=10, 
+        timestep: int=1,
+        debug:bool=True
     ):
         self.T = T
         self.timestep = timestep
+        self.debug = debug
+
         super().__init__(model=model,
                          n_epochs=n_epochs,
                          wandb_log=wandb_log,
@@ -96,7 +99,9 @@ class AutoregressiveTrainer(Trainer):
         if self.regularizer:
             self.regularizer.reset()
 
-        
+        u = sample["u"]
+        if self.debug:
+            print(f"one {u.shape=}")
         for t in range(0, self.T, self.timestep):
             ## TODO@DAVID: should we have a general handler for autoregressive trainer?
             if self.data_processor is not None:
@@ -108,23 +113,27 @@ class AutoregressiveTrainer(Trainer):
                     for k, v in sample.items()
                     if torch.is_tensor(v)
                 }
-            self.n_samples += sample["y"].shape[0]
+            self.n_samples += sample["y"].shape[0] # TODO@David: divide by timesteps
 
-            print(sample["x"].shape)
+            if self.debug:
+                print("one x shape: " + str(sample["x"].shape))
             if self.mixed_precision:
                 with torch.autocast(device_type=self.autocast_device_type):
                     out = self.model(**sample)
             else:
                 out = self.model(**sample)
             
-            if self.epoch == 0 and idx == 0 and self.verbose:
+            if self.epoch == 0 and idx == 0 and t == 0 and self.verbose:
                 print(f"Raw outputs of shape {out.shape}")
 
             if self.data_processor is not None:
-                out, sample = self.data_processor.postprocess(out, sample)
+                out, sample = self.data_processor.postprocess(out, sample, step=t)
 
             loss = 0.0
 
+            if self.debug:
+                print(f"{out.shape=}")
+                print(f"y: " + str(sample["y"].shape))
             if self.mixed_precision:
                 with torch.autocast(device_type=self.autocast_device_type):
                     loss += training_loss(out, **sample)
@@ -135,7 +144,6 @@ class AutoregressiveTrainer(Trainer):
                 loss += self.regularizer.loss
             
             # roll x forward in time using the output of out
-            x = torch.cat((x[..., self.timestep:], out), dim=-1)
 
             '''if t == 0:
                 full_out = out
@@ -167,31 +175,32 @@ class AutoregressiveTrainer(Trainer):
         outputs: torch.Tensor | None
             optionally returns batch outputs
         """
-        if self.data_processor is not None:
-            sample = self.data_processor.preprocess(sample)
-        else:
-            # load data to device if no preprocessor exists
-            sample = {
-                k: v.to(self.device)
-                for k, v in sample.items()
-                if torch.is_tensor(v)
-            }
         eval_step_losses = {loss_name: 0. for loss_name in eval_losses.keys()}
         eval_rollout_losses = {loss_name: 0. for loss_name in eval_losses.keys()}
 
-        x = sample["ic"]
+        u = sample["u"]
+        if self.debug:
+            print(f"one {u.shape=}")
         for t in range(0, self.T, self.timestep):
-            y = sample["u"][..., t:t+self.timestep]
-            self.n_samples += y.shape[0]
-
-            # Recreate x and y, as they change at each step of the rollout
-            sample['x'] = x
-            sample['y'] = y 
+            ## TODO@DAVID: should we have a general handler for autoregressive trainer?
+            if self.data_processor is not None:
+                sample = self.data_processor.preprocess(sample, step=t)
+            else:
+                # load data to device if no preprocessor exists
+                sample = {
+                    k: v.to(self.device)
+                    for k, v in sample.items()
+                    if torch.is_tensor(v)
+                }
+            self.n_samples += sample["y"].shape[0]
 
             out = self.model(**sample)
             
+            if self.debug:
+                x = sample["x"]
+                print(f"eval {x.shape=} {out.shape=}")
             if self.data_processor is not None:
-                out, sample = self.data_processor.postprocess(out, sample)
+                out, sample = self.data_processor.postprocess(out, sample, step=t)
             
             if t == 0:
                 full_out = out
@@ -202,13 +211,18 @@ class AutoregressiveTrainer(Trainer):
                 step_loss = loss(out, **sample)
                 eval_step_losses[loss_name] += step_loss
 
+                full_y = sample['full_y']
                 #TODO @ DAVID: figure out better way to do this
-                '''full_loss = loss(full_out, **sample)
-                eval_rollout_losses[loss_name]'''
+                full_loss = loss(full_out, full_y)
+                eval_rollout_losses[loss_name] += full_loss
             
             # roll x forward in time using the output of out
-            x = torch.cat((x[..., self.timestep:], out), dim=-1)
-        
+            #x = torch.cat((x[..., self.timestep:], out), dim=-1)
+        # TODO@DAVID: return both step and full losses. You need to handle this in .evaluate() indexing
+        all_eval_losses = {}
+        for loss_name in eval_losses.keys():
+            all_eval_losses[f'step_{loss_name}'] = eval_step_losses[loss_name]
+            all_eval_losses[f'full_{loss_name}'] = eval_rollout_losses[loss_name]
         if return_output:
             return eval_step_losses, out
         else:

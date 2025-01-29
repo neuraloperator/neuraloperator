@@ -29,11 +29,13 @@ class TemporalDataset:
                  root_dir: Union[Path, str],
                  dataset_name: str,
                  n_train: int,
+                 n_tests: List[int],
                  batch_size: int,
                  test_batch_sizes: List[int],
                  train_resolution: int,
                  test_resolutions: List[int],
                  T: int, 
+                 temporal_resolution: int,
                  timestep: int=1,
                  encoding="channel-wise",
                  input_subsampling_rate=None,
@@ -99,7 +101,8 @@ class TemporalDataset:
         # Load train data
         
         data = torch.load(
-        Path(root_dir).joinpath(f"{dataset_name}.pt").as_posix()
+        Path(root_dir).joinpath(f"{dataset_name}_temporal_{train_resolution}_t{temporal_resolution}_train.pt").as_posix(),
+        weights_only=True # no behavior change, suppress warning
         )
 
         u_train = data["u"].type(torch.float32).clone()
@@ -143,6 +146,40 @@ class TemporalDataset:
         # Save train dataset
         self._train_db = GeneralKeyedTensorDataset({'u': u_train})
 
+        self._test_dbs = {}
+
+        # construct test datasets
+
+        for res, n_test in zip(test_resolutions, n_tests):
+            data = torch.load(
+            Path(root_dir).joinpath(f"{dataset_name}_temporal_{res}_t{temporal_resolution}_test.pt").as_posix(),
+            weights_only=True # no behavior change, suppress warning
+            )
+
+            u_test = data["u"].type(torch.float32).clone()
+            if channels_squeezed:
+                u_test = u_test.unsqueeze(channel_dim)        
+
+            # optionally subsample along data indices
+            ## Input subsampling 
+            input_data_dims = data["u"].ndim - 3 # batch, channels, time are ignored
+            # convert None and 0 to 1
+            if not input_subsampling_rate:
+                input_subsampling_rate = 1
+            if not isinstance(input_subsampling_rate, list):
+                # expand subsampling rate along dims if one per dim is not provided
+                input_subsampling_rate = [input_subsampling_rate] * (input_data_dims)
+            # make sure there is one subsampling rate per data dim
+            assert len(input_subsampling_rate) == input_data_dims
+            # Construct full indices along which to grab X. No subsampling along time
+            test_input_indices = [slice(0, n_test, None)] + [slice(None, None, rate) for rate in input_subsampling_rate] + [slice(None)]
+            test_input_indices.insert(channel_dim, slice(None))
+            u_test = u_test[test_input_indices]
+            
+            self._test_dbs[res] = GeneralKeyedTensorDataset({'u': u_test})
+            del data
+
+
         # create DataProcessor
         self._data_processor = AutoregressiveDataProcessor(T=self.T,
                                                            timestep=self.timestep,
@@ -156,4 +193,8 @@ class TemporalDataset:
     @property
     def train_db(self):
         return self._train_db
+    
+    @property
+    def test_dbs(self):
+        return self._test_dbs
     

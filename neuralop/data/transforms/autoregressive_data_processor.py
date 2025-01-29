@@ -6,7 +6,7 @@ class AutoregressiveDataProcessor(DataProcessor):
     to pre/post process data for use in the autoregressive trainer. 
     """
     def __init__(
-        self, T, timestep=1, in_normalizer=None, out_normalizer=None,
+        self, T, timestep=1, in_normalizer=None, out_normalizer=None, debug=True
     ):
         """
         Parameters
@@ -27,6 +27,7 @@ class AutoregressiveDataProcessor(DataProcessor):
         self.out_normalizer = out_normalizer
         self.device = "cpu"
         self.model = None
+        self.debug = debug
 
     def to(self, device):
         if self.in_normalizer is not None:
@@ -67,30 +68,38 @@ class AutoregressiveDataProcessor(DataProcessor):
         y = data_dict["u"][..., self.T+step:self.T+self.timestep+step].to(self.device)
 
 
-        n_samples_x = x.shape[0]
-        spatial_res_x = x.shape[2:-1]
-        # reshape n,c, d_1, ... t into n, c*t, d_1, ...
-        x = x.permute(0, -1, *list(range(1, x.ndim-1))).view(n_samples_x, -1, *spatial_res_x)
-
-        print(f"{x.shape=}")
-
-        n_samples_y = y.shape[0]
-        spatial_res_y = y.shape[2:-1]
-        # reshape n,c, d_1, ... t into n, c*t, d_1, ...
-        y = y.permute(0, -1, *list(range(1, y.ndim-1))).view(n_samples_y, -1, *spatial_res_y)
-        print(f"{y.shape=}")
-
         if self.in_normalizer is not None:
             x = self.in_normalizer.transform(x)
         if self.out_normalizer is not None and self.training:
             y = self.out_normalizer.transform(y)
 
+        if self.debug:
+            print(f"post norm, {x.shape=}")
+
+
+        n_samples_x = x.shape[0]
+        data_dict["x_channels"] = x.shape[1]
+        spatial_res_x = x.shape[2:-1]
+        # reshape n,c, d_1, ... t into n, c*t, d_1, ...
+        x = x.permute(0, -1, *list(range(1, x.ndim-1))).view(n_samples_x, -1, *spatial_res_x)
+
+        if self.debug:
+            print(f"{x.shape=}")
+
+        n_samples_y = y.shape[0]
+        spatial_res_y = y.shape[2:-1]
+        data_dict["y_channels"] = y.shape[1]
+
+        # reshape n,c, d_1, ... t into n, c*t, d_1, ...
+        y = y.permute(0, -1, *list(range(1, y.ndim-1))).view(n_samples_y, -1, *spatial_res_y)
+        if self.debug:
+            print(f"{y.shape=}")
+
         data_dict["x"] = x
         data_dict["y"] = y
-
         return data_dict
 
-    def postprocess(self, output, data_dict):
+    def postprocess(self, output, data_dict, step):
         """postprocess model outputs and data_dict
         into format expected by training or val loss
 
@@ -110,12 +119,30 @@ class AutoregressiveDataProcessor(DataProcessor):
         out, data_dict
             postprocessed outputs and data dict
         """
-        if self.out_normalizer and not self.training:
-            output = self.out_normalizer.inverse_transform(output)
-        
-        
-        data_dict["x"] = torch.cat((data_dict["x"][..., self.timestep:], output), dim=-1)
 
+        # permute back to b,c, x,y,t
+        x = data_dict["x"]
+        y = data_dict["y"]
+        if self.debug:
+            print(f"pre permute cat {x.shape=}")
+        x = x.view(x.shape[0], data_dict["x_channels"], -1, *x.shape[2:]).permute(0,1, *list(range(3, x.ndim+1)), 2)
+        y = y.view(y.shape[0], data_dict["y_channels"], -1, *y.shape[2:]).permute(0,1, *list(range(3, y.ndim+1)), 2)
+        output = output.view(output.shape[0], data_dict["y_channels"], -1, *output.shape[2:]).permute(0,1, *list(range(3, output.ndim+1)), 2)
+
+        if self.debug:
+            print(f"post permute {x.shape=} {output.shape=}")
+        x = torch.cat((x[...,self.timestep:], output), dim=-1)
+
+        if self.out_normalizer and not self.training:
+            x = self.in_normalizer.inverse_transform(x)
+            output = self.out_normalizer.inverse_transform(output)
+    
+        data_dict["x"] = x
+        data_dict["y"] = y
+        if data_dict.get("full_y") is None:
+            data_dict["full_y"] = data_dict["y"]
+        else:
+            data_dict["full_y"] = torch.cat((data_dict["full_y"],data_dict["y"]), dim=-1)
         return output, data_dict
 
     def forward(self, **data_dict):

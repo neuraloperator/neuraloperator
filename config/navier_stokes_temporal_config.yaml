@@ -5,6 +5,7 @@ default: &DEFAULT
   n_params_baseline: None #If None, will be computed
   verbose: True
   arch: 'fno'
+  debug: False
 
   #Distributed computing
   distributed:
@@ -58,15 +59,16 @@ default: &DEFAULT
 
   # Dataset related
   data:
+    temporal_resolution: 20
     T: 10
     timestep: 1
     folder: data/navier_stokes/
-    batch_size: 4
-    n_train: 10000
-    train_resolution: 128
-    n_tests: [2000] #, 1000] #, 1000]
-    test_resolutions: [128] #, 1024] #, 1024] 
-    test_batch_sizes: [8] #, 4] #, 1]
+    batch_size: 1
+    n_train: 10
+    train_resolution: 64
+    n_tests: [10] #, 1000] #, 1000]
+    test_resolutions: [64] #, 1024] #, 1024] 
+    test_batch_sizes: [1] #, 4] #, 1]
     encode_input: True
     encode_output: True
 
@@ -84,5 +86,5 @@ default: &DEFAULT
     project: "train_ns"
     entity: "dhpitt" # put your username here
     sweep: False
-    log_output: True
+    log_output: False
     eval_interval: 1

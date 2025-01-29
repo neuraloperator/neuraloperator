@@ -77,19 +77,26 @@ if config.verbose:
 
 # Load the dataset
 dataset = TemporalDataset(root_dir="/home/dave/data/navier_stokes/temporal", 
-                          dataset_name="navier_stokes_temporal_64_t20", 
+                          dataset_name="navier_stokes", 
+                          temporal_resolution=config.data.temporal_resolution,
                           T=config.data.T, timestep=config.data.timestep,
-                          n_train=1200, batch_size=1, test_batch_sizes=None, 
-                          train_resolution=None, test_resolutions=None,)
+                          n_train=config.data.n_train, 
+                          n_tests=config.data.n_tests,
+                          batch_size=config.data.batch_size, 
+                          test_batch_sizes=config.data.test_batch_sizes, 
+                          train_resolution=config.data.train_resolution,
+                          test_resolutions=config.data.test_resolutions,)
 train_loader = DataLoader(dataset.train_db, batch_size=1, shuffle=True)
+val_loader = DataLoader(dataset.test_dbs[64], batch_size=1, shuffle=True)
 
 # reconfigure data channels for temporal
-data_channels = config[config.arch].data_channels * config.data.T
+config[config.arch].data_channels = config[config.arch].data_channels * config.data.T
 
 model = get_model(config)
 model = model.to(device)
 
 data_processor = dataset.data_processor
+data_processor.debug = config.debug
 data_processor = data_processor.to(device)
 
 # Create the optimizer
@@ -155,7 +162,8 @@ trainer = AutoregressiveTrainer(
     verbose=config.verbose,
     wandb_log = config.wandb.log,
     T=10,
-    timestep=1
+    timestep=1,
+    debug=config.debug
 )
 
 # Log parameter count
@@ -178,7 +186,7 @@ if is_logger:
 
 trainer.train(
     train_loader,
-    test_loaders={},
+    test_loaders={'val': val_loader},
     optimizer=optimizer,
     scheduler=scheduler,
     regularizer=False,
