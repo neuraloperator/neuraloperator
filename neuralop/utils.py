@@ -89,20 +89,27 @@ def spectrum_2d(signal, n_observations, normalize=True):
         n_observations * n_observations is the spatial resolution.
     n_observations: an integer
         Number of discretized points. Basically the resolution of the signal.
-
+    normalize: bool
+        whether to apply normalization to the output of the 2D FFT. 
+        If True, normalizes the outputs by ``1/n_observations``
+        (actually ``1/sqrt(n_observations * n_observations)``). 
     Returns
     --------
     spectrum: a tensor
         A 1D tensor of shape (s,) representing the computed spectrum.
+        The spectrum is computed using a square approximation to radial
+        binning, meaning that the wavenumber 'bin' into which a particular 
+        coefficient is the coefficient's location along the diagonal, indexed 
+        from the top-left corner of the 2d FFT output. 
     """
     T = signal.shape[0]
     signal = signal.view(T, n_observations, n_observations)
 
     if normalize:
-        signal = torch.fft.fft2(signal)
+        signal = torch.fft.fft2(signal, norm="ortho")
     else:
         signal = torch.fft.rfft2(
-            signal, s=(n_observations, n_observations), normalized=False
+            signal, s=(n_observations, n_observations), norm="backward"
         )
 
     # 2d wavenumbers following PyTorch fft convention

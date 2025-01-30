@@ -10,7 +10,7 @@ dependencies = [
     "configmypy",
     "tensorly",
     "tensorly-torch",
-    "torch-harmonics==0.7.3",
+    "torch-harmonics==0.7.4",
     "matplotlib",
     "numpy>=1.25",
     "opt-einsum",
@@ -30,7 +30,10 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["neuralop"]
+include = [
+    "neuralop",
+    "neuralop.*",    
+]
 
 # Dynamic versioning from neuralop.__init__
 [tool.setuptools.dynamic]

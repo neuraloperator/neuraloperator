@@ -151,11 +151,15 @@ Citing
 
 If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
 
-   @misc{li2020fourier,
-      title={Fourier Neural Operator for Parametric Partial Differential Equations}, 
-      author={Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar},
-      year={2020},
-      eprint={2010.08895},
+   @misc{kossaifi2024neural,
+      title={A Library for Learning Neural Operators}, 
+      author={Jean Kossaifi and Nikola Kovachki and 
+      Zongyi Li and Davit Pitt and 
+      Miguel Liu-Schiaffini and Robert Joseph George and 
+      Boris Bonev and Kamyar Azizzadenesheli and 
+      Julius Berner and Anima Anandkumar},
+      year={2024},
+      eprint={2412.10354},
       archivePrefix={arXiv},
       primaryClass={cs.LG}
    }
@@ -175,6 +179,7 @@ If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
    }
 
 
-.. [1] Li, Z., Kovachki, N., Azizzadenesheli, K., Liu, B., Bhattacharya, K., Stuart, A., and Anandkumar A., “Fourier Neural Operator for Parametric Partial Differential Equations”, ICLR, 2021. doi:10.48550/arXiv.2010.08895.
+.. [1] Kossaifi, J., Kovachki, N., Li, Z., Pitt, D., Liu-Schiaffini, M., George, R., Bonev, B., Azizzadenesheli, K., Berner, J., and Anandkumar, A., "A Library for Learning Neural Operators", ArXiV, 2024. doi:10.48550/arXiv.2412.10354.
+
 
 .. [2] Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar A., “Neural Operator: Learning Maps Between Function Spaces”, JMLR, 2021. doi:10.48550/arXiv.2108.08481.
