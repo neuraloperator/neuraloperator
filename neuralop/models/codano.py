@@ -6,7 +6,7 @@ from ..layers.channel_mlp import ChannelMLP
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.skip_connections import skip_connection
 from ..layers.padding import DomainPadding
-from ..layers.coda_blocks import CODABlocks
+from ..layers.coda_layer import CODALayer
 from ..layers.resample import resample
 from ..layers.embeddings import GridEmbedding2D, GridEmbeddingND
 
@@ -72,8 +72,8 @@ class CODANO(nn.Module):
         components in x and y directions and pressure, respectively. Please note that we consider each input channel as a physical
         variable of the PDE.
 
-        Please note that the 'velocity' varibale is composed of two channels (codimension=2) and we have splitted the velocity field
-        into two components, i.e., u_x and u_y. And this is to be done for all varibale with codimension > 1.
+        Please note that the 'velocity' variable is composed of two channels (codimension=2) and we have split the velocity field
+        into two components, i.e., u_x and u_y. And this is to be done for all variable with codimension > 1.
 
         If the dataset consists of multiple PDEs, such as Navier Stokes and Heat equation, the variable_ids=['u_x', 'u_y', 'p', 'T'],
         where 'T' represents the temperature variable for thee Heat equation and 'u_x', 'u_y', 'p' are the velocity components and pressure
@@ -135,8 +135,7 @@ class CODANO(nn.Module):
         output of the last CoDA block.
 
     Other parameters
-    ------------------
-
+    ----------------
     use_horizontal_skip_connection : bool, optional
         Indicates whether to use horizontal skip connections, similar to U-shaped architectures. Default is False.
 
@@ -157,13 +156,10 @@ class CODANO(nn.Module):
 
     References
     -----------
-    .. [1] :
-
-    Rahman, Md Ashiqur, et al. "Pretraining codomain attention neural operators for solving multiphysics pdes." (2024).
+    .. [1] : Rahman, Md Ashiqur, et al. "Pretraining codomain attention neural operators for solving multiphysics pdes." (2024).
     NeurIPS 2024. https://arxiv.org/pdf/2403.12553.
 
-    .. [2] :
-    Devlin, Jacob, et al. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.
+    .. [2] : Devlin, Jacob, et al. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.
 
     """
 
@@ -309,11 +305,11 @@ class CODANO(nn.Module):
         else:
             self.hidden_variable_codimension = self.extended_variable_codimemsion
 
-        self.base = nn.ModuleList([])
+        self.attention_layers = nn.ModuleList([])
 
         for i in range(self.n_layers):
-            self.base.append(
-                CODABlocks(
+            self.attention_layers.append(
+                CODALayer(
                     n_modes=self.n_modes[i],
                     n_heads=self.n_heads[i],
                     scale=self.attention_scalings[i],
@@ -584,7 +580,7 @@ class CODANO(nn.Module):
             else:
                 cur_output_shape = None
 
-            x = self.base[layer_idx](x, output_shape=cur_output_shape)
+            x = self.attention_layers[layer_idx](x, output_shape=cur_output_shape)
 
             # storing the outputs for skip connections
             if (

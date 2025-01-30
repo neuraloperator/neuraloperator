@@ -1,6 +1,6 @@
 import pytest
 import torch
-from ..coda_blocks import *
+from ..coda_layer import *
 from ..spectral_convolution import *
 
 device = 'cuda' if torch.backends.cuda.is_built() else 'cpu'
@@ -27,7 +27,7 @@ def test_Codano(token_codimension,
     permutation_eq = True
     temperature = 1.0
 
-    layer = CODABlocks(
+    layer = CODALayer(
         n_modes=n_modes,
         n_heads=n_heads,
         token_codimension=token_codimension,

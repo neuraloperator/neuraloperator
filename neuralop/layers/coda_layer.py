@@ -12,8 +12,8 @@ from .spectral_convolution import SpectralConv
 
 einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-class CODABlocks(nn.Module):
-    """Co-domain Attention Blocks (CODABlocks) implement the transformer
+class CODALayer(nn.Module):
+    """Co-domain Attention Blocks (CODALayer) implement the transformer
     architecture in the operator learning framework, as described in [1]_.
 
     Parameters
@@ -164,7 +164,8 @@ class CODABlocks(nn.Module):
 
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
-        common_args = dict(
+
+        shared_fno_configs = dict(
             use_channel_mlp=use_channel_mlp,
             preactivation=preactivation,
             channel_mlp_skip=channel_mlp_skip,
@@ -188,26 +189,25 @@ class CODABlocks(nn.Module):
             non_linearity=kqv_activation,
             fno_skip='linear',
             norm=None,
-            apply_skip=True,
             n_layers=1,
         )
         self.Key = FNOBlocks(
             resolution_scaling_factor=1 * scale,
             conv_module=conv_module,
             **kqv_args,
-            **common_args,
+            **shared_fno_configs,
         )
         self.Query = FNOBlocks(
             resolution_scaling_factor=1 * scale,
             conv_module=conv_module,
             **kqv_args,
-            **common_args,
+            **shared_fno_configs,
         )
         self.Value = FNOBlocks(
             resolution_scaling_factor=1,
             conv_module=conv_module,
             **kqv_args,
-            **common_args,
+            **shared_fno_configs,
         )
 
         if self.n_heads * self.head_codimension != self.token_codimension:
@@ -217,13 +217,12 @@ class CODABlocks(nn.Module):
                 n_modes=n_modes,
                 resolution_scaling_factor=1,
                 # args below are shared with KQV blocks
-                apply_skip=True,
                 non_linearity=torch.nn.Identity(),
                 fno_skip='linear',
                 norm=None,
                 conv_module=conv_module,
                 n_layers=1,
-                **common_args,
+                **shared_fno_configs,
             )
         else:
             self.multi_head_proj = None
@@ -246,10 +245,9 @@ class CODABlocks(nn.Module):
             self.mixer = FNOBlocks(
                 in_channels=self.mixer_token_codimension,
                 out_channels=self.mixer_token_codimension,
-                apply_skip=True,
                 n_layers=2,
                 **mixer_args,
-                **common_args,
+                **shared_fno_configs,
             )
             self.norm1 = norm_module(self.token_codimension)
             self.mixer_in_normalizer = norm_module(self.mixer_token_codimension)
@@ -263,7 +261,7 @@ class CODABlocks(nn.Module):
                 out_channels=codimension_size,
                 n_layers=2,
                 **mixer_args,
-                **common_args,
+                **shared_fno_configs,
             )
             self.norm1 = norm_module(codimension_size)
             self.mixer_in_normalizer = norm_module(codimension_size)
