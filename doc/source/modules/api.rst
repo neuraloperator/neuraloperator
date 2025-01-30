@@ -227,7 +227,7 @@ We also provide additional layers that implement standard deep learning architec
 
 **Codomain Attention (Transformer) Blocks**
 
-.. automodule:: neuralop.layers.coda_blocks
+.. automodule:: neuralop.layers.coda_layer
     :no-members:
     :no-inherited-members:
 
@@ -235,7 +235,7 @@ We also provide additional layers that implement standard deep learning architec
     :toctree: generated
     :template: class.rst
 
-    CODABlocks
+    CODALayer
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
