@@ -2,12 +2,12 @@ from typing import Literal
 import importlib
 
 import torch
-from torch import einsum
 
 def segment_csr(
     src: torch.Tensor,
     indptr: torch.Tensor,
     reduce: Literal["mean", "sum"],
+    eps: float=1e-7,
     use_scatter=True,
 ):
     """segment_csr reduces all entries of a CSR-formatted
@@ -34,6 +34,12 @@ def segment_csr(
         how to reduce a neighborhood. if mean,
         reduce by taking the average of all neighbors.
         Otherwise take the sum.
+    eps : float
+        Tiny perturbation to prevent div by zero in scaling
+        neigborhoods if a particular neighborhood is empty
+    use_scatter : bool
+        whether to use `torch_scatter`'s implementation of 
+        `segment_csr` over the native torch version. Defaults to True
     """
     if reduce not in ["mean", "sum"]:
         raise ValueError("reduce must be one of 'mean', 'sum'")
@@ -54,38 +60,23 @@ def segment_csr(
         # if batched, shape [b, n_reps, channels]
         # otherwise shape [n_reps, channels]
         if src.ndim == 3:
-            batched = True
             point_dim = 1
         else:
-            batched = False
             point_dim = 0
 
         # if batched, shape [b, n_out, channels]
         # otherwise shape [n_out, channels]
         output_shape = list(src.shape)
-        n_out = indptr.shape[point_dim] - 1
+        n_out = indptr.shape[0] - 1
+        n_reps = indptr[1:] - indptr[:-1]
+
         output_shape[point_dim] = n_out
 
-        out = torch.zeros(output_shape, device=src.device)
+        indices = torch.arange(n_out).to(indptr.device).repeat_interleave(n_reps)
+        out = torch.zeros(output_shape, device=src.device).index_add_(point_dim, indices, src)
+        if reduce == 'mean':
+            # scale the outputs by number of reduced neighbors, add eps to avoid div by zero
+            scale = (1 / (n_reps + eps)).unsqueeze(0).T
+            out = out * scale    
 
-        for i in range(n_out):
-            # reduce all indices pointed to in indptr from src into out
-            if batched:
-                from_idx = (slice(None), slice(indptr[0,i], indptr[0,i+1]))
-                ein_str = 'bio->bo'
-                start = indptr[0,i]
-                n_nbrs = indptr[0,i+1] - start
-                to_idx = (slice(None), i)
-            else:
-                from_idx = slice(indptr[i], indptr[i+1])
-                ein_str = 'io->o'
-                start = indptr[i]
-                n_nbrs = indptr[i+1] - start
-                to_idx = i
-            src_from = src[from_idx]
-            if n_nbrs > 0:
-                to_reduce = einsum(ein_str, src_from)
-                if reduce == "mean":
-                    to_reduce /= n_nbrs
-                out[to_idx] += to_reduce
         return out
