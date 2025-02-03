@@ -7,25 +7,23 @@ NeuralOperator Developer's Guide
 This guide provides essential information for developers contributing to NeuralOperator.
 
 Installation and Setup
-======================
+-----------------------
 
 To get started with development, clone the repository and install dependencies:
 
 .. code-block:: bash
 
-    git clone https://github.com/neuraloperator/NeuralOperator.git
-    cd NeuralOperator
+    git clone https://github.com/neuraloperator/neuraloperator.git
+    cd neuraloperator
     pip install -e .[dev]
 
-Ensure you have the required dependencies listed in `requirements-dev.txt`.
-
 Code Style and Standards
-========================
+------------------------
 
 To ensure code clarity and future maintainability, NeuralOperator adheres to a few style principles:
 
 Commenting and docstrings
--------------------------
++++++++++++++++++++++++++
 
 In general, docstrings use the NumPy format:
 
@@ -47,7 +45,7 @@ def function(arg1: type1, arg2: type2=default)
 
 
 Contributing
-============
+------------
 
 Follow these steps when making contributions:
 
@@ -70,7 +68,7 @@ in ``neuralop/models/mymodel.py``, you would add tests to `neuralop/models/tests
 
 
 Extending the Library
----------------------
++++++++++++++++++++++
 
 To add a new neural operator model:
 
@@ -88,13 +86,13 @@ To add a layer:
     the more visibility it will get! 
 
 Debugging and Troubleshooting
-==============================
+-----------------------------
 
 - Use `torch.set_detect_anomaly(True)` for debugging NaN gradients.
 - Check GPU memory usage with `nvidia-smi`.
 - Ensure dependencies are up to date with `pip list --outdated`.
 
 Contact
-=======
+-------
 
 For questions or issues, create a GitHub issue or reach out on the discussion forum.
