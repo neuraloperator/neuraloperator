@@ -2,7 +2,9 @@
 Checkpointing and loading training states
 =========================================
 
-In this example, we demonstrate the Trainer's saving and loading functionality, which makes it easy to checkpoint and resume training states. 
+Demonstrating the ``Trainer``'s saving and loading functionality, 
+which makes it easy to checkpoint and resume training states.
+
 """
 
 # %%

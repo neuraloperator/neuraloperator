@@ -1,7 +1,9 @@
 """
+.. _small_darcy_vis :
+
 A simple Darcy-Flow dataset
 ===========================
-In this example, we demonstrate how to use the small Darcy-Flow example we ship with the package
+An intro to the small Darcy-Flow example dataset we ship with the package.
 """
 
 # %%

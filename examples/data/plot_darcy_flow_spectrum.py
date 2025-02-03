@@ -1,21 +1,28 @@
 """
 A simple Darcy-Flow spectrum analysis
 =====================================
-In this example, we demonstrate how to use the spectrum analysis function on the small Darcy-Flow example.
+Using ``neuralop.utils.spectrum_2d`` to perform spectrum analysis function on our small Darcy-Flow example.
+
 For more details on spectrum analysis, users can take a look at this reference: https://www.astronomy.ohio-state.edu/ryden.1/ast825/ch7.pdf
 
 Short summary
--------------
+--------------
+Spectral analysis is useful because it allows researchers to study the distribution of energy across different scales in a fluid flow. 
+The energy spectrum is analysed through the Fourier transform, a mathematical tool that decomposes a function or signal into its 
+constituent frequencies. In a fluid flow, it is used to analyze the distribution of energy across different scales in a flow. 
 
-Spectral analysis is useful because it allows researchers to study the distribution of energy across different scales in a fluid flow. By examining the energy spectrum, one can gain insights into the behavior of turbulence or any other dataset and the underlying physical processes. The energy spectrum is analysed through the Fourier transform which is a mathematical tool that decomposes a function or signal into its constituent frequencies. In a fluid flow, it is used to analyze the distribution of energy across different scales in a flow. Specifically, the Fourier transform is applied to the velocity field of the flow, converting it into a frequency domain representation. Higher the wavenumber corresponds to higher frequency and higher energy and is a much harder task to solve as we need higher modes to capture the high-frequency behavior of the flow. Overall this allows researchers to study the energy spectrum, which provides insights into the behavior of turbulence and the underlying physical processes.
+Specifically, the Fourier transform is applied to the velocity field of the flow, converting it into a frequency domain representation. 
+Higher the wavenumber corresponds to higher frequency and higher energy and is a much harder task to solve as we need higher modes to capture 
+the high-frequency behavior of the flow. Overall this allows researchers to study the energy spectrum, which provides insights into the behavior 
+of turbulence and the underlying physical processes.
 
 """
 
 # Original Author: Zongyi Li
 # Modified by: Robert Joseph George
 # %%
-# Import the library
-# ------------------
+# Import dependencies
+# --------------------
 # We first import our `neuralop` library and required dependencies.
 import numpy as np
 import torch
@@ -46,7 +53,7 @@ dataset_name = "Darcy Flow"
 # Loading the Navier-Stokes dataset in 128x128 resolution
 train_loader, test_loaders, data_processor = load_darcy_flow_small(
         n_train=50, batch_size=50, 
-        test_resolutions=[16, 32], n_tests=[50],
+        test_resolutions=[16, 32], n_tests=[50, 50],
         test_batch_sizes=[32], 
         encode_output=False
 )
@@ -56,7 +63,7 @@ print("Original dataset shape", train_loader.dataset[:samples]['x'].shape) # che
 
 # It is important to note that we want the last two dimensions to represent the spatial dimensions
 # So in some cases one might have to permute the dataset after squeezing the initial dimensions as well
-dataset_pred = train_loader.dataset[:samples]['x'].squeeze() # squeeze the dataset to remove the batch dimension or other dimensions
+dataset_pred = train_loader.dataset[:samples]['x'].squeeze() # squeeze the dataset to remove the empty channel dimension
 
 # Shape of the dataset
 shape = dataset_pred.shape
@@ -86,22 +93,22 @@ grid = torch.cat((gridx, gridy), dim=-1)
 ##############################################################
 
 # Generate the spectrum of the dataset
-# Again only the last two dimensions have to be resolution and the first dimension is the reshaped product of all the other dimensions
+# We reshape our samples into the form expected by ``spectrum_2d``: ``(n_samples, h, w)``
 truth_sp = spectrum_2d(dataset_pred.reshape(samples * batchsize, s, s), s)
 
-# Generate the spectrum plot and set all the settings
+# Configure pyplot and generate the plot
 fig, ax = plt.subplots(figsize=(10,10))
 
 linewidth = 3
 ax.set_yscale('log')
 
-length = 16 # typically till the resolution length of the dataset
+length = dataset_pred.shape[-1] # the resolution length of the dataset
 buffer = 10 # just add a buffer to the plot
 k = np.arange(length + buffer) * 1.0
 ax.plot(truth_sp, 'k', linestyle=":", label="NS", linewidth=4)
 
 ax.set_xlim(1,length+buffer)
-ax.set_ylim(10, 10^10)
+ax.set_ylim(0.1, 100)
 plt.legend(prop={'size': 20})
 plt.title('Spectrum of {} Datset'.format(dataset_name))
 

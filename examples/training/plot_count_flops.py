@@ -2,10 +2,11 @@
 Using `torchtnt` to count FLOPS
 ================================
 
-In this example, we demonstrate how to use torchtnt to estimate the number of floating-point
+A demo using ``torchtnt`` to estimate the number of floating-point
 operations per second (FLOPS) required for a model's forward and backward pass. 
 
 We will use the FLOP computation to compare the resources used by a base FNO.
+
 """
 
 # %%

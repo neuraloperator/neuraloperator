@@ -163,9 +163,7 @@ class BaseModel(torch.nn.Module):
         save_folder = Path(save_folder)
 
         metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.pkl').as_posix()
-        init_kwargs = torch.load(metadata_filepath)
-        # with open(metadata_filepath, 'r') as f:
-        #     init_kwargs = json.load(f)
+        init_kwargs = torch.load(metadata_filepath, weights_only=False)
         
         version = init_kwargs.pop('_version')
         if hasattr(cls, '_version') and version != cls._version:
