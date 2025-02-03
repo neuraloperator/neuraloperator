@@ -78,10 +78,11 @@ of an equivalent, dense Fourier Neural Operator!
 
 Checkout the `documentation <https://neuraloperator.github.io/dev/index.html>`_ for more!
 
-Using with weights and biases
+Using with Weights and Biases
 -----------------------------
 
-Create a file in ``neuraloperator/config`` called ``wandb_api_key.txt`` and paste your Weights and Biases API key there.
+Our ``Trainer`` natively supports logging to W&B. To use these features, create a file in
+``neuraloperator/config`` called ``wandb_api_key.txt`` and paste your W&B API key there.
 You can configure the project you want to use and your username in the main yaml configuration files.
 
 ===============
@@ -93,11 +94,17 @@ If you spot a bug or a typo in the documentation, or have an idea for a feature 
 please report it on our `issue tracker <https://github.com/neuraloperator/neuraloperator/issues>`_, 
 or even better, open a Pull-Request on `GitHub <https://github.com/neuraloperator/neuraloperator>`_. 
 
-NeuralOperator has additional dependencies for development, which can be found in ``requirements_dev.txt``:
+NeuralOperator has additional dependencies for development, which are packaged as ``neuraloperator[dev]``
 
 .. code::
    
-   pip install -r requirements_dev.txt
+   pip install neuraloperator[dev]
+
+OR 
+
+.. code ::
+   
+   pip install -e .[dev]
 
 Code formatting
 ----------------
