@@ -6,16 +6,20 @@ NeuralOperator Developer's Guide
 
 This guide provides essential information for developers contributing to NeuralOperator.
 
+~~~~~~~~
+
 Installation and Setup
 -----------------------
 
-To get started with development, clone the repository and install dependencies:
+To get started with development, fork the repository on GitHub, then download your fork:
 
 .. code-block:: bash
 
-    git clone https://github.com/neuraloperator/neuraloperator.git
+    git clone https://github.com/YOURNAME/neuraloperator.git
     cd neuraloperator
     pip install -e .[dev]
+
+~~~~~~~~
 
 Code Style and Standards
 ------------------------
@@ -27,22 +31,35 @@ Commenting and docstrings
 
 In general, docstrings use the NumPy format:
 
-.. code ::
+.. code-block:: python
 
-def function(arg1: type1, arg2: type2=default)
+    def function(arg1: type1, arg2: type2=default)
+        """
+        Parameters
+        ----------
+        arg1 : type1
+            description of what arg1 'means'
+            for the function's behavior
+        arg2 : type2, optional
+            description arg2
+            by default default
+        """
 
-    Parameters
-    ----------
-    arg1 : type1
-        description of what arg1 'means'
-        for the function's behavior
-    arg2 : type2, optional
-        description arg2
-        by default default
-    
-**In-line commenting**
+For *classes*, this docstring should go directly below the class declaration:
 
+.. code-block:: python
+    class MyClass(Superclass):
+        """
+        docstring goes here
+        """
+        def __init__(self, ...):
+        # Full NumPy docstring not needed here.
+        
+We also adhere to good in-line commenting practices. When a block's function is not
+obvious on its own, add in-line comments with a brief description. For tensor operations, 
+shape annotations are especially helpful where applicable.
 
+~~~~~~~~
 
 Contributing
 ------------
@@ -56,15 +73,17 @@ Follow these steps when making contributions:
        git checkout -b feature-branch
 
 2. Write clean, well-documented code. 
+
 3. Add or update tests in appropriate directory. For instance, if your feature adds a model
 in ``neuralop/models/mymodel.py``, you would add tests to `neuralop/models/tests/test_mymodel.py`
-4. Run the test suite before submitting a pull request:
 
-   .. code-block:: bash
-      
-       pytest neuralop
+4. Run the test suite:
+.. code-block:: bash
+    
+    pytest neuralop
 
-5. Submit a pull request (PR). Ensure your PR clearly communicates what you've changed or added. 
+5. Submit a pull request (PR) on GitHub from your branch to the upstream origin/main. 
+Ensure your PR clearly communicates what you've changed or added. 
 
 
 Extending the Library
@@ -85,12 +104,16 @@ To add a layer:
     This helps both us and you: the simpler it is for new users to understand and adapt your method, 
     the more visibility it will get! 
 
+~~~~~~~~
+
 Debugging and Troubleshooting
 -----------------------------
 
 - Use `torch.set_detect_anomaly(True)` for debugging NaN gradients.
 - Check GPU memory usage with `nvidia-smi`.
 - Ensure dependencies are up to date with `pip list --outdated`.
+
+~~~~~~~~
 
 Contact
 -------
