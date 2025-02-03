@@ -41,26 +41,29 @@ class TheWellDataset:
         base_path = root_dir / f"datasets/{well_dataset_name}/data/"
 
         if download:
-            for split in ['train', 'test']:
+            for split in ['train', 'test', 'valid']:
                 data_path = base_path / split
                 if not data_path.exists():
                     well_download(root_dir,
                                 dataset=well_dataset_name,
                                 split=split,
                                 )
+            # Download per-variable stats.yaml directly from the_well on GitHub
+            # skip for now 
         self._train_db = WellDataset(path=str(base_path / "train"),
                                         n_steps_input=1,
                                         n_steps_output=1,
                                         return_grid=return_grid,
                                         use_normalization=False)
         
-        self._test_db = WellDataset(path=str(base_path / "train"),
+        self._test_db = WellDataset(path=str(base_path / "test"),
                                         n_steps_input=1,
                                         n_steps_output=1,
                                         return_grid=return_grid,
                                         use_normalization=False)
+
         
-        self.normalizer = 
+        self.normalizer = UnitGaussianNormalizer()
         
         
     @property
