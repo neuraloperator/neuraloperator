@@ -7,12 +7,17 @@ class TheWellDataProcessor(DefaultDataProcessor):
     def __init__(self, normalizer):
         super().__init__()
         self.normalizer = normalizer
+    
+    def to(self, device):
+        self.device = device
+        self.normalizer = self.normalizer.to(self.device)
+        return self
         
     def preprocess(self, data_dict, step=0):
         """
         Code adapted from the_well.data.data_formatter.DefaultChannelsFirstFormatter
         """
-        x = data_dict["input_fields"]
+        x = data_dict["input_fields"].to(self.device)
         x = rearrange(x, "b t ... c -> b (t c) ...")
         if "constant_fields" in data_dict:
             flat_constants = rearrange(data_dict["constant_fields"], "b ... c -> b c ...")
@@ -23,7 +28,8 @@ class TheWellDataProcessor(DefaultDataProcessor):
                 ],
                 dim=1,
             )
-        y = data_dict["output_fields"]
+        y = data_dict["output_fields"].to(self.device)
+        y = rearrange(y, "b t ... c -> b (t c) ...")
 
         # TODO - Add warning to output if nan has to be replaced
         # in some cases (staircase), its ok. In others, it's not.
@@ -36,7 +42,7 @@ class TheWellDataProcessor(DefaultDataProcessor):
 
         return data_dict
 
-    def preprocess(self, output, data_dict, step=0):
+    def postprocess(self, output, data_dict, step=0):
         """
         Code adapted from the_well.data.data_formatter.DefaultChannelsFirstFormatter
         """
