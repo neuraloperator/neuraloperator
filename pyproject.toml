@@ -43,6 +43,7 @@ dev = [
     "pytest",
     "flaky",
     "black"
+
 ]
 doc = [
     "matplotlib",
@@ -53,6 +54,7 @@ doc = [
     "sphinx-gallery",
     "tensorly_sphinx_theme",
     "torchtnt",
+    "torch_harmonics==0.7.4"
 ]
 all = [
     "pytest",
@@ -67,4 +69,5 @@ all = [
     "torchtnt",
     "numpy>=1.25",
     "scipy",
+    "torch_harmonics==0.7.4"
 ]
