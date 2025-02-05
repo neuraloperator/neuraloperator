@@ -415,10 +415,14 @@ class SpectralConv(BaseSpectralConv):
             x = x.half()
 
         if self.complex_data:
-            x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
+            # disable autocast on cuda for FFT
+            with torch.autocast(enabled=False, device_type='cuda'):
+                x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
             dims_to_fft_shift = fft_dims
         else: 
-            x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
+            # disable autocast on cuda for FFT
+            with torch.autocast(enabled=False, device_type='cuda'):
+                x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
             # When x is real in spatial domain, the last half of the last dim is redundant.
             # See :ref:`fft_shift_explanation` for discussion of the FFT shift.
             dims_to_fft_shift = fft_dims[:-1] 
@@ -495,9 +499,13 @@ class SpectralConv(BaseSpectralConv):
             out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
         
         if self.complex_data:
-            x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+            # disable autocast on cuda for FFT
+            with torch.autocast(enabled=False, device_type='cuda'):
+                x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
         else:
-            x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+            # disable autocast on cuda for FFT
+            with torch.autocast(enabled=False, device_type='cuda'):
+                x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias
