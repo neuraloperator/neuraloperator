@@ -1,9 +1,5 @@
 import torch
 from ..codano import CODANO
-from ...layers.discrete_continuous_convolution import (
-    EquidistantDiscreteContinuousConv2d,
-)
-from functools import partial
 import pytest
 
 
