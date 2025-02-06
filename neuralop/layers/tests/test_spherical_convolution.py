@@ -1,6 +1,11 @@
 import pytest
 import torch
 from tltorch import FactorizedTensor
+try:
+    import torch_harmonics 
+except ModuleNotFoundError:
+    pytest.skip("Skipping because torch_harmonics is not installed", allow_module_level=True)
+
 from ..spherical_convolution import SphericalConv
 from ..spherical_convolution import SHT
 
