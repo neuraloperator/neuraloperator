@@ -76,10 +76,15 @@ if config.verbose and is_logger:
 # Loading the Darcy flow dataset
 dataset = ActiveMatterDataset(root_dir=Path(config.data.root).expanduser(),
                               train_task='next_step',
-                              eval_task='next_step',
+                              eval_tasks=['next_step', 'autoregression'],
                               first_only=True)
+
+print(dataset.train_db.metadata.n_steps_per_trajectory)
 train_loader = DataLoader(dataset.train_db, batch_size=config.data.batch_size)
-test_loader = DataLoader(dataset.test_db, batch_size=config.data.test_batch_size)
+
+test_loaders = {}
+for mode, db in dataset.test_dbs.items():
+    test_loaders[mode] = DataLoader(db, batch_size=config.data.test_batch_size)
 
 data_processor = dataset.data_processor
 print(data_processor)
@@ -195,7 +200,7 @@ if is_logger:
 # Train the model
 trainer.train(
     train_loader=train_loader,
-    test_loaders={'test': test_loader},
+    test_loaders={'val': test_loaders['next_step']},
     optimizer=optimizer,
     scheduler=scheduler,
     regularizer=False,
@@ -203,5 +208,11 @@ trainer.train(
     eval_losses=eval_losses,
 )
 
+losses = trainer.evaluate(eval_losses,
+                 test_loaders["autoregression"],
+                 log_prefix="autoreg",
+                 mode="autoregression",
+                 max_steps=dataset.test_dbs["autoregression"].metadata.n_steps_per_trajectory[0])
+print(f"Autoregressive eval losses: {losses}")
 if config.wandb.log and is_logger:
     wandb.finish()

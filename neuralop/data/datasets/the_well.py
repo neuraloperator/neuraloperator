@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Literal
+from typing import Literal, List
 import yaml
 
 import torch
@@ -46,7 +46,7 @@ class TheWellDataset:
                  root_dir: Path, 
                  well_dataset_name : str,
                  train_task: Literal['next_step', 'rollout']='next_step',
-                 eval_task: Literal['next_step', 'rollout']='next_step',
+                 eval_tasks: List[Literal['next_step', 'rollout']]=['next_step'],
                  download: bool=True,
                  first_only: bool=True,
                  ):
@@ -76,12 +76,20 @@ class TheWellDataset:
                                         n_steps_output=n_steps_output,
                                         return_grid=False,
                                         use_normalization=False)
+    
+        self._test_dbs = {}
         
-        self._test_db = WellDataset(path=str(base_path / "test"),
-                                        n_steps_input=n_steps_input,
-                                        n_steps_output=n_steps_output,
-                                        return_grid=False,
-                                        use_normalization=False)
+        if "next_step" in eval_tasks:
+            self._test_dbs["next_step"] = WellDataset(path=str(base_path / "test"),
+                                            n_steps_input=n_steps_input,
+                                            n_steps_output=n_steps_output,
+                                            return_grid=False,
+                                            use_normalization=False)
+        if "autoregression" in eval_tasks:
+            self._test_dbs["autoregression"] = WellDataset(path=str(base_path / "test"),
+                                            full_trajectory_mode=True,
+                                            return_grid=False,
+                                            use_normalization=False)
         
         stats_path = base_path / "stats.yaml"
         with open(stats_path, "r") as f:
@@ -127,8 +135,8 @@ class TheWellDataset:
         return self._train_db
     
     @property
-    def test_db(self):
-        return self._test_db
+    def test_dbs(self):
+        return self._test_dbs
     
     @property
     def data_processor(self):
@@ -138,11 +146,11 @@ class ActiveMatterDataset(TheWellDataset):
     def __init__(self, 
                  root_dir, 
                  train_task = 'next_step', 
-                 eval_task = 'next_step', 
+                 eval_tasks = ['next_step'], 
                  download = True, 
                  first_only = True):
         super().__init__(root_dir, well_dataset_name="active_matter", 
                          train_task=train_task,
-                         eval_task=eval_task,
+                         eval_tasks=eval_tasks,
                          download=download,
                          first_only=first_only)

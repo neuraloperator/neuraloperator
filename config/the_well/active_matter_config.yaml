@@ -45,7 +45,7 @@ default: &DEFAULT
 
   # Optimizer
   opt:
-    n_epochs: 500
+    n_epochs: 2
     learning_rate: 3e-4
     training_loss: 'h1'
     weight_decay: 1e-4
