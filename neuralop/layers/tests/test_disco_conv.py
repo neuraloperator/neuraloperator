@@ -1,12 +1,16 @@
 import pytest
 import torch
-from torch import nn
-from torch.testing import assert_close
+
+# Skip tests if torch_harmonics is not installed
+try:
+    import torch_harmonics 
+except ModuleNotFoundError:
+    pytest.skip("Skipping because torch_harmonics is not installed", allow_module_level=True)
 
 from ..discrete_continuous_convolution import (DiscreteContinuousConv2d, 
-                                               DiscreteContinuousConvTranspose2d, 
-                                               EquidistantDiscreteContinuousConv2d,
-                                               EquidistantDiscreteContinuousConvTranspose2d)
+                                            DiscreteContinuousConvTranspose2d, 
+                                            EquidistantDiscreteContinuousConv2d,
+                                            EquidistantDiscreteContinuousConvTranspose2d)
 
 from ..embeddings import regular_grid_2d
 
@@ -51,7 +55,7 @@ def test_regular_disco_conv2d(conv_type, groups):
     assert res.shape == (batch_size, out_channels, side_length_out ** 2)
 
 @pytest.mark.parametrize('conv_type', [EquidistantDiscreteContinuousConv2d,
-                                       EquidistantDiscreteContinuousConvTranspose2d])
+                                    EquidistantDiscreteContinuousConvTranspose2d])
 @pytest.mark.parametrize('groups', [1,3])
 def test_equidistant_disco_conv2d(conv_type, groups):
 

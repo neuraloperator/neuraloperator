@@ -9,10 +9,14 @@ from typing import Union, List, Optional, Tuple
 from functools import partial
 
 # import the base class from torch-harmonics
-from torch_harmonics.quadrature import _precompute_grid
-from torch_harmonics.filter_basis import (PiecewiseLinearFilterBasis, 
-                                          MorletFilterBasis, 
-                                          ZernikeFilterBasis)
+try:
+    from torch_harmonics.quadrature import _precompute_grid
+    from torch_harmonics.filter_basis import (PiecewiseLinearFilterBasis, 
+                                            MorletFilterBasis, 
+                                            ZernikeFilterBasis)
+except ModuleNotFoundError:
+    print("Error: trying to import DISCO convolutions without optional dependency torch-harmonics. ",
+          "Please install with `pip install torch-harmonics` and retry.")
 
 basis_type_classes = {
     'piecewise_linear': PiecewiseLinearFilterBasis,
