@@ -200,7 +200,7 @@ class Trainer:
         
         for epoch in range(self.start_epoch, self.n_epochs):
             train_err, avg_loss, avg_lasso_loss, epoch_train_time =\
-                  self.train_one_epoch(epoch, train_loader, training_loss)
+                  self.train_one_epoch(epoch, train_loader, optimizer, training_loss)
             epoch_metrics = dict(
                 train_err=train_err,
                 avg_loss=avg_loss,
@@ -228,7 +228,7 @@ class Trainer:
 
         return epoch_metrics
 
-    def train_one_epoch(self, epoch, train_loader, training_loss):
+    def train_one_epoch(self, epoch, train_loader, optimizer, training_loss):
         """train_one_epoch trains self.model on train_loader
         for one epoch and returns training metrics
 
@@ -238,14 +238,17 @@ class Trainer:
             epoch number
         train_loader : torch.utils.data.DataLoader
             data loader of train examples
-        test_loaders : dict
-            dict of test torch.utils.data.DataLoader objects
+        optimizer : torch.optim.Optimizer
+            optimizer to use in training
+        training_loss : callable
+            training objective
 
         Returns
         -------
         all_errors
             dict of all eval metrics for the last epoch
         """
+        self.optimizer = optimizer
         self.on_epoch_start(epoch)
         avg_loss = 0
         avg_lasso_loss = 0
