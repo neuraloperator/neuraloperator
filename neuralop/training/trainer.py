@@ -534,6 +534,9 @@ class Trainer:
             keyed "loss_name": step_loss_value for each loss name
         outputs: torch.Tensor | None
             optionally returns batch outputs
+
+        TODO@DAVID: manually overwrite x=out 
+        also manually slice y in the trainer
         """
         eval_step_losses = {loss_name: 0. for loss_name in eval_losses.keys()}
         eval_rollout_losses = {loss_name: 0. for loss_name in eval_losses.keys()}
