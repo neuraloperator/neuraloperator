@@ -86,3 +86,12 @@ def test_CODANO(
 
     # Test backward pass
     out.sum().backward()
+    
+    # testing for new varibales 
+    if use_positional_encoding:
+        model._extend_positional_encoding("T")
+        input_var_ids = input_var_ids + ["T"]
+        
+    in_data = torch.randn(2, new_n_var + 1, 64, 64)
+    out = model(in_data, static_channels, input_var_ids)
+    assert list(out.shape) == [2, new_n_var + 1, 64, 64]

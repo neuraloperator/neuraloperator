@@ -381,7 +381,7 @@ class CODANO(nn.Module):
         new_var_ids : list[str]
             IDs of the new variables to add positional encoding.
         """
-        for i in range(new_var_ids):
+        for i in new_var_ids:
             self.positional_encoding[i] = nn.Parameter(
                 torch.randn(
                     1,
