@@ -161,7 +161,7 @@ If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
    @misc{kossaifi2024neural,
       title={A Library for Learning Neural Operators}, 
       author={Jean Kossaifi and Nikola Kovachki and 
-      Zongyi Li and Davit Pitt and 
+      Zongyi Li and David Pitt and 
       Miguel Liu-Schiaffini and Robert Joseph George and 
       Boris Bonev and Kamyar Azizzadenesheli and 
       Julius Berner and Anima Anandkumar},
