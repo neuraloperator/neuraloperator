@@ -417,6 +417,243 @@ class H1Loss(object):
         """
         return self.rel(y_pred, y, quadrature=quadrature)
 
+class HdivLoss(object):
+    """
+    HdivLoss provides the Hdiv Sobolev norm between
+    two d-dimensional discretized functions.
+
+    .. note :: 
+        In function space, the Sobolev norm is an integral over the
+        entire domain. To ensure the norm converges to the integral,
+        we scale the matrix norm by quadrature weights along each spatial dimension.
+
+        If no quadrature is passed at a call to HdivLoss, we assume a regular 
+        discretization and take ``1 / measure`` as the quadrature weights. 
+
+    Parameters
+    ----------
+    d : int, optional
+        dimension of input functions, by default 1
+    measure : float or list, optional
+        measure of the domain, by default 1.0
+        either single scalar for each dim, or one per dim
+
+        .. note::
+
+        To perform quadrature, ``HdivLoss`` scales ``measure`` by the size
+        of each spatial dimension of ``x``, and multiplies them with 
+        ||x-y||, such that the final norm is a scaled average over the spatial
+        dimensions of ``x``. 
+
+    reduction : str, optional
+        whether to reduce across the batch and channel dimension
+        by summing ('sum') or averaging ('mean')
+
+        .. warning : 
+
+            HdivLoss always averages over the spatial dimensions. 
+            `reduction` only applies to the batch and channel dimensions.
+    fix_x_bnd : bool, optional
+        whether to fix finite difference derivative
+        computation on the x boundary, by default False
+    fix_y_bnd : bool, optional
+        whether to fix finite difference derivative
+        computation on the y boundary, by default False
+    fix_z_bnd : bool, optional
+        whether to fix finite difference derivative
+        computation on the z boundary, by default False
+    """
+    def __init__(self, d=1, measure=1., reduction='sum', fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
+        super().__init__()
+
+        assert d > 0 and d < 4, "Currently only implemented for 1, 2, and 3-D."
+
+        self.d = d
+        self.fix_x_bnd = fix_x_bnd
+        self.fix_y_bnd = fix_y_bnd
+        self.fix_z_bnd = fix_z_bnd
+        
+        allowed_reductions = ["sum", "mean"]
+        assert reduction in allowed_reductions,\
+        f"error: expected `reduction` to be one of {allowed_reductions}, got {reduction}"
+        self.reduction = reduction
+
+        if isinstance(measure, float):
+            self.measure = [measure]*self.d
+        else:
+            self.measure = measure
+    
+    @property
+    def name(self):
+        return f"Hdiv_{self.d}DLoss"
+     
+    def compute_terms(self, x, y, quadrature):
+        """compute_terms computes the necessary
+        finite-difference derivative terms for computing
+        the Hdiv norm: it will return x and y along with their
+        divergence terms.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            inputs
+        y : torch.Tensor
+            targets
+        quadrature : int or list
+            quadrature weights
+
+        """
+        dict_x = {}
+        dict_y = {}
+
+        if self.d == 1:
+            dict_x[0] = x
+            dict_y[0] = y
+
+            div_x = central_diff_1d(x, quadrature[0], fix_x_bnd=self.fix_x_bnd)
+            div_y = central_diff_1d(y, quadrature[0], fix_x_bnd=self.fix_x_bnd)
+ 
+        elif self.d == 2:
+            dict_x[0] = torch.flatten(x, start_dim=-2)
+            dict_y[0] = torch.flatten(y, start_dim=-2)
+
+            x_x, x_y = central_diff_2d(x, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd)
+            y_x, y_y = central_diff_2d(y, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd)
+
+            div_x = torch.flatten(x_x + x_y, start_dim=-2)
+            div_y = torch.flatten(y_x + y_y, start_dim=-2)
+        
+        else:
+            dict_x[0] = torch.flatten(x, start_dim=-3)
+            dict_y[0] = torch.flatten(y, start_dim=-3)
+
+            x_x, x_y, x_z = central_diff_3d(x, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd, fix_z_bnd=self.fix_z_bnd)
+            y_x, y_y, y_z = central_diff_3d(y, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd, fix_z_bnd=self.fix_z_bnd)
+
+            div_x = torch.flatten(x_x + x_y + x_z, start_dim=-3)
+            div_y = torch.flatten(y_x + y_y + y_z, start_dim=-3)
+        
+        dict_x[1] = div_x
+        dict_y[1] = div_y
+        
+        return dict_x, dict_y
+
+    def uniform_quadrature(self, x):
+        """
+        uniform_quadrature creates quadrature weights
+        scaled by the spatial size of ``x`` to ensure that 
+        ``LpLoss`` computes the average over spatial dims. 
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            input data
+
+        Returns
+        -------
+        quadrature : list
+            list of quadrature weights per-dim
+        """
+        quadrature = [0.0]*self.d
+        for j in range(self.d, 0, -1):
+            quadrature[-j] = self.measure[-j]/x.size(-j)
+        
+        return quadrature
+    
+    def reduce_all(self, x):
+        """
+        reduce x across the batch according to `self.reduction`
+
+        Params
+        ------
+        x: torch.Tensor
+            inputs
+        """
+        if self.reduction == 'sum':
+            x = torch.sum(x)
+        else:
+            x = torch.mean(x)
+        
+        return x
+        
+    def abs(self, x, y, quadrature=None):
+        """absolute Hdiv norm
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            inputs
+        y : torch.Tensor
+            targets
+        quadrature : float or list, optional
+            quadrature constant for reduction along each dim, by default None
+        """
+        #Assume uniform mesh
+        if quadrature is None:
+            quadrature = self.uniform_quadrature(x)
+        else:
+            if isinstance(quadrature, float):
+                quadrature = [quadrature]*self.d
+            
+        dict_x, dict_y = self.compute_terms(x, y, quadrature)
+
+        const = math.prod(quadrature)
+        diff = const*torch.norm(dict_x[0] - dict_y[0], p=2, dim=-1, keepdim=False)**2  #compute L2 norm of x-y
+
+        diff += const*torch.norm(dict_x[1] - dict_y[1], p=2, dim=-1, keepdim=False)**2
+        
+        diff = diff**0.5
+
+        diff = self.reduce_all(diff).squeeze()
+            
+        return diff
+        
+    def rel(self, x, y, quadrature=None):
+        """relative Hdiv norm
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            inputs
+        y : torch.Tensor
+            targets
+        quadrature : float or list, optional
+            quadrature constant for reduction along each dim, by default None
+        """
+        #Assume uniform mesh
+        if quadrature is None:
+            quadrature = self.uniform_quadrature(x)
+        else:
+            if isinstance(quadrature, float):
+                quadrature = [quadrature]*self.d
+        
+        dict_x, dict_y = self.compute_terms(x, y, quadrature)
+
+        diff = torch.norm(dict_x[0] - dict_y[0], p=2, dim=-1, keepdim=False)**2
+        ynorm = torch.norm(dict_y[0], p=2, dim=-1, keepdim=False)**2
+
+        diff += torch.norm(dict_x[1] - dict_y[1], p=2, dim=-1, keepdim=False) ** 2
+        ynorm += torch.norm(dict_y[1], p=2, dim=-1, keepdim=False) ** 2
+
+        diff = (diff**0.5)/(ynorm**0.5)
+
+        diff = self.reduce_all(diff).squeeze()
+            
+        return diff
+
+    def __call__(self, y_pred, y, quadrature=None, **kwargs):
+        """
+        Parameters
+        ----------
+        y_pred : torch.Tensor
+            inputs
+        y : torch.Tensor
+            targets
+        quadrature : float or list, optional
+            normalization constant for reduction, by default None
+        """
+        return self.rel(y_pred, y, quadrature=quadrature)
+
 class PointwiseQuantileLoss(object):
     """PointwiseQuantileLoss computes Quantile Loss described in [1]_
 

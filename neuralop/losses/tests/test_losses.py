@@ -2,7 +2,7 @@ import math
 import torch
 from torch.testing import assert_close
 
-from ..data_losses import LpLoss, H1Loss
+from ..data_losses import LpLoss, H1Loss, HdivLoss
 from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d
 from neuralop.layers.embeddings import regular_grid_nd
 
@@ -66,6 +66,24 @@ def test_h1loss():
     # norm is 1 averaged in space
     mean_abs_h1 = h1.abs(zeros, ones)
     assert mean_abs_h1.item() == 1.
+
+def test_hdivloss():
+    hdiv = HdivLoss(d=2, reduction='mean')
+    x = torch.randn(10, 4, 4)
+
+    abs_0 = hdiv.abs(x,x)
+    assert abs_0.item() == 0.
+
+    zeros = torch.zeros_like(x)
+    ones = torch.ones_like(x)
+
+    # Hdiv w/o normalizing constant, 
+    # finite-difference derivatives of both sides are zero
+    # sum of items in each element in ones is 16
+    # norm is 1 averaged in space
+    mean_abs_hdiv = hdiv.abs(zeros, ones)
+    assert mean_abs_hdiv.item() == 1.
+
 
 def test_central_diff1d():
     # assert f(x) = x
