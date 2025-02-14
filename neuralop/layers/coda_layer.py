@@ -386,8 +386,9 @@ class CODALayer(nn.Module):
         if self.multi_head_proj is not None:
             attention = self.multi_head_proj(attention)
         attention = self.attention_normalizer(attention + tokens)
-        attention_normalized = self.mixer_in_normalizer(attention)
-        output = self.mixer(attention_normalized, output_shape=input_shape)
+        output = self.mixer_in_normalizer(attention)
+        for i in range(self.mixer.n_layers):
+            output = self.mixer(output, index=i, output_shape=input_shape)
         output = self.mixer_out_normalizer(output) + attention
 
         # reshape from shape (b*t) d h w... to b (t d) h w ...
@@ -446,8 +447,9 @@ class CODALayer(nn.Module):
             t * attention.size(2),
             *attention.shape[-self.n_dim:])
 
-        attention_normalized = self.mixer_in_normalizer(attention)
-        output = self.mixer(attention_normalized, output_shape=input_shape)
+        output = self.mixer_in_normalizer(attention)
+        for i in range(self.mixer.n_layers):
+            output = self.mixer(output, index=i, output_shape=input_shape)
 
         output = self.mixer_out_normalizer(output) + attention
 
