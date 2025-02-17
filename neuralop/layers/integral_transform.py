@@ -188,12 +188,7 @@ class IntegralTransform(nn.Module):
 
         if weights is not None:
             assert weights.ndim == 1, "Weights must be of dimension 1 in all cases"
-            nbr_weights = weights[neighbors["neighbors_index"]]
-            # repeat weights along batch dim if batched
-            if batched:
-                nbr_weights = nbr_weights.repeat(
-                    [batch_size] + [1] * nbr_weights.ndim
-                )
+            nbr_weights = weights[neighbors["neighbors_index"]]        
             rep_features = nbr_weights * rep_features
             reduction = "sum"
         else:
