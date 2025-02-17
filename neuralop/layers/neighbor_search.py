@@ -22,7 +22,7 @@ class NeighborSearch(nn.Module):
         Whether to use open3d or native PyTorch implementation
         NOTE: open3d implementation requires 3d data
     """
-    def __init__(self, use_open3d=True):
+    def __init__(self, use_open3d=True, return_norm=False):
         super().__init__()
         if use_open3d and open3d_built: # slightly faster, works on GPU in 3d only
             self.search_fn = FixedRadiusSearch()
@@ -30,6 +30,7 @@ class NeighborSearch(nn.Module):
         else: # slower fallback, works on GPU and CPU
             self.search_fn = native_neighbor_search
             self.use_open3d = False
+        self.return_norm = return_norm
         
         
     def forward(self, data, queries, radius):
@@ -71,11 +72,11 @@ class NeighborSearch(nn.Module):
             return_dict['neighbors_row_splits'] = search_return.neighbors_row_splits.long()
 
         else:
-            return_dict = self.search_fn(data, queries, radius)
+            return_dict = self.search_fn(data, queries, radius, self.return_norm)
         
         return return_dict
 
-def native_neighbor_search(data: torch.Tensor, queries: torch.Tensor, radius: float):
+def native_neighbor_search(data: torch.Tensor, queries: torch.Tensor, radius: float, return_norm: bool=False):
     """
     Native PyTorch implementation of a neighborhood search
     between two arbitrary coordinate meshes.
@@ -93,11 +94,18 @@ def native_neighbor_search(data: torch.Tensor, queries: torch.Tensor, radius: fl
 
     # compute pairwise distances
     dists = torch.cdist(queries, data).to(queries.device) # shaped num query points x num data points
-    in_nbr = torch.where(dists <= radius, 1., 0.) # i,j is one if j is i's neighbor
+    in_nbr = torch.where(dists <= radius, dists, 0.) # i,j is 1 if j is i's neighbor
     nbr_indices = in_nbr.nonzero()[:,1:].reshape(-1,) # only keep the column indices
+    if return_norm:
+        radii = in_nbr[nbr_indices]
+    nbr_indices = torch.where(nbr_indices > 0, 1., 0.,)
     nbrhd_sizes = torch.cumsum(torch.sum(in_nbr, dim=1), dim=0) # num points in each neighborhood, summed cumulatively
     splits = torch.cat((torch.tensor([0.]).to(queries.device), nbrhd_sizes))
     nbr_dict = {}
     nbr_dict['neighbors_index'] = nbr_indices.long().to(queries.device)
     nbr_dict['neighbors_row_splits'] = splits.long()
+
+    if return_norm:
+        nbr_dict['weights'] = radii
+
     return nbr_dict
