@@ -10,6 +10,7 @@ from ..layers.embeddings import SinusoidalEmbedding
 from ..layers.fno_block import FNOBlocks
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.gno_block import GNOBlock
+from ..layers.gno_weighting_functions import dispatch_weighting_fn
 
 class GINO(BaseModel):
     """GINO: Geometry-informed Neural Operator. Learns a mapping between
@@ -33,6 +34,12 @@ class GINO(BaseModel):
             geometric dimension of input/output queries, by default 3
         gno_radius : float, optional
             radius in input/output space for GNO neighbor search, by default 0.033
+        gno_weight_function : str, optional
+            Choice of weighting function to use in the output GNO for 
+            Mollified Graph Neural Operator-based models
+        gno_weight_function_scale : float, optional
+            Factor by which to scale weights from GNO weighting function
+            by default 1
         in_gno_transform_type : str, optional
             transform type parameter for input GNO, by default 'linear'
             see neuralop.layers.gno_block for more details
@@ -150,6 +157,8 @@ class GINO(BaseModel):
         gno_radius=0.033,
         in_gno_transform_type='linear',
         out_gno_transform_type='linear',
+        gno_weight_function=None,
+        gno_weight_function_scale=1,
         gno_pos_embed_type='transformer',
         fno_in_channels=3,
         fno_n_modes=(16, 16, 16), 
@@ -254,6 +263,8 @@ class GINO(BaseModel):
             pos_embedding_channels=gno_embed_channels,
             pos_embedding_max_positions=gno_embed_max_positions,
             radius=gno_radius,
+            reduction='mean',
+            weighting_fn=None,
             channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=in_gno_transform_type,
@@ -304,12 +315,15 @@ class GINO(BaseModel):
         )
 
         ### output GNO
-
+        if gno_weight_function is not None:
+            weight_fn = dispatch_weighting_fn(gno_weight_function, sq_radius=gno_radius**2, scale=gno_weight_function_scale)
         self.gno_out = GNOBlock(
             in_channels=fno_hidden_channels, # number of channels in f_y
             out_channels=fno_hidden_channels,
             coord_dim=self.gno_coord_dim,
             radius=self.gno_radius,
+            reduction='sum',
+            weighting_fn=weight_fn,
             pos_embedding_type=gno_pos_embed_type,
             pos_embedding_channels=gno_embed_channels,
             pos_embedding_max_positions=gno_embed_max_positions,

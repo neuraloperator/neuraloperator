@@ -1,3 +1,4 @@
+from functools import partial
 import torch
 
 def bump_cutoff(x, radius=1., scale=1., eps=1e-7):
@@ -63,3 +64,37 @@ def sigmoid_cutoff(x, radius=1., scale=1.):
     denom_3 = torch.e ** (50 * (x - radius + 0.1)) + 1
 
     return scale * 1 / (1 / denom_1 - 1 / denom_2) * (1 / denom_3 - 1 / denom_2)
+
+WEIGHTING_FN_REGISTRY = {
+    "linear": linear_cutoff,
+    "bump": bump_cutoff,
+    "tanh": tanh_cutoff,
+    "cubic": cubic_cutoff,
+    "cos": cos_cutoff,
+    "quadr": quadr_cutoff,
+    "bump_sqrt": bump_sqrt_cutoff,
+    "quartic": quartic_cutoff,
+    "quartic_sqrt": quartic_sqrt_cutoff,
+    "octic": octic_cutoff,
+    "octic_sqrt": octic_sqrt_cutoff,
+    "sigmoid": sigmoid_cutoff
+}
+
+def dispatch_weighting_fn(weight_function_name : str, sq_radius: float, scale: float):
+    '''
+    Select a GNO weighting function for use in output GNO 
+    of a Mollified Graph Neural Operator-based model. See [1]_ (add later)
+
+    Parameters
+    ----------
+    weight_function_name : str Literal
+        name of weighting function to use, keyed to ``WEIGHT_FUNCTION_REGISTRY`` above
+    sq_radius : float
+        squared radius of GNO neighborhoods for Nyström approximation
+    scale : float
+        factor by which to scale all weights
+    '''
+    base_func = WEIGHTING_FN_REGISTRY.get(weight_function_name)
+    if base_func is None:
+        raise NotImplementedError(f"weighting function should be one of {list(WEIGHTING_FN_REGISTRY.keys())}, got {weight_function_name}")
+    return partial(base_func, radius=sq_radius, scale=scale)
