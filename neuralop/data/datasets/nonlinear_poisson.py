@@ -8,6 +8,8 @@ import pickle
 from torch.utils.data import DataLoader
 from .dict_dataset import DictDataset
 
+from neuralop.data.transforms.data_processors import DataProcessor
+
 
 path = Path(__file__).resolve().parent.joinpath('data')
 
@@ -171,6 +173,155 @@ def load_nonlinear_poisson_pt(
     test_dataloader = DataLoader(DictDataset(test_data)) 
     
     return train_dataloader, test_dataloader, None
+
+class SubsamplingGINODataProcessor(DataProcessor):
+    """SubsamplingGINODataProcessor does the exact same thing
+    as a DefaultDataProcessor with the addition of randomly subsampling
+    points in the model's domain and codomain. Written specifically
+    for the forward call signature of neuralop.models.GINO
+    """
+    def __init__(
+        self, device='cpu', 
+        in_normalizer=None, 
+        out_normalizer=None, 
+        positional_encoding=None, 
+        input_min=100,
+        input_max=1000,
+        input_sub_level=None, 
+        output_sub_level=None
+    ):
+        """A simple processor to pre/post process data before training/inferencing a model.
+
+        Parameters
+        ----------
+        in_normalizer : Transform, optional, default is None
+            normalizer (e.g. StandardScaler) for the input samples
+        out_normalizer : Transform, optional, default is None
+            normalizer (e.g. StandardScaler) for the target and predicted samples
+        positional_encoding : Processor, optional, default is None
+            class that appends a positional encoding to the input
+        input_sub_level : float, optional, default is None
+            level at which to subsample points in the domain (between 0 and 1)
+        output_sub_level : float, optional, default is None
+            level at which to subsample points in the codomain (between 0 and 1)
+        """
+        super().__init__()
+        self.in_normalizer = in_normalizer
+        self.out_normalizer = out_normalizer
+        self.positional_encoding = positional_encoding
+        self.input_sub_level = input_sub_level
+        if not output_sub_level:
+            output_sub_level = 1
+        self.output_sub_level = output_sub_level
+        self.device = device
+        self.input_min = input_min
+        self.input_max = input_max
+
+    def wrap(self, model):
+        self.model = model
+        return self
+
+    def to(self, device):
+        if self.in_normalizer is not None:
+            self.in_normalizer = self.in_normalizer.to(device)
+        if self.out_normalizer is not None:
+            self.out_normalizer = self.out_normalizer.to(device)
+        self.device = device
+        return self
+
+    def preprocess(self, data_dict, batched=True):
+        # inputs of shape (_, n_in, in_dim)
+        x = data_dict["x"].to(self.device)
+        input_geom = data_dict["input_geom"].to(self.device)
+
+        if input_geom.ndim == 4:
+            input_geom = input_geom.squeeze(0)
+        
+        if x.ndim == 4:
+            x = x.squeeze(0)
+
+        if self.input_sub_level is not None:
+            # Sample set percentage
+            n_in = int(input_geom.shape[1] * self.input_sub_level)
+        else:
+            # Sample random in between range
+            n_in = random.randint(self.input_min, self.input_max)
+        
+        input_indices = random.sample(list(range(input_geom.shape[-2])), k=n_in)
+        x = x[:, input_indices, ...]
+        input_geom = input_geom[:, input_indices, ...]
+
+        # outputs of shape (_, n_out, out_dim)
+        output_queries = data_dict["output_queries"].to(self.device)
+
+        if "output_source_terms" in data_dict.keys():
+            output_source_terms = data_dict["output_source_terms"].to(self.device)
+        else:
+            output_source_terms = None
+
+        y = data_dict["y"].to(self.device)
+        if 'y_bound' in data_dict.keys():
+            y_bound = data_dict["y_bound"].to(self.device)
+
+        n_bound = data_dict["num_boundary"].item()
+        n_bound_out = n_bound * self.output_sub_level
+        n_domain_out = (output_queries.shape[1] - n_bound) * self.output_sub_level
+
+        if n_domain_out < 0:
+            n_bound = 0
+            n_bound_out = 0
+            n_domain_out = output_queries.shape[1] * self.output_sub_level
+
+        output_indices_bound = random.sample(list(range(0, n_bound)), k=int(n_bound_out))
+        output_indices_domain = random.sample(list(range(n_bound, output_queries.shape[1])), k=int(n_domain_out))
+        output_indices = output_indices_bound + output_indices_domain
+
+        if y.shape[-2] >= max(output_indices):
+            y = y[:, output_indices, ...]
+            if 'y_bound' in data_dict.keys():
+                y_bound = y_bound[:, ]
+        output_queries = output_queries[:, output_indices, ...]
+
+        if output_source_terms:
+            output_source_terms = output_source_terms[:, output_indices, ...]
+
+        if self.in_normalizer is not None:
+            x = self.in_normalizer.transform(x)
+        if self.positional_encoding is not None:
+            x = self.positional_encoding(x, batched=batched)
+        if self.out_normalizer is not None and self.train:
+            y = self.out_normalizer.transform(y)
+
+        data_dict["x"] = x
+        data_dict["y"] = y.squeeze(0)
+        data_dict["y_domain"] = data_dict["y_domain"].squeeze(0).to(self.device)
+        data_dict["input_geom"] = input_geom
+        data_dict["output_queries"] = output_queries.squeeze(0)
+        data_dict["output_queries_domain"] = data_dict['output_queries_domain'].to(self.device).squeeze(0)
+        if 'output_source_terms_domain' in data_dict.keys():
+            data_dict["output_source_terms_domain"] = data_dict['output_source_terms_domain'].to(self.device)
+        data_dict["output_source_terms"] = output_source_terms
+
+        if 'coefs' in data_dict.keys():
+            data_dict['coefs'] = data_dict['coefs'].to(self.device).squeeze(0)
+
+        data_dict['latent_queries'] = data_dict['latent_queries'].to(self.device).squeeze(0)
+
+        return data_dict
+
+    def postprocess(self, output, data_dict):
+        y = data_dict["y"]
+        if self.out_normalizer and not self.train:
+            output = self.out_normalizer.inverse_transform(output)
+            y = self.out_normalizer.inverse_transform(y)
+        data_dict["y"] = y
+        return output, data_dict
+
+    def forward(self, **data_dict):
+        data_dict = self.preprocess(data_dict)
+        output = self.model(data_dict["x"])
+        output = self.postprocess(output)
+        return output, data_dict
 
 if __name__ == "__main__":
     train_data = load_nonlinear_poisson_pt(str(path))
