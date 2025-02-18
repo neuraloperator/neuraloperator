@@ -126,11 +126,9 @@ else:
     raise ValueError(f"Got scheduler={config.opt.scheduler}")
 
 # Creating the losses
-equation_loss = PoissonEqnLoss(device=device)
-boundary_loss = PoissonBoundaryLoss(device=device)
 
 # with default measure, 2D l2 is 2D MSE
-mse_loss = LpLoss(d=2, p=2, measure=1.)
+mse_loss = LpLoss(d=1, p=2, measure=1.)
 
 training_loss = config.opt.training_loss
 if not isinstance(training_loss, (tuple, list)):
@@ -138,22 +136,16 @@ if not isinstance(training_loss, (tuple, list)):
 
 losses = []
 weights = []
-for loss in training_loss:
-    # Append loss
-    if loss == 'mse':
-        losses.append(mse_loss)
-    elif loss == 'equation':
-        losses.append(equation_loss)
-    elif loss == 'boundary':
-        losses.append(boundary_loss)
-    else:
-        raise ValueError(f'Training_loss={loss} is not supported.')
 
-    # Append loss weight
-    if "loss_weights" in config.opt:
-        weights.append(config.opt.loss_weights.get(loss, 1.))
-    else:
-        weights.append(1.)
+if 'mse' in training_loss:
+    losses.append(mse_loss)
+    weights.append(config.opt.loss_weights.get('mse', 1.))
+if 'equation' in training_loss:
+    equation_loss = PoissonEqnLoss(interior_weight=config.opt.loss_weights.get('interior', 1.), 
+                                    boundary_weight=config.opt.loss_weights.get('boundary', 1.),
+                                    diff_method=config.opt.get('pino_method', 'autograd'))
+    losses.append(equation_loss)
+    weights.append(1)
 
 train_loss = WeightedSumLoss(losses=losses, weights=weights)
 #train_loss = WeightedSumLoss(losses=losses, weights=weights, return_individual=True, compute_grads=True)

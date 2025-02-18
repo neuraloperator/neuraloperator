@@ -8,7 +8,7 @@ import pickle
 from torch.utils.data import DataLoader
 from .dict_dataset import DictDataset
 
-from neuralop.data.transforms.data_processors import DataProcessor
+from neuralop.data.transforms.data_processors import DefaultDataProcessor
 
 
 path = Path(__file__).resolve().parent.joinpath('data')
@@ -70,7 +70,10 @@ def load_nonlinear_poisson_pt(
         n_out=6000,
         n_eval=6000,
         n_bound = 1024,
-        out_sub_level=None,
+        input_min_sample_points=None,
+        input_max_sample_points=None,
+        input_subsample_level=None,
+        output_subsample_level=None,
         train_out_res=None
         ):
     try:
@@ -119,13 +122,16 @@ def load_nonlinear_poisson_pt(
             out_source_bound = torch.tensor(instance['val_source_terms_boundary'][:n_bound], dtype=torch.float32)
             y_bound = torch.tensor(instance['val_values_boundary'][:n_bound], dtype=torch.float32)
 
-            out_p = torch.cat((out_p_bound, out_p_domain))
+            out_p_bound.requires_grad = True
             out_source = torch.cat((out_source_bound, out_source_domain))
-            y = torch.cat((y_bound, y_domain))
+            #y = torch.cat((y_bound, y_domain))
         else:
-            out_p = torch.tensor(instance['val_points_domain'][:n_eval], dtype=torch.float32)
-            out_source = torch.tensor(instance['val_source_terms_domain'][:n_eval], dtype=torch.float32)
-            y = torch.tensor(instance['val_values_domain'][:n_eval], dtype=torch.float32)
+            # TODO: FIX  train/eval different points passed
+            out_p_bound = None
+            out_p_domain = torch.tensor(instance['val_points_domain'][:n_eval], dtype=torch.float32)
+            out_source_domain = torch.tensor(instance['val_source_terms_domain'][:n_eval], dtype=torch.float32)
+            y_domain = torch.tensor(instance['val_values_domain'][:n_eval], dtype=torch.float32)
+            y_bound = None
 
         f_f = torch.cat((torch.tensor(instance['train_source_terms_boundary'][:n_in], dtype=torch.float32), f_f))
         f_g = torch.cat((torch.tensor(instance['train_bc_boundary'][:n_in], dtype=torch.float32), f_g))
@@ -136,7 +142,6 @@ def load_nonlinear_poisson_pt(
         f_g = f_g.unsqueeze(dim=-1)
         f_dist = f_dist.unsqueeze(dim=-1)
 
-        y = y.unsqueeze(dim=-1)
 
         f = torch.cat((f_f, f_g, f_dist), dim=-1)
         latent_queries = generate_latent_queries(query_res=query_res,
@@ -144,21 +149,29 @@ def load_nonlinear_poisson_pt(
                                                 )
         
         data_dict = {'x': f, 
+                    # input coords
                     'input_geom': input_geom,
+                    # latent grid
                     'latent_queries': latent_queries,
+                    # domain info
                     'output_queries_domain': out_p_domain,
                     'output_source_terms_domain': out_source_domain,
                     'y_domain': y_domain,
-                    'output_queries_bound': out_p_bound,
-                    'output_source_terms_bound': out_source_bound,
-                    'y_bound': y_bound,
-                    'output_queries': out_p,
-                    'output_source_terms': out_source,
-                    'y': y.unsqueeze(0),
+                    # boundary info
+                    #'output_queries_bound': out_p_bound,
+                    #'output_source_terms_bound': out_source_bound,
+                    #'y_bound': y_bound,
+                    #'output_source_terms': out_source,
                     'coefs': instance['coefs'],
                     'num_boundary': n_bound,
-                    'out_sub_level': out_sub_level if out_sub_level else 1
+                    'out_sub_level': output_subsample_level if output_subsample_level else 1
                     }
+        
+        # avoid collating None for boundary values by inserting only if the tensors exist
+        if y_bound is not None:
+            data_dict['y_bound'] = y_bound
+            data_dict['output_queries_bound'] = out_p_bound
+            data_dict['output_source_terms_bound'] = out_source_bound
         data_list.append(data_dict)
     
     train_data = data_list[:n_train]
@@ -172,10 +185,17 @@ def load_nonlinear_poisson_pt(
     train_dataloader = DataLoader(DictDataset(train_data)) 
     test_dataloader = DataLoader(DictDataset(test_data)) 
     
-    return train_dataloader, test_dataloader, None
+    data_processor = PoissonGINODataProcessor(
+        input_min=input_min_sample_points,
+        input_max=input_max_sample_points,
+        input_sub_level=input_subsample_level,
+        output_sub_level=output_subsample_level
+    )
+    return train_dataloader, test_dataloader, data_processor
 
-class SubsamplingGINODataProcessor(DataProcessor):
-    """SubsamplingGINODataProcessor does the exact same thing
+
+class PoissonGINODataProcessor(DefaultDataProcessor):
+    """PoissonGINODataProcessor does the same thing
     as a DefaultDataProcessor with the addition of randomly subsampling
     points in the model's domain and codomain. Written specifically
     for the forward call signature of neuralop.models.GINO
@@ -217,18 +237,6 @@ class SubsamplingGINODataProcessor(DataProcessor):
         self.input_min = input_min
         self.input_max = input_max
 
-    def wrap(self, model):
-        self.model = model
-        return self
-
-    def to(self, device):
-        if self.in_normalizer is not None:
-            self.in_normalizer = self.in_normalizer.to(device)
-        if self.out_normalizer is not None:
-            self.out_normalizer = self.out_normalizer.to(device)
-        self.device = device
-        return self
-
     def preprocess(self, data_dict, batched=True):
         # inputs of shape (_, n_in, in_dim)
         x = data_dict["x"].to(self.device)
@@ -251,40 +259,81 @@ class SubsamplingGINODataProcessor(DataProcessor):
         x = x[:, input_indices, ...]
         input_geom = input_geom[:, input_indices, ...]
 
-        # outputs of shape (_, n_out, out_dim)
-        output_queries = data_dict["output_queries"].to(self.device)
+        # Subsample points on the output domain
+        # first
+        '''y = data_dict["y"].to(self.device)
+        if y.ndim == 4:
+            y = y.squeeze(0)'''
 
-        if "output_source_terms" in data_dict.keys():
-            output_source_terms = data_dict["output_source_terms"].to(self.device)
-        else:
-            output_source_terms = None
-
-        y = data_dict["y"].to(self.device)
         if 'y_bound' in data_dict.keys():
-            y_bound = data_dict["y_bound"].to(self.device)
+            y_bound = data_dict["y_bound"]
+            #print(f"{y_bound.shape=}")
+        else:
+            y_bound = None
+        
+        y_domain = data_dict["y_domain"]
+        #print(f"{y_domain.shape=}")
+
+        output_queries_bound = data_dict.get('output_queries_bound', None)
+        output_queries_domain = data_dict['output_queries_domain']
+
+        ## Subsample all points defined on the output domain/boundary
 
         n_bound = data_dict["num_boundary"].item()
         n_bound_out = n_bound * self.output_sub_level
-        n_domain_out = (output_queries.shape[1] - n_bound) * self.output_sub_level
+        n_domain_out = output_queries_domain.shape[1] * self.output_sub_level
 
-        if n_domain_out < 0:
+        '''if n_domain_out < 0:
             n_bound = 0
             n_bound_out = 0
-            n_domain_out = output_queries.shape[1] * self.output_sub_level
-
+            n_domain_out = output_queries.shape[1] * self.output_sub_level'''
+    
         output_indices_bound = random.sample(list(range(0, n_bound)), k=int(n_bound_out))
-        output_indices_domain = random.sample(list(range(n_bound, output_queries.shape[1])), k=int(n_domain_out))
-        output_indices = output_indices_bound + output_indices_domain
+        output_indices_domain = random.sample(list(range(0, output_queries_domain.shape[1])), k=int(n_domain_out))
+        #output_indices = output_indices_bound + output_indices_domain
+        '''if output_queries_bound is not None:
+            print(f"{output_queries_bound.shape=}")
+        print(f"{output_queries_domain.shape=}")'''
 
-        if y.shape[-2] >= max(output_indices):
+        if y_bound is not None:
+            y_bound = y_bound[:, output_indices_bound]
+            output_queries_bound = output_queries_bound[:, output_indices_bound]
+        
+        y_domain = y_domain[:, output_indices_domain]
+        output_queries_domain = output_queries_domain[:, output_indices_domain]
+
+
+        '''if y.shape[-2] >= max(output_indices):
             y = y[:, output_indices, ...]
             if 'y_bound' in data_dict.keys():
-                y_bound = y_bound[:, ]
-        output_queries = output_queries[:, output_indices, ...]
+                y_bound = y_bound[:, ]'''
 
-        if output_source_terms:
-            output_source_terms = output_source_terms[:, output_indices, ...]
 
+        if "output_source_terms_domain" in data_dict.keys():
+            output_source_terms_domain = data_dict["output_source_terms_domain"]
+            output_source_terms_domain = output_source_terms_domain[:, output_indices_domain, ...]
+        else:
+            output_source_terms_domain = None
+        
+        if "output_source_terms_bound" in data_dict.keys():
+            output_source_terms_bound = data_dict["output_source_terms_bound"]
+            output_source_terms_bound = output_source_terms_bound[:, output_indices_bound, ...]
+        else:
+            output_source_terms_bound = None
+        
+        if y_bound is not None:
+            y = torch.cat((y_bound, y_domain), dim=1) # concat along the point index dimension
+            # load both boundaries and interior points to device before concatenating so they exist 
+            # separately in the computational graph for later use in physics
+            output_queries_domain = output_queries_domain.to(self.device)
+            output_queries_bound = output_queries_bound.to(self.device)
+            output_queries = torch.cat((output_queries_bound, output_queries_domain), dim=1)
+        else:
+            y = y_domain.to(self.device)
+            output_queries = output_queries_domain.to(self.device)
+        
+        y = y.squeeze(0)
+        
         if self.in_normalizer is not None:
             x = self.in_normalizer.transform(x)
         if self.positional_encoding is not None:
@@ -293,17 +342,20 @@ class SubsamplingGINODataProcessor(DataProcessor):
             y = self.out_normalizer.transform(y)
 
         data_dict["x"] = x
-        data_dict["y"] = y.squeeze(0)
-        data_dict["y_domain"] = data_dict["y_domain"].squeeze(0).to(self.device)
-        data_dict["input_geom"] = input_geom
-        data_dict["output_queries"] = output_queries.squeeze(0)
-        data_dict["output_queries_domain"] = data_dict['output_queries_domain'].to(self.device).squeeze(0)
-        if 'output_source_terms_domain' in data_dict.keys():
-            data_dict["output_source_terms_domain"] = data_dict['output_source_terms_domain'].to(self.device)
-        data_dict["output_source_terms"] = output_source_terms
+        data_dict["y"] = y.to(self.device)
+        data_dict["y_domain"] = data_dict["y_domain"].squeeze(0) # TODO: how is this handled?
 
-        if 'coefs' in data_dict.keys():
-            data_dict['coefs'] = data_dict['coefs'].to(self.device).squeeze(0)
+        data_dict["input_geom"] = input_geom.to(self.device)
+        data_dict["output_queries"] = output_queries
+        data_dict["output_queries_domain"] = output_queries_domain
+        data_dict["output_queries_bound"] = output_queries_bound
+        if output_source_terms_domain is  not None:
+            data_dict["output_source_terms_domain"] = output_source_terms_domain.to(self.device)
+        # TODO: what are these and how to use them?
+        '''if 'coefs' in data_dict.keys():
+            coefs = data_dict['coefs']
+            print(f"{coefs=}")
+            data_dict['coefs'] = data_dict['coefs'].to(self.device).squeeze(0)'''
 
         data_dict['latent_queries'] = data_dict['latent_queries'].to(self.device).squeeze(0)
 
@@ -317,11 +369,6 @@ class SubsamplingGINODataProcessor(DataProcessor):
         data_dict["y"] = y
         return output, data_dict
 
-    def forward(self, **data_dict):
-        data_dict = self.preprocess(data_dict)
-        output = self.model(data_dict["x"])
-        output = self.postprocess(output)
-        return output, data_dict
 
 if __name__ == "__main__":
     train_data = load_nonlinear_poisson_pt(str(path))

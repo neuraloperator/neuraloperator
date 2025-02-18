@@ -388,7 +388,7 @@ class GINO(BaseModel):
             shape (1, n_gridpts_1, .... n_gridpts_n, gno_coord_dim)
         output_queries : torch.Tensor
             points at which to query the final GNO layer to get output
-            shape (n_out, gno_coord_dim)
+            shape (1, n_out, gno_coord_dim)
         x : torch.Tensor, optional
             input function a defined on the input domain `input_geom`
             shape (batch, n_in, in_channels). Default None
@@ -422,6 +422,7 @@ class GINO(BaseModel):
 
         input_geom = input_geom.squeeze(0) 
         latent_queries = latent_queries.squeeze(0)
+        output_queries = output_queries.squeeze(0)
 
         # Pass through input GNOBlock 
         in_p = self.gno_in(y=input_geom,

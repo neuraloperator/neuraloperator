@@ -72,14 +72,12 @@ class ICLoss(object):
         return self.initial_condition_loss(y_pred, x)
 
 
-class PoissonEqnLoss(object):
-    def __init__(self, method='autograd', loss=F.mse_loss, 
-                 device='cuda', debug=False):
+class PoissonInteriorLoss(object):
+    def __init__(self, method='autograd', loss=F.mse_loss, debug=False):
         super().__init__()
         self.method = method
         self.loss = loss
         self.debug = debug
-        self.device = device
 
         
     def finite_difference(self, output_queries_domain, u, output_source_terms_domain, num_boundary, out_sub_level, **kwargs):
@@ -113,7 +111,7 @@ class PoissonEqnLoss(object):
         del u_xx, u_yy, u_x, u_y, left_hand_side
         return loss
     
-    def autograd(self, output_queries_domain, u, output_source_terms_domain, num_boundary, out_sub_level, **kwargs):
+    def autograd(self, u, output_queries_domain, output_source_terms_domain, **kwargs):
         # compute the nonlinear Poisson equation: ∇·((1 + 0.1u^2)∇u(x)) = f(x)
         u_prime = grad(outputs=u.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0]
         
@@ -121,11 +119,11 @@ class PoissonEqnLoss(object):
         # return None, norm_grad_u, None
 
         assert output_queries_domain.shape[-1] == 2
-        # assert output_queries_domain.shape[0] == 1
         assert output_queries_domain.ndim == 3
+        n_domain = output_queries_domain.shape[1]
 
-        u_x = u_prime[:,:,0]
-        u_y = u_prime[:,:,1]
+        u_x = u_prime[:,0]
+        u_y = u_prime[:,1]
         
         # compute second derivatives
         u_xx = grad(outputs=u_x.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0][:,:,0]
@@ -134,13 +132,17 @@ class PoissonEqnLoss(object):
         u_xx = u_xx.squeeze(0)
         u_yy = u_yy.squeeze(0)
         u_prime = u_prime.squeeze(0)
-        u = u.squeeze([0, -1])
+        u = u.squeeze([0, -1])[-n_domain:]
 
         # compute LHS of the Poisson equation
         u_sq = torch.pow(u, 2)
         laplacian = (u_xx + u_yy)
         norm_grad_u = torch.pow(u_prime, 2).sum(dim=-1)
 
+        '''print(f"{u_sq.shape=}")
+        print(f"{u_xx.shape=}")
+        print(f"{u_yy.shape=}")
+        print(f"{norm_grad_u.shape=}")'''
         assert u_sq.shape == u_xx.shape == u_yy.shape == norm_grad_u.shape
 
         left_hand_side = laplacian + laplacian * 0.1 * u_sq + 0.2 * u * norm_grad_u
@@ -163,12 +165,10 @@ class PoissonEqnLoss(object):
             raise NotImplementedError()
 
 class PoissonBoundaryLoss(object):
-    def __init__(self, loss=F.mse_loss, 
-                 device='cuda', debug=False):
+    def __init__(self, loss=F.mse_loss, debug=False):
         super().__init__()
         self.loss = loss
         self.debug = debug
-        self.device = device
         self.counter = 0
 
     def __call__(self, y_pred, num_boundary, out_sub_level, y, output_queries, **kwargs):
@@ -178,3 +178,20 @@ class PoissonBoundaryLoss(object):
         
         assert boundary_pred.shape == y_bound.shape
         return self.loss(boundary_pred, y_bound)
+    
+class PoissonEqnLoss(object):
+    '''
+    Weighted sum of interior PDE loss and MSE on the boundary
+    '''
+    def __init__(self, boundary_weight, interior_weight, diff_method: str='autograd', base_loss=F.mse_loss): 
+        super().__init__()
+        self.boundary_weight = boundary_weight
+        self.boundary_loss = PoissonBoundaryLoss(loss=base_loss)
+
+        self.interior_weight = interior_weight
+        self.interior_loss = PoissonInteriorLoss(method=diff_method, loss=base_loss)
+
+    def __call__(self, out, **kwargs):
+        interior_loss = self.interior_weight * self.interior_loss(out, **kwargs)
+        bc_loss = self.boundary_weight * self.boundary_loss(out, **kwargs)
+        return interior_loss + bc_loss
