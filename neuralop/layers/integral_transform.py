@@ -203,6 +203,7 @@ class IntegralTransform(nn.Module):
                 nbr_weights = nbr_weights.repeat(
                     [batch_size] + [1] * nbr_weights.ndim
                 )
+                nbr_weights = nbr_weights.unsqueeze(-1)
             rep_features = nbr_weights * rep_features
             reduction = "sum" # Force sum reduction for weighted GNO layers
         else:

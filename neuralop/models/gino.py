@@ -157,7 +157,7 @@ class GINO(BaseModel):
         gno_radius=0.033,
         in_gno_transform_type='linear',
         out_gno_transform_type='linear',
-        gno_weight_function=None,
+        gno_weighting_function=None,
         gno_weight_function_scale=1,
         gno_pos_embed_type='transformer',
         fno_in_channels=3,
@@ -314,8 +314,8 @@ class GINO(BaseModel):
         )
 
         ### output GNO
-        if gno_weight_function is not None:
-            weight_fn = dispatch_weighting_fn(gno_weight_function, sq_radius=gno_radius**2, scale=gno_weight_function_scale)
+        if gno_weighting_function is not None: #sq radius**2?
+            weight_fn = dispatch_weighting_fn(gno_weighting_function, sq_radius=gno_radius, scale=gno_weight_function_scale)
         else:
             weight_fn = None
         self.gno_out = GNOBlock(

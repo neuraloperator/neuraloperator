@@ -158,7 +158,7 @@ class GNOBlock(nn.Module):
         if use_open3d_neighbor_search:
             assert self.coord_dim == 3, f"Error: open3d is only designed for 3d data, \
                 GNO instantiated for dim={coord_dim}"
-        self.neighbor_search = NeighborSearch(use_open3d=use_open3d_neighbor_search)
+        self.neighbor_search = NeighborSearch(use_open3d=use_open3d_neighbor_search, return_norm=weighting_fn is not None)
 
         # create proper kernel input channel dim
         if self.pos_embedding is None:

@@ -16,8 +16,8 @@ default: &DEFAULT
   data:
     batch_size: 1
     file: '/home/dave/data/nonlin_poisson/nonlinear_poisson.obj'
-    n_train: 2 #7000
-    n_test: 2 #100 #[48]
+    n_train: 1 #7000
+    n_test: 1 #100 #[48]
     n_in: 5000 # Input points per instance
     n_out: 100 # Output query points instance
     n_eval: 6000 # Points to evaluate on
@@ -51,10 +51,11 @@ default: &DEFAULT
     gno_embed_max_positions: 600
     in_gno_radius: 0.16
     out_gno_radius: 0.175
-    gno_transform_type: 'nonlinear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
+    in_gno_transform_type: 'nonlinear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
+    out_gno_transform_type: 'nonlinear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
     gno_reduction: 'mean'
-    gno_weighting_fn: 'cos' # 'bump', 'bump_sqrt', 'linear', 'tanh', 'cos', 'quadr', 'cubic', 'quartic'. 'quartic_sqrt', 'octic', 'octic_sqrt', None
-    gno_wt_fn_scale: 0.030624999999999996
+    gno_weighting_function: 'cos' # 'bump', 'bump_sqrt', 'linear', 'tanh', 'cos', 'quadr', 'cubic', 'quartic'. 'quartic_sqrt', 'octic', 'octic_sqrt', None
+    gno_weight_function_scale: 0.030624999999999996
     gno_use_open3d: False
     in_gno_channel_mlp_hidden_layers: [256, 512, 256] #[40, 40], [512, 256]
     out_gno_channel_mlp_hidden_layers: [512, 1024, 512] #[40, 40], [512, 256]
@@ -64,7 +65,7 @@ default: &DEFAULT
     fno_hidden_channels: 64 #86
     fno_projection_channels: 256
     fno_n_layers: 4
-    fno_use_mlp: True
+    fno_use_channel_mlp: True
     fno_norm: 'group_norm' # also tried 'ada_in', no difference found
     fno_ada_in_features: 8
     fno_factorization: None
@@ -78,14 +79,14 @@ default: &DEFAULT
     training_loss: ['equation', 'boundary']
     loss_weights: 
       mse : 1.
-      equation: 0.01
+      interior: 0.01
       boundary: 1.
     loss_schedule: False
     loss_scale: 1.
     pino_method: 'autograd' # 'finite_difference', 'fdm_fourier_hybrid', 'autograd', 'FC_fourier_hybrid', 'FC'
     weight_decay: 1e-6 #1e-4 #1e-4 #0
     amp_autocast: False
-    learning_rate: 1e-4
+    learning_rate: 1e-3
     optimizer: 'Adam'
     scheduler: 'ReduceLROnPlateau' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau' or "StepLR"
     scheduler_T_max: 5000 # For cosine only, typically take n_epochs
@@ -96,11 +97,11 @@ default: &DEFAULT
 
   # Weights and biases
   wandb:
-    log: False
-    name: Test-Time Optimization Poisson # If None, config will be used but you can override it here
-    group: 'ry_lin' 
-    project: "pino-update-poisson"
-    entity: "NAME" # put your username here
+    log: True
+    name: single_inst # If None, config will be used but you can override it here
+    group: test
+    project: "mgno_poisson"
+    entity: "dhpitt" # put your username here
     sweep: False
     log_output: True
     log_test_interval: 1
