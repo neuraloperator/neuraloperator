@@ -161,7 +161,7 @@ class PoissonEqnLoss(object):
             return self.finite_difference(u=y_pred, **kwargs)
         else:
             raise NotImplementedError()
-    
+
 class PoissonBoundaryLoss(object):
     def __init__(self, loss=F.mse_loss, 
                  device='cuda', debug=False):

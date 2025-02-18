@@ -269,7 +269,6 @@ class GINO(BaseModel):
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=in_gno_transform_type,
             use_open3d_neighbor_search=gno_use_open3d,
-            use_torch_scatter_reduce=gno_use_torch_scatter,
         )
 
         ### Lifting layer before FNOBlocks
@@ -317,6 +316,8 @@ class GINO(BaseModel):
         ### output GNO
         if gno_weight_function is not None:
             weight_fn = dispatch_weighting_fn(gno_weight_function, sq_radius=gno_radius**2, scale=gno_weight_function_scale)
+        else:
+            weight_fn = None
         self.gno_out = GNOBlock(
             in_channels=fno_hidden_channels, # number of channels in f_y
             out_channels=fno_hidden_channels,
@@ -331,7 +332,6 @@ class GINO(BaseModel):
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=out_gno_transform_type,
             use_open3d_neighbor_search=gno_use_open3d,
-            use_torch_scatter_reduce=gno_use_torch_scatter
         )
 
         self.projection = ChannelMLP(in_channels=fno_hidden_channels, 

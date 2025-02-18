@@ -93,19 +93,16 @@ def native_neighbor_search(data: torch.Tensor, queries: torch.Tensor, radius: fl
     """
 
     # compute pairwise distances
-    dists = torch.cdist(queries, data).to(queries.device) # shaped num query points x num data points
-    in_nbr = torch.where(dists <= radius, dists, 0.) # i,j is 1 if j is i's neighbor
-    nbr_indices = in_nbr.nonzero()[:,1:].reshape(-1,) # only keep the column indices
+    all_dists = torch.cdist(queries, data).to(queries.device) # shaped num query points x num data points
+    dists = torch.where(all_dists <= radius, all_dists, 0.) # i,j is 1 if j is i's neighbor
+    nbr_indices = dists.nonzero()[:,1:].reshape(-1,) # only keep the column indices
     if return_norm:
-        radii = in_nbr[nbr_indices]
-    nbr_indices = torch.where(nbr_indices > 0, 1., 0.,)
+        nbr_dict['weights'] = dists[nbr_indices]
+    in_nbr = torch.where(dists > 0, 1., 0.,)
     nbrhd_sizes = torch.cumsum(torch.sum(in_nbr, dim=1), dim=0) # num points in each neighborhood, summed cumulatively
     splits = torch.cat((torch.tensor([0.]).to(queries.device), nbrhd_sizes))
     nbr_dict = {}
     nbr_dict['neighbors_index'] = nbr_indices.long().to(queries.device)
     nbr_dict['neighbors_row_splits'] = splits.long()
-
-    if return_norm:
-        nbr_dict['weights'] = radii
 
     return nbr_dict

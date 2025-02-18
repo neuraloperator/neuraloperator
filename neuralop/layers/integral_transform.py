@@ -69,12 +69,14 @@ class IntegralTransform(nn.Module):
         channel_mlp_non_linearity=F.gelu,
         transform_type="linear",
         weighting_fn=None,
+        reduction='sum',
         use_torch_scatter=True,
     ):
         super().__init__()
 
         assert channel_mlp is not None or channel_mlp_layers is not None
 
+        self.reduction = reduction
         self.transform_type = transform_type
         self.use_torch_scatter = use_torch_scatter
 
@@ -204,7 +206,7 @@ class IntegralTransform(nn.Module):
             rep_features = nbr_weights * rep_features
             reduction = "sum" # Force sum reduction for weighted GNO layers
         else:
-            reduction = reduction
+            reduction = self.reduction
 
         splits = neighbors["neighbors_row_splits"]
         if batched:
