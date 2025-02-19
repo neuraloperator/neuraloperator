@@ -32,8 +32,10 @@ class GINO(BaseModel):
             number of channels in FNO pointwise projection
         gno_coord_dim : int, optional
             geometric dimension of input/output queries, by default 3
-        gno_radius : float, optional
-            radius in input/output space for GNO neighbor search, by default 0.033
+        in_gno_radius : float, optional
+            radius in input space for GNO neighbor search, by default 0.033
+        out_gno_radius : float, optional
+            radius in output space for GNO neighbor search, by default 0.033
         gno_weight_function : str, optional
             Choice of weighting function to use in the output GNO for 
             Mollified Graph Neural Operator-based models
@@ -46,8 +48,11 @@ class GINO(BaseModel):
         out_gno_transform_type : str, optional
             transform type parameter for output GNO, by default 'linear'
             see neuralop.layers.gno_block for more details
-        gno_pos_embed_type : literal `{'transformer', 'nerf'}` | None
-            type of optional sinusoidal positional embedding to use in GNOBlock,
+        in_gno_pos_embed_type : literal `{'transformer', 'nerf'}` | None
+            type of optional sinusoidal positional embedding to use in input GNOBlock,
+            by default `'transformer'`
+        out_gno_pos_embed_type : literal `{'transformer', 'nerf'}` | None
+            type of optional sinusoidal positional embedding to use in output GNOBlock,
             by default `'transformer'`
         fno_in_channels : int, optional
             number of input channels for FNO, by default 26
@@ -154,12 +159,14 @@ class GINO(BaseModel):
         latent_feature_channels=None,
         projection_channels=256,
         gno_coord_dim=3,
-        gno_radius=0.033,
+        in_gno_radius=0.033,
+        out_gno_radius=0.033,
         in_gno_transform_type='linear',
         out_gno_transform_type='linear',
         gno_weighting_function=None,
         gno_weight_function_scale=1,
-        gno_pos_embed_type='transformer',
+        in_gno_pos_embed_type='transformer',
+        out_gno_pos_embed_type='transformer',
         fno_in_channels=3,
         fno_n_modes=(16, 16, 16), 
         fno_hidden_channels=64,
@@ -248,7 +255,9 @@ class GINO(BaseModel):
             self.adain_pos_embed = None
             self.ada_in_dim = None
         
-        self.gno_radius = gno_radius
+        self.in_gno_radius = in_gno_radius
+        self.out_gno_radius = out_gno_radius
+
         self.out_gno_tanh = out_gno_tanh
 
         ### input GNO
@@ -259,10 +268,10 @@ class GINO(BaseModel):
             in_channels=in_channels,
             out_channels=in_gno_out_channels,
             coord_dim=self.gno_coord_dim,
-            pos_embedding_type=gno_pos_embed_type,
+            pos_embedding_type=in_gno_pos_embed_type,
             pos_embedding_channels=gno_embed_channels,
             pos_embedding_max_positions=gno_embed_max_positions,
-            radius=gno_radius,
+            radius=in_gno_radius,
             reduction='mean',
             weighting_fn=None,
             channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
@@ -315,17 +324,17 @@ class GINO(BaseModel):
 
         ### output GNO
         if gno_weighting_function is not None: #sq radius**2?
-            weight_fn = dispatch_weighting_fn(gno_weighting_function, sq_radius=gno_radius, scale=gno_weight_function_scale)
+            weight_fn = dispatch_weighting_fn(gno_weighting_function, sq_radius=out_gno_radius**2, scale=gno_weight_function_scale)
         else:
             weight_fn = None
         self.gno_out = GNOBlock(
             in_channels=fno_hidden_channels, # number of channels in f_y
             out_channels=fno_hidden_channels,
             coord_dim=self.gno_coord_dim,
-            radius=self.gno_radius,
+            radius=self.out_gno_radius,
             reduction='sum',
             weighting_fn=weight_fn,
-            pos_embedding_type=gno_pos_embed_type,
+            pos_embedding_type=out_gno_pos_embed_type,
             pos_embedding_channels=gno_embed_channels,
             pos_embedding_max_positions=gno_embed_max_positions,
             channel_mlp_layers=out_gno_channel_mlp_hidden_layers,

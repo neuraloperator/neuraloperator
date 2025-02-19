@@ -16,8 +16,8 @@ default: &DEFAULT
   data:
     batch_size: 1
     file: '/home/dave/data/nonlin_poisson/nonlinear_poisson.obj'
-    n_train: 1 #7000
-    n_test: 1 #100 #[48]
+    n_train: 1
+    n_test: 1 #[48]
     n_in: 5000 # Input points per instance
     n_out: 100 # Output query points instance
     n_eval: 6000 # Points to evaluate on
@@ -28,8 +28,8 @@ default: &DEFAULT
     points_per_bc: 100
     padding: 1
     encode: True
-    input_min: 1024
-    input_max: 1024
+    input_min: 1000
+    input_max: 10000
     sample_random_in: None # Set to a certain percentage if we want to sample a static number of points. Will use the range otherwise
     sample_random_out: None
 
@@ -47,6 +47,8 @@ default: &DEFAULT
     out_channels: 1
     res: False
     gno_coord_dim: 2
+    in_gno_pos_embed_type: None
+    out_gno_pos_embed_type: 'transformer'
     gno_embed_channels: 32
     gno_embed_max_positions: 600
     in_gno_radius: 0.16
@@ -54,7 +56,7 @@ default: &DEFAULT
     in_gno_transform_type: 'nonlinear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
     out_gno_transform_type: 'nonlinear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
     gno_reduction: 'mean'
-    gno_weighting_function: 'cos' # 'bump', 'bump_sqrt', 'linear', 'tanh', 'cos', 'quadr', 'cubic', 'quartic'. 'quartic_sqrt', 'octic', 'octic_sqrt', None
+    gno_weighting_function: 'quadr' # 'bump', 'bump_sqrt', 'linear', 'tanh', 'cos', 'quadr', 'cubic', 'quartic'. 'quartic_sqrt', 'octic', 'octic_sqrt', None
     gno_weight_function_scale: 0.030624999999999996
     gno_use_open3d: False
     in_gno_channel_mlp_hidden_layers: [256, 512, 256] #[40, 40], [512, 256]
@@ -63,7 +65,7 @@ default: &DEFAULT
     out_gno_tanh: None # None, 'in_p', 'latent_embed', 'both'
     fno_n_modes: [20, 20] #[32, 32, 32] #just changed this trying next # try 16 along each dim?
     fno_hidden_channels: 64 #86
-    fno_projection_channels: 256
+    fno_projection_channel_ratio: 4
     fno_n_layers: 4
     fno_use_channel_mlp: True
     fno_norm: 'group_norm' # also tried 'ada_in', no difference found
@@ -79,7 +81,7 @@ default: &DEFAULT
     training_loss: ['equation', 'boundary']
     loss_weights: 
       mse : 1.
-      interior: 0.01
+      interior: 1e-10
       boundary: 1.
     loss_schedule: False
     loss_scale: 1.
