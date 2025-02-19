@@ -25,7 +25,7 @@ default: &DEFAULT
     # train_out_res: 64 # Resolution of output GNO points' grid
     test_batch_sizes: [1] #16
     query_resolution: 64
-    train_out_res: None #400
+    train_out_res: 400 #400
     points_per_bc: 100
     padding: 1
     encode: True
@@ -80,10 +80,10 @@ default: &DEFAULT
   
   opt:
     n_epochs: 1000
-    training_loss: 'mse' #['equation', 'boundary']
+    training_loss: ['equation', 'boundary']
     loss_weights: 
       mse : 1.
-      interior: 1e-2
+      interior: 1e-10
       boundary: 1.
     loss_schedule: False
     loss_scale: 1.
@@ -102,7 +102,7 @@ default: &DEFAULT
   # Weights and biases
   wandb:
     log: True
-    name: single_inst_true_mse # If None, config will be used but you can override it here
+    name: single_inst_pino # If None, config will be used but you can override it here
     group: test
     project: "mgno_poisson"
     entity: "dhpitt" # put your username here
