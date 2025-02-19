@@ -5,7 +5,7 @@ from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.nn.functional as F
 
-from neuralop.losses.data_losses import LpLoss
+from neuralop.losses.data_losses import LpLoss, MSELoss
 from neuralop.training import Trainer, setup
 from neuralop.data.datasets.nonlinear_poisson import load_nonlinear_poisson_pt
 from neuralop.losses.equation_losses import PoissonBoundaryLoss, PoissonEqnLoss
@@ -83,13 +83,14 @@ train_loader, test_loader, data_processor = load_nonlinear_poisson_pt(
     n_in=config.data.n_in,
     n_out=config.data.n_out,
     n_eval=config.data.n_eval,
+    val_on_same_instance=config.data.single_instance,
     train_out_res=config.data.train_out_res,
     input_min_sample_points=config.data.input_min,
     input_max_sample_points=config.data.input_max,
     input_subsample_level=config.data.sample_random_in,
     output_subsample_level=config.data.sample_random_out
 )
-test_loaders = {"test": train_loader} ##TODO FIX ONCE NOT FITTING SINGLE INSTANCE
+test_loaders = {"test": test_loader} ##TODO FIX ONCE NOT FITTING SINGLE INSTANCE
 
 model = get_model(config)
 model = model.to(device)
@@ -129,7 +130,7 @@ else:
 
 # Creating the losses
 # with default measure, 2D l2 is 2D MSE
-mse_loss = LpLoss(d=2, p=2, measure=1.)
+mse_loss = MSELoss()
 
 training_loss = config.opt.training_loss
 if not isinstance(training_loss, (tuple, list)):

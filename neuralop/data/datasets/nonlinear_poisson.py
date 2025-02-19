@@ -332,7 +332,7 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
             y = y_domain.to(self.device)
             output_queries = output_queries_domain.to(self.device)
         
-        y = y.squeeze(0)
+        y = y.unsqueeze(-1) # add feature dim
         
         if self.in_normalizer is not None:
             x = self.in_normalizer.transform(x)
@@ -343,7 +343,7 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
 
         data_dict["x"] = x
         data_dict["y"] = y.to(self.device)
-        data_dict["y_domain"] = data_dict["y_domain"].squeeze(0) # TODO: how is this handled?
+        data_dict["y_domain"] = data_dict["y_domain"].unsqueeze(-1) # add feature dim
 
         data_dict["input_geom"] = input_geom.to(self.device)
         data_dict["output_queries"] = output_queries

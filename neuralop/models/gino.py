@@ -242,11 +242,11 @@ class GINO(BaseModel):
 
         self.fno_norm = fno_norm
         if self.fno_norm == "ada_in":
-            if fno_ada_in_features is not None and gno_pos_embed_type is not None:
+            if fno_ada_in_features is not None and out_gno_pos_embed_type is not None:
                 self.adain_pos_embed = SinusoidalEmbedding(in_channels=fno_ada_in_dim,
                                                         num_frequencies=fno_ada_in_features, 
                                                         max_positions=10000,
-                                                        embedding_type=gno_pos_embed_type)                    
+                                                        embedding_type=out_gno_pos_embed_type)                    
                 self.ada_in_dim = self.adain_pos_embed.out_channels
             else:
                 self.ada_in_dim = fno_ada_in_dim
@@ -284,7 +284,7 @@ class GINO(BaseModel):
         self.lifting = ChannelMLP(in_channels=self.fno_in_channels,
                                   hidden_channels=self.lifting_channels,
                                   out_channels=fno_hidden_channels,
-                                  n_layers=3)
+                                  n_layers=2) # CHANGED RECENTLY FOR THIS PAPER
         
         ### FNOBlocks in latent space
         # input: `in_p` intermediate embeddings,

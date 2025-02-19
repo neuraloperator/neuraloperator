@@ -88,7 +88,7 @@ def dispatch_weighting_fn(weight_function_name : str, sq_radius: float, scale: f
     Parameters
     ----------
     weight_function_name : str Literal
-        name of weighting function to use, keyed to ``WEIGHT_FUNCTION_REGISTRY`` above
+        name of weighting function to use, keyed to ``WEIGHTING_FN_REGISTRY`` above
     sq_radius : float
         squared radius of GNO neighborhoods for Nyström approximation
     scale : float
