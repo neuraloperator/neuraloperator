@@ -99,7 +99,7 @@ def native_neighbor_search(data: torch.Tensor, queries: torch.Tensor, radius: fl
     nbr_indices = dists.nonzero()[:,1:].reshape(-1,) # only keep the column indices
     if return_norm:
         weights = dists[dists.nonzero(as_tuple=True)]
-        nbr_dict['weights'] = weights
+        nbr_dict['weights'] = weights **2 # weighting function computed on squared norms
     in_nbr = torch.where(dists > 0, 1., 0.,)
     nbrhd_sizes = torch.cumsum(torch.sum(in_nbr, dim=1), dim=0) # num points in each neighborhood, summed cumulatively
     splits = torch.cat((torch.tensor([0.]).to(queries.device), nbrhd_sizes))
