@@ -32,6 +32,7 @@ config_name = pipe.steps[-1].config_name
 device, is_logger = setup(config)
 
 # Set up WandB logging
+wandb_args = None
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
     if config.wandb.name:
@@ -41,17 +42,17 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.fno2d.n_layers,
-                config.fno2d.n_modes_width,
-                config.fno2d.n_modes_height,
-                config.fno2d.hidden_channels,
-                config.fno2d.factorization,
-                config.fno2d.rank,
+                config.fno.n_layers,
+                config.fno.hidden_channels,
+                config.fno.n_modes_width,
+                config.fno.n_modes[0],
+                config.fno.factorization,
+                config.fno.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
         )
-    wandb_init_args = dict(
+    wandb_args =  dict(
         config=config,
         name=wandb_name,
         group=config.wandb.group,
@@ -61,6 +62,7 @@ if config.wandb.log and is_logger:
     if config.wandb.sweep:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
+    wandb.init(**wandb_args)
 
 else: 
     wandb_init_args = None
@@ -73,7 +75,7 @@ if config.verbose:
     sys.stdout.flush()
 
 # Load the Nonlinear Poisson dataset
-train_loader, test_loaders, data_processor = load_nonlinear_poisson_pt(
+train_loader, test_loader, data_processor = load_nonlinear_poisson_pt(
     data_path=config.data.file,
     query_res=config.data.query_resolution,
     n_train=config.data.n_train, 
@@ -87,7 +89,7 @@ train_loader, test_loaders, data_processor = load_nonlinear_poisson_pt(
     input_subsample_level=config.data.sample_random_in,
     output_subsample_level=config.data.sample_random_out
 )
-test_loaders = {"test": test_loaders}
+test_loaders = {"test": train_loader} ##TODO FIX ONCE NOT FITTING SINGLE INSTANCE
 
 model = get_model(config)
 model = model.to(device)
@@ -126,9 +128,8 @@ else:
     raise ValueError(f"Got scheduler={config.opt.scheduler}")
 
 # Creating the losses
-
 # with default measure, 2D l2 is 2D MSE
-mse_loss = LpLoss(d=1, p=2, measure=1.)
+mse_loss = LpLoss(d=2, p=2, measure=1.)
 
 training_loss = config.opt.training_loss
 if not isinstance(training_loss, (tuple, list)):
