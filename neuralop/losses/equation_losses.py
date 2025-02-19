@@ -113,14 +113,18 @@ class PoissonInteriorLoss(object):
     
     def autograd(self, u, output_queries_domain, output_source_terms_domain, **kwargs):
         # compute the nonlinear Poisson equation: ∇·((1 + 0.1u^2)∇u(x)) = f(x)
+        # Make sure output queries are the right shape
+        assert output_queries_domain.shape[-1] == 2
+        assert output_queries_domain.ndim == 3
+        n_domain = output_queries_domain.shape[1]
+        # we only care about u defined over the interior.
+        # Grab u_interior now
+        u = u[:, -n_domain:, ...]
         u_prime = grad(outputs=u.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0]
         
         norm_grad_u = torch.pow(u_prime, 2).sum(dim=-1)
         # return None, norm_grad_u, None
 
-        assert output_queries_domain.shape[-1] == 2
-        assert output_queries_domain.ndim == 3
-        n_domain = output_queries_domain.shape[1]
 
         u_x = u_prime[:,0]
         u_y = u_prime[:,1]
@@ -132,7 +136,7 @@ class PoissonInteriorLoss(object):
         u_xx = u_xx.squeeze(0)
         u_yy = u_yy.squeeze(0)
         u_prime = u_prime.squeeze(0)
-        u = u.squeeze([0, -1])[-n_domain:]
+        u = u.squeeze([0, -1])
 
         # compute LHS of the Poisson equation
         u_sq = torch.pow(u, 2)
