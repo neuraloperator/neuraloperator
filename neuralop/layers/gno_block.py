@@ -180,18 +180,18 @@ class GNOBlock(nn.Module):
                       got {channel_mlp.in_channels}."
             assert channel_mlp.out_channels == out_channels, f"Error: expected ChannelMLP to have\
                  {out_channels=} but got {channel_mlp.in_channels=}."
-            self.channel_mlp = channel_mlp
+            channel_mlp = channel_mlp
 
         elif channel_mlp_layers is not None:
             if channel_mlp_layers[0] != kernel_in_dim:
                 channel_mlp_layers = [kernel_in_dim] + channel_mlp_layers
             if channel_mlp_layers[-1] != self.out_channels:
                 channel_mlp_layers.append(self.out_channels)
-            self.channel_mlp = LinearChannelMLP(layers=channel_mlp_layers, non_linearity=channel_mlp_non_linearity)
+            channel_mlp = LinearChannelMLP(layers=channel_mlp_layers, non_linearity=channel_mlp_non_linearity)
 
         # Create integral transform module
         self.integral_transform = IntegralTransform(
-            channel_mlp=self.channel_mlp,
+            channel_mlp=channel_mlp,
             transform_type=transform_type,
             use_torch_scatter=False,
             weighting_fn=weighting_fn,
