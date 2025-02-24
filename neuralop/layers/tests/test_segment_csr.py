@@ -2,22 +2,9 @@ import torch
 from ..segment_csr import segment_csr
 import pytest
 
-# Test torch_scatter util if built
-try:
-    from torch_scatter import segment_csr
-    torch_scatter_built = True
-except:
-    torch_scatter_built = False
-
-if torch_scatter_built:
-    use_torch_scatter_parametrize = [True, False]
-else:
-    use_torch_scatter_parametrize = [False]
-
 
 @pytest.mark.parametrize('batch_size', [1,4])
-@pytest.mark.parametrize('use_torch_scatter', use_torch_scatter_parametrize)
-def test_native_segcsr_shapes(batch_size, use_torch_scatter):
+def test_native_segcsr_shapes(batch_size):
     n_pts = 25
     n_channels = 5
     max_nbrhd_size = 7 # prevent degenerate cases in testing
@@ -33,7 +20,7 @@ def test_native_segcsr_shapes(batch_size, use_torch_scatter):
     indptr = torch.cumsum(torch.tensor(nbrhd_sizes, dtype=torch.long), dim=0)
     if batch_size == 1:
         src = src.squeeze(0)
-    out = segment_csr(src=src, indptr=indptr, reduce='sum', use_scatter=use_torch_scatter)
+    out = segment_csr(src=src, indptr=indptr, reduce='sum')
     
     if batch_size == 1:
         assert out.shape == (len(indptr) - 1, n_channels)
@@ -41,8 +28,7 @@ def test_native_segcsr_shapes(batch_size, use_torch_scatter):
         assert out.shape == (batch_size, len(indptr) - 1, n_channels)
 
 @pytest.mark.parametrize('batch_size', [1,4])
-@pytest.mark.parametrize('use_torch_scatter', use_torch_scatter_parametrize)
-def test_native_segcsr_reductions(batch_size, use_torch_scatter):
+def test_native_segcsr_reductions(batch_size):
     src = torch.ones([10, 3])
     indptr = torch.tensor([0,3,8,10], dtype=torch.long)
 
@@ -52,12 +38,12 @@ def test_native_segcsr_reductions(batch_size, use_torch_scatter):
         out_shape = [batch_size] + out_shape
     out_shape = torch.Size(out_shape)
 
-    out_sum = segment_csr(src, indptr, reduce='sum', use_scatter=use_torch_scatter)
+    out_sum = segment_csr(src, indptr, reduce='sum')
     assert out_sum.shape == out_shape
     diff = out_sum - torch.tensor([[3, 5, 2]]).T * torch.ones([3,3])
     assert not diff.nonzero().any()
 
-    out_mean = segment_csr(src, indptr, reduce='mean', use_scatter=use_torch_scatter)
+    out_mean = segment_csr(src, indptr, reduce='mean')
     assert out_mean.shape == out_shape
     diff = out_mean - torch.ones([3,3])
     assert not diff.nonzero().any()
