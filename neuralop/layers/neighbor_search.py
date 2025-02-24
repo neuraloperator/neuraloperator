@@ -139,4 +139,6 @@ def spatial_hashing_neighbor_search(data: torch.Tensor, queries: torch.Tensor, r
     cell_coords = torch.floor(torch.cat([data, queries], dim=0) / (2 * radius))
     #print(cell_coords)
 
-    adj_cells = 
+    adj_cells = None
+
+    # next get the mapping of adjacent cells for each cell

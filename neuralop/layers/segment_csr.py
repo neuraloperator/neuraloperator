@@ -40,7 +40,8 @@ def segment_csr(
     """
     if reduce not in ["mean", "sum"]:
         raise ValueError("reduce must be one of 'mean', 'sum'")
-
+    
+    device = src.device
 
     if src.ndim == 3:
         point_dim = 1
@@ -53,7 +54,7 @@ def segment_csr(
 
     n_reps = neighborhood_splits[1:] - neighborhood_splits[:-1]
 
-    inds = torch.arange(n_in).unsqueeze(0)
+    inds = torch.arange(n_in).unsqueeze(0).to(device)
     mask = (inds >= neighborhood_splits[:-1].unsqueeze(1)) & (inds < neighborhood_splits[1:].unsqueeze(1))
 
     # add a batch dim to the mask if src is batched

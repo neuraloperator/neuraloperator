@@ -68,14 +68,12 @@ class IntegralTransform(nn.Module):
         channel_mlp_layers=None,
         channel_mlp_non_linearity=F.gelu,
         transform_type="linear",
-        use_torch_scatter=True,
     ):
         super().__init__()
 
         assert channel_mlp is not None or channel_mlp_layers is not None
 
         self.transform_type = transform_type
-        self.use_torch_scatter = use_torch_scatter
 
         if (
             self.transform_type != "linear_kernelonly"
@@ -194,6 +192,6 @@ class IntegralTransform(nn.Module):
         else:
             reduction = "mean"
 
-        out_features = segment_csr(rep_features, neighbors["neighbors_row_splits"], reduce=reduction, use_scatter=self.use_torch_scatter)
+        out_features = segment_csr(rep_features, neighbors["neighbors_row_splits"], reduce=reduction)
 
         return out_features
