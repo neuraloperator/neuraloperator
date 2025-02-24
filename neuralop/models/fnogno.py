@@ -259,7 +259,6 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=gno_transform_type,
             use_open3d_neighbor_search=gno_use_open3d,
-            use_torch_scatter_reduce=True,
         )
 
         self.projection = ChannelMLP(
