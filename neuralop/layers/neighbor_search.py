@@ -95,9 +95,10 @@ def native_neighbor_search(data: torch.Tensor, queries: torch.Tensor, radius: fl
 
     # compute pairwise distances
     all_dists = torch.cdist(queries, data).to(queries.device) # shaped num query points x num data points
-    ## keep zero-dist points
+    # keep zero-distance points
     eps = 1e-7
-    dists = torch.where(all_dists <= radius, all_dists + eps, 0.) # i,j is 1 if j is i's neighbor 
+    all_dists = torch.where(all_dists == 0., eps, all_dists)
+    dists = torch.where(all_dists <= radius, all_dists, 0.) # i,j is 1 if j is i's neighbor 
     nbr_indices = dists.nonzero()[:,1:].reshape(-1,) # only keep the column indices
     if return_norm:
         weights = dists[dists.nonzero(as_tuple=True)]
