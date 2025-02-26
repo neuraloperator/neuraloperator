@@ -358,7 +358,7 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
         data_dict["x"] = x
 
         # In eval mode, pass whole tensors instead of dicts of queries and y
-        if not self.training:
+        if not self.training and isinstance(y, dict):
             y = torch.cat((y['boundary'], y['domain']), dim=1)
             output_queries = torch.cat((output_queries['boundary'], output_queries['domain']), dim=1)
         data_dict["y"] = y
