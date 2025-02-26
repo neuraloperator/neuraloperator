@@ -111,9 +111,12 @@ class PoissonInteriorLoss(object):
         del u_xx, u_yy, u_x, u_y, left_hand_side
         return loss
     
-    def autograd(self, u, output_queries_domain, output_source_terms_domain, **kwargs):
-        # compute the nonlinear Poisson equation: ∇·((1 + 0.1u^2)∇u(x)) = f(x)
+    def autograd(self, u, output_queries, output_source_terms_domain, **kwargs):
+        '''
+        Compute the nonlinear Poisson equation: ∇·((1 + 0.1u^2)∇u(x)) = f(x)
+        '''
         # Make sure output queries are the right shape
+        output_queries_domain = output_queries['domain']
         assert output_queries_domain.shape[-1] == 2
         assert output_queries_domain.ndim == 3
         n_domain = output_queries_domain.shape[1]
@@ -195,7 +198,7 @@ class PoissonEqnLoss(object):
         self.interior_weight = interior_weight
         self.interior_loss = PoissonInteriorLoss(method=diff_method, loss=base_loss)
 
-    def __call__(self, out, **kwargs):
-        interior_loss = self.interior_weight * self.interior_loss(out, **kwargs)
-        bc_loss = self.boundary_weight * self.boundary_loss(out, **kwargs)
+    def __call__(self, out, y, **kwargs):
+        interior_loss = self.interior_weight * self.interior_loss(out['domain'], **kwargs)
+        bc_loss = self.boundary_weight * self.boundary_loss(out['boundary'], y=y['boundary'],  **kwargs)
         return interior_loss + bc_loss

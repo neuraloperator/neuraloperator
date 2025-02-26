@@ -482,7 +482,7 @@ class GINO(BaseModel):
                 out_p = out_p.squeeze(0)
 
                 sub_output = self.gno_out(y=latent_queries.reshape((-1, latent_queries.shape[-1])), 
-                    x=output_queries,
+                    x=out_p,
                     f_y=latent_embed,)
                 sub_output = sub_output.permute(0, 2, 1)
 

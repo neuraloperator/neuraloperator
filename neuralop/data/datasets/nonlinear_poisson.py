@@ -323,9 +323,16 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
         
         if y_bound is not None:
             #y = torch.cat((y_bound, y_domain), dim=1) # concat along the point index dimension
+            y_bound = y_bound.unsqueeze(-1).to(self.device)
+            y_domain = y_domain.unsqueeze(-1).to(self.device)
+
+            if self.out_normalizer is not None and self.train:
+                y_bound = self.out_normalizer.transform(y_bound)
+                y_domain = self.out_normalizer.transform(y_domain)
+
             y = {
-                'boundary': y_bound,
-                'domain': y_domain
+                'boundary': y_bound, # add feature dim
+                'domain': y_domain,
             }
             # load both boundaries and interior points to device before concatenating so they exist 
             # separately in the computational graph for later use in physics
@@ -333,26 +340,28 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
             output_queries_bound = output_queries_bound.to(self.device)
             #output_queries = torch.cat((output_queries_bound, output_queries_domain), dim=1)
             output_queries = {
-                'boundary': output_indices_bound,
+                'boundary': output_queries_bound,
                 'domain': output_queries_domain
             }
         else:
-            y = y_domain.to(self.device)
+            y = y_domain.unsqueeze(-1).to(self.device) # add feature dim
             output_queries = output_queries_domain.to(self.device)
-        
-        y = y.unsqueeze(-1) # add feature dim
-        
+            if self.out_normalizer is not None and self.train:
+                y = self.out_normalizer.transform(y)
+                
         if self.in_normalizer is not None:
             x = self.in_normalizer.transform(x)
         if self.positional_encoding is not None:
             x = self.positional_encoding(x, batched=batched)
-        if self.out_normalizer is not None and self.train:
-            y = self.out_normalizer.transform(y)
+        
 
         data_dict["x"] = x
-        data_dict["y"] = y.to(self.device)
-        data_dict["y_domain"] = data_dict["y_domain"].unsqueeze(-1) # add feature dim
 
+        # In eval mode, pass whole tensors instead of dicts of queries and y
+        if not self.training:
+            y = torch.cat((y['boundary'], y['domain']), dim=1)
+            output_queries = torch.cat((output_queries['boundary'], output_queries['domain']), dim=1)
+        data_dict["y"] = y
         data_dict["input_geom"] = input_geom.to(self.device)
         data_dict["output_queries"] = output_queries
         #data_dict["output_queries_domain"] = output_queries_domain
