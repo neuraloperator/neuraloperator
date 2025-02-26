@@ -395,9 +395,16 @@ class GINO(BaseModel):
             latent geometry on which to compute FNO latent embeddings
             a grid on [0,1] x [0,1] x ....
             shape (1, n_gridpts_1, .... n_gridpts_n, gno_coord_dim)
-        output_queries : torch.Tensor
-            points at which to query the final GNO layer to get output
-            shape (1, n_out, gno_coord_dim)
+        output_queries : torch.Tensor | dict[torch.Tensor]
+            points at which to query the final GNO layer to get output.
+
+            shape (1, n_out, gno_coord_dim) per tensor.
+
+            * if a tensor, the model will output a tensor. 
+
+            * if a dict of tensors, the model will return a dict of outputs, so
+            that ``output[key]`` corresponds to the model queried at 
+            ``output_queries[key]``. 
         x : torch.Tensor, optional
             input function a defined on the input domain `input_geom`
             shape (batch, n_in, in_channels). Default None
@@ -407,6 +414,13 @@ class GINO(BaseModel):
             if `latent_feature_channels` is set, must be passed
         ada_in : torch.Tensor, optional
             adaptive scalar instance parameter, defaults to None
+
+        Returns
+        -------
+        out : torch.Tensor | dict[torch.Tensor]
+            Function over the output query coordinates
+            * tensor if if ``output_queries`` is a tensor
+            * dict if if ``output_queries`` is a dict
         """
 
         # Ensure input functions on the input geom and latent geom
@@ -431,7 +445,6 @@ class GINO(BaseModel):
 
         input_geom = input_geom.squeeze(0) 
         latent_queries = latent_queries.squeeze(0)
-        output_queries = output_queries.squeeze(0)
 
         # Pass through input GNOBlock 
         in_p = self.gno_in(y=input_geom,
@@ -459,14 +472,36 @@ class GINO(BaseModel):
         if self.out_gno_tanh in ['latent_embed', 'both']:
             latent_embed = torch.tanh(latent_embed)
         
-        # latent queries is of shape (d_1 x d_2 x... d_n x n), reshape to n_out x n
-        out = self.gno_out(y=latent_queries.reshape((-1, latent_queries.shape[-1])), 
+
+        # integrate over the latent space
+        # if output queries is a dict, query the output gno separately 
+        # with each tensor of query points
+        if isinstance(output_queries, dict):
+            out = {}
+            for key, out_p in output_queries.items():
+                out_p = out_p.squeeze(0)
+
+                sub_output = self.gno_out(y=latent_queries.reshape((-1, latent_queries.shape[-1])), 
                     x=output_queries,
                     f_y=latent_embed,)
-        out = out.permute(0, 2, 1)
+                sub_output = sub_output.permute(0, 2, 1)
 
-        # Project pointwise to out channels
-        #(b, n_in, out_channels)
-        out = self.projection(out).permute(0, 2, 1)  
+                # Project pointwise to out channels
+                #(b, n_in, out_channels)
+                sub_output = self.projection(sub_output).permute(0, 2, 1)  
+
+                out[key] = sub_output
+        else:
+            output_queries = output_queries.squeeze(0)
+
+            # latent queries is of shape (d_1 x d_2 x... d_n x n), reshape to n_out x n
+            out = self.gno_out(y=latent_queries.reshape((-1, latent_queries.shape[-1])), 
+                        x=output_queries,
+                        f_y=latent_embed,)
+            out = out.permute(0, 2, 1)
+
+            # Project pointwise to out channels
+            #(b, n_in, out_channels)
+            out = self.projection(out).permute(0, 2, 1)  
         
         return out

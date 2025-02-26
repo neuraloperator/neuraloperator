@@ -322,12 +322,20 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
             output_source_terms_bound = None
         
         if y_bound is not None:
-            y = torch.cat((y_bound, y_domain), dim=1) # concat along the point index dimension
+            #y = torch.cat((y_bound, y_domain), dim=1) # concat along the point index dimension
+            y = {
+                'boundary': y_bound,
+                'domain': y_domain
+            }
             # load both boundaries and interior points to device before concatenating so they exist 
             # separately in the computational graph for later use in physics
             output_queries_domain = output_queries_domain.to(self.device)
             output_queries_bound = output_queries_bound.to(self.device)
-            output_queries = torch.cat((output_queries_bound, output_queries_domain), dim=1)
+            #output_queries = torch.cat((output_queries_bound, output_queries_domain), dim=1)
+            output_queries = {
+                'boundary': output_indices_bound,
+                'domain': output_queries_domain
+            }
         else:
             y = y_domain.to(self.device)
             output_queries = output_queries_domain.to(self.device)
@@ -347,8 +355,8 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
 
         data_dict["input_geom"] = input_geom.to(self.device)
         data_dict["output_queries"] = output_queries
-        data_dict["output_queries_domain"] = output_queries_domain
-        data_dict["output_queries_bound"] = output_queries_bound
+        #data_dict["output_queries_domain"] = output_queries_domain
+        #data_dict["output_queries_bound"] = output_queries_bound
         if output_source_terms_domain is  not None:
             data_dict["output_source_terms_domain"] = output_source_terms_domain.to(self.device)
         # TODO: what are these and how to use them?
