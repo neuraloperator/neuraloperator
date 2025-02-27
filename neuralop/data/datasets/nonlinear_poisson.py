@@ -1,19 +1,40 @@
-import torch
-import numpy as np
 from pathlib import Path
 import random
-import matplotlib.pyplot as plt
+from typing import List
 import pickle
+import numpy as np
 
+import torch
 from torch.utils.data import DataLoader
-from .dict_dataset import DictDataset
 
+from .dict_dataset import DictDataset
 from neuralop.data.transforms.data_processors import DefaultDataProcessor
 
 
 path = Path(__file__).resolve().parent.joinpath('data')
 
-def generate_latent_queries(query_res, pad=0, domain_lims=[[-1.4,1.4],[-1.4,1.4]]):
+def generate_latent_queries(query_res: int, pad: float=0., domain_lims: List[List[float]]=[[-1.4,1.4],[-1.4,1.4]]):
+    """generate_latent_queries creates the point cloud of query points in latent space
+    on which to run the FNO. 
+
+    Parameters
+    ----------
+    query_res : int
+        number of points along each dimension in the original grid.
+        If unpadded, the grid is assumed to be a square in latent space, e.g. no matter
+        the original coordinates the grid will have an equal number for all dimensions
+    pad : float, optional
+        additional side lengths in the latent domain to fill in with query points, by default 0.
+        * if ``pad > 0``, as many points as possible with the same spacing as the original square
+        will be concatenated onto the latent grid. 
+    domain_lims : list, optional
+        limits of the domain to cover with query points, by default [[-1.4,1.4],[-1.4,1.4]]
+
+    Returns
+    -------
+    latent_queries : torch.Tensor
+        output coordinate point cloud (_, d_1, d_2, 2)
+    """
     oneDMeshes = []
     for lower,upper in domain_lims:
         oneDMesh = np.linspace(lower,upper,query_res)
@@ -27,7 +48,30 @@ def generate_latent_queries(query_res, pad=0, domain_lims=[[-1.4,1.4],[-1.4,1.4]
     latent_queries = grid.permute(*list(range(1,len(domain_lims)+1)), 0)
     return latent_queries
 
-def generate_output_grid(grid_res, coefs, domain_lims=[[-1.4,1.4],[-1.4,1.4]], tol=1e-7):
+def generate_output_grid(grid_res: int, coefs: dict, domain_lims: List[List[float]]=[[-1.4,1.4],[-1.4,1.4]], tol: float=1e-7):
+    """generate_output_grid creates output query coordinates within the domain
+    for use in computing physics loss according to the parameters of a particular
+    instance
+
+    Parameters
+    ----------
+    grid_res : int
+        resolution of points to generate
+    coefs : _type_
+        dictionary of coefficients describing a particular instance
+        of the Poisson equation
+    domain_lims : List[List[float]], optional
+        limits of the output domain on which to generate points,
+        by default [[-1.4,1.4],[-1.4,1.4]]
+    tol : float, optional
+        relative tolerance of error for boundary comparison, by default 1e-7
+
+    Returns
+    -------
+    XY_filtered : torch.Tensor
+        grid of coordinate points within the boundary of one particular instance of
+        Poisson's equation. 
+    """
     xi = domain_lims[0][0] + (domain_lims[0][1] - domain_lims[0][0]) * torch.rand(grid_res)
     yi = domain_lims[1][0] + (domain_lims[1][1] - domain_lims[1][0]) * torch.rand(grid_res)
 
@@ -62,7 +106,6 @@ def load_nonlinear_poisson_pt(
         data_path, 
         query_res=48, 
         domain_padding=0, 
-        encode=True, 
         val_on_same_instance=False,
         n_train=1, 
         n_test=1,
@@ -124,31 +167,28 @@ def load_nonlinear_poisson_pt(
 
             out_p_bound.requires_grad = True
             out_source = torch.cat((out_source_bound, out_source_domain))
-            #y = torch.cat((y_bound, y_domain))
         else:
-            # TODO: FIX  train/eval different points passed
             out_p_bound = None
             out_p_domain = torch.tensor(instance['val_points_domain'][:n_eval], dtype=torch.float32)
             out_source_domain = torch.tensor(instance['val_source_terms_domain'][:n_eval], dtype=torch.float32)
             y_domain = torch.tensor(instance['val_values_domain'][:n_eval], dtype=torch.float32)
             y_bound = None
 
-        f_f = torch.cat((torch.tensor(instance['train_source_terms_boundary'][:n_in], dtype=torch.float32), f_f))
-        f_g = torch.cat((torch.tensor(instance['train_bc_boundary'][:n_in], dtype=torch.float32), f_g))
-        f_dist = torch.cat((torch.zeros(n_in), f_dist))
         input_geom = torch.vstack((torch.tensor(instance['train_points_boundary'][:n_in], dtype=torch.float32), input_geom))
-
-        f_f = f_f.unsqueeze(dim=-1)
-        f_g = f_g.unsqueeze(dim=-1)
-        f_dist = f_dist.unsqueeze(dim=-1)
-
-
-        f = torch.cat((f_f, f_g, f_dist), dim=-1)
         latent_queries = generate_latent_queries(query_res=query_res,
                                                 pad=domain_padding
                                                 )
         
-        data_dict = {'x': f, 
+        # Add source terms on the boundary and interior
+        f_f = torch.cat((torch.tensor(instance['train_source_terms_boundary'][:n_in], dtype=torch.float32), f_f))
+        f_g = torch.cat((torch.tensor(instance['train_bc_boundary'][:n_in], dtype=torch.float32), f_g))
+        f_dist = torch.cat((torch.zeros(n_in), f_dist))
+        f_f = f_f.unsqueeze(dim=-1)
+        f_g = f_g.unsqueeze(dim=-1)
+        f_dist = f_dist.unsqueeze(dim=-1)
+        f = torch.cat((f_f, f_g, f_dist), dim=-1)
+        
+        data_dict = {'x': f, # input function
                     # input coords
                     'input_geom': input_geom,
                     # latent grid
@@ -157,16 +197,12 @@ def load_nonlinear_poisson_pt(
                     'output_queries_domain': out_p_domain,
                     'output_source_terms_domain': out_source_domain,
                     'y_domain': y_domain,
-                    # boundary info
-                    #'output_queries_bound': out_p_bound,
-                    #'output_source_terms_bound': out_source_bound,
-                    #'y_bound': y_bound,
-                    #'output_source_terms': out_source,
                     'coefs': instance['coefs'],
                     'num_boundary': n_bound,
                     'out_sub_level': output_subsample_level if output_subsample_level else 1
                     }
-        
+
+        # insert boundary y and output queries
         # avoid collating None for boundary values by inserting only if the tensors exist
         if y_bound is not None:
             data_dict['y_bound'] = y_bound
