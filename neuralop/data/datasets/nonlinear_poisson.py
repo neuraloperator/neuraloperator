@@ -238,16 +238,20 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
         self.input_max = input_max
 
     def preprocess(self, data_dict, batched=True):
-        # inputs of shape (_, n_in, in_dim)
+        # load input function of shape (_, n_in, in_dim)
         x = data_dict["x"].to(self.device)
-        input_geom = data_dict["input_geom"].to(self.device)
 
+        # Load input geometry of shape (_, n_in, 2)
+        input_geom = data_dict["input_geom"].to(self.device)
+        
+        # squeeze out extra dims if DataLoader's builtin collate adds one
         if input_geom.ndim == 4:
             input_geom = input_geom.squeeze(0)
         
         if x.ndim == 4:
             x = x.squeeze(0)
 
+        # Subsample inputs along the point dimension of the tensor (1)
         if self.input_sub_level is not None:
             # Sample set percentage
             n_in = int(input_geom.shape[1] * self.input_sub_level)
@@ -259,55 +263,39 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
         x = x[:, input_indices, ...]
         input_geom = input_geom[:, input_indices, ...]
 
-        # Subsample points on the output domain
-        # first
-        '''y = data_dict["y"].to(self.device)
-        if y.ndim == 4:
-            y = y.squeeze(0)'''
-
+        # Load output truth values of shape (_, n_out, _)
+        # if in training mode, values will be stored separately
+        # for the boundary conditions and interior of the domain
         if 'y_bound' in data_dict.keys():
             y_bound = data_dict["y_bound"]
-            #print(f"{y_bound.shape=}")
         else:
             y_bound = None
         
         y_domain = data_dict["y_domain"]
-        #print(f"{y_domain.shape=}")
 
+        # Load output query coordinates of shape (_, n_out, 2)
+        # if in training mode, values will be stored separately
+        # for the boundary conditions and interior of the domain
         output_queries_bound = data_dict.get('output_queries_bound', None)
         output_queries_domain = data_dict['output_queries_domain']
 
-        ## Subsample all points defined on the output domain/boundary
-
+        # Subsample all points defined on the output domain/boundary
+        # along the point dimension (1)
         n_bound = data_dict["num_boundary"].item()
         n_bound_out = n_bound * self.output_sub_level
         n_domain_out = output_queries_domain.shape[1] * self.output_sub_level
-
-        '''if n_domain_out < 0:
-            n_bound = 0
-            n_bound_out = 0
-            n_domain_out = output_queries.shape[1] * self.output_sub_level'''
     
         output_indices_bound = random.sample(list(range(0, n_bound)), k=int(n_bound_out))
         output_indices_domain = random.sample(list(range(0, output_queries_domain.shape[1])), k=int(n_domain_out))
-        #output_indices = output_indices_bound + output_indices_domain
-        '''if output_queries_bound is not None:
-            print(f"{output_queries_bound.shape=}")
-        print(f"{output_queries_domain.shape=}")'''
 
+        # boundary points in both output queries and ground truth
+        # are only stored separately in train mode
         if y_bound is not None:
             y_bound = y_bound[:, output_indices_bound]
             output_queries_bound = output_queries_bound[:, output_indices_bound]
         
         y_domain = y_domain[:, output_indices_domain]
         output_queries_domain = output_queries_domain[:, output_indices_domain]
-
-
-        '''if y.shape[-2] >= max(output_indices):
-            y = y[:, output_indices, ...]
-            if 'y_bound' in data_dict.keys():
-                y_bound = y_bound[:, ]'''
-
 
         if "output_source_terms_domain" in data_dict.keys():
             output_source_terms_domain = data_dict["output_source_terms_domain"]
@@ -321,8 +309,11 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
         else:
             output_source_terms_bound = None
         
+        # when output points and query coords are stored separately, we pass
+        # the queries into the GINO model as a dictionary, and receive a dict 
+        # of outputs in return corresponding to the function evaluated at each set of queries. 
         if y_bound is not None:
-            #y = torch.cat((y_bound, y_domain), dim=1) # concat along the point index dimension
+            # add feature dimensions to make y shape (_, n_out, 1)
             y_bound = y_bound.unsqueeze(-1).to(self.device)
             y_domain = y_domain.unsqueeze(-1).to(self.device)
 
@@ -331,14 +322,13 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
                 y_domain = self.out_normalizer.transform(y_domain)
 
             y = {
-                'boundary': y_bound, # add feature dim
+                'boundary': y_bound,
                 'domain': y_domain,
             }
-            # load both boundaries and interior points to device before concatenating so they exist 
+            # load both boundaries and interior points to device so they exist
             # separately in the computational graph for later use in physics
             output_queries_domain = output_queries_domain.to(self.device)
             output_queries_bound = output_queries_bound.to(self.device)
-            #output_queries = torch.cat((output_queries_bound, output_queries_domain), dim=1)
             output_queries = {
                 'boundary': output_queries_bound,
                 'domain': output_queries_domain
@@ -364,16 +354,11 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
         data_dict["y"] = y
         data_dict["input_geom"] = input_geom.to(self.device)
         data_dict["output_queries"] = output_queries
-        #data_dict["output_queries_domain"] = output_queries_domain
-        #data_dict["output_queries_bound"] = output_queries_bound
+        
         if output_source_terms_domain is  not None:
             data_dict["output_source_terms_domain"] = output_source_terms_domain.to(self.device)
-        # TODO: what are these and how to use them?
-        '''if 'coefs' in data_dict.keys():
-            coefs = data_dict['coefs']
-            print(f"{coefs=}")
-            data_dict['coefs'] = data_dict['coefs'].to(self.device).squeeze(0)'''
-
+       
+       # no transformation needed for the cube of latent queries
         data_dict['latent_queries'] = data_dict['latent_queries'].to(self.device).squeeze(0)
 
         return data_dict
@@ -389,4 +374,4 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
 
 if __name__ == "__main__":
     train_data = load_nonlinear_poisson_pt(str(path))
-    print(np.array(train_data).shape)
+    
