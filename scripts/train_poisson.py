@@ -95,8 +95,6 @@ test_loaders = {"test": test_loader} ##TODO FIX ONCE NOT FITTING SINGLE INSTANCE
 model = get_model(config)
 model = model.to(device)
 
-print(f'{device=}')
-
 # Use distributed data parallel
 if config.distributed.use_distributed:
     model = DDP(
@@ -132,6 +130,21 @@ else:
 # with default measure, 2D l2 is 2D MSE
 mse_loss = MSELoss()
 
+class GINOLoss(object):
+    def __init__(self, base_loss):
+        super().__init__()
+        self.base_loss = base_loss
+    def __call__(self, out, y, **kwargs):
+        loss = 0.
+        if isinstance(out, dict) and isinstance(y, dict):
+            for field, points in out.items():
+                loss += self.base_loss(points, y[field], **kwargs)
+            return loss
+        else:
+            return self.base_loss(out, y, **kwargs)
+
+gino_mseloss = GINOLoss(mse_loss)
+
 training_loss = config.opt.training_loss
 if not isinstance(training_loss, (tuple, list)):
     training_loss = [training_loss]
@@ -140,7 +153,8 @@ losses = []
 weights = []
 
 if 'mse' in training_loss:
-    losses.append(mse_loss)
+    #losses.append(mse_loss)
+    losses.append(gino_mseloss)
     weights.append(config.opt.loss_weights.get('mse', 1.))
 if 'equation' in training_loss:
     equation_loss = PoissonEqnLoss(interior_weight=config.opt.loss_weights.get('interior', 1.), 
