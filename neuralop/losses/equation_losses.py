@@ -158,7 +158,7 @@ class PoissonInteriorLoss(object):
         assert not u_prime.isnan().any()
         assert not u_yy.isnan().any()
         assert not u_xx.isnan().any()
-        del u_prime, u_x, u_t, u_xx
+        del u_xx, u_yy, u_x, u_y, left_hand_side
 
         return loss
     
