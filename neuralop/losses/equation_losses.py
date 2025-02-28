@@ -124,8 +124,6 @@ class PoissonInteriorLoss(object):
         # Grab u_interior now
         u = u[:, -n_domain:, ...]
         u_prime = grad(outputs=u.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0]
-        
-        norm_grad_u = torch.pow(u_prime, 2).sum(dim=-1)
         # return None, norm_grad_u, None
 
 
@@ -144,6 +142,7 @@ class PoissonInteriorLoss(object):
         # compute LHS of the Poisson equation
         u_sq = torch.pow(u, 2)
         laplacian = (u_xx + u_yy)
+        norm_grad_u = torch.pow(u_prime, 2).sum(dim=-1)
 
         '''print(f"{u_sq.shape=}")
         print(f"{u_xx.shape=}")
