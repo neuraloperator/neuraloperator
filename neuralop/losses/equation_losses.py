@@ -144,7 +144,6 @@ class PoissonInteriorLoss(object):
         # compute LHS of the Poisson equation
         u_sq = torch.pow(u, 2)
         laplacian = (u_xx + u_yy)
-        norm_grad_u = torch.pow(u_prime, 2).sum(dim=-1)
 
         '''print(f"{u_sq.shape=}")
         print(f"{u_xx.shape=}")
@@ -160,6 +159,7 @@ class PoissonInteriorLoss(object):
         assert not u_prime.isnan().any()
         assert not u_yy.isnan().any()
         assert not u_xx.isnan().any()
+        del u_prime, u_x, u_t, u_xx
 
         return loss
     
