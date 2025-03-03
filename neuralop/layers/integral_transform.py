@@ -199,20 +199,23 @@ class IntegralTransform(nn.Module):
         if self.weighting_fn is not None:
             nbr_weights = self.weighting_fn(nbr_weights)
             # repeat weights along batch dim if batched
-            if batched:
+            '''if batched:
                 nbr_weights = nbr_weights.repeat(
                     [batch_size] + [1] * nbr_weights.ndim
                 )
-                nbr_weights = nbr_weights.unsqueeze(-1)
+                nbr_weights = nbr_weights.unsqueeze(-1)'''
+            #print(f"{nbr_weights.shape=}")
+            #print(f"{rep_features.shape=}")
+            nbr_weights = nbr_weights.unsqueeze(-1)
             rep_features = nbr_weights * rep_features
             reduction = "sum" # Force sum reduction for weighted GNO layers
         else:
             reduction = self.reduction
 
-        splits = neighbors["neighbors_row_splits"]
+        '''splits = neighbors["neighbors_row_splits"]
         if batched:
-            splits = splits.repeat([batch_size] + [1] * splits.ndim)
+            splits = splits.repeat([batch_size] + [1] * splits.ndim)'''
 
-        out_features = segment_csr(rep_features, splits, reduce=reduction, use_scatter=self.use_torch_scatter)
+        out_features = segment_csr(rep_features, neighbors["neighbors_row_splits"], reduce=reduction)
 
         return out_features
