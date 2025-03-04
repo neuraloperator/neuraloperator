@@ -8,6 +8,7 @@ def segment_csr(
     neighborhood_splits: torch.Tensor,
     reduce: Literal["mean", "sum"],
     eps: float=1e-7,
+    use_scatter: bool=False
 ):
     """segment_csr reduces all entries of a CSR-formatted
     matrix by summing or averaging over neighbors.
@@ -38,6 +39,9 @@ def segment_csr(
         neigborhoods if a particular neighborhood is empty
 
     """
+    if use_scatter:
+        from torch_scatter import segment_csr
+        return segment_csr(src=src, indptr=neighborhood_splits, reduce=reduce)
     if reduce not in ["mean", "sum"]:
         raise ValueError("reduce must be one of 'mean', 'sum'")
     

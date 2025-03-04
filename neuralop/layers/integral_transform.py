@@ -186,36 +186,25 @@ class IntegralTransform(nn.Module):
                 )
             agg_features = torch.cat([agg_features, in_features], dim=-1)
 
-        rep_features = self.channel_mlp(agg_features)
+        rep_features = self.channel_mlp(agg_features).unsqueeze(0)
 
         if f_y is not None and self.transform_type != "nonlinear_kernelonly":
-            rep_features = rep_features * in_features
+            rep_features.mul_(in_features)
 
-        
         nbr_weights = neighbors.get("weights")
         if nbr_weights is None and self.weighting_fn is not None:
             raise KeyError("if a weighting function is provided, your neighborhoods must contain weights.")
 
         if self.weighting_fn is not None:
-            nbr_weights = self.weighting_fn(nbr_weights)
-            # repeat weights along batch dim if batched
-            '''if batched:
-                nbr_weights = nbr_weights.repeat(
-                    [batch_size] + [1] * nbr_weights.ndim
-                )
-                nbr_weights = nbr_weights.unsqueeze(-1)'''
-            #print(f"{nbr_weights.shape=}")
-            #print(f"{rep_features.shape=}")
-            nbr_weights = nbr_weights.unsqueeze(-1)
-            rep_features = nbr_weights * rep_features
+            nbr_weights = self.weighting_fn(nbr_weights).unsqueeze(-1).unsqueeze(0)
+            rep_features.mul_(nbr_weights)
             reduction = "sum" # Force sum reduction for weighted GNO layers
         else:
             reduction = self.reduction
-
-        '''splits = neighbors["neighbors_row_splits"]
+        
+        splits = neighbors["neighbors_row_splits"]
         if batched:
-            splits = splits.repeat([batch_size] + [1] * splits.ndim)'''
+            splits = splits.repeat([batch_size] + [1] * splits.ndim)
 
-        out_features = segment_csr(rep_features, neighbors["neighbors_row_splits"], reduce=reduction)
-
+        out_features = segment_csr(rep_features, splits, reduce=reduction, use_scatter=True)
         return out_features
