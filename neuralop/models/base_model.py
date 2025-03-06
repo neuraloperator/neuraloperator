@@ -28,7 +28,7 @@ class BaseModel(torch.nn.Module):
     def __init_subclass__(cls, name=None, **kwargs):
         """When a subclass is created, register it in _models
         We look for an existing name attribute. 
-        If not give, then we use the class' name.
+        If not given, then we use the class' name.
         """
         super().__init_subclass__(**kwargs)
         if name is not None:
@@ -97,7 +97,7 @@ class BaseModel(torch.nn.Module):
 
         """
         state_dict = super().state_dict(destination=destination, prefix=prefix, keep_vars=keep_vars)
-        if state_dict.get('_metadata') == None:
+        if state_dict.get('_metadata') is None:
             state_dict['_metadata'] = self._init_kwargs
         else:
             warnings.warn("Attempting to update metadata for a module with metadata already in self.state_dict()")
