@@ -20,7 +20,7 @@ class BaseSpectralConv(nn.Module):
 
         Typical usecases are:
 
-        * Your upsample or downsample the input in the Spectral conv: the skip connection has to be similarly scaled. 
+        * You upsample or downsample the input in the Spectral Conv: the skip connection has to be similarly scaled. 
           This allows you to deal with it however you want (e.g. avoid aliasing)
         * You perform a change of basis in your Spectral Conv, again, this needs to be applied to the skip connection too.
         """
