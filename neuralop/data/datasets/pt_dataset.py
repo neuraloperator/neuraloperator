@@ -125,7 +125,7 @@ class PTDataset:
             y_train = y_train.unsqueeze(channel_dim)
 
         ## Output subsampling
-        output_data_dims = data["y"].ndim - 2
+        output_data_dims = y_train.ndim - 2
         # convert None and 0 to 1
         if not input_subsampling_rate:
             output_subsampling_rate = 1

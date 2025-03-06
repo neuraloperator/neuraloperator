@@ -16,7 +16,7 @@ default: &DEFAULT
 
   # FNO related
   tfno2d:
-    data_channels: 3
+    data_channels: 1
     n_modes_height: 15
     n_modes_width: 15
     hidden_channels: 24
@@ -63,7 +63,7 @@ default: &DEFAULT
 
   # Dataset related
   data:
-    folder: '/home/ubuntu/data/burgers/burgers.npz' 
+    folder: 'neuralop/data/datasets/data/tmp/' 
     batch_size: 16
     n_train: 800
     test_batch_sizes: [16]

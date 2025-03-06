@@ -80,6 +80,7 @@ class Burgers1dTimeDataset(PTDataset):
                          encode_output=True,
                          encoding="channel-wise",
                          channel_dim=1,
+                         channels_squeezed=False,
                          dataset_name="burgers",) 
 
 def load_mini_burgers_1dtime(data_path: Union[Path, str],
@@ -126,4 +127,4 @@ def load_mini_burgers_1dtime(data_path: Union[Path, str],
                                    batch_size=test_batch_size,
                                    shuffle=False)}
 
-    return train_loader, test_loaders, burgers_dataset.data_processo
+    return train_loader, test_loaders, burgers_dataset.data_processor
