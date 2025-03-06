@@ -232,10 +232,10 @@ class LocalNO(BaseModel, name='LocalNO'):
 
         # init lifting and projection channels using ratios w.r.t hidden channels
         self.lifting_channel_ratio = lifting_channel_ratio
-        self.lifting_channels = lifting_channel_ratio * self.hidden_channels
+        self.lifting_channels = self.lifting_channel_ratio * self.hidden_channels
 
         self.projection_channel_ratio = projection_channel_ratio
-        self.projection_channels = projection_channel_ratio * self.hidden_channels
+        self.projection_channels = self.projection_channel_ratio * self.hidden_channels
 
         self.non_linearity = non_linearity
         self.rank = rank
@@ -262,7 +262,7 @@ class LocalNO(BaseModel, name='LocalNO'):
                 raise ValueError(f'Error: expected {self.n_dim}-d positional embeddings, got {positional_embedding}')
         elif isinstance(positional_embedding, GridEmbeddingND):
             self.positional_embedding = positional_embedding
-        elif positional_embedding == None:
+        elif positional_embedding is None:
             self.positional_embedding = None
         else:
             raise ValueError(f"Error: tried to instantiate positional embedding with {positional_embedding},\
@@ -345,8 +345,8 @@ class LocalNO(BaseModel, name='LocalNO'):
         else:
             self.lifting = ChannelMLP(
                 in_channels=lifting_in_channels,
-                hidden_channels=self.hidden_channels,
                 out_channels=self.hidden_channels,
+                hidden_channels=self.hidden_channels,
                 n_layers=1,
                 n_dim=self.n_dim,
                 non_linearity=non_linearity
