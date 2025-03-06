@@ -151,7 +151,7 @@ class FNOBlocks(nn.Module):
         self.preactivation = preactivation
         self.ada_in_features = ada_in_features
 
-        # apply real nonlin if data is real, otherwise CGELU
+        # apply real nonlinearity if data is real, otherwise CGELU
         if self.complex_data:
             self.non_linearity = CGELU
         else:

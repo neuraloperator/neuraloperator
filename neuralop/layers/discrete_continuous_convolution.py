@@ -1,12 +1,10 @@
 import abc
 import math
-import numpy
 
 import torch
 import torch.nn as nn
 
 from typing import Union, List, Optional, Tuple
-from functools import partial
 
 # import the base class from torch-harmonics
 try:
@@ -344,8 +342,8 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
             assert len(n_in) == 2
             x, wx = _precompute_grid(n_in[0], grid=grid_in, periodic=periodic)
             y, wy = _precompute_grid(n_in[1], grid=grid_in, periodic=periodic)
-            x, y = torch.meshgrid(torch.from_numpy(x), torch.from_numpy(y))
-            wx, wy = torch.meshgrid(torch.from_numpy(wx), torch.from_numpy(wy))
+            x, y = torch.meshgrid(torch.from_numpy(x), torch.from_numpy(y), indexing='ij')
+            wx, wy = torch.meshgrid(torch.from_numpy(wx), torch.from_numpy(wy), indexing='ij')
             grid_in = torch.stack([x.reshape(-1), y.reshape(-1)])
             quadrature_weights = (wx * wy).reshape(-1)
         else:
@@ -358,7 +356,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
             assert len(n_out) == 2
             x, wx = _precompute_grid(n_out[0], grid=grid_out, periodic=periodic)
             y, wy = _precompute_grid(n_out[1], grid=grid_out, periodic=periodic)
-            x, y = torch.meshgrid(torch.from_numpy(x), torch.from_numpy(y))
+            x, y = torch.meshgrid(torch.from_numpy(x), torch.from_numpy(y), indexing='ij')
             grid_out = torch.stack([x.reshape(-1), y.reshape(-1)])
         else:
             raise ValueError(f"Unknown grid output type of type {type(grid_out)}")
@@ -523,8 +521,8 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
             assert len(n_in) == 2
             x, wx = _precompute_grid(n_in[0], grid=grid_in, periodic=periodic)
             y, wy = _precompute_grid(n_in[1], grid=grid_in, periodic=periodic)
-            x, y = torch.meshgrid(torch.from_numpy(x), torch.from_numpy(y))
-            wx, wy = torch.meshgrid(torch.from_numpy(wx), torch.from_numpy(wy))
+            x, y = torch.meshgrid(torch.from_numpy(x), torch.from_numpy(y), indexing='ij')
+            wx, wy = torch.meshgrid(torch.from_numpy(wx), torch.from_numpy(wy), indexing='ij')
             grid_in = torch.stack([x.reshape(-1), y.reshape(-1)])
             quadrature_weights = (wx * wy).reshape(-1)
         else:
@@ -537,7 +535,7 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
             assert len(n_out) == 2
             x, wx = _precompute_grid(n_out[0], grid=grid_out, periodic=periodic)
             y, wy = _precompute_grid(n_out[1], grid=grid_out, periodic=periodic)
-            x, y = torch.meshgrid(torch.from_numpy(x), torch.from_numpy(y))
+            x, y = torch.meshgrid(torch.from_numpy(x), torch.from_numpy(y), indexing='ij')
             grid_out = torch.stack([x.reshape(-1), y.reshape(-1)])
         else:
             raise ValueError(f"Unknown grid output type of type {type(grid_out)}")
@@ -717,7 +715,7 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         # psi_local is essentially the support of the hat functions evaluated locally
         x = torch.linspace(-radius_cutoff, radius_cutoff, self.psi_local_h)
         y = torch.linspace(-radius_cutoff, radius_cutoff, self.psi_local_w)
-        x, y = torch.meshgrid(x, y)
+        x, y = torch.meshgrid(x, y, indexing='ij')
         grid_in = torch.stack([x.reshape(-1), y.reshape(-1)])
 
         # compute quadrature weights on the incoming grid
@@ -876,7 +874,7 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         # psi_local is essentially the support of the hat functions evaluated locally
         x = torch.linspace(-radius_cutoff, radius_cutoff, self.psi_local_h)
         y = torch.linspace(-radius_cutoff, radius_cutoff, self.psi_local_w)
-        x, y = torch.meshgrid(x, y)
+        x, y = torch.meshgrid(x, y, indexing='ij')
         grid_in = torch.stack([x.reshape(-1), y.reshape(-1)])
         grid_out = torch.Tensor([[0.0], [0.0]])
 

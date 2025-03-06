@@ -1,5 +1,3 @@
-from typing import List
-
 import torch
 from torch.utils.data import Dataset
 
@@ -69,7 +67,7 @@ class RandomMGPatch():
             if step == 1:
                 return (shifted_image, )
             else:
-                # Notice that we need to stat cropping at start_h = (height - patch_size)//2
+                # Notice that we need to start cropping at start_h = (height - patch_size)//2
                 # (//2 as we pad both sides)
                 # Here, the extracted patch-size is half the size so patch-size = height//2
                 # Hence the values height//4 and width // 4
