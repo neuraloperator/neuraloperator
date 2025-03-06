@@ -409,7 +409,7 @@ class SpectralConv(BaseSpectralConv):
         fft_size = list(mode_sizes)
         if not self.complex_data:
             fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient in real spatial data
-        fft_dims = list(range(-self.order, 0))
+        fft_dims = tuple(range(-self.order, 0))
 
         if self.fno_block_precision == "half":
             x = x.half()
