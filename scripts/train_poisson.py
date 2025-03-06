@@ -83,6 +83,7 @@ train_loader, test_loader, data_processor = load_nonlinear_poisson_pt(
     n_in=config.data.n_in,
     n_out=config.data.n_out,
     n_eval=config.data.n_eval,
+    n_bound=config.data.n_bound,
     val_on_same_instance=config.data.single_instance,
     train_out_res=config.data.train_out_res,
     input_min_sample_points=config.data.input_min,
