@@ -28,7 +28,6 @@ class ChannelMLP(nn.Module):
         out_channels=None,
         hidden_channels=None,
         n_layers=2,
-        n_dim=2,
         non_linearity=F.gelu,
         dropout=0.0,
         **kwargs,
