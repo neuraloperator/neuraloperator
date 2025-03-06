@@ -111,29 +111,37 @@ class PoissonInteriorLoss(object):
         del u_xx, u_yy, u_x, u_y, left_hand_side
         return loss
     
-    def autograd(self, u, output_queries, output_source_terms_domain, **kwargs):
+    def autograd(self, u, output_queries, output_source_terms_domain, num_boundary, **kwargs):
         '''
         Compute the nonlinear Poisson equation: ∇·((1 + 0.1u^2)∇u(x)) = f(x)
         '''
+        #print(f"{u.shape=}")
+        #print(f"{output_queries.shape=}")
         # Make sure output queries are the right shape
-        output_queries_domain = output_queries['domain']
-        assert output_queries_domain.shape[-1] == 2
-        assert output_queries_domain.ndim == 3
-        n_domain = output_queries_domain.shape[1]
+        if isinstance(output_queries, dict):
+            output_queries_domain = output_queries['domain']
+            u_prime = grad(outputs=u.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0]
+        else:
+            #output_queries_domain = output_queries
+            output_queries_domain = None
+            u = u[:, num_boundary:, ...]
+            u_prime = grad(outputs=u.sum(), inputs=output_queries, create_graph=True, retain_graph=True)[0][:, num_boundary:, :]
+        #assert output_queries_domain.shape[-1] == 2
+        #assert output_queries_domain.ndim == 3
         # we only care about u defined over the interior.
         # Grab u_interior now
-        u = u[:, -n_domain:, ...]
-        u_prime = grad(outputs=u.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0]
+        
         # return None, norm_grad_u, None
-
-
         u_x = u_prime[:,0]
         u_y = u_prime[:,1]
         
         # compute second derivatives
-        u_xx = grad(outputs=u_x.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0][:,:,0]
-        u_yy = grad(outputs=u_y.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0][:,:,1]
-
+        if output_queries_domain is not None:
+            u_xx = grad(outputs=u_x.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0][:,:,0]
+            u_yy = grad(outputs=u_y.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0][:,:,1]
+        else:
+            u_xx = grad(outputs=u_x.sum(), inputs=output_queries, create_graph=True, retain_graph=True)[0][:,num_boundary: ,0]
+            u_yy = grad(outputs=u_y.sum(), inputs=output_queries, create_graph=True, retain_graph=True)[0][:,num_boundary: ,1]
         u_xx = u_xx.squeeze(0)
         u_yy = u_yy.squeeze(0)
         u_prime = u_prime.squeeze(0)
@@ -198,6 +206,12 @@ class PoissonEqnLoss(object):
         self.interior_loss = PoissonInteriorLoss(method=diff_method, loss=base_loss)
 
     def __call__(self, out, y, **kwargs):
-        interior_loss = self.interior_weight * self.interior_loss(out['domain'], **kwargs)
-        bc_loss = self.boundary_weight * self.boundary_loss(out['boundary'], y=y['boundary'],  **kwargs)
+        if isinstance(out, dict):
+            interior_loss = self.interior_weight * self.interior_loss(out['domain'], **kwargs)
+            bc_loss = self.boundary_weight * self.boundary_loss(out['boundary'], y=y['boundary'],  **kwargs)
+        else:
+            interior_loss = self.interior_weight + self.interior_loss(out, **kwargs)
+            bc_loss = self.boundary_weight * self.boundary_loss(out, y=y, **kwargs)
+        #print(f"{interior_loss=} {bc_loss=}")
         return interior_loss + bc_loss
+        #return {'interior': interior_loss, 'boundary': bc_loss}

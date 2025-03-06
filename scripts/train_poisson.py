@@ -88,7 +88,8 @@ train_loader, test_loader, data_processor = load_nonlinear_poisson_pt(
     input_min_sample_points=config.data.input_min,
     input_max_sample_points=config.data.input_max,
     input_subsample_level=config.data.sample_random_in,
-    output_subsample_level=config.data.sample_random_out
+    output_subsample_level=config.data.sample_random_out,
+    return_dict=config.data.return_queries_dict
 )
 test_loaders = {"test": test_loader} ##TODO FIX ONCE NOT FITTING SINGLE INSTANCE
 
@@ -137,11 +138,10 @@ class GINOLoss(object):
     def __call__(self, out, y, **kwargs):
         loss = 0.
         if isinstance(out, dict) and isinstance(y, dict):
-            for field, points in out.items():
-                loss += self.base_loss(points, y[field], **kwargs)
-            return loss
-        else:
-            return self.base_loss(out, y, **kwargs)
+            y = torch.cat([y[field] for field in out.keys()], dim=1)
+            out = torch.cat([out[field] for field in out.keys()], dim=1)
+        
+        return self.base_loss(out, y, **kwargs)
 
 gino_mseloss = GINOLoss(mse_loss)
 
@@ -163,7 +163,10 @@ if 'equation' in training_loss:
     losses.append(equation_loss)
     weights.append(1)
 
-train_loss = WeightedSumLoss(losses=losses, weights=weights)
+if len(losses) == 1:
+    train_loss = losses[0]
+else:
+    train_loss = WeightedSumLoss(losses=losses, weights=weights)
 #train_loss = WeightedSumLoss(losses=losses, weights=weights, return_individual=True, compute_grads=True)
 eval_losses = {"mse": mse_loss}
 

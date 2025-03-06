@@ -117,7 +117,8 @@ def load_nonlinear_poisson_pt(
         input_max_sample_points=None,
         input_subsample_level=None,
         output_subsample_level=None,
-        train_out_res=None
+        train_out_res=None,
+        return_dict=True
         ):
     try:
         with open(data_path, 'rb') as file:
@@ -225,7 +226,8 @@ def load_nonlinear_poisson_pt(
         input_min=input_min_sample_points,
         input_max=input_max_sample_points,
         input_sub_level=input_subsample_level,
-        output_sub_level=output_subsample_level
+        output_sub_level=output_subsample_level,
+        return_dict=return_dict
     )
     return train_dataloader, test_dataloader, data_processor
 
@@ -244,7 +246,8 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
         input_min=100,
         input_max=1000,
         input_sub_level=None, 
-        output_sub_level=None
+        output_sub_level=None,
+        return_dict=True
     ):
         """A simple processor to pre/post process data before training/inferencing a model.
 
@@ -272,6 +275,7 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
         self.device = device
         self.input_min = input_min
         self.input_max = input_max
+        self.return_dict = return_dict
 
     def preprocess(self, data_dict, batched=True):
         # load input function of shape (_, n_in, in_dim)
@@ -357,18 +361,25 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
                 y_bound = self.out_normalizer.transform(y_bound)
                 y_domain = self.out_normalizer.transform(y_domain)
 
-            y = {
-                'boundary': y_bound,
-                'domain': y_domain,
-            }
+            if self.return_dict:
+                y = {
+                    'boundary': y_bound,
+                    'domain': y_domain,
+                }
+            else:
+                y = torch.cat((y_bound, y_domain), dim=1)
             # load both boundaries and interior points to device so they exist
             # separately in the computational graph for later use in physics
             output_queries_domain = output_queries_domain.to(self.device)
             output_queries_bound = output_queries_bound.to(self.device)
-            output_queries = {
-                'boundary': output_queries_bound,
-                'domain': output_queries_domain
-            }
+            if self.return_dict:
+                output_queries = {
+                    'boundary': output_queries_bound,
+                    'domain': output_queries_domain
+                }
+            else:
+                output_queries = torch.cat((output_queries_bound, output_queries_domain), dim=1)
+                print(f"{output_queries.shape=}")
         else:
             y = y_domain.unsqueeze(-1).to(self.device) # add feature dim
             output_queries = output_queries_domain.to(self.device)
