@@ -48,10 +48,10 @@ class GINO(BaseModel):
         out_gno_transform_type : str, optional
             transform type parameter for output GNO, by default 'linear'
             see neuralop.layers.gno_block for more details
-        in_gno_pos_embed_type : literal `{'transformer', 'nerf'}` | None
+        in_gno_pos_embed_type : literal `{'transformer', 'nerf', 'legacy'}` | None
             type of optional sinusoidal positional embedding to use in input GNOBlock,
             by default `'transformer'`
-        out_gno_pos_embed_type : literal `{'transformer', 'nerf'}` | None
+        out_gno_pos_embed_type : literal `{'transformer', 'nerf', 'legacy'}` | None
             type of optional sinusoidal positional embedding to use in output GNOBlock,
             by default `'transformer'`
         fno_in_channels : int, optional

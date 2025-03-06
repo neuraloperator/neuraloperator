@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from .channel_mlp import LinearChannelMLP
 from .integral_transform import IntegralTransform
 from .neighbor_search import NeighborSearch
-from .embeddings import SinusoidalEmbedding
+from .embeddings import SinusoidalEmbedding, LegacySinusoidalEmbedding
 
 
 class GNOBlock(nn.Module):
@@ -144,13 +144,18 @@ class GNOBlock(nn.Module):
 
         # Apply sinusoidal positional embedding
         self.pos_embedding_type = pos_embedding_type
-        if self.pos_embedding_type is not None:
+        if self.pos_embedding_type in ['nerf', 'transformer']:
             self.pos_embedding = SinusoidalEmbedding(
                 in_channels=coord_dim,
                 num_frequencies=pos_embedding_channels,
                 embedding_type=pos_embedding_type,
                 max_positions=pos_embedding_max_positions
             )
+        elif self.pos_embedding_type == 'legacy':
+            self.pos_embedding = LegacySinusoidalEmbedding(
+                in_channels=coord_dim,
+                num_frequencies=pos_embedding_channels,
+                max_positions=pos_embedding_max_positions)
         else:
             self.pos_embedding = None
                     
