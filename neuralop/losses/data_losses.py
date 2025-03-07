@@ -64,6 +64,7 @@ class LpLoss(object):
 
         self.d = d
         self.p = p
+        self.eps = 1e-8
         
         allowed_reductions = ["sum", "mean"]
         assert reduction in allowed_reductions,\
@@ -162,7 +163,7 @@ class LpLoss(object):
                           p=self.p, dim=-1, keepdim=False)
         ynorm = torch.norm(torch.flatten(y, start_dim=-self.d), p=self.p, dim=-1, keepdim=False)
 
-        diff = diff/ynorm
+        diff = diff/(ynorm + self.eps)
 
         diff = self.reduce_all(diff).squeeze()
             
@@ -226,6 +227,8 @@ class H1Loss(object):
         self.fix_x_bnd = fix_x_bnd
         self.fix_y_bnd = fix_y_bnd
         self.fix_z_bnd = fix_z_bnd
+        
+        self.eps = 1e-8
         
         allowed_reductions = ["sum", "mean"]
         assert reduction in allowed_reductions,\
@@ -398,7 +401,7 @@ class H1Loss(object):
             diff += torch.norm(dict_x[j] - dict_y[j], p=2, dim=-1, keepdim=False)**2
             ynorm += torch.norm(dict_y[j], p=2, dim=-1, keepdim=False)**2
         
-        diff = (diff**0.5)/(ynorm**0.5)
+        diff = (diff**0.5)/(ynorm**0.5 + self.eps)
 
         diff = self.reduce_all(diff).squeeze()
             
@@ -472,6 +475,8 @@ class HdivLoss(object):
         self.fix_x_bnd = fix_x_bnd
         self.fix_y_bnd = fix_y_bnd
         self.fix_z_bnd = fix_z_bnd
+        
+        self.eps = 1e-8
         
         allowed_reductions = ["sum", "mean"]
         assert reduction in allowed_reductions,\
@@ -635,7 +640,7 @@ class HdivLoss(object):
         diff += torch.norm(dict_x[1] - dict_y[1], p=2, dim=-1, keepdim=False) ** 2
         ynorm += torch.norm(dict_y[1], p=2, dim=-1, keepdim=False) ** 2
 
-        diff = (diff**0.5)/(ynorm**0.5)
+        diff = (diff**0.5)/(ynorm**0.5 + self.eps)
 
         diff = self.reduce_all(diff).squeeze()
             
