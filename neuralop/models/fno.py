@@ -36,7 +36,7 @@ class FNO(BaseModel, name='FNO'):
     out_channels : int
         Number of channels in output function
     hidden_channels : int
-        width of the FNO (i.e. number of channels), by default 256
+        width of the FNO (i.e. number of channels)
     n_layers : int, optional
         Number of Fourier Layers, by default 4
 
@@ -47,11 +47,11 @@ class FNO(BaseModel, name='FNO'):
     lifting_channel_ratio : int, optional
         ratio of lifting channels to hidden_channels, by default 2
         The number of liting channels in the lifting block of the FNO is
-        lifting_channel_ratio * hidden_channels (e.g. default 512)
+        lifting_channel_ratio * hidden_channels (e.g. default 2 * hidden_channels)
     projection_channel_ratio : int, optional
         ratio of projection channels to hidden_channels, by default 2
         The number of projection channels in the projection block of the FNO is
-        projection_channel_ratio * hidden_channels (e.g. default 512)
+        projection_channel_ratio * hidden_channels (e.g. default 2 * hidden_channels)
     positional_embedding : Union[str, nn.Module], optional
         Positional embedding to apply to last channels of raw input
         before being passed through the FNO. Defaults to "grid"
@@ -72,6 +72,8 @@ class FNO(BaseModel, name='FNO'):
     complex_data : bool, optional
         Whether data is complex-valued (default False)
         if True, initializes complex-valued modules.
+    use_channel_mlp : bool, optional
+        Whether to use an MLP layer after each FNO block, by default True
     channel_mlp_dropout : float, optional
         dropout parameter for ChannelMLP in FNO Block, by default 0
     channel_mlp_expansion : float, optional
@@ -172,6 +174,7 @@ class FNO(BaseModel, name='FNO'):
         non_linearity: nn.Module=F.gelu,
         norm: Literal ["ada_in", "group_norm", "instance_norm"]=None,
         complex_data: bool=False,
+        use_channel_mlp: bool=True,
         channel_mlp_dropout: float=0,
         channel_mlp_expansion: float=0.5,
         channel_mlp_skip: Literal['linear', 'identity', 'soft-gating']="soft-gating",
@@ -268,6 +271,7 @@ class FNO(BaseModel, name='FNO'):
             out_channels=hidden_channels,
             n_modes=self.n_modes,
             resolution_scaling_factor=resolution_scaling_factor,
+            use_channel_mlp=use_channel_mlp,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
             non_linearity=non_linearity,
