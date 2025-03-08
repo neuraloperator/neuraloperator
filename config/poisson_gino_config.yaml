@@ -33,7 +33,7 @@ default: &DEFAULT
     input_max: 5000
     sample_random_in: None # Set to a certain percentage if we want to sample a static number of points. Will use the range otherwise
     sample_random_out: None
-    return_queries_dict: False
+    return_queries_dict: True
 
   checkpoint_dir: '../checkpoints/'
   checkpoint_name: 'PoissonMLPCheck'
@@ -81,7 +81,7 @@ default: &DEFAULT
   
   opt:
     n_epochs: 1000
-    training_loss: ['mse'] #['equation', 'boundary']
+    training_loss: ['equation', 'boundary']
     loss_weights: 
       mse : 1.
       interior: 1e-2
