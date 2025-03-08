@@ -379,7 +379,7 @@ class PoissonGINODataProcessor(DefaultDataProcessor):
                 }
             else:
                 output_queries = torch.cat((output_queries_bound, output_queries_domain), dim=1)
-                print(f"{output_queries.shape=}")
+                #print(f"{output_queries.shape=}")
         else:
             y = y_domain.unsqueeze(-1).to(self.device) # add feature dim
             output_queries = output_queries_domain.to(self.device)

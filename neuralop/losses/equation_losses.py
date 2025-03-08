@@ -116,13 +116,15 @@ class PoissonInteriorLoss(object):
         Compute the nonlinear Poisson equation: ∇·((1 + 0.1u^2)∇u(x)) = f(x)
         '''
         #print(f"{u.shape=}")
-        #print(f"{output_queries.shape=}")
+        
         # Make sure output queries are the right shape
         if isinstance(output_queries, dict):
             output_queries_domain = output_queries['domain']
+            #print(f"{output_queries_domain.shape=}")
             u_prime = grad(outputs=u.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0]
         else:
             #output_queries_domain = output_queries
+            #print(f"{output_queries.shape=}")
             output_queries_domain = None
             u = u[:, num_boundary:, ...]
             u_prime = grad(outputs=u.sum(), inputs=output_queries, create_graph=True, retain_graph=True)[0][:, num_boundary:, :]

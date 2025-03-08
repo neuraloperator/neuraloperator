@@ -15,24 +15,25 @@ default: &DEFAULT
   # Dataset related
   data:
     batch_size: 1
-    file: '/home/dave/data/nonlin_poisson/nonlinear_poisson.obj'
-    n_train: 1
-    n_test: 1 #[48]
-    n_in: 10000 # Input points per instance
-    n_out: 1000 # Output query points instance
+    file: '/home/dave/data/nonlin_poisson/nonlinear_poisson_new.obj' #new = ryan's revised data
+    n_train: 7000
+    n_test: 3000 #[48]
+    n_in: 5000 # Input points per instance
+    n_out: 100 # Output query points instance
     n_eval: 6000 # Points to evaluate on
-    single_instance: True
+    n_bound: 4000
     # train_out_res: 64 # Resolution of output GNO points' grid
     test_batch_sizes: [1] #16
     query_resolution: 64
-    train_out_res: 400 #400
+    train_out_res: 400
     points_per_bc: 100
     padding: 1
-    encode: True
-    input_min: 1000
-    input_max: 10000
+    single_instance: False
+    input_min: 100
+    input_max: 5000
     sample_random_in: None # Set to a certain percentage if we want to sample a static number of points. Will use the range otherwise
     sample_random_out: None
+    return_queries_dict: False
 
   checkpoint_dir: '../checkpoints/'
   checkpoint_name: 'PoissonMLPCheck'
@@ -58,8 +59,8 @@ default: &DEFAULT
     in_gno_transform_type: 'linear' #ryan config'd to nonlinear but not passed # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
     out_gno_transform_type: 'linear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
     gno_reduction: 'mean'
-    gno_weighting_function: 'quadr' # 'bump', 'bump_sqrt', 'linear', 'tanh', 'cos', 'quadr', 'cubic', 'quartic'. 'quartic_sqrt', 'octic', 'octic_sqrt', None
-    gno_weight_function_scale: 1. #0.030624999999999996
+    gno_weighting_function: 'quadr' #'cos' # 'bump', 'bump_sqrt', 'linear', 'tanh', 'cos', 'quadr', 'cubic', 'quartic'. 'quartic_sqrt', 'octic', 'octic_sqrt', None
+    gno_weight_function_scale: 1.0 #0.030624999999999996
     gno_use_open3d: False
     in_gno_channel_mlp_hidden_layers: [256, 512, 256] #[40, 40], [512, 256]
     out_gno_channel_mlp_hidden_layers: [512, 1024, 512] #[40, 40], [512, 256]
@@ -80,17 +81,17 @@ default: &DEFAULT
   
   opt:
     n_epochs: 1000
-    training_loss: ['equation', 'boundary']
+    training_loss: ['mse'] #['equation', 'boundary']
     loss_weights: 
       mse : 1.
-      interior: 1e-10
+      interior: 1e-2
       boundary: 1.
     loss_schedule: False
     loss_scale: 1.
     pino_method: 'autograd' # 'finite_difference', 'fdm_fourier_hybrid', 'autograd', 'FC_fourier_hybrid', 'FC'
-    weight_decay: 0. #1e-6 #1e-4 #1e-4 #0
+    weight_decay: 1e-6 #1e-4 #1e-4 #0
     amp_autocast: False
-    learning_rate: 1e-3
+    learning_rate: 1e-4
     optimizer: 'Adam'
     scheduler: 'ReduceLROnPlateau' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau' or "StepLR"
     scheduler_T_max: 5000 # For cosine only, typically take n_epochs
@@ -102,7 +103,7 @@ default: &DEFAULT
   # Weights and biases
   wandb:
     log: True
-    name: single_inst_pino # If None, config will be used but you can override it here
+    name: local_pino_corrected_loss # If None, config will be used but you can override it here
     group: test
     project: "mgno_poisson"
     entity: "dhpitt" # put your username here
