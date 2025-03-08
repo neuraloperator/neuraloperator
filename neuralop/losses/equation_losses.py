@@ -132,8 +132,8 @@ class PoissonInteriorLoss(object):
         # Grab u_interior now
         
         # return None, norm_grad_u, None
-        u_x = u_prime[:,0]
-        u_y = u_prime[:,1]
+        u_x = u_prime[:,:,0]
+        u_y = u_prime[:,:,1]
         
         # compute second derivatives
         if output_queries_domain is not None:
