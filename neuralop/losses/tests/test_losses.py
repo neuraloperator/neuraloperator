@@ -3,7 +3,7 @@ import torch
 from torch.testing import assert_close
 
 from ..data_losses import LpLoss, H1Loss, HdivLoss
-from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d
+from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd
 from neuralop.layers.embeddings import regular_grid_nd
 
 def test_lploss():
@@ -126,3 +126,73 @@ def test_central_diff3d():
     assert_close(dz[0], torch.zeros_like(dz[0]))
     assert_close(dz[1], torch.zeros_like(dz[1]))
     assert_close(dz[2], torch.ones_like(dz[2]))
+
+
+def test_nonuniform_fd_1d():
+    
+    x = torch.sort(torch.rand(256))[0].unsqueeze(1)
+    f = torch.exp(3*x) + torch.sin(10*x) - x**2
+    df_ref = (3*torch.exp(3*x) + 10*torch.cos(10*x) - 2 * x).squeeze()
+    df_dx = non_uniform_fd(x, f.squeeze(), num_neighbors=3, derivative_indices=[0], regularize_lstsq=False)[0]
+    
+    l2 = LpLoss(d=1, p=2, reduction='mean', measure=1.)
+    assert l2.rel(df_ref, df_dx).item() < 5e-2
+    
+    # # Plot to check visually
+    # import matplotlib.pyplot as plt
+    # plt.figure(figsize=(10,5))
+    # plt.plot(x.detach().numpy().squeeze(), df_ref.detach().numpy(), 'r', linewidth=0.8, label='Reference')
+    # plt.plot(x.detach().numpy(), df_dx.detach().numpy(), 'b', linewidth=0.8, label='FD')
+    # plt.legend()
+    # plt.xlabel(r'$x$')
+    # plt.ylabel(r'$df/dx$')
+    # plt.savefig('non_uniform_fd_1D.pdf')
+    
+    
+def test_nonuniform_fd_2d():
+    
+    num_points = 128
+    x = torch.linspace(-1, 1, num_points, dtype=torch.float64)
+    y = torch.linspace(-1, 1, num_points, dtype=torch.float64)
+    X, Y = torch.meshgrid(x, y, indexing='ij')
+    points = torch.stack([X.flatten(), Y.flatten()], dim=1)
+    f = torch.exp(Y) + 0.1 * torch.sin(10 * X) - (X**2) * (Y**2)
+    dfdx_ref =  torch.cos(10*X) - 2*X*(Y**2)
+    dfdy_ref = torch.exp(Y) - 2*(X**2)*Y
+    df = non_uniform_fd(points, f.flatten(), num_neighbors=5, derivative_indices=[0,1], regularize_lstsq=True)
+    df_dx = df[0].reshape(num_points, num_points)
+    df_dy = df[1].reshape(num_points, num_points)
+
+    l2 = LpLoss(d=2, p=2, reduction='mean', measure=1.)
+    assert l2.rel(dfdx_ref, df_dx).item() < 5e-2
+    assert l2.rel(dfdy_ref, df_dy).item() < 5e-2
+    
+    # # Plot to check visually
+    # import matplotlib.pyplot as plt
+    # plt.figure(figsize=(7, 7))
+    # plt.subplot(2, 2, 1)
+    # img1 = plt.imshow(df_dx.detach().numpy())
+    # plt.colorbar(img1, shrink=0.75)  
+    # plt.title(r'$df/dx$')
+    # plt.xticks([])  
+    # plt.yticks([]) 
+    # plt.subplot(2, 2, 2)
+    # img2 = plt.imshow(dfdx_ref.detach().numpy())
+    # plt.colorbar(img2, shrink=0.75)
+    # plt.title(r'$df/dx$_ref')
+    # plt.xticks([])
+    # plt.yticks([])
+    # plt.subplot(2, 2, 3)
+    # img3 = plt.imshow(df_dy.detach().numpy())
+    # plt.colorbar(img3, shrink=0.75)
+    # plt.title(r'$df/dy$')
+    # plt.xticks([])
+    # plt.yticks([])
+    # plt.subplot(2, 2, 4)
+    # img4 = plt.imshow(dfdy_ref.detach().numpy().reshape(num_points, num_points))
+    # plt.colorbar(img4, shrink=0.75)
+    # plt.title(r'$df/dy$_ref')
+    # plt.xticks([])
+    # plt.yticks([])
+    # plt.tight_layout()
+    # plt.savefig('non_uniform_fd_2D.pdf')
