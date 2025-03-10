@@ -242,9 +242,20 @@ class PoissonBoundaryLoss(object):
         return self.loss(boundary_pred, y_bound)
     
 class PoissonEqnLoss(object):
-    '''
-    Weighted sum of interior PDE loss and MSE on the boundary
-    '''
+    """PoissonEqnLoss computes a weighted sum of equation loss computed on the interior points of a model's output
+    and a boundary loss computed on the boundary points. 
+
+    Parameters
+    ----------
+    boundary_weight : float
+        weight by which to multiply boundary loss
+    interior_weight : float
+        weight by which to multiply interior loss
+    diff_method : Literal['autograd', 'finite_difference'], optional
+        method to use to compute derivatives, by default 'autograd'
+    base_loss : Callable, optional
+        base loss class to use inside equation and boundary loss, by default F.mse_loss
+    """
     def __init__(self, boundary_weight, interior_weight, diff_method: str='autograd', base_loss=F.mse_loss): 
         super().__init__()
         self.boundary_weight = boundary_weight
@@ -260,6 +271,4 @@ class PoissonEqnLoss(object):
         else:
             interior_loss = self.interior_weight + self.interior_loss(out, **kwargs)
             bc_loss = self.boundary_weight * self.boundary_loss(out, y=y, **kwargs)
-        #print(f"{interior_loss=} {bc_loss=}")
         return interior_loss + bc_loss
-        #return {'interior': interior_loss, 'boundary': bc_loss}
