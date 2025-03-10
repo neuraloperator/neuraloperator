@@ -277,6 +277,7 @@ class GINO(BaseModel):
             channel_mlp_layers=in_gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=in_gno_transform_type,
+            use_torch_scatter_reduce=gno_use_torch_scatter,
             use_open3d_neighbor_search=gno_use_open3d,
         )
 
@@ -340,6 +341,7 @@ class GINO(BaseModel):
             channel_mlp_layers=out_gno_channel_mlp_hidden_layers,
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=out_gno_transform_type,
+            use_torch_scatter_reduce=gno_use_torch_scatter,
             use_open3d_neighbor_search=gno_use_open3d,
         )
 

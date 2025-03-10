@@ -133,6 +133,7 @@ class GNOBlock(nn.Module):
                  channel_mlp_layers: List[int]=[128,256,128],
                  channel_mlp_non_linearity=F.gelu,
                  channel_mlp: nn.Module=None,
+                 use_torch_scatter_reduce: bool=True,
                  use_open3d_neighbor_search: bool=True,):
         super().__init__()
 
@@ -198,7 +199,7 @@ class GNOBlock(nn.Module):
         self.integral_transform = IntegralTransform(
             channel_mlp=channel_mlp,
             transform_type=transform_type,
-            use_torch_scatter=False,
+            use_torch_scatter=use_torch_scatter_reduce,
             weighting_fn=weighting_fn,
             reduction=reduction
         )
