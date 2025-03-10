@@ -73,15 +73,60 @@ class ICLoss(object):
 
 
 class PoissonInteriorLoss(object):
-    def __init__(self, method='autograd', loss=F.mse_loss, debug=False):
+    """PoissonInteriorLoss computes the loss on the interior points of model outputs 
+    according to Poisson's equation in 2d. 
+
+    Parameters
+    ----------
+    method : Literal['autograd', 'finite_difference']
+        How to compute derivatives for equation loss. 
+        
+        * If 'autograd', differentiates using torch.autograd.grad. This can be used with outputs with any irregular
+        point cloud structure.
+
+        * If 'finite_difference', uses neuralop.losses.finite_diff.central_diff_2d. This can only be used with outputs 
+        provided over a regular 2d grid. 
+
+    loss: Callable
+        Base loss class to compute distances between expected and true values, by 
+        default torch.nn.functional.mse_loss
+
+    """
+    def __init__(self, method='autograd', loss=F.mse_loss):
         super().__init__()
         self.method = method
         self.loss = loss
-        self.debug = debug
 
         
     def finite_difference(self, output_queries_domain, u, output_source_terms_domain, num_boundary, out_sub_level, **kwargs):
-        # WARNING: used when domain is a structured grid
+        """finite_difference computes the loss using finite-difference derivatives. 
+
+        .. note:: This loss requires outputs and output queries to be structured as regular 2d grids. 
+        
+
+        Parameters
+        ----------
+        output_queries_domain : torch.Tensor
+            output queries ONLY at the interior of the domain for a specific instance of Poisson's equation
+            Must be in the shape of a regular grid. 
+        u : torch.Tensor
+            model outputs at the interior of the domain concatenated with num_boundary points on the boundary. 
+            Must be in the shape of a regular grid except for the boundary points.
+
+            Indexed 
+        output_source_terms_domain : torch.Tensor
+            source terms f(x) for this instance of Poisson's equation
+        num_boundary : int
+            number of boundary points provided alongside 
+        out_sub_level : _type_
+            _description_
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+        # WARNING: only used when domain is a structured grid
         domain_length = 1/96
 
         u_x, u_y = central_diff_2d(u.reshape((out_sub_level, out_sub_level)), [domain_length, domain_length], fix_x_bnd=True, fix_y_bnd=True)
@@ -112,28 +157,34 @@ class PoissonInteriorLoss(object):
         return loss
     
     def autograd(self, u, output_queries, output_source_terms_domain, num_boundary, **kwargs):
-        '''
+        """
         Compute the nonlinear Poisson equation: ∇·((1 + 0.1u^2)∇u(x)) = f(x)
-        '''
-        #print(f"{u.shape=}")
-        
-        # Make sure output queries are the right shape
+
+        u: torch.Tensor | dict
+            output of the model. If output_queries is passed to the model
+            as a dict, this will be a dict of outputs provided over the points at 
+            each value in output_queries. If a tensor, u[:, 0:num_boundary, :] are boundary points
+            and u[:, num_boundary:, :] are interior points.
+        output_queries: torch.Tensor | dict
+            output queries provided to the model. If provided as a dict of tensors,
+            u will also be returned as a dict keyed the same way. If provided as a tensor,
+            u will be a tensor of the same shape except for number of channels. If a tensor,
+            output_queries[:, 0:num_boundary, :] are boundary points and output_queries[:, num_boundary:, :] 
+            are interior points.
+        output_source_terms_domain: torch.Tensor
+            source terms f(x) defined for this specific instance of Poisson's equation. 
+
+        """  
+
         if isinstance(output_queries, dict):
             output_queries_domain = output_queries['domain']
-            #print(f"{output_queries_domain.shape=}")
             u_prime = grad(outputs=u.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0]
         else:
-            #output_queries_domain = output_queries
-            #print(f"{output_queries.shape=}")
+            #We only care about U defined over the interior. Grab it now if the entire U is passed.
             output_queries_domain = None
             u = u[:, num_boundary:, ...]
             u_prime = grad(outputs=u.sum(), inputs=output_queries, create_graph=True, retain_graph=True)[0][:, num_boundary:, :]
-        #assert output_queries_domain.shape[-1] == 2
-        #assert output_queries_domain.ndim == 3
-        # we only care about u defined over the interior.
-        # Grab u_interior now
         
-        # return None, norm_grad_u, None
         u_x = u_prime[:,:,0]
         u_y = u_prime[:,:,1]
         
@@ -154,10 +205,6 @@ class PoissonInteriorLoss(object):
         laplacian = (u_xx + u_yy)
         norm_grad_u = torch.pow(u_prime, 2).sum(dim=-1)
 
-        '''print(f"{u_sq.shape=}")
-        print(f"{u_xx.shape=}")
-        print(f"{u_yy.shape=}")
-        print(f"{norm_grad_u.shape=}")'''
         assert u_sq.shape == u_xx.shape == u_yy.shape == norm_grad_u.shape
 
         left_hand_side = laplacian + laplacian * 0.1 * u_sq + 0.2 * u * norm_grad_u
@@ -180,11 +227,10 @@ class PoissonInteriorLoss(object):
         else:
             raise NotImplementedError()
 
-class PoissonBoundaryLoss(object):
+class PoissonBoundaryLoss(object): 
     def __init__(self, loss=F.mse_loss, debug=False):
         super().__init__()
         self.loss = loss
-        self.debug = debug
         self.counter = 0
 
     def __call__(self, y_pred, num_boundary, out_sub_level, y, output_queries, **kwargs):
