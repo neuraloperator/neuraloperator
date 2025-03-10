@@ -254,7 +254,7 @@ class SinusoidalEmbedding(Embedding):
             freqs = 2 ** torch.arange(0, self.num_frequencies, device=x.device) * torch.pi
         
         elif self.embedding_type == 'transformer':
-            freqs = torch.arange(0, self.num_frequencies, device=x.device) / self.in_channels
+            freqs = torch.arange(0, self.num_frequencies, device=x.device) / self.out_channels
             freqs = (1 / self.max_positions) ** freqs
         
         # outer product of wavenumbers and position coordinates
