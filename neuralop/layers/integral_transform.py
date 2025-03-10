@@ -79,7 +79,6 @@ class IntegralTransform(nn.Module):
         self.reduction = reduction
         self.transform_type = transform_type
         self.use_torch_scatter = use_torch_scatter
-
         if (
             self.transform_type != "linear_kernelonly"
             and self.transform_type != "linear"
@@ -97,20 +96,16 @@ class IntegralTransform(nn.Module):
             self.channel_mlp = channel_mlp
         
         self.weighting_fn = weighting_fn
-            
-
-    """"
-    
-
-    Assumes x=y if not specified
-    Integral is taken w.r.t. the neighbors
-    If no weights are given, a Monte-Carlo approximation is made
-    NOTE: For transforms of type 0 or 2, out channels must be
-    the same as the channels of f
-    """
 
     def forward(self, y, neighbors, x=None, f_y=None, weights=None):
-        """Compute a kernel integral transform
+        """Compute a kernel integral transform. Assumes x=y if not specified. 
+        
+        Integral is taken w.r.t. the neighbors.
+
+        If no weights are given, a Monte-Carlo approximation is made.
+
+        .. note :: For transforms of type 0 or 2, out channels must be
+            the same as the channels of f
 
         Parameters
         ----------
@@ -199,14 +194,14 @@ class IntegralTransform(nn.Module):
             nbr_weights = self.weighting_fn(nbr_weights).unsqueeze(-1).unsqueeze(0)
             rep_features.mul_(nbr_weights)                                                                                                                           
             # repeat weights along batch dim if batched
-            '''                                            
+                                                      
             if batched:                                                                                                                                                            
                 nbr_weights = nbr_weights.repeat(                                                                                                                                  
                     [batch_size] + [1] * nbr_weights.ndim                                                                                                                          
                 )                                                                                                                                                                  
                 nbr_weights = nbr_weights.unsqueeze(-1)                                                                                                                            
             rep_features = nbr_weights * rep_features
-            '''
+            
             reduction = "sum" # Force sum reduction for weighted GNO layers
         else:
             reduction = self.reduction
@@ -215,5 +210,5 @@ class IntegralTransform(nn.Module):
         if batched:
             splits = splits.repeat([batch_size] + [1] * splits.ndim)
 
-        out_features = segment_csr(rep_features, splits, reduction=reduction, use_scatter=True)
+        out_features = segment_csr(rep_features, splits, reduction=reduction, use_scatter=self.use_torch_scatter)
         return out_features
