@@ -310,107 +310,24 @@ def load_nonlinear_poisson_pt(
         train_out_res=None,
         return_dict=True
         ):
-    try:
-        with open(data_path, 'rb') as file:
-            data = pickle.load(file)
-            print("Dictionary loaded successfully.")
-    except FileNotFoundError:
-        print(f"Error: The file was not found.")
-    random.shuffle(data)
-
-    train_end = int(0.7*len(data))
     
-    if n_train > train_end:
-        n_train = train_end
-        print('WARNING: Max n_train is 0.7 of the length of the data file. Overriding.')
-    print(f"{n_train=}")
-    if n_test > len(data) - train_end:
-        n_test =  len(data) - train_end
-    print(f"{n_test=}")
+    dataset = NonlinearPoissonDataset(data_path=data_path,
+                                      n_train=n_train,
+                                      n_test=n_test,
+                                      n_in=n_in,
+                                      n_out=n_out,
+                                      n_eval=n_eval,
+                                      n_bound=n_bound,
+                                      latent_query_res=query_res,
+                                      domain_padding=domain_padding,
+                                      train_out_res=train_out_res)
 
-    data_list = []
-
-    for idx, instance in enumerate(data):
-        f_f = torch.tensor(instance['train_source_terms_domain'][:n_in], dtype=torch.float32)
-        f_g = torch.tensor(instance['train_bc_domain'][:n_in], dtype=torch.float32)
-        f_dist = torch.tensor(instance['train_distances_domain'][:n_in], dtype=torch.float32)
-
-        input_geom = torch.tensor(instance['train_points_domain'][:n_in], dtype=torch.float32)
-
-        if idx < n_train:
-            if train_out_res:
-                # Using uniform output mesh
-                out_p_domain = generate_output_queries(train_out_res, instance['coefs'])
-                out_source_domain = source(out_p_domain, instance['coefs']['beta'], instance['coefs']['mu_1'], instance['coefs']['mu_2'])
-                y_domain = torch.ones(out_p_domain.shape[0])
-                out_p_domain.requires_grad = True
-            else:
-                # Using randomly sampled Fenics mesh
-                out_p_domain = torch.tensor(instance['val_points_domain'][:n_out], dtype=torch.float32)
-                out_source_domain = torch.tensor(instance['val_source_terms_domain'][:n_out], dtype=torch.float32)
-                y_domain = torch.tensor(instance['val_values_domain'][:n_out], dtype=torch.float32)
-                out_p_domain.requires_grad = True
-
-            # Give the boundary points for the output during training
-            out_p_bound = torch.tensor(instance['val_points_boundary'][:n_bound], dtype=torch.float32)
-            out_source_bound = torch.tensor(instance['val_source_terms_boundary'][:n_bound], dtype=torch.float32)
-            y_bound = torch.tensor(instance['val_values_boundary'][:n_bound], dtype=torch.float32)
-
-            out_p_bound.requires_grad = True
-            out_source = torch.cat((out_source_bound, out_source_domain))
-        else:
-            out_p_bound = None
-            out_p_domain = torch.tensor(instance['val_points_domain'][:n_eval], dtype=torch.float32)
-            out_source_domain = torch.tensor(instance['val_source_terms_domain'][:n_eval], dtype=torch.float32)
-            y_domain = torch.tensor(instance['val_values_domain'][:n_eval], dtype=torch.float32)
-            y_bound = None
-
-        input_geom = torch.vstack((torch.tensor(instance['train_points_boundary'][:n_in], dtype=torch.float32), input_geom))
-        latent_queries = generate_latent_queries(query_res=query_res,
-                                                pad=domain_padding
-                                                )
-        
-        # Add source terms on the boundary and interior
-        f_f = torch.cat((torch.tensor(instance['train_source_terms_boundary'][:n_in], dtype=torch.float32), f_f))
-        f_g = torch.cat((torch.tensor(instance['train_bc_boundary'][:n_in], dtype=torch.float32), f_g))
-        f_dist = torch.cat((torch.zeros(n_in), f_dist))
-        f_f = f_f.unsqueeze(dim=-1)
-        f_g = f_g.unsqueeze(dim=-1)
-        f_dist = f_dist.unsqueeze(dim=-1)
-        f = torch.cat((f_f, f_g, f_dist), dim=-1)
-        
-        data_dict = {'x': f, # input function
-                    # input coords
-                    'input_geom': input_geom,
-                    # latent grid
-                    'latent_queries': latent_queries,
-                    # domain info
-                    'output_queries_domain': out_p_domain,
-                    'output_source_terms_domain': out_source_domain,
-                    'y_domain': y_domain,
-                    'coefs': instance['coefs'],
-                    'num_boundary': n_bound,
-                    'out_sub_level': output_subsample_level if output_subsample_level else 1
-                    }
-
-        # insert boundary y and output queries
-        # avoid collating None for boundary values by inserting only if the tensors exist
-        if y_bound is not None:
-            data_dict['y_bound'] = y_bound
-            data_dict['output_queries_bound'] = out_p_bound
-            data_dict['output_source_terms_bound'] = out_source_bound
-        data_list.append(data_dict)
     
-    train_data = data_list[:n_train]
-
     if val_on_same_instance:
-        test_data = train_data.copy()
+        train_dataloader = test_dataloader =  DataLoader(DictDataset(dataset.train_db[1:])) 
     else:
-        test_data = data_list[train_end:train_end+n_test]
-
-
-    train_dataloader = DataLoader(DictDataset(train_data)) 
-    test_dataloader = DataLoader(DictDataset(test_data)) 
+        train_dataloader = DataLoader(DictDataset(dataset.train_db)) 
+        test_dataloader = DataLoader(DictDataset(dataset.test_db)) 
     
     data_processor = PoissonGINODataProcessor(
         input_min=input_min_sample_points,
