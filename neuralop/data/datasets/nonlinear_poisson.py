@@ -184,6 +184,8 @@ class NonlinearPoissonDataset:
                     root_dir.mkdir(parents=True)
                 download_from_zenodo_record(record_id=zenodo_record_id, root=root_dir, 
                                             files_to_download=["nonlinear_poisson.obj"])
+            else:
+                print(f"File {data_path} already exists. Skipping download.")
 
         # Load the data
         with open(data_path, 'rb') as data_file:
