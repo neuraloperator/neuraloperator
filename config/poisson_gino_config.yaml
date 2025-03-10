@@ -15,7 +15,7 @@ default: &DEFAULT
   # Dataset related
   data:
     batch_size: 1
-    file: '/home/dave/data/nonlin_poisson/nonlinear_poisson_new.obj' #new = ryan's revised data
+    file: '/home/YOURNAME/data/nonlin_poisson/nonlinear_poisson_new.obj' #new = ryan's revised data
     n_train: 7000
     n_test: 3000 #[48]
     n_in: 5000 # Input points per instance
@@ -35,9 +35,6 @@ default: &DEFAULT
     sample_random_out: None
     return_queries_dict: True
 
-  checkpoint_dir: '../checkpoints/'
-  checkpoint_name: 'PoissonMLPCheck'
-
   # Patching
   patching:
     levels: 0
@@ -54,6 +51,7 @@ default: &DEFAULT
     out_gno_pos_embed_type: 'transformer'
     gno_embed_channels: 16 # try 16 next
     gno_embed_max_positions: 600
+    gno_use_torch_scatter: True
     in_gno_radius: 0.16
     out_gno_radius: 0.175
     in_gno_transform_type: 'linear' #ryan config'd to nonlinear but not passed # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
