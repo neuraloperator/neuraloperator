@@ -182,10 +182,12 @@ class IntegralTransform(nn.Module):
             agg_features = torch.cat([agg_features, in_features], dim=-1)
 
         rep_features = self.channel_mlp(agg_features)
-        '''if rep_features.ndim == 2:
-            rep_features = rep_features.unsqueeze(0)'''
 
         if f_y is not None and self.transform_type != "nonlinear_kernelonly":
+            # if we have a batch of outputs (3d incl. batch dim) and unbatched inputs,
+            # create an identical batch dim in rep_features
+            if rep_features.ndim == 2 and batched:
+                rep_features = rep_features.unsqueeze(0).repeat([batch_size] + [1] * rep_features.ndim)
             rep_features.mul_(in_features)
 
         nbr_weights = neighbors.get("weights")
@@ -200,7 +202,6 @@ class IntegralTransform(nn.Module):
                 nbr_weights = nbr_weights.repeat(                                                                                                                                  
                     [batch_size] + [1] * nbr_weights.ndim                                                                                                                          
                 )
-            print(f"{nbr_weights.shape=}")
             rep_features.mul_(nbr_weights)                                                                                                                           
             
             

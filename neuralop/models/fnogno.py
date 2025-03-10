@@ -66,6 +66,9 @@ class FNOGNO(BaseModel, name="FNOGNO"):
     gno_use_open3d : bool, defaults to True
         whether to use Open3D functionality
         if False, uses simple fallback neighbor search
+    gno_use_torch_scatter : bool, defaults to True
+        whether to use torch_scatter for csr reduction in output
+        IntegralTransform.
     gno_batched: bool, defaults to False
         whether to use IntegralTransform/GNO layer in
         "batched" mode. If False, sets batched=False.
@@ -141,6 +144,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         gno_channel_mlp_hidden_layers=[512, 256],
         gno_channel_mlp_non_linearity=F.gelu,
         gno_use_open3d=True,
+        gno_use_torch_scatter=False,
         gno_batched=False,
         # Other FNO params
         fno_resolution_scaling_factor=None,
@@ -274,6 +278,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=gno_transform_type,
             use_open3d_neighbor_search=gno_use_open3d,
+            use_torch_scatter_reduce=gno_use_torch_scatter
         )
 
         self.projection = ChannelMLP(
