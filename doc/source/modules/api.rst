@@ -131,18 +131,14 @@ In addition to the full architectures, we also provide
 in :mod:`neuralop.layers` building blocks,
 in the form of PyTorch layers, that you can use to build your own models:
 
-Neural operator layers
-------------------------
-
-**Spectral convolutions** (in Fourier domain):
-
+.. _spectral_conv_api:
+Fourier Convolutions
+---------------------
 .. automodule:: neuralop.layers.spectral_convolution
     :no-members:
     :no-inherited-members:
 
 General SpectralConv layer:
-
-.. _spectral_conv_api:
 
 .. autosummary::
     :toctree: generated
@@ -162,7 +158,9 @@ Dimension-specific versions:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Spherical convolutions**: (using Spherical Harmonics)
+.. _sfno_api:
+Spherical Convolutions
+-----------------------
 
 .. automodule:: neuralop.layers.spherical_convolution
     :no-members:
@@ -176,11 +174,12 @@ Dimension-specific versions:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To support geometry-informed (GINO) models, we also offer the ability to integrate kernels in the spatial domain, which we formulate as mappings between arbitrary coordinate meshes.
+To support geometry-informed (GINO) models, we also offer the ability to integrate kernels in the spatial domain,
+ which we formulate as mappings between arbitrary coordinate meshes.
 
-**Graph convolutions and kernel integration**:
-
-.. _gno_block_api:
+.. _gno_api:
+Graph convolutions and kernel integration
+-----------------------------------------
 
 .. automodule:: neuralop.layers.gno_block
     :no-members:
@@ -193,8 +192,6 @@ To support geometry-informed (GINO) models, we also offer the ability to integra
     GNOBlock
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. _integral_transform_api:
 
 .. automodule:: neuralop.layers.integral_transform
     :no-members:
