@@ -78,14 +78,11 @@ class PoissonInteriorLoss(object):
 
     Parameters
     ----------
-    method : Literal['autograd', 'finite_difference']
+    method : Literal['autograd'] only (for now)
         How to compute derivatives for equation loss. 
         
         * If 'autograd', differentiates using torch.autograd.grad. This can be used with outputs with any irregular
         point cloud structure.
-
-        * If 'finite_difference', uses neuralop.losses.finite_diff.central_diff_2d. This can only be used with outputs 
-        provided over a regular 2d grid. 
 
     loss: Callable
         Base loss class to compute distances between expected and true values, by 
@@ -96,65 +93,6 @@ class PoissonInteriorLoss(object):
         super().__init__()
         self.method = method
         self.loss = loss
-
-        
-    def finite_difference(self, output_queries_domain, u, output_source_terms_domain, num_boundary, out_sub_level, **kwargs):
-        """finite_difference computes the loss using finite-difference derivatives. 
-
-        .. note:: This loss requires outputs and output queries to be structured as regular 2d grids. 
-        
-
-        Parameters
-        ----------
-        output_queries_domain : torch.Tensor
-            output queries ONLY at the interior of the domain for a specific instance of Poisson's equation
-            Must be in the shape of a regular grid. 
-        u : torch.Tensor
-            model outputs at the interior of the domain concatenated with num_boundary points on the boundary. 
-            Must be in the shape of a regular grid except for the boundary points.
-
-            Indexed 
-        output_source_terms_domain : torch.Tensor
-            source terms f(x) for this instance of Poisson's equation
-        num_boundary : int
-            number of boundary points provided alongside 
-        out_sub_level : _type_
-            _description_
-
-        Returns
-        -------
-        _type_
-            _description_
-        """
-        # WARNING: only used when domain is a structured grid
-        domain_length = 1/96
-
-        u_x, u_y = central_diff_2d(u.reshape((out_sub_level, out_sub_level)), [domain_length, domain_length], fix_x_bnd=True, fix_y_bnd=True)
-
-        u_xx, _ = central_diff_2d(u_x, [domain_length, domain_length], fix_x_bnd=True, fix_y_bnd=True)
-        _, u_yy = central_diff_2d(u_y, [domain_length, domain_length], fix_x_bnd=True, fix_y_bnd=True)
-
-        u_xx = u_xx.squeeze(0)
-        u_yy = u_yy.squeeze(0)
-        u = u.squeeze([0, -1])
-
-        # compute LHS of the Poisson equation
-        u_sq = torch.pow(u, 2)
-        u_x = u_x.reshape((out_sub_level**2))
-        u_y = u_y.reshape((out_sub_level**2))
-        u_xx = u_xx.reshape((out_sub_level**2))
-        u_yy = u_yy.reshape((out_sub_level**2))
-        laplacian = (u_xx + u_yy)
-
-        norm_grad_u = u_x ** 2 + u_y ** 2
-
-        left_hand_side = laplacian + laplacian * 0.1 * u_sq + 0.2 * u * norm_grad_u
-        output_source_terms_domain = output_source_terms_domain.squeeze(0).squeeze(-1)
-
-        assert left_hand_side.shape == output_source_terms_domain.shape
-        loss = self.loss(left_hand_side, output_source_terms_domain)
-        del u_xx, u_yy, u_x, u_y, left_hand_side
-        return loss
     
     def autograd(self, u, output_queries, output_source_terms_domain, num_boundary, **kwargs):
         """
@@ -178,23 +116,29 @@ class PoissonInteriorLoss(object):
 
         if isinstance(output_queries, dict):
             output_queries_domain = output_queries['domain']
-            u_prime = grad(outputs=u.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0]
+            u_prime = grad(outputs=u.sum(), inputs=output_queries_domain,
+                           create_graph=True, retain_graph=True)[0]
         else:
             #We only care about U defined over the interior. Grab it now if the entire U is passed.
             output_queries_domain = None
             u = u[:, num_boundary:, ...]
-            u_prime = grad(outputs=u.sum(), inputs=output_queries, create_graph=True, retain_graph=True)[0][:, num_boundary:, :]
+            u_prime = grad(outputs=u.sum(), inputs=output_queries,
+                           create_graph=True, retain_graph=True)[0][:, num_boundary:, :]
         
         u_x = u_prime[:,:,0]
         u_y = u_prime[:,:,1]
         
         # compute second derivatives
         if output_queries_domain is not None:
-            u_xx = grad(outputs=u_x.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0][:,:,0]
-            u_yy = grad(outputs=u_y.sum(), inputs=output_queries_domain, create_graph=True, retain_graph=True)[0][:,:,1]
+            u_xx = grad(outputs=u_x.sum(), inputs=output_queries_domain, 
+                        create_graph=True, retain_graph=True)[0][:, :, 0]
+            u_yy = grad(outputs=u_y.sum(), inputs=output_queries_domain, 
+                        create_graph=True, retain_graph=True)[0][:, :, 1]
         else:
-            u_xx = grad(outputs=u_x.sum(), inputs=output_queries, create_graph=True, retain_graph=True)[0][:,num_boundary: ,0]
-            u_yy = grad(outputs=u_y.sum(), inputs=output_queries, create_graph=True, retain_graph=True)[0][:,num_boundary: ,1]
+            u_xx = grad(outputs=u_x.sum(), inputs=output_queries,
+                        create_graph=True, retain_graph=True)[0][:, num_boundary:, 0]
+            u_yy = grad(outputs=u_y.sum(), inputs=output_queries,
+                        create_graph=True, retain_graph=True)[0][:, num_boundary:, 1]
         u_xx = u_xx.squeeze(0)
         u_yy = u_yy.squeeze(0)
         u_prime = u_prime.squeeze(0)
