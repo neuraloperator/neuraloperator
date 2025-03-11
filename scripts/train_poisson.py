@@ -92,7 +92,8 @@ train_loader, test_loader, data_processor = load_nonlinear_poisson_pt(
     output_subsample_level=config.data.sample_random_out,
     return_dict=config.data.return_queries_dict
 )
-test_loaders = {"test": test_loader} ##TODO FIX ONCE NOT FITTING SINGLE INSTANCE
+
+test_loaders = {"test": test_loader}
 
 model = get_model(config)
 model = model.to(device)
