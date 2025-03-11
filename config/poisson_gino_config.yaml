@@ -54,7 +54,7 @@ default: &DEFAULT
     gno_use_torch_scatter: True
     in_gno_radius: 0.16
     out_gno_radius: 0.175
-    in_gno_transform_type: 'linear' #ryan config'd to nonlinear but not passed # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
+    in_gno_transform_type: 'linear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
     out_gno_transform_type: 'linear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
     gno_reduction: 'mean'
     gno_weighting_function: 'cos' #'cos' # 'bump', 'bump_sqrt', 'linear', 'tanh', 'cos', 'quadr', 'cubic', 'quartic'. 'quartic_sqrt', 'octic', 'octic_sqrt', None
