@@ -42,14 +42,14 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.fno.n_layers,
-                config.fno.hidden_channels,
-                config.fno.n_modes_width,
-                config.fno.n_modes[0],
-                config.fno.factorization,
-                config.fno.rank,
-                config.patching.levels,
-                config.patching.padding,
+                config.gino.in_gno_radius,
+                config.gino.out_gno_radius,
+                config.gino.gno_weighting_function,
+                config.gino.gno_weight_function_scale,
+                config.gino.fno_n_modes,
+                config.gino.fno_n_layers,
+                config.data.n_train,
+                config.data.n_test,
             ]
         )
     wandb_args =  dict(
