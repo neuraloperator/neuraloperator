@@ -25,6 +25,7 @@ We provide a general Fourier Neural Operator (TFNO) that supports most usecases.
 We have a generic interface that works for any dimension, which is inferred based on `n_modes`
 (a tuple with the number of modes to keep in the Fourier domain for each dimension.)
 
+.. _fno_api:
 .. autosummary::
     :toctree: generated
     :template: class.rst
@@ -47,6 +48,7 @@ Tensorized FNO (TFNO)
 ----------------------
 
 N-D version: 
+.. _tfno_api:
 
 .. autosummary::
     :toctree: generated
@@ -68,6 +70,7 @@ Dimension-specific classes:
 
 Spherical Fourier Neural Operators (SFNO)
 --------------------------------------------
+.. _sfno_api:
 
 .. autosummary::
     :toctree: generated
@@ -79,6 +82,7 @@ Spherical Fourier Neural Operators (SFNO)
 
 Geometry-Informed Neural Operators (GINO)
 ------------------------------------------
+.. _gino_api:
 
 .. autosummary::
     :toctree: generated
@@ -90,6 +94,7 @@ Geometry-Informed Neural Operators (GINO)
 
 Local Neural Operators (LocalNO)
 --------------------------------------------
+.. _local_no_api:
 
 .. autosummary::
     :toctree: generated
@@ -102,6 +107,7 @@ Local Neural Operators (LocalNO)
 
 U-shaped Neural Operators (U-NO)
 ---------------------------------
+.. _uno_api:
 
 .. autosummary::
     :toctree: generated
@@ -135,6 +141,8 @@ Neural operator layers
     :no-inherited-members:
 
 General SpectralConv layer:
+
+.. _spectral_conv_api:
 
 .. autosummary::
     :toctree: generated
@@ -172,6 +180,8 @@ To support geometry-informed (GINO) models, we also offer the ability to integra
 
 **Graph convolutions and kernel integration**:
 
+.. _gno_block_api:
+
 .. automodule:: neuralop.layers.gno_block
     :no-members:
     :no-inherited-members:
@@ -183,6 +193,8 @@ To support geometry-informed (GINO) models, we also offer the ability to integra
     GNOBlock
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _integral_transform_api:
 
 .. automodule:: neuralop.layers.integral_transform
     :no-members:
@@ -200,6 +212,8 @@ We also provide additional layers that implement standard deep learning architec
 
 **Local Integral/Differential Convolutions**
 
+.. _diff_conv_api:
+
 .. automodule:: neuralop.layers.differential_conv
     :no-members:
     :no-inherited-members:
@@ -211,6 +225,8 @@ We also provide additional layers that implement standard deep learning architec
     FiniteDifferenceConvolution
 
 **Discrete-Continuous (DISCO) Convolutions**
+
+.. _disco_conv_api:
 
 .. automodule:: neuralop.layers.discrete_continuous_convolution
     :no-members:
