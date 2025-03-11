@@ -243,7 +243,6 @@ class GNOBlock(nn.Module):
             y_embed = y
             x_embed = x
 
-        # TODO: compute weights using the neighborhood dict
         out_features = self.integral_transform(y=y_embed,
                                                x=x_embed,
                                                neighbors=neighbors_dict,

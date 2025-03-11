@@ -34,7 +34,6 @@ def test_fallback_nb_search():
     print(f"{return_dict['weights']=}")
 
     def compute_norm_separate(nbrs, data, queries):
-        # todo: the forward pass could also call this same method to not have redundant code
         return_dict = nbrs
         num_reps = return_dict['neighbors_row_splits'][1:] - return_dict['neighbors_row_splits'][:-1]
         rep_queries = torch.repeat_interleave(queries, num_reps, dim=0)
