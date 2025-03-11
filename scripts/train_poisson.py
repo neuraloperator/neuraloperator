@@ -211,10 +211,6 @@ if is_logger:
         wandb.log(to_log)
         wandb.watch(model)
 
-# This breaks if we run it, since trainer needs to run train at least once first
-# We only use this as a check that the loss is high before training. 
-# trainer.evaluate(eval_losses, test_loaders['test'])
-
 trainer.train(
     train_loader,
     test_loaders,
