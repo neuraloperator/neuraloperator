@@ -103,9 +103,12 @@ def source(x, beta, mu_1, mu_2):
     return source_terms
 
 class NonlinearPoissonDataset:
-    """NonlinearPoissonDataset provides up to 10,000 instances
-    of Poisson's equation in 2d over irregular grids. Originally created in 
+    """
+    NonlinearPoissonDataset provides up to 10,000 instances
+    of Poisson's equation in 2d over irregular point clouds. Originally created in 
     [1]_, adapted to include boundary points and more specificity in [2]_.
+
+    Equation:  ∇·((1 + 0.1u^2)∇u(x)) = f(x) 
 
     Parameters
     ----------

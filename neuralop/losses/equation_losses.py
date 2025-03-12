@@ -73,8 +73,9 @@ class ICLoss(object):
 
 
 class PoissonInteriorLoss(object):
-    """PoissonInteriorLoss computes the loss on the interior points of model outputs 
-    according to Poisson's equation in 2d. 
+    """
+    PoissonInteriorLoss computes the loss on the interior points of model outputs 
+    according to Poisson's equation in 2d: ∇·((1 + 0.1u^2)∇u(x)) = f(x)
 
     Parameters
     ----------
@@ -87,8 +88,8 @@ class PoissonInteriorLoss(object):
     loss: Callable
         Base loss class to compute distances between expected and true values, by 
         default torch.nn.functional.mse_loss
-
     """
+
     def __init__(self, method='autograd', loss=F.mse_loss):
         super().__init__()
         self.method = method
@@ -96,7 +97,8 @@ class PoissonInteriorLoss(object):
     
     def autograd(self, u, output_queries, output_source_terms_domain, num_boundary, **kwargs):
         """
-        Compute the nonlinear Poisson equation: ∇·((1 + 0.1u^2)∇u(x)) = f(x)
+        Compute tolerance between the left-hand side and right-hand side of
+        nonlinear Poisson's equation: ∇·((1 + 0.1u^2)∇u(x)) = f(x)
 
         u: torch.Tensor | dict
             output of the model. If output_queries is passed to the model
