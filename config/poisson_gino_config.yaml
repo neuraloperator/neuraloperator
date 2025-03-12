@@ -56,8 +56,8 @@ default: &DEFAULT
     in_gno_transform_type: 'linear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
     out_gno_transform_type: 'linear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
     gno_reduction: 'mean'
-    gno_weighting_function: 'cos' #'cos' # 'bump', 'bump_sqrt', 'linear', 'tanh', 'cos', 'quadr', 'cubic', 'quartic'. 'quartic_sqrt', 'octic', 'octic_sqrt', None
-    gno_weight_function_scale: 0.030624999999999996
+    gno_weighting_function: 'half_cos' #'half_cos' # 'bump', 'quadr', 'quartic', 'octic' None
+    gno_weight_function_scale: 0.030625
     gno_use_open3d: False
     in_gno_channel_mlp_hidden_layers: [256, 512, 256]
     out_gno_channel_mlp_hidden_layers: [512, 1024, 512] 
