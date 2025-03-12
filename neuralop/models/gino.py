@@ -13,145 +13,148 @@ from ..layers.gno_block import GNOBlock
 from ..layers.gno_weighting_functions import dispatch_weighting_fn
 
 class GINO(BaseModel):
-    """GINO: Geometry-informed Neural Operator. Learns a mapping between
-       functions presented over arbitrary coordinate meshes. The model carries
-       global integration through spectral convolution layers in an intermediate
-       latent space, as described in [1]_.
+    """
+    GINO: Geometry-informed Neural Operator. Learns a mapping between
+    functions presented over arbitrary coordinate meshes. The model carries
+    global integration through spectral convolution layers in an intermediate
+    latent space, as described in [1]_. Optionally enables a weighted output
+    GNO for use in a Mollified Graph Neural Operator scheme, as introduced in [2]_. 
 
-        Parameters
-        ----------
-        in_channels : int
-            feature dimension of input points
-        out_channels : int
-            feature dimension of output points
-        latent_feature_channels : int, optional
-            number of channels in optional latent feature map
-            to concatenate onto latent embeddings before 
-            the FNO's forward pass, default None
-        projection_channels : int, optional
-            number of channels in FNO pointwise projection
-        gno_coord_dim : int, optional
-            geometric dimension of input/output queries, by default 3
-        in_gno_radius : float, optional
-            radius in input space for GNO neighbor search, by default 0.033
-        out_gno_radius : float, optional
-            radius in output space for GNO neighbor search, by default 0.033
-        gno_weight_function : str, optional
-            Choice of weighting function to use in the output GNO for 
-            Mollified Graph Neural Operator-based models
-        gno_weight_function_scale : float, optional
-            Factor by which to scale weights from GNO weighting function
-            by default 1
-        in_gno_transform_type : str, optional
-            transform type parameter for input GNO, by default 'linear'
-            see neuralop.layers.gno_block for more details
-        out_gno_transform_type : str, optional
-            transform type parameter for output GNO, by default 'linear'
-            see neuralop.layers.gno_block for more details
-        in_gno_pos_embed_type : literal `{'transformer', 'nerf', 'legacy'}` | None
-            type of optional sinusoidal positional embedding to use in input GNOBlock,
-            by default `'transformer'`
-        out_gno_pos_embed_type : literal `{'transformer', 'nerf', 'legacy'}` | None
-            type of optional sinusoidal positional embedding to use in output GNOBlock,
-            by default `'transformer'`
-        fno_in_channels : int, optional
-            number of input channels for FNO, by default 26
-        fno_n_modes : tuple, optional
-            number of modes along each dimension 
-            to use in FNO, by default (16, 16, 16)
-        fno_hidden_channels : int, optional
-            hidden channels for use in FNO, by default 64
-        lifting_channel_ratio : int, optional
-            ratio of lifting channels to `fno_hidden_channels`, by default 2
-            The number of liting channels in the lifting block of the FNO is
-            lifting_channel_ratio * hidden_channels (e.g. default 512)
-        fno_n_layers : int, optional
-            number of layers in FNO, by default 4
+    Parameters
+    ----------
+    in_channels : int
+        feature dimension of input points
+    out_channels : int
+        feature dimension of output points
+    latent_feature_channels : int, optional
+        number of channels in optional latent feature map
+        to concatenate onto latent embeddings before 
+        the FNO's forward pass, default None
+    projection_channels : int, optional
+        number of channels in FNO pointwise projection
+    gno_coord_dim : int, optional
+        geometric dimension of input/output queries, by default 3
+    in_gno_radius : float, optional
+        radius in input space for GNO neighbor search, by default 0.033
+    out_gno_radius : float, optional
+        radius in output space for GNO neighbor search, by default 0.033
+    gno_weighting_function : Literal{'half_cos', 'bump', 'quartic', 'quadr', 'octic'}, optional
+        Choice of weighting function to use in the output GNO for 
+        Mollified Graph Neural Operator-based models.
+        See ``neuralop.layers.gno_weighting_functions`` for more details. 
+    gno_weight_function_scale : float, optional
+        Factor by which to scale weights from GNO weighting function
+        by default 1. 
+        If ``gno_weighting_function`` is ``None``, this is not used. 
+    in_gno_transform_type : str, optional
+        transform type parameter for input GNO, by default 'linear'
+        see neuralop.layers.gno_block for more details
+    out_gno_transform_type : str, optional
+        transform type parameter for output GNO, by default 'linear'
+        see neuralop.layers.gno_block for more details
+    in_gno_pos_embed_type : literal `{'transformer', 'nerf', 'legacy'}` | None
+        type of optional sinusoidal positional embedding to use in input GNOBlock,
+        by default `'transformer'`
+    out_gno_pos_embed_type : literal `{'transformer', 'nerf', 'legacy'}` | None
+        type of optional sinusoidal positional embedding to use in output GNOBlock,
+        by default `'transformer'`
+    fno_in_channels : int, optional
+        number of input channels for FNO, by default 26
+    fno_n_modes : tuple, optional
+        number of modes along each dimension 
+        to use in FNO, by default (16, 16, 16)
+    fno_hidden_channels : int, optional
+        hidden channels for use in FNO, by default 64
+    lifting_channel_ratio : int, optional
+        ratio of lifting channels to `fno_hidden_channels`, by default 2
+        The number of liting channels in the lifting block of the FNO is
+        lifting_channel_ratio * hidden_channels (e.g. default 512)
+    fno_n_layers : int, optional
+        number of layers in FNO, by default 4
+    
+    Other Parameters
+    ----------------
+    gno_embed_channels: int
+        dimension of optional per-channel embedding to use in GNOBlock,
+        by default 32
+    gno_embed_max_positions: int
+        max positions of optional per-channel embedding to use in GNOBlock,
+        by default 10000. If `gno_pos_embed_type != 'transformer'`, value is unused.
+    in_gno_channel_mlp_hidden_layers : list, optional
+        widths of hidden layers in input GNO, by default [80, 80, 80]
+    out_gno_channel_mlp_hidden_layers : list, optional
+        widths of hidden layers in output GNO, by default [512, 256]
+    gno_channel_mlp_non_linearity : nn.Module, optional
+        nonlinearity to use in gno ChannelMLP, by default F.gelu
+    gno_use_open3d : bool, optional
+        whether to use open3d neighbor search, by default True
+        if False, uses pure-PyTorch fallback neighbor search
+    gno_use_torch_scatter : bool, optional
+        whether to use torch_scatter's neighborhood reduction function
+        or the native PyTorch implementation in IntegralTransform layers.
+        If False, uses the fallback PyTorch version.
+    out_gno_tanh : bool, optional
+        whether to use tanh to stabilize outputs of the output GNO, by default False
+    fno_resolution_scaling_factor : float | None, optional
+        factor by which to scale output of FNO, by default None
+    fno_incremental_n_modes : list[int] | None, defaults to None
+    if passed, sets n_modes separately for each FNO layer.
+    fno_block_precision : str, defaults to 'full'
+        data precision to compute within fno block
+    fno_use_channel_mlp : bool, defaults to True
+        Whether to use a ChannelMLP layer after each FNO block.
+    fno_channel_mlp_dropout : float, defaults to 0
+        dropout parameter of above ChannelMLP.
+    fno_channel_mlp_expansion : float, defaults to 0.5
+        expansion parameter of above ChannelMLP.
+    fno_non_linearity : nn.Module, defaults to F.gelu
+        nonlinear activation function between each FNO layer.
+    fno_stabilizer : nn.Module | None, defaults to None
+        By default None, otherwise tanh is used before FFT in the FNO block.
+    fno_norm : nn.Module | None, defaults to None
+        normalization layer to use in FNO.
+    fno_ada_in_features : int | None, defaults to 4
+        if an adaptive mesh is used, number of channels of its positional embedding.
+        If None, adaptive mesh embedding is not used.
+    fno_ada_in_dim : int, defaults to 1
+        dimensions of above FNO adaptive mesh.
+    fno_preactivation : bool, defaults to False
+        whether to use Resnet-style preactivation.
+    fno_skip : str, defaults to 'linear'
+        type of skip connection to use.
+    fno_channel_mlp_skip : str, defaults to 'soft-gating'
+        type of skip connection to use in the FNO
+        'linear': conv layer
+        'soft-gating': weights the channels of the input
+        'identity': nn.Identity
+    fno_separable : bool, defaults to False
+        if True, use a depthwise separable spectral convolution.
+    fno_factorization : str {'tucker', 'tt', 'cp'} |  None, defaults to None
+        Tensor factorization of the parameters weight to use
+    fno_rank : float, defaults to 1.0
+        Rank of the tensor factorization of the Fourier weights.
+    fno_joint_factorization : bool, defaults to False
+        Whether all the Fourier layers should be parameterized by a single tensor (vs one per layer).
+    fno_fixed_rank_modes : bool, defaults to False
+        Modes to not factorize.
+    fno_implementation : str {'factorized', 'reconstructed'} | None, defaults to 'factorized'
+        If factorization is not None, forward mode to use::
+        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass
+        * `factorized` : the input is directly contracted with the factors of the decomposition
+    fno_decomposition_kwargs : dict, defaults to dict()
+        Optionaly additional parameters to pass to the tensor decomposition.
+    fno_conv_module : nn.Module, defaults to SpectralConv
+        Spectral Convolution module to use.
+    
         
-        Other Parameters
-        ----------------
-        gno_embed_channels: int
-            dimension of optional per-channel embedding to use in GNOBlock,
-            by default 32
-        gno_embed_max_positions: int
-            max positions of optional per-channel embedding to use in GNOBlock,
-            by default 10000. If `gno_pos_embed_type != 'transformer'`, value is unused.
-        in_gno_channel_mlp_hidden_layers : list, optional
-            widths of hidden layers in input GNO, by default [80, 80, 80]
-        out_gno_channel_mlp_hidden_layers : list, optional
-            widths of hidden layers in output GNO, by default [512, 256]
-        gno_channel_mlp_non_linearity : nn.Module, optional
-            nonlinearity to use in gno ChannelMLP, by default F.gelu
-        gno_use_open3d : bool, optional
-            whether to use open3d neighbor search, by default True
-            if False, uses pure-PyTorch fallback neighbor search
-        gno_use_torch_scatter : bool, optional
-            whether to use torch_scatter's neighborhood reduction function
-            or the native PyTorch implementation in IntegralTransform layers.
-            If False, uses the fallback PyTorch version.
-        out_gno_tanh : bool, optional
-            whether to use tanh to stabilize outputs of the output GNO, by default False
-        fno_resolution_scaling_factor : float | None, optional
-            factor by which to scale output of FNO, by default None
-        fno_incremental_n_modes : list[int] | None, defaults to None
-        if passed, sets n_modes separately for each FNO layer.
-        fno_block_precision : str, defaults to 'full'
-            data precision to compute within fno block
-        fno_use_channel_mlp : bool, defaults to True
-            Whether to use a ChannelMLP layer after each FNO block.
-        fno_channel_mlp_dropout : float, defaults to 0
-            dropout parameter of above ChannelMLP.
-        fno_channel_mlp_expansion : float, defaults to 0.5
-            expansion parameter of above ChannelMLP.
-        fno_non_linearity : nn.Module, defaults to F.gelu
-            nonlinear activation function between each FNO layer.
-        fno_stabilizer : nn.Module | None, defaults to None
-            By default None, otherwise tanh is used before FFT in the FNO block.
-        fno_norm : nn.Module | None, defaults to None
-            normalization layer to use in FNO.
-        fno_ada_in_features : int | None, defaults to 4
-            if an adaptive mesh is used, number of channels of its positional embedding.
-            If None, adaptive mesh embedding is not used.
-        fno_ada_in_dim : int, defaults to 1
-            dimensions of above FNO adaptive mesh.
-        fno_preactivation : bool, defaults to False
-            whether to use Resnet-style preactivation.
-        fno_skip : str, defaults to 'linear'
-            type of skip connection to use.
-        fno_channel_mlp_skip : str, defaults to 'soft-gating'
-            type of skip connection to use in the FNO
-            'linear': conv layer
-            'soft-gating': weights the channels of the input
-            'identity': nn.Identity
-        fno_separable : bool, defaults to False
-            if True, use a depthwise separable spectral convolution.
-        fno_factorization : str {'tucker', 'tt', 'cp'} |  None, defaults to None
-            Tensor factorization of the parameters weight to use
-        fno_rank : float, defaults to 1.0
-            Rank of the tensor factorization of the Fourier weights.
-        fno_joint_factorization : bool, defaults to False
-            Whether all the Fourier layers should be parameterized by a single tensor (vs one per layer).
-        fno_fixed_rank_modes : bool, defaults to False
-            Modes to not factorize.
-        fno_implementation : str {'factorized', 'reconstructed'} | None, defaults to 'factorized'
-            If factorization is not None, forward mode to use::
-            * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass
-            * `factorized` : the input is directly contracted with the factors of the decomposition
-        fno_decomposition_kwargs : dict, defaults to dict()
-            Optionaly additional parameters to pass to the tensor decomposition.
-        fno_conv_module : nn.Module, defaults to SpectralConv
-            Spectral Convolution module to use.
-        
-            
-        References
-        -----------
-        .. _[1] : 
-        
-        Li, Z., Kovachki, N., Choy, C., Li, B., Kossaifi, J., Otta, S., 
-            Nabian, M., Stadler, M., Hundt, C., Azizzadenesheli, K., Anandkumar, A. (2023)
-            Geometry-Informed Neural Operator for Large-Scale 3D PDEs. NeurIPS 2023,
-            https://proceedings.neurips.cc/paper_files/paper/2023/hash/70518ea42831f02afc3a2828993935ad-Abstract-Conference.html
-        """
+    References
+    -----------
+    .. _[1] : Li, Z., Kovachki, N., Choy, C., Li, B., Kossaifi, J., Otta, S., 
+        Nabian, M., Stadler, M., Hundt, C., Azizzadenesheli, K., Anandkumar, A. (2023)
+        Geometry-Informed Neural Operator for Large-Scale 3D PDEs. NeurIPS 2023,
+        https://proceedings.neurips.cc/paper_files/paper/2023/hash/70518ea42831f02afc3a2828993935ad-Abstract-Conference.html
+    .. _[2] : Lin, R. et al. Placeholder reference for Mollified Graph Neural Operators.
+    """
     def __init__(
         self,
         in_channels,

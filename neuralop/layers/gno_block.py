@@ -40,8 +40,8 @@ class GNOBlock(nn.Module):
     radius : float
         radius in which to search for neighbors
     weighting_fn : Callable, optional
-        optional radius weighting function to use for Mollified GNO layer
-        by default None
+        optional squared-norm weighting function to use for Mollified GNO layer
+        by default None. See ``neuralop.layers.gno_weighting_functions` for more details. 
     reduction : Literal['sum', 'mean']
         whether to aggregate information from each neighborhood in the
         integral transform by summing ('sum') or averaging ('mean')
@@ -90,14 +90,6 @@ class GNOBlock(nn.Module):
     GNOBlock(
         (pos_embedding): SinusoidalEmbedding()
         (neighbor_search): NeighborSearch()
-        (channel_mlp): LinearChannelMLP(
-            (fcs): ModuleList(
-            (0): Linear(in_features=384, out_features=128, bias=True)
-            (1): Linear(in_features=128, out_features=256, bias=True)
-            (2): Linear(in_features=256, out_features=128, bias=True)
-            (3): Linear(in_features=128, out_features=12, bias=True)
-            )
-        )
         (integral_transform): IntegralTransform(
             (channel_mlp): LinearChannelMLP(
             (fcs): ModuleList(
@@ -113,9 +105,7 @@ class GNOBlock(nn.Module):
 
     References
     -----------
-    .. [1] : 
-    
-    Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, 
+    .. [1] : Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, 
         Anima Anandkumar (2020). "Neural Operator: Graph Kernel Network for 
         Partial Differential Equations." ArXiV, https://arxiv.org/pdf/2003.03485.
     """
