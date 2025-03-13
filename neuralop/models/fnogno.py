@@ -36,12 +36,14 @@ class FNOGNO(BaseModel, name="FNOGNO"):
                     'linear' : integrand is k(x, y) * f(y)
                     'nonlinear_kernelonly' : integrand is k(x, y, f(y))
                     'nonlinear' : integrand is k(x, y, f(y)) * f(y)
-     gno_weighting_function : str, optional
+    gno_weighting_function : Literal{'half_cos', 'bump', 'quartic', 'quadr', 'octic'}, optional
         Choice of weighting function to use in the output GNO for 
-        Mollified Graph Neural Operator-based models
+        Mollified Graph Neural Operator-based models.
+        See ``neuralop.layers.gno_weighting_functions`` for more details. 
     gno_weight_function_scale : float, optional
         Factor by which to scale weights from GNO weighting function
-        by default 1
+        by default 1. 
+        If ``gno_weighting_function`` is ``None``, this is not used. 
     fno_n_modes : tuple, defaults to (16, 16, 16)
         number of modes to keep along each spectral dimension of FNO block
     fno_hidden_channels : int, defaults to 64
