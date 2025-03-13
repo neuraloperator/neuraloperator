@@ -138,7 +138,6 @@ class GINOLoss(object):
         super().__init__()
         self.base_loss = base_loss
     def __call__(self, out, y, **kwargs):
-        loss = 0.
         if isinstance(out, dict) and isinstance(y, dict):
             y = torch.cat([y[field] for field in out.keys()], dim=1)
             out = torch.cat([out[field] for field in out.keys()], dim=1)
@@ -155,7 +154,6 @@ losses = []
 weights = []
 
 if 'mse' in training_loss:
-    #losses.append(mse_loss)
     losses.append(gino_mseloss)
     weights.append(config.opt.loss_weights.get('mse', 1.))
 if 'equation' in training_loss:
@@ -169,7 +167,7 @@ if len(losses) == 1:
     train_loss = losses[0]
 else:
     train_loss = WeightedSumLoss(losses=losses, weights=weights)
-#train_loss = WeightedSumLoss(losses=losses, weights=weights, return_individual=True, compute_grads=True)
+
 eval_losses = {"mse": mse_loss}
 
 if config.verbose:
