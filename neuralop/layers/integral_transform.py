@@ -193,14 +193,16 @@ class IntegralTransform(nn.Module):
         nbr_weights = neighbors.get("weights")
         if nbr_weights is None and self.weighting_fn is not None:
             raise KeyError("if a weighting function is provided, your neighborhoods must contain weights.")
-        
-        if self.weighting_fn is not None:
-            assert nbr_weights.ndim == 1
-            nbr_weights = self.weighting_fn(nbr_weights).unsqueeze(-1).unsqueeze(0)
-            rep_features.mul_(nbr_weights)                                                                                                                           
+        if nbr_weights is not None:
+            nbr_weights = nbr_weights.unsqueeze(-1).unsqueeze(0)
             reduction = "sum" # Force sum reduction for weighted GNO layers
+            
+            if self.weighting_fn is not None:
+                nbr_weights = self.weighting_fn(nbr_weights)
         else:
             reduction = self.reduction
+        rep_features.mul_(nbr_weights)                                                                                                                           
+        
         
         splits = neighbors["neighbors_row_splits"]
         if batched:
