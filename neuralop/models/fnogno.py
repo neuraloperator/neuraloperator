@@ -8,6 +8,7 @@ from ..layers.embeddings import SinusoidalEmbedding
 from ..layers.fno_block import FNOBlocks
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.gno_block import GNOBlock
+from ..layers.gno_weighting_functions import dispatch_weighting_fn
 
 class FNOGNO(BaseModel, name="FNOGNO"):
     """FNOGNO: Fourier/Geometry Neural Operator. The FNOGNO
@@ -35,6 +36,14 @@ class FNOGNO(BaseModel, name="FNOGNO"):
                     'linear' : integrand is k(x, y) * f(y)
                     'nonlinear_kernelonly' : integrand is k(x, y, f(y))
                     'nonlinear' : integrand is k(x, y, f(y)) * f(y)
+    gno_weighting_function : Literal{'half_cos', 'bump', 'quartic', 'quadr', 'octic'}, optional
+        Choice of weighting function to use in the output GNO for 
+        Mollified Graph Neural Operator-based models.
+        See ``neuralop.layers.gno_weighting_functions`` for more details. 
+    gno_weight_function_scale : float, optional
+        Factor by which to scale weights from GNO weighting function
+        by default 1. 
+        If ``gno_weighting_function`` is ``None``, this is not used. 
     fno_n_modes : tuple, defaults to (16, 16, 16)
         number of modes to keep along each spectral dimension of FNO block
     fno_hidden_channels : int, defaults to 64
@@ -59,6 +68,9 @@ class FNOGNO(BaseModel, name="FNOGNO"):
     gno_use_open3d : bool, defaults to True
         whether to use Open3D functionality
         if False, uses simple fallback neighbor search
+    gno_use_torch_scatter : bool, defaults to True
+        whether to use torch_scatter for csr reduction in output
+        IntegralTransform.
     gno_batched: bool, defaults to False
         whether to use IntegralTransform/GNO layer in
         "batched" mode. If False, sets batched=False.
@@ -129,9 +141,12 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         gno_embed_channels=32,
         gno_embed_max_positions=10000,
         gno_radius=0.033,
+        gno_weighting_function=None,
+        gno_weight_function_scale=1.,
         gno_channel_mlp_hidden_layers=[512, 256],
         gno_channel_mlp_non_linearity=F.gelu,
         gno_use_open3d=True,
+        gno_use_torch_scatter=False,
         gno_batched=False,
         # Other FNO params
         fno_resolution_scaling_factor=None,
@@ -247,10 +262,16 @@ class FNOGNO(BaseModel, name="FNOGNO"):
 
         self.gno_radius = gno_radius
 
+        if gno_weighting_function is not None: #sq radius**2?
+            weight_fn = dispatch_weighting_fn(gno_weighting_function, sq_radius=gno_radius**2, scale=gno_weight_function_scale)
+        else:
+            weight_fn = None
+
         self.gno = GNOBlock(
             in_channels=fno_hidden_channels,
             out_channels=fno_hidden_channels,
             radius=gno_radius,
+            weighting_fn=weight_fn,
             coord_dim=self.gno_coord_dim,
             pos_embedding_type=gno_pos_embed_type,
             pos_embedding_channels=gno_embed_channels,
@@ -259,7 +280,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=gno_transform_type,
             use_open3d_neighbor_search=gno_use_open3d,
-            use_torch_scatter_reduce=True,
+            use_torch_scatter_reduce=gno_use_torch_scatter
         )
 
         self.projection = ChannelMLP(

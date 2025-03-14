@@ -27,7 +27,20 @@ splits = [0, 3, 7, 11, 15, 18, 22, 27, 32, 37, 41, 45, 50,
 def test_fallback_nb_search():
     mesh_grid = np.stack(np.meshgrid(*[np.linspace(0,1,5) for _ in range(2)], indexing="ij"), axis=-1)
     coords = torch.Tensor(mesh_grid.reshape(-1,2)) # reshape into n**d x d coord points
-    return_dict = native_neighbor_search(data=coords, queries=coords, radius=0.3)
+    return_dict = native_neighbor_search(data=coords, queries=coords, radius=0.3, return_norm=True)
     
     assert return_dict['neighbors_index'].tolist() == indices
     assert return_dict['neighbors_row_splits'].tolist() == splits
+    print(f"{return_dict['weights']=}")
+
+    def compute_norm_separate(nbrs, data, queries):
+        return_dict = nbrs
+        num_reps = return_dict['neighbors_row_splits'][1:] - return_dict['neighbors_row_splits'][:-1]
+        rep_queries = torch.repeat_interleave(queries, num_reps, dim=0)
+        rep_data = data[return_dict['neighbors_index']]
+        rep_dist = rep_queries - rep_data
+        return_dict['squared_norm'] = (rep_dist ** 2).sum(dim=-1)
+        return return_dict
+    
+    return_dict = compute_norm_separate(return_dict, coords, coords)
+    print(return_dict["squared_norm"])
