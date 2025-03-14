@@ -16,20 +16,19 @@ default: &DEFAULT
   data:
     batch_size: 1
     test_batch_size: 1
-    file: '/home/YOURNAME/data/nonlin_poisson/nonlinear_poisson.obj' #new = ryan's revised data
+    file: '/home/YOURNAME/data/nonlin_poisson/nonlinear_poisson.obj'
     n_train: 7000
-    n_test: 3000 #[48]
+    n_test: 3000
     n_in: 5000 # Input points per instance
-    n_out: 100 # Output query points instance
+    n_out: 100 # Output query points per instance
     n_eval: 6000 # Points to evaluate on
-    n_bound: 4000
+    n_bound: 4000 # Output query boundary points per instance
     query_resolution: 64
     train_out_res: 400
-    points_per_bc: 100
     padding: 1
-    single_instance: False
-    input_min: 100
-    input_max: 5000
+    single_instance: False # if True, and n_train=n_test=1, train and test set are 1 identical instance
+    input_min: 100 # minimum total number of input points if subsampling
+    input_max: 5000 # max total number of input points if subsampling
     sample_random_in: None # Set to a certain percentage if we want to sample a static number of points. Will use the range otherwise
     sample_random_out: None
     return_queries_dict: True
@@ -44,7 +43,6 @@ default: &DEFAULT
     data_channels: 3
     out_channels: 1
     projection_channels: 256
-    res: False
     gno_coord_dim: 2
     in_gno_pos_embed_type: None
     out_gno_pos_embed_type: 'transformer'
@@ -74,7 +72,6 @@ default: &DEFAULT
     fno_factorization: None
     fno_rank: 0.8
     fno_domain_padding: 0.
-    debug: False
   
   opt:
     n_epochs: 1000
@@ -83,8 +80,6 @@ default: &DEFAULT
       mse : 1.
       interior: 1e-2
       boundary: 1.
-    loss_schedule: False
-    loss_scale: 1.
     pino_method: 'autograd' # 'finite_difference'
     weight_decay: 1e-6 
     amp_autocast: False
