@@ -38,7 +38,7 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
         in_channels=in_channels,
         out_channels=out_channels,
         latent_feature_channels=latent_feature_dim,
-        in_gno_radius=0.3,# make this large to ensure neighborhoods fit
+        in_gno_radius=0.3,# make this large to ensure neighborhoods overlap with queries on the domain
         out_gno_radius=0.3,
         projection_channels=projection_channels,
         gno_coord_dim=gno_coord_dim,
