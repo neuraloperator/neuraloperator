@@ -195,11 +195,11 @@ class IntegralTransform(nn.Module):
             raise KeyError("if a weighting function is provided, your neighborhoods must contain weights.")
         if nbr_weights is not None:
             nbr_weights = nbr_weights.unsqueeze(-1).unsqueeze(0)
-            reduction = "sum" # Force sum reduction for weighted GNO layers
-
             if self.weighting_fn is not None:
                 nbr_weights = self.weighting_fn(nbr_weights)
             rep_features.mul_(nbr_weights)
+            reduction = "sum" # Force sum reduction for weighted GNO layers
+
         else:
             reduction = self.reduction
                                                                                                                         
