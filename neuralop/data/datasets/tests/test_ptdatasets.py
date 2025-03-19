@@ -41,8 +41,7 @@ def test_BurgersDataset(resolution):
                         batch_size=1,
                         test_batch_sizes=[1],
                         train_resolution=resolution,
-                        test_resolutions=[resolution],
-                        download=False)
+                        test_resolutions=[resolution])
     
     assert dataset.train_db
     assert dataset.test_dbs
