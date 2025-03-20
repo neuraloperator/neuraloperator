@@ -5,8 +5,7 @@ import numpy
 import torch
 import torch.nn as nn
 
-from typing import Union, List, Optional, Tuple
-from functools import partial
+from typing import Union, List, Optional, Tuple, Literal
 
 # import the base class from torch-harmonics
 try:
@@ -213,22 +212,21 @@ class DiscreteContinuousConv(nn.Module, metaclass=abc.ABCMeta):
         in_channels: int,
         out_channels: int,
         kernel_shape: Union[int, List[int]],
+        basis_type: Literal['piecewise_linear', 'morlet', 'zernike']='piecewise_linear',
         groups: Optional[int] = 1,
         bias: Optional[bool] = True,
     ):
         super().__init__()
 
         if isinstance(kernel_shape, int):
-            self.kernel_shape = [kernel_shape]
+            self.kernel_shape = [kernel_shape, kernel_shape]
         else:
             self.kernel_shape = kernel_shape
 
-        if len(self.kernel_shape) == 1:
-            self.kernel_size = self.kernel_shape[0]
-        elif len(self.kernel_shape) == 2:
-            self.kernel_size = (self.kernel_shape[0] - 1) * self.kernel_shape[1] + 1
+        if basis_type == 'morlet':
+            self.kernel_size = math.prod(self.kernel_shape)
         else:
-            raise ValueError("kernel_shape should be either one- or two-dimensional.")
+            self.kernel_size = (self.kernel_shape[0] - 1) * self.kernel_shape[1] + 1
 
         # groups
         self.groups = groups
@@ -333,7 +331,11 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         bias: Optional[bool] = True,
         radius_cutoff: Optional[float] = None,
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
+        super().__init__(in_channels=in_channels,
+                         out_channels=out_channels,
+                         kernel_shape=kernel_shape,
+                         basis_type=basis_type,
+                         groups=groups, bias=bias)
 
         # the instantiator supports convenience constructors for the input and output grids
         if isinstance(grid_in, torch.Tensor):
@@ -512,8 +514,11 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         bias: Optional[bool] = True,
         radius_cutoff: Optional[float] = None,
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
-
+        super().__init__(in_channels=in_channels,
+                         out_channels=out_channels,
+                         kernel_shape=kernel_shape,
+                         basis_type=basis_type,
+                         groups=groups, bias=bias)
         # the instantiator supports convenience constructors for the input and output grids
         if isinstance(grid_in, torch.Tensor):
             assert isinstance(quadrature_weights, torch.Tensor)
@@ -688,7 +693,11 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         radius_cutoff: Optional[float] = None,
         **kwargs
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
+        super().__init__(in_channels=in_channels,
+                         out_channels=out_channels,
+                         kernel_shape=kernel_shape,
+                         basis_type=basis_type,
+                         groups=groups, bias=bias)
 
         # to ensure compatibility with the unstructured code, only constant zero and periodic padding are supported currently
         self.padding_mode = "circular" if periodic else "zeros"
@@ -842,7 +851,11 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         radius_cutoff: Optional[float] = None,
         **kwargs
     ):
-        super().__init__(in_channels, out_channels, kernel_shape, groups, bias)
+        super().__init__(in_channels=in_channels,
+                         out_channels=out_channels,
+                         kernel_shape=kernel_shape,
+                         basis_type=basis_type,
+                         groups=groups, bias=bias)
         # torch ConvTranspose2d expects grouped weights stacked along the out_channels
         # shape (in_channels, out_channels/groups, h, w)
         self.weight = nn.Parameter(self.weight.permute(1,0,2).reshape(self.groupsize * self.groups,
