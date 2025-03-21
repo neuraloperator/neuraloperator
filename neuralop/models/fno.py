@@ -65,8 +65,8 @@ class FNO(BaseModel, name='FNO'):
 
         * If None, does nothing
 
-    non_linearity : nn.Module, optional
-        Non-Linear activation function module to use, by default F.gelu
+    non_linearity : Literal ["gelu", "relu", "elu", "sigmoid", "tanh"],
+        Non-linear activation function to use, by default "gelu"
     norm : Literal ["ada_in", "group_norm", "instance_norm"], optional
         Normalization layer to use, by default None
     complex_data : bool, optional
@@ -131,8 +131,8 @@ class FNO(BaseModel, name='FNO'):
         if True, use a depthwise separable spectral convolution, by default False   
     preactivation : bool, optional (**DEACTIVATED**)
         whether to compute FNO forward pass with resnet-style preactivation, by default False
-    conv_module : nn.Module, optional
-        module to use for FNOBlock's convolutions, by default SpectralConv
+    conv_module : Literal['spectral', 'spherical'], optional
+        module to use for FNOBlock's convolutions, by default 'spectral'
     
     Examples
     ---------
@@ -169,7 +169,7 @@ class FNO(BaseModel, name='FNO'):
         lifting_channel_ratio: int=2,
         projection_channel_ratio: int=2,
         positional_embedding: Union[str, nn.Module]="grid",
-        non_linearity: nn.Module=F.gelu,
+        non_linearity: Literal['gelu', 'relu', 'elu', 'sigmoid', 'tanh']='gelu',
         norm: Literal ["ada_in", "group_norm", "instance_norm"]=None,
         complex_data: bool=False,
         channel_mlp_dropout: float=0,
@@ -189,7 +189,7 @@ class FNO(BaseModel, name='FNO'):
         decomposition_kwargs: dict=dict(),
         separable: bool=False,
         preactivation: bool=False,
-        conv_module: nn.Module=SpectralConv,
+        conv_module: Literal['spectral', 'spherical']='spherical', # nn.Module=SpectralConv,
         **kwargs
     ):
         
@@ -212,6 +212,7 @@ class FNO(BaseModel, name='FNO'):
         self.projection_channel_ratio = projection_channel_ratio
         self.projection_channels = projection_channel_ratio * self.hidden_channels
 
+        
         self.non_linearity = non_linearity
         self.rank = rank
         self.factorization = factorization

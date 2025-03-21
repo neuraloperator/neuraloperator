@@ -24,7 +24,8 @@ nonlinearity_modules = {'gelu': F.gelu,
                         'relu': F.relu,
                         'elu': F.elu,
                         'tanh': F.tanh,
-                        'sigmoid': F.sigmoid}
+                        'sigmoid': F.sigmoid,
+                        'identity': nn.Identity()}
 
 Number = Union[int, float]
 
