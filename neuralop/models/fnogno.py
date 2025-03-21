@@ -54,8 +54,8 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         by default 10000. If `gno_pos_embed_type != 'transformer'`, value is unused.
     gno_channel_mlp_hidden_layers : list, defaults to [512, 256]
         dimension of hidden ChannelMLP layers of GNO.
-    gno_channel_mlp_non_linearity : nn.Module, defaults to F.gelu
-        nonlinear activation function between layers
+    gno_channel_mlp_non_linearity : Literal ["gelu", "relu", "elu", "sigmoid", "tanh"]
+        nonlinear activation function between layers, defaults to 'gelu'
     gno_use_open3d : bool, defaults to True
         whether to use Open3D functionality
         if False, uses simple fallback neighbor search
@@ -74,8 +74,8 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         dropout parameter of above ChannelMLP.
     fno_channel_mlp_expansion : float, defaults to 0.5
         expansion parameter of above ChannelMLP.
-    fno_non_linearity : nn.Module, defaults to F.gelu
-        nonlinear activation function between each FNO layer.
+    fno_non_linearity : Literal ["gelu", "relu", "elu", "sigmoid", "tanh"]
+        nonlinear activation function between each FNO layer, defaults to 'gelu'
     fno_stabilizer : nn.Module | None, defaults to None
         By default None, otherwise tanh is used before FFT in the FNO block.
     fno_norm : nn.Module | None, defaults to None
@@ -109,7 +109,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         * `factorized` : the input is directly contracted with the factors of the decomposition
     fno_decomposition_kwargs : dict, defaults to dict()
         Optionaly additional parameters to pass to the tensor decomposition.
-    fno_conv_module : nn.Module, defaults to SpectralConv
+    fno_conv_module : Literal['spectral', 'spherical']
          Spectral Convolution module to use.
     """
 
@@ -130,7 +130,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         gno_embed_max_positions=10000,
         gno_radius=0.033,
         gno_channel_mlp_hidden_layers=[512, 256],
-        gno_channel_mlp_non_linearity=F.gelu,
+        gno_channel_mlp_non_linearity='gelu',
         gno_use_open3d=True,
         gno_batched=False,
         # Other FNO params
@@ -139,7 +139,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         fno_block_precision="full",
         fno_channel_mlp_dropout=0,
         fno_channel_mlp_expansion=0.5,
-        fno_non_linearity=F.gelu,
+        fno_non_linearity='gelu',
         fno_stabilizer=None,
         fno_norm=None,
         fno_ada_in_features=None,
@@ -154,7 +154,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         fno_fixed_rank_modes=False,
         fno_implementation="factorized",
         fno_decomposition_kwargs=dict(),
-        fno_conv_module=SpectralConv,
+        fno_conv_module='spectral',
         **kwargs,
     ):
         super().__init__()
