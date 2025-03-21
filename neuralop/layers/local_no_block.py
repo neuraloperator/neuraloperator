@@ -12,11 +12,24 @@ from .discrete_continuous_convolution import EquidistantDiscreteContinuousConv2d
 from .normalization_layers import AdaIN, InstanceNorm
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
+try:
+    from ..layers.spherical_convolution import SphericalConv
+    conv_modules = {'spectral': SpectralConv,
+                    'spherical': SphericalConv}
+except:
+    conv_modules = {'spectral': SpectralConv,}
 from ..utils import validate_scaling_factor
 
 
 Number = Union[int, float]
 
+# dispatch nonlinearity to avoid serializing nn.Functional modules
+nonlinearity_modules = {'gelu': F.gelu,
+                        'relu': F.relu,
+                        'elu': F.elu,
+                        'tanh': F.tanh,
+                        'sigmoid': F.sigmoid,
+                        'identity': nn.Identity()}
 
 class LocalNOBlocks(nn.Module):
     """LocalNOBlocks implements a sequence of Fourier layers, the operations of which 
@@ -73,8 +86,8 @@ class LocalNOBlocks(nn.Module):
         dropout parameter for self.channel_mlp, by default 0
     channel_mlp_expansion : float, optional
         expansion parameter for self.channel_mlp, by default 0.5
-    non_linearity : torch.nn.F module, optional
-        nonlinear activation function to use between layers, by default F.gelu
+    non_linearity : Literal["gelu", "relu", "elu", "sigmoid", "tanh"], optional
+        nonlinear activation function to use between layers, by default "gelu"
     stabilizer : Literal["tanh"], optional
         stabilizing module to use between certain layers, by default None
         if "tanh", use tanh
@@ -103,8 +116,8 @@ class LocalNOBlocks(nn.Module):
         factorization parameter for SpectralConv, by default None
     rank : float, optional
         rank parameter for SpectralConv, by default 1.0
-    conv_module : BaseConv, optional
-        module to use for convolutions in Local NO block, by default SpectralConv
+    conv_module : Literal['spectral', 'spherical']
+        module to use for convolutions in Local NO block, by default 'spectral'
     joint_factorization : bool, optional
         whether to factorize all spectralConv weights as one tensor, by default False
     fixed_rank_modes : bool, optional
@@ -148,7 +161,7 @@ class LocalNOBlocks(nn.Module):
         use_channel_mlp=False,
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
-        non_linearity=F.gelu,
+        non_linearity="gelu",
         stabilizer=None,
         norm=None,
         ada_in_features=None,
@@ -158,7 +171,7 @@ class LocalNOBlocks(nn.Module):
         separable=False,
         factorization=None,
         rank=1.0,
-        conv_module=SpectralConv,
+        conv_module='spectral',
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
@@ -198,7 +211,7 @@ class LocalNOBlocks(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.n_layers = n_layers
-        self.non_linearity = non_linearity
+        self.non_linearity = nonlinearity_modules[non_linearity]
         self.stabilizer = stabilizer
         self.rank = rank
         self.factorization = factorization
@@ -236,9 +249,10 @@ class LocalNOBlocks(nn.Module):
             f"disco_layers must either provide a single bool value or a list of booleans of length n_layers,\
                     got {len(disco_layers)=}"
 
+        conv_class = conv_modules[conv_module]
         self.convs = nn.ModuleList(
             [
-                conv_module(
+                conv_class(
                     self.in_channels,
                     self.out_channels,
                     self.n_modes,

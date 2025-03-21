@@ -8,7 +8,6 @@ from torch import nn
 import torch.nn.functional as F
 from .resample import resample
 from .fno_block import FNOBlocks
-from .spectral_convolution import SpectralConv
 
 einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -55,8 +54,8 @@ class CODALayer(nn.Module):
         Whether to use MLP layers to parameterize skip connections. Default is True.
     channel_mlp_expansion : float, optional
         Expansion parameter for self.channel_mlp. Default is 0.5.
-    non_linearity : callable
-        Non-linearity function to be used.
+    non_linearity : Literal ["gelu", "relu", "elu", "sigmoid", "tanh"],
+        Non-linear activation function to use, by default "gelu"
     preactivation : bool, optional
         Whether to use preactivation. Default is False.
     fno_skip : str, optional
@@ -69,10 +68,14 @@ class CODALayer(nn.Module):
         Type of factorization to be used. Default is 'tucker'.
     rank : float, optional
         Rank of the factorization. Default is 1.0.
-    conv_module : callable
-        Spectral convolution module to be used.
+    conv_module : Literal['spectral', 'spherical']
+        Spectral convolution module to be used, by default 'spectral'
+        * If ``'spectral'``, uses ``SpectralConv``
+
+        * If ``'spherical'``, uses ``SphericalConv``
+
     joint_factorization : bool, optional
-        Whether to factorize all spectralConv weights as one tensor. Default is False.
+        Whether to factorize all SpectralConv weights as one tensor. Default is False.
     
     References
     ----------
@@ -96,7 +99,7 @@ class CODALayer(nn.Module):
         scale=None,
         resolution_scaling_factor=None,
         incremental_n_modes=None,
-        non_linearity=F.gelu,
+        non_linearity="gelu",
         use_channel_mlp=True,
         channel_mlp_expansion=1.0,
         fno_skip='linear',
@@ -106,7 +109,7 @@ class CODALayer(nn.Module):
         factorization='tucker',
         rank=1.0,
         joint_factorization=False,
-        conv_module=SpectralConv,
+        conv_module='spectral',
         fixed_rank_modes=False,
         implementation='factorized',
         decomposition_kwargs=None,
@@ -148,7 +151,7 @@ class CODALayer(nn.Module):
         if nonlinear_attention:
             kqv_activation = non_linearity
         else:
-            kqv_activation = torch.nn.Identity()
+            kqv_activation = 'identity'
 
         self.permutation_eq = permutation_eq
 
@@ -217,7 +220,7 @@ class CODALayer(nn.Module):
                 n_modes=n_modes,
                 resolution_scaling_factor=1,
                 # args below are shared with KQV blocks
-                non_linearity=torch.nn.Identity(),
+                non_linearity='identity',
                 fno_skip='linear',
                 norm=None,
                 conv_module=conv_module,

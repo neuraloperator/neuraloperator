@@ -189,7 +189,7 @@ class FNO(BaseModel, name='FNO'):
         decomposition_kwargs: dict=dict(),
         separable: bool=False,
         preactivation: bool=False,
-        conv_module: Literal['spectral', 'spherical']='spherical', # nn.Module=SpectralConv,
+        conv_module: Literal['spectral', 'spherical']='spectral', # nn.Module=SpectralConv,
         **kwargs
     ):
         
@@ -417,7 +417,7 @@ class FNO1d(FNO):
         max_n_modes=None,
         n_layers=4,
         resolution_scaling_factor=None,
-        non_linearity=F.gelu,
+        non_linearity='gelu',
         stabilizer=None,
         complex_data=False,
         fno_block_precision="full",
@@ -492,7 +492,7 @@ class FNO2d(FNO):
         n_layers=4,
         resolution_scaling_factor=None,
         max_n_modes=None,
-        non_linearity=F.gelu,
+        non_linearity='gelu',
         stabilizer=None,
         complex_data=False,
         fno_block_precision="full",
@@ -571,7 +571,7 @@ class FNO3d(FNO):
         n_layers=4,
         resolution_scaling_factor=None,
         max_n_modes=None,
-        non_linearity=F.gelu,
+        non_linearity='gelu',
         stabilizer=None,
         complex_data=False,
         fno_block_precision="full",

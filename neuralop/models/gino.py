@@ -68,8 +68,8 @@ class GINO(BaseModel):
             widths of hidden layers in input GNO, by default [80, 80, 80]
         out_gno_channel_mlp_hidden_layers : list, optional
             widths of hidden layers in output GNO, by default [512, 256]
-        gno_channel_mlp_non_linearity : nn.Module, optional
-            nonlinearity to use in gno ChannelMLP, by default F.gelu
+        gno_channel_mlp_non_linearity: Literal ["gelu", "relu", "elu", "sigmoid", "tanh"]
+            Non-linear activation function to use in gno ChannelMLP,  by default "gelu"
         gno_use_open3d : bool, optional
             whether to use open3d neighbor search, by default True
             if False, uses pure-PyTorch fallback neighbor search
@@ -91,8 +91,8 @@ class GINO(BaseModel):
             dropout parameter of above ChannelMLP.
         fno_channel_mlp_expansion : float, defaults to 0.5
             expansion parameter of above ChannelMLP.
-        fno_non_linearity : nn.Module, defaults to F.gelu
-            nonlinear activation function between each FNO layer.
+        fno_non_linearity : Literal ["gelu", "relu", "elu", "sigmoid", "tanh"]
+            nonlinear activation function between each FNO layer, defaults to 'gelu'
         fno_stabilizer : nn.Module | None, defaults to None
             By default None, otherwise tanh is used before FFT in the FNO block.
         fno_norm : nn.Module | None, defaults to None
@@ -127,7 +127,7 @@ class GINO(BaseModel):
             * `factorized` : the input is directly contracted with the factors of the decomposition
         fno_decomposition_kwargs : dict, defaults to dict()
             Optionaly additional parameters to pass to the tensor decomposition.
-        fno_conv_module : nn.Module, defaults to SpectralConv
+        fno_conv_module : Literal['spectral', 'spherical']
             Spectral Convolution module to use.
         
             
@@ -161,7 +161,7 @@ class GINO(BaseModel):
         gno_embed_max_positions=10000,
         in_gno_channel_mlp_hidden_layers=[80, 80, 80],
         out_gno_channel_mlp_hidden_layers=[512, 256],
-        gno_channel_mlp_non_linearity=F.gelu, 
+        gno_channel_mlp_non_linearity='gelu', 
         gno_use_open3d=True,
         gno_use_torch_scatter=True,
         out_gno_tanh=None,
@@ -172,7 +172,7 @@ class GINO(BaseModel):
         fno_use_channel_mlp=True, 
         fno_channel_mlp_dropout=0,
         fno_channel_mlp_expansion=0.5,
-        fno_non_linearity=F.gelu,
+        fno_non_linearity='gelu',
         fno_stabilizer=None, 
         fno_norm=None,
         fno_ada_in_features=4,
@@ -187,7 +187,7 @@ class GINO(BaseModel):
         fno_fixed_rank_modes=False,
         fno_implementation='factorized',
         fno_decomposition_kwargs=dict(),
-        fno_conv_module=SpectralConv,
+        fno_conv_module='spectral',
         **kwargs
         ):
         
