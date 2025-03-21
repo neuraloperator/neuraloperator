@@ -8,7 +8,8 @@ nonlinearity_modules = {'gelu': F.gelu,
                         'relu': F.relu,
                         'elu': F.elu,
                         'tanh': F.tanh,
-                        'sigmoid': F.sigmoid}
+                        'sigmoid': F.sigmoid,
+                        'identity': nn.Identity()}
 
 class ChannelMLP(nn.Module):
     """ChannelMLP applies an arbitrary number of layers of 
