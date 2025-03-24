@@ -1,4 +1,5 @@
 from copy import deepcopy
+from pathlib import Path
 
 import torch
 import torch.nn as nn
@@ -38,11 +39,15 @@ class UQNO(BaseModel, name="UQNO"):
                  **kwargs
                  ):
         super().__init__()
+        self._version = '0.2.0'
 
         self.base_model = base_model
         if residual_model is None:
             residual_model = deepcopy(base_model)
         self.residual_model = residual_model
+
+        self._model_cls_names = {'solution': self.base_model.__class__.__name__,
+                                 'residual': self.residual_model.__class__.__name__}
     
     def forward(self, *args, **kwargs):
         """
@@ -58,3 +63,52 @@ class UQNO(BaseModel, name="UQNO"):
         quantile = self.residual_model(*args, **kwargs)
         return (solution, quantile)
     
+    def save_checkpoint(self, save_folder, save_name):
+        """Saves the model state and init param in the given folder under the given name
+        """
+        save_folder = Path(save_folder)
+        if not save_folder.exists():
+            save_folder.mkdir(parents=True)
+
+        # save the solution and residual models separately to avoid serializing the individual modules
+
+        ## save solution model
+        solution_model_state_dict_filepath = save_folder.joinpath(f'{save_name}_solution_state_dict.pt').as_posix()
+        torch.save(self.base_model.state_dict(), solution_model_state_dict_filepath)
+
+        solution_metadata_filepath = save_folder.joinpath(f'{save_name}_solution_metadata.pkl').as_posix()
+        torch.save(self.base_model._init_kwargs, solution_metadata_filepath)
+
+        ## save residual model
+        residual_model_state_dict_filepath = save_folder.joinpath(f'{save_name}_residual_state_dict.pt').as_posix()
+        torch.save(self.residual_model.state_dict(), residual_model_state_dict_filepath)
+
+        residual_metadata_filepath = save_folder.joinpath(f'{save_name}_residual_metadata.pkl').as_posix()
+        torch.save(self.residual_model._init_kwargs, residual_metadata_filepath)
+
+        ## save init kwargs
+        metadata_filepath = save_folder.joinpath(f'{save_name}_submodule_cls_names.pkl').as_posix()
+        torch.save(self._model_cls_names, metadata_filepath)
+    
+    def load_checkpoint(self, save_folder, save_name, map_location=None):
+        save_folder = Path(save_folder)
+
+        self.base_model.load_checkpoint(save_folder, f"{save_name}_solution", map_location=map_location)   
+        self.residual_model.load_checkpoint(save_folder, f"{save_name}_residual", map_location=map_location)   
+
+    @classmethod
+    def from_checkpoint(self, save_folder, save_name, map_location=None):
+        save_folder = Path(save_folder)
+
+        # load the model class names to initialize separately
+        cls_names_filepath = save_folder.joinpath(f'{save_name}_submodule_cls_names.pkl').as_posix()
+        cls_names = torch.load(cls_names_filepath)
+
+        # load the solution and residual models separately to avoid ``weights_only=False`` loading
+        solution_model_cls = BaseModel._models[cls_names['solution']]
+        solution_model = solution_model_cls.from_checkpoint(save_folder, save_name=f"{save_name}_solution", map_location=map_location)
+
+        residual_model_cls = BaseModel._models[cls_names['residual']]
+        residual_model = residual_model_cls.from_checkpoint(save_folder, save_name=f"{save_name}_residual", map_location=map_location)
+
+        return UQNO(base_model=solution_model, residual_model=residual_model)
