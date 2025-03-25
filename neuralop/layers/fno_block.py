@@ -48,7 +48,7 @@ class FNOBlocks(nn.Module):
     stabilizer : Literal["tanh"], optional
         stabilizing module to use between certain layers, by default None
         if "tanh", use tanh
-    norm : Literal["ada_in", "group_norm", "instance_norm"], optional
+    norm : Literal["ada_in", "group_norm", "instance_norm", "batch_norm"], optional
         Normalization layer to use, by default None
     ada_in_features : int, optional
         number of features for adaptive instance norm above, by default None
