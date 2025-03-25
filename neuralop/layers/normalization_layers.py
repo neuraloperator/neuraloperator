@@ -45,3 +45,20 @@ class InstanceNorm(nn.Module):
         x = torch.nn.functional.instance_norm(x, **self.kwargs)
         assert x.shape == size
         return x
+
+class BatchNorm(nn.Module):
+    def __init__(self, **kwargs):
+        """BatchNorm applies dim-agnostic batch normalization
+        to data as an nn.Module. 
+
+        kwargs: additional parameters to pass to instance_norm() for use as a module
+        e.g. running_mean, running_var, affine
+        """
+        super().__init__()
+        self.kwargs = kwargs
+    
+    def forward(self, x):
+        size = x.shape
+        x = torch.nn.functional.batch_norm(x, **self.kwargs)
+        assert x.shape == size
+        return x
