@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from .channel_mlp import ChannelMLP
 from .complex import CGELU, apply_complex, ctanh, ComplexValued
-from .normalization_layers import AdaIN, InstanceNorm
+from .normalization_layers import AdaIN, InstanceNorm, BatchNorm
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
 from ..utils import validate_scaling_factor
@@ -48,7 +48,7 @@ class FNOBlocks(nn.Module):
     stabilizer : Literal["tanh"], optional
         stabilizing module to use between certain layers, by default None
         if "tanh", use tanh
-    norm : Literal["ada_in", "group_norm", "instance_norm"], optional
+    norm : Literal["ada_in", "group_norm", "instance_norm", "batch_norm"], optional
         Normalization layer to use, by default None
     ada_in_features : int, optional
         number of features for adaptive instance norm above, by default None
@@ -241,6 +241,14 @@ class FNOBlocks(nn.Module):
                 ]
             )
         
+        elif norm == "batch_norm":
+            self.norm = nn.ModuleList(
+                [
+                    BatchNorm()
+                    for _ in range(n_layers * self.n_norms)
+                ]
+            )
+        
         elif norm == "ada_in":
             self.norm = nn.ModuleList(
                 [
@@ -251,7 +259,7 @@ class FNOBlocks(nn.Module):
         else:
             raise ValueError(
                 f"Got norm={norm} but expected None or one of "
-                "[instance_norm, group_norm, ada_in]"
+                "[instance_norm, group_norm, batch_norm, ada_in]"
             )
 
     def set_ada_in_embeddings(self, *embeddings):
