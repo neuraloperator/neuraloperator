@@ -148,7 +148,7 @@ def load_darcy_flow_small(n_train,
                            encode_output=encode_output,
                            channel_dim=channel_dim,
                            encoding=encoding,
-                           download=False)
+                           download=True)
     
     # return dataloaders for backwards compat
     train_loader = DataLoader(dataset.train_db,
