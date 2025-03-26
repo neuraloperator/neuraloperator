@@ -44,7 +44,7 @@ on `PyPI <https://pypi.org/project/neuraloperator/>`_:
   
   pip install neuraloperator
 
-Or on `conda <>`_:
+Or on `conda <https://anaconda.org/conda-forge/neuraloperator>`_:
 
 
 .. code::
