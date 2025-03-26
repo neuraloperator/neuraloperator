@@ -44,6 +44,14 @@ on `PyPI <https://pypi.org/project/neuraloperator/>`_:
   
   pip install neuraloperator
 
+Or on `conda <>`_:
+
+
+.. code::
+  
+  conda install conda-forge::neuraloperator
+
+
 Quickstart
 ----------
 
