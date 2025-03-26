@@ -303,48 +303,6 @@ class RotaryEmbedding2D(nn.Module):
 
         return torch.cat((apply_rotary_pos_emb(t_x, freqs_x),
                           apply_rotary_pos_emb(t_y, freqs_y)), dim=-1)
-
-class LegacySinusoidalEmbedding(Embedding):
-    def __init__(self, in_channels, num_frequencies, max_positions=10000, endpoint=False):
-        super().__init__()
-        self.in_channels = in_channels
-        self.num_frequencies = num_frequencies
-        self.max_positions = max_positions
-        self.endpoint = endpoint
-    
-    @property
-    def out_channels(self):
-        return self.in_channels * self.num_frequencies * 2
-
-    def forward(self, x):
-        """
-        Parameters 
-        -----------
-        x: ``torch.Tensor``
-            shape ``(n_in, self.in_channels)`` or ``(batch, n_in, self.in_channels)``
-        """
-        assert x.ndim in [2,3], f"Error: expected inputs of shape (batch, n_in, {self.in_channels})\
-            or (n_in, channels), got inputs with ndim={x.ndim}, shape={x.shape}"
-        if x.ndim == 2:
-            batched = False
-            x = x.unsqueeze(0)
-        else:
-            batched = True
-        batch_size, n_in, _ = x.shape
-        x = x.view(-1)
-        freqs = torch.arange(
-            start=0, end=self.num_frequencies, dtype=torch.float32, device=x.device
-        )
-        freqs = freqs / (self.num_frequencies * 2 - (1 if self.endpoint else 0))
-        freqs = (1 / self.max_positions) ** freqs
-        x = x.ger(freqs.to(x.dtype))
-        x = torch.cat([x.cos(), x.sin()], dim=1)
-        x = x.view((batch_size, n_in, -1))
-
-        if not batched:
-            x = x.squeeze(0)
-
-        return x
     
 # Utility functions for GridEmbedding
 def regular_grid_2d(spatial_dims, grid_boundaries=[[0, 1], [0, 1]]):
