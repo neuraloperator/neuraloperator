@@ -36,15 +36,15 @@ immediately reflected without having to reinstall):
   pip install -e .
   pip install -r requirements.txt
 
-You can also just pip install the most recent stable release of the library 
-on `PyPI <https://pypi.org/project/neuraloperator/>`_:
+You can also install the most recent stable release of the library 
+from `PyPI <https://pypi.org/project/neuraloperator/>`_:
 
 
 .. code::
   
   pip install neuraloperator
 
-Or on `conda <https://anaconda.org/conda-forge/neuraloperator>`_:
+Or from `conda <https://anaconda.org/conda-forge/neuraloperator>`_:
 
 
 .. code::
