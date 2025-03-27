@@ -114,7 +114,7 @@ class LinearChannelMLP(nn.Module):
         assert self.n_layers >= 1
 
         self.fcs = nn.ModuleList()
-        self.non_linearity = nonlinearity_modules[non_linearity]
+        self.non_linearity = get_nonlinearity(non_linearity)
         self.dropout = (
             nn.ModuleList([nn.Dropout(dropout) for _ in range(self.n_layers)])
             if dropout > 0.0
