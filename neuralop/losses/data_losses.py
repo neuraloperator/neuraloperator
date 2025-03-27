@@ -52,6 +52,8 @@ class LpLoss(object):
 
             ``LpLoss`` always reduces over the spatial dimensions according to ``self.measure``.
             `reduction` only applies to the batch and channel dimensions.
+    eps : float, optional
+        small number added to the denominator for numerical stability when using the relative loss
 
     Examples
     --------
@@ -59,11 +61,12 @@ class LpLoss(object):
     ```
     """
 
-    def __init__(self, d=1, p=2, measure=1., reduction='sum'):
+    def __init__(self, d=1, p=2, measure=1., reduction='sum', eps=1e-8):
         super().__init__()
 
         self.d = d
         self.p = p
+        self.eps = eps
         
         allowed_reductions = ["sum", "mean"]
         assert reduction in allowed_reductions,\
@@ -148,7 +151,7 @@ class LpLoss(object):
     def rel(self, x, y):
         """
         rel: relative LpLoss
-        computes ||x-y||/||y||
+        computes ||x-y||/(||y|| + eps)
 
         Parameters
         ----------
@@ -162,7 +165,7 @@ class LpLoss(object):
                           p=self.p, dim=-1, keepdim=False)
         ynorm = torch.norm(torch.flatten(y, start_dim=-self.d), p=self.p, dim=-1, keepdim=False)
 
-        diff = diff/ynorm
+        diff = diff/(ynorm + self.eps)
 
         diff = self.reduce_all(diff).squeeze()
             
@@ -207,6 +210,8 @@ class H1Loss(object):
 
             H1Loss always averages over the spatial dimensions. 
             `reduction` only applies to the batch and channel dimensions.
+    eps : float, optional
+        small number added to the denominator for numerical stability when using the relative loss
     fix_x_bnd : bool, optional
         whether to fix finite difference derivative
         computation on the x boundary, by default False
@@ -217,7 +222,7 @@ class H1Loss(object):
         whether to fix finite difference derivative
         computation on the z boundary, by default False
     """
-    def __init__(self, d=1, measure=1., reduction='sum', fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
+    def __init__(self, d=1, measure=1., reduction='sum', eps=1e-8, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
         super().__init__()
 
         assert d > 0 and d < 4, "Currently only implemented for 1, 2, and 3-D."
@@ -226,6 +231,8 @@ class H1Loss(object):
         self.fix_x_bnd = fix_x_bnd
         self.fix_y_bnd = fix_y_bnd
         self.fix_z_bnd = fix_z_bnd
+        
+        self.eps = eps
         
         allowed_reductions = ["sum", "mean"]
         assert reduction in allowed_reductions,\
@@ -398,7 +405,7 @@ class H1Loss(object):
             diff += torch.norm(dict_x[j] - dict_y[j], p=2, dim=-1, keepdim=False)**2
             ynorm += torch.norm(dict_y[j], p=2, dim=-1, keepdim=False)**2
         
-        diff = (diff**0.5)/(ynorm**0.5)
+        diff = (diff**0.5)/(ynorm**0.5 + self.eps)
 
         diff = self.reduce_all(diff).squeeze()
             
@@ -453,6 +460,8 @@ class HdivLoss(object):
 
             HdivLoss always averages over the spatial dimensions. 
             `reduction` only applies to the batch and channel dimensions.
+    eps : float, optional
+        small number added to the denominator for numerical stability when using the relative loss
     fix_x_bnd : bool, optional
         whether to fix finite difference derivative
         computation on the x boundary, by default False
@@ -463,7 +472,7 @@ class HdivLoss(object):
         whether to fix finite difference derivative
         computation on the z boundary, by default False
     """
-    def __init__(self, d=1, measure=1., reduction='sum', fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
+    def __init__(self, d=1, measure=1., reduction='sum', eps=1e-8, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
         super().__init__()
 
         assert d > 0 and d < 4, "Currently only implemented for 1, 2, and 3-D."
@@ -472,6 +481,8 @@ class HdivLoss(object):
         self.fix_x_bnd = fix_x_bnd
         self.fix_y_bnd = fix_y_bnd
         self.fix_z_bnd = fix_z_bnd
+        
+        self.eps = eps
         
         allowed_reductions = ["sum", "mean"]
         assert reduction in allowed_reductions,\
@@ -635,7 +646,7 @@ class HdivLoss(object):
         diff += torch.norm(dict_x[1] - dict_y[1], p=2, dim=-1, keepdim=False) ** 2
         ynorm += torch.norm(dict_y[1], p=2, dim=-1, keepdim=False) ** 2
 
-        diff = (diff**0.5)/(ynorm**0.5)
+        diff = (diff**0.5)/(ynorm**0.5 + self.eps)
 
         diff = self.reduce_all(diff).squeeze()
             
