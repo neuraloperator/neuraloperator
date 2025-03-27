@@ -101,10 +101,14 @@ class PoissonInteriorLoss(object):
         nonlinear Poisson's equation: ∇·((1 + 0.1u^2)∇u(x)) = f(x)
 
         u: torch.Tensor | dict
-            output of the model. If output_queries is passed to the model
-            as a dict, this will be a dict of outputs provided over the points at 
-            each value in output_queries. If a tensor, u[:, 0:num_boundary, :] are boundary points
-            and u[:, num_boundary:, :] are interior points.
+            output of the model. 
+            
+            * If output_queries is passed to the model as a dict, this will be a 
+            dict of outputs provided over the points at each value in output_queries. 
+            Each tensor will be shape (batch, n_points, 2).
+            
+            * If a tensor, u will be of shape (batch, num_boundary + num_interior, 2), where
+            u[:, 0:num_boundary, :] are boundary points and u[:, num_boundary:, :] are interior points.
         output_queries: torch.Tensor | dict
             output queries provided to the model. If provided as a dict of tensors,
             u will also be returned as a dict keyed the same way. If provided as a tensor,

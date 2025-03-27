@@ -88,9 +88,7 @@ default: &DEFAULT
     scheduler: 'ReduceLROnPlateau' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau' or "StepLR"
     scheduler_T_max: 5000 # For cosine only, typically take n_epochs
     scheduler_patience: 2 # For ReduceLROnPlateau only
-    gamma: 0.9
-    precision_schedule: None
-    
+    gamma: 0.9    
 
   # Weights and biases
   wandb:
