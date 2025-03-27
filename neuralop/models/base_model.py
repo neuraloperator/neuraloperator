@@ -156,14 +156,14 @@ class BaseModel(torch.nn.Module):
     def load_checkpoint(self, save_folder, save_name, map_location=None):
         save_folder = Path(save_folder)
         state_dict_filepath = save_folder.joinpath(f'{save_name}_state_dict.pt').as_posix()
-        self.load_state_dict(torch.load(state_dict_filepath, map_location=map_location, weights_only=False))
+        self.load_state_dict(torch.load(state_dict_filepath, map_location=map_location))
     
     @classmethod
     def from_checkpoint(cls, save_folder, save_name, map_location=None):
         save_folder = Path(save_folder)
 
         metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.pkl').as_posix()
-        init_kwargs = torch.load(metadata_filepath, weights_only=False)
+        init_kwargs = torch.load(metadata_filepath)
         
         version = init_kwargs.pop('_version')
         if hasattr(cls, '_version') and version != cls._version:
