@@ -129,9 +129,9 @@ elif config.opt.scheduler == "StepLR":
 else:
     raise ValueError(f"Got scheduler={config.opt.scheduler}")
 
-# Creating the losses
-# with default measure, 2D l2 is 2D MSE
+# Create the losses: MSE and relative L2
 mse_loss = MSELoss()
+l2_loss = LpLoss(d=2, p=2)
 
 class GINOLoss(object):
     def __init__(self, base_loss):
@@ -168,7 +168,7 @@ if len(losses) == 1:
 else:
     train_loss = WeightedSumLoss(losses=losses, weights=weights)
 
-eval_losses = {"mse": mse_loss}
+eval_losses = {"mse": mse_loss, 'relative_l2': l2_loss}
 
 if config.verbose:
     print("\n### MODEL ###\n", model)
