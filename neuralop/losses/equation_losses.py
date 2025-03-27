@@ -179,7 +179,7 @@ class PoissonInteriorLoss(object):
         if self.method == "autograd":
             return self.autograd(u=y_pred, **kwargs)
         elif self.method == "finite_difference":
-            return self.finite_difference(u=y_pred, **kwargs)
+            raise NotImplementedError()
         else:
             raise NotImplementedError()
 
