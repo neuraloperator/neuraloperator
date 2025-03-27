@@ -1,15 +1,8 @@
 from typing import List, Literal
 
 from torch import nn
-import torch.nn.functional as F
 
-# dispatch nonlinearity to avoid serializing nn.Functional modules
-nonlinearity_modules = {'gelu': F.gelu,
-                        'relu': F.relu,
-                        'elu': F.elu,
-                        'tanh': F.tanh,
-                        'sigmoid': F.sigmoid,
-                        'identity': nn.Identity()}
+from .nonlinearity import get_nonlinearity
 
 class ChannelMLP(nn.Module):
     """ChannelMLP applies an arbitrary number of layers of 
@@ -28,7 +21,7 @@ class ChannelMLP(nn.Module):
         if None, same is in_channels
     n_layers : int, default is 2
         number of linear layers in the MLP
-    non_linearity : Literal ["gelu", "relu", "elu", "sigmoid", "tanh"],
+    non_linearity : Literal ["gelu", "relu", "elu", "sigmoid", "tanh", "identity"],
         Non-linear activation function to use, by default "gelu" (F.gelu)
     dropout : float, default is 0
         if > 0, dropout probability
@@ -51,7 +44,7 @@ class ChannelMLP(nn.Module):
         self.hidden_channels = (
             in_channels if hidden_channels is None else hidden_channels
         )
-        self.non_linearity = nonlinearity_modules[non_linearity]
+        self.non_linearity = get_nonlinearity(non_linearity)
         self.dropout = (
             nn.ModuleList([nn.Dropout(dropout) for _ in range(n_layers)])
             if dropout > 0.0

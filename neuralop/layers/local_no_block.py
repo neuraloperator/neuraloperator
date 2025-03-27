@@ -9,6 +9,7 @@ from .channel_mlp import ChannelMLP
 from .fno_block import SubModule
 from .differential_conv import FiniteDifferenceConvolution
 from .discrete_continuous_convolution import EquidistantDiscreteContinuousConv2d
+from .nonlinearity import get_nonlinearity
 from .normalization_layers import AdaIN, InstanceNorm
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
@@ -22,14 +23,6 @@ from ..utils import validate_scaling_factor
 
 
 Number = Union[int, float]
-
-# dispatch nonlinearity to avoid serializing nn.Functional modules
-nonlinearity_modules = {'gelu': F.gelu,
-                        'relu': F.relu,
-                        'elu': F.elu,
-                        'tanh': F.tanh,
-                        'sigmoid': F.sigmoid,
-                        'identity': nn.Identity()}
 
 class LocalNOBlocks(nn.Module):
     """LocalNOBlocks implements a sequence of Fourier layers, the operations of which 
@@ -211,7 +204,7 @@ class LocalNOBlocks(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.n_layers = n_layers
-        self.non_linearity = nonlinearity_modules[non_linearity]
+        self.non_linearity = get_nonlinearity(non_linearity)
         self.stabilizer = stabilizer
         self.rank = rank
         self.factorization = factorization

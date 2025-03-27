@@ -6,6 +6,7 @@ import torch.nn.functional as F
 
 from .channel_mlp import ChannelMLP
 from .complex import CGELU, apply_complex, ctanh, ComplexValued
+from .nonlinearity import get_nonlinearity
 from .normalization_layers import AdaIN, InstanceNorm
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
@@ -19,13 +20,6 @@ except:
 
 from ..utils import validate_scaling_factor
 
-# dispatch nonlinearity to avoid serializing nn.Functional modules
-nonlinearity_modules = {'gelu': F.gelu,
-                        'relu': F.relu,
-                        'elu': F.elu,
-                        'tanh': F.tanh,
-                        'sigmoid': F.sigmoid,
-                        'identity': nn.Identity()}
 
 Number = Union[int, float]
 
@@ -174,7 +168,7 @@ class FNOBlocks(nn.Module):
         if self.complex_data:
             self.non_linearity = CGELU
         else:
-            self.non_linearity = nonlinearity_modules[non_linearity]
+            self.non_linearity = get_nonlinearity(non_linearity)
         
         conv_class = conv_modules[conv_module]
 
