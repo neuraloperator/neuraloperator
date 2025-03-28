@@ -87,15 +87,12 @@ class PoissonInteriorLoss(object):
     loss: Callable, optional
         Base loss class to compute distances between expected and true values, 
         by default torch.nn.functional.mse_loss
-    debug: bool
-        if True, checks shapes and raises an error if loss returns any ``inf`` or ``nan`` values.
     """
 
-    def __init__(self, method='autograd', loss=F.mse_loss, debug=False):
+    def __init__(self, method='autograd', loss=F.mse_loss):
         super().__init__()
         self.method = method
         self.loss = loss
-        self.debug = debug
     
     def autograd(self, u, output_queries, output_source_terms_domain, num_boundary, **kwargs):
         """
@@ -157,20 +154,17 @@ class PoissonInteriorLoss(object):
         laplacian = (u_xx + u_yy)
         norm_grad_u = torch.pow(u_prime, 2).sum(dim=-1)
 
-        if self.debug:
-            assert u_sq.shape == u_xx.shape == u_yy.shape == norm_grad_u.shape
+        assert u_sq.shape == u_xx.shape == u_yy.shape == norm_grad_u.shape
 
         left_hand_side = laplacian + laplacian * 0.1 * u_sq + 0.2 * u * norm_grad_u
         output_source_terms_domain = output_source_terms_domain.squeeze(0)
 
-        if self.debug:
-            assert left_hand_side.shape == output_source_terms_domain.shape
+        assert left_hand_side.shape == output_source_terms_domain.shape
         loss = self.loss(left_hand_side, output_source_terms_domain)
 
-        if self.debug:
-            assert not u_prime.isnan().any()
-            assert not u_yy.isnan().any()
-            assert not u_xx.isnan().any()
+        assert not u_prime.isnan().any()
+        assert not u_yy.isnan().any()
+        assert not u_xx.isnan().any()
         del u_xx, u_yy, u_x, u_y, left_hand_side
 
         return loss
@@ -184,7 +178,7 @@ class PoissonInteriorLoss(object):
             raise NotImplementedError()
 
 class PoissonBoundaryLoss(object): 
-    def __init__(self, loss=F.mse_loss, debug=False):
+    def __init__(self, loss=F.mse_loss):
         super().__init__()
         self.loss = loss
         self.counter = 0
