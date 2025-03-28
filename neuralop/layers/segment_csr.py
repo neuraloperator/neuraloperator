@@ -7,7 +7,7 @@ from torch import einsum
 def segment_csr(
     src: torch.Tensor,
     indptr: torch.Tensor,
-    reduce: Literal["mean", "sum"],
+    reduction: Literal["mean", "sum"],
     use_scatter=True,
 ):
     """segment_csr reduces all entries of a CSR-formatted
@@ -35,7 +35,7 @@ def segment_csr(
         reduce by taking the average of all neighbors.
         Otherwise take the sum.
     """
-    if reduce not in ["mean", "sum"]:
+    if reduction not in ["mean", "sum"]:
         raise ValueError("reduce must be one of 'mean', 'sum'")
 
     if (
@@ -45,7 +45,7 @@ def segment_csr(
         """only import torch_scatter when cuda is available"""
         import torch_scatter.segment_csr as scatter_segment_csr
 
-        return scatter_segment_csr(src, indptr, reduce=reduce)
+        return scatter_segment_csr(src, indptr, reduce=reduction)
 
     else:
         if use_scatter:
@@ -85,7 +85,7 @@ def segment_csr(
             src_from = src[from_idx]
             if n_nbrs > 0:
                 to_reduce = einsum(ein_str, src_from)
-                if reduce == "mean":
+                if reduction == "mean":
                     to_reduce /= n_nbrs
                 out[to_idx] += to_reduce
         return out

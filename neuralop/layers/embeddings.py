@@ -254,7 +254,7 @@ class SinusoidalEmbedding(Embedding):
             freqs = 2 ** torch.arange(0, self.num_frequencies, device=x.device) * torch.pi
         
         elif self.embedding_type == 'transformer':
-            freqs = torch.arange(0, self.num_frequencies, device=x.device) / self.in_channels
+            freqs = torch.arange(0, self.num_frequencies, device=x.device) / (self.num_frequencies * 2)
             freqs = (1 / self.max_positions) ** freqs
         
         # outer product of wavenumbers and position coordinates
@@ -304,7 +304,6 @@ class RotaryEmbedding2D(nn.Module):
         return torch.cat((apply_rotary_pos_emb(t_x, freqs_x),
                           apply_rotary_pos_emb(t_y, freqs_y)), dim=-1)
     
-
 # Utility functions for GridEmbedding
 def regular_grid_2d(spatial_dims, grid_boundaries=[[0, 1], [0, 1]]):
     """
