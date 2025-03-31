@@ -20,8 +20,11 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         number of input channels
     out_channels : int
         number of output channels
-    projection_channels : int, defaults to 256
-         number of hidden channels in embedding block of FNO.
+    projection_channel_ratio : int, defaults to 4
+        ratio of pointwise projection channels in the final ``ChannelMLP`` 
+        to ``fno_hidden_channels``, by default 4. The number of projection channels 
+        in the final ``ChannelMLP`` is computed by 
+        ``projection_channel_ratio * fno_hidden_channels`` (i.e. default 256)
     gno_coord_dim : int, defaults to 3
         dimension of coordinate space where GNO is computed
     gno_pos_embed_type : literal `{'transformer', 'nerf'}` | None
@@ -133,7 +136,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         self,
         in_channels,
         out_channels,
-        projection_channels=256,
+        projection_channel_ratio=4,
         gno_coord_dim=3,
         gno_pos_embed_type='transformer',
         gno_transform_type="linear",
@@ -287,6 +290,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             use_torch_scatter_reduce=gno_use_torch_scatter
         )
 
+        projection_channels = projection_channel_ratio * fno_hidden_channels
         self.projection = ChannelMLP(
             in_channels=fno_hidden_channels,
             out_channels=out_channels,
