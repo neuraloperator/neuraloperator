@@ -134,7 +134,7 @@ class GNOBlock(nn.Module):
                  pos_embedding_channels: int=32,
                  pos_embedding_max_positions: int=10000,
                  channel_mlp_layers: List[int]=[128,256,128],
-                 channel_mlp_non_linearity=F.gelu,
+                 channel_mlp_non_linearity="gelu",
                  channel_mlp: nn.Module=None,
                  use_torch_scatter_reduce: bool=True,
                  use_open3d_neighbor_search: bool=True,):
