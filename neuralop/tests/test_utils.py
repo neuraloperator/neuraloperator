@@ -128,7 +128,7 @@ class DummyDataset(Dataset):
     def __len__(self):
         return self.X.shape[0]
 
-class DummyModel(BaseModel, name='Dummy'):
+class DummyModel(BaseModel, name='DummyModel'):
     """
     Simple linear model to mock-up our model API
     """
