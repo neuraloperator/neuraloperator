@@ -86,8 +86,6 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         if passed, sets n_modes separately for each FNO layer.
     fno_block_precision : str, defaults to 'full'
         data precision to compute within fno block
-    fno_use_channel_mlp : bool, defaults to False
-        Whether to use a ChannelMLP layer after each FNO block.
     fno_channel_mlp_dropout : float, defaults to 0
         dropout parameter of above ChannelMLP.
     fno_channel_mlp_expansion : float, defaults to 0.5
@@ -152,7 +150,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         gno_channel_mlp_hidden_layers=[512, 256],
         gno_channel_mlp_non_linearity=F.gelu,
         gno_use_open3d=True,
-        gno_use_torch_scatter=False,
+        gno_use_torch_scatter=True,
         gno_batched=False,
         # Other FNO params
         fno_resolution_scaling_factor=None,
