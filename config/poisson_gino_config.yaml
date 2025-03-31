@@ -42,7 +42,7 @@ default: &DEFAULT
   gino:
     data_channels: 3
     out_channels: 1
-    projection_channels: 256
+    projection_channel_ratio: 4
     gno_coord_dim: 2
     in_gno_pos_embed_type: None
     out_gno_pos_embed_type: 'transformer'
