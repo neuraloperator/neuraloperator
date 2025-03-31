@@ -157,15 +157,6 @@ class GINO(BaseModel):
 
         * If ``'spherical'``, uses ``SphericalConv``
         
-        References
-        -----------
-        .. _[1] : 
-        
-        Li, Z., Kovachki, N., Choy, C., Li, B., Kossaifi, J., Otta, S., 
-            Nabian, M., Stadler, M., Hundt, C., Azizzadenesheli, K., Anandkumar, A. (2023)
-            Geometry-Informed Neural Operator for Large-Scale 3D PDEs. NeurIPS 2023,
-            https://proceedings.neurips.cc/paper_files/paper/2023/hash/70518ea42831f02afc3a2828993935ad-Abstract-Conference.html
-    
     References
     -----------
     .. _[1] : Li, Z., Kovachki, N., Choy, C., Li, B., Kossaifi, J., Otta, S., 
