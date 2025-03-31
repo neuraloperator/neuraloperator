@@ -1,5 +1,4 @@
-from typing import List
-
+from typing import List, Literal, Optional, Callable
 
 import torch
 from torch import nn
@@ -40,7 +39,13 @@ class GNOBlock(nn.Module):
         dimension of domain on which x and y are defined
     radius : float
         radius in which to search for neighbors
-    
+    weighting_fn : Callable, optional
+        optional squared-norm weighting function to use for Mollified GNO layer
+        by default None. See ``neuralop.layers.gno_weighting_functions` for more details. 
+    reduction : Literal['sum', 'mean']
+        whether to aggregate information from each neighborhood in the
+        integral transform by summing (``'sum'``) or averaging (``'mean'``), by default ``'sum'``
+
     Other Parameters
     -----------------
     transform_type : str, optional
@@ -73,12 +78,21 @@ class GNOBlock(nn.Module):
         kernel integral. If you have more specific needs than the LinearChannelMLP,
         this argument allows you to pass your own Module to parameterize the kernel k. 
         Default None.
-    use_open3d_neighbor_search: bool, optional
-        whether to use open3d or native-PyTorch search
     use_torch_scatter_reduce : bool, optional
-        whether to reduce in integral computation using a function
-        provided by the extra dependency torch_scatter or the slower
-        native PyTorch implementation, by default True
+        whether to use ``torch-scatter`` to perform grouped reductions in the ``IntegralTransform``. 
+        If False, uses native Python reduction in ``neuralop.layers.segment_csr``, by default True
+
+        .. warning:: 
+
+            ``torch-scatter`` is an optional dependency that conflicts with the newest versions of PyTorch,
+            so you must handle the conflict explicitly in your environment. See :ref:`torch_scatter_dependency` 
+            for more information. 
+    use_open3d_neighbor_search : bool, optional
+        whether to use open3d for fast 3d neighbor search, by default True. 
+        
+        .. note ::
+            If the coordinates provided are not 3D, the ``GNOBlock`` automatically
+            uses PyTorch native fallback neighbor search. 
 
     Examples
     ---------
@@ -89,14 +103,6 @@ class GNOBlock(nn.Module):
     GNOBlock(
         (pos_embedding): SinusoidalEmbedding()
         (neighbor_search): NeighborSearch()
-        (channel_mlp): LinearChannelMLP(
-            (fcs): ModuleList(
-            (0): Linear(in_features=384, out_features=128, bias=True)
-            (1): Linear(in_features=128, out_features=256, bias=True)
-            (2): Linear(in_features=256, out_features=128, bias=True)
-            (3): Linear(in_features=128, out_features=12, bias=True)
-            )
-        )
         (integral_transform): IntegralTransform(
             (channel_mlp): LinearChannelMLP(
             (fcs): ModuleList(
@@ -112,26 +118,26 @@ class GNOBlock(nn.Module):
 
     References
     -----------
-    .. [1] : 
-    
-    Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, 
+    .. [1] : Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, 
         Anima Anandkumar (2020). "Neural Operator: Graph Kernel Network for 
         Partial Differential Equations." ArXiV, https://arxiv.org/pdf/2003.03485.
     """
     def __init__(self,
-                 in_channels: int, # main
-                 out_channels: int, # main
-                 coord_dim: int, # main
-                 radius: float, # main  
-                 transform_type="linear", # other
-                 pos_embedding_type: str='transformer', # other
-                 pos_embedding_channels: int=32, # other
-                 pos_embedding_max_positions: int=10000, # other
-                 channel_mlp_layers: List[int]=[128,256,128], # mention ratios in docstring
-                 channel_mlp_non_linearity=F.gelu, # other
-                 channel_mlp: nn.Module=None, # other
-                 use_open3d_neighbor_search: bool=True, # other
-                 use_torch_scatter_reduce: bool=True,): # other
+                 in_channels: int,
+                 out_channels: int,
+                 coord_dim: int,
+                 radius: float,
+                 transform_type="linear",
+                 weighting_fn: Optional[Callable]=None,
+                 reduction: Literal['sum', 'mean']='sum',
+                 pos_embedding_type: str='transformer',
+                 pos_embedding_channels: int=32,
+                 pos_embedding_max_positions: int=10000,
+                 channel_mlp_layers: List[int]=[128,256,128],
+                 channel_mlp_non_linearity=F.gelu,
+                 channel_mlp: nn.Module=None,
+                 use_torch_scatter_reduce: bool=True,
+                 use_open3d_neighbor_search: bool=True,):
         super().__init__()
 
         self.in_channels = in_channels
@@ -142,7 +148,7 @@ class GNOBlock(nn.Module):
 
         # Apply sinusoidal positional embedding
         self.pos_embedding_type = pos_embedding_type
-        if self.pos_embedding_type is not None:
+        if self.pos_embedding_type in ['nerf', 'transformer']:
             self.pos_embedding = SinusoidalEmbedding(
                 in_channels=coord_dim,
                 num_frequencies=pos_embedding_channels,
@@ -156,7 +162,7 @@ class GNOBlock(nn.Module):
         if use_open3d_neighbor_search:
             assert self.coord_dim == 3, f"Error: open3d is only designed for 3d data, \
                 GNO instantiated for dim={coord_dim}"
-        self.neighbor_search = NeighborSearch(use_open3d=use_open3d_neighbor_search)
+        self.neighbor_search = NeighborSearch(use_open3d=use_open3d_neighbor_search, return_norm=weighting_fn is not None)
 
         # create proper kernel input channel dim
         if self.pos_embedding is None:
@@ -178,23 +184,25 @@ class GNOBlock(nn.Module):
                       got {channel_mlp.in_channels}."
             assert channel_mlp.out_channels == out_channels, f"Error: expected ChannelMLP to have\
                  {out_channels=} but got {channel_mlp.in_channels=}."
-            self.channel_mlp = channel_mlp
+            channel_mlp = channel_mlp
 
         elif channel_mlp_layers is not None:
             if channel_mlp_layers[0] != kernel_in_dim:
                 channel_mlp_layers = [kernel_in_dim] + channel_mlp_layers
             if channel_mlp_layers[-1] != self.out_channels:
                 channel_mlp_layers.append(self.out_channels)
-            self.channel_mlp = LinearChannelMLP(layers=channel_mlp_layers, non_linearity=channel_mlp_non_linearity)
+            channel_mlp = LinearChannelMLP(layers=channel_mlp_layers, non_linearity=channel_mlp_non_linearity)
 
         # Create integral transform module
         self.integral_transform = IntegralTransform(
-            channel_mlp=self.channel_mlp,
+            channel_mlp=channel_mlp,
             transform_type=transform_type,
-            use_torch_scatter=use_torch_scatter_reduce
+            use_torch_scatter=use_torch_scatter_reduce,
+            weighting_fn=weighting_fn,
+            reduction=reduction
         )
 
-    def forward(self, y, x, f_y=None, reduction='sum'):
+    def forward(self, y, x, f_y=None):
         """Compute a GNO neighbor search and kernel integral transform.
 
         Parameters
@@ -220,8 +228,9 @@ class GNOBlock(nn.Module):
             Output function given on the points x.
             d4 is the output size of the kernel k.
         """
-        n_in = y.shape[0]
-        n_out = x.shape[0]
+        if f_y is not None:
+            if f_y.ndim == 3 and f_y.shape[0] == -1:
+                f_y = f_y.squeeze(0)
 
         neighbors_dict = self.neighbor_search(data=y, queries=x, radius=self.radius)
         
@@ -232,12 +241,9 @@ class GNOBlock(nn.Module):
             y_embed = y
             x_embed = x
 
-        # TODO: compute weights using the neighborhood dict
         out_features = self.integral_transform(y=y_embed,
                                                x=x_embed,
                                                neighbors=neighbors_dict,
                                                f_y=f_y)
         
         return out_features
-
-

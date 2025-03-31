@@ -55,11 +55,14 @@ class IntegralTransform(nn.Module):
         If the input f is not given then (a) is computed
         by default independently of this parameter.
     use_torch_scatter : bool, default 'True'
-        Whether to use torch_scatter's implementation of 
-        segment_csr or our native PyTorch version. torch_scatter 
-        should be installed by default, but there are known versioning
-        issues on some linux builds of CPU-only PyTorch. Try setting
-        to False if you experience an error from torch_scatter.
+        whether to use ``torch-scatter`` to perform grouped reductions in the ``IntegralTransform``. 
+        If False, uses native Python reduction in ``neuralop.layers.segment_csr``, by default True
+
+        .. warning:: 
+
+            ``torch-scatter`` is an optional dependency that conflicts with the newest versions of PyTorch,
+            so you must handle the conflict explicitly in your environment. See :ref:`torch_scatter_dependency` 
+            for more information. 
     """
 
     def __init__(
@@ -68,15 +71,17 @@ class IntegralTransform(nn.Module):
         channel_mlp_layers=None,
         channel_mlp_non_linearity=F.gelu,
         transform_type="linear",
+        weighting_fn=None,
+        reduction='sum',
         use_torch_scatter=True,
     ):
         super().__init__()
 
         assert channel_mlp is not None or channel_mlp_layers is not None
 
+        self.reduction = reduction
         self.transform_type = transform_type
         self.use_torch_scatter = use_torch_scatter
-
         if (
             self.transform_type != "linear_kernelonly"
             and self.transform_type != "linear"
@@ -92,20 +97,18 @@ class IntegralTransform(nn.Module):
             self.channel_mlp = LinearChannelMLP(layers=channel_mlp_layers, non_linearity=channel_mlp_non_linearity)
         else:
             self.channel_mlp = channel_mlp
-            
-
-    """"
-    
-
-    Assumes x=y if not specified
-    Integral is taken w.r.t. the neighbors
-    If no weights are given, a Monte-Carlo approximation is made
-    NOTE: For transforms of type 0 or 2, out channels must be
-    the same as the channels of f
-    """
+        
+        self.weighting_fn = weighting_fn
 
     def forward(self, y, neighbors, x=None, f_y=None, weights=None):
-        """Compute a kernel integral transform
+        """Compute a kernel integral transform. Assumes x=y if not specified. 
+        
+        Integral is taken w.r.t. the neighbors.
+
+        If no weights are given, a Monte-Carlo approximation is made.
+
+        .. note :: For transforms of type 0 or 2, out channels must be
+            the same as the channels of f
 
         Parameters
         ----------
@@ -184,25 +187,32 @@ class IntegralTransform(nn.Module):
         rep_features = self.channel_mlp(agg_features)
 
         if f_y is not None and self.transform_type != "nonlinear_kernelonly":
-            rep_features = rep_features * in_features
+            # if we have a batch of outputs (3d incl. batch dim) and unbatched inputs,
+            # create an identical batch dim in rep_features
+            if rep_features.ndim == 2 and batched:
+                rep_features = rep_features.unsqueeze(0).repeat([batch_size] + [1] * rep_features.ndim)
+            rep_features.mul_(in_features)
+        
+        # Weight neighbors in each neighborhood, first according to the neighbor search (mollified GNO)
+        # and second according to individually-provided weights.
+        nbr_weights = neighbors.get("weights")
+        if nbr_weights is None:
+            nbr_weights = weights
+        if nbr_weights is None and self.weighting_fn is not None:
+            raise KeyError("if a weighting function is provided, your neighborhoods must contain weights.")
+        if nbr_weights is not None:
+            nbr_weights = nbr_weights.unsqueeze(-1).unsqueeze(0)
+            if self.weighting_fn is not None:
+                nbr_weights = self.weighting_fn(nbr_weights)
+            rep_features.mul_(nbr_weights)
+            reduction = "sum" # Force sum reduction for weighted GNO layers
 
-        if weights is not None:
-            assert weights.ndim == 1, "Weights must be of dimension 1 in all cases"
-            nbr_weights = weights[neighbors["neighbors_index"]]
-            # repeat weights along batch dim if batched
-            if batched:
-                nbr_weights = nbr_weights.repeat(
-                    [batch_size] + [1] * nbr_weights.ndim
-                )
-            rep_features = nbr_weights * rep_features
-            reduction = "sum"
         else:
-            reduction = "mean"
-
+            reduction = self.reduction
+        
         splits = neighbors["neighbors_row_splits"]
         if batched:
-            splits = splits.repeat([batch_size] + [1] * splits.ndim)
+            splits = splits.unsqueeze(0).repeat([batch_size] + [1] * (splits.ndim))
 
-        out_features = segment_csr(rep_features, splits, reduce=reduction, use_scatter=self.use_torch_scatter)
-
+        out_features = segment_csr(rep_features, splits, reduction=reduction, use_scatter=self.use_torch_scatter)
         return out_features
