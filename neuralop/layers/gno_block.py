@@ -44,7 +44,7 @@ class GNOBlock(nn.Module):
         by default None. See ``neuralop.layers.gno_weighting_functions` for more details. 
     reduction : Literal['sum', 'mean']
         whether to aggregate information from each neighborhood in the
-        integral transform by summing ('sum') or averaging ('mean')
+        integral transform by summing (``'sum'``) or averaging (``'mean'``), by default ``'sum'``
 
     Other Parameters
     -----------------
@@ -88,7 +88,11 @@ class GNOBlock(nn.Module):
             so you must handle the conflict explicitly in your environment. See :ref:`torch_scatter_dependency` 
             for more information. 
     use_open3d_neighbor_search : bool, optional
-        whether to use open3d or native-PyTorch search
+        whether to use open3d for fast 3d neighbor search, by default True. 
+        
+        .. note ::
+            If the coordinates provided are not 3D, the ``GNOBlock`` automatically
+            uses PyTorch native fallback neighbor search. 
 
     Examples
     ---------
