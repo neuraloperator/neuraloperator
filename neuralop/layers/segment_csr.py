@@ -30,10 +30,19 @@ def segment_csr(
     indptr : torch.Tensor
         splits representing start and end indices
         of each neighborhood in src
-    reduce : Literal['mean', 'sum']
+    reduce : Literal['mean', 'sum'], optional
         how to reduce a neighborhood. if mean,
         reduce by taking the average of all neighbors.
         Otherwise take the sum.
+    use_scatter : bool, optional
+        whether to use ``torch-scatter.segment_csr``. If False, uses native Python reduction.
+        By default True
+
+        .. warning:: 
+
+            ``torch-scatter`` is an optional dependency that conflicts with the newest versions of PyTorch,
+            so you must handle the conflict explicitly in your environment. See :ref:`torch_scatter_dependency` 
+            for more information. 
     """
     if reduction not in ["mean", "sum"]:
         raise ValueError("reduce must be one of 'mean', 'sum'")

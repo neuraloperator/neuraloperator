@@ -55,11 +55,14 @@ class IntegralTransform(nn.Module):
         If the input f is not given then (a) is computed
         by default independently of this parameter.
     use_torch_scatter : bool, default 'True'
-        Whether to use torch_scatter's implementation of 
-        segment_csr or our native PyTorch version. torch_scatter 
-        should be installed by default, but there are known versioning
-        issues on some linux builds of CPU-only PyTorch. Try setting
-        to False if you experience an error from torch_scatter.
+        whether to use ``torch-scatter`` to perform grouped reductions in the ``IntegralTransform``. 
+        If False, uses native Python reduction in ``neuralop.layers.segment_csr``, by default True
+
+        .. warning:: 
+
+            ``torch-scatter`` is an optional dependency that conflicts with the newest versions of PyTorch,
+            so you must handle the conflict explicitly in your environment. See :ref:`torch_scatter_dependency` 
+            for more information. 
     """
 
     def __init__(
@@ -189,8 +192,12 @@ class IntegralTransform(nn.Module):
             if rep_features.ndim == 2 and batched:
                 rep_features = rep_features.unsqueeze(0).repeat([batch_size] + [1] * rep_features.ndim)
             rep_features.mul_(in_features)
-
+        
+        # Weight neighbors in each neighborhood, first according to the neighbor search (mollified GNO)
+        # and second according to individually-provided weights.
         nbr_weights = neighbors.get("weights")
+        if nbr_weights is None:
+            nbr_weights = weights
         if nbr_weights is None and self.weighting_fn is not None:
             raise KeyError("if a weighting function is provided, your neighborhoods must contain weights.")
         if nbr_weights is not None:
@@ -202,8 +209,6 @@ class IntegralTransform(nn.Module):
 
         else:
             reduction = self.reduction
-                                                                                                                        
-        
         
         splits = neighbors["neighbors_row_splits"]
         if batched:

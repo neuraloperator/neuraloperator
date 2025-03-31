@@ -78,7 +78,16 @@ class GNOBlock(nn.Module):
         kernel integral. If you have more specific needs than the LinearChannelMLP,
         this argument allows you to pass your own Module to parameterize the kernel k. 
         Default None.
-    use_open3d_neighbor_search: bool, optional
+    use_torch_scatter_reduce : bool, optional
+        whether to use ``torch-scatter`` to perform grouped reductions in the ``IntegralTransform``. 
+        If False, uses native Python reduction in ``neuralop.layers.segment_csr``, by default True
+
+        .. warning:: 
+
+            ``torch-scatter`` is an optional dependency that conflicts with the newest versions of PyTorch,
+            so you must handle the conflict explicitly in your environment. See :ref:`torch_scatter_dependency` 
+            for more information. 
+    use_open3d_neighbor_search : bool, optional
         whether to use open3d or native-PyTorch search
 
     Examples

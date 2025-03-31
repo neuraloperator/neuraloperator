@@ -90,9 +90,14 @@ class GINO(BaseModel):
         whether to use open3d neighbor search, by default True
         if False, uses pure-PyTorch fallback neighbor search
     gno_use_torch_scatter : bool, optional
-        whether to use torch_scatter's neighborhood reduction function
-        or the native PyTorch implementation in IntegralTransform layers.
-        If False, uses the fallback PyTorch version.
+        whether to use ``torch-scatter`` to perform grouped reductions in the ``IntegralTransform``. 
+        If False, uses native Python reduction in ``neuralop.layers.segment_csr``, by default True
+
+        .. warning:: 
+
+            ``torch-scatter`` is an optional dependency that conflicts with the newest versions of PyTorch,
+            so you must handle the conflict explicitly in your environment. See :ref:`torch_scatter_dependency` 
+            for more information. 
     out_gno_tanh : bool, optional
         whether to use tanh to stabilize outputs of the output GNO, by default False
     fno_resolution_scaling_factor : float | None, optional

@@ -69,8 +69,14 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         whether to use Open3D functionality
         if False, uses simple fallback neighbor search
     gno_use_torch_scatter : bool, defaults to True
-        whether to use torch_scatter for csr reduction in output
-        IntegralTransform.
+        whether to use ``torch-scatter`` to perform grouped reductions in the ``IntegralTransform``. 
+        If False, uses native Python reduction in ``neuralop.layers.segment_csr``, by default True
+
+        .. warning:: 
+
+            ``torch-scatter`` is an optional dependency that conflicts with the newest versions of PyTorch,
+            so you must handle the conflict explicitly in your environment. See :ref:`torch_scatter_dependency` 
+            for more information. 
     gno_batched: bool, defaults to False
         whether to use IntegralTransform/GNO layer in
         "batched" mode. If False, sets batched=False.
