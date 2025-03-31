@@ -30,8 +30,11 @@ class GINO(BaseModel):
         number of channels in optional latent feature map
         to concatenate onto latent embeddings before 
         the FNO's forward pass, default None
-    projection_channels : int, optional
-        number of channels in FNO pointwise projection
+    projection_channel_ratio : int, optional
+        ratio of pointwise projection channels in the final ``ChannelMLP`` 
+        to ``fno_hidden_channels``, by default 4. The number of projection channels 
+        in the final ``ChannelMLP`` is computed by 
+        ``projection_channel_ratio * fno_hidden_channels`` (i.e. default 256)
     gno_coord_dim : int, optional
         geometric dimension of input/output queries, by default 3
     in_gno_radius : float, optional
@@ -59,16 +62,16 @@ class GINO(BaseModel):
         type of optional sinusoidal positional embedding to use in output GNOBlock,
         by default `'transformer'`
     fno_in_channels : int, optional
-        number of input channels for FNO, by default 26
+        number of input channels for FNO, by default 3
     fno_n_modes : tuple, optional
         number of modes along each dimension 
         to use in FNO, by default (16, 16, 16)
     fno_hidden_channels : int, optional
         hidden channels for use in FNO, by default 64
-    lifting_channel_ratio : int, optional
-        ratio of lifting channels to `fno_hidden_channels`, by default 2
+    fno_lifting_channel_ratio : int, optional
+        ratio of lifting channels to ``fno_hidden_channels``, by default 2
         The number of liting channels in the lifting block of the FNO is
-        lifting_channel_ratio * hidden_channels (e.g. default 512)
+        fno_lifting_channel_ratio * hidden_channels (i.e. default 128)
     fno_n_layers : int, optional
         number of layers in FNO, by default 4
     
@@ -165,7 +168,7 @@ class GINO(BaseModel):
         in_channels,
         out_channels,
         latent_feature_channels=None,
-        projection_channels=256,
+        projection_channel_ratio=4,
         gno_coord_dim=3,
         in_gno_radius=0.033,
         out_gno_radius=0.033,
@@ -224,12 +227,16 @@ class GINO(BaseModel):
 
         self.lifting_channels = fno_lifting_channel_ratio * fno_hidden_channels
 
-        # TODO: make sure this makes sense in all contexts
+        # If the input GNO performs a nonlinear kernel, the GNO's output
+        # features must be the same dimension as its input. 
+        # otherwise the kernel's MLP will perform a lifting operation to 
+        # lift the inputs to ``fno_in_channels`` channels
         if in_gno_transform_type in ["nonlinear", "nonlinear_kernelonly"]:
             in_gno_out_channels = self.in_channels
         else:
             in_gno_out_channels = fno_in_channels
-
+        
+        # The actual input channels to the FNO are computed here. 
         self.fno_in_channels = in_gno_out_channels
 
         if latent_feature_channels is not None:
@@ -245,7 +252,8 @@ class GINO(BaseModel):
             print(f'Warning: FNO expects {self.in_coord_dim}-d data while input GNO expects {self.gno_coord_dim}-d data')
 
         self.in_coord_dim_forward_order = list(range(self.in_coord_dim))
-        # channels starting at 2 to permute everything after channel and batch dims
+
+        # tensor indices starting at 2 to permute everything after channel and batch dims
         self.in_coord_dim_reverse_order = [j + 2 for j in self.in_coord_dim_forward_order]
 
         self.fno_norm = fno_norm
@@ -353,6 +361,7 @@ class GINO(BaseModel):
             use_open3d_neighbor_search=gno_use_open3d,
         )
 
+        projection_channels = projection_channel_ratio * fno_hidden_channels
         self.projection = ChannelMLP(in_channels=fno_hidden_channels, 
                               out_channels=self.out_channels, 
                               hidden_channels=projection_channels, 
