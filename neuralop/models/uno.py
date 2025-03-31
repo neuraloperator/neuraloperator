@@ -60,8 +60,8 @@ class UNO(nn.Module):
         dropout parameter for channelMLP after each FNO Block
     channel_mlp_expansions: float, optional
         expansion parameter for channelMLP after each FNO block
-    non_linearity : nn.Module, optional
-        Non-Linearity module to use, by default F.gelu
+    non_linearity : Literal ["gelu", "relu", "elu", "sigmoid", "tanh"]
+        Non-linear activation function to use, by default "gelu"
     norm : F.module, optional
         Normalization layer to use, by default None
     preactivation : bool, default is False
@@ -117,7 +117,7 @@ class UNO(nn.Module):
         incremental_n_modes=None,
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
-        non_linearity=F.gelu,
+        non_linearity='gelu',
         norm=None,
         preactivation=False,
         fno_skip="linear",

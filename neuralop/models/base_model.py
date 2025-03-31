@@ -3,7 +3,34 @@ import torch
 import warnings
 from pathlib import Path
 
-# Author: Jean Kossaifi
+# Author: Jean Kossaifi, David Pitt
+
+# recursively loop through all BaseModel._init_kwargs to serialize init kwargs instead of nested BaseModels
+def base_models_to_kwargs(kwarg_dict):
+    for key, value in kwarg_dict.items():
+        if isinstance(value, BaseModel):
+            kwarg_dict[key] = {'BaseModel_to_store': value._init_kwargs}
+        elif isinstance(value, dict):
+            kwarg_dict[key] = base_models_to_kwargs(value)
+    return kwarg_dict
+
+#  recursively loop through all torch.loaded metadata to turn deserialized init kwargs back into nested BaseModels
+def kwargs_to_base_models(kwarg_dict):
+    for key, value in kwarg_dict.items():
+        if isinstance(value, dict):
+            base_model_init_kwargs = value.pop('BaseModel_to_store')
+            if base_model_init_kwargs is not None:
+                if 'args' in base_model_init_kwargs:
+                    init_args = base_model_init_kwargs.pop('args')
+                else:
+                    init_args = []
+                base_model_cls = BaseModel._models[base_model_init_kwargs['_name']]
+                kwarg_dict[key] = base_model_cls(*init_args, **base_model_init_kwargs)
+            else:
+                kwarg_dict[key] = kwargs_to_base_models[value]
+                
+    return kwarg_dict
+
 
 class BaseModel(torch.nn.Module):
     """Based class for all Models
@@ -73,6 +100,8 @@ class BaseModel(torch.nn.Module):
         kwargs['args'] = args
         kwargs['_name'] = cls._name
         instance = super().__new__(cls)
+
+        kwargs = base_models_to_kwargs(kwargs)
         instance._init_kwargs = kwargs
 
         return instance
@@ -156,14 +185,15 @@ class BaseModel(torch.nn.Module):
     def load_checkpoint(self, save_folder, save_name, map_location=None):
         save_folder = Path(save_folder)
         state_dict_filepath = save_folder.joinpath(f'{save_name}_state_dict.pt').as_posix()
-        self.load_state_dict(torch.load(state_dict_filepath, map_location=map_location, weights_only=False))
+        self.load_state_dict(torch.load(state_dict_filepath, map_location=map_location))
     
     @classmethod
     def from_checkpoint(cls, save_folder, save_name, map_location=None):
         save_folder = Path(save_folder)
 
         metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.pkl').as_posix()
-        init_kwargs = torch.load(metadata_filepath, weights_only=False)
+        init_kwargs = torch.load(metadata_filepath)
+        init_kwargs = kwargs_to_base_models(init_kwargs)
         
         version = init_kwargs.pop('_version')
         if hasattr(cls, '_version') and version != cls._version:
