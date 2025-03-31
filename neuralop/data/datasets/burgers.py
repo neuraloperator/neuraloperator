@@ -1,12 +1,37 @@
 from pathlib import Path
 from typing import Optional, List, Union
-
-import numpy as np
-import torch
-
 from torch.utils.data import DataLoader
 
 from .pt_dataset import PTDataset
+from ..transforms.data_processors import DefaultDataProcessor
+
+class Burgers1dTimeDataProcessor(DefaultDataProcessor):
+    """Burgers1dTimeDataProcessor wraps the DefaultDataProcessor
+    but adds one line to ``.preprocess`` to repeat the input ``x`` along
+    the temporal dimension. 
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    def preprocess(self, data_dict, batched=True):
+        """preprocess does the same thing as ``DefaultDataProcessor.preprocess()``,
+        with the addition of unsqueezing ``x`` along the temporal dimension and repeating
+        to match ``y``'s shape. 
+
+        Parameters
+        ----------
+        data_dict : dict
+            one batch of input
+        batched : bool, optional
+            Whether inputs are batched, by default True
+        """
+        _, _, temporal_len, _ = data_dict["y"].shape
+        # x starts as shape b, 1, spatial_len
+        x = data_dict["x"]
+        x = x.unsqueeze(-2).repeat([1, 1, temporal_len, 1])
+        data_dict["x"] = x
+        return super().preprocess(data_dict, batched)
+
 
 class Burgers1dTimeDataset(PTDataset):
     """
@@ -81,7 +106,8 @@ class Burgers1dTimeDataset(PTDataset):
                          encoding="channel-wise",
                          channel_dim=1,
                          dataset_name="burgers",) 
-
+        self._data_processor = Burgers1dTimeDataProcessor(self._data_processor.in_normalizer, self.data_processor.out_normalizer)
+        
 def load_mini_burgers_1dtime(data_path: Union[Path, str],
                         n_train: int, 
                         n_test: int, 
@@ -126,4 +152,4 @@ def load_mini_burgers_1dtime(data_path: Union[Path, str],
                                    batch_size=test_batch_size,
                                    shuffle=False)}
 
-    return train_loader, test_loaders, burgers_dataset.data_processo
+    return train_loader, test_loaders, burgers_dataset.data_processor

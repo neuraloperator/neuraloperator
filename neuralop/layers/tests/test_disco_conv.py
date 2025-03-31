@@ -25,7 +25,8 @@ device = "cuda" if torch.backends.cuda.is_built() else "cpu"
 
 @pytest.mark.parametrize('conv_type', [DiscreteContinuousConv2d, DiscreteContinuousConvTranspose2d])
 @pytest.mark.parametrize('groups', [1,3])
-def test_regular_disco_conv2d(conv_type, groups):
+@pytest.mark.parametrize('basis_type', ['piecewise_linear', 'morlet', 'zernike'])
+def test_regular_disco_conv2d(conv_type, groups, basis_type):
     # create regular grids of in and output coords
     grid_in = torch.stack(regular_grid_2d(spatial_dims=[side_length_in, side_length_in]))
     grid_out = torch.stack(regular_grid_2d(spatial_dims=[side_length_out, side_length_out]))
@@ -40,11 +41,12 @@ def test_regular_disco_conv2d(conv_type, groups):
     conv_layer = conv_type(
         in_channels=in_channels,
         out_channels=out_channels,
+        basis_type=basis_type,
         grid_in=grid_in,
         grid_out=grid_out,
         kernel_shape=3,
         quadrature_weights=quadrature_weights,
-        groups=groups
+        groups=groups,
     )
 
     # start with a grid, pass to forward as a point cloud
@@ -57,7 +59,8 @@ def test_regular_disco_conv2d(conv_type, groups):
 @pytest.mark.parametrize('conv_type', [EquidistantDiscreteContinuousConv2d,
                                     EquidistantDiscreteContinuousConvTranspose2d])
 @pytest.mark.parametrize('groups', [1,3])
-def test_equidistant_disco_conv2d(conv_type, groups):
+@pytest.mark.parametrize('basis_type', ['piecewise_linear', 'morlet', 'zernike'])
+def test_equidistant_disco_conv2d(conv_type, groups, basis_type):
 
     in_shape = (side_length_in, side_length_in)
     if conv_type == EquidistantDiscreteContinuousConv2d:
@@ -70,8 +73,9 @@ def test_equidistant_disco_conv2d(conv_type, groups):
         out_channels=out_channels,
         in_shape=in_shape,
         out_shape=out_shape,
+        basis_type=basis_type,
         kernel_shape=3,
-        groups=groups
+        groups=groups,
     )
 
     # start with a grid, pass to forward as a grid

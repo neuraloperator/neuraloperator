@@ -69,6 +69,8 @@ class LocalNOBlocks(nn.Module):
         maximum number of modes to keep along each dimension, by default None
     local_no_block_precision : str, optional
         floating point precision to use for computations, by default "full"
+    use_channel_mlp : bool, optional
+        Whether to use an MLP layer after each block, by default True
     channel_mlp_dropout : int, optional
         dropout parameter for self.channel_mlp, by default 0
     channel_mlp_expansion : float, optional
