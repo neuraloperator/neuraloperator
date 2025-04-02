@@ -18,11 +18,8 @@ nu = 0.02   # diffusion coefficient
 cx, cy = 1.0, 0.6  # advection speeds
 
 ## Create grid
-x = torch.linspace(0, Lx, nx, device=device)
-y = torch.linspace(0, Ly, ny, device=device)
-X = x.repeat(ny, 1).T 
-Y = y.repeat(nx, 1)  
-
+X = torch.linspace(0, Lx, nx, device=device).repeat(ny, 1).T 
+Y = torch.linspace(0, Ly, ny, device=device).repeat(nx, 1)  
 dx = Lx / (nx - 1)
 dy = Ly / (ny - 1)
 nt = int(T / dt)

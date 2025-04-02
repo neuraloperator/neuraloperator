@@ -6,7 +6,7 @@ from ...finite_diff import central_diff_2d
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-## 2D visuous Burger's equations
+## 2D viscous Burger's equations
 #  u_t + u u_x + v u_y = nu (u_xx + u_yy)
 #  v_t + u v_x + v v_y = nu (v_xx + v_yy)
 
@@ -18,10 +18,8 @@ dt = 0.001  # Time step
 nu = 0.04   # Viscosity
 
 ## Create grid
-x = torch.linspace(0, Lx, nx, device=device)
-y = torch.linspace(0, Ly, ny, device=device)
-X = x.repeat(ny, 1).T 
-Y = y.repeat(nx, 1)  
+X = torch.linspace(0, Lx, nx, device=device).repeat(ny, 1).T 
+Y = torch.linspace(0, Ly, ny, device=device).repeat(nx, 1)  
 dx = Lx / (nx-1)
 dy = Ly / (ny-1)
 nt = int(T / dt)
