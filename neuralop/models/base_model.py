@@ -48,34 +48,31 @@ class BaseModel(torch.nn.Module):
         We store all the args and kwargs given so we can duplicate the instance transparently.
         """
         sig = inspect.signature(cls)
-        model_name = cls.__name__
-
-        verbose = kwargs.get('verbose', False)
-        # Verify that given parameters are actually arguments of the model
-        for key in kwargs:
-            if key not in sig.parameters:
-                if verbose:
-                    print(f"Given argument key={key} "
-                        f"that is not in {model_name}'s signature.")
-
-        # Check for model arguments not specified in the configuration
-        for key, value in sig.parameters.items():
-            if (value.default is not inspect._empty) and (key not in kwargs):
-                if verbose:
-                    print(
-                        f"Keyword argument {key} not specified for model {model_name}, "
-                        f"using default={value.default}."
-                    )
-                kwargs[key] = value.default
-
-        if hasattr(cls, '_version'):
-            kwargs['_version'] = cls._version
-        kwargs['args'] = args
-        kwargs['_name'] = cls._name
+        metadata = cls._validate_and_store_args(sig, args, kwargs)
         instance = super().__new__(cls)
-        instance._init_kwargs = kwargs
+        instance._metadata = metadata
 
         return instance
+
+    @classmethod
+    def _validate_and_store_args(cls, sig, args, kwargs):
+        class_name = cls.__name__
+        metadata = {"_args": args, "_kwargs": kwargs, "_version": cls._version, "_name": class_name}
+
+        verbose = kwargs.get('verbose', False)
+        # Unexpected arguments: verify that given parameters are actually arguments of the model
+        for key in kwargs:
+            if key not in sig.parameters and verbose:
+                warnings.warn(f"Given argument '{key}' that isn't in the signature of class {class_name}.")
+
+        # Fill in default arguments: check for model arguments not specified in the configuration
+        for key, param in sig.parameters.items():
+            if param.default is not inspect._empty and key not in kwargs:
+                kwargs[key] = param.default
+                if verbose:
+                    print(f"Keyword argument {key} not specified for class {class_name},  using default={param.default}.")
+
+        return metadata
 
     def state_dict(self, destination: dict=None, prefix: str='', keep_vars: bool=False):
         """
@@ -98,9 +95,10 @@ class BaseModel(torch.nn.Module):
         """
         state_dict = super().state_dict(destination=destination, prefix=prefix, keep_vars=keep_vars)
         if state_dict.get('_metadata') == None:
-            state_dict['_metadata'] = self._init_kwargs
+            state_dict['_metadata'] = self._metadata
         else:
             warnings.warn("Attempting to update metadata for a module with metadata already in self.state_dict()")
+            state_dict['_metadata'].update(self._metadata)
         return state_dict
 
     def load_state_dict(self, state_dict, strict=True, assign=False):
@@ -136,7 +134,8 @@ class BaseModel(torch.nn.Module):
                 warnings.warn(f"Attempting to load a {self.__class__} of version {saved_version},"
                               f"But current version of {self.__class__} is {saved_version}")
             # remove state dict metadata at the end to ensure proper loading with PyTorch module
-        return super().load_state_dict(state_dict, strict=strict, assign=assign)
+        super().load_state_dict(state_dict, strict=strict, assign=assign)
+        self._metadata = metadata
 
     def save_checkpoint(self, save_folder, save_name):
         """Saves the model state and init param in the given folder under the given name
@@ -147,11 +146,13 @@ class BaseModel(torch.nn.Module):
 
         state_dict_filepath = save_folder.joinpath(f'{save_name}_state_dict.pt').as_posix()
         torch.save(self.state_dict(), state_dict_filepath)
-        metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.pkl').as_posix()
-        # Objects (e.g. GeLU) are not serializable by json - find a better solution in the future
-        torch.save(self._init_kwargs, metadata_filepath)
+
+        # The metadata is already in the state_dict
+        # metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.pkl').as_posix()
+        # # Objects (e.g. GeLU) are not serializable by json - find a better solution in the future
+        # torch.save(self._metadata, metadata_filepath)
         # with open(metadata_filepath, 'w') as f:
-        #     json.dump(self._init_kwargs, f)
+        #     json.dump(self._metadata, f)
 
     def load_checkpoint(self, save_folder, save_name, map_location=None):
         save_folder = Path(save_folder)
@@ -159,24 +160,23 @@ class BaseModel(torch.nn.Module):
         self.load_state_dict(torch.load(state_dict_filepath, map_location=map_location, weights_only=False))
     
     @classmethod
-    def from_checkpoint(cls, save_folder, save_name, map_location=None):
-        save_folder = Path(save_folder)
+    def from_checkpoint(cls, checkpoint_path, map_location=None, strict=True, assign=False):
+        # Load the checkpoint safely: change weights_only to False if you want to load the full checkpoint
+        state_dict = torch.load(checkpoint_path, map_location=map_location, weights_only=True)
 
-        metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.pkl').as_posix()
-        init_kwargs = torch.load(metadata_filepath, weights_only=False)
-        
-        version = init_kwargs.pop('_version')
-        if hasattr(cls, '_version') and version != cls._version:
-            print(version)
-            warnings.warn(f'Checkpoint saved for version {version} of model {cls._name} but current code is version {cls._version}')
-        
-        if 'args' in init_kwargs:
-            init_args = init_kwargs.pop('args')
-        else:
-            init_args = []
+        metadata = state_dict.get('_metadata', dict())
+        version = metadata.get('_version', None)
+
+        if version is not None and hasattr(cls, '_version') and version != cls._version:
+            warnings.warn(f'Checkpoint saved for version {version} of class {cls.__name__} but current code is version {cls._version}')
+
+        init_args = metadata.get('_args', list())
+        init_kwargs = metadata.get('_kwargs', dict())
         instance = cls(*init_args, **init_kwargs)
 
-        instance.load_checkpoint(save_folder, save_name, map_location=map_location)
+        instance.load_state_dict(state_dict, strict=strict, assign=assign)
+        instance._metadata = metadata
+
         return instance
 
 
