@@ -13,9 +13,16 @@ class DomainPadding(nn.Module):
     domain_padding : ``float`` or ``list``
         typically, between zero and one, percentage of padding to use
         if a list, make sure if matches the dim of (d1, ..., dN)
-    padding_mode : ``Literal ['symmetric', 'one-sided']``, optional
-        whether to pad on both sides, by default ``'symmetric'``
-    resolution_scaling_factor : ``int`` ; default is 1
+    padding_mode : {'symmetric', 'one-sided'}, optional
+        whether to pad on both sides, by default 'one-sided'
+        
+        .. note::
+
+            - 'symmetric': pad on both sides. This should be the default if you use a non-periodic operation after padding.
+
+            - 'one-sided': pad on one side only.  This is equivalent to padding both sides if the first operation following padding is an FFT since that is periodic.
+
+    resolution_scaling_factor : int ; default is 1
 
     Notes
     -----
