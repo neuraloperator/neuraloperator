@@ -1,6 +1,8 @@
 from pathlib import Path
 import shutil
 
+import torch
+
 from neuralop.tests.test_utils import DummyModel
 from ..uqno import UQNO
 
@@ -20,19 +22,13 @@ def test_uqno_checkpoint():
     dummy_uq = UQNO(base_model=DummyModel(50), residual_model=DummyModel(50))
 
     checkpoint_path = Path("./test_checkpoints")
-    dummy_uq.save_checkpoint(save_folder=checkpoint_path, save_name="uqno")
-
-    save_path = checkpoint_path / f"uqno_state_dict.pt"
-    assert save_path.exists()
-
-    metadata_path = checkpoint_path / f"uqno_metadata.pkl"
-    assert metadata_path.exists
+    torch.save(dummy_uq.state_dict(), checkpoint_path / "uqno.pt"), 
 
     from neuralop.models.base_model import BaseModel
 
     # temporarily add DummyModel to the BaseModel registry to allow class creation
-    BaseModel._models.update({'DummyModel': DummyModel})
+    #BaseModel._models.update({'DummyModel': DummyModel})
 
-    dummy_uq = UQNO.from_checkpoint(checkpoint_path, "uqno")
+    dummy_uq = UQNO.from_checkpoint(checkpoint_path / "uqno.pt")
 
     shutil.rmtree(checkpoint_path)
