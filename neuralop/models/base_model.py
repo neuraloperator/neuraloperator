@@ -10,7 +10,7 @@ from pprint import pprint
 def kwargs_ser_safe(kwargs):
     for key, value in kwargs.items():
         if isinstance(value, BaseModel):
-            kwargs[key] = {'BaseModel': value._metadata}
+            kwargs[key] = {'BaseModel': value.state_dict()["_metadata"]}
         elif isinstance(value, dict):
             kwargs[key] = kwargs_ser_safe(value)
         
@@ -27,7 +27,7 @@ def metadata_to_base_models(kwargs):
     #pprint(kwargs)
     for key, value in kwargs.items():
         if isinstance(value, dict):
-            base_model_init_kwargs = value.get('BaseModel', None)
+            base_model_init_kwargs = value.pop('BaseModel', None)
             if base_model_init_kwargs is not None:
                 if 'args' in base_model_init_kwargs:
                     init_args = base_model_init_kwargs.pop('args')
@@ -95,10 +95,10 @@ class BaseModel(torch.nn.Module):
         class_name = cls.__name__
 
         # ensure that if metadata contains another BaseModel object, we convert that in a way that is loadable with ``weights_only=False``
-        for i, arg in enumerate(args):
+        '''for i, arg in enumerate(args):
             if isinstance(arg, BaseModel):
                 args[i] = {'BaseModel': arg._metadata}
-        print(args)
+        print(args)'''
         kwargs = kwargs_ser_safe(kwargs)
 
         metadata = {"_args": args, "_kwargs": kwargs, "_version": cls._version, "_name": class_name}
@@ -148,7 +148,7 @@ class BaseModel(torch.nn.Module):
             pprint(state_dict['_metadata'])
             warnings.warn("Attempting to update metadata for a module with metadata already in self.state_dict()")
             state_dict['_metadata'].update(self._metadata)
-            print(f"storing metadata: for {self._name}")
+            print(f"storing metadata for {self._name}")
             pprint(state_dict['_metadata'])
         return state_dict
 
@@ -199,7 +199,9 @@ class BaseModel(torch.nn.Module):
         if version is not None and hasattr(cls, '_version') and version != cls._version:
             warnings.warn(f'Checkpoint saved for version {version} of class {cls.__name__} but current code is version {cls._version}')
 
-        metadata = metadata_to_base_models(metadata)
+        #metadata = metadata_to_base_models(metadata)
+
+        print(f"updated metadata={metadata}")
 
         init_args = metadata.get('_args', list())
         init_kwargs = metadata.get('_kwargs', dict())

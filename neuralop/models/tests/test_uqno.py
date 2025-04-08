@@ -19,7 +19,9 @@ def test_uqno_train_eval():
     assert not dummy_uq.residual_model.training
 
 def test_uqno_checkpoint():
-    dummy_uq = UQNO(base_model=DummyModel(50), residual_model=DummyModel(50))
+    soln_model = DummyModel(50)
+    resid_model = DummyModel(50)
+    dummy_uq = UQNO(base_model=soln_model, residual_model=resid_model)
 
     checkpoint_path = Path("./test_checkpoints")
     torch.save(dummy_uq.state_dict(), checkpoint_path / "uqno.pt"), 
