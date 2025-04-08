@@ -24,12 +24,9 @@ def test_uqno_checkpoint():
     dummy_uq = UQNO(base_model=soln_model, residual_model=resid_model)
 
     checkpoint_path = Path("./test_checkpoints")
+    checkpoint_path.mkdir(parents=True)
+    
     torch.save(dummy_uq.state_dict(), checkpoint_path / "uqno.pt"), 
-
-    from neuralop.models.base_model import BaseModel
-
-    # temporarily add DummyModel to the BaseModel registry to allow class creation
-    #BaseModel._models.update({'DummyModel': DummyModel})
 
     dummy_uq = UQNO.from_checkpoint(checkpoint_path / "uqno.pt")
 

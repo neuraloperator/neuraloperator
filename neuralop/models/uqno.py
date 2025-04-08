@@ -47,18 +47,6 @@ class UQNO(BaseModel, name="UQNO"):
         if residual_model is None:
             residual_model = deepcopy(base_model)
         self.residual_model = residual_model
-    
-    '''def state_dict(self, destination = None, prefix = '', keep_vars = False):
-        state_dict = super().state_dict(destination=destination, prefix=prefix, keep_vars=keep_vars)
-        state_dict['_metadata'].update(_args=(),
-                              _kwargs = {
-                                  'base_model': {'BaseModel': deepcopy(self.base_model._metadata)},
-                                  'residual_model': {'BaseModel': self.residual_model._metadata,}
-                                  },)
-        print("revised state dict: ")
-        pprint(state_dict)
-        
-        return state_dict'''
 
     def forward(self, *args, **kwargs):
         """
