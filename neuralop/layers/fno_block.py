@@ -276,12 +276,13 @@ class FNOBlocks(nn.Module):
             if a single embedding is given, it will be used for each norm layer
             otherwise, each embedding will be used for the corresponding norm layer
         """
-        if len(embeddings) == 1:
-            for norm in self.norm:
-                norm.set_embedding(embeddings[0])
-        else:
-            for norm, embedding in zip(self.norm, embeddings):
-                norm.set_embedding(embedding)
+        if self.norm is not None:
+            if len(embeddings) == 1:
+                for norm in self.norm:
+                    norm.set_embedding(embeddings[0])
+            else:
+                for norm, embedding in zip(self.norm, embeddings):
+                    norm.set_embedding(embedding)
 
     def forward(self, x, index=0, output_shape=None):
         if self.preactivation:
