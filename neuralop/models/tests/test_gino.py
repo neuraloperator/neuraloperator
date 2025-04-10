@@ -1,8 +1,14 @@
 import torch
-from torch.autograd import grad
 import pytest
 from tensorly import tenalg
 tenalg.set_backend("einsum")
+
+# Parameterize use of torch_scatter if it is built
+try: 
+    from torch_scatter import segment_csr
+    use_torch_scatter = [True, False]
+except:
+    use_torch_scatter = [False]
 
 from ..gino import GINO
 
@@ -28,7 +34,8 @@ fno_ada_in_features = 4
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
 )
 @pytest.mark.parametrize("latent_feature_dim", [None, 2])
-def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_embed_type, batch_size, fno_norm):
+@pytest.mark.parametrize("use_torch_scatter", use_torch_scatter)
+def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_embed_type, batch_size, fno_norm, use_torch_scatter):
     if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")
     else:
@@ -40,6 +47,7 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
         latent_feature_channels=latent_feature_dim,
         in_gno_radius=0.3,# make this large to ensure neighborhoods overlap with queries on the domain
         out_gno_radius=0.3,
+        use_torch_scatter=use_torch_scatter,
         projection_channels=projection_channels,
         gno_coord_dim=gno_coord_dim,
         gno_pos_embed_type=gno_pos_embed_type,
