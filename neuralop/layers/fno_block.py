@@ -6,14 +6,22 @@ import torch.nn.functional as F
 
 from .channel_mlp import ChannelMLP
 from .complex import CGELU, apply_complex, ctanh, ComplexValued
+from .nonlinearity import get_nonlinearity
 from .normalization_layers import AdaIN, InstanceNorm, BatchNorm
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
+
+try:
+    from .spherical_convolution import SphericalConv
+    conv_modules = {'spectral': SpectralConv,
+                    'spherical': SphericalConv}
+except:
+    conv_modules = {'spectral': SpectralConv,}
+
 from ..utils import validate_scaling_factor
 
 
 Number = Union[int, float]
-
 
 class FNOBlocks(nn.Module):
     """FNOBlocks implements a sequence of Fourier layers, the operations of which 
@@ -45,8 +53,8 @@ class FNOBlocks(nn.Module):
         dropout parameter for self.channel_mlp, by default 0
     channel_mlp_expansion : float, optional
         expansion parameter for self.channel_mlp, by default 0.5
-    non_linearity : torch.nn.F module, optional
-        nonlinear activation function to use between layers, by default F.gelu
+    non_linearity : Literal ["gelu", "relu", "elu", "sigmoid", "tanh"],
+        Non-linear activation function to use, by default "gelu"
     stabilizer : Literal["tanh"], optional
         stabilizing module to use between certain layers, by default None
         if "tanh", use tanh
@@ -75,10 +83,15 @@ class FNOBlocks(nn.Module):
         factorization parameter for SpectralConv, by default None
     rank : float, optional
         rank parameter for SpectralConv, by default 1.0
-    conv_module : BaseConv, optional
-        module to use for convolutions in FNO block, by default SpectralConv
+    conv_module : Literal['spectral', 'spherical'], optional
+        module to use for FNOBlock's convolutions, by default 'spectral'
+
+        * if 'spectral', uses neuralop.layers.spectral_convolution.SpectralConv
+
+        * if 'spherical', uses neuralop.layers.spherical_convolution.SphericalConv
+
     joint_factorization : bool, optional
-        whether to factorize all spectralConv weights as one tensor, by default False
+        whether to factorize all SpectralConv weights as one tensor, by default False
     fixed_rank_modes : bool, optional
         fixed_rank_modes parameter for SpectralConv, by default False
     implementation : str, optional
@@ -106,7 +119,7 @@ class FNOBlocks(nn.Module):
         use_channel_mlp=True,
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
-        non_linearity=F.gelu,
+        non_linearity='gelu',
         stabilizer=None,
         norm=None,
         ada_in_features=None,
@@ -117,7 +130,7 @@ class FNOBlocks(nn.Module):
         separable=False,
         factorization=None,
         rank=1.0,
-        conv_module=SpectralConv,
+        conv_module='spectral',
         fixed_rank_modes=False, #undoc
         implementation="factorized", #undoc
         decomposition_kwargs=dict(),
@@ -159,10 +172,12 @@ class FNOBlocks(nn.Module):
         if self.complex_data:
             self.non_linearity = CGELU
         else:
-            self.non_linearity = non_linearity
+            self.non_linearity = get_nonlinearity(non_linearity)
         
+        conv_class = conv_modules[conv_module]
+
         self.convs = nn.ModuleList([
-                conv_module(
+                conv_class(
                 self.in_channels,
                 self.out_channels,
                 self.n_modes,

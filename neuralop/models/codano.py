@@ -4,6 +4,14 @@ import torch
 import numpy as np
 from ..layers.channel_mlp import ChannelMLP
 from ..layers.spectral_convolution import SpectralConv
+
+try:
+    from ..layers.spherical_convolution import SphericalConv
+    conv_modules = {'spectral': SpectralConv,
+                    'spherical': SphericalConv}
+except:
+    conv_modules = {'spectral': SpectralConv,}
+
 from ..layers.skip_connections import skip_connection
 from ..layers.padding import DomainPadding
 from ..layers.coda_layer import CODALayer
@@ -110,14 +118,18 @@ class CODANO(nn.Module):
         Example: For a 5-layer CoDA-NO, attention_scaling_factors=[0.5, 0.5, 0.5, 0.5, 0.5], which is downsample the key and query functions,
         reducing the resolution by a factor of 2.
 
-    conv_module : nn.Module
-        The convolution module to use in the CoDANO_block. Default is SpectralConv.
+    conv_module : Literal['spectral', 'spherical']
+        The convolution module to use in the CoDANO_block. Default is 'spectral'.
+
+        * If ``'spectral'``, uses ``SpectralConv``
+
+        * If ``'spherical'``, uses ``SphericalConv``
 
     nonlinear_attention : bool
         Indicates whether to use a non-linear attention mechanism, employing non-linear key, query, and value operators. Default is False.
 
-    non_linearity : callable
-        The non-linearity to use in the codomain attention block. Default is `F.gelu`.
+    non_linearity : Literal ["gelu", "relu", "elu", "sigmoid", "tanh"]
+        Non-linear activation function to use, by default "gelu"
 
     attention_token_dim : int
         The number of channels in each token function. `attention_token_dim` must divide `hidden_variable_codimension`. Default is 1.
@@ -181,9 +193,9 @@ class CODANO(nn.Module):
         per_layer_scaling_factors=None,
         n_heads=None,
         attention_scaling_factors=None,
-        conv_module=SpectralConv,
+        conv_module='spectral',
         nonlinear_attention=False,
-        non_linearity=F.gelu,
+        non_linearity="gelu",
         attention_token_dim=1,
         per_channel_attention=False,
         layer_kwargs={},
@@ -334,7 +346,7 @@ class CODANO(nn.Module):
                     out_channels=self.hidden_variable_codimension,
                     hidden_channels=None,
                     n_layers=1,
-                    non_linearity=nn.Identity(),
+                    non_linearity='identity',
                     n_dim=self.n_dim,
                 )
 
