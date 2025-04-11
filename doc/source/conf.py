@@ -52,6 +52,7 @@ sphinx_gallery_conf = {
      'examples_dirs': [sg_examples_dir],   # path to your example scripts
      'gallery_dirs': [sg_gallery_dir],  # path to where to save gallery generated output
      'nested_sections': True, # ensure we can nest multiple levels in the gallery toctree
+     'matplotlib_animations': True, # ensure that we can render MPL animations in the gallery
 }
 
 # -- Template configuration 
