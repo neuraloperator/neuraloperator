@@ -24,12 +24,14 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Defining our problem
 # --------------------
 # We aim to solve the 2D diffusion advection equation:
-# > u_t + cx u_x + cy u_y = nu (u_xx + u_yy) + source(x,y,t)
+# 
+# u_t + cx u_x + cy u_y = nu (u_xx + u_yy) + source(x,y,t).
+# 
 # We set simulation parameters below:
 
 ## Simulation parameters
 Lx, Ly = 2.0, 2.0   # Domain lengths
-nx, ny = 128, 128   # Grid resolution
+nx, ny = 64, 64   # Grid resolution
 T = 1.6    # Total simulation time
 dt = 0.001  # Time step
 nu = 0.02   # diffusion coefficient
@@ -52,8 +54,8 @@ def source_term(X, Y, t):
     return 0.2 * torch.sin(3 * np.pi * X) * torch.cos(3 * np.pi * Y) * torch.cos(4 * np.pi * t)
 
 # %%
-# Simulate evolution
-# ------------------
+# Simulate evolution using numerical solver
+# -----------------------------------------
 u_evolution = [u.clone()]
 
 t = torch.tensor(0.0)
@@ -93,4 +95,3 @@ def update(frame):
     return cmap_u,
 
 ani = animation.FuncAnimation(fig, update, frames=len(u_frames), interval=50, blit=False)
-#ani.save("diffusion_advection.gif", writer="pillow", fps=15)
