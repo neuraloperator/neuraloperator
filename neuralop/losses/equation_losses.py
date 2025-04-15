@@ -20,14 +20,55 @@ class BurgersEqnLoss(object):
         if not isinstance(self.domain_length, (tuple, list)):
             self.domain_length = [self.domain_length] * 2
 
-    def fdm(self, u):
-        # remove extra channel dimensions
+    def autograd(self, out_p, u, t_interior=True):
+        # compute the burgers equation: u_t + u_x^2/2 - v*u_xx  = f
         u = u.squeeze(1)
+
+        # compute derivatives and second derivatives
+        u_prime = grad(outputs=u.sum(), inputs=out_p, create_graph=True, retain_graph=True)[0]
+        u_t = u_prime[:, :, 0]
+        u_x = u_prime[:, :, 1]
+        u_xx = grad(outputs=u_x.sum(), inputs=out_p, create_graph=True, retain_graph=True)[0][:, :, 1]
+
+        u_t = u_t.view(u.shape)
+        u_x = u_x.view(u.shape)
+        u_xx = u_xx.view(u.shape)
+
+        # note that ux * u == u_x^2 / 2, so this completes the computation
+        right_hand_side = - u_x * u + self.visc * u_xx
+
+        # check if we work on a grid 
+        # TODO(jberner): Use a dict/namedtuple input with a corresponding flag
+        if t_interior and not (u.shape[-1] == 1):
+            right_hand_side = right_hand_side[:, 1:-1, :]
+            u_t = u_t[:, 1:-1, :]
+
+        equation_loss = self.loss(u_t, right_hand_side)
+        assert not u_t.isnan().any()
+        assert not u_x.isnan().any()
+        assert not u_xx.isnan().any()
+
+        if self.debug:
+            self.record_norms(u_t, u_x, u_xx)
+            self.counter += 1
+            if self.counter > 50:
+                pass
+                #import pdb
+                #pdb.set_trace()
+
+        del u_prime, u_x, u_t, u_xx
+        return equation_loss 
+
+    def finite_difference(self, u):
+        # remove extra channel dimensions
+        assert u.shape[1] == 1
+        u = u[:, 0, :, :]
 
         # shapes
         _, nt, nx = u.shape
 
-        # we assume that the input is given on a regular grid
+        # note: here we assume that the input is a regular grid
+        # TODO(jberner): original PINO implementation uses `dx = domain_length / (nx)`
         dt = self.domain_length[0] / (nt - 1)
         dx = self.domain_length[1] / nx
 
@@ -35,18 +76,18 @@ class BurgersEqnLoss(object):
         dudt, dudx = central_diff_2d(u, [dt, dx], fix_x_bnd=True, fix_y_bnd=True)
 
         # d^2u/dxx
-        dudxx = (
-            torch.roll(u, -1, dims=-1) - 2 * u + torch.roll(u, 1, dims=-1)
-        ) / dx**2
-        # fix boundary
-        dudxx[..., 0] = (u[..., 2] - 2 * u[..., 1] + u[..., 0]) / dx**2
-        dudxx[..., -1] = (u[..., -1] - 2 * u[..., -2] + u[..., -3]) / dx**2
+        # TODO(jberner): Implement general (higher order) `central_dff_1d`
+        dudxx = (torch.roll(u, -1, dims=-1) - 2*u + torch.roll(u, 1, dims=-1))/dx**2
+        dudxx[...,0] = (u[...,2] - 2*u[...,1] + u[...,0])/dx**2
+        dudxx[...,-1] = (u[...,-1] - 2*u[...,-2] + u[...,-3])/dx**2
 
         # right hand side
+        assert u.shape == dudx.shape == dudxx.shape == dudt.shape
         right_hand_side = -dudx * u + self.visc * dudxx
 
-        # compute the loss of the left and right hand sides of Burgers' equation
-        return self.loss(dudt, right_hand_side)
+        # compute the loss of the left and right hand sides of the Burger's equation
+        loss = self.loss(dudt, right_hand_side)
+        return loss * self.loss_scale
 
     def __call__(self, y_pred, **kwargs):
         if self.method == "fdm":
