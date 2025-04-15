@@ -125,7 +125,7 @@ if not isinstance(training_loss, (tuple, list)):
     training_loss = [training_loss]
 
 losses = []
-weights = []
+weights = [] 
 for loss in training_loss:
     # Append loss
     if loss == 'l2':
@@ -139,11 +139,12 @@ for loss in training_loss:
     else:
         raise ValueError(f'Training_loss={loss} is not supported.')
 
-    # Append loss weight
-    if "loss_weights" in config.opt:
-        weights.append(config.opt.loss_weights.get(loss, 1.))
+    loss_weights = config.opt.get('loss_weights')
+    if loss_weights is not None:
+        weight = loss_weights.get(loss, 1.0)
+        weights.append(weight)
     else:
-        weights.append(1.)
+        weights.append(1.0)
 
 train_loss = WeightedSumLoss(losses=losses, weights=weights)
 eval_losses = {"h1": h1loss, "l2": l2loss}
