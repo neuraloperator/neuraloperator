@@ -5,11 +5,13 @@ from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.nn.functional as F
 
-from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Trainer, get_model
-from neuralop.data.datasets import load_mini_burgers_1dtime
-from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
-from neuralop.training import setup, AdamW
-from neuralop.utils import get_wandb_api_key, count_model_params, get_project_root
+from neuralop.losses.data_losses import LpLoss, MSELoss
+from neuralop.training import Trainer, setup
+from neuralop.data.datasets.nonlinear_poisson import load_nonlinear_poisson_pt
+from neuralop.losses.equation_losses import PoissonBoundaryLoss, PoissonEqnLoss
+from neuralop.losses.meta_losses import WeightedSumLoss
+from neuralop.models import get_model
+from neuralop.utils import get_wandb_api_key, count_model_params
 
 
 # Read the configuration
@@ -17,7 +19,7 @@ config_name = "default"
 pipe = ConfigPipeline(
     [
         YamlConfig(
-            "./burgers_config.yaml", config_name="default", config_folder="../config"
+            "./poisson_gino_config.yaml", config_name="default", config_folder="../config"
         ),
         ArgparseConfig(infer_types=True, config_name=None, config_file=None),
         YamlConfig(config_folder="../config"),
@@ -30,6 +32,7 @@ config_name = pipe.steps[-1].config_name
 device, is_logger = setup(config)
 
 # Set up WandB logging
+wandb_args = None
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
     if config.wandb.name:
@@ -39,17 +42,17 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.fno2d.n_layers,
-                config.fno2d.n_modes_width,
-                config.fno2d.n_modes_height,
-                config.fno2d.hidden_channels,
-                config.fno2d.factorization,
-                config.fno2d.rank,
-                config.patching.levels,
-                config.patching.padding,
+                config.gino.in_gno_radius,
+                config.gino.out_gno_radius,
+                config.gino.gno_weighting_function,
+                config.gino.gno_weight_function_scale,
+                config.gino.fno_n_modes,
+                config.gino.fno_n_layers,
+                config.data.n_train,
+                config.data.n_test,
             ]
         )
-    wandb_init_args = dict(
+    wandb_args =  dict(
         config=config,
         name=wandb_name,
         group=config.wandb.group,
@@ -59,7 +62,8 @@ if config.wandb.log and is_logger:
     if config.wandb.sweep:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
-    wandb.init(**wandb_init_args)
+    wandb.init(**wandb_args)
+
 else: 
     wandb_init_args = None
 # Make sure we only print information when needed
@@ -70,16 +74,29 @@ if config.verbose:
     pipe.log()
     sys.stdout.flush()
 
-data_path = get_project_root() / config.data.folder
-# Load the Burgers dataset
-train_loader, test_loaders, data_processor = load_mini_burgers_1dtime(data_path=data_path,
-        n_train=config.data.n_train, batch_size=config.data.batch_size, 
-        n_test=config.data.n_tests[0], test_batch_size=config.data.test_batch_sizes[0],
-        temporal_subsample=config.data.get("temporal_subsample", 1),
-        spatial_subsample=config.data.get("spatial_subsample", 1),
-        )
+# Load the Nonlinear Poisson dataset
+train_loader, test_loader, data_processor = load_nonlinear_poisson_pt(
+    data_path=config.data.file,
+    query_res=config.data.query_resolution,
+    n_train=config.data.n_train, 
+    n_test=config.data.n_test,
+    n_in=config.data.n_in,
+    n_out=config.data.n_out,
+    n_eval=config.data.n_eval,
+    n_bound=config.data.n_bound,
+    val_on_same_instance=config.data.single_instance,
+    train_out_res=config.data.train_out_res,
+    input_min_sample_points=config.data.input_min,
+    input_max_sample_points=config.data.input_max,
+    input_subsample_level=config.data.sample_random_in,
+    output_subsample_level=config.data.sample_random_out,
+    return_dict=config.data.return_queries_dict
+)
+
+test_loaders = {"test": test_loader}
 
 model = get_model(config)
+model = model.to(device)
 
 # Use distributed data parallel
 if config.distributed.use_distributed:
@@ -88,7 +105,7 @@ if config.distributed.use_distributed:
     )
 
 # Create the optimizer
-optimizer = AdamW(
+optimizer = torch.optim.Adam(
     model.parameters(),
     lr=config.opt.learning_rate,
     weight_decay=config.opt.weight_decay,
@@ -112,13 +129,22 @@ elif config.opt.scheduler == "StepLR":
 else:
     raise ValueError(f"Got scheduler={config.opt.scheduler}")
 
+# Create the losses: MSE and relative L2
+mse_loss = MSELoss()
+l2_loss = LpLoss(d=2, p=2)
 
-# Creating the losses
-l2loss = LpLoss(d=2, p=2)
-h1loss = H1Loss(d=2)
-ic_loss = ICLoss()
-equation_loss = BurgersEqnLoss(method=config.opt.get('pino_method', None), 
-                               visc=0.01, loss=F.mse_loss)
+class GINOLoss(object):
+    def __init__(self, base_loss):
+        super().__init__()
+        self.base_loss = base_loss
+    def __call__(self, out, y, **kwargs):
+        if isinstance(out, dict) and isinstance(y, dict):
+            y = torch.cat([y[field] for field in out.keys()], dim=1)
+            out = torch.cat([out[field] for field in out.keys()], dim=1)
+        
+        return self.base_loss(out, y, **kwargs)
+
+gino_mseloss = GINOLoss(mse_loss)
 
 training_loss = config.opt.training_loss
 if not isinstance(training_loss, (tuple, list)):
@@ -126,27 +152,23 @@ if not isinstance(training_loss, (tuple, list)):
 
 losses = []
 weights = []
-for loss in training_loss:
-    # Append loss
-    if loss == 'l2':
-        losses.append(l2loss)
-    elif loss == 'h1':
-        losses.append(h1loss)
-    elif loss == 'equation':
-        losses.append(equation_loss)
-    elif loss == 'ic':
-        losses.append(ic_loss)
-    else:
-        raise ValueError(f'Training_loss={loss} is not supported.')
 
-    # Append loss weight
-    if "loss_weights" in config.opt:
-        weights.append(config.opt.loss_weights.get(loss, 1.))
-    else:
-        weights.append(1.)
+if 'mse' in training_loss:
+    losses.append(gino_mseloss)
+    weights.append(config.opt.loss_weights.get('mse', 1.))
+if 'equation' in training_loss:
+    equation_loss = PoissonEqnLoss(interior_weight=config.opt.loss_weights.get('interior', 1.), 
+                                    boundary_weight=config.opt.loss_weights.get('boundary', 1.),
+                                    diff_method=config.opt.get('pino_method', 'autograd'))
+    losses.append(equation_loss)
+    weights.append(1)
 
-train_loss = WeightedSumLoss(losses=losses, weights=weights)
-eval_losses = {"h1": h1loss, "l2": l2loss}
+if len(losses) == 1:
+    train_loss = losses[0]
+else:
+    train_loss = WeightedSumLoss(losses=losses, weights=weights)
+
+eval_losses = {"mse": mse_loss, 'relative_l2': l2_loss}
 
 if config.verbose:
     print("\n### MODEL ###\n", model)
@@ -158,27 +180,17 @@ if config.verbose:
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
 
-# only perform MG patching if config patching levels > 0
-if config.patching.levels > 0:
-    data_processor = MGPatchingDataProcessor(model=model,
-                                        levels=config.patching.levels,
-                                        padding_fraction=config.patching.padding,
-                                        stitching=config.patching.stitching,
-                                        device=device,
-                                        in_normalizer=data_processor.in_normalizer,
-                                        out_normalizer=data_processor.out_normalizer)
-
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
     data_processor=data_processor,
     device=device,
     mixed_precision=config.opt.amp_autocast,
-    eval_interval=config.wandb.eval_interval,
+    eval_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,
-    wandb_log = config.wandb.log
+    wandb_log=config.wandb.log
 )
 
 # Log parameter count
@@ -195,16 +207,15 @@ if is_logger:
             to_log["n_params_baseline"] = (config.n_params_baseline,)
             to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
             to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
-        wandb.log(to_log, commit=False)
+        wandb.log(to_log)
         wandb.watch(model)
-
 
 trainer.train(
     train_loader,
     test_loaders,
     optimizer,
     scheduler,
-    regularizer=False,
+    regularizer=None,
     training_loss=train_loss,
     eval_losses=eval_losses,
 )

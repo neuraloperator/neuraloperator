@@ -52,7 +52,8 @@ def test_gno_block(gno_transform_type, gno_coord_dim, gno_pos_embed_type, batch_
         radius=0.25,
         channel_mlp_layers=mlp_hidden_layers,
         transform_type=gno_transform_type,
-        use_open3d_neighbor_search=use_open3d
+        use_open3d_neighbor_search=use_open3d,
+        use_torch_scatter_reduce=False
     ).to(device)
 
     # create input geometry and output queries

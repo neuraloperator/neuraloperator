@@ -18,30 +18,30 @@ except:
 
 
 class TheWellDataset:
-    """__init__ _summary_
-        Base Class for TheWell [1]_ datasets
-        
-        Parameters
-        ----------
-        root_dir : Path
-            shared root path at which to download all TheWell datasets
-        well_dataset_name : str
-            name of the dataset to download
-        n_train : int
-            _description_
-        n_test : int
-            _description_
-        download : bool, optional
-            _description_, by default True
-        
-        References
-        ----------
-        .. [1] : Ohana, R., McCabe, M., Meyer, L., Morel, R., Agocs, F., Benitez, M., Berger, M.,
-            Burkhart, B., Dalziel, S., Fielding, D., Fortunato, D., Goldberg, J., Hirashima, K., Jiang, Y.,
-            Kerswell, R., Maddu, S., Miller, J., Mukhopadhyay, P., Nixon, S., Shen, J., Watteaux, R., 
-            Blancard, B., Rozet, F., and Parker, L., and Cranmer, M., and Ho, S. (2024).
-            The Well: a Large-Scale Collection of Diverse Physics Simulations for Machine Learning. 
-            NeurIPS 2024, https://openreview.net/forum?id=00Sx577BT3. 
+    """Base class for TheWell [1]_ datasets.
+    Requires ``the_well==1.1.0``, available via pip. 
+    
+    Parameters
+    ----------
+    root_dir : Path
+        shared root path at which to download all TheWell datasets
+    well_dataset_name : str
+        name of the dataset to download
+    n_train : int
+        number of training examples
+    n_test : int
+        number of test examples
+    download : bool, optional
+        _description_, by default True
+    
+    References
+    ----------
+    .. [1] : Ohana, R., McCabe, M., Meyer, L., Morel, R., Agocs, F., Benitez, M., Berger, M.,
+        Burkhart, B., Dalziel, S., Fielding, D., Fortunato, D., Goldberg, J., Hirashima, K., Jiang, Y.,
+        Kerswell, R., Maddu, S., Miller, J., Mukhopadhyay, P., Nixon, S., Shen, J., Watteaux, R., 
+        Blancard, B., Rozet, F., and Parker, L., and Cranmer, M., and Ho, S. (2024).
+        The Well: a Large-Scale Collection of Diverse Physics Simulations for Machine Learning. 
+        NeurIPS 2024, https://openreview.net/forum?id=00Sx577BT3. 
         """
     def __init__(self,
                  root_dir: Path, 
@@ -53,6 +53,7 @@ class TheWellDataset:
                  ):
         
         base_path = root_dir / f"datasets/{well_dataset_name}/data"
+        
 
         if download:
             for split in ['train', 'test', 'valid']:
@@ -70,7 +71,9 @@ class TheWellDataset:
             n_steps_input = n_steps_output = 1
         else:
             raise NotImplementedError
-        
+
+        self.train_task = train_task
+        self.eval_task = eval_task
 
         self._train_db = WellDataset(path=str(base_path / "train"),
                                         n_steps_input=n_steps_input,

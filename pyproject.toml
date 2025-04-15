@@ -10,12 +10,10 @@ dependencies = [
     "configmypy",
     "tensorly",
     "tensorly-torch",
-    "torch-harmonics==0.7.4",
     "matplotlib",
     "numpy>=1.25",
     "opt-einsum",
     "h5py",
-    "zarr",
 ]
 requires-python = ">=3.9"
 readme = "README.rst"
@@ -44,6 +42,7 @@ dev = [
     "pytest",
     "flaky",
     "black"
+
 ]
 doc = [
     "matplotlib",
@@ -54,6 +53,7 @@ doc = [
     "sphinx-gallery",
     "tensorly_sphinx_theme",
     "torchtnt",
+    "torch_harmonics==0.7.4"
 ]
 all = [
     "pytest",
@@ -68,4 +68,5 @@ all = [
     "torchtnt",
     "numpy>=1.25",
     "scipy",
+    "torch_harmonics==0.7.4"
 ]

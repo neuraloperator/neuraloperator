@@ -1,5 +1,11 @@
 import pytest
 import torch
+
+try:
+    import torch_harmonics 
+except ModuleNotFoundError:
+    pytest.skip("Skipping because torch_harmonics is not installed", allow_module_level=True)
+
 from ..local_no_block import LocalNOBlocks
 
 @pytest.mark.parametrize('n_dim', [1,2,3])
@@ -50,7 +56,7 @@ def test_LocalNOBlock_resolution_scaling_factor(n_dim):
     assert(list(res.shape[2:]) == [m*2 for m in size[:n_dim]])
 
 @pytest.mark.parametrize('norm', 
-                         ['instance_norm', 'ada_in', 'group_norm'])
+                        ['instance_norm', 'ada_in', 'group_norm'])
 @pytest.mark.parametrize('n_dim', [1,2,3])
 def test_LocalNOBlock_norm(norm, n_dim):
     """Test LocalNOBlock with normalization

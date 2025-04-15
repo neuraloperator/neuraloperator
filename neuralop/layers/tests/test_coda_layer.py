@@ -1,6 +1,6 @@
 import pytest
 import torch
-from ..coda_blocks import *
+from ..coda_layer import *
 from ..spectral_convolution import *
 
 device = 'cuda' if torch.backends.cuda.is_built() else 'cpu'
@@ -10,7 +10,13 @@ device = 'cuda' if torch.backends.cuda.is_built() else 'cpu'
 @pytest.mark.parametrize('n_dim', [2, 3])
 @pytest.mark.parametrize('norm', ['instance_norm', None])
 @pytest.mark.parametrize('nonlinear_attention', ['True', 'False'])
-def test_Codano(token_codimension, n_dim, norm, nonlinear_attention):
+@pytest.mark.parametrize('per_channel_attention', ['False', 'True'])
+@pytest.mark.parametrize('output_scale', [1, 2])
+def test_Codano(token_codimension,
+                n_dim, norm,
+                nonlinear_attention,
+                per_channel_attention,
+                output_scale):
     """
     Test CoDA-NO layers
     """
@@ -18,11 +24,10 @@ def test_Codano(token_codimension, n_dim, norm, nonlinear_attention):
     n_heads = 3
     head_codimension = 3
     codimension_size = None
-    per_channel_attention = False
     permutation_eq = True
     temperature = 1.0
 
-    layer = CODABlocks(
+    layer = CODALayer(
         n_modes=n_modes,
         n_heads=n_heads,
         token_codimension=token_codimension,
@@ -37,8 +42,9 @@ def test_Codano(token_codimension, n_dim, norm, nonlinear_attention):
     
     spatial_res = [64]*n_dim
     x = torch.randn(2, 10, *spatial_res).to(device)
-    out = layer(x)
-    assert out.shape == x.shape
+    output_shape = [int(s * output_scale) for s in spatial_res]
+    out = layer(x, output_shape)
+    assert list(out.shape[-n_dim:]) == output_shape
 
     # test different spatial resolution 
     spatial_res = [48]*n_dim

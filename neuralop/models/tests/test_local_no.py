@@ -3,7 +3,10 @@ from math import prod
 import pytest
 import torch
 from tensorly import tenalg
-from configmypy import Bunch
+try:
+    import torch_harmonics 
+except ModuleNotFoundError:
+    pytest.skip("Skipping because torch_harmonics is not installed", allow_module_level=True)
 
 from neuralop.models import LocalNO
 
