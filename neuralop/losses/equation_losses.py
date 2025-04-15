@@ -87,12 +87,16 @@ class BurgersEqnLoss(object):
 
         # compute the loss of the left and right hand sides of the Burger's equation
         loss = self.loss(dudt, right_hand_side)
-        return loss * self.loss_scale
+        return loss 
 
-    def __call__(self, y_pred, **kwargs):
-        if self.method == "fdm":
-            return self.fdm(u=y_pred)
-        raise NotImplementedError()
+    def __call__(self, y_pred, out_p=None, **kwargs):
+        if self.method == "finite_difference":
+            return self.finite_difference(u=y_pred)
+        elif self.method == "autograd":
+            assert out_p is not None, "Error: data must be queried at output coords out_p to use autograd loss."
+            return self.autograd(out_p=out_p, u=y_pred)
+        else:
+            raise NotImplementedError()
 
 
 class ICLoss(object):
