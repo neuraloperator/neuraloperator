@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Literal, List
 import yaml
-from pprint import pprint
 
 import torch
 
@@ -93,12 +92,8 @@ class TheWellDataset:
         stats_path = base_path / "../stats.yaml"
         with open(stats_path, "r") as f:
             stats = yaml.safe_load(f)
-        pprint(stats)
         
-        # TODO@DAVID: in future handle the field names more directly. 
-        # make sure they're all there and in the correct order
         dataset_field_names = self._train_db.field_names
-        print(dataset_field_names)
 
         channel_means = []
         channel_stds = []

@@ -25,7 +25,6 @@ class TheWellDataProcessor(DefaultDataProcessor):
             
         if step is None or step == 0:
             x = data_dict["input_fields"].to(self.device)
-            print(f"raw {x.shape=}")
             x = rearrange(x, "b t ... c -> b (t c) ...")
             if "constant_fields" in data_dict:
                 flat_constants = rearrange(data_dict["constant_fields"], "b ... c -> b c ...")
@@ -38,14 +37,13 @@ class TheWellDataProcessor(DefaultDataProcessor):
                 )
         else:
             x = data_dict["x"]
-        print(f"proc {x.shape=}")
         y = data_dict["output_fields"].to(self.device)
 
         # if stepping, roll y forward
         if step is not None:
             y = y[:, step:step+1, ...]
         y = rearrange(y, "b t ... c -> b (t c) ...")
-            # Otherwise x is already preprocessed
+        # Otherwise y is already preprocessed
 
         if self.normalizer is not None:
             x = self.normalizer.transform(x)
@@ -61,7 +59,6 @@ class TheWellDataProcessor(DefaultDataProcessor):
         Code adapted from the_well.data.data_formatter.DefaultChannelsFirstFormatter
         """
 
-        #TODO@DAVID: handle step in autoregressive mode
         y = data_dict["y"]
         if self.normalizer is not None and not self.training:
             y = self.normalizer.inverse_transform(y)
