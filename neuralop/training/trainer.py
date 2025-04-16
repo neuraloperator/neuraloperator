@@ -560,7 +560,7 @@ class Trainer:
                        sample: dict,
                        eval_losses: dict,
                        return_output: bool=False,
-                       max_steps: int=1):
+                       max_steps: int=None):
         """eval_one_batch runs inference on one batch
         and returns eval_losses for that batch.
 
@@ -576,6 +576,11 @@ class Trainer:
         max_steps: int
             number of timesteps to roll out
             typically the full trajectory length
+            If max_steps is none, runs until the full length
+
+            .. note::
+                If a value for ``max_steps`` is not provided, a data_processor
+                must be provided to handle rollout logic. 
         Returns
         -------
         eval_step_losses : dict
@@ -583,14 +588,14 @@ class Trainer:
         outputs: torch.Tensor | None
             optionally returns batch outputs
 
-        TODO@DAVID: manually overwrite x=out 
-        also manually slice y in the trainer
+
         """
         eval_step_losses = {loss_name: 0. for loss_name in eval_losses.keys()}
-        eval_rollout_losses = {loss_name: 0. for loss_name in eval_losses.keys()}
+        # eval_rollout_losses = {loss_name: 0. for loss_name in eval_losses.keys()}
 
-        for t in range(0, max_steps-1):
-            print(f"rollout: {t}/{max_steps}", end="\r")
+        t = 0
+        while sample is not None:
+            
             if self.data_processor is not None:
                 sample = self.data_processor.preprocess(sample, step=t)
             else:
@@ -600,6 +605,9 @@ class Trainer:
                     for k, v in sample.items()
                     if torch.is_tensor(v)
                 }
+            if sample is None:
+                break
+            print(f"rollout: {t}/{max_steps}", end="\r")
             self.n_samples += sample["y"].shape[0]
 
             out = self.model(**sample)
@@ -607,10 +615,10 @@ class Trainer:
             '''if self.debug:
                 x = sample["x"]
                 print(f"eval {x.shape=} {out.shape=}")'''
-            
+                
             if self.data_processor is not None:
                 out, sample = self.data_processor.postprocess(out, sample, step=t)
-          
+            
             for loss_name, loss in eval_losses.items():
                 step_loss = loss(out, **sample)
                 eval_step_losses[loss_name] += step_loss

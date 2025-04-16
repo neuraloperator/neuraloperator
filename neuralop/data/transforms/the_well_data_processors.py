@@ -4,9 +4,11 @@ from einops import rearrange
 import torch
 
 class TheWellDataProcessor(DefaultDataProcessor):
-    def __init__(self, normalizer):
+    def __init__(self, normalizer, max_steps=None):
         super().__init__()
         self.normalizer = normalizer
+        self.max_steps = max_steps
+
     
     def to(self, device):
         self.device = device
@@ -17,7 +19,10 @@ class TheWellDataProcessor(DefaultDataProcessor):
         """
         Code adapted from the_well.data.data_formatter.DefaultChannelsFirstFormatter
         """
-
+        if self.max_steps is not None:
+            if step > self.max_steps:
+                return None
+            
         if step is None or step == 0:
             x = data_dict["input_fields"].to(self.device)
             x = rearrange(x, "b t ... c -> b (t c) ...")

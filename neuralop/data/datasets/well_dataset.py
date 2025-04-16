@@ -124,7 +124,7 @@ class TheWellDataset:
 
         normalizer = UnitGaussianNormalizer(mean=channel_means, std=channel_stds)
 
-        self._data_processor = TheWellDataProcessor(normalizer=normalizer)
+        self._data_processor = TheWellDataProcessor(normalizer=normalizer, max_steps=self._test_db.metadata.n_steps_per_trajectory)
         
     @property
     def train_db(self):

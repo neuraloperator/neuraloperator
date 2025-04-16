@@ -200,7 +200,8 @@ if is_logger:
 # Train the model
 trainer.train(
     train_loader=train_loader,
-    test_loaders={'val': test_loaders['next_step']},
+    test_loaders=test_loaders,
+    eval_modes={'autoregression': 'autoregression'},
     optimizer=optimizer,
     scheduler=scheduler,
     regularizer=False,
@@ -208,11 +209,11 @@ trainer.train(
     eval_losses=eval_losses,
 )
 
-losses = trainer.evaluate(eval_losses,
+'''losses = trainer.evaluate(eval_losses,
                  test_loaders["autoregression"],
                  log_prefix="autoreg",
                  mode="autoregression",
-                 max_steps=dataset.test_dbs["autoregression"].metadata.n_steps_per_trajectory[0])
+                 max_steps=dataset.test_dbs["autoregression"].metadata.n_steps_per_trajectory[0])'''
 print(f"Autoregressive eval losses: {losses}")
 if config.wandb.log and is_logger:
     wandb.finish()
