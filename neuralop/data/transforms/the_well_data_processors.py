@@ -19,12 +19,13 @@ class TheWellDataProcessor(DefaultDataProcessor):
         """
         Code adapted from the_well.data.data_formatter.DefaultChannelsFirstFormatter
         """
-        if self.max_steps is not None:
+        if self.max_steps is not None and step is not None:
             if step > self.max_steps:
                 return None
             
         if step is None or step == 0:
             x = data_dict["input_fields"].to(self.device)
+            print(f"raw {x.shape=}")
             x = rearrange(x, "b t ... c -> b (t c) ...")
             if "constant_fields" in data_dict:
                 flat_constants = rearrange(data_dict["constant_fields"], "b ... c -> b c ...")
@@ -37,6 +38,7 @@ class TheWellDataProcessor(DefaultDataProcessor):
                 )
         else:
             x = data_dict["x"]
+        print(f"proc {x.shape=}")
         y = data_dict["output_fields"].to(self.device)
 
         # if stepping, roll y forward

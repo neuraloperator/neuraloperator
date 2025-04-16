@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Literal, List
 import yaml
+from pprint import pprint
 
 import torch
 
@@ -62,8 +63,6 @@ class TheWellDataset:
                                 split=split,
                                 first_only=first_only,
                                 )
-            # Download per-variable stats.yaml directly from the_well on GitHub
-            # skip for now 
 
         if train_task == 'next_step':
             n_steps_input = n_steps_output = 1
@@ -91,9 +90,10 @@ class TheWellDataset:
                                             return_grid=False,
                                             use_normalization=False)
         
-        stats_path = base_path / "stats.yaml"
+        stats_path = base_path / "../stats.yaml"
         with open(stats_path, "r") as f:
             stats = yaml.safe_load(f)
+        pprint(stats)
         
         # TODO@DAVID: in future handle the field names more directly. 
         # make sure they're all there and in the correct order
@@ -112,23 +112,32 @@ class TheWellDataset:
             channel_stds.append(stats['std'][field_name])
 
         indiv_vector_fields = dataset_field_names[1]
-        vector_fields = set([x.split("_")[0] for x in indiv_vector_fields])
+        vector_fields = set(["_".join(x.split("_")[:-1]) for x in indiv_vector_fields])
         for field_name in vector_fields:
             channel_means.extend(stats['mean'][field_name])
             channel_stds.extend(stats['std'][field_name])
 
         indiv_tensor_fields = dataset_field_names[2]
-        tensor_fields = set([x.split("_")[0] for x in indiv_tensor_fields])
+        tensor_fields = set(["_".join(x.split("_")[:-1]) for x in indiv_tensor_fields])
         for field_name in tensor_fields:
             channel_means.extend([x for xs in stats['mean'][field_name] for x in xs])
             channel_stds.extend([x for xs in stats['std'][field_name] for x in xs])
         
-        channel_means = torch.tensor(channel_means).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
-        channel_stds = torch.tensor(channel_stds).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+        
+        channel_means = torch.tensor(channel_means).unsqueeze(0)
+        channel_stds = torch.tensor(channel_stds).unsqueeze(0)
+
+        # unsqueeze means and stds along the spatial dimensions
+        for _ in range(self.train_db.metadata.n_spatial_dims):
+            channel_means = channel_means.unsqueeze(-1)
+            channel_stds = channel_stds.unsqueeze(-1)
 
         normalizer = UnitGaussianNormalizer(mean=channel_means, std=channel_stds)
 
-        self._data_processor = TheWellDataProcessor(normalizer=normalizer)
+        max_autoreg_steps = None
+        if "autoregression" in eval_tasks:
+            max_autoreg_steps = self._test_dbs["autoregression"].metadata.n_steps_per_trajectory[0]
+        self._data_processor = TheWellDataProcessor(normalizer=normalizer, max_steps=max_autoreg_steps)
         
     @property
     def train_db(self):
@@ -150,6 +159,19 @@ class ActiveMatterDataset(TheWellDataset):
                  download = True, 
                  first_only = True):
         super().__init__(root_dir, well_dataset_name="active_matter", 
+                         train_task=train_task,
+                         eval_tasks=eval_tasks,
+                         download=download,
+                         first_only=first_only)
+
+class MHD64Dataset(TheWellDataset):
+    def __init__(self, 
+                 root_dir, 
+                 train_task = 'next_step', 
+                 eval_tasks = ['next_step'], 
+                 download = True, 
+                 first_only = True):
+        super().__init__(root_dir, well_dataset_name="MHD_64", 
                          train_task=train_task,
                          eval_tasks=eval_tasks,
                          download=download,
