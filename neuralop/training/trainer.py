@@ -102,6 +102,7 @@ class Trainer:
         regularizer=None,
         training_loss=None,
         eval_losses=None,
+        eval_modes=None,
         save_every: int=None,
         save_best: int=None,
         save_dir: Union[str, Path]="./ckpt",
@@ -125,6 +126,15 @@ class Trainer:
             cost function to minimize
         eval_losses: dict[Loss]
             dict of losses to use in self.eval()
+        eval_modes: dict[str], optional
+            optional mapping from the name of each loader to its evaluation mode.
+
+            * if 'single_step', predicts one input-output pair and evaluates loss.
+            
+            * if 'autoregressive', autoregressively predicts output using last step's 
+            output as input for a number of steps defined by the temporal dimension of the batch.
+            This requires specially batched data with a data processor whose ``.preprocess`` and 
+            ``.postprocess`` both take ``idx`` as an argument.
         save_every: int, optional, default is None
             if provided, interval at which to save checkpoints
         save_best: str, optional, default is None
@@ -169,6 +179,10 @@ class Trainer:
         
         # accumulated wandb metrics
         self.wandb_epoch_metrics = None
+
+        # create default eval modes
+        if eval_modes is None:
+            eval_modes = {}
 
         # attributes for checkpointing
         self.save_every = save_every
@@ -218,8 +232,8 @@ class Trainer:
                 # evaluate and gather metrics across each loader in test_loaders
                 eval_metrics = self.evaluate_all(epoch=epoch,
                                                 eval_losses=eval_losses,
-                                                test_loaders=test_loaders)
-
+                                                test_loaders=test_loaders,
+                                                eval_modes=eval_modes)
                 epoch_metrics.update(**eval_metrics)
                 # save checkpoint if conditions are met
                 if save_best is not None:
@@ -305,19 +319,43 @@ class Trainer:
 
         return train_err, avg_loss, avg_lasso_loss, epoch_train_time
 
-    def evaluate_all(self, epoch, eval_losses, test_loaders):
+    def evaluate_all(self, epoch, eval_losses, test_loaders, eval_modes):
+        """evaluate_all iterates through the entire dict of test_loaders
+        to perform evaluation on the whole dataset stored in each one. 
+
+        Parameters
+        ----------
+        epoch : int
+            current training epoch
+        eval_losses : dict[Loss]
+            keyed ``loss_name: loss_obj`` for each pair. Full set of 
+            losses to use in evaluation for each test loader. 
+        test_loaders : dict[DataLoader]
+            keyed ``loader_name: loader`` for each test loader. 
+        eval_modes : dict[str], optional
+            keyed ``loader_name: eval_mode`` for each test loader.
+            * If ``eval_modes.get(loader_name)`` does not return a value, 
+            the evaluation is automatically performed in ``single_step`` mode. 
+
+        Returns
+        -------
+        all_metrics: dict
+            collected eval metrics for each loader. 
+        """
         # evaluate and gather metrics across each loader in test_loaders
         all_metrics = {}
         for loader_name, loader in test_loaders.items():
+            loader_eval_mode = eval_modes.get(loader_name, "single_step")
             loader_metrics = self.evaluate(eval_losses, loader,
-                                    log_prefix=loader_name)   
+                                    log_prefix=loader_name,
+                                    mode=loader_eval_mode)   
             all_metrics.update(**loader_metrics)
         if self.verbose:
             self.log_eval(epoch=epoch,
                       eval_metrics=all_metrics)
         return all_metrics
     
-    def evaluate(self, loss_dict, data_loader, log_prefix="", epoch=None, mode="next_step",max_steps=None):
+    def evaluate(self, loss_dict, data_loader, log_prefix="", epoch=None, mode="single_step",max_steps=None):
         """Evaluates the model on a dictionary of losses
 
         Parameters
@@ -331,8 +369,8 @@ class Trainer:
         epoch : int | None
             current epoch. Used when logging both train and eval
             default None
-        mode : Literal {'next_step', 'autoregression'}
-            if 'next_step', performs standard evaluation
+        mode : Literal {'single_step', 'autoregression'}
+            if 'single_step', performs standard evaluation
             if 'autoregression' loops through `max_steps` steps
         max_steps : int, optional
             max number of steps for autoregressive rollout. 
@@ -371,7 +409,7 @@ class Trainer:
                 return_output = False
                 if idx == len(data_loader) - 1:
                     return_output = True
-                if mode == "next_step":
+                if mode == "single_step":
                     eval_step_losses, outs = self.eval_one_batch(sample, loss_dict, return_output=return_output)
                 elif mode == "autoregression":
                     eval_step_losses, outs = self.eval_one_batch_autoreg(sample, loss_dict,
