@@ -146,16 +146,6 @@ General SpectralConv layer:
 
     SpectralConv
 
-Dimension-specific versions: 
-
-.. autosummary::
-    :toctree: generated
-    :template: class.rst
-
-    SpectralConv1d
-    SpectralConv2d
-    SpectralConv3d
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _sfno_api:
