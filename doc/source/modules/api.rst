@@ -117,17 +117,6 @@ U-shaped Neural Operators (U-NO)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Codomain Attention Neural Operator (CoDANO)
--------------------------------------------
-
-.. autosummary::
-    :toctree: generated
-    :template: class.rst
-    
-    CODANO
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 .. _neuralop_layers_ref:
 Layers
 =======

@@ -31,7 +31,7 @@ np.random.seed(0)
 # The 3-d Navier-Stokes equations were simulated for a variety of inlet velocities over each surface using the 
 # **OpenFOAM** computational solver to predict pressure at every vertex on the mesh. 
 # Each sample here also has an inlet velocity scalar and a pressure field that maps 1-to-1 with the vertices on the mesh.
-# The actual CarCFDDataset is stored in triangle mesh files for downstream processing. 
+# The :ref:`full CarCFDDataset <car_cfd_dataset_api>` is stored in triangle mesh files for downstream processing. 
 # For the sake of simplicity, we've packaged a few examples of the data after processing in tensor form to visualize here:
 
 data_list = load_mini_car()
@@ -81,7 +81,7 @@ ax.set_title("Query points and vertices")
 fig.colorbar(scatter, pad=0.2, label="normalized pressure", ax=ax)
 # %%
 # Visualizing neighbor search
-# In :ref:`examples/layers/plot_neighbor_search` (just a dummy ref for now) we demonstrate our neighbor search
+# In :doc:`auto_examples/layers/plot_neighbor_search` we demonstrate our neighbor search
 # on a simple 2-d point cloud. Let's try that again with our points here:
 
 from neuralop.layers.neighbor_search import native_neighbor_search

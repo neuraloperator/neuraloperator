@@ -50,9 +50,7 @@ class CarCFDDataset(MeshDataModule):
 
     References
     ----------
-    .. [1] :
-    
-    Umetani, N. and Bickel, B. (2018). "Learning three-dimensional flow for interactive 
+    .. [1]: Umetani, N. and Bickel, B. (2018). "Learning three-dimensional flow for interactive 
         aerodynamic design". ACM Transactions on Graphics, 2018. 
         https://dl.acm.org/doi/10.1145/3197517.3201325.
     """
