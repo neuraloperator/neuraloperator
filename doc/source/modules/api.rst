@@ -440,6 +440,8 @@ We provide downloadable datasets for Darcy-Flow, Navier-Stokes, and Car-CFD, as 
 
     NavierStokesDataset
 
+
+.. _car_cfd_dataset:
 .. automodule:: neuralop.data.datasets.car_cfd_dataset
     :no-members:
     :no-inherited-members:

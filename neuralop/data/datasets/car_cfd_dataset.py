@@ -94,11 +94,10 @@ class CarCFDDataset(MeshDataModule):
             press = data['press']
             self.test_data.data_list[i]['press'] = torch.cat((press[:,0:16], press[:,112:]), axis=1)
 
-def load_mini_car(n_train=3, n_test=1, query_res=[16,16,16], download=False):
+def load_mini_car():
     """
     Load the 3-example mini Car-CFD dataset we package along with our module.
 
     See `neuralop.data.datasets.CarCFDDataset` for more detailed references
     """
-    return CarCFDDataset(root_dir=get_project_root() / "neuralop/data/datasets/data/mini_car",
-                         n_train=n_train, n_test=n_test, query_res=query_res, download=download)
+    return torch.load(get_project_root() / "neuralop/data/datasets/data/mini_car.pt")
