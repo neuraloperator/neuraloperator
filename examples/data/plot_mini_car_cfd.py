@@ -31,7 +31,7 @@ np.random.seed(0)
 # The 3-d Navier-Stokes equations were simulated for a variety of inlet velocities over each surface using the 
 # **OpenFOAM** computational solver to predict pressure at every vertex on the mesh. 
 # Each sample here also has an inlet velocity scalar and a pressure field that maps 1-to-1 with the vertices on the mesh.
-# The actual CarCFDDataset, linked here: :ref:`car_cfd_dataset`, is stored in triangle mesh files for downstream processing. 
+# The actual CarCFDDataset is stored in triangle mesh files for downstream processing. 
 # For the sake of simplicity, we've packaged a few examples of the data after processing in tensor form to visualize here:
 
 data_list = load_mini_car()
