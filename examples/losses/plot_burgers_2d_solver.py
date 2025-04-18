@@ -24,9 +24,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # --------------------
 # We aim to solve the 2D viscous Burger's equations:
 #
-# u_t + u u_x + v u_y = nu (u_xx + u_yy)
+# :math: `u_t + u \cdot u_x + v \cdot u_y = \nu (u_xx + u_yy)`
 #
-# v_t + u v_x + v v_y = nu (v_xx + v_yy)
+# :math: `v_t + u \cdot v_x + v \cdot v_y = \nu (v_xx + v_yy)`
 
 ## Simulation parameters
 Lx, Ly = 2.0, 2.0   # Domain lengths

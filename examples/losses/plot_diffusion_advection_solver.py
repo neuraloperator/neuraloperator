@@ -25,8 +25,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # --------------------
 # We aim to solve the 2D diffusion advection equation:
 # 
-# u_t + cx u_x + cy u_y = nu (u_xx + u_yy) + source(x,y,t).
+# :math:`u_t + cx \cdot u_x + cy \cdot u_y = \nu (u_xx + u_yy) + f(x,y,t)`,
 # 
+# Where :math:`f(x,y,t)` is a source term and :math:`cx` and :math:`cy` are advection speeds in x and y.
 # We set simulation parameters below:
 
 ## Simulation parameters
