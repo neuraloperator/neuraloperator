@@ -17,6 +17,7 @@ Models
 
 In :mod:`neuralop.models`, we provide neural operator models you can directly use on your applications.
 
+.. _fno_api:
 FNO
 ----
 
@@ -25,7 +26,6 @@ We provide a general Fourier Neural Operator (TFNO) that supports most usecases.
 We have a generic interface that works for any dimension, which is inferred based on `n_modes`
 (a tuple with the number of modes to keep in the Fourier domain for each dimension.)
 
-.. _fno_api:
 .. autosummary::
     :toctree: generated
     :template: class.rst
@@ -44,11 +44,11 @@ We also have dimension-specific classes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _tfno_api:
 Tensorized FNO (TFNO)
 ----------------------
 
 N-D version: 
-.. _tfno_api:
 
 .. autosummary::
     :toctree: generated
@@ -68,9 +68,9 @@ Dimension-specific classes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _sfno_api:
 Spherical Fourier Neural Operators (SFNO)
 --------------------------------------------
-.. _sfno_api:
 
 .. autosummary::
     :toctree: generated
@@ -80,9 +80,9 @@ Spherical Fourier Neural Operators (SFNO)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _gino_api:
 Geometry-Informed Neural Operators (GINO)
 ------------------------------------------
-.. _gino_api:
 
 .. autosummary::
     :toctree: generated
@@ -92,9 +92,9 @@ Geometry-Informed Neural Operators (GINO)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _local_no_api:
 Local Neural Operators (LocalNO)
 --------------------------------------------
-.. _local_no_api:
 
 .. autosummary::
     :toctree: generated
@@ -105,9 +105,9 @@ Local Neural Operators (LocalNO)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _uno_api:
 U-shaped Neural Operators (U-NO)
 ---------------------------------
-.. _uno_api:
 
 .. autosummary::
     :toctree: generated
@@ -117,6 +117,7 @@ U-shaped Neural Operators (U-NO)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _neuralop_layers_ref:
 Layers
 =======
 
@@ -124,7 +125,6 @@ Layers
     :no-members:
     :no-inherited-members:
 
-.. _neuralop_layers_ref:
 
 
 In addition to the full architectures, we also provide 
@@ -197,9 +197,9 @@ Graph convolutions and kernel integration
 
 We also provide additional layers that implement standard deep learning architectures as neural operators.
 
-**Local Integral/Differential Convolutions**
-
 .. _diff_conv_api:
+Local Integral/Differential Convolutions
+----------------------------------------
 
 .. automodule:: neuralop.layers.differential_conv
     :no-members:
@@ -211,9 +211,9 @@ We also provide additional layers that implement standard deep learning architec
 
     FiniteDifferenceConvolution
 
-**Discrete-Continuous (DISCO) Convolutions**
-
 .. _disco_conv_api:
+Discrete-Continuous (DISCO) Convolutions
+----------------------------------------
 
 .. automodule:: neuralop.layers.discrete_continuous_convolution
     :no-members:
@@ -228,8 +228,8 @@ We also provide additional layers that implement standard deep learning architec
     EquidistantDiscreteContinuousConv2d
     EquidistantDiscreteContinuousConvTranspose2d
 
-**Local NO Blocks**
-
+Local NO Blocks
+---------------
 .. automodule:: neuralop.layers.local_no_block
     :no-members:
     :no-inherited-members:
@@ -240,8 +240,8 @@ We also provide additional layers that implement standard deep learning architec
 
     LocalNOBlocks
 
-**Codomain Attention (Transformer) Blocks**
-
+Codomain Attention (Transformer) Blocks
+---------------------------------------
 .. automodule:: neuralop.layers.coda_layer
     :no-members:
     :no-inherited-members:
@@ -272,7 +272,8 @@ Apply positional embeddings as additional channels on a function:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Neighbor search**
+Neighbor search
+---------------
 
 Find neighborhoods on arbitrary coordinate meshes:
 
@@ -396,6 +397,10 @@ Data
 ========
 In `neuralop.data`, we provide APIs for standardizing PDE datasets (`.datasets`) and transforming raw data into model inputs (`.transforms`).
 
+.. _darcy_flow_api:
+Darcy-Flow
+----------
+
 We also ship a small dataset for testing:
 
 .. automodule:: neuralop.data.datasets
@@ -420,6 +425,10 @@ We provide downloadable datasets for Darcy-Flow, Navier-Stokes, and Car-CFD, as 
 
     DarcyDataset
 
+.. _navier_stokes_api:
+Navier-Stokes
+-------------
+
 .. automodule:: neuralop.data.datasets.navier_stokes
     :no-members:
     :no-inherited-members:
@@ -429,6 +438,10 @@ We provide downloadable datasets for Darcy-Flow, Navier-Stokes, and Car-CFD, as 
     :template: class.rst
 
     NavierStokesDataset
+
+.. _car_cfd_dataset_api:
+Airflow over Car Surfaces
+-------------------------
 
 .. automodule:: neuralop.data.datasets.car_cfd_dataset
     :no-members:
@@ -440,6 +453,8 @@ We provide downloadable datasets for Darcy-Flow, Navier-Stokes, and Car-CFD, as 
 
     CarCFDDataset
 
+General Tensor Dataset
+----------------------
 .. automodule:: neuralop.data.datasets.tensor_dataset
     :no-members:
     :no-inherited-members:
