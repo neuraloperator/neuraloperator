@@ -68,8 +68,8 @@ class GNOBlock(nn.Module):
     channel_mlp_layers : List[int], optional
         list of layer widths to dynamically construct
         LinearChannelMLP network to parameterize kernel k, by default None
-    channel_mlp_non_linearity : torch.nn function, optional
-        activation function for ChannelMLPLinear above, by default F.gelu
+    channel_mlp_non_linearity : Literal ["gelu", "relu", "elu", "sigmoid", "tanh"]
+        activation function for ChannelMLPLinear above, by default "gelu"
     channel_mlp : nn.Module, optional
         ChannelMLP parametrizing the kernel k. Input dimension
         should be dim x + dim y or dim x + dim y + dim f.
@@ -134,7 +134,7 @@ class GNOBlock(nn.Module):
                  pos_embedding_channels: int=32,
                  pos_embedding_max_positions: int=10000,
                  channel_mlp_layers: List[int]=[128,256,128],
-                 channel_mlp_non_linearity=F.gelu,
+                 channel_mlp_non_linearity="gelu",
                  channel_mlp: nn.Module=None,
                  use_torch_scatter_reduce: bool=True,
                  use_open3d_neighbor_search: bool=True,):
