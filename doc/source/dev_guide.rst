@@ -25,20 +25,21 @@ move to the top level of the repo in your terminal.
     default local Python environment, we recommend developing and building ``neuraloperator`` in a fresh Python
     virtual environment. 
 
-.. note::
+.. warning::
 
     Previous versions of our installation and build guides recommended starting with the Anaconda distribution. Our library
-    depends on :ref:`PyTorch <https://pytorch.org>`. As of spring 2025, PyTorch has stopped releasing updates to the Anaconda
+    depends on `PyTorch <https://pytorch.org>`_. As of spring 2025, PyTorch has stopped releasing updates to the Anaconda
     distribution. For the latest PyTorch we recommend you use ``pip``. 
 
 Create your virtual environment and store it in the top level:
 
 .. code-block:: bash
+
     python -m venv .venv
     source .venv/bin/activate
 
 Install PyTorch. These are generic instructions; if you require a specific build, or a specific CUDA version, your installation
-command will vary. Check PyTorch's `getting started page <https://pytorch.org/get-started/locally/>` for more detailed instructions
+command will vary. Check PyTorch's `getting started page <https://pytorch.org/get-started/locally/>`_ for more detailed instructions
 
 **For CUDA installations:**
 
@@ -60,13 +61,13 @@ Next, install the library locally in editable mode, along with the ``".[dev]"`` 
 
 To test your installation, run python in interactive mode and import the library as ``neuralop`` to ensure it is properly built:
 
-```
-$ python
-Python 3.10.14 (main, Month Day Year, Time of Day) [GCC VERSION] on linux
-Type "help", "copyright", "credits" or "license" for more information.
->>> import neuralop
->>> 
-```
+.. code-block:: bash
+
+    $ python
+    Python 3.10.14 (main, Month Day Year, Time of Day) [GCC VERSION] on linux
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>> import neuralop
+    >>> 
 
 You have now successfully built ``neuralop``. For instructions on contributing code, see below. 
 
@@ -129,6 +130,7 @@ In general, docstrings use the NumPy format:
 For *classes*, this docstring should go directly below the class declaration:
 
 .. code-block:: python
+
     class MyClass(Superclass):
         """
         docstring goes here
@@ -154,9 +156,10 @@ Follow these steps when making contributions:
 2. Write clean, well-documented code (see above).
 
 3. Add or update tests in appropriate directory. For instance, if your feature adds a model
-in ``neuralop/models/mymodel.py``, you would add tests to `neuralop/models/tests/test_mymodel.py`
+in ``neuralop/models/mymodel.py``, you would add tests to ``neuralop/models/tests/test_mymodel.py``
 
 4. Run the test suite:
+
 .. code-block:: bash
     
     pytest neuralop
@@ -177,14 +180,13 @@ If you plan to use ``neuralop`` as the base of a project, we suggest the followi
 
 * To install the latest PyPI release of the library, simply run: 
 
-.. code-block::bash
+.. code-block:: bash
 
     pip install neuralop
 
-* If the latest code on the NeuralOperator GitHub repository has diverged significantly, and you need access to 
-functionality that was added after the last PyPI release, you can pip install the library from a git commit hash:
+* If you need access to functionality that was added after the last PyPI release, you can pip install the library from a git commit hash:
 
-a. Go to the repository's `commit history page <https://github.com/neuraloperator/neuraloperator/commits/main/>` and locate the commit
+Go to the repository's `commit history page <https://github.com/neuraloperator/neuraloperator/commits/main/>`_ and locate the commit
 hash that corresponds to the repository state at which you want to install the repo. For most use cases, this will be the most recent commit. 
 
 To find the commit hash, click the commit title, which will take you to the commit's url. The hash will be the last component of the commit's URL,
@@ -192,13 +194,15 @@ e.g. ``https://github.com/neuraloperator/neuraloperator/commit/<COMMIT_HASH>``. 
 
 Then, use ``pip`` to install the library with the hash you just saved. 
 
-.. code-block::bash
+.. code-block:: bash
+    
     pip install git+https://github.com/neuraloperator/neuraloperator.git@<COMMIT_HASH>
 
 Once installed, if you plan to implement new functionality, like a new model or dataset, we recommend you **subclass** the functionality
 you need. For instance, to create a modified ``FNO`` that performs extra steps during the forward pass:
 
-.. code-block::python
+.. code-block:: python
+
     from neuralop.models import FNO
 
     # other imports here
