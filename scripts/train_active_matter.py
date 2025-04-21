@@ -207,6 +207,7 @@ trainer.train(
     regularizer=False,
     training_loss=train_loss,
     eval_losses=eval_losses,
+    max_autoregressive_steps=10
 )
 
 '''losses = trainer.evaluate(eval_losses,
@@ -214,6 +215,6 @@ trainer.train(
                  log_prefix="autoreg",
                  mode="autoregression",
                  max_steps=dataset.test_dbs["autoregression"].metadata.n_steps_per_trajectory[0])'''
-print(f"Autoregressive eval losses: {losses}")
+#print(f"Autoregressive eval losses: {losses}")
 if config.wandb.log and is_logger:
     wandb.finish()

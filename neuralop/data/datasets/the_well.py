@@ -129,10 +129,12 @@ class TheWellDataset:
 
         normalizer = UnitGaussianNormalizer(mean=channel_means, std=channel_stds)
 
-        max_autoreg_steps = None
+        ## TODO@DAVID: clarify or improve this based on feedback from Adarsh
+        '''max_autoreg_steps = None
         if "autoregression" in eval_tasks:
-            max_autoreg_steps = self._test_dbs["autoregression"].metadata.n_steps_per_trajectory[0]
-        self._data_processor = TheWellDataProcessor(normalizer=normalizer, max_steps=max_autoreg_steps)
+            max_autoreg_steps = self._test_dbs["autoregression"].metadata.n_steps_per_trajectory[0]'''
+        #self._data_processor = TheWellDataProcessor(normalizer=normalizer, max_steps=max_autoreg_steps)
+        self._data_processor = TheWellDataProcessor(normalizer=normalizer)
         
     @property
     def train_db(self):

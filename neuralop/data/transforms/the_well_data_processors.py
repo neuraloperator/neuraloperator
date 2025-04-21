@@ -4,10 +4,9 @@ from einops import rearrange
 import torch
 
 class TheWellDataProcessor(DefaultDataProcessor):
-    def __init__(self, normalizer, max_steps=None):
+    def __init__(self, normalizer):
         super().__init__()
         self.normalizer = normalizer
-        self.max_steps = max_steps
 
     
     def to(self, device):
@@ -19,10 +18,6 @@ class TheWellDataProcessor(DefaultDataProcessor):
         """
         Code adapted from the_well.data.data_formatter.DefaultChannelsFirstFormatter
         """
-        if self.max_steps is not None and step is not None:
-            if step > self.max_steps:
-                return None
-            
         if step is None or step == 0:
             x = data_dict["input_fields"].to(self.device)
             x = rearrange(x, "b t ... c -> b (t c) ...")
@@ -36,12 +31,15 @@ class TheWellDataProcessor(DefaultDataProcessor):
                     dim=1,
                 )
         else:
-            x = data_dict["x"]
+            x = data_dict["x"].to(self.device)
         y = data_dict["output_fields"].to(self.device)
+        # if stepping, infer number of steps and roll y forward
 
-        # if stepping, roll y forward
         if step is not None:
-            y = y[:, step:step+1, ...]
+            if step >= y.shape[1]:
+                return None
+            else:
+                y = y[:, step:step+1, ...]
         y = rearrange(y, "b t ... c -> b (t c) ...")
         # Otherwise y is already preprocessed
 

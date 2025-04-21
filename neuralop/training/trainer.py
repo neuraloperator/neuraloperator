@@ -107,6 +107,7 @@ class Trainer:
         save_best: int=None,
         save_dir: Union[str, Path]="./ckpt",
         resume_from_dir: Union[str, Path]=None,
+        max_autoregressive_steps: int=None,
     ):
         """Trains the given model on the given dataset.
 
@@ -148,6 +149,9 @@ class Trainer:
             if provided, resumes training state (model, 
             optimizer, regularizer, scheduler) from state saved in
             `resume_from_dir`
+        max_autoregressive_steps : int, default None
+            if provided, and a dataloader is to be evaluated in autoregressive mode,
+            limits the number of autoregressive in each rollout to be performed.
         
         Returns
         -------
@@ -233,7 +237,8 @@ class Trainer:
                 eval_metrics = self.evaluate_all(epoch=epoch,
                                                 eval_losses=eval_losses,
                                                 test_loaders=test_loaders,
-                                                eval_modes=eval_modes)
+                                                eval_modes=eval_modes,
+                                                max_autoregressive_steps=max_autoregressive_steps)
                 epoch_metrics.update(**eval_metrics)
                 # save checkpoint if conditions are met
                 if save_best is not None:
@@ -319,7 +324,7 @@ class Trainer:
 
         return train_err, avg_loss, avg_lasso_loss, epoch_train_time
 
-    def evaluate_all(self, epoch, eval_losses, test_loaders, eval_modes):
+    def evaluate_all(self, epoch, eval_losses, test_loaders, eval_modes, max_autoregressive_steps=None):
         """evaluate_all iterates through the entire dict of test_loaders
         to perform evaluation on the whole dataset stored in each one. 
 
@@ -336,6 +341,9 @@ class Trainer:
             keyed ``loader_name: eval_mode`` for each test loader.
             * If ``eval_modes.get(loader_name)`` does not return a value, 
             the evaluation is automatically performed in ``single_step`` mode. 
+        max_autoregressive_steps : ``int``, optional
+            if provided, and one of the test loaders has ``eval_mode == "autoregressive"``,
+            limits the number of autoregressive steps performed per rollout.
 
         Returns
         -------
@@ -348,14 +356,15 @@ class Trainer:
             loader_eval_mode = eval_modes.get(loader_name, "single_step")
             loader_metrics = self.evaluate(eval_losses, loader,
                                     log_prefix=loader_name,
-                                    mode=loader_eval_mode)   
+                                    mode=loader_eval_mode,
+                                    max_steps=max_autoregressive_steps)   
             all_metrics.update(**loader_metrics)
         if self.verbose:
             self.log_eval(epoch=epoch,
                       eval_metrics=all_metrics)
         return all_metrics
     
-    def evaluate(self, loss_dict, data_loader, log_prefix="", epoch=None, mode="single_step",max_steps=None):
+    def evaluate(self, loss_dict, data_loader, log_prefix="", epoch=None, mode="single_step", max_steps=None):
         """Evaluates the model on a dictionary of losses
 
         Parameters
@@ -374,7 +383,7 @@ class Trainer:
             if 'autoregression' loops through `max_steps` steps
         max_steps : int, optional
             max number of steps for autoregressive rollout. 
-            if `mode == 'autoregression'`, you must pass a value
+            If None, runs the full rollout.
         Returns
         -------
         errors : dict
@@ -399,9 +408,6 @@ class Trainer:
                     warnings.warn(f"{eval_loss.reduction=}. This means that the loss is "
                                 "initialized to average across the batch dim. The Trainer "
                                 "expects losses to sum across the batch dim.")
-                    
-        if mode == "autoregression":
-            assert  max_steps is not None, "Must provide a value for max_steps when in autoregressive mode."
 
         self.n_samples = 0
         with torch.no_grad():
@@ -594,7 +600,10 @@ class Trainer:
         # eval_rollout_losses = {loss_name: 0. for loss_name in eval_losses.keys()}
 
         t = 0
+        
         while sample is not None:
+            if max_steps is not None and t >= max_steps:
+                break
             
             if self.data_processor is not None:
                 sample = self.data_processor.preprocess(sample, step=t)
@@ -605,9 +614,18 @@ class Trainer:
                     for k, v in sample.items()
                     if torch.is_tensor(v)
                 }
+            
+            '''# If no max_step number is set, get the sample's trajectory length 
+            try:
+                if max_steps is None:
+                    max_steps = sample["n_steps"]
+            except:
+                print("Error: to run Trainer eval in autoregressive mode you must set max_steps",
+                      "or provide `\"n_steps\":N` as a key-value pair in your batch.")'''
+
             if sample is None:
                 break
-            print(f"rollout: {t}/{max_steps}", end="\r")
+            # print(f"rollout: {t}/{max_steps}", end="\r")
             self.n_samples += sample["y"].shape[0]
 
             out = self.model(**sample)
@@ -622,6 +640,8 @@ class Trainer:
             for loss_name, loss in eval_losses.items():
                 step_loss = loss(out, **sample)
                 eval_step_losses[loss_name] += step_loss
+            
+            t += 1
 
         if return_output:
             return eval_step_losses, out
