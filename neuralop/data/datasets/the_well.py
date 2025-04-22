@@ -45,8 +45,10 @@ class TheWellDataset:
     def __init__(self,
                  root_dir: Path, 
                  well_dataset_name : str,
-                 train_task: Literal['next_step', 'rollout']='next_step',
+                 train_task: Literal['next_step']='next_step',
                  eval_tasks: List[Literal['next_step', 'rollout']]=['next_step'],
+                 n_steps_input: int=1,
+                 n_steps_output: int=1,
                  download: bool=True,
                  first_only: bool=True,
                  ):
@@ -62,18 +64,16 @@ class TheWellDataset:
                                 split=split,
                                 first_only=first_only,
                                 )
-
-        if train_task == 'next_step':
-            n_steps_input = n_steps_output = 1
-        else:
-            raise NotImplementedError
         
-
-        self._train_db = WellDataset(path=str(base_path / "train"),
-                                        n_steps_input=n_steps_input,
-                                        n_steps_output=n_steps_output,
-                                        return_grid=False,
-                                        use_normalization=False)
+        if train_task == "next_step":
+            self._train_db = WellDataset(path=str(base_path / "train"),
+                                            n_steps_input=n_steps_input,
+                                            n_steps_output=n_steps_output,
+                                            full_trajectory_mode=False,
+                                            return_grid=False,
+                                            use_normalization=False)
+        else:
+            raise NotImplementedError(f"no training set available for training task {train_task}. Choose from ['next_step']")
     
         self._test_dbs = {}
         
@@ -95,46 +95,66 @@ class TheWellDataset:
         
         dataset_field_names = self._train_db.field_names
 
+        # store channel-specific means for fields encoding the components of each physical variable
         channel_means = []
         channel_stds = []
+
+        # keep track of constant field statistics separately
+        const_means = []
+        const_stds = []
 
         # Loop through fields separately: const, vector and 
         # tensor fields need to be handled differently. 
 
         # constant fields have scalar means
         for field_name in dataset_field_names[0]:
-            channel_means.append(stats['mean'][field_name])
-            channel_stds.append(stats['std'][field_name])
-
+            const_means.append(stats['mean'][field_name])
+            const_stds.append(stats['std'][field_name])
+        
+        # vector-valued fields have vector means
         indiv_vector_fields = dataset_field_names[1]
         vector_fields = set(["_".join(x.split("_")[:-1]) for x in indiv_vector_fields])
         for field_name in vector_fields:
             channel_means.extend(stats['mean'][field_name])
             channel_stds.extend(stats['std'][field_name])
 
+        # tensor-valued fields have tensor means
         indiv_tensor_fields = dataset_field_names[2]
         tensor_fields = set(["_".join(x.split("_")[:-1]) for x in indiv_tensor_fields])
         for field_name in tensor_fields:
             channel_means.extend([x for xs in stats['mean'][field_name] for x in xs])
             channel_stds.extend([x for xs in stats['std'][field_name] for x in xs])
         
-        
-        channel_means = torch.tensor(channel_means).unsqueeze(0)
-        channel_stds = torch.tensor(channel_stds).unsqueeze(0)
+        # add a batch dimension and a dummy time dimension : final shape (1, channels, 1)
+        # all reshaping/channel flattening will be performed after normalizing
+        channel_means = torch.tensor(channel_means).unsqueeze(0).unsqueeze(-1)
+        channel_stds = torch.tensor(channel_stds).unsqueeze(0).unsqueeze(-1)
 
-        # unsqueeze means and stds along the spatial dimensions
+        # unsqueeze means and stds along the spatial dimensions: final shape (1, channels, 1, 1, ... 1) 
         for _ in range(self.train_db.metadata.n_spatial_dims):
             channel_means = channel_means.unsqueeze(-1)
             channel_stds = channel_stds.unsqueeze(-1)
 
-        normalizer = UnitGaussianNormalizer(mean=channel_means, std=channel_stds)
+        data_normalizer = UnitGaussianNormalizer(mean=channel_means, std=channel_stds)
 
-        ## TODO@DAVID: clarify or improve this based on feedback from Adarsh
-        '''max_autoreg_steps = None
-        if "autoregression" in eval_tasks:
-            max_autoreg_steps = self._test_dbs["autoregression"].metadata.n_steps_per_trajectory[0]'''
-        #self._data_processor = TheWellDataProcessor(normalizer=normalizer, max_steps=max_autoreg_steps)
-        self._data_processor = TheWellDataProcessor(normalizer=normalizer)
+        # if there are any constant fields, provide a constant normalizer
+        if const_means is not None:
+            const_means = torch.tensor(const_means).unsqueeze(0)
+            const_stds = torch.tensor(const_stds).unsqueeze(0)
+
+            # unsqueeze means and stds along the spatial dimensions
+            for _ in range(self.train_db.metadata.n_spatial_dims):
+                const_means = const_means.unsqueeze(-1)
+                const_stds = const_stds.unsqueeze(-1)
+
+            const_fields_normalizer = UnitGaussianNormalizer(mean=const_means, std=const_stds)
+        else:
+            const_fields_normalizer = None
+
+        self._data_processor = TheWellDataProcessor(data_normalizer=data_normalizer, 
+                                                    const_normalizer=const_fields_normalizer,
+                                                    n_steps_input=n_steps_input, n_steps_output=n_steps_output, 
+                                                    time_as_channels=True)
         
     @property
     def train_db(self):
