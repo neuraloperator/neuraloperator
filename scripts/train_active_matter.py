@@ -75,6 +75,8 @@ if config.verbose and is_logger:
 
 # Loading the Darcy flow dataset
 dataset = ActiveMatterDataset(root_dir=Path(config.data.root).expanduser(),
+                              n_steps_input=config.data.n_steps_input,
+                              n_steps_output=config.data.n_steps_output,
                               train_task='next_step',
                               eval_tasks=['next_step', 'autoregression'],
                               first_only=True)
@@ -88,6 +90,9 @@ for mode, db in dataset.test_dbs.items():
 
 data_processor = dataset.data_processor
 print(data_processor)
+
+if config.data.n_steps_input > 1:
+    config[config.arch].data_channels *= config.data.n_steps_input
 
 model = get_model(config)
 

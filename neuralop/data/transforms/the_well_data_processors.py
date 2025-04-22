@@ -55,22 +55,23 @@ class TheWellDataProcessor(DefaultDataProcessor):
         Code adapted from the_well.data.data_formatter.DefaultChannelsFirstFormatter
         """
         ## processing x
-
         # in next-step mode, or if x is not yet set
-        if step == 0 or step is None:
+        if step is None:
 
             # by default, in The Well, x is stored in shape (b, time, d1, d2, ... dN, channels)
             x = data_dict["input_fields"].to(self.device)
+            x = x.permute(0,-1, *list(range(1, x.ndim - 1)))
+            data_dict["input_fields"] = x # store permuted version for later
+        elif step == 0:
+            x = data_dict["output_fields"][:, :self.n_steps_input, ...].to(self.device)
 
             # always move channels to the second dimension
             x = x.permute(0,-1, *list(range(1, x.ndim - 1)))
+            data_dict["input_fields"] = x # store permuted version for later
             in_channels = x.shape[1]
-
         else:
             # otherwise input fields are set in self.postprocess (see below)
             x = data_dict["input_fields"].to(self.device)
-        print(data_dict.keys())
-        print(f"{x.shape=}")
         if self.data_normalizer is not None:
             x = self.data_normalizer.transform(x)
 
@@ -84,7 +85,6 @@ class TheWellDataProcessor(DefaultDataProcessor):
             # TODO repeat along time 
             flat_constants = rearrange(data_dict["constant_fields"], "b ... c -> b c ...")
             constant_channels = flat_constants.shape[1]
-            print(f"{flat_constants=}")
             
             if self.const_normalizer is not None:
                 flat_constants = self.const_normalizer.transform(flat_constants)
@@ -108,7 +108,6 @@ class TheWellDataProcessor(DefaultDataProcessor):
         # always move channels to the second dimension
         # shape (b, c, t, ...)
         y = y.permute(0,-1, *list(range(1, y.ndim - 1)))
-        print(f"{y.shape=}")
 
         # if in autoregressive (AR) mode, skip default preprocessing, infer number of steps and roll y forward
         if step is not None:
@@ -166,8 +165,7 @@ class TheWellDataProcessor(DefaultDataProcessor):
         if step is not None:
             # only grab variable fields
             input_vars = data_dict["input_fields"].to(self.device)
-            # (b, t, ... c) --> (b, c, t, ...)
-            input_vars = input_vars.permute(0, -1, *list(range(1, input_vars.ndim-1)))
+            # on step=0, the channels are permuted to dim 1
             # concatenate along time dim (add to output)
             input_vars = torch.cat((input_vars, output.unsqueeze(2)), dim=2)
             # roll forward by one step

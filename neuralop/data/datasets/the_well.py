@@ -178,11 +178,15 @@ class ActiveMatterDataset(TheWellDataset):
                  root_dir, 
                  train_task = 'next_step', 
                  eval_tasks = ['next_step'], 
-                 download = True, 
+                 n_steps_input: int=1,
+                 n_steps_output: int=1,
+                 download:bool = True, 
                  first_only = True):
         super().__init__(root_dir, well_dataset_name="active_matter", 
                          train_task=train_task,
                          eval_tasks=eval_tasks,
+                         n_steps_input=n_steps_input,
+                         n_steps_output=n_steps_output,
                          download=download,
                          first_only=first_only)
 

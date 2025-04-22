@@ -17,7 +17,7 @@ default: &DEFAULT
 
   # FNO related
   fno:
-    data_channels: 11
+    data_channels: 11 # 11 per-channel, multiply by n-steps-input
     out_channels: 11
     n_modes: [32,32]
     hidden_channels: 64
@@ -59,11 +59,10 @@ default: &DEFAULT
 
   # Dataset related
   data:
-    temporal_resolution: 20
-    T: 10
-    timestep: 1
     root: ~/data/the_well
     n_train: 10
+    n_steps_input: 4
+    n_steps_output: 1
     batch_size: 1
     n_test: 10 #, 1000] #, 1000]
     test_batch_size: 1 #, 4] #, 1]
