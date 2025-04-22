@@ -600,10 +600,13 @@ class Trainer:
         # eval_rollout_losses = {loss_name: 0. for loss_name in eval_losses.keys()}
 
         t = 0
-        
-        while sample is not None:
-            if max_steps is not None and t >= max_steps:
-                break
+        if max_steps is None:
+            max_steps = float('inf')
+
+        # only increment the sample count once
+        sample_count_incr = False
+
+        while sample is not None and t < max_steps:
             
             if self.data_processor is not None:
                 sample = self.data_processor.preprocess(sample, step=t)
@@ -614,25 +617,16 @@ class Trainer:
                     for k, v in sample.items()
                     if torch.is_tensor(v)
                 }
-            
-            '''# If no max_step number is set, get the sample's trajectory length 
-            try:
-                if max_steps is None:
-                    max_steps = sample["n_steps"]
-            except:
-                print("Error: to run Trainer eval in autoregressive mode you must set max_steps",
-                      "or provide `\"n_steps\":N` as a key-value pair in your batch.")'''
 
             if sample is None:
                 break
-            # print(f"rollout: {t}/{max_steps}", end="\r")
-            self.n_samples += sample["y"].shape[0]
+            
+            # only increment the sample count once
+            if not sample_count_incr:
+                self.n_samples += sample["y"].shape[0]
+                sample_count_incr = True
 
             out = self.model(**sample)
-            
-            '''if self.debug:
-                x = sample["x"]
-                print(f"eval {x.shape=} {out.shape=}")'''
                 
             if self.data_processor is not None:
                 out, sample = self.data_processor.postprocess(out, sample, step=t)
@@ -642,6 +636,9 @@ class Trainer:
                 eval_step_losses[loss_name] += step_loss
             
             t += 1
+        # average over all steps of the final rollout
+        for loss_name in eval_step_losses.keys():
+            eval_step_losses[loss_name] /= t 
 
         if return_output:
             return eval_step_losses, out
