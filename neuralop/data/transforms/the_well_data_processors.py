@@ -44,21 +44,20 @@ class TheWellDataProcessor(DefaultDataProcessor):
 
     def to(self, device):
         self.device = device
-        self.data_normalizer = self.data_normalizer.to(self.device)
-        self.const_normalizer = self.const_normalizer.to(self.device)
+        if self.data_normalizer is not None:
+            self.data_normalizer = self.data_normalizer.to(self.device)
+        if self.const_normalizer is not None:
+            self.const_normalizer = self.const_normalizer.to(self.device)
         return self
 
     def preprocess(self, data_dict, step=None):
         """
         Code adapted from the_well.data.data_formatter.DefaultChannelsFirstFormatter
         """
-        if step is None:
-            step = 0
-
         ## processing x
 
         # in next-step mode, or if x is not yet set
-        if step == 0:
+        if step == 0 or step is None:
 
             # by default, in The Well, x is stored in shape (b, time, d1, d2, ... dN, channels)
             x = data_dict["input_fields"].to(self.device)
@@ -69,8 +68,9 @@ class TheWellDataProcessor(DefaultDataProcessor):
 
         else:
             # otherwise input fields are set in self.postprocess (see below)
-            x = data_dict["input_fields"]
-
+            x = data_dict["input_fields"].to(self.device)
+        print(data_dict.keys())
+        print(f"{x.shape=}")
         if self.data_normalizer is not None:
             x = self.data_normalizer.transform(x)
 
@@ -84,9 +84,10 @@ class TheWellDataProcessor(DefaultDataProcessor):
             # TODO repeat along time 
             flat_constants = rearrange(data_dict["constant_fields"], "b ... c -> b c ...")
             constant_channels = flat_constants.shape[1]
+            print(f"{flat_constants=}")
             
             if self.const_normalizer is not None:
-                flat_constants = self.const_normalizer.normalize(flat_constants)
+                flat_constants = self.const_normalizer.transform(flat_constants)
             
             # if x stays spatiotemporal, repeat constants along time dim
             if not self.time_as_channels:
@@ -96,7 +97,7 @@ class TheWellDataProcessor(DefaultDataProcessor):
             x = torch.cat(
                 [
                     x,
-                    flat_constants,
+                    flat_constants.to(self.device),
                 ],
                 dim=1,
             )
@@ -107,6 +108,7 @@ class TheWellDataProcessor(DefaultDataProcessor):
         # always move channels to the second dimension
         # shape (b, c, t, ...)
         y = y.permute(0,-1, *list(range(1, y.ndim - 1)))
+        print(f"{y.shape=}")
 
         # if in autoregressive (AR) mode, skip default preprocessing, infer number of steps and roll y forward
         if step is not None:
@@ -127,7 +129,7 @@ class TheWellDataProcessor(DefaultDataProcessor):
         
         # In both modes, permute y's dimensions into the same order as x's
         if self.time_as_channels:
-            y = rearrange(y, "b c t ... c -> b (t c) ...")
+            y = rearrange(y, "b c t ... -> b (t c) ...")
         
         data_dict["x"] = x
         data_dict["y"] = y
@@ -142,7 +144,7 @@ class TheWellDataProcessor(DefaultDataProcessor):
         y = data_dict["y"]
 
         # Unnormalize: outputs/ground truth/(sometimes inputs)
-        if self.normalizer is not None:
+        if self.data_normalizer is not None:
 
             # in next-step mode, out and y are unnormalized unly during eval.
             if (step is None and not self.training) or step is not None:
@@ -150,7 +152,7 @@ class TheWellDataProcessor(DefaultDataProcessor):
                 # we can unsqueeze because we assume n_steps_output == 1.
                 if self.time_as_channels:
                     y = y.unsqueeze(2)
-                    out = out.unsqueeze(2)
+                    output = output.unsqueeze(2)
 
                 y = self.data_normalizer.inverse_transform(y)
                 output = self.data_normalizer.inverse_transform(output)
@@ -158,16 +160,16 @@ class TheWellDataProcessor(DefaultDataProcessor):
                 # after normalizing, squeeze time dim out again (note n_steps_output forced to 1)
                 if self.time_as_channels:
                     y = y.squeeze(2)
-                    out = out.squeeze(2)
+                    output = output.squeeze(2)
 
         # if in AR mode, append output to x
         if step is not None:
             # only grab variable fields
-            input_vars = data_dict["input_fields"]
+            input_vars = data_dict["input_fields"].to(self.device)
             # (b, t, ... c) --> (b, c, t, ...)
             input_vars = input_vars.permute(0, -1, *list(range(1, input_vars.ndim-1)))
             # concatenate along time dim (add to output)
-            input_vars = torch.cat((input_vars, out.unsqueeze(2)), dim=2)
+            input_vars = torch.cat((input_vars, output.unsqueeze(2)), dim=2)
             # roll forward by one step
             input_vars = input_vars[:, :, -self.n_steps_input:, ...]
             data_dict["input_fields"] = input_vars

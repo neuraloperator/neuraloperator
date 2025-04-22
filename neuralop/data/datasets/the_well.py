@@ -92,8 +92,12 @@ class TheWellDataset:
         stats_path = base_path / "../stats.yaml"
         with open(stats_path, "r") as f:
             stats = yaml.safe_load(f)
+            from pprint import pprint
+            pprint(stats)
+
         
         dataset_field_names = self._train_db.field_names
+        pprint(dataset_field_names)
 
         # store channel-specific means for fields encoding the components of each physical variable
         channel_means = []
@@ -106,19 +110,20 @@ class TheWellDataset:
         # Loop through fields separately: const, vector and 
         # tensor fields need to be handled differently. 
 
-        # constant fields have scalar means
-        for field_name in dataset_field_names[0]:
-            const_means.append(stats['mean'][field_name])
-            const_stds.append(stats['std'][field_name])
         
-        # vector-valued fields have vector means
+        # scalar fields have scalar means
+        for field_name in dataset_field_names[0]:
+            channel_means.append(stats['mean'][field_name])
+            channel_stds.append(stats['std'][field_name])
+        
+        # vector-valued fields have vector means, 1 degree of nesting to unpack
         indiv_vector_fields = dataset_field_names[1]
         vector_fields = set(["_".join(x.split("_")[:-1]) for x in indiv_vector_fields])
         for field_name in vector_fields:
             channel_means.extend(stats['mean'][field_name])
             channel_stds.extend(stats['std'][field_name])
 
-        # tensor-valued fields have tensor means
+        # tensor-valued fields have tensor means, 2 degrees of nesting to unpack
         indiv_tensor_fields = dataset_field_names[2]
         tensor_fields = set(["_".join(x.split("_")[:-1]) for x in indiv_tensor_fields])
         for field_name in tensor_fields:
@@ -138,7 +143,7 @@ class TheWellDataset:
         data_normalizer = UnitGaussianNormalizer(mean=channel_means, std=channel_stds)
 
         # if there are any constant fields, provide a constant normalizer
-        if const_means is not None:
+        if const_means:
             const_means = torch.tensor(const_means).unsqueeze(0)
             const_stds = torch.tensor(const_stds).unsqueeze(0)
 
