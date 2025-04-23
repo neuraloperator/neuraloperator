@@ -1,6 +1,3 @@
-# MIT License
-# Copyright (c) 2024 Saman Pordanesh
-
 import pytest
 import torch
 import numpy as np
