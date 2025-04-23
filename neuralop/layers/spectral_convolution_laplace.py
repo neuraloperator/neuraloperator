@@ -7,6 +7,7 @@ from .resample import resample
 from ..utils import validate_scaling_factor
 from .shape_enforcer import ShapeEnforcer
 from .base_spectral_conv import BaseSpectralConv
+from neuralop.layers.embeddings import regular_grid_nd
 
 Number = Union[int, float]
 
@@ -14,19 +15,8 @@ Number = Union[int, float]
 def _compute_dt(shape, start_points: List = None, end_points: List = None):
     """
     Compute uniform spacing (dt) for each dimension based on domain lengths, step sizes,
-    start points, and end points. Defaults to a unit domain if not specified.
-
-    Parameters:
-    ----------
-    shape (Sequence[int]): The shape of the input excluding batch and channel, i.e. (d_1, d_2, ..., d_n).
-    start_points (Sequence[float], optional): Start points for each dimension. Defaults to 0.0 for all dimensions.
-    end_points (Sequence[float], optional): End points for each dimension. Defaults to 1.0 for all dimensions.
-
-    Returns:
-    -------
-    dt_list (Sequence[float]): A list of spacings, one per dimension.
-    grid (List[torch.Tensor]): A list of grid points for each dimension based on the spacing and domain.
     """
+    
     dim = len(shape)
     # Set default start and end points if not provided
     if start_points is None:
@@ -40,14 +30,8 @@ def _compute_dt(shape, start_points: List = None, end_points: List = None):
             "Start points and end points must match the number of input dimensions ({dim})."
         )
 
-    # Compute domain lengths from start and end points
-    domain_lengths = [end_points[i] - start_points[i] for i in range(dim)]
-
     # Generate grid points for each dimension using torch.linspace
-    grid = [
-        torch.linspace(start_points[i], end_points[i], steps=shape[i])
-        for i in range(dim)
-    ]
+    grid = [regular_grid_nd(resolutions=[shape[i]-1], grid_boundaries=[[start_points[i], end_points[i]]])[0] for i in range(dim)]
 
     # Compute dt directly from the grid
     dt_list = [(grid[i][1] - grid[i][0]).item() for i in range(dim)]
@@ -260,8 +244,8 @@ class SpectralConvLaplace1D(BaseSpectralConv):
         (modes1,) = self.n_modes
         L = x.shape[-1]
         modes1 = min(modes1, L)
+        
         self.linspace_steps = x.shape[2:]
-
         # Compute the grid and spacing for the domain
         dt_list, shape = _compute_dt(
             shape=self.linspace_steps,
