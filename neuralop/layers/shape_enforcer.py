@@ -64,26 +64,44 @@ class ShapeEnforcer(torch.nn.Module):
         # Build slicing for each dimension
         slices = [slice(None)] * self.start_dim  # keep [B, C, ...] as is
         for i, size_desired in enumerate(output_shape):
-            current_size = x.shape[self.start_dim + i]
+            dim_idx = self.start_dim + i
+            # Skip if dim_idx is out of bounds
+            if dim_idx >= len(x.shape):
+                break
+                
+            current_size = x.shape[dim_idx]
             # If current is bigger, crop
             if current_size > size_desired:
                 slices.append(slice(0, size_desired))
             else:
                 slices.append(slice(0, current_size))
+        
+        # Add remaining dimensions as-is
+        for i in range(self.start_dim + len(output_shape), len(x.shape)):
+            slices.append(slice(None))
+            
         x = x[tuple(slices)]
 
         # -- 2) Pad if needed --
-        # F.pad expects a pad-list in reverse order: [dimN_left, dimN_right, dimN-1_left, ...]
+        # Calculate which dimensions need padding
         pad_list = []
-        for i in reversed(range(len(output_shape))):
-            size_desired = output_shape[i]
-            current_size = x.shape[self.start_dim + i]
-            if current_size < size_desired:
-                pad_amount = size_desired - current_size
-                # Pad only on the "end" (right side).
-                pad_list.extend([0, pad_amount])
+        for i in range(len(x.shape) - 1, self.start_dim - 1, -1):
+            # If this dimension is within our output_shape range
+            if self.start_dim <= i < self.start_dim + len(output_shape):
+                output_idx = i - self.start_dim
+                size_desired = output_shape[output_idx]
+                current_size = x.shape[i]
+                
+                if current_size < size_desired:
+                    pad_amount = size_desired - current_size
+                    # Pad only on the "end" (right side)
+                    pad_list.extend([0, pad_amount])
+                else:
+                    pad_list.extend([0, 0])
             else:
+                # Dimensions outside our range of interest don't need padding
                 pad_list.extend([0, 0])
+                
         if any(pad_list):
             x = F.pad(x, pad_list, mode="constant", value=0.0)
 
