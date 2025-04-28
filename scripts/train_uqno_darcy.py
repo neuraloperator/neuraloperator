@@ -187,7 +187,7 @@ if is_logger:
 solution_train_loader = DataLoader(solution_train_db,
                                 batch_size=config.data.batch_size,
                                     shuffle=True,
-                                    num_workers=1,
+                                    num_workers=4,
                                     pin_memory=True,
                                     persistent_workers=False,
                                 )
@@ -397,7 +397,7 @@ if wandb_args is not None:
 residual_train_loader_unprocessed = DataLoader(residual_train_db,
                                     batch_size=1,
                                         shuffle=True,
-                                        num_workers=0,
+                                        num_workers=4,
                                         pin_memory=True,
                                         persistent_workers=False,
                                     )
@@ -413,14 +413,14 @@ residual_data_processor = residual_data_processor.to(device)
 residual_train_loader = DataLoader(processed_residual_train_db,
                                 batch_size=config.data.batch_size,
                                     shuffle=True,
-                                    num_workers=0,
+                                    num_workers=4,
                                     pin_memory=True,
                                     persistent_workers=False,
                                 )
 residual_val_loader = DataLoader(processed_residual_val_db,
                                 batch_size=config.data.batch_size,
                                     shuffle=True,
-                                    num_workers=0,
+                                    num_workers=4,
                                     pin_memory=True,
                                     persistent_workers=False,
                                 )
