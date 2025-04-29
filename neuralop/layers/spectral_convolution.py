@@ -503,14 +503,14 @@ class SpectralConv(BaseSpectralConv):
             # b, c, *spatial_dims
 
             # after reversing fft shift, zero is at 0 
-            zero_indices.append([[slice(None), slice(None)] + [slice(None)] * i +\
-                                        [slice(0, 1)] + [slice(None)] * (len(fft_size) - i - 1)])
+            zero_indices.append([slice(None), slice(None)] + [slice(None)] * i +\
+                                        [slice(0, 1)] + [slice(None)] * (len(fft_size) - i - 1))
             
         # after reversing fft shift, nyquist is at n//2 
         for i, mode_sz in enumerate(fft_size[:-1]):
             if mode_sz % 2 == 0:
-                nyquist_indices.append([[slice(None), slice(None)] + [slice(None)] * i +\
-                                        [slice(mode_sz//2, mode_sz//2 + 1)] + [slice(None)] * (len(fft_size) - i - 1)])
+                nyquist_indices.append([slice(None), slice(None)] + [slice(None)] * i +\
+                                        [slice(mode_sz//2, mode_sz//2 + 1)] + [slice(None)] * (len(fft_size) - i - 1))
         # except for the last mode, where it is at 
         nyquist_indices.append((slice(None), slice(None), *[slice(None)]*(len(fft_size)-1), slice(-1)))
             
