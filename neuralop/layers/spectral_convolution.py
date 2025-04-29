@@ -497,23 +497,29 @@ class SpectralConv(BaseSpectralConv):
         # not all CUFFT backend algorithms ensure that the imaginary components 
         # of zero and nyquist (n//2) frequencies are set to 0, so we do this manually
 
-        nyquist_indices = []
         zero_indices = []
+        nyquist_indices = []
         for i, mode_sz in enumerate(fft_size):
             # b, c, *spatial_dims
 
             # after reversing fft shift, zero is at 0 
             zero_indices.append([[slice(None), slice(None)] + [slice(None)] * i +\
-                                       [slice(0, 1)] + [slice(None)] * (len(mode_sizes) - i)])
+                                        [slice(0, 1)] + [slice(None)] * (len(fft_size) - i - 1)])
             
-            # after reversing fft shift, nyquist is at n//2 
-            ## 
-            if mode_sz % 2 == 0 and i < len(fft_size):
+        # after reversing fft shift, nyquist is at n//2 
+        for i, mode_sz in enumerate(fft_size[:-1]):
+            if mode_sz % 2 == 0:
                 nyquist_indices.append([[slice(None), slice(None)] + [slice(None)] * i +\
-                                        [slice(mode_sz//2, mode_sz//2 + 1)] + [slice(None)] * (len(mode_sizes) - i)])
+                                        [slice(mode_sz//2, mode_sz//2 + 1)] + [slice(None)] * (len(fft_size) - i - 1)])
+        # except for the last mode, where it is at 
+        nyquist_indices.append((slice(None), slice(None), *[slice(None)]*(len(fft_size)-1), slice(-1)))
             
-        for zero_idc in zero_indices:
-            out_fft[zero_idc].imag = 0.0
+        for idx in zero_indices:
+            out_fft[idx].imag = 0.0
+        
+        for idx in nyquist_indices:
+            out_fft[idx].imag = 0.0
+
 
         if self.complex_data:
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
