@@ -425,7 +425,7 @@ class SpectralConv(BaseSpectralConv):
         
         if self.order > 1:
             x = torch.fft.fftshift(x, dim=dims_to_fft_shift)
-
+        
         if self.fno_block_precision == "mixed":
             # if 'mixed', the above fft runs in full precision, but the
             # following operations run at half precision
@@ -493,7 +493,28 @@ class SpectralConv(BaseSpectralConv):
 
         if self.order > 1:
             out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
-        
+
+        # not all CUFFT backend algorithms ensure that the imaginary components 
+        # of zero and nyquist (n//2) frequencies are set to 0, so we do this manually
+
+        nyquist_indices = []
+        zero_indices = []
+        for i, mode_sz in enumerate(fft_size):
+            # b, c, *spatial_dims
+
+            # after reversing fft shift, zero is at 0 
+            zero_indices.append([[slice(None), slice(None)] + [slice(None)] * i +\
+                                       [slice(0, 1)] + [slice(None)] * (len(mode_sizes) - i)])
+            
+            # after reversing fft shift, nyquist is at n//2 
+            ## 
+            if mode_sz % 2 == 0 and i < len(fft_size):
+                nyquist_indices.append([[slice(None), slice(None)] + [slice(None)] * i +\
+                                        [slice(mode_sz//2, mode_sz//2 + 1)] + [slice(None)] * (len(mode_sizes) - i)])
+            
+        for zero_idc in zero_indices:
+            out_fft[zero_idc].imag = 0.0
+
         if self.complex_data:
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
         else:
