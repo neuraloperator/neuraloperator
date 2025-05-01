@@ -249,7 +249,9 @@ class SpectralConvLaplace(BaseSpectralConv):
             lambdas_list.append(lambda_d)
 
         # Transform input to frequency domain
-        alpha = torch.fft.fftn(x, dim=fft_dims, norm=self.fft_norm)
+        # alpha = torch.fft.fftn(x, dim=fft_dims, norm=self.fft_norm)
+        alpha = torch.fft.fftn(x, dim=fft_dims) # Without normalization 
+        
         # alpha shape: (batch, in_channels, freq1, freq2, ..., freqN)
 
         # --- Pole-Residue Calculation ---
@@ -353,7 +355,9 @@ class SpectralConvLaplace(BaseSpectralConv):
              output_spatial_shape = tuple(output_shape)
 
         # Apply IFFT
-        x1 = torch.fft.ifftn(out1_summed, s=output_spatial_shape, dim=fft_dims, norm=self.fft_norm)
+        # x1 = torch.fft.ifftn(out1_summed, s=output_spatial_shape, dim=fft_dims, norm=self.fft_norm)
+        x1 = torch.fft.ifftn(out1_summed, s=output_spatial_shape, dim=fft_dims) # Without normalization
+        
         
         # If input was real, take real part (assuming output should also be real)
         if not x.is_complex(): # Check if input was complex
