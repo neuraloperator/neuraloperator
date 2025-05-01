@@ -17,10 +17,10 @@ Number = Union[int, float]
 try:
     from tensorly.plugins import use_opt_einsum
     use_opt_einsum('optimal')
-    einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    einsum_symbols = "acdefghjklmnpqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" # Except b, i and o
 except ImportError:
     print("Tensorly or opt_einsum not found. Using default torch.einsum.")
-    einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    einsum_symbols = "acdefghjklmnpqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 def _compute_dt_nd(shape: Tuple[int, ...], 
                    start_points: Optional[List[float]] = None, 
