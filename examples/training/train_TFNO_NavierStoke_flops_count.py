@@ -24,6 +24,8 @@ from torchtnt.utils.flops import FlopTensorDispatchMode
 from copy import deepcopy
 from collections import defaultdict
 
+from torch.profiler import profile, record_function, ProfilerActivity
+
 # Load dataset 
 train_loader, test_loaders, output_encoder = load_navier_stokes_pt(
     n_train=20,
@@ -82,23 +84,27 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
 
 # Training loop 
 epochs = 3
-model.train()
 for epoch in range(epochs):
-    running_loss = 0.0
-    for batch in train_loader:
-        x = batch["x"].to(device)
-        y = batch["y"].to(device)
+    with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+                 record_shapes=True, profile_memory=True) as prof:
+        for batch in train_loader:
+            # forward
+            with record_function(f"epoch_{epoch+1}_forward"):
+                optimizer.zero_grad()
+                out = model(batch["x"].to(device))
 
-        optimizer.zero_grad()
-        out = model(x)
-        loss = train_loss(out, y)
-        loss.backward()
-        optimizer.step()
-
-        running_loss += loss.item()
-
+            with record_function(f"epoch_{epoch+1}_backward"):
+                loss = train_loss(out, batch["y"].to(device))
+                loss.backward()
+                optimizer.step()
+            
+            prof.step() 
+    
+    print(f"Epoch {epoch+1} profiling:")
+    print(prof.key_averages().table(sort_by="cuda_time_total", row_limit=5))
+    prof.export_chrome_trace(f"epoch_{epoch+1}_trace.json")
     scheduler.step()
-    print(f"Epoch {epoch+1} - Loss: {running_loss / len(train_loader):.6f}")
+
 
 # %%
 # Plot the prediction, and compare with the ground-truth
