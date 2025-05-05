@@ -64,21 +64,21 @@ plt.draw()
 # Each sample in the ``CarCFDDataset`` also includes a set of latent query points on which we learn a function
 # to enable learning with an FNO in the middle of our geometry-informed models. Let's visualize the queries
 # on top of the car from before:
-fig = plt.figure()
+fig = plt.figure(figsize=(8,10))
 ax = fig.add_subplot(projection='3d')
 scatter = ax.scatter(sample['vertices'][:,0],sample['vertices'][:,1],
-                     sample['vertices'][:,2]*2, s=2)
+                     sample['vertices'][:,2]*2, s=4, label='Car surface')
 queries = sample['query_points'].view(-1, 3) # unroll our cube tensor into a point cloud
-ax.scatter(queries[:,0],queries[:,1],queries[:,2]*2,s=0.4, alpha=0.5)
+ax.scatter(queries[:,0],queries[:,1],queries[:,2]*2,s=1, alpha=0.5, label='Latent queries')
 
 ax.set_xlim(0,2)
 ax.set_ylim(0,2)
 ax.set_xlabel("x")
 ax.set_ylabel("y")
 ax.set_zlabel("z")
+ax.legend()
 ax.view_init(elev=20, azim=150, roll=0, vertical_axis='y')
 ax.set_title("Query points and vertices")
-fig.colorbar(scatter, pad=0.2, label="normalized pressure", ax=ax)
 # %%
 # Visualizing neighbor search
 # In :doc:`auto_examples/layers/plot_neighbor_search` we demonstrate our neighbor search
@@ -88,40 +88,43 @@ from neuralop.layers.neighbor_search import native_neighbor_search
 verts = sample['vertices']
 query_point = queries[1000]
 nbr_data = native_neighbor_search(data=verts, queries=query_point.unsqueeze(0), radius=0.15)
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
+fig = plt.figure(figsize=(8,10))
+ax1 = fig.add_subplot(2,1,1, projection='3d')
+ax2 = fig.add_subplot(2,1,2, projection='3d')
 neighbors = verts[nbr_data['neighbors_index']]
-ax.scatter(verts[:, 0], verts[:, 1], verts[:, 2]*2, s=1, alpha=0.5)
-ax.scatter(queries[:, 0], queries[:, 1], queries[:, 2]*2, s=1, alpha=0.5)
-ax.scatter(neighbors[:, 0], neighbors[:, 1], neighbors[:, 2]*2, label="neighbors of x")
-ax.legend()
-ax.set_xlim(0,2)
-ax.set_ylim(0,2)
-ax.set_xlabel("x")
-ax.set_ylabel("y")
-ax.set_zlabel("z")
-ax.view_init(elev=20, azim=-20, roll=0, vertical_axis='y')
-ax.set_title("Neighbor points from car for one query point")
-plt.draw()
 
-# %%
-# Looking closer, without all the query points:
+# Plotting just one query point vs. the car
+ax1.scatter(verts[:, 0], verts[:, 1], verts[:, 2]*2, s=1, alpha=0.1)
+ax1.scatter(query_point[0], query_point[1], query_point[2]*2, s=10, c='red', label='Single query')
+ax1.view_init(elev=20, azim=-20, roll=0, vertical_axis='y')
+ax1.legend()
+ax1.set_xlim(0,2)
+ax1.set_ylim(0,2)
+ax1.set_xlabel("x")
+ax1.set_ylabel("y")
+ax1.set_zlabel("z")
+ax1.view_init(elev=20, azim=-20, roll=0, vertical_axis='y')
+ax1.grid(False)
+ax1.set_title("One query point")
 
-from neuralop.layers.neighbor_search import native_neighbor_search
-verts = sample['vertices']
-query_point = queries[1000]
-nbr_data = native_neighbor_search(data=verts, queries=query_point.unsqueeze(0), radius=0.15)
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-neighbors = verts[nbr_data['neighbors_index']]
-ax.scatter(verts[:, 0], verts[:, 1], verts[:, 2]*2, s=1, alpha=0.5)
-ax.scatter(neighbors[:, 0], neighbors[:, 1], neighbors[:, 2]*2, label="neighbors of x")
-ax.legend()
-ax.set_xlim(0,2)
-ax.set_ylim(0,2)
-ax.set_xlabel("x")
-ax.set_ylabel("y")
-ax.set_zlabel("z")
-ax.view_init(elev=20, azim=-120, roll=0, vertical_axis='y')
-ax.set_title("Neighbor points from car for one query point")
+# Plotting all query points and neighbors
+ax2.scatter(verts[:, 0], verts[:, 1], verts[:, 2]*2, s=0.5, alpha=0.4, label="Car surface")
+ax2.scatter(queries[:, 0], queries[:, 1], queries[:, 2]*2, s=0.5, alpha=0.2, label="Latent queries")
+ax2.scatter(neighbors[:, 0], neighbors[:, 1], neighbors[:, 2]*2, s=10, label="Neighbors on\ncar surface",)
+ax2.legend()
+ax2.set_xlim(0,2)
+ax2.set_ylim(0,2)
+ax2.set_xlabel("x")
+ax2.set_ylabel("y")
+ax2.set_zlabel("z")
+ax2.view_init(elev=20, azim=-20, roll=0, vertical_axis='y')
+ax2.set_title("Neighbor points from car for one query point")
+ax2.grid(False)
+
+for ax in ax1,ax2:
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_zticks([])
+
+fig.tight_layout()
 plt.draw()
