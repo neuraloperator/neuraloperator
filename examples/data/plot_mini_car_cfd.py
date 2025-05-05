@@ -1,7 +1,7 @@
 """
 Visualizing computational fluid dynamics on a car
 ===================================================
-In this example we visualize a mesh drawn from the CarCFDDataset. 
+In this example we visualize a mesh drawn from the :ref:`CarCFDDataset <car_cfd_dataset_api>`. 
 """
 
 # %%
@@ -81,7 +81,7 @@ ax.view_init(elev=20, azim=150, roll=0, vertical_axis='y')
 ax.set_title("Query points and vertices")
 # %%
 # Visualizing neighbor search
-# In :doc:`auto_examples/layers/plot_neighbor_search` we demonstrate our neighbor search
+# In :doc:`../layers/plot_neighbor_search` we demonstrate our neighbor search
 # on a simple 2-d point cloud. Let's try that again with our points here:
 
 from neuralop.layers.neighbor_search import native_neighbor_search
