@@ -351,7 +351,7 @@ class SpectralConvLaplace(BaseSpectralConv):
              output_spatial_shape = tuple(output_shape)
 
         # Apply IFFT
-        x1 = torch.fft.ifftn(out1_summed, s=output_spatial_shape, dim=fft_dims) # Without normalization
+        x1 = torch.fft.ifftn(out1_summed, s=output_spatial_shape, dim=fft_dims) 
         
         
         # If input was real, take real part (assuming output should also be real)
