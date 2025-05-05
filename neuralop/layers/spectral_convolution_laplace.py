@@ -88,8 +88,6 @@ class SpectralConvLaplace(BaseSpectralConv):
         By default False.
     bias : bool, default is True
         Whether to include a bias term
-    resolution_scaling_factor : float or list of float, optional
-        Factor to scale the output resolution along each dimension.
     steady_state_sign : int, optional
         Sign multiplier for the steady-state term calculation (+1 or -1).
         Defaults to (-1)**(order + 1), based on observed pattern in 1D/2D/3D.
@@ -121,7 +119,6 @@ class SpectralConvLaplace(BaseSpectralConv):
         out_channels: int,
         n_modes: Tuple[int, ...],
         bias: bool = True,
-        resolution_scaling_factor: Optional[Union[Number, List[Number]]] = None,
         steady_state_sign: Optional[int] = None,
         init_std: Union[str, float] = "auto",
         fft_norm: str = "forward",
@@ -145,12 +142,6 @@ class SpectralConvLaplace(BaseSpectralConv):
         self.linspace_startpoints = linspace_startpoints
         self.linspace_endpoints = linspace_endpoints
 
-        # Validate and store resolution scaling factor
-        self.resolution_scaling_factor: Union[None, List[float]] = (
-            validate_scaling_factor(resolution_scaling_factor, self.order)
-            if resolution_scaling_factor is not None else None
-        )
-        
         # Determine sign convention for steady state part
         if steady_state_sign is None:
             self.steady_state_sign = (-1)**(self.order + 1)
@@ -258,7 +249,6 @@ class SpectralConvLaplace(BaseSpectralConv):
             lambdas_list.append(lambda_d)
 
         # Transform input to frequency domain
-        # alpha = torch.fft.fftn(x, dim=fft_dims, norm=self.fft_norm)
         alpha = torch.fft.fftn(x, dim=fft_dims) # Without normalization 
         
         # alpha shape: (batch, in_channels, freq1, freq2, ..., freqN)
@@ -356,15 +346,11 @@ class SpectralConvLaplace(BaseSpectralConv):
         
         # Determine output spatial size for IFFT
         if output_shape is None:
-            if self.resolution_scaling_factor is not None:
-                output_spatial_shape = tuple([round(s * r) for s, r in zip(mode_sizes, self.resolution_scaling_factor)])
-            else:
-                output_spatial_shape = tuple(mode_sizes)
+            output_spatial_shape = tuple(mode_sizes)
         else:
              output_spatial_shape = tuple(output_shape)
 
         # Apply IFFT
-        # x1 = torch.fft.ifftn(out1_summed, s=output_spatial_shape, dim=fft_dims, norm=self.fft_norm)
         x1 = torch.fft.ifftn(out1_summed, s=output_spatial_shape, dim=fft_dims) # Without normalization
         
         
@@ -417,6 +403,9 @@ class SpectralConvLaplace(BaseSpectralConv):
         # Take real part if needed
         if not x.is_complex():
             x2 = torch.real(x2)
+            
+        if x2.shape[2:] != output_spatial_shape:
+            x2 = self.shape_enforcer(x2, output_shape=output_spatial_shape)
 
         # --- Combine and Finalize ---
         x = x1 + x2
@@ -431,25 +420,3 @@ class SpectralConvLaplace(BaseSpectralConv):
              x = self.shape_enforcer(x, output_shape=output_spatial_shape)
 
         return x
-
-    def transform(self, x, output_shape=None):
-        """Transforms the input tensor resolution (Placeholder/Example)."""
-        # This method can be used for pre/post adjustments if needed,
-        # but the main resizing happens within forward via IFFT's 's' parameter
-        # and the shape_enforcer.
-        in_shape = list(x.shape[2:])
-
-        if self.resolution_scaling_factor is not None and output_shape is None:
-            out_shape = tuple(
-                [round(s * r) for (s, r) in zip(in_shape, self.resolution_scaling_factor)]
-            )
-        elif output_shape is not None:
-             out_shape = tuple(output_shape)
-        else:
-             out_shape = tuple(in_shape)
-
-        if tuple(in_shape) == out_shape:
-            return x
-        else:
-            # Ensure output_shape is a list for resample function if needed
-            return resample(x, 1.0, list(range(2, x.ndim)), output_shape=list(out_shape))
