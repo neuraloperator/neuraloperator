@@ -503,7 +503,7 @@ class SpectralConv(BaseSpectralConv):
         if self.order > 1:
             out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
 
-        # not all CUFFT backend algorithms ensure that the imaginary components 
+        '''# not all CUFFT backend algorithms ensure that the imaginary components 
         # of zero and nyquist (n//2) frequencies are set to 0, so we do this manually
 
         zero_indices = []
@@ -527,7 +527,7 @@ class SpectralConv(BaseSpectralConv):
             out_fft[idx].imag = 0.0
         
         for idx in nyquist_indices:
-            out_fft[idx].imag = 0.0
+            out_fft[idx].imag = 0.0'''
 
 
         if self.complex_data:
