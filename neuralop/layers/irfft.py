@@ -62,12 +62,12 @@ class irfftn_handle(object):
         if self.needs_manual_correction:
             zero_frequency_inds = [] 
             nyquist_frequency_inds = []
-            fft_size = x.shape[fft_dims]
+            fft_size = [x.shape[k] for k in fft_dims]
             
             # correct zero and optionally nyquist frequency imaginary components
             # along each transformed mode of the FFT tensor
             for mode_size, dim in zip(fft_size, fft_dims):
-                zero_ind = [slice(None)] * input.ndim
+                zero_ind = [slice(None)] * x.ndim
                 zero_ind[dim] = slice(0,1)
 
                 x[zero_ind].imag = 0.
@@ -75,7 +75,7 @@ class irfftn_handle(object):
                 # only correct the nyquist frequency here if the signal length along 
                 # this dimension is a multiple of two. 
                 if mode_size % 2 == 0:
-                    nyquist_ind = [None] * input.ndim
+                    nyquist_ind = [slice(None)] * x.ndim
                     nyquist_ind[dim] = slice(mode_size // 2, mode_size // 2 + 1)
                     x[nyquist_ind].imag = 0.
                 
@@ -83,8 +83,8 @@ class irfftn_handle(object):
             # of the last dim, which we truncate to remove redundant coefficients, to zero
             last_nyquist_ind = [slice(None)] * (x.ndim-1) + [slice(-1, 0)]
             x[last_nyquist_ind].imag = 0.
-        else:
-            return irfftn(x, s=mode_sizes, dim=dim, norm=norm)
+        
+        return irfftn(x, s=mode_sizes, dim=fft_dims, norm=norm)
 
 
 

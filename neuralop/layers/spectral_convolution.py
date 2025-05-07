@@ -533,7 +533,7 @@ class SpectralConv(BaseSpectralConv):
         if self.complex_data:
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
         else:
-            x = self._irfftn_handle(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+            x = self._irfftn_handle(out_fft, mode_sizes=mode_sizes, fft_dims=fft_dims, norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias
