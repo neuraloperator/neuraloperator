@@ -12,6 +12,7 @@ from tltorch.factorized_tensors.core import FactorizedTensor
 from .einsum_utils import einsum_complexhalf
 from .base_spectral_conv import BaseSpectralConv
 from .resample import resample
+from .irfft import irfftn_handle
 
 tl.set_backend("pytorch")
 use_opt_einsum("optimal")
@@ -247,14 +248,10 @@ class SpectralConv(BaseSpectralConv):
     
     References
     -----------
-    .. [1] :
-
-    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
+    .. [1] : Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
         Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
     
-    .. [2] :
-
-    Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
+    .. [2] : Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
         Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024). 
         TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
     """
@@ -316,6 +313,11 @@ class SpectralConv(BaseSpectralConv):
                 fixed_rank_modes = [0]
             else:
                 fixed_rank_modes = None
+
+        # Handle CUFFT IRFFT backend correction by checking if 
+        # nyquist and zero frequencies are handled properly by THIS DEVICE's
+        # CUFFT backend. 
+        self._irfftn_handle = irfftn_handle(device=self.device)
         self.fft_norm = fft_norm
 
         if factorization is None:
@@ -372,6 +374,13 @@ class SpectralConv(BaseSpectralConv):
             return x
         else:
             return resample(x, 1.0, list(range(2, x.ndim)), output_shape=out_shape)
+    
+    def to(self, device):
+        # when moving this module to a new device,
+        # ensure that we re-verify the CUFFT backend and the necessity
+        # of manually correcting IRFFT inputs. 
+        self._irfftn_handle = irfftn_handle(device)
+        return super().to(device)
     
     @property
     def n_modes(self):
@@ -524,7 +533,7 @@ class SpectralConv(BaseSpectralConv):
         if self.complex_data:
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
         else:
-            x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+            x = self._irfftn_handle(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias
