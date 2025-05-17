@@ -1,7 +1,6 @@
 import sys
 import torch
 import wandb
-from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.nn.functional as F
 
@@ -16,17 +15,14 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 
 # Read the configuration
 config_name = "default"
-pipe = ConfigPipeline(
-    [
-        YamlConfig(
-            "./poisson_gino_config.yaml", config_name="default", config_folder="../config"
-        ),
-        ArgparseConfig(infer_types=True, config_name=None, config_file=None),
-        YamlConfig(config_folder="../config"),
-    ]
-)
-config = pipe.read_conf()
-config_name = pipe.steps[-1].config_name
+from zencfg import cfg_from_commandline
+import sys 
+sys.path.insert(0, '../')
+from config.poisson_gino_config import Default
+
+config = cfg_from_commandline(Default)
+config = config.to_dict()
+
 
 # Set-up distributed communication, if using
 device, is_logger = setup(config)

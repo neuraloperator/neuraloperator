@@ -1,6 +1,5 @@
 import sys
 
-from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from pathlib import Path
 import torch
 from torch.utils.data import DataLoader, DistributedSampler
@@ -17,17 +16,13 @@ from neuralop.training import setup, AdamW
 
 # Read the configuration
 config_name = "default"
-pipe = ConfigPipeline(
-    [
-        YamlConfig(
-            "./navier_stokes_config.yaml", config_name="default", config_folder="../config"
-        ),
-        ArgparseConfig(infer_types=True, config_name=None, config_file=None),
-        YamlConfig(config_folder="../config"),
-    ]
-)
-config = pipe.read_conf()
-config_name = pipe.steps[-1].config_name
+from zencfg import cfg_from_commandline
+import sys 
+sys.path.insert(0, '../')
+from config.navier_stokes_config import Default
+
+config = cfg_from_commandline(Default)
+config = config.to_dict()
 
 # Set-up distributed communication, if using
 device, is_logger = setup(config)
