@@ -1,7 +1,6 @@
 import sys
 import copy
 
-from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -19,17 +18,14 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 
 # Read the configuration
 config_name = "default"
-pipe = ConfigPipeline(
-    [
-        YamlConfig(
-            "./uqno_config.yaml", config_name="default", config_folder="../config"
-        ),
-        ArgparseConfig(infer_types=True, config_name=None, config_file=None),
-        YamlConfig(config_folder="../config"),
-    ]
-)
-config = pipe.read_conf()
-config_name = pipe.steps[-1].config_name
+from zencfg import cfg_from_commandline
+import sys 
+sys.path.insert(0, '../')
+from config.uqno_config import Default
+
+config = cfg_from_commandline(Default)
+config = config.to_dict()
+
 
 # Set-up distributed communication, if using
 device, is_logger = setup(config)
