@@ -15,22 +15,29 @@ class Small2dFNO(FNOConfig):
     hidden_channels: int = 24
     projection_channel_ratio: int = 2
 
-class BurgersOptConfig(OptimizationConfig):
-    n_epochs = 10000
-
-class BurgersWandbConfig(WandbConfig):
-    log = False
-    entity = "my_entity"
-    project = "my_project"
-    log_outputs = False
-
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None
     verbose: bool = True
     arch: str = "fno"
     distributed: DistributedConfig = DistributedConfig()
     fno: FNOConfig = Small2dFNO()
-    opt: OptimizationConfig = BurgersOptConfig()
+    '''
+    OR
+    fno: FNOConfig = FNOConfig(
+        data_channels = 1
+        out_channels = 1
+        n_modes = [16,16]
+        hidden_channels = 24
+        projection_channel_ratio = 2
+    )
+    '''
+    opt: OptimizationConfig = OptimizationConfig(
+        n_epochs=10000
+    )
     data: BurgersDatasetConfig = BurgersDatasetConfig()
     patching: PatchingConfig = PatchingConfig()
-    wandb: WandbConfig = BurgersWandbConfig()
+    wandb: WandbConfig = WandbConfig(
+        log=True,
+        entity="my_entity",
+        project="my_project"
+    )
