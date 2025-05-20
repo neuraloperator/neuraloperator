@@ -1,7 +1,12 @@
 from typing import List, Literal
 from zencfg import ConfigBase
 
-class SimpleFNOConfig(ConfigBase):
+from neuralop.models import (FNO,
+                             SFNO,
+                             FNOGNO,
+                             GINO)
+
+class FNOConfig(ConfigBase):
     """FNOConfig 
 
     Parameters
@@ -99,6 +104,7 @@ class SimpleFNOConfig(ConfigBase):
     conv_module : nn.Module, optional
         module to use for FNOBlock's convolutions, by default SpectralConv
     """
+    model_arch: str = "fno"
     data_channels: int
     out_channels: int
     n_modes: List[int]
@@ -112,7 +118,7 @@ class SimpleFNOConfig(ConfigBase):
     norm: str = "None"
     skip: str = "linear"
     implementation: str = "reconstructed"
-    use_channel_mlp: int = 1
+    use_channel_mlp: bool = True
     channel_mlp_expansion: float = 0.5
     channel_mlp_dropout: float = 0
     separable: bool = False
@@ -123,3 +129,59 @@ class SimpleFNOConfig(ConfigBase):
     joint_factorization: bool = False
     stabilizer: str = "None"
 
+class SimpleFNOConfig(FNOConfig):
+    """
+    SimpleFNOConfig: a basic FNO config that provides access to only
+    the most important FNO parameters.
+    """
+    data_channels: int
+    out_channels: int
+    n_modes: List[int]
+    hidden_channels: int
+    projection_channel_ratio: int
+
+class Small2dFNO(SimpleFNOConfig):
+    """
+    Small2dFNO: a basic, small FNO for 2d problems.
+    """
+    data_channels: int = 1
+    out_channels: int = 1
+    n_modes: List[int] = [16,16]
+    hidden_channels: int = 24
+    projection_channel_ratio: int = 2
+
+fno_param_docstring = FNO.__doc__.split("Parameters")[1:]
+Small2dFNO.__doc__ += "Parameters".join(fno_param_docstring) # this doesn't really work
+
+class FNOGNOConfig(ConfigBase):
+    model_arch: str = "fnogno"
+    data_channels: int
+    out_channels: int
+    gno_coord_dim: int
+    gno_coord_embed_dim: int
+    gno_radius: float
+    gno_transform_type: str
+    fno_n_modes: List[int]
+    fno_hidden_channels: int
+    fno_use_channel_mlp: bool = True
+    fno_norm: str = "instance_norm"
+    fno_ada_in_features: int = 32
+    fno_factorization: str = "tucker"
+    fno_rank: float = 1.0
+    fno_domain_padding: float = 0.125
+    fno_use_channel_mlp: bool = True
+    fno_channel_mlp_expansion: float = 1.0
+    fno_resolution_scaling_factor: int = 1
+
+class CarCFDFNOGNOConfig(FNOGNOConfig):
+    data_channels: int = 1
+    out_channels: int = 1
+    gno_coord_dim: int = 3
+    gno_coord_embed_dim: int = 16
+    gno_radius: float = 0.033
+    gno_transform_type: str = "linear"
+    fno_n_modes: List[int] = [16, 16, 16]
+    fno_hidden_channels: int = 64
+    fno_use_channel_mlp: bool = True
+    fno_rank: float = 0.4
+    fno_domain_padding: float = 0.125

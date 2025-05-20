@@ -24,7 +24,7 @@ class OptimizationConfig(ConfigBase):
         Weight decay to apply during training
     eval_interval: int = 1
         Number of training epochs between each epoch of evaluation
-    amp_autocast: bool = False
+    mixed_precision: bool = False
         Whether to use automatic mixed precision (AMP) via ``torch.autocast``,
         e.g. for half-precision model weights. 
     scheduler: Literal['StepLR', 'ReduceLROnPlateau', 'CosineAnnealingLR'] = "StepLR"
@@ -49,7 +49,7 @@ class OptimizationConfig(ConfigBase):
     learning_rate: float = 3e-4
     weight_decay: float = 1e-4
     eval_interval: int = 1
-    amp_autocast: bool = False
+    mixed_precision: bool = False
     scheduler: Literal['StepLR', 'ReduceLROnPlateau', 'CosineAnnealingLR'] = "StepLR"
     scheduler_T_max: int = 500
     scheduler_patience: int = 50
