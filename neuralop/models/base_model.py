@@ -207,7 +207,7 @@ def get_model(config):
     model : nn.Module
         the instanciated module
     """
-    arch = config.model['arch'].lower()
+    arch = config.model['model_arch'].lower()
     model_config = config.model
 
     # Set the number of input channels depending on channels in data + mg patching
