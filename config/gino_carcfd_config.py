@@ -2,7 +2,7 @@ from typing import Any, List, Optional
 
 from zencfg import ConfigBase
 from .distributed import DistributedConfig
-from .datasets import CarCFDDatasetConfig
+from .datasets import DataConfig, CarCFDDatasetConfig
 from .models import ModelConfig, CarCFDGINOConfig
 from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
@@ -22,7 +22,7 @@ class Default(ConfigBase):
         step_size=50,
         gamma=0.5,
     )
-    data: CarCFDDatasetConfig = CarCFDDatasetConfig(
+    data: DataConfig = CarCFDDatasetConfig(
         root="/home/YOURNAME/data/car-pressure-data/",
         sdf_query_resolution=32,
         n_train=500,

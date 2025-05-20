@@ -21,8 +21,6 @@ from config.burgers_config import Default
 
 
 config = cfg_from_commandline(Default)
-print(config)
-print(config.to_dict())
 config = config.to_dict()
 
 # Set-up distributed communication, if using
@@ -66,7 +64,8 @@ config.verbose = config.verbose and is_logger
 
 # Print config to screen
 if config.verbose:
-    pipe.log()
+    print("##### CONFIG ######")
+    print(config)
     sys.stdout.flush()
 
 data_path = get_project_root() / config.data.folder
@@ -172,8 +171,8 @@ trainer = Trainer(
     n_epochs=config.opt.n_epochs,
     data_processor=data_processor,
     device=device,
-    mixed_precision=config.opt.amp_autocast,
-    eval_interval=config.wandb.eval_interval,
+    mixed_precision=config.opt.mixed_precision,
+    eval_interval=config.opt.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,
