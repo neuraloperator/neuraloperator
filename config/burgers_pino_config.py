@@ -52,7 +52,7 @@ class Opt(ConfigBase):
     pino_method: str = "fdm"
     loss_weights: Dict[str, Any] = {'l2': 0.0, 'equation': 0.2, 'ic': 0.8}
     weight_decay: float = 1e-4
-    amp_autocast: bool = False
+    mixed_precision: bool = False
     scheduler_T_max: int = 500
     scheduler_patience: int = 100
     scheduler: str = "ReduceLROnPlateau"

@@ -3,16 +3,15 @@ from typing import Any, List, Optional
 from zencfg import ConfigBase
 from .distributed import DistributedConfig
 from .datasets import CarCFDDatasetConfig
-from .models import FNOGNOConfig, CarCFDFNOGNOConfig
+from .models import ModelConfig, CarCFDFNOGNOConfig
 from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
 
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None
     verbose: bool = True
-    arch: str = "fno"
     distributed: DistributedConfig = DistributedConfig()
-    fno: FNOGNOConfig = CarCFDFNOGNOConfig()
+    model: ModelConfig = CarCFDFNOGNOConfig()
     opt: OptimizationConfig = OptimizationConfig(
         n_epochs=300,
         learning_rate=5e-3,

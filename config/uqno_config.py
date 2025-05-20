@@ -46,8 +46,8 @@ class Tfno2d(ConfigBase):
 class Opt(ConfigBase):
     alpha: float = 0.9
     delta: float = 0.95
-    solution: Dict[str, Any] = {'n_epochs': 300, 'resume': False, 'learning_rate': '5e-3', 'training_loss': 'h1', 'weight_decay': '1e-4', 'amp_autocast': False, 'scheduler_T_max': 500, 'scheduler_patience': 5, 'scheduler': 'StepLR', 'step_size': 60, 'gamma': 0.5}
-    residual: Dict[str, Any] = {'n_epochs': 300, 'learning_rate': '5e-3', 'training_loss': 'h1', 'weight_decay': '1e-4', 'amp_autocast': False, 'scheduler_T_max': 500, 'scheduler_patience': 5, 'scheduler': 'StepLR', 'step_size': 60, 'gamma': 0.5}
+    solution: Dict[str, Any] = {'n_epochs': 300, 'resume': False, 'learning_rate': '5e-3', 'training_loss': 'h1', 'weight_decay': '1e-4', 'mixed_precision': False, 'scheduler_T_max': 500, 'scheduler_patience': 5, 'scheduler': 'StepLR', 'step_size': 60, 'gamma': 0.5}
+    residual: Dict[str, Any] = {'n_epochs': 300, 'learning_rate': '5e-3', 'training_loss': 'h1', 'weight_decay': '1e-4', 'mixed_precision': False, 'scheduler_T_max': 500, 'scheduler_patience': 5, 'scheduler': 'StepLR', 'step_size': 60, 'gamma': 0.5}
 
 
 class Solution(ConfigBase):
@@ -56,7 +56,7 @@ class Solution(ConfigBase):
     learning_rate: float = 5e-3
     training_loss: str = "h1"
     weight_decay: float = 1e-4
-    amp_autocast: bool = False
+    mixed_precision: bool = False
     scheduler_T_max: int = 500
     scheduler_patience: int = 5
     scheduler: str = "StepLR"
@@ -69,7 +69,7 @@ class Residual(ConfigBase):
     learning_rate: float = 5e-3
     training_loss: str = "h1"
     weight_decay: float = 1e-4
-    amp_autocast: bool = False
+    mixed_precision: bool = False
     scheduler_T_max: int = 500
     scheduler_patience: int = 5
     scheduler: str = "StepLR"

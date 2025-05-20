@@ -46,6 +46,7 @@ class OptimizationConfig(ConfigBase):
     """
     n_epochs: int
     training_loss: Literal['h1', 'l2'] = "h1"
+    testing_loss: str = "l2"
     learning_rate: float = 3e-4
     weight_decay: float = 1e-4
     eval_interval: int = 1

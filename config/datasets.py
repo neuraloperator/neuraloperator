@@ -5,7 +5,12 @@ from zencfg import ConfigBase
 from typing import List
 from zencfg import ConfigBase
 
-class PTDatasetConfig(ConfigBase):
+class DataConfig(ConfigBase):
+    folder: str
+    n_train: int
+    batch_size: Optional[int]=None
+
+class PTDatasetConfig(DataConfig):
     """PTDatasetConfig provides configuration options
     for the PTDataset base datasets we package with the library.
 
@@ -168,9 +173,29 @@ class NavierStokesDatasetConfig(PTDatasetConfig):
     test_resolutions: List[int] = [128]
     test_batch_sizes: List[int] = [8]
 
-class CarCFDDatasetConfig(ConfigBase):
+class CarCFDDatasetConfig(DataConfig):
     root: str
     sdf_query_resolution: int
     n_train: int = 500
     n_test: int = 111
     download: bool = True
+
+class NonlinearPoissonDatasetConfig(ConfigBase):
+    root: str = "/home/YOURNAME/data/nonlin_poisson/nonlinear_poisson.obj"
+    batch_size: int = 1
+    test_batch_size: int = 1
+    n_train: int = 7000
+    n_test: int = 3000
+    n_in: int = 5000
+    n_out: int = 100
+    n_eval: int = 6000
+    n_bound: int = 4000
+    query_resolution: int = 64
+    train_out_res: int = 400
+    padding: int = 1
+    single_instance: bool = False
+    input_min: int = 100
+    input_max: int = 5000
+    sample_random_in: Optional[Any] = None
+    sample_random_out: Optional[Any] = None
+    return_queries_dict: bool = True

@@ -3,16 +3,15 @@ from typing import Any, List, Optional
 from zencfg import ConfigBase
 from .distributed import DistributedConfig
 from .datasets import NavierStokesDatasetConfig
-from .models import FNOConfig, SimpleFNOConfig
+from .models import ModelConfig, SimpleFNOConfig
 from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
 
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None
     verbose: bool = True
-    arch: str = "fno"
     distributed: DistributedConfig = DistributedConfig()
-    fno: FNOConfig = SimpleFNOConfig(
+    model: ModelConfig = SimpleFNOConfig(
         data_channels=1,
         out_channels=1,
         n_modes=[64,64],
