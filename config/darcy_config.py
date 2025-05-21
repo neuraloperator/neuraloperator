@@ -2,8 +2,7 @@ from typing import Any, List, Optional
 
 from zencfg import ConfigBase
 from .distributed import DistributedConfig
-from .datasets import DarcyDatasetConfig
-from .models import FNOConfig, FNO_Small2d
+from .models import ModelConfig, FNO_Small2d
 from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
 
@@ -34,7 +33,7 @@ class Default(ConfigBase):
     verbose: bool = True
     arch: str = "fno"
     distributed: DistributedConfig = DistributedConfig()
-    fno: FNOConfig = FNO_Small2d()
+    model: ModelConfig = FNO_Small2d()
     opt: OptimizationConfig = DarcyOptConfig()
     data: DarcyDatasetConfig = DarcyDatasetConfig()
     patching: PatchingConfig = PatchingConfig()
