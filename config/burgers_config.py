@@ -20,11 +20,14 @@ class BurgersDatasetConfig(ConfigBase):
     encode_output: bool = False
     include_endpoint: List[bool] = [True, False]
 
-class BurgersOptConfig(OptimizationConfig):
+class BurgersOptConfig(ConfigBase):
     n_epochs: int = 10000
     training_loss: str = "l2"
     testing_loss: str = "l2"
     learning_rate: float = 1e-4
+    weight_decay: float = 1e-4
+    eval_interval: int = 1
+    mixed_precision: bool = False
     scheduler: str = 'ReduceLROnPlateau' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
     scheduler_patience: int = 100 # For ReduceLROnPlateau only
     step_size: int = 60
@@ -35,8 +38,8 @@ class Default(ConfigBase):
     verbose: bool = True
     arch: str = "fno"
     distributed: DistributedConfig = DistributedConfig()
-    model: FNOConfig = FNO_Small2d()
-    opt: OptimizationConfig = BurgersOptConfig()
+    model: ModelConfig = FNO_Small2d()
+    opt: BurgersOptConfig = BurgersOptConfig()
     data: BurgersDatasetConfig = BurgersDatasetConfig()
     patching: PatchingConfig = PatchingConfig()
     wandb: WandbConfig = WandbConfig()

@@ -14,7 +14,7 @@ from neuralop.utils import get_wandb_api_key, count_model_params, get_project_ro
 # Read the configuration
 config_name = "default"
 # Read the configuration
-from zencfg import cfg_from_commandline
+from zencfg import cfg_from_commandline, cfg_from_nested_dict
 import sys 
 sys.path.insert(0, '../')
 from config.burgers_config import Default
@@ -115,7 +115,7 @@ else:
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
 ic_loss = ICLoss()
-equation_loss = BurgersEqnLoss(method=config.opt.get('pino_method', None), 
+equation_loss = BurgersEqnLoss(method=config.opt.get('pino_method', 'fdm'), 
                                visc=0.01, loss=F.mse_loss)
 
 training_loss = config.opt.training_loss
