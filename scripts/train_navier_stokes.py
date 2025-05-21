@@ -65,10 +65,10 @@ config.verbose = config.verbose and is_logger
 
 # Print config to screen
 if config.verbose:
-    pipe.log()
-    sys.stdout.flush()
+    print(f"##### CONFIG #####\n")
+    print(config)
 
-data_dir = Path(f"~/{config.data.folder}").expanduser()
+data_dir = Path(config.data.folder).expanduser()
 
 # Loading the Navier-Stokes dataset in 128x128 resolution
 train_loader, test_loaders, data_processor = load_navier_stokes_pt(
@@ -172,7 +172,7 @@ trainer = Trainer(
     data_processor=data_processor,
     device=device,
     mixed_precision=config.opt.mixed_precision,
-    eval_interval=config.wandb.eval_interval,
+    eval_interval=config.opt.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,

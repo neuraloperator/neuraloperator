@@ -67,7 +67,8 @@ config.verbose = config.verbose and is_logger
 
 # Print config to screen
 if config.verbose:
-    pipe.log()
+    print(f"##### CONFIG #####\n")
+    print(config)
     sys.stdout.flush()
 
 # Load the Nonlinear Poisson dataset
