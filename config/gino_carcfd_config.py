@@ -2,36 +2,27 @@ from typing import Any, List, Optional
 
 from zencfg import ConfigBase
 from .distributed import DistributedConfig
-from .datasets import DataConfig, CarCFDDatasetConfig
-from .models import ModelConfig, CarCFDGINOConfig
-from .opt import OptimizationConfig, PatchingConfig
+from .datasets import CarCFDDatasetConfig
+from .models import ModelConfig, GINO_Small3d
+from .opt import PatchingConfig
 from .wandb import WandbConfig
+
+class CarCFDOptConfig(ConfigBase):
+    n_epochs: int = 301
+    learning_rate: bool = True
+    training_loss: str = "l2"
+    testing_loss: str = "l2"
+    weight_decay: float = 1e-4
+    scheduler: str = "StepLR"
+    step_size: int = 50
+    gamma: float = 0.5
 
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None
     verbose: bool = True
     distributed: DistributedConfig = DistributedConfig()
-    model: ModelConfig = CarCFDGINOConfig()
-    opt: OptimizationConfig = OptimizationConfig(
-        n_epochs=301,
-        learning_rate=1e-3,
-        training_loss="l2",
-        testing_loss="l2",
-        weight_decay=1e-4,
-        scheduler="StepLR",
-        step_size=50,
-        gamma=0.5,
-    )
-    data: DataConfig = CarCFDDatasetConfig(
-        root="/home/YOURNAME/data/car-pressure-data/",
-        sdf_query_resolution=32,
-        n_train=500,
-        n_test=111,
-        download=True,
-    )
+    model: ModelConfig = GINO_Small3d()
+    opt: ConfigBase = CarCFDOptConfig()
+    data: CarCFDDatasetConfig = CarCFDDatasetConfig()
     patching: PatchingConfig = PatchingConfig()
-    wandb: WandbConfig = WandbConfig(
-        log=False, # turn this to True to log to wandb
-        entity="my_entity",
-        project="my_project"
-    )
+    wandb: WandbConfig = WandbConfig() # default empty

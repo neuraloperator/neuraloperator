@@ -2,8 +2,7 @@ from typing import Any, List, Optional, Dict
 
 from zencfg import ConfigBase
 from .distributed import DistributedConfig
-from .datasets import DataConfig, NonlinearPoissonDatasetConfig
-from .models import ModelConfig, PoissonGINOConfig
+from .models import ModelConfig, GINO_Poisson2d
 from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
 
@@ -22,16 +21,32 @@ class MGNOPoissonOptConfig(OptimizationConfig):
     scheduler_patience: int = 2
     gamma: float = 0.9
 
+class NonlinearPoissonDatasetConfig(ConfigBase):
+    root: str = "/home/YOURNAME/data/nonlin_poisson/nonlinear_poisson.obj"
+    batch_size: int = 1
+    test_batch_size: int = 1
+    n_train: int = 7000
+    n_test: int = 3000
+    n_in: int = 5000
+    n_out: int = 100
+    n_eval: int = 6000
+    n_bound: int = 4000
+    query_resolution: int = 64
+    train_out_res: int = 400
+    padding: int = 1
+    single_instance: bool = False
+    input_min: int = 100
+    input_max: int = 5000
+    sample_random_in: Optional[Any] = None
+    sample_random_out: Optional[Any] = None
+    return_queries_dict: bool = True
+
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None
     verbose: bool = True
     distributed: DistributedConfig = DistributedConfig()
-    model: ModelConfig = PoissonGINOConfig()
+    model: ModelConfig = GINO_Poisson2d()
     opt: OptimizationConfig = MGNOPoissonOptConfig()
-    data: DataConfig = NonlinearPoissonDatasetConfig()
+    data: ConfigBase = NonlinearPoissonDatasetConfig()
     patching: PatchingConfig = PatchingConfig()
-    wandb: WandbConfig = WandbConfig(
-        log=False, # turn this to True to log to wandb
-        entity="my_entity",
-        project="my_project"
-    )
+    wandb: WandbConfig = WandbConfig()
