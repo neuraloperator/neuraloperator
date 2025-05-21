@@ -7,16 +7,16 @@ from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
 
 class NavierStokesOptConfig(OptimizationConfig):
-    n_epochs: int = 600,
-    learning_rate: float = 3e-4,
-    training_loss: str = "h1",
-    weight_decay: float = 1e-4,
-    scheduler: str = "StepLR",
-    step_size: int = 100,
-    gamma: float = 0.5,
+    n_epochs: int = 600
+    learning_rate: float = 3e-4
+    training_loss: str = "h1"
+    weight_decay: float = 1e-4
+    scheduler: str = "StepLR"
+    step_size: int = 100
+    gamma: float = 0.5
 
 class NavierStokesDatasetConfig(ConfigBase):
-    folder: str = "data/navier_stokes/"
+    folder: str = "~/data/navier_stokes/"
     batch_size: int = 8
     n_train: int = 10000
     train_resolution: int = 128

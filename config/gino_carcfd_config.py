@@ -2,10 +2,15 @@ from typing import Any, List, Optional
 
 from zencfg import ConfigBase
 from .distributed import DistributedConfig
-from .datasets import CarCFDDatasetConfig
 from .models import ModelConfig, GINO_Small3d
 from .opt import PatchingConfig
 from .wandb import WandbConfig
+class CarCFDDatasetConfig(ConfigBase):
+    root: str = "~/data/car-pressure-data/"
+    sdf_query_resolution: int = 32
+    n_train: int = 500
+    n_test: int = 111
+    download: bool = True
 
 class CarCFDOptConfig(ConfigBase):
     n_epochs: int = 301

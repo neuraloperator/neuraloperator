@@ -22,7 +22,7 @@ class MGNOPoissonOptConfig(OptimizationConfig):
     gamma: float = 0.9
 
 class NonlinearPoissonDatasetConfig(ConfigBase):
-    root: str = "/home/YOURNAME/data/nonlin_poisson/nonlinear_poisson.obj"
+    file: str = "~/data/nonlin_poisson/nonlinear_poisson.obj"
     batch_size: int = 1
     test_batch_size: int = 1
     n_train: int = 7000
