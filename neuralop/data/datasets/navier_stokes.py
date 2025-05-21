@@ -137,7 +137,8 @@ def load_navier_stokes_pt(n_train,
     encode_output=True,
     encoding="channel-wise",
     channel_dim=1,
-    subsampling_rate=None,):
+    subsampling_rate=None,
+    num_workers=1):
 
     dataset = NavierStokesDataset(root_dir = data_root,
                            n_train=n_train,
@@ -155,7 +156,7 @@ def load_navier_stokes_pt(n_train,
     # return dataloaders for backwards compat
     train_loader = DataLoader(dataset.train_db,
                               batch_size=batch_size,
-                              num_workers=0,
+                              num_workers=num_workers,
                               pin_memory=True,
                               persistent_workers=False,)
     
@@ -164,7 +165,7 @@ def load_navier_stokes_pt(n_train,
         test_loaders[res] = DataLoader(dataset.test_dbs[res],
                                        batch_size=test_bsize,
                                        shuffle=False,
-                                       num_workers=0,
+                                       num_workers=num_workers,
                                        pin_memory=True,
                                        persistent_workers=False,)
     
