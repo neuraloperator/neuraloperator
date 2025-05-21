@@ -1,25 +1,10 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 
 from zencfg import ConfigBase
 from .distributed import DistributedConfig
 from .models import ModelConfig, FNO_Medium2d
 from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
-
-class NavierStokesOptConfig(OptimizationConfig):
-    n_epochs: int = 600,
-    learning_rate: float = 3e-4,
-    training_loss: str = "h1",
-    weight_decay: float = 1e-4,
-    scheduler: str = "StepLR",
-    step_size: int = 100,
-    gamma: float = 0.5,
-
-class Opt(ConfigBase):
-    
-    solution: Dict[str, Any] = {'n_epochs': 300, 'resume': False, 'learning_rate': '5e-3', 'training_loss': 'h1', 'weight_decay': '1e-4', 'mixed_precision': False, 'scheduler_T_max': 500, 'scheduler_patience': 5, 'scheduler': 'StepLR', 'step_size': 60, 'gamma': 0.5}
-    residual: Dict[str, Any] = {'n_epochs': 300, 'learning_rate': '5e-3', 'training_loss': 'h1', 'weight_decay': '1e-4', 'mixed_precision': False, 'scheduler_T_max': 500, 'scheduler_patience': 5, 'scheduler': 'StepLR', 'step_size': 60, 'gamma': 0.5}
-
 
 class SolutionModelOptConfig(OptimizationConfig):
     n_epochs: int = 300
@@ -33,6 +18,7 @@ class SolutionModelOptConfig(OptimizationConfig):
     scheduler: str = "StepLR"
     step_size: int = 60
     gamma: float = 0.5
+    eval_interval: int = 1
 
 class ResidualModelOptConfig(OptimizationConfig):
     n_epochs: int = 300
@@ -45,9 +31,10 @@ class ResidualModelOptConfig(OptimizationConfig):
     scheduler: str = "StepLR"
     step_size: int = 60
     gamma: float = 0.5
+    eval_interval: int = 1
 
 class UQNODarcyDatasetConfig(ConfigBase):
-    root: str = "YOUR_ROOT"
+    root: str = "~/data/darcy"
     batch_size: int = 4
     n_train_total: int = 4000
     n_train_solution: int = 2500
@@ -71,7 +58,7 @@ class Default(ConfigBase):
     verbose: bool = True
     distributed: DistributedConfig = DistributedConfig()
     model: ModelConfig = FNO_Medium2d()
-    opt: OptimizationConfig = UQNO_OptConfig()
+    opt: UQNO_OptConfig = UQNO_OptConfig()
     data: UQNODarcyDatasetConfig = UQNODarcyDatasetConfig()
     patching: PatchingConfig = PatchingConfig()
     wandb: WandbConfig = WandbConfig()

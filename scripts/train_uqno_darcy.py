@@ -1,5 +1,6 @@
 import sys
 import copy
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -68,12 +69,13 @@ config.verbose = config.verbose and is_logger
 
 # Print config to screen
 if config.verbose and is_logger and config.opt.solution.n_epochs > 0:
-    pipe.log()
+    print(f"##### CONFIG #####\n{config}")
     sys.stdout.flush()
 
 # Loading the Darcy flow dataset for training the base model
+root_dir = Path(config.data.root).expanduser()
 solution_dataset = DarcyDataset(
-    root_dir=config.data.root,
+    root_dir=root_dir,
     n_train=config.data.n_train_total,
     n_tests=[config.data.n_test],
     batch_size=config.data.batch_size,
@@ -195,7 +197,7 @@ trainer = Trainer(
     data_processor=data_processor,
     mixed_precision=config.opt.solution.mixed_precision,
     wandb_log=config.wandb.log,
-    eval_interval=config.wandb.eval_interval,
+    eval_interval=config.opt.solution.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
@@ -448,7 +450,7 @@ if config.opt.residual.n_epochs > 0:
                             wandb_log=config.wandb.log,
                             device=device,
                             mixed_precision=config.opt.residual.mixed_precision,
-                            eval_interval=config.wandb.eval_interval,
+                            eval_interval=config.opt.residual.eval_interval,
                             log_output=config.wandb.log_output,
                             use_distributed=config.distributed.use_distributed,
                             verbose=config.verbose and is_logger,
