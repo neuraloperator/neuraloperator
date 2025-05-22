@@ -91,7 +91,8 @@ class LinearChannelMLP(torch.nn.Module):
 
         self.n_layers = len(layers) - 1
 
-        assert self.n_layers >= 1
+        assert self.n_layers >= 1, "Error: trying to instantiate \
+            a LinearChannelMLP with only one linear layer."
 
         self.fcs = nn.ModuleList()
         self.non_linearity = non_linearity
