@@ -19,8 +19,10 @@ def setup(config):
         device : torch.device
         is_logger : bool
     """
+    seed = config.distributed.seed
+
     if config.distributed.use_distributed:
-        comm.init(model_parallel_size=config.distributed.get('model_parallel_size', 1),
+        comm.init(model_parallel_size=config.distributed.model_parallel_size,
                   verbose=config.verbose)
 
         #Set process 0 to log screen and wandb
@@ -28,7 +30,9 @@ def setup(config):
 
         #Set device and random seed
         device = torch.device(f"cuda:{comm.get_local_rank()}")
-        seed = config.distributed.seed + comm.get_data_parallel_rank()
+        
+        if seed is not None:
+            seed = seed + comm.get_data_parallel_rank()
 
         #Ensure batch can be evenly split among the model-parallel group
         if config.patching.levels > 0:
@@ -51,15 +55,13 @@ def setup(config):
             device = torch.device('cuda:0')
         else:
             device = torch.device('cpu')
-        if 'seed' in config.distributed:
-            seed = config.distributed.seed
 
     #Set device, random seed and optimization
     if torch.cuda.is_available():
 
         torch.cuda.set_device(device.index)
 
-        if 'seed' in config.distributed:
+        if seed is not None:
             torch.cuda.manual_seed(seed)
         increase_l2_fetch_granularity()
         try:
@@ -69,7 +71,7 @@ def setup(config):
         
         torch.backends.cudnn.benchmark = True
 
-    if 'seed' in config.distributed:
+    if seed is not None:
         torch.manual_seed(seed)
 
     return device, is_logger

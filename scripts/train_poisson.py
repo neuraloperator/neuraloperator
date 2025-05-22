@@ -67,7 +67,8 @@ config.verbose = config.verbose and is_logger
 
 # Print config to screen
 if config.verbose:
-    pipe.log()
+    print(f"##### CONFIG #####\n")
+    print(config)
     sys.stdout.flush()
 
 # Load the Nonlinear Poisson dataset
@@ -181,7 +182,7 @@ trainer = Trainer(
     n_epochs=config.opt.n_epochs,
     data_processor=data_processor,
     device=device,
-    mixed_precision=config.opt.amp_autocast,
+    mixed_precision=config.opt.mixed_precision,
     eval_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,

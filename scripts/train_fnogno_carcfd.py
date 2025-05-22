@@ -24,8 +24,11 @@ config = config.to_dict()
 #Set-up distributed communication, if using
 device, is_logger = setup(config)
 
-if config.data.sdf_query_resolution < config.fnogno.fno_n_modes[0]:
-    config.fnogno.fno_n_modes = [config.data.sdf_query_resolution]*3
+# if the model's number of modes is greater than the query res, 
+# shrink the model to avoid an ill-posed FNO
+
+if config.data.sdf_query_resolution < config.model.fno_n_modes[0]:
+    config.model.fno_n_modes = [config.data.sdf_query_resolution]*3
 
 #Set up WandB logging
 wandb_init_args = {}
