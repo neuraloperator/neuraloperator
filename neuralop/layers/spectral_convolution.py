@@ -12,6 +12,7 @@ from tltorch.factorized_tensors.core import FactorizedTensor
 from .einsum_utils import einsum_complexhalf
 from .base_spectral_conv import BaseSpectralConv
 from .resample import resample
+from .irfft import irfftn_handle
 
 tl.set_backend("pytorch")
 use_opt_einsum("optimal")
@@ -247,14 +248,10 @@ class SpectralConv(BaseSpectralConv):
     
     References
     -----------
-    .. [1] :
-
-    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
+    .. [1] : Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
         Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
     
-    .. [2] :
-
-    Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
+    .. [2] : Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
         Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024). 
         TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
     """
@@ -316,6 +313,11 @@ class SpectralConv(BaseSpectralConv):
                 fixed_rank_modes = [0]
             else:
                 fixed_rank_modes = None
+
+        # Handle CUFFT IRFFT backend correction by checking if 
+        # nyquist and zero frequencies are handled properly by THIS DEVICE's
+        # CUFFT backend. 
+        self._irfftn_handle = irfftn_handle(device=self.device)
         self.fft_norm = fft_norm
 
         if factorization is None:
@@ -373,6 +375,13 @@ class SpectralConv(BaseSpectralConv):
         else:
             return resample(x, 1.0, list(range(2, x.ndim)), output_shape=out_shape)
     
+    def to(self, device):
+        # when moving this module to a new device,
+        # ensure that we re-verify the CUFFT backend and the necessity
+        # of manually correcting IRFFT inputs. 
+        self._irfftn_handle = irfftn_handle(device)
+        return super().to(device)
+    
     @property
     def n_modes(self):
         return self._n_modes
@@ -425,7 +434,7 @@ class SpectralConv(BaseSpectralConv):
         
         if self.order > 1:
             x = torch.fft.fftshift(x, dim=dims_to_fft_shift)
-
+        
         if self.fno_block_precision == "mixed":
             # if 'mixed', the above fft runs in full precision, but the
             # following operations run at half precision
@@ -493,11 +502,38 @@ class SpectralConv(BaseSpectralConv):
 
         if self.order > 1:
             out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
+
+        '''# not all CUFFT backend algorithms ensure that the imaginary components 
+        # of zero and nyquist (n//2) frequencies are set to 0, so we do this manually
+
+        zero_indices = []
+        nyquist_indices = []
+        for i, mode_sz in enumerate(fft_size):
+            # b, c, *spatial_dims
+
+            # after reversing fft shift, zero is at 0 
+            zero_indices.append([slice(None), slice(None)] + [slice(None)] * i +\
+                                        [slice(0, 1)] + [slice(None)] * (len(fft_size) - i - 1))
+            
+        # after reversing fft shift, nyquist is at n//2 
+        for i, mode_sz in enumerate(fft_size[:-1]):
+            if mode_sz % 2 == 0:
+                nyquist_indices.append([slice(None), slice(None)] + [slice(None)] * i +\
+                                        [slice(mode_sz//2, mode_sz//2 + 1)] + [slice(None)] * (len(fft_size) - i - 1))
+        # except for the last mode, where it is at 
+        nyquist_indices.append((slice(None), slice(None), *[slice(None)]*(len(fft_size)-1), slice(-1)))
+            
+        for idx in zero_indices:
+            out_fft[idx].imag = 0.0
         
+        for idx in nyquist_indices:
+            out_fft[idx].imag = 0.0'''
+
+
         if self.complex_data:
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
         else:
-            x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+            x = self._irfftn_handle(out_fft, mode_sizes=mode_sizes, fft_dims=fft_dims, norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias
