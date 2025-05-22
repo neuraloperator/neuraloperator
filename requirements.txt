@@ -1,6 +1,7 @@
 wandb
 ruamel.yaml
 configmypy
+zencfg
 tensorly
 tensorly-torch
 torch-harmonics
