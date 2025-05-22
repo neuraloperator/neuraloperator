@@ -289,7 +289,8 @@ class CODALayer(nn.Module):
         q = self.Query(tokens)
         v = self.Value(tokens)
         assert k.size(
-            1) % self.n_heads == 0, "Number of channels in k, q, and v should be divisible by number of heads"
+            1) % self.n_heads == 0,\
+                  "Number of channels in k, q, and v should be divisible by number of heads"
 
         # reshape from (b*t) (n*d) h w -> b n t (d*h*w ...)
         t = k.size(0) // batch_size  # Compute the number of tokens `t`
@@ -371,7 +372,8 @@ class CODALayer(nn.Module):
         batch_size = x.shape[0]
         input_shape = x.shape[-self.n_dim:]
 
-        assert x.shape[1] % self.token_codimension == 0, "Number of channels in x should be divisible by token_codimension"
+        assert x.shape[1] % self.token_codimension == 0,\
+              "Number of channels in x should be divisible by token_codimension"
 
         # reshape from shape b (t*d) h w ... to (b*t) d h w ...
         t = x.size(1) // self.token_codimension
@@ -422,7 +424,8 @@ class CODALayer(nn.Module):
         batch_size = x.shape[0]
         input_shape = x.shape[-self.n_dim:]
 
-        assert x.shape[1] % self.token_codimension == 0, "Number of channels in x should be divisible by token_codimension"
+        assert x.shape[1] % self.token_codimension == 0,\
+              "Number of channels in x should be divisible by token_codimension"
 
         # reshape from shape b (t*d) h w ... to (b*t) d h w ...
         t = x.size(1) // self.token_codimension
