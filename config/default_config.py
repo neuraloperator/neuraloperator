@@ -41,7 +41,7 @@ class Opt(ConfigBase):
     learning_rate: float = 1e-3
     training_loss: str = "h1"
     weight_decay: float = 1e-4
-    amp_autocast: bool = False
+    mixed_precision: bool = False
     scheduler_T_max: int = 500
     scheduler_patience: int = 5
     scheduler: str = "StepLR"

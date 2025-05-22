@@ -14,15 +14,13 @@ from neuralop.utils import get_wandb_api_key, count_model_params, get_project_ro
 # Read the configuration
 config_name = "default"
 # Read the configuration
-from zencfg import cfg_from_commandline
+from zencfg import cfg_from_commandline, cfg_from_nested_dict
 import sys 
 sys.path.insert(0, '../')
 from config.burgers_config import Default
 
 
 config = cfg_from_commandline(Default)
-print(config)
-print(config.to_dict())
 config = config.to_dict()
 
 # Set-up distributed communication, if using
@@ -38,12 +36,12 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.fno2d.n_layers,
-                config.fno2d.n_modes_width,
-                config.fno2d.n_modes_height,
-                config.fno2d.hidden_channels,
-                config.fno2d.factorization,
-                config.fno2d.rank,
+                config.model.n_layers,
+                config.model.n_modes_width,
+                config.model.n_modes_height,
+                config.model.hidden_channels,
+                config.model.factorization,
+                config.model.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
@@ -66,7 +64,8 @@ config.verbose = config.verbose and is_logger
 
 # Print config to screen
 if config.verbose:
-    pipe.log()
+    print("##### CONFIG ######")
+    print(config)
     sys.stdout.flush()
 
 data_path = get_project_root() / config.data.folder
@@ -116,7 +115,7 @@ else:
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
 ic_loss = ICLoss()
-equation_loss = BurgersEqnLoss(method=config.opt.get('pino_method', None), 
+equation_loss = BurgersEqnLoss(method=config.opt.get('pino_method', 'fdm'), 
                                visc=0.01, loss=F.mse_loss)
 
 training_loss = config.opt.training_loss
@@ -172,8 +171,8 @@ trainer = Trainer(
     n_epochs=config.opt.n_epochs,
     data_processor=data_processor,
     device=device,
-    mixed_precision=config.opt.amp_autocast,
-    eval_interval=config.wandb.eval_interval,
+    mixed_precision=config.opt.mixed_precision,
+    eval_interval=config.opt.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,

@@ -1,3 +1,4 @@
+from pathlib import Path
 import sys
 
 import torch
@@ -17,12 +18,10 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 from zencfg import ConfigBase, cfg_from_commandline
 import sys 
 sys.path.insert(0, '../')
-from config.darcy_config import DarcyConfig
+from config.darcy_config import Default
 
 
-config = cfg_from_commandline(DarcyConfig)
-print(config)
-print(config.to_dict())
+config = cfg_from_commandline(Default)
 config = config.to_dict()
 
 # Set-up distributed communication, if using
@@ -38,12 +37,12 @@ if config.wandb.log and is_logger:
         wandb_name = "_".join(
             f"{var}"
             for var in [
-                config.fno.n_layers,
-                config.fno.hidden_channels,
-                config.fno.n_modes_width,
-                config.fno.n_modes[0],
-                config.fno.factorization,
-                config.fno.rank,
+                config.model.n_layers,
+                config.model.hidden_channels,
+                config.model.n_modes_width,
+                config.model.n_modes[0],
+                config.model.factorization,
+                config.model.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
@@ -65,11 +64,14 @@ config.verbose = config.verbose and is_logger
 
 # Print config to screen
 if config.verbose and is_logger:
+    print(f"##### CONFIG #####\n")
     print(config)
     sys.stdout.flush()
 
 # Loading the Darcy flow dataset
+data_root = Path(config.data.folder).expanduser()
 train_loader, test_loaders, data_processor = load_darcy_flow_small(
+    data_root=data_root,
     n_train=config.data.n_train,
     batch_size=config.data.batch_size,
     test_resolutions=config.data.test_resolutions,
@@ -162,9 +164,9 @@ trainer = Trainer(
     n_epochs=config.opt.n_epochs,
     device=device,
     data_processor=data_processor,
-    mixed_precision=config.opt.amp_autocast,
+    mixed_precision=config.opt.mixed_precision,
     wandb_log=config.wandb.log,
-    eval_interval=config.wandb.eval_interval,
+    eval_interval=config.opt.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,

@@ -39,11 +39,11 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.fno.n_layers,
-                config.fno.n_modes,
-                config.fno.hidden_channels,
-                config.fno.factorization,
-                config.fno.rank,
+                config.model.n_layers,
+                config.model.n_modes,
+                config.model.hidden_channels,
+                config.model.factorization,
+                config.model.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
@@ -65,10 +65,10 @@ config.verbose = config.verbose and is_logger
 
 # Print config to screen
 if config.verbose:
-    pipe.log()
-    sys.stdout.flush()
+    print(f"##### CONFIG #####\n")
+    print(config)
 
-data_dir = Path(f"~/{config.data.folder}").expanduser()
+data_dir = Path(config.data.folder).expanduser()
 
 # Loading the Navier-Stokes dataset in 128x128 resolution
 train_loader, test_loaders, data_processor = load_navier_stokes_pt(
@@ -171,8 +171,8 @@ trainer = Trainer(
     n_epochs=config.opt.n_epochs,
     data_processor=data_processor,
     device=device,
-    mixed_precision=config.opt.amp_autocast,
-    eval_interval=config.wandb.eval_interval,
+    mixed_precision=config.opt.mixed_precision,
+    eval_interval=config.opt.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,
