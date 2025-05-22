@@ -55,7 +55,7 @@ class MeshDataModule:
 
         if o3d_warn:
             print("Warning: you are attempting to run MeshDataModule without the required dependency open3d.")
-
+            raise ModuleNotFoundError()
         if isinstance(root_dir, str):
             root_dir = Path(root_dir)
 
