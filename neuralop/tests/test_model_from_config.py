@@ -4,22 +4,27 @@ import time
 from tensorly import tenalg
 tenalg.set_backend('einsum')
 from pathlib import Path
+import sys
 
-from configmypy import ConfigPipeline, YamlConfig
 from neuralop import get_model
+
+# Read the configuration
+from zencfg import cfg_from_flat_dict
+import sys 
+from .test_config import TestConfig
+
 
 def test_from_config():
     """Test forward/backward from a config file"""
     # Read the configuration
-    config_name = 'default'
-    config_path = Path(__file__).parent.as_posix()
-    pipe = ConfigPipeline([YamlConfig('./test_config.yaml', config_name=config_name, config_folder=config_path),
-                        ])
-    config = pipe.read_conf()
-    config_name = pipe.steps[-1].config_name
+    config = cfg_from_flat_dict(TestConfig, {})
+    config = config.to_dict()
+    from pprint import pprint
+
+    pprint(config)
 
     batch_size = config.data.batch_size
-    size = config.data.size
+    size = config.data.train_resolution
 
     if torch.has_cuda:
         device = 'cuda'
@@ -29,7 +34,7 @@ def test_from_config():
     model = get_model(config)
     model = model.to(device)
 
-    in_data = torch.randn(batch_size, 3, size, size).to(device)
+    in_data = torch.randn(batch_size, 1, size, size).to(device)
     print(model.__class__)
     print(model)
 
