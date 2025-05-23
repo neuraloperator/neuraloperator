@@ -1,11 +1,6 @@
 from typing import List, Literal, Optional, Any
 from zencfg import ConfigBase
 
-from neuralop.models import (FNO,
-                             SFNO,
-                             FNOGNO,
-                             GINO)
-
 class ModelConfig(ConfigBase):
     arch: str
     data_channels: int
