@@ -4,18 +4,20 @@ import time
 from tensorly import tenalg
 tenalg.set_backend('einsum')
 
-from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from neuralop import get_model
 
 
 # Read the configuration
-config_name = 'default'
-pipe = ConfigPipeline([YamlConfig('./test_config.yaml', config_name='default', config_folder='../config'),
-                       ArgparseConfig(infer_types=True, config_name=None, config_file=None),
-                       YamlConfig(config_folder='../config')
-                      ])
-config = pipe.read_conf()
-config_name = pipe.steps[-1].config_name
+from zencfg import cfg_from_commandline
+import sys 
+sys.path.insert(0, '../')
+from config.test_config import TestConfig
+
+
+config = cfg_from_commandline(TestConfig)
+print(config)
+print(config.to_dict())
+config = config.to_dict()
 
 batch_size = config.data.batch_size
 size = config.data.size
