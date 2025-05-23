@@ -210,10 +210,10 @@ class FNO(BaseModel, name='FNO'):
 
         # init lifting and projection channels using ratios w.r.t hidden channels
         self.lifting_channel_ratio = lifting_channel_ratio
-        self.lifting_channels = lifting_channel_ratio * self.hidden_channels
+        self.lifting_channels = int(lifting_channel_ratio * self.hidden_channels)
 
         self.projection_channel_ratio = projection_channel_ratio
-        self.projection_channels = projection_channel_ratio * self.hidden_channels
+        self.projection_channels = int(projection_channel_ratio * self.hidden_channels)
 
         self.non_linearity = non_linearity
         self.rank = rank
