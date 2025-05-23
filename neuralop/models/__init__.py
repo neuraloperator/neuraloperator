@@ -4,7 +4,7 @@ from .fno import FNO, FNO1d, FNO2d, FNO3d
 try:
     from .sfno import SFNO
     from .local_no import LocalNO
-except ModuleNotFoundError:
+except:
     pass
 from .uno import UNO
 from .uqno import UQNO
