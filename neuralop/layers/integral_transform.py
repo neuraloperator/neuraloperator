@@ -9,10 +9,10 @@ from .segment_csr import segment_csr
 class IntegralTransform(nn.Module):
     """Integral Kernel Transform (GNO)
     Computes one of the following:
-        (a) \int_{A(x)} k(x, y) dy
-        (b) \int_{A(x)} k(x, y) * f(y) dy
-        (c) \int_{A(x)} k(x, y, f(y)) dy
-        (d) \int_{A(x)} k(x, y, f(y)) * f(y) dy
+        (a) \\int_{A(x)} k(x, y) dy
+        (b) \\int_{A(x)} k(x, y) * f(y) dy
+        (c) \\int_{A(x)} k(x, y, f(y)) dy
+        (d) \\int_{A(x)} k(x, y, f(y)) * f(y) dy
 
     x : Points for which the output is defined
 

@@ -23,10 +23,10 @@ class GNOBlock(nn.Module):
 
     The kernel integral computed in IntegralTransform 
     computes one of the following:
-        (a) \int_{A(x)} k(x, y) dy
-        (b) \int_{A(x)} k(x, y) * f(y) dy
-        (c) \int_{A(x)} k(x, y, f(y)) dy
-        (d) \int_{A(x)} k(x, y, f(y)) * f(y) dy
+        (a) \\int_{A(x)} k(x, y) dy
+        (b) \\int_{A(x)} k(x, y) * f(y) dy
+        (c) \\int_{A(x)} k(x, y, f(y)) dy
+        (d) \\int_{A(x)} k(x, y, f(y)) * f(y) dy
     
     Parameters
     ----------
