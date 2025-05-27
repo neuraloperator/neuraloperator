@@ -118,7 +118,7 @@ class SpectralConvLaplace(BaseSpectralConv):
         in_channels: int,
         out_channels: int,
         n_modes: Tuple[int, ...],
-        bias: bool = True,
+        bias: bool = False,
         steady_state_sign: Optional[int] = None,
         init_std: Union[str, float] = "auto",
         fft_norm: str = "forward",
@@ -144,7 +144,7 @@ class SpectralConvLaplace(BaseSpectralConv):
 
         # Determine sign convention for steady state part
         if steady_state_sign is None:
-            self.steady_state_sign = (-1)**(self.order + 1)
+            self.steady_state_sign = (-1)**(self.order)
             print(f"SpectralConvLaplace Info: Using default steady_state_sign = {self.steady_state_sign}")
         elif steady_state_sign in [-1, 1]:
              self.steady_state_sign = steady_state_sign
@@ -161,21 +161,21 @@ class SpectralConvLaplace(BaseSpectralConv):
         # Initialize single weight tensor combining poles and residues
         # Shape: (in_channels, out_channels, total_poles + num_residues)
         if init_std == "auto":
-            std = (2 / (in_channels + out_channels))**0.5
+            std = (1 / (in_channels * out_channels))
         else:
             std = init_std
             
         # Initialize weights as complex
         self.weight = nn.Parameter(
-            std * torch.randn(in_channels, out_channels, total_weight_dim, dtype=torch.cfloat)
+            std * torch.rand(in_channels, out_channels, total_weight_dim, dtype=torch.cfloat)
         )
-
-        # Optional bias term
-        if bias:
-            # Bias added in spatial domain, shape (out_channels, 1, ..., 1)
-            self.bias = nn.Parameter(std * torch.randn(out_channels, *(1,) * self.order))
-        else:
-            self.register_parameter('bias', None)
+    
+        # # Optional bias term
+        # if bias:
+        #     # Bias added in spatial domain, shape (out_channels, 1, ..., 1)
+        #     self.bias = nn.Parameter(std * torch.randn(out_channels, *(1,) * self.order))
+        # else:
+        #     self.register_parameter('bias', None)
             
         self.fft_norm = fft_norm
         self.shape_enforcer = ShapeEnforcer() # Use your actual ShapeEnforcer
@@ -303,9 +303,12 @@ class SpectralConvLaplace(BaseSpectralConv):
 
         # Calculate Hw = Residues / Denominator
         # Avoid division by zero or very small numbers
-        epsilon = torch.finfo(full_denominator.dtype).eps
+        # epsilon = torch.finfo(full_denominator.dtype).eps
         # Ensure epsilon has compatible shape or is scalar
-        denominator = torch.add(full_denominator, epsilon) # Avoid division by zero
+        
+        # denominator = torch.add(full_denominator, epsilon) # Avoid division by zero
+        denominator = full_denominator 
+        
         Hw = torch.div(residues_reshaped, denominator) # Element-wise division
         # Hw shape: (i, o, poles0, ..., polesN, freqs0, ..., freqsN)
 
@@ -387,7 +390,7 @@ class SpectralConvLaplace(BaseSpectralConv):
         # Calculate steady state x2 using einsum
         # output2: bopqr... combined_exp: iopqr...xyz... -> x2: boxyz...
         # Sum over i, p, q, r...
-        out2_indices_x2 = idx['batch'] + idx['out'] + "".join(idx['poles'])
+        out2_indices_x2 = idx['batch'] + idx['in'] + "".join(idx['poles'])
         comb_exp_indices_x2 = idx['in'] + idx['out'] + "".join(idx['poles']) + "".join(idx['spatial'])
         x2_indices = idx['batch'] + idx['out'] + "".join(idx['spatial'])
         einsum_x2_str = f"{out2_indices_x2},{comb_exp_indices_x2}->{x2_indices}"
@@ -410,10 +413,10 @@ class SpectralConvLaplace(BaseSpectralConv):
         # --- Combine and Finalize ---
         x = x1 + x2
 
-        if self.bias is not None:
-             # Reshape bias to broadcast correctly: (1, out_channels, 1, ..., 1)
-             bias_shape = [1, self.out_channels] + [1] * self.order
-             x = x + self.bias.view(bias_shape)
+        # if self.bias is not None:
+        #      # Reshape bias to broadcast correctly: (1, out_channels, 1, ..., 1)
+        #      bias_shape = [1, self.out_channels] + [1] * self.order
+        #      x = x + self.bias.view(bias_shape)
 
         # Ensure final output shape matches expectation via resampling/enforcer
         if tuple(x.shape[2:]) != output_spatial_shape:
