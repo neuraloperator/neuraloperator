@@ -106,7 +106,9 @@ def download_from_url(
                     prog = curr_size / size
                     print(f"Download in progress: {prog:.2%}", end='\r')
 
-            assert fpath.stat().st_size == size
+            assert fpath.stat().st_size == size, f"Error: mismatch between expected\
+                 and true size of downloaded file {fpath}. Delete the file\
+                    and try again. "
 
     # check integrity of downloaded file
     if not check_integrity(fpath, md5):
@@ -134,7 +136,8 @@ def download_from_zenodo_record(record_id: str,
     root : Union[str, Path]
         root directory into which to download archive
     files_to_download : Optional[List[str]]
-        list of filenames to download from record
+        list of filenames to download from record. 
+        If None, downloads all. Default None
     """
     zenodo_api_url = "https://zenodo.org/api/records/"
     url = f"{zenodo_api_url}{record_id}"
@@ -143,7 +146,7 @@ def download_from_zenodo_record(record_id: str,
     response_json = resp.json()
     for file_record in response_json['files']:
         fname = file_record['key']
-        if fname in files_to_download:
+        if files_to_download is None or fname in files_to_download:
             download_from_url(url=file_record['links']['self'],
                               md5=file_record['checksum'][4:], # md5 stored as 'md5:xxxxx'
                               size=file_record['size'],

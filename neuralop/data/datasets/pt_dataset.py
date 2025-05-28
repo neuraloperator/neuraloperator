@@ -22,7 +22,7 @@ class PTDataset:
 
         train_db: torch.utils.data.Dataset of training examples
         test_db:  ""                       of test examples
-        data_processor: neuralop.datasets.DataProcessor to process data examples
+        data_processor: neuralop.data.transforms.DataProcessor to process data examples
             optional, default is None
         """
     def __init__(self,
@@ -39,7 +39,8 @@ class PTDataset:
                  encoding="channel-wise",
                  input_subsampling_rate=None,
                  output_subsampling_rate=None,
-                 channel_dim=1,):
+                 channel_dim=1,
+                 channels_squeezed=True):
         """PTDataset
 
         Parameters
@@ -76,6 +77,11 @@ class PTDataset:
             rate at which to subsample each output dimension, by default None
         channel_dim : int, optional
             dimension of saved tensors to index data channels, by default 1
+        channels_squeezed : bool, optional
+            If the channels dim is 1, whether that is explicitly kept in the saved tensor. 
+            If not, we need to unsqueeze it to explicitly have a channel dim. 
+            Only applies when there is only one data channel, as in our example problems
+            Defaults to True
         """
         
         if isinstance(root_dir, str):
@@ -94,9 +100,13 @@ class PTDataset:
         Path(root_dir).joinpath(f"{dataset_name}_train_{train_resolution}.pt").as_posix()
         )
 
+        x_train = data["x"].type(torch.float32).clone()
+        if channels_squeezed:
+            x_train = x_train.unsqueeze(channel_dim)
+
         # optionally subsample along data indices
         ## Input subsampling 
-        input_data_dims = data["x"].ndim - 1
+        input_data_dims = data["x"].ndim - 2 # batch and channels
         # convert None and 0 to 1
         if not input_subsampling_rate:
             input_subsampling_rate = 1
@@ -104,10 +114,22 @@ class PTDataset:
             # expand subsampling rate along dims if one per dim is not provided
             input_subsampling_rate = [input_subsampling_rate] * input_data_dims
         # make sure there is one subsampling rate per data dim
-        assert len(input_subsampling_rate) == input_data_dims
+        assert len(input_subsampling_rate) == input_data_dims, \
+            f"Error: length mismatch between input_subsampling_rate and dimensions of data.\
+                input_subsampling_rate must be one int shared across all dims, or an iterable of\
+                    length {len(input_data_dims)}, got {input_subsampling_rate}"
+        # Construct full indices along which to grab X
+        train_input_indices = [slice(0, n_train, None)] + [slice(None, None, rate)\
+                                                           for rate in input_subsampling_rate]
+        train_input_indices.insert(channel_dim, slice(None))
+        x_train = x_train[train_input_indices]
         
+        y_train = data["y"].clone()
+        if channels_squeezed:
+            y_train = y_train.unsqueeze(channel_dim)
+
         ## Output subsampling
-        output_data_dims = data["y"].ndim - 1
+        output_data_dims = data["y"].ndim - 2
         # convert None and 0 to 1
         if not input_subsampling_rate:
             output_subsampling_rate = 1
@@ -115,14 +137,16 @@ class PTDataset:
             # expand subsampling rate along dims if one per dim is not provided
             output_subsampling_rate = [output_subsampling_rate] * output_data_dims
         # make sure there is one subsampling rate per data dim
-        assert len(output_subsampling_rate) == output_data_dims
+        assert len(output_subsampling_rate) == output_data_dims, \
+            f"Error: length mismatch between output_subsampling_rate and dimensions of data.\
+                input_subsampling_rate must be one int shared across all dims, or an iterable of\
+                    length {len(output_data_dims)}, got {output_subsampling_rate}"
 
-        train_input_indices = [slice(0, n_train, None)] + [slice(None, None, rate) for rate in input_subsampling_rate]
-        x_train = (
-        data["x"][train_input_indices].unsqueeze(channel_dim).type(torch.float32).clone()
-        )
+        # Construct full indices along which to grab Y
         train_output_indices = [slice(0, n_train, None)] + [slice(None, None, rate) for rate in output_subsampling_rate]
-        y_train = data["y"][train_output_indices].unsqueeze(channel_dim).clone()
+        train_output_indices.insert(channel_dim, slice(None))
+        y_train = y_train[train_output_indices]
+        
         del data
 
         # Fit optional encoders to train data
@@ -171,13 +195,21 @@ class PTDataset:
             )
             data = torch.load(Path(root_dir).joinpath(f"{dataset_name}_test_{res}.pt").as_posix())
 
+            x_test = data["x"].type(torch.float32).clone()
+            if channels_squeezed:
+                x_test = x_test.unsqueeze(channel_dim)
             # optionally subsample along data indices
             test_input_indices = [slice(0, n_test, None)] + [slice(None, None, rate) for rate in input_subsampling_rate] 
-            x_test = (
-                data["x"][test_input_indices].unsqueeze(channel_dim).type(torch.float32).clone()
-            )
+            test_input_indices.insert(channel_dim, slice(None))
+            x_test = x_test[test_input_indices]
+            
+            y_test = data["y"].clone()
+            if channels_squeezed:
+                y_test = y_test.unsqueeze(channel_dim)
             test_output_indices = [slice(0, n_test, None)] + [slice(None, None, rate) for rate in output_subsampling_rate] 
-            y_test = data["y"][test_output_indices].unsqueeze(channel_dim).clone()
+            test_output_indices.insert(channel_dim, slice(None))
+            y_test = y_test[test_output_indices]
+
             del data
 
             test_db = TensorDataset(

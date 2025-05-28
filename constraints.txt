@@ -1,0 +1,2 @@
+numpy>=1.26.4
+torch_harmonics>=0.7

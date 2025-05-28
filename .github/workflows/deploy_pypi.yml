@@ -1,4 +1,4 @@
-name: Deploy to Pypi
+name: Deploy neuraloperator to Test-Pypi and Pypi 🐍
 
 on:
   push:
@@ -11,35 +11,103 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.9
-      - name: Install TensorLy and TensorLy-Torch dev
-        run: |
-          git clone https://github.com/tensorly/tensorly
-          cd tensorly
-          python -m pip install -e .
-          cd ..
-          git clone https://github.com/tensorly/torch
-          cd torch
-          python -m pip install -e .
-          cd ..
+          python-version: 3.13
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
+          python -m pip install setuptools
+          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
       - name: Install package
         run: |
-          python -m pip install -e .
-            pip install setuptools wheel
+          python -m pip install -e .[all]
+          pip install build
       - name: Build a binary wheel and a source tarball
         run: |
-          python setup.py sdist bdist_wheel
-      - name: Publish package to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+          python -m build
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
         with:
-          user: __token__ 
-          password: ${{ secrets.PYPI_PASSWORD }}
+          name: python-package-distributions
+          path: dist/
+      - name: Make doc
+        run: |
+          cd doc
+          make html
+          cd ..
+          if [ -d stable ]; then
+          git rm -r stable/*
+          fi
+          mkdir -p stable
+          echo "Copying to folder"
+          cp -r ./doc/build/html/* stable/
+      - name: Store the built docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-docs
+          path: stable/
+
+  publish-to-pypi:
+    name: >-
+      Publish Python 🐍 distribution 📦 to PyPI
+    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
+    needs:
+    - build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/neuraloperator
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+  
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish distribution 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+  
+  update-stable-docs:
+    name: >-
+      Publish Python 🐍 distribution 📦 to PyPI
+    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
+    needs:
+    - build
+    - publish-to-pypi
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download the prebuilt docs
+      uses: actions/download-artifact@v4
+      with:
+        name: built-docs
+        path: stable/
+    - name: Push docs
+      run: |
+        # Add deploy key and clone through ssh
+        eval "$(ssh-agent -s)"
+        mkdir ~/.ssh
+        echo "${{ secrets.DOC_DEPLOY_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -t rsa github.com
+        echo 'Documentation was successfully built, updating the website.'
+        # See https://github.community/t/github-actions-bot-email-address/17204/5
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions"
+        git clone "git@github.com:neuraloperator/neuraloperator.github.io.git" doc_folder
+        echo "-- Updating the content"
+        cd doc_folder
+        if [ -d stable ]; then
+          git rm -r stable/*
+        fi
+        mkdir -p stable
+        echo "Copying to folder"
+        cp -r ../stable/* stable/
+        echo "Pushing to git"
+        git add stable
+        git commit -m "Github action: auto-update."
+        git push --force origin main

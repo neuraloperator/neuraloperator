@@ -1,41 +1,40 @@
-from typing import List, Union
+from typing import List, Union, Literal
 
 from torch import nn
 from torch.nn import functional as F
 
 from neuralop.utils import validate_scaling_factor
 
-
 class DomainPadding(nn.Module):
     """Applies domain padding scaled automatically to the input's resolution
 
     Parameters
     ----------
-    domain_padding : float or list
+    domain_padding : ``float`` or ``list``
         typically, between zero and one, percentage of padding to use
         if a list, make sure if matches the dim of (d1, ..., dN)
-    padding_mode : {'symmetric', 'one-sided'}, optional
-        whether to pad on both sides, by default 'one-sided'
-    output_scaling_factor : int ; default is 1
+    padding_mode : ``Literal ['symmetric', 'one-sided']``, optional
+        whether to pad on both sides, by default ``'symmetric'``
+    resolution_scaling_factor : ``int`` ; default is 1
 
     Notes
     -----
-    This class works for any input resolution, as long as it is in the form
-    `(batch-size, channels, d1, ...., dN)`
+    This class works for any input resolution. Expects inputs of shape
+   ` `(batch-size, channels, d1, ...., dN)``
     """
 
     def __init__(
         self,
-        domain_padding,
-        padding_mode="one-sided",
-        output_scaling_factor: Union[int, List[int]] = 1,
+        domain_padding: Union[float, list],
+        padding_mode: Literal['symmetric', 'one-sided']="symmetric",
+        resolution_scaling_factor: Union[int, List[int]]=1,
     ):
         super().__init__()
         self.domain_padding = domain_padding
         self.padding_mode = padding_mode.lower()
-        if output_scaling_factor is None:
-            output_scaling_factor = 1
-        self.output_scaling_factor: Union[int, List[int]] = output_scaling_factor
+        if resolution_scaling_factor is None:
+            resolution_scaling_factor = 1
+        self.resolution_scaling_factor: Union[int, List[int]] = resolution_scaling_factor
 
         # dict(f'{resolution}'=padding) such that padded = F.pad(x, indices)
         self._padding = dict()
@@ -44,7 +43,9 @@ class DomainPadding(nn.Module):
         self._unpad_indices = dict()
 
     def forward(self, x):
-        """forward pass: pad the input"""
+        """
+        forward pass: pad the input
+        """
         self.pad(x)
 
     def pad(self, x, verbose=False):
@@ -63,12 +64,12 @@ class DomainPadding(nn.Module):
             "(excluding batch, ch)"
         )
 
-        output_scaling_factor = self.output_scaling_factor
-        if not isinstance(self.output_scaling_factor, list):
+        resolution_scaling_factor = self.resolution_scaling_factor
+        if not isinstance(self.resolution_scaling_factor, list):
             # if unset by the user, scaling_factor will be 1 be default,
-            # so `output_scaling_factor` should never be None.
-            output_scaling_factor: List[float] = validate_scaling_factor(
-                self.output_scaling_factor, len(resolution), n_layers=None
+            # so `resolution_scaling_factor` should never be None.
+            resolution_scaling_factor: List[float] = validate_scaling_factor(
+                self.resolution_scaling_factor, len(resolution), n_layers=None
             )
 
         try:
@@ -87,7 +88,7 @@ class DomainPadding(nn.Module):
             output_pad = padding
 
             output_pad = [
-                round(i * j) for (i, j) in zip(output_scaling_factor, output_pad)
+                round(i * j) for (i, j) in zip(resolution_scaling_factor, output_pad)
             ]
 
             # padding is being applied in reverse order
@@ -138,7 +139,7 @@ class DomainPadding(nn.Module):
             output_shape = padded.shape[2:]
 
             output_shape = [
-                round(i * j) for (i, j) in zip(output_scaling_factor, output_shape)
+                round(i * j) for (i, j) in zip(resolution_scaling_factor, output_shape)
             ]
 
             self._unpad_indices[f"{[i for i in output_shape]}"] = unpad_indices

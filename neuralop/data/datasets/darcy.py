@@ -17,13 +17,13 @@ class DarcyDataset(PTDataset):
     DarcyDataset stores data generated according to Darcy's Law.
     Input is a coefficient function and outputs describe flow. 
 
-    Data source: https://zenodo.org/records/10994262
+    Data source: https://zenodo.org/records/12784353
 
     Attributes
     ----------
     train_db: torch.utils.data.Dataset of training examples
     test_db:  ""                       of test examples
-    data_processor: neuralop.datasets.DataProcessor to process data examples
+    data_processor: neuralop.data.transforms.DataProcessor to process data examples
         optional, default is None
     """
     def __init__(self,
@@ -86,7 +86,7 @@ class DarcyDataset(PTDataset):
             root_dir.mkdir(parents=True)
 
         # Zenodo record ID for Darcy-Flow dataset
-        zenodo_record_id = "10994262"
+        zenodo_record_id = "12784353"
 
         # List of resolutions needed for dataset object
         resolutions = set(test_resolutions + [train_resolution])
@@ -148,12 +148,12 @@ def load_darcy_flow_small(n_train,
                            encode_output=encode_output,
                            channel_dim=channel_dim,
                            encoding=encoding,
-                           download=False)
+                           download=True)
     
     # return dataloaders for backwards compat
     train_loader = DataLoader(dataset.train_db,
                               batch_size=batch_size,
-                              num_workers=0,
+                              num_workers=1,
                               pin_memory=True,
                               persistent_workers=False,)
     
@@ -162,7 +162,7 @@ def load_darcy_flow_small(n_train,
         test_loaders[res] = DataLoader(dataset.test_dbs[res],
                                        batch_size=test_bsize,
                                        shuffle=False,
-                                       num_workers=0,
+                                       num_workers=1,
                                        pin_memory=True,
                                        persistent_workers=False,)
     
@@ -179,7 +179,8 @@ def load_darcy_pt(n_train,
                   encode_input=False,
                   encode_output=True,
                   encoding="channel-wise",
-                  channel_dim=1,):
+                  channel_dim=1,
+                  num_workers=1):
 
     dataset = DarcyDataset(root_dir = data_root,
                            n_train=n_train,
@@ -197,7 +198,7 @@ def load_darcy_pt(n_train,
     # return dataloaders for backwards compat
     train_loader = DataLoader(dataset.train_db,
                               batch_size=batch_size,
-                              num_workers=0,
+                              num_workers=num_workers,
                               pin_memory=True,
                               persistent_workers=False,)
     
@@ -206,7 +207,7 @@ def load_darcy_pt(n_train,
         test_loaders[res] = DataLoader(dataset.test_dbs[res],
                                        batch_size=test_bsize,
                                        shuffle=False,
-                                       num_workers=0,
+                                       num_workers=num_workers,
                                        pin_memory=True,
                                        persistent_workers=False,)
     

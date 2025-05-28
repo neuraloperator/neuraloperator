@@ -6,9 +6,9 @@
    :target: https://github.com/NeuralOperator/neuraloperator/actions/workflows/test.yml
 
 
-===============
+===============================================
 NeuralOperator: Learning in Infinite Dimensions
-===============
+===============================================
 
 ``neuraloperator`` is a comprehensive library for 
 learning neural operators in PyTorch.
@@ -76,12 +76,13 @@ will be efficient by contracting directly the inputs with the factors
 of the decomposition. The Fourier layers will have 5% of the parameters
 of an equivalent, dense Fourier Neural Operator!
 
-Checkout the `documentation <https://neuraloperator.github.io/neuraloperator/dev/index.html>`_ for more!
+Checkout the `documentation <https://neuraloperator.github.io/dev/index.html>`_ for more!
 
-Using with weights and biases
+Using with Weights and Biases
 -----------------------------
 
-Create a file in ``neuraloperator/config`` called ``wandb_api_key.txt`` and paste your Weights and Biases API key there.
+Our ``Trainer`` natively supports logging to W&B. To use these features, create a file in
+``neuraloperator/config`` called ``wandb_api_key.txt`` and paste your W&B API key there.
 You can configure the project you want to use and your username in the main yaml configuration files.
 
 ===============
@@ -93,11 +94,17 @@ If you spot a bug or a typo in the documentation, or have an idea for a feature 
 please report it on our `issue tracker <https://github.com/neuraloperator/neuraloperator/issues>`_, 
 or even better, open a Pull-Request on `GitHub <https://github.com/neuraloperator/neuraloperator>`_. 
 
-NeuralOperator has additional dependencies for development, which can be found in ``requirements_dev.txt``:
+NeuralOperator has additional dependencies for development, which are packaged as ``neuraloperator[dev]``
 
 .. code::
    
-   pip install -r requirements_dev.txt
+   pip install neuraloperator[dev]
+
+OR 
+
+.. code ::
+   
+   pip install -e .[dev]
 
 Code formatting
 ----------------
@@ -151,11 +158,15 @@ Citing
 
 If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
 
-   @misc{li2020fourier,
-      title={Fourier Neural Operator for Parametric Partial Differential Equations}, 
-      author={Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar},
-      year={2020},
-      eprint={2010.08895},
+   @misc{kossaifi2024neural,
+      title={A Library for Learning Neural Operators}, 
+      author={Jean Kossaifi and Nikola Kovachki and 
+      Zongyi Li and David Pitt and 
+      Miguel Liu-Schiaffini and Robert Joseph George and 
+      Boris Bonev and Kamyar Azizzadenesheli and 
+      Julius Berner and Anima Anandkumar},
+      year={2024},
+      eprint={2412.10354},
       archivePrefix={arXiv},
       primaryClass={cs.LG}
    }
@@ -175,6 +186,7 @@ If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
    }
 
 
-.. [1] Li, Z., Kovachki, N., Azizzadenesheli, K., Liu, B., Bhattacharya, K., Stuart, A., and Anandkumar A., “Fourier Neural Operator for Parametric Partial Differential Equations”, ICLR, 2021. doi:10.48550/arXiv.2010.08895.
+.. [1] Kossaifi, J., Kovachki, N., Li, Z., Pitt, D., Liu-Schiaffini, M., George, R., Bonev, B., Azizzadenesheli, K., Berner, J., and Anandkumar, A., "A Library for Learning Neural Operators", ArXiV, 2024. doi:10.48550/arXiv.2412.10354.
+
 
 .. [2] Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar A., “Neural Operator: Learning Maps Between Function Spaces”, JMLR, 2021. doi:10.48550/arXiv.2108.08481.

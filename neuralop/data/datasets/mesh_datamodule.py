@@ -3,7 +3,15 @@ from timeit import default_timer
 from typing import List, Union
 
 import numpy as np
-import open3d as o3d
+
+# import open3d for io if built. Otherwise,
+# the class will build, but no files will be loaded.
+try:
+    import open3d as o3d
+    o3d_warn = False
+except ModuleNotFoundError:
+    o3d_warn = True
+
 import torch
 from torch.utils.data import DataLoader
 
@@ -45,6 +53,9 @@ class MeshDataModule:
             as keys for each batch dict
         """
 
+        if o3d_warn:
+            print("Warning: you are attempting to run MeshDataModule without the required dependency open3d.")
+            raise ModuleNotFoundError()
         if isinstance(root_dir, str):
             root_dir = Path(root_dir)
 
@@ -302,8 +313,8 @@ class MeshDataModule:
 
         return global_min, global_max
 
-    def train_dataloader(self, **kwargs):
+    def train_loader(self, **kwargs):
         return DataLoader(self.train_data, **kwargs)
 
-    def test_dataloader(self, **kwargs):
+    def test_loader(self, **kwargs):
         return DataLoader(self.test_data, **kwargs)

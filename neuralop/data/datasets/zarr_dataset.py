@@ -1,5 +1,8 @@
 import torch
-import zarr
+try:
+    import zarr
+except ModuleNotFoundError as e:
+    raise e("trying to import zarr_dataset without optional dependency zarr. Please install and try again.")
 from torch.utils.data import Dataset
 
 

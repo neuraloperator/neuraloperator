@@ -44,7 +44,8 @@ so your trained operator can be applied on data of any resolution.
 Quickstart
 ==========
 
-This guide will walk you through the standard ML workflow of loading data, creating a neural operator, training it on your data and saving the trained model for later use.
+This guide will walk you through the standard ML workflow of loading data, creating a neural operator, 
+training it on the data and saving the trained model for later use. (Check out :ref:`gallery_examples` for more info)
 
 First install the library ``pip install neuraloperator`` (see :doc:`install` for more options).
 
@@ -78,14 +79,13 @@ To import the data:
 .. code-block:: python
 
    import torch
-   from neuralop.datasets import load_darcy_flow_small
+   from neuralop.data.datasets import load_darcy_flow_small
 
    train_loader, test_loaders, data_processor = load_darcy_flow_small(
         n_train=1000, batch_size=32, 
         test_resolutions=[32], n_tests=[100],
         test_batch_sizes=[32],
-        positional_encoding=True
-)
+   )
 
 Similar to the API provided by ``torchvision``, this dataset includes training and test data for use in standard PyTorch training loops,
 as well as a ``preprocessor`` object that automates the transforms to convert the data into the form best understood by the model. 
@@ -99,9 +99,6 @@ We provide a ``Trainer`` object that automates the logic of a basic neural opera
    # Create the trainer
    trainer = Trainer(model=model, n_epochs=20,
                      data_processor=data_processor,
-                     wandb_log=False,
-                     eval_interval=3,
-                     use_distributed=False,
                      verbose=True)
 
    # train the model
@@ -113,7 +110,7 @@ We provide a ``Trainer`` object that automates the logic of a basic neural opera
               training_loss=train_loss,
               eval_losses=eval_losses)
 
-Tensorization is also provided out of the box: you can improve the previous models
+Weight tensorization is also provided out of the box: you can improve the previous models
 by simply using a Tucker Tensorized FNO with just a few parameters:
 
 .. code-block:: python
@@ -134,13 +131,14 @@ of an equivalent, dense Fourier Neural Operator!
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
 
    install
    user_guide/index
    modules/api
    auto_examples/index
+   dev_guide
 
 
 .. only:: html
@@ -165,10 +163,10 @@ of an equivalent, dense Fourier Neural Operator!
             If you use NeuralOperator, please cite the following papers:
          </p>
          <p>
-            <it> Li, Z., Kovachki, N., Azizzadenesheli, K., Liu, B., Bhattacharya, K., Stuart, A., and Anandkumar A. </it>, 
-            <strong> “Fourier Neural Operator for Parametric Partial Differential Equations”</strong>, 
-            ICLR, 2021. 
-            <br/> <a href="https://arxiv.org/abs/2010.08895">https://arxiv.org/abs/2010.08895</a>.
+            <it> Kossaifi, J., Kovachki, N., Li, Z., Pitt, D., Liu-Schiaffini, M., George, R., Bonev, B., Azizzadenesheli, K., Berner, J., and Anandkumar, A. </it>, 
+            <strong>"A Library for Learning Neural Operators"</strong>, 
+            ArXiV, 2024.
+            <br/> <a href="https://arxiv.org/abs/2412.10354">https://arxiv.org/abs/2412.10354</a>.
          </p>
          <p>
             <it> Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar A. </it>,
@@ -178,14 +176,15 @@ of an equivalent, dense Fourier Neural Operator!
          </p>
 
          <blockquote id="bibtex" class="is-hidden">
-            @misc{li2020fourier,<br/>
-            &emsp; title={Fourier Neural Operator for Parametric Partial Differential Equations}, <br/>
-            &emsp; author={Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar},<br/>
-            &emsp; year={2020},<br/>
-            &emsp; eprint={2010.08895},<br/>
-            &emsp; archivePrefix={arXiv},<br/>
-            &emsp; primaryClass={cs.LG}<br/>
-            } <br/> <br/>
+            @misc{kossaifi2024neural,<br/>
+            &emsp;  title         = {A Library for Learning Neural Operators}, 
+            &emsp;  author        = {Jean Kossaifi and Nikola Kovachki and Zongyi Li and Davit Pitt and Miguel Liu-Schiaffini and Robert Joseph George and Boris Bonev and Kamyar Azizzadenesheli and Julius Berner and Anima Anandkumar},<br/>
+            &emsp;  year          = {2024},<br/>
+            &emsp;  eprint        = {2412.10354},<br/>
+            &emsp;  archivePrefix = {arXiv},<br/>
+            &emsp;  primaryClass  = {cs.LG},<br/>
+            } <br/> 
+            <br/>
             @article{kovachki2021neural,<br/>
             &emsp;  author    = {Nikola B. Kovachki and Zongyi Li and Burigede Liu and Kamyar Azizzadenesheli and Kaushik Bhattacharya and Andrew M. Stuart and Anima Anandkumar},<br/>
             &emsp;  title     = {Neural Operator: Learning Maps Between Function Spaces},<br/>

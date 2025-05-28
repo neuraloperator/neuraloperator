@@ -1,7 +1,7 @@
-sphinx
-numpydoc
 matplotlib
-sphinx-gallery
 myst-nb
+numpydoc
+sphinx
+sphinx-gallery
 tensorly_sphinx_theme
 torchtnt

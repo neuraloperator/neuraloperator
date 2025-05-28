@@ -1,0 +1,102 @@
+default: &DEFAULT
+
+  arch: 'gino'
+  verbose: True
+  n_params_baseline: None
+
+  # Distributed computing
+  distributed:
+    use_distributed: False
+    wireup_info: 'mpi'
+    wireup_store: 'tcp'
+    model_parallel_size: 2
+    seed: 666
+
+  # Dataset related
+  data:
+    batch_size: 1
+    test_batch_size: 1
+    file: '/home/YOURNAME/data/nonlin_poisson/nonlinear_poisson.obj'
+    n_train: 7000
+    n_test: 3000
+    n_in: 5000 # Input points per instance
+    n_out: 100 # Output query points per instance
+    n_eval: 6000 # Points to evaluate on
+    n_bound: 4000 # Output query boundary points per instance
+    query_resolution: 64
+    train_out_res: 400
+    padding: 1
+    single_instance: False # if True, and n_train=n_test=1, train and test set are 1 identical instance
+    input_min: 100 # minimum total number of input points if subsampling
+    input_max: 5000 # max total number of input points if subsampling
+    sample_random_in: None # Set to a certain percentage if we want to sample a static number of points. Will use the range otherwise
+    sample_random_out: None
+    return_queries_dict: True
+
+  # Patching
+  patching:
+    levels: 0
+    padding: 0
+    stitching: False
+
+  gino:
+    data_channels: 3
+    out_channels: 1
+    projection_channel_ratio: 4
+    gno_coord_dim: 2
+    in_gno_pos_embed_type: None
+    out_gno_pos_embed_type: 'transformer'
+    gno_embed_channels: 16
+    gno_embed_max_positions: 600
+    gno_use_torch_scatter: True
+    in_gno_radius: 0.16
+    out_gno_radius: 0.175
+    in_gno_transform_type: 'linear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
+    out_gno_transform_type: 'linear' # linear_kernelonly, linear, nonlinear_kernelonly, nonlinear
+    gno_reduction: 'mean'
+    gno_weighting_function: 'half_cos' #'half_cos' # 'bump', 'quadr', 'quartic', 'octic' None
+    gno_weight_function_scale: 0.030625
+    gno_use_open3d: False
+    in_gno_channel_mlp_hidden_layers: [256, 512, 256]
+    out_gno_channel_mlp_hidden_layers: [512, 1024, 512] 
+    in_gno_tanh: None # 'in_p', 'latent_embed', 'both'
+    out_gno_tanh: None # 'in_p', 'latent_embed', 'both'
+    fno_n_modes: [20, 20]
+    fno_hidden_channels: 64 #86
+    fno_lifting_channel_ratio: 4
+    fno_n_layers: 4
+    fno_use_channel_mlp: True
+    fno_channel_mlp_expansion: 0.5
+    fno_norm: 'group_norm' 
+    fno_ada_in_features: 8
+    fno_factorization: None
+    fno_rank: 0.8
+    fno_domain_padding: 0.
+  
+  opt:
+    n_epochs: 1000
+    training_loss: ['equation', 'boundary']
+    loss_weights: 
+      mse : 1.
+      interior: 1e-2
+      boundary: 1.
+    pino_method: 'autograd' # 'finite_difference'
+    weight_decay: 1e-6 
+    amp_autocast: False
+    learning_rate: 1e-4
+    optimizer: 'Adam'
+    scheduler: 'ReduceLROnPlateau' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau' or "StepLR"
+    scheduler_T_max: 5000 # For cosine only, typically take n_epochs
+    scheduler_patience: 2 # For ReduceLROnPlateau only
+    gamma: 0.9    
+
+  # Weights and biases
+  wandb:
+    log: True
+    name: None # If None, config will be used but you can override it here
+    group: None
+    project: ""
+    entity: "" # put your username here
+    sweep: False
+    log_output: True
+    log_test_interval: 1

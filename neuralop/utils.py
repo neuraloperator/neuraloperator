@@ -11,75 +11,6 @@ try:
 except ModuleNotFoundError:
     wandb_available = False
 
-import warnings
-
-# normalization, pointwise gaussian
-class UnitGaussianNormalizer:
-    def __init__(self, x, eps=0.00001, reduce_dim=[0], verbose=True):
-        super().__init__()
-
-        msg = ("neuralop.utils.UnitGaussianNormalizer has been deprecated. "
-               "Please use the newer neuralop.datasets.UnitGaussianNormalizer instead.")
-        warnings.warn(msg, DeprecationWarning)
-        n_samples, *shape = x.shape
-        self.sample_shape = shape
-        self.verbose = verbose
-        self.reduce_dim = reduce_dim
-
-        # x could be in shape of ntrain*n or ntrain*T*n or ntrain*n*T
-        self.mean = torch.mean(x, reduce_dim, keepdim=True).squeeze(0)
-        self.std = torch.std(x, reduce_dim, keepdim=True).squeeze(0)
-        self.eps = eps
-
-        if verbose:
-            print(
-                f"UnitGaussianNormalizer init on {n_samples}, reducing over {reduce_dim}, samples of shape {shape}."
-            )
-            print(f"   Mean and std of shape {self.mean.shape}, eps={eps}")
-
-    def encode(self, x):
-        # x = x.view(-1, *self.sample_shape)
-        x -= self.mean
-        x /= self.std + self.eps
-        # x = (x.view(-1, *self.sample_shape) - self.mean) / (self.std + self.eps)
-        return x
-
-    def decode(self, x, sample_idx=None):
-        if sample_idx is None:
-            std = self.std + self.eps  # n
-            mean = self.mean
-        else:
-            if len(self.mean.shape) == len(sample_idx[0].shape):
-                std = self.std[sample_idx] + self.eps  # batch*n
-                mean = self.mean[sample_idx]
-            if len(self.mean.shape) > len(sample_idx[0].shape):
-                std = self.std[:, sample_idx] + self.eps  # T*batch*n
-                mean = self.mean[:, sample_idx]
-
-        # x is in shape of batch*n or T*batch*n
-        # x = (x.view(self.sample_shape) * std) + mean
-        # x = x.view(-1, *self.sample_shape)
-        x *= std
-        x += mean
-
-        return x
-
-    def cuda(self):
-        self.mean = self.mean.cuda()
-        self.std = self.std.cuda()
-        return self
-
-    def cpu(self):
-        self.mean = self.mean.cpu()
-        self.std = self.std.cpu()
-        return self
-
-    def to(self, device):
-        self.mean = self.mean.to(device)
-        self.std = self.std.to(device)
-        return self
-
-
 def count_model_params(model):
     """Returns the total number of parameters of a PyTorch model
     
@@ -158,20 +89,27 @@ def spectrum_2d(signal, n_observations, normalize=True):
         n_observations * n_observations is the spatial resolution.
     n_observations: an integer
         Number of discretized points. Basically the resolution of the signal.
-
+    normalize: bool
+        whether to apply normalization to the output of the 2D FFT. 
+        If True, normalizes the outputs by ``1/n_observations``
+        (actually ``1/sqrt(n_observations * n_observations)``). 
     Returns
     --------
     spectrum: a tensor
         A 1D tensor of shape (s,) representing the computed spectrum.
+        The spectrum is computed using a square approximation to radial
+        binning, meaning that the wavenumber 'bin' into which a particular 
+        coefficient is the coefficient's location along the diagonal, indexed 
+        from the top-left corner of the 2d FFT output. 
     """
     T = signal.shape[0]
     signal = signal.view(T, n_observations, n_observations)
 
     if normalize:
-        signal = torch.fft.fft2(signal)
+        signal = torch.fft.fft2(signal, norm="ortho")
     else:
         signal = torch.fft.rfft2(
-            signal, s=(n_observations, n_observations), normalized=False
+            signal, s=(n_observations, n_observations), norm="backward"
         )
 
     # 2d wavenumbers following PyTorch fft convention
@@ -228,17 +166,15 @@ def validate_scaling_factor(
             return [float(scaling_factor)] * n_dim
 
         return [[float(scaling_factor)] * n_dim] * n_layers
+    
     if (
         isinstance(scaling_factor, list)
         and len(scaling_factor) > 0
         and all([isinstance(s, (float, int)) for s in scaling_factor])
     ):
-        return [[float(s)] * n_dim for s in scaling_factor]
-    if (
-        isinstance(scaling_factor, list)
-        and len(scaling_factor) > 0
-        and all([isinstance(s, (float, int)) for s in scaling_factor])
-    ):
+        if n_layers is None and len(scaling_factor) == n_dim:
+            # this is a dim-wise scaling
+            return [float(s) for s in scaling_factor]
         return [[float(s)] * n_dim for s in scaling_factor]
 
     if (

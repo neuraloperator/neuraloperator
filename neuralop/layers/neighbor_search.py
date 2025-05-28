@@ -1,8 +1,15 @@
 import torch
 from torch import nn
 
-#Requires either open3d torch instalation or torch_cluster
-#Uses open3d by default which, as of 07/23/2023, requires torch 1.13.1
+# only import open3d if built
+open3d_built = False
+try:
+    from open3d.ml.torch.layers import FixedRadiusSearch
+    open3d_built = True
+except:
+    pass
+
+# Uses open3d by default which, as of October 2024, requires torch 2.0 and cuda11.*
 class NeighborSearch(nn.Module):
     """
     Neighborhood search between two arbitrary coordinate meshes.
@@ -15,19 +22,20 @@ class NeighborSearch(nn.Module):
         Whether to use open3d or native PyTorch implementation
         NOTE: open3d implementation requires 3d data
     """
-    def __init__(self, use_open3d=True):
+    def __init__(self, use_open3d=True, return_norm=False):
         super().__init__()
-        if use_open3d: # slightly faster, works on GPU in 3d only
-            from open3d.ml.torch.layers import FixedRadiusSearch
+        if use_open3d and open3d_built: # slightly faster, works on GPU in 3d only
             self.search_fn = FixedRadiusSearch()
             self.use_open3d = use_open3d
         else: # slower fallback, works on GPU and CPU
             self.search_fn = native_neighbor_search
             self.use_open3d = False
+        self.return_norm = return_norm
         
         
     def forward(self, data, queries, radius):
-        """Find the neighbors, in data, of each point in queries
+        """
+        Find the neighbors, in data, of each point in queries
         within a ball of radius. Returns in CRS format.
 
         Parameters
@@ -64,11 +72,11 @@ class NeighborSearch(nn.Module):
             return_dict['neighbors_row_splits'] = search_return.neighbors_row_splits.long()
 
         else:
-            return_dict = self.search_fn(data, queries, radius)
+            return_dict = self.search_fn(data, queries, radius, self.return_norm)
         
         return return_dict
 
-def native_neighbor_search(data: torch.Tensor, queries: torch.Tensor, radius: float):
+def native_neighbor_search(data: torch.Tensor, queries: torch.Tensor, radius: float, return_norm: bool=False):
     """
     Native PyTorch implementation of a neighborhood search
     between two arbitrary coordinate meshes.
@@ -83,14 +91,23 @@ def native_neighbor_search(data: torch.Tensor, queries: torch.Tensor, radius: fl
     radius : float
         size of each neighborhood
     """
+    nbr_dict = {}
 
     # compute pairwise distances
-    dists = torch.cdist(queries, data).to(queries.device) # shaped num query points x num data points
-    in_nbr = torch.where(dists <= radius, 1., 0.) # i,j is one if j is i's neighbor
-    nbr_indices = in_nbr.nonzero()[:,1:].reshape(-1,) # only keep the column indices
+    all_dists = torch.cdist(queries, data).to(queries.device) # shaped num query points x num data points
+    # keep zero-distance points
+    eps = 1e-7
+    all_dists = torch.where(all_dists == 0., eps, all_dists)
+    dists = torch.where(all_dists <= radius, all_dists, 0.) # i,j is 1 if j is i's neighbor 
+    nbr_indices = dists.nonzero()[:,1:].reshape(-1,) # only keep the column indices
+    if return_norm:
+        weights = dists[dists.nonzero(as_tuple=True)]
+        nbr_dict['weights'] = weights **2 # weighting function computed on squared norms
+    in_nbr = torch.where(dists > 0, 1., 0.,)
     nbrhd_sizes = torch.cumsum(torch.sum(in_nbr, dim=1), dim=0) # num points in each neighborhood, summed cumulatively
     splits = torch.cat((torch.tensor([0.]).to(queries.device), nbrhd_sizes))
-    nbr_dict = {}
+    
     nbr_dict['neighbors_index'] = nbr_indices.long().to(queries.device)
     nbr_dict['neighbors_row_splits'] = splits.long()
+
     return nbr_dict

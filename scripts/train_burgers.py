@@ -6,10 +6,10 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.nn.functional as F
 
 from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Trainer, get_model
-from neuralop.data.datasets import load_burgers_1dtime
+from neuralop.data.datasets import load_mini_burgers_1dtime
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
-from neuralop.training import setup
-from neuralop.utils import get_wandb_api_key, count_model_params
+from neuralop.training import setup, AdamW
+from neuralop.utils import get_wandb_api_key, count_model_params, get_project_root
 
 
 # Read the configuration
@@ -70,17 +70,16 @@ if config.verbose:
     pipe.log()
     sys.stdout.flush()
 
+data_path = get_project_root() / config.data.folder
 # Load the Burgers dataset
-train_loader, test_loaders, output_encoder = load_burgers_1dtime(data_path=config.data.folder,
+train_loader, test_loaders, data_processor = load_mini_burgers_1dtime(data_path=data_path,
         n_train=config.data.n_train, batch_size=config.data.batch_size, 
-        n_test=config.data.n_tests[0], batch_size_test=config.data.test_batch_sizes[0],
-        temporal_length=config.data.temporal_length, spatial_length=config.data.spatial_length,
-        pad=config.data.get("pad", 0), temporal_subsample=config.data.get("temporal_subsample", 1),
+        n_test=config.data.n_tests[0], test_batch_size=config.data.test_batch_sizes[0],
+        temporal_subsample=config.data.get("temporal_subsample", 1),
         spatial_subsample=config.data.get("spatial_subsample", 1),
         )
 
 model = get_model(config)
-model = model.to(device)
 
 # Use distributed data parallel
 if config.distributed.use_distributed:
@@ -89,7 +88,7 @@ if config.distributed.use_distributed:
     )
 
 # Create the optimizer
-optimizer = torch.optim.Adam(
+optimizer = AdamW(
     model.parameters(),
     lr=config.opt.learning_rate,
     weight_decay=config.opt.weight_decay,
@@ -160,19 +159,21 @@ if config.verbose:
     sys.stdout.flush()
 
 # only perform MG patching if config patching levels > 0
-data_processor = MGPatchingDataProcessor(model=model,
-                                       levels=config.patching.levels,
-                                       padding_fraction=config.patching.padding,
-                                       stitching=config.patching.stitching,
-                                       device=device,
-                                       in_normalizer=output_encoder,
-                                       out_normalizer=output_encoder)
+if config.patching.levels > 0:
+    data_processor = MGPatchingDataProcessor(model=model,
+                                        levels=config.patching.levels,
+                                        padding_fraction=config.patching.padding,
+                                        stitching=config.patching.stitching,
+                                        device=device,
+                                        in_normalizer=data_processor.in_normalizer,
+                                        out_normalizer=data_processor.out_normalizer)
+
 trainer = Trainer(
     model=model,
     n_epochs=config.opt.n_epochs,
     data_processor=data_processor,
     device=device,
-    amp_autocast=config.opt.amp_autocast,
+    mixed_precision=config.opt.amp_autocast,
     eval_interval=config.wandb.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
@@ -194,7 +195,7 @@ if is_logger:
             to_log["n_params_baseline"] = (config.n_params_baseline,)
             to_log["compression_ratio"] = (config.n_params_baseline / n_params,)
             to_log["space_savings"] = 1 - (n_params / config.n_params_baseline)
-        wandb.log(to_log)
+        wandb.log(to_log, commit=False)
         wandb.watch(model)
 
 
