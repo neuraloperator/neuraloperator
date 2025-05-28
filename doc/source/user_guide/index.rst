@@ -8,15 +8,6 @@ and learn mapping between function spaces, in PyTorch.
 
 ~~~~~~~~~~~~
 
-Intro to operator learning
-----------------------------
-To get a better feel for the theory behind our neural operator models, see :ref:`neuralop_intro`. 
-Once you're comfortable with the concept of operator learning, check out specific details of our
-Fourier Neural Operator (FNO) in :ref:`fno_intro`. Finally, to learn more about the model training
-utilities we provide, check out :ref:`training_nos`.
-
-~~~~~~~~~~~~
-
 NeuralOperator library structure
 ---------------------------------
 
