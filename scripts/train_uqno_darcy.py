@@ -1,7 +1,7 @@
 import sys
 import copy
+from pathlib import Path
 
-from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -19,17 +19,14 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 
 # Read the configuration
 config_name = "default"
-pipe = ConfigPipeline(
-    [
-        YamlConfig(
-            "./uqno_config.yaml", config_name="default", config_folder="../config"
-        ),
-        ArgparseConfig(infer_types=True, config_name=None, config_file=None),
-        YamlConfig(config_folder="../config"),
-    ]
-)
-config = pipe.read_conf()
-config_name = pipe.steps[-1].config_name
+from zencfg import cfg_from_commandline
+import sys 
+sys.path.insert(0, '../')
+from config.uqno_config import Default
+
+config = cfg_from_commandline(Default)
+config = config.to_dict()
+
 
 # Set-up distributed communication, if using
 device, is_logger = setup(config)
@@ -45,12 +42,12 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.tfno2d.n_layers,
-                config.tfno2d.hidden_channels,
-                config.tfno2d.n_modes_width,
-                config.tfno2d.n_modes_height,
-                config.tfno2d.factorization,
-                config.tfno2d.rank,
+                config.model.n_layers,
+                config.model.hidden_channels,
+                config.model.n_modes_width,
+                config.model.n_modes_height,
+                config.model.factorization,
+                config.model.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
@@ -72,12 +69,13 @@ config.verbose = config.verbose and is_logger
 
 # Print config to screen
 if config.verbose and is_logger and config.opt.solution.n_epochs > 0:
-    pipe.log()
+    print(f"##### CONFIG #####\n{config}")
     sys.stdout.flush()
 
 # Loading the Darcy flow dataset for training the base model
+root_dir = Path(config.data.root).expanduser()
 solution_dataset = DarcyDataset(
-    root_dir=config.data.root,
+    root_dir=root_dir,
     n_train=config.data.n_train_total,
     n_tests=[config.data.n_test],
     batch_size=config.data.batch_size,
@@ -197,9 +195,9 @@ trainer = Trainer(
     n_epochs=config.opt.solution.n_epochs,
     device=device,
     data_processor=data_processor,
-    amp_autocast=config.opt.solution.amp_autocast,
+    mixed_precision=config.opt.solution.mixed_precision,
     wandb_log=config.wandb.log,
-    eval_interval=config.wandb.eval_interval,
+    eval_interval=config.opt.solution.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
@@ -451,8 +449,8 @@ if config.opt.residual.n_epochs > 0:
                             data_processor=residual_data_processor,
                             wandb_log=config.wandb.log,
                             device=device,
-                            amp_autocast=config.opt.residual.amp_autocast,
-                            eval_interval=config.wandb.eval_interval,
+                            mixed_precision=config.opt.residual.mixed_precision,
+                            eval_interval=config.opt.residual.eval_interval,
                             log_output=config.wandb.log_output,
                             use_distributed=config.distributed.use_distributed,
                             verbose=config.verbose and is_logger,

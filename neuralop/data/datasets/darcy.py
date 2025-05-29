@@ -99,7 +99,7 @@ class DarcyDataset(PTDataset):
         # download darcy data from zenodo archive if passed
         if download:
             files_to_download = []
-            already_downloaded_files = [x for x in root_dir.iterdir()]
+            already_downloaded_files = [x.name for x in root_dir.iterdir()]
             for res in resolutions:
                 if f"darcy_train_{res}.pt" not in already_downloaded_files or \
                 f"darcy_test_{res}.pt" not in already_downloaded_files:    
