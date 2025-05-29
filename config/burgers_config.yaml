@@ -48,9 +48,13 @@ default: &DEFAULT
   opt:
     n_epochs: 10000
     learning_rate: 0.0001
-    training_loss: 'l2'
+    training_loss: ['equation', 'ic'] # or l2, h1
+    loss_weights:
+      equation: 1.
+      ic: 5.
     weight_decay: 1e-4
     amp_autocast: False
+    pino_method: 'finite_difference'
 
     scheduler_T_max: 500 # For cosine only, typically take n_epochs
     scheduler_patience: 100 # For ReduceLROnPlateau only
@@ -66,9 +70,9 @@ default: &DEFAULT
     n_train: 800
     test_batch_sizes: [16]
     n_tests: [400]
-    spatial_length: 128
-    temporal_length: 101
-
+    spatial_length: 16
+    temporal_length: 17
+    pino_method: 'autograd'
     encode_input: False
     encode_output: False
     include_endpoint: [True, False]
