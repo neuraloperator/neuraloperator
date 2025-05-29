@@ -249,7 +249,7 @@ class FNOBlocks(nn.Module):
         elif norm == "batch_norm":
             self.norm = nn.ModuleList(
                 [
-                    BatchNorm()
+                    BatchNorm(n_dim=self.n_dim, num_features=self.out_channels)
                     for _ in range(n_layers * self.n_norms)
                 ]
             )
