@@ -193,8 +193,8 @@ class LocalNO(BaseModel, name='LocalNO'):
         conv_padding_mode: str='periodic',
         fin_diff_kernel_size: int=3,
         mix_derivatives: bool=True,
-        lifting_channel_ratio: int=2,
-        projection_channel_ratio: int=2,
+        lifting_channel_ratio: Number=2,
+        projection_channel_ratio: Number=2,
         positional_embedding: Union[str, nn.Module]="grid",
         non_linearity: nn.Module=F.gelu,
         norm: str=None,
@@ -235,10 +235,10 @@ class LocalNO(BaseModel, name='LocalNO'):
 
         # init lifting and projection channels using ratios w.r.t hidden channels
         self.lifting_channel_ratio = lifting_channel_ratio
-        self.lifting_channels = lifting_channel_ratio * self.hidden_channels
+        self.lifting_channels = int(lifting_channel_ratio * self.hidden_channels)
 
         self.projection_channel_ratio = projection_channel_ratio
-        self.projection_channels = projection_channel_ratio * self.hidden_channels
+        self.projection_channels = int(projection_channel_ratio * self.hidden_channels)
 
         self.non_linearity = non_linearity
         self.rank = rank

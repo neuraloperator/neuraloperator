@@ -1,6 +1,5 @@
 import sys
 
-from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from pathlib import Path
 import torch
 from torch.utils.data import DataLoader, DistributedSampler
@@ -17,17 +16,13 @@ from neuralop.training import setup, AdamW
 
 # Read the configuration
 config_name = "default"
-pipe = ConfigPipeline(
-    [
-        YamlConfig(
-            "./navier_stokes_config.yaml", config_name="default", config_folder="../config"
-        ),
-        ArgparseConfig(infer_types=True, config_name=None, config_file=None),
-        YamlConfig(config_folder="../config"),
-    ]
-)
-config = pipe.read_conf()
-config_name = pipe.steps[-1].config_name
+from zencfg import cfg_from_commandline
+import sys 
+sys.path.insert(0, '../')
+from config.navier_stokes_config import Default
+
+config = cfg_from_commandline(Default)
+config = config.to_dict()
 
 # Set-up distributed communication, if using
 device, is_logger = setup(config)
@@ -44,11 +39,11 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.fno.n_layers,
-                config.fno.n_modes,
-                config.fno.hidden_channels,
-                config.fno.factorization,
-                config.fno.rank,
+                config.model.n_layers,
+                config.model.n_modes,
+                config.model.hidden_channels,
+                config.model.factorization,
+                config.model.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
@@ -70,10 +65,10 @@ config.verbose = config.verbose and is_logger
 
 # Print config to screen
 if config.verbose:
-    pipe.log()
-    sys.stdout.flush()
+    print(f"##### CONFIG #####\n")
+    print(config)
 
-data_dir = Path(f"~/{config.data.folder}").expanduser()
+data_dir = Path(config.data.folder).expanduser()
 
 # Loading the Navier-Stokes dataset in 128x128 resolution
 train_loader, test_loaders, data_processor = load_navier_stokes_pt(
@@ -176,8 +171,8 @@ trainer = Trainer(
     n_epochs=config.opt.n_epochs,
     data_processor=data_processor,
     device=device,
-    mixed_precision=config.opt.amp_autocast,
-    eval_interval=config.wandb.eval_interval,
+    mixed_precision=config.opt.mixed_precision,
+    eval_interval=config.opt.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,

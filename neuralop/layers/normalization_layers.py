@@ -47,18 +47,45 @@ class InstanceNorm(nn.Module):
         return x
 
 class BatchNorm(nn.Module):
-    def __init__(self, **kwargs):
+    def __init__(self, n_dim: int, num_features: int, **kwargs):
         """BatchNorm applies dim-agnostic batch normalization
         to data as an nn.Module. 
 
-        kwargs: additional parameters to pass to instance_norm() for use as a module
-        e.g. running_mean, running_var, affine
+        Parameters
+        ----------
+        n_dim: int
+            dimension of input data, determined by FNOBlocks.n_dim
+            If n_dim > 3, batch norm will not be used.
+        num_features: int
+            number of channels in input to normalization 
+
+        kwargs: additional parameters to pass to batch_norm() for use as a module
+        e.g. eps, affine
         """
         super().__init__()
+        self.n_dim = n_dim
+        self.num_features = num_features
         self.kwargs = kwargs
+
+        if self.n_dim <= 3:
+            self.norm = getattr(torch.nn, f"BatchNorm{n_dim}d")(num_features=num_features, **kwargs)
+        else:
+            print("Warning: torch does not implement batch norm for dimensions higher than 3.\
+                  We manually flatten the spatial dimension of 4+D tensors to apply batch norm. ")
+            self.norm = torch.nn.BatchNorm1d(num_features=num_features, **kwargs)
     
     def forward(self, x):
         size = x.shape
-        x = torch.nn.functional.batch_norm(x, **self.kwargs)
+        num_channels = size[1]
+
+        # in 4+D, we flatten and use batchnorm1d.
+        if self.n_dim >= 4:
+            x = x.reshape(size[0], size[1], -1)
+        x = self.norm(x)
+
+        # if flattening occurred, unflatten
+        if self.n_dim >= 4:
+            x = x.reshape(size)
+        
         assert x.shape == size
         return x

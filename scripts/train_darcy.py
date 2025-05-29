@@ -1,6 +1,6 @@
+from pathlib import Path
 import sys
 
-from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 import torch
 
 from torch.utils.data import DataLoader, DistributedSampler
@@ -15,18 +15,14 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 
 
 # Read the configuration
-config_name = "default"
-pipe = ConfigPipeline(
-    [
-        YamlConfig(
-            "./darcy_config.yaml", config_name="default", config_folder="../config"
-        ),
-        ArgparseConfig(infer_types=True, config_name=None, config_file=None),
-        YamlConfig(config_folder="../config"),
-    ]
-)
-config = pipe.read_conf()
-config_name = pipe.steps[-1].config_name
+from zencfg import ConfigBase, cfg_from_commandline
+import sys 
+sys.path.insert(0, '../')
+from config.darcy_config import Default
+
+
+config = cfg_from_commandline(Default)
+config = config.to_dict()
 
 # Set-up distributed communication, if using
 device, is_logger = setup(config)
@@ -41,13 +37,12 @@ if config.wandb.log and is_logger:
         wandb_name = "_".join(
             f"{var}"
             for var in [
-                config_name,
-                config.fno.n_layers,
-                config.fno.hidden_channels,
-                config.fno.n_modes_width,
-                config.fno.n_modes[0],
-                config.fno.factorization,
-                config.fno.rank,
+                config.model.n_layers,
+                config.model.hidden_channels,
+                config.model.n_modes_width,
+                config.model.n_modes[0],
+                config.model.factorization,
+                config.model.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
@@ -69,11 +64,14 @@ config.verbose = config.verbose and is_logger
 
 # Print config to screen
 if config.verbose and is_logger:
-    pipe.log()
+    print(f"##### CONFIG #####\n")
+    print(config)
     sys.stdout.flush()
 
 # Loading the Darcy flow dataset
+data_root = Path(config.data.folder).expanduser()
 train_loader, test_loaders, data_processor = load_darcy_flow_small(
+    data_root=data_root,
     n_train=config.data.n_train,
     batch_size=config.data.batch_size,
     test_resolutions=config.data.test_resolutions,
@@ -166,9 +164,9 @@ trainer = Trainer(
     n_epochs=config.opt.n_epochs,
     device=device,
     data_processor=data_processor,
-    mixed_precision=config.opt.amp_autocast,
+    mixed_precision=config.opt.mixed_precision,
     wandb_log=config.wandb.log,
-    eval_interval=config.wandb.eval_interval,
+    eval_interval=config.opt.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,

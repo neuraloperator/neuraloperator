@@ -114,9 +114,13 @@ class PTDataset:
             # expand subsampling rate along dims if one per dim is not provided
             input_subsampling_rate = [input_subsampling_rate] * input_data_dims
         # make sure there is one subsampling rate per data dim
-        assert len(input_subsampling_rate) == input_data_dims
+        assert len(input_subsampling_rate) == input_data_dims, \
+            f"Error: length mismatch between input_subsampling_rate and dimensions of data.\
+                input_subsampling_rate must be one int shared across all dims, or an iterable of\
+                    length {len(input_data_dims)}, got {input_subsampling_rate}"
         # Construct full indices along which to grab X
-        train_input_indices = [slice(0, n_train, None)] + [slice(None, None, rate) for rate in input_subsampling_rate]
+        train_input_indices = [slice(0, n_train, None)] + [slice(None, None, rate)\
+                                                           for rate in input_subsampling_rate]
         train_input_indices.insert(channel_dim, slice(None))
         x_train = x_train[train_input_indices]
         
@@ -133,7 +137,10 @@ class PTDataset:
             # expand subsampling rate along dims if one per dim is not provided
             output_subsampling_rate = [output_subsampling_rate] * output_data_dims
         # make sure there is one subsampling rate per data dim
-        assert len(output_subsampling_rate) == output_data_dims
+        assert len(output_subsampling_rate) == output_data_dims, \
+            f"Error: length mismatch between output_subsampling_rate and dimensions of data.\
+                input_subsampling_rate must be one int shared across all dims, or an iterable of\
+                    length {len(output_data_dims)}, got {output_subsampling_rate}"
 
         # Construct full indices along which to grab Y
         train_output_indices = [slice(0, n_train, None)] + [slice(None, None, rate) for rate in output_subsampling_rate]
