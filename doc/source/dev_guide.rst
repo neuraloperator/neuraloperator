@@ -1,8 +1,8 @@
 .. _dev_guide:
 
-=================================
-NeuralOperator Developer's Guide
-=================================
+=================
+Developer's Guide
+=================
 
 This guide provides essential information for developers contributing to NeuralOperator.
 
@@ -40,18 +40,6 @@ Create your virtual environment and store it in the top level:
 
 Install PyTorch. These are generic instructions; if you require a specific build, or a specific CUDA version, your installation
 command will vary. Check PyTorch's `getting started page <https://pytorch.org/get-started/locally/>`_ for more detailed instructions
-
-**For CUDA installations:**
-
-.. code-block:: bash
-
-    pip install torch torchvision --index-url https://download.pytorch.org/whl/<YOUR_CUDA_VERSION>
-
-**For CPU installations:**
-
-.. code-block:: bash
-
-    pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 Next, install the library locally in editable mode, along with the ``".[dev]"`` tag to install all development dependencies 
 
