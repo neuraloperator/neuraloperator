@@ -87,6 +87,16 @@ class FNO_Huge2d(SimpleFNOConfig):
     hidden_channels: int = 128
     projection_channel_ratio: int = 2
 
+class FNO_Medium3d(SimpleFNOConfig):
+    """
+    FNO_Medium3d: a medium FNO for 3d problems.
+    """
+    data_channels: int = 1
+    out_channels: int = 1
+    n_modes: List[int] = [32,32,32]
+    hidden_channels: int = 64
+    projection_channel_ratio: int = 4
+
 class FNOGNOConfig(ModelConfig):
     model_arch: str = "fnogno"
     data_channels: int

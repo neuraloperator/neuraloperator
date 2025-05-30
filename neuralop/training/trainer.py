@@ -102,10 +102,12 @@ class Trainer:
         regularizer=None,
         training_loss=None,
         eval_losses=None,
+        eval_modes=None,
         save_every: int=None,
         save_best: int=None,
         save_dir: Union[str, Path]="./ckpt",
         resume_from_dir: Union[str, Path]=None,
+        max_autoregressive_steps: int=None,
     ):
         """Trains the given model on the given dataset.
 
@@ -125,6 +127,15 @@ class Trainer:
             cost function to minimize
         eval_losses: dict[Loss]
             dict of losses to use in self.eval()
+        eval_modes: dict[str], optional
+            optional mapping from the name of each loader to its evaluation mode.
+
+            * if 'single_step', predicts one input-output pair and evaluates loss.
+            
+            * if 'autoregressive', autoregressively predicts output using last step's 
+            output as input for a number of steps defined by the temporal dimension of the batch.
+            This requires specially batched data with a data processor whose ``.preprocess`` and 
+            ``.postprocess`` both take ``idx`` as an argument.
         save_every: int, optional, default is None
             if provided, interval at which to save checkpoints
         save_best: str, optional, default is None
@@ -138,6 +149,9 @@ class Trainer:
             if provided, resumes training state (model, 
             optimizer, regularizer, scheduler) from state saved in
             `resume_from_dir`
+        max_autoregressive_steps : int, default None
+            if provided, and a dataloader is to be evaluated in autoregressive mode,
+            limits the number of autoregressive in each rollout to be performed.
         
         Returns
         -------
@@ -169,6 +183,10 @@ class Trainer:
         
         # accumulated wandb metrics
         self.wandb_epoch_metrics = None
+
+        # create default eval modes
+        if eval_modes is None:
+            eval_modes = {}
 
         # attributes for checkpointing
         self.save_every = save_every
@@ -218,8 +236,9 @@ class Trainer:
                 # evaluate and gather metrics across each loader in test_loaders
                 eval_metrics = self.evaluate_all(epoch=epoch,
                                                 eval_losses=eval_losses,
-                                                test_loaders=test_loaders)
-
+                                                test_loaders=test_loaders,
+                                                eval_modes=eval_modes,
+                                                max_autoregressive_steps=max_autoregressive_steps)
                 epoch_metrics.update(**eval_metrics)
                 # save checkpoint if conditions are met
                 if save_best is not None:
@@ -305,19 +324,47 @@ class Trainer:
 
         return train_err, avg_loss, avg_lasso_loss, epoch_train_time
 
-    def evaluate_all(self, epoch, eval_losses, test_loaders):
+    def evaluate_all(self, epoch, eval_losses, test_loaders, eval_modes, max_autoregressive_steps=None):
+        """evaluate_all iterates through the entire dict of test_loaders
+        to perform evaluation on the whole dataset stored in each one. 
+
+        Parameters
+        ----------
+        epoch : int
+            current training epoch
+        eval_losses : dict[Loss]
+            keyed ``loss_name: loss_obj`` for each pair. Full set of 
+            losses to use in evaluation for each test loader. 
+        test_loaders : dict[DataLoader]
+            keyed ``loader_name: loader`` for each test loader. 
+        eval_modes : dict[str], optional
+            keyed ``loader_name: eval_mode`` for each test loader.
+            * If ``eval_modes.get(loader_name)`` does not return a value, 
+            the evaluation is automatically performed in ``single_step`` mode. 
+        max_autoregressive_steps : ``int``, optional
+            if provided, and one of the test loaders has ``eval_mode == "autoregressive"``,
+            limits the number of autoregressive steps performed per rollout.
+
+        Returns
+        -------
+        all_metrics: dict
+            collected eval metrics for each loader. 
+        """
         # evaluate and gather metrics across each loader in test_loaders
         all_metrics = {}
         for loader_name, loader in test_loaders.items():
+            loader_eval_mode = eval_modes.get(loader_name, "single_step")
             loader_metrics = self.evaluate(eval_losses, loader,
-                                    log_prefix=loader_name)   
+                                    log_prefix=loader_name,
+                                    mode=loader_eval_mode,
+                                    max_steps=max_autoregressive_steps)   
             all_metrics.update(**loader_metrics)
         if self.verbose:
             self.log_eval(epoch=epoch,
                       eval_metrics=all_metrics)
         return all_metrics
     
-    def evaluate(self, loss_dict, data_loader, log_prefix="", epoch=None):
+    def evaluate(self, loss_dict, data_loader, log_prefix="", epoch=None, mode="single_step", max_steps=None):
         """Evaluates the model on a dictionary of losses
 
         Parameters
@@ -331,6 +378,12 @@ class Trainer:
         epoch : int | None
             current epoch. Used when logging both train and eval
             default None
+        mode : Literal {'single_step', 'autoregression'}
+            if 'single_step', performs standard evaluation
+            if 'autoregression' loops through `max_steps` steps
+        max_steps : int, optional
+            max number of steps for autoregressive rollout. 
+            If None, runs the full rollout.
         Returns
         -------
         errors : dict
@@ -362,16 +415,21 @@ class Trainer:
                 return_output = False
                 if idx == len(data_loader) - 1:
                     return_output = True
-                eval_step_losses, outs = self.eval_one_batch(sample, loss_dict, return_output=return_output)
+                if mode == "single_step":
+                    eval_step_losses, outs = self.eval_one_batch(sample, loss_dict, return_output=return_output)
+                elif mode == "autoregression":
+                    eval_step_losses, outs = self.eval_one_batch_autoreg(sample, loss_dict,
+                                                                         return_output=return_output,
+                                                                         max_steps=max_steps)
 
                 for loss_name, val_loss in eval_step_losses.items():
                     errors[f"{log_prefix}_{loss_name}"] += val_loss
-            
+        
         for key in errors.keys():
             errors[key] /= self.n_samples
 
         # on last batch, log model outputs
-        if self.log_output:
+        if self.log_output and self.wandb_log:
             errors[f"{log_prefix}_outputs"] = wandb.Image(outs)
         
         return errors
@@ -499,6 +557,89 @@ class Trainer:
             val_loss = loss(out, **sample)
             eval_step_losses[loss_name] = val_loss
         
+        if return_output:
+            return eval_step_losses, out
+        else:
+            return eval_step_losses, None
+        
+    def eval_one_batch_autoreg(self,
+                       sample: dict,
+                       eval_losses: dict,
+                       return_output: bool=False,
+                       max_steps: int=None):
+        """eval_one_batch runs inference on one batch
+        and returns eval_losses for that batch.
+
+        Parameters
+        ----------
+        sample : dict
+            data batch dictionary
+        eval_losses : dict
+            dictionary of named eval metrics
+        return_outputs : bool
+            whether to return model outputs for plotting
+            by default False
+        max_steps: int
+            number of timesteps to roll out
+            typically the full trajectory length
+            If max_steps is none, runs until the full length
+
+            .. note::
+                If a value for ``max_steps`` is not provided, a data_processor
+                must be provided to handle rollout logic. 
+        Returns
+        -------
+        eval_step_losses : dict
+            keyed "loss_name": step_loss_value for each loss name
+        outputs: torch.Tensor | None
+            optionally returns batch outputs
+
+
+        """
+        eval_step_losses = {loss_name: 0. for loss_name in eval_losses.keys()}
+        # eval_rollout_losses = {loss_name: 0. for loss_name in eval_losses.keys()}
+
+        t = 0
+        if max_steps is None:
+            max_steps = float('inf')
+
+        # only increment the sample count once
+        sample_count_incr = False
+
+        while sample is not None and t < max_steps:
+            
+            if self.data_processor is not None:
+                sample = self.data_processor.preprocess(sample, step=t)
+            else:
+                # load data to device if no preprocessor exists
+                sample = {
+                    k: v.to(self.device)
+                    for k, v in sample.items()
+                    if torch.is_tensor(v)
+                }
+
+            if sample is None:
+                break
+            
+            # only increment the sample count once
+            if not sample_count_incr:
+                self.n_samples += sample["y"].shape[0]
+                sample_count_incr = True
+
+            out = self.model(**sample)
+                
+            if self.data_processor is not None:
+                out, sample = self.data_processor.postprocess(out, sample, step=t)
+            
+            for loss_name, loss in eval_losses.items():
+                step_loss = loss(out, **sample)
+                eval_step_losses[loss_name] += step_loss
+            
+            t += 1
+        # average over all steps of the final rollout
+        for loss_name in eval_step_losses.keys():
+            eval_step_losses[loss_name] /= t 
+
         if return_output:
             return eval_step_losses, out
         else:
