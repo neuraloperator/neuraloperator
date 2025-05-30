@@ -243,7 +243,6 @@ def test_fourier_diff_1d_periodic():
 
 def test_fourier_diff_1d_non_periodic():
     
-    
     ## Test on non-periodic functions using Fourier continuation
     # Consider sin(16*x)-cos(8*x) and exp(-0.8x)
     L = 2*torch.pi

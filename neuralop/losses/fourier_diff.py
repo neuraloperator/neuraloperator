@@ -1,5 +1,6 @@
 from neuralop.layers.fourier_continuation import FCLegendre
 import torch
+import warnings
 
 def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=40, FC_one_sided=False):
     """
@@ -35,11 +36,13 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=4
         FC = FCLegendre(n=FC_n, d=FC_d).to(u.device)
         u = FC(u, dim=1, one_sided=FC_one_sided)
         L = L *  (u.shape[-1] + FC_d) / u.shape[-1]     # Define extended length
+    else:
+        warnings.warn("Consider using Fourier continuation if the input is not periodic (use_FC=True).", category=UserWarning)
 
 
     nx = u.size(-1)    
     u_h = torch.fft.rfft(u, dim=-1) 
-    k_x = torch.arange(start=0, end=nx//2+1, step=1, device=u.device).view(*([1] * (u_h.dim() - 1)), u_h.size(-1))
+    k_x = torch.fft.rfftfreq(nx, d=1/nx).view(*([1] * (u_h.dim() - 1)), u_h.size(-1))
     
     # Fourier differentiation
     derivative_u_h = (1j * k_x * 2*torch.pi/L)**order * u_h 
@@ -52,4 +55,3 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=4
         derivative_u = derivative_u[..., FC_d//2: -FC_d//2]
 
     return derivative_u
-
