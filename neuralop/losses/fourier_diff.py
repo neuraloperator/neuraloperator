@@ -49,7 +49,7 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=4
     
     if low_pass_filter_ratio is not None:
         # Apply a low-pass filter to the Fourier coefficients
-        cutoff = int(nx * low_pass_filter_ratio)
+        cutoff = int(u_h.shape[-1] * low_pass_filter_ratio)
         u_h[..., cutoff:] = 0
     
     # Fourier differentiation
