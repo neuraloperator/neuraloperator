@@ -2,7 +2,7 @@ from neuralop.layers.fourier_continuation import FCLegendre
 import torch
 import warnings
 
-def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=40, FC_one_sided=False):
+def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=40, FC_one_sided=False, low_pass_filter_ratio=None):
     """
     Compute the 1D Fourier derivative of a given tensor.
     Use Fourier continuation to extend the signal if it is non-periodic. 
@@ -24,6 +24,8 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=4
         Number of points to add using the Fourier continuation layer. Defaults to 40.
     FC_one_sided : bool, optional
         Whether to only add points on one side, or add an equal number of points on both sides. Defaults to False.
+    low_pass_filter_ratio : float, optional
+        If not None, apply a low-pass filter to the Fourier coefficients. Can help reduce artificial oscillations. Defaults to None.
 
     Returns
     -------
@@ -39,10 +41,14 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=4
     else:
         warnings.warn("Consider using Fourier continuation if the input is not periodic (use_FC=True).", category=UserWarning)
 
-
     nx = u.size(-1)    
     u_h = torch.fft.rfft(u, dim=-1) 
     k_x = torch.fft.rfftfreq(nx, d=1/nx, device=u_h.device).view(*([1] * (u_h.dim() - 1)), u_h.size(-1))
+    
+    if low_pass_filter_ratio is not None:
+        # Apply a low-pass filter to the Fourier coefficients
+        cutoff = int(nx * low_pass_filter_ratio)
+        u_h[..., cutoff:] = 0
     
     # Fourier differentiation
     derivative_u_h = (1j * k_x * 2*torch.pi/L)**order * u_h 
