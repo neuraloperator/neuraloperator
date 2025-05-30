@@ -424,12 +424,12 @@ class Trainer:
 
                 for loss_name, val_loss in eval_step_losses.items():
                     errors[f"{log_prefix}_{loss_name}"] += val_loss
-            
+        
         for key in errors.keys():
             errors[key] /= self.n_samples
 
         # on last batch, log model outputs
-        if self.log_output:
+        if self.log_output and self.wandb_log:
             errors[f"{log_prefix}_outputs"] = wandb.Image(outs)
         
         return errors
