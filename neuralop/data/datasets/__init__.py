@@ -17,5 +17,5 @@ try:
     from .the_well import (TheWellDataset,
                            ActiveMatterDataset,
                            MHD64Dataset)
-except ModuleNotFoundError:
+except:
     pass
