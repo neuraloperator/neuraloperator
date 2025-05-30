@@ -41,6 +41,7 @@ extensions = [
     'sphinx.ext.mathjax', #'sphinx.ext.imgmath',
     'numpydoc.numpydoc',
     'sphinx_gallery.gen_gallery',
+    'sphinx_design',
 ]
 
 # -- sphinx_gallery configuration ---------------------------------
@@ -101,10 +102,11 @@ html_theme_options = {
     'github_url': 'https://github.com/neuraloperator/neuraloperator',
     # 'google_analytics' : 'G-QSPLEF75VT',
     'nav_links' : [('Install', 'install'),
+                   ('Theory Guide', 'theory_guide/index'),
                    ('User Guide', 'user_guide/index'),
                    ('API', 'modules/api'),
                    ('Examples', 'auto_examples/index'),
-                   ('Developer\'s Guide', 'dev_guide')
+                   ('Developer\'s Guide', 'dev_guide'),
                   ],
     # 'external_nav_links' : [('TensorLy', 'http://tensorly.org/dev')]
 }

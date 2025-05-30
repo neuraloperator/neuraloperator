@@ -1,7 +1,6 @@
 import sys
 import torch
 import wandb
-from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.nn.functional as F
 
@@ -16,17 +15,14 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 
 # Read the configuration
 config_name = "default"
-pipe = ConfigPipeline(
-    [
-        YamlConfig(
-            "./poisson_gino_config.yaml", config_name="default", config_folder="../config"
-        ),
-        ArgparseConfig(infer_types=True, config_name=None, config_file=None),
-        YamlConfig(config_folder="../config"),
-    ]
-)
-config = pipe.read_conf()
-config_name = pipe.steps[-1].config_name
+from zencfg import cfg_from_commandline
+import sys 
+sys.path.insert(0, '../')
+from config.poisson_gino_config import Default
+
+config = cfg_from_commandline(Default)
+config = config.to_dict()
+
 
 # Set-up distributed communication, if using
 device, is_logger = setup(config)
@@ -42,12 +38,12 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.gino.in_gno_radius,
-                config.gino.out_gno_radius,
-                config.gino.gno_weighting_function,
-                config.gino.gno_weight_function_scale,
-                config.gino.fno_n_modes,
-                config.gino.fno_n_layers,
+                config.model.in_gno_radius,
+                config.model.out_gno_radius,
+                config.model.gno_weighting_function,
+                config.model.gno_weight_function_scale,
+                config.model.fno_n_modes,
+                config.model.fno_n_layers,
                 config.data.n_train,
                 config.data.n_test,
             ]
@@ -71,7 +67,8 @@ config.verbose = config.verbose and is_logger
 
 # Print config to screen
 if config.verbose:
-    pipe.log()
+    print(f"##### CONFIG #####\n")
+    print(config)
     sys.stdout.flush()
 
 # Load the Nonlinear Poisson dataset
@@ -185,7 +182,7 @@ trainer = Trainer(
     n_epochs=config.opt.n_epochs,
     data_processor=data_processor,
     device=device,
-    mixed_precision=config.opt.amp_autocast,
+    mixed_precision=config.opt.mixed_precision,
     eval_interval=config.wandb.log_test_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,

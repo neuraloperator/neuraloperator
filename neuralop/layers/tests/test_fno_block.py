@@ -49,9 +49,11 @@ def test_FNOBlock_resolution_scaling_factor():
         assert(list(res.shape[2:]) == [m*2 for m in size[:dim]])
 
 
+@pytest.mark.parametrize('n_dim', [1,2,3,4])
+
 @pytest.mark.parametrize('norm', 
-                         ['instance_norm', 'ada_in', 'group_norm'])
-def test_FNOBlock_norm(norm):
+                         ['instance_norm', 'ada_in', 'group_norm', 'batch_norm'])
+def test_FNOBlock_norm(norm, n_dim):
     """Test SpectralConv with upsampled or downsampled outputs
     """
     modes = (8, 8, 8)
@@ -59,10 +61,9 @@ def test_FNOBlock_norm(norm):
     channel_mlp_dropout=0
     channel_mlp_expansion=0.5
     channel_mlp_skip='linear'
-    dim = 2
     ada_in_features = 4
     block = FNOBlocks(
-        3, 4, modes[:dim], n_layers=1, norm=norm, ada_in_features=ada_in_features,
+        3, 4, modes[:n_dim], n_layers=1, norm=norm, ada_in_features=ada_in_features,
         channel_mlp_dropout=channel_mlp_dropout, channel_mlp_expansion=channel_mlp_expansion, 
         channel_mlp_skip=channel_mlp_skip)
 
@@ -70,9 +71,9 @@ def test_FNOBlock_norm(norm):
         embedding = torch.randn(ada_in_features)
         block.set_ada_in_embeddings(embedding)
 
-    x = torch.randn(2, 3, *size[:dim])
+    x = torch.randn(2, 3, *size[:n_dim])
     res = block(x)
-    assert(list(res.shape[2:]) == size[:dim])
+    assert(list(res.shape[2:]) == size[:n_dim])
 
 @pytest.mark.parametrize('n_dim', 
                          [1,2,3])

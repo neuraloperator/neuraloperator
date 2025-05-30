@@ -87,9 +87,13 @@ class DictTransform(Transform):
         self.input_mappings = input_mappings
         self.return_mappings = return_mappings
 
-        assert transform_dict.keys() == input_mappings.keys()
+        assert transform_dict.keys() == input_mappings.keys(), \
+        f"Error: expected keys in transform_dict and input_mappings to match,\
+             received {transform_dict.keys()=}\n{input_mappings.keys()=}"
         if self.return_mappings:
-            assert transform_dict.keys() == return_mappings.keys()
+            assert transform_dict.keys() == return_mappings.keys(), \
+        f"Error: expected keys in transform_dict and return_mappings to match,\
+             received {transform_dict.keys()=}\n{return_mappings.keys()=}"
 
     def transform(self, tensor_dict):
         """

@@ -99,7 +99,7 @@ class DarcyDataset(PTDataset):
         # download darcy data from zenodo archive if passed
         if download:
             files_to_download = []
-            already_downloaded_files = [x for x in root_dir.iterdir()]
+            already_downloaded_files = [x.name for x in root_dir.iterdir()]
             for res in resolutions:
                 if f"darcy_train_{res}.pt" not in already_downloaded_files or \
                 f"darcy_test_{res}.pt" not in already_downloaded_files:    
@@ -153,7 +153,7 @@ def load_darcy_flow_small(n_train,
     # return dataloaders for backwards compat
     train_loader = DataLoader(dataset.train_db,
                               batch_size=batch_size,
-                              num_workers=0,
+                              num_workers=1,
                               pin_memory=True,
                               persistent_workers=False,)
     
@@ -162,7 +162,7 @@ def load_darcy_flow_small(n_train,
         test_loaders[res] = DataLoader(dataset.test_dbs[res],
                                        batch_size=test_bsize,
                                        shuffle=False,
-                                       num_workers=0,
+                                       num_workers=1,
                                        pin_memory=True,
                                        persistent_workers=False,)
     
@@ -179,7 +179,8 @@ def load_darcy_pt(n_train,
                   encode_input=False,
                   encode_output=True,
                   encoding="channel-wise",
-                  channel_dim=1,):
+                  channel_dim=1,
+                  num_workers=1):
 
     dataset = DarcyDataset(root_dir = data_root,
                            n_train=n_train,
@@ -197,7 +198,7 @@ def load_darcy_pt(n_train,
     # return dataloaders for backwards compat
     train_loader = DataLoader(dataset.train_db,
                               batch_size=batch_size,
-                              num_workers=0,
+                              num_workers=num_workers,
                               pin_memory=True,
                               persistent_workers=False,)
     
@@ -206,7 +207,7 @@ def load_darcy_pt(n_train,
         test_loaders[res] = DataLoader(dataset.test_dbs[res],
                                        batch_size=test_bsize,
                                        shuffle=False,
-                                       num_workers=0,
+                                       num_workers=num_workers,
                                        pin_memory=True,
                                        persistent_workers=False,)
     

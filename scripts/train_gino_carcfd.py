@@ -1,7 +1,6 @@
 import torch
 import wandb
 import sys
-from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
 from neuralop.training import setup, AdamW
 from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
@@ -14,17 +13,20 @@ from copy import deepcopy
 # query points is [sdf_query_resolution] * 3 (taken from config ahmed)
 # Read the configuration
 config_name = 'cfd'
-pipe = ConfigPipeline([YamlConfig('./gino_carcfd_config.yaml', config_name=config_name, config_folder='../config'),
-                       ArgparseConfig(infer_types=True, config_name=None, config_file=None),
-                       YamlConfig(config_folder='../config')
-                      ])
-config = pipe.read_conf()
+from zencfg import cfg_from_commandline
+import sys 
+sys.path.insert(0, '../')
+from config.gino_carcfd_config import Default
+
+config = cfg_from_commandline(Default)
+config = config.to_dict()
+
 
 #Set-up distributed communication, if using
 device, is_logger = setup(config)
 
-if config.data.sdf_query_resolution < config.gino.fno_n_modes[0]:
-    config.gino.fno_n_modes = [config.data.sdf_query_resolution]*3
+if config.data.sdf_query_resolution < config.model.fno_n_modes[0]:
+    config.model.fno_n_modes = [config.data.sdf_query_resolution]*3
 
 #Set up WandB logging
 wandb_init_args = {}

@@ -207,21 +207,21 @@ def get_model(config):
     model : nn.Module
         the instanciated module
     """
-    arch = config["arch"].lower()
-    config_arch = config.get(arch)
+    arch = config.model['model_arch'].lower()
+    model_config = config.model
 
     # Set the number of input channels depending on channels in data + mg patching
-    data_channels = config_arch.pop("data_channels")
+    data_channels = model_config.pop("data_channels")
     try:
         patching_levels = config["patching"]["levels"]
     except KeyError:
         patching_levels = 0
     if patching_levels:
         data_channels *= patching_levels + 1
-    config_arch["in_channels"] = data_channels
+    model_config["in_channels"] = data_channels
 
     # Dispatch model creation
     try:
-        return BaseModel._models[arch](**config_arch)
+        return BaseModel._models[arch](**model_config)
     except KeyError:
         raise ValueError(f"Got config.arch={arch}, expected one of {available_models()}.")

@@ -133,10 +133,10 @@ def _precompute_convolution_filter_matrix(grid_in,
     """
     
     # check that input arrays are valid point clouds in 2D
-    assert len(grid_in) == 2
-    assert len(grid_out) == 2
-    assert grid_in.shape[0] == 2
-    assert grid_out.shape[0] == 2
+    assert len(grid_in) == 2, "grid_in must be a 2d tensor."
+    assert len(grid_out) == 2, "grid_out must be a 2d tensor."
+    assert grid_in.shape[0] == 2, "grid_in must be a 2d tensor."
+    assert grid_out.shape[0] == 2, "grid_out must be a 2d tensor."
 
     n_in = grid_in.shape[-1]
     n_out = grid_out.shape[-1]
