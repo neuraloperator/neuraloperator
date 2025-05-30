@@ -17,17 +17,15 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 
 # Read the configuration
 config_name = "default"
-pipe = ConfigPipeline(
-    [
-        YamlConfig(
-            "./the_well/mhd_64_config.yaml", config_name="default", config_folder="../config"
-        ),
-        ArgparseConfig(infer_types=True, config_name=None, config_file=None),
-        YamlConfig(config_folder="../config"),
-    ]
-)
-config = pipe.read_conf()
-config_name = pipe.steps[-1].config_name
+# Read the configuration
+from zencfg import cfg_from_commandline, cfg_from_nested_dict
+import sys 
+sys.path.insert(0, '../')
+from config.the_well.mhd_64_config import Default
+
+config = cfg_from_commandline(Default)
+config = config.to_dict()
+
 
 # Set-up distributed communication, if using
 device, is_logger = setup(config)
@@ -43,12 +41,12 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.fno.n_layers,
-                config.fno.hidden_channels,
-                config.fno.n_modes_width,
-                config.fno.n_modes[0],
-                config.fno.factorization,
-                config.fno.rank,
+                config.model.n_layers,
+                config.model.hidden_channels,
+                config.model.n_modes_width,
+                config.model.n_modes[0],
+                config.model.factorization,
+                config.model.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
@@ -70,7 +68,7 @@ config.verbose = config.verbose and is_logger
 
 # Print config to screen
 if config.verbose and is_logger:
-    pipe.log()
+    print(f"##### CONFIG #####\n\n{config}\n")
     sys.stdout.flush()
 
 # Loading the Darcy flow dataset
@@ -144,8 +142,8 @@ else:
 
 
 # Creating the losses
-l2loss = LpLoss(d=2, p=2)
-h1loss = H1Loss(d=2)
+l2loss = LpLoss(d=3, p=2)
+h1loss = H1Loss(d=3)
 if config.opt.training_loss == "l2":
     train_loss = l2loss
 elif config.opt.training_loss == "h1":
@@ -172,9 +170,9 @@ trainer = Trainer(
     n_epochs=config.opt.n_epochs,
     device=device,
     data_processor=data_processor,
-    mixed_precision=config.opt.amp_autocast,
+    mixed_precision=config.opt.mixed_precision,
     wandb_log=config.wandb.log,
-    eval_interval=config.wandb.eval_interval,
+    eval_interval=config.opt.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
@@ -208,12 +206,5 @@ trainer.train(
     training_loss=train_loss,
     eval_losses=eval_losses,
 )
-
-'''losses = trainer.evaluate(eval_losses,
-                 test_loaders["autoregression"],
-                 log_prefix="autoreg",
-                 mode="autoregression",
-                 max_steps=dataset.test_dbs["autoregression"].metadata.n_steps_per_trajectory[0])'''
-print(f"Autoregressive eval losses: {losses}")
 if config.wandb.log and is_logger:
     wandb.finish()
