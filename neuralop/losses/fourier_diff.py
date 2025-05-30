@@ -25,7 +25,9 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=4
     FC_one_sided : bool, optional
         Whether to only add points on one side, or add an equal number of points on both sides. Defaults to False.
     low_pass_filter_ratio : float, optional
-        If not None, apply a low-pass filter to the Fourier coefficients. Can help reduce artificial oscillations. Defaults to None.
+        If not None, apply a low-pass filter to the Fourier coefficients. Can help reduce artificial oscillations. 
+        1.0 means no filtering, 0.5 means keep half of the coefficients, etc.
+        Defaults to None.
 
     Returns
     -------
