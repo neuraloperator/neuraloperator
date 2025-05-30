@@ -42,7 +42,7 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=4
 
     nx = u.size(-1)    
     u_h = torch.fft.rfft(u, dim=-1) 
-    k_x = torch.fft.rfftfreq(nx, d=1/nx).view(*([1] * (u_h.dim() - 1)), u_h.size(-1))
+    k_x = torch.fft.rfftfreq(nx, d=1/nx, device=u_h.device).view(*([1] * (u_h.dim() - 1)), u_h.size(-1))
     
     # Fourier differentiation
     derivative_u_h = (1j * k_x * 2*torch.pi/L)**order * u_h 
