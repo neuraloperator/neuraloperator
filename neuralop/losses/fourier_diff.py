@@ -52,6 +52,9 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=4
 
     # If Fourier continuation is used, crop the result to retrieve the derivative on the original interval
     if use_FC:
-        derivative_u = derivative_u[..., FC_d//2: -FC_d//2]
+        if FC_one_sided:
+            derivative_u = derivative_u[..., :-FC_d]
+        else:
+            derivative_u = derivative_u[..., FC_d//2: -FC_d//2]
 
     return derivative_u
