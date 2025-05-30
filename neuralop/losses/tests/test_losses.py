@@ -4,6 +4,7 @@ from torch.testing import assert_close
 
 from ..data_losses import LpLoss, H1Loss, HdivLoss
 from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd
+from ..fourier_diff import fourier_derivative_1d
 from neuralop.layers.embeddings import regular_grid_nd
 
 def test_lploss():
@@ -196,3 +197,80 @@ def test_nonuniform_fd_2d():
     # plt.yticks([])
     # plt.tight_layout()
     # plt.savefig('non_uniform_fd_2D.pdf')
+    
+    
+    
+def test_fourier_diff_1d_periodic():
+    
+    ## Test on periodic functions without Fourier continuation
+    # Consider sin(x) and cos(x)
+    L = 2*torch.pi
+    x = torch.linspace(0, L, 101)[:-1]
+    f = torch.stack([torch.sin(x), torch.cos(x)], dim=0)
+    dfdx = fourier_derivative_1d(f, order=1, L=L)
+    df2dx2 = fourier_derivative_1d(f, order=2, L=L)
+    df3dx3 = fourier_derivative_1d(f, order=3, L=L)
+    
+    assert f.shape == dfdx.shape == df2dx2.shape == df3dx3.shape
+
+    # # Plot to check visually
+    # import numpy as np
+    # import matplotlib.pyplot as plt
+    # x_np    = x.cpu().numpy()
+    # plt.figure()
+    # plt.plot(x_np, dfdx[0].squeeze().cpu().numpy(), label='Fourier dfdx')
+    # plt.plot(x_np, np.cos(x_np), '--', label='dfdx')
+    # plt.plot(x_np, df2dx2[0].squeeze().cpu().numpy(), label='Fourier df2dx2')
+    # plt.plot(x_np, -np.sin(x_np), '--', label='df2dx2')
+    # plt.plot(x_np, df3dx3[0].squeeze().cpu().numpy(), label='Fourier df3dx3')
+    # plt.plot(x_np, -np.cos(x_np), '--', label='df3dx3')
+    # plt.xlabel('x')
+    # plt.legend()
+    # plt.savefig("fourier_diff_sin.png")
+
+    # plt.figure()
+    # plt.plot(x_np, dfdx[1].squeeze().cpu().numpy(), label='Fourier dfdx')
+    # plt.plot(x_np, -np.sin(x_np), '--', label='dfdx')
+    # plt.plot(x_np, df2dx2[1].squeeze().cpu().numpy(), label='Fourier df2dx2')
+    # plt.plot(x_np, -np.cos(x_np), '--', label='df2dx2')
+    # plt.plot(x_np, df3dx3[1].squeeze().cpu().numpy(), label='Fourier df3dx3')
+    # plt.plot(x_np, np.sin(x_np), '--', label='df3dx3')
+    # plt.xlabel('x')
+    # plt.legend()
+    # plt.savefig("fourier_diff_cos.png")
+    
+    
+
+def test_fourier_diff_1d_non_periodic():
+    
+    
+    ## Test on non-periodic functions using Fourier continuation
+    # Consider sin(16*x)-cos(8*x) and exp(-0.8x)
+    L = 2*torch.pi
+    x = torch.linspace(0, L, 101)[:-1]    
+    f = torch.stack([torch.sin(3*x) - torch.cos(x), torch.exp(-0.8*x)+torch.sin(x)], dim=0)
+    dfdx = fourier_derivative_1d(f, order=1, L=L, use_FC=True, FC_n=4, FC_d=30, FC_one_sided=False)
+    df2dx2 = fourier_derivative_1d(f, order=2, L=L, use_FC=True, FC_n=4, FC_d=30, FC_one_sided=False)
+
+    assert f.shape == dfdx.shape == df2dx2.shape
+    
+    # # Plot to check visually
+    # import numpy as np
+    # import matplotlib.pyplot as plt
+    # x_np    = x.cpu().numpy()
+    # plt.figure()
+    # plt.plot(x_np, dfdx[0].squeeze().cpu().numpy(), label='Fourier dfdx')
+    # plt.plot(x_np, 3*torch.cos(3*x) + torch.sin(x), '--', label='dfdx')
+    # plt.plot(x_np, df2dx2[0].squeeze().cpu().numpy(), label='Fourier df2dx2')
+    # plt.plot(x_np, -9*torch.sin(3*x) + torch.cos(x), '--', label='df2dx2')
+    # plt.xlabel('x')
+    # plt.legend()
+    # plt.savefig("fourier_diff_non_periodic_sin_cos.png")
+    # plt.figure()
+    # plt.plot(x_np, dfdx[1].squeeze().cpu().numpy(), label='Fourier dfdx')
+    # plt.plot(x_np, -0.8*torch.exp(-0.8*x)+torch.cos(x), '--', label='dfdx')
+    # plt.plot(x_np, df2dx2[1].squeeze().cpu().numpy(), label='Fourier df2dx2')
+    # plt.plot(x_np, 0.64*torch.exp(-0.8*x)-torch.sin(x), '--', label='df2dx2')
+    # plt.xlabel('x')
+    # plt.legend()
+    # plt.savefig("fourier_diff_non_periodic_exp.png")
