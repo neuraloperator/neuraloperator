@@ -89,7 +89,20 @@ You can configure the project you want to use and your username in the main yaml
 Contributing
 ===============
 
-NeuralOperator is 100% open-source, and we welcome all contributions from the community! 
+NeuralOperator is 100% open-source, and we welcome contributions from the community! 
+
+Our mission for NeuralOperator is to provide access to well-documented, robust implementations of 
+neural operator methods from foundations to the cutting edge. The library is primarily intended for 
+methods that directly relate to operator learning: new architectures, meta-algorithms, training methods 
+and benchmark datasets. We are also interested in integrating interactive examples that showcase operator 
+learning in action on small sample problems. 
+
+If your work provides one of the above, we would be thrilled to integrate it into the library. 
+Otherwise, if your work simply relies on a version of the NeuralOperator codebase, we recommend 
+publishing your code separately using a procedure outlined in our
+`developer's guide <https://neuraloperator.github.io/dev/dev_guide.html>`_, under the section 
+"Publishing code built on the library". 
+
 If you spot a bug or a typo in the documentation, or have an idea for a feature you'd like to see,
 please report it on our `issue tracker <https://github.com/neuraloperator/neuraloperator/issues>`_, 
 or even better, open a Pull-Request on `GitHub <https://github.com/neuraloperator/neuraloperator>`_. 
