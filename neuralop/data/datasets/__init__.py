@@ -11,3 +11,11 @@ try:
     from .spherical_swe import load_spherical_swe
 except ModuleNotFoundError:
     pass
+
+# only import TheWell if the_well is built
+try:
+    from .the_well import (TheWellDataset,
+                           ActiveMatterDataset,
+                           MHD64Dataset)
+except:
+    pass
