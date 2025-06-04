@@ -106,7 +106,7 @@ html_theme_options = {
                    ('User Guide', 'user_guide/index'),
                    ('API', 'modules/api'),
                    ('Examples', 'auto_examples/index'),
-                   ('Developer\'s Guide', 'dev_guide'),
+                   ('Developer\'s Guide', 'dev_guide/index'),
                   ],
     # 'external_nav_links' : [('TensorLy', 'http://tensorly.org/dev')]
 }
