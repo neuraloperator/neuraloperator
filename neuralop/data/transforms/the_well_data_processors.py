@@ -4,6 +4,7 @@ try:
 except ModuleNotFoundError:
     print("Trying to import data processors for TheWell without required dependency\
           ``einops``. Run ``pip install einops`` and try again.")
+    raise ModuleNotFoundError
 
 import torch
 
