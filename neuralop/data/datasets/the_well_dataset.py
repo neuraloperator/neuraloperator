@@ -4,17 +4,12 @@ import yaml
 
 import torch
 
-from ..transforms.the_well_data_processors import TheWellDataProcessor
+from the_well.data import WellDataset
+from the_well.utils.download import well_download
+
+
 from ..transforms.normalizers import UnitGaussianNormalizer
-
-try:
-    from the_well.data import WellDataset
-    from the_well.utils.download import well_download
-except:
-    print("You are trying to use WellDataset without optional dependency `the_well`. ",
-          "Install via `pip install the_well` and retry.")
-    raise ImportError
-
+from ..transforms.the_well_data_processors import TheWellDataProcessor
 
 class TheWellDataset:
     """__init__ _summary_

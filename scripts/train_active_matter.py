@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader, DistributedSampler
 import wandb
 
 from neuralop import H1Loss, LpLoss, Trainer, get_model
-from neuralop.data.datasets.the_well import ActiveMatterDataset
+from neuralop.data.datasets.the_well_dataset import ActiveMatterDataset
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.training import setup, AdamW
 from neuralop.mpu.comm import get_local_rank

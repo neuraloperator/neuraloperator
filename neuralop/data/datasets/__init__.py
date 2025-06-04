@@ -14,8 +14,8 @@ except ModuleNotFoundError:
 
 # only import TheWell if the_well is built
 try:
-    from .the_well import (TheWellDataset,
+    from .the_well_dataset import (TheWellDataset,
                            ActiveMatterDataset,
                            MHD64Dataset)
-except:
+except ModuleNotFoundError:
     pass
