@@ -1,68 +1,5 @@
-.. _dev_guide:
-
-=================
-Developer's Guide
-=================
-
-This guide provides essential information for developers contributing to NeuralOperator.
-
-~~~~~~~~
-
-Installation and Setup
------------------------
-
-To get started with development, fork the repository on GitHub, then download your fork. After cloning, 
-move to the top level of the repo in your terminal. 
-
-.. code-block:: bash
-
-    git clone https://github.com/YOURNAME/neuraloperator.git
-    cd neuraloperator
-
-.. note:: 
-
-    To manage the library's dependencies and minimize the risk of conflicts with other packages installed in your
-    default local Python environment, we recommend developing and building ``neuraloperator`` in a fresh Python
-    virtual environment. 
-
-.. warning::
-
-    Previous versions of our installation and build guides recommended starting with the Anaconda distribution. Our library
-    depends on `PyTorch <https://pytorch.org>`_. As of spring 2025, PyTorch has stopped releasing updates to the Anaconda
-    distribution. For the latest PyTorch we recommend you use ``pip``. 
-
-Create your virtual environment and store it in the top level:
-
-.. code-block:: bash
-
-    python -m venv .venv
-    source .venv/bin/activate
-
-Install PyTorch. These are generic instructions; if you require a specific build, or a specific CUDA version, your installation
-command will vary. Check PyTorch's `getting started page <https://pytorch.org/get-started/locally/>`_ for more detailed instructions
-
-Next, install the library locally in editable mode, along with the ``".[dev]"`` tag to install all development dependencies 
-
-.. code-block:: bash
-    
-    pip install -e .[dev]
-
-To test your installation, run python in interactive mode and import the library as ``neuralop`` to ensure it is properly built:
-
-.. code-block:: bash
-
-    $ python
-    Python 3.10.14 (main, Month Day Year, Time of Day) [GCC VERSION] on linux
-    Type "help", "copyright", "credits" or "license" for more information.
-    >>> import neuralop
-    >>> 
-
-You have now successfully built ``neuralop``. For instructions on contributing code, see below. 
-
-~~~~~~~~
-
 Contributing code
------------------
+=================
 
 We welcome new contributions to the library! Our mission for NeuralOperator is to provide access
 to well-documented, robust implementations of neural operator methods from foundations to the cutting edge. 
@@ -74,8 +11,11 @@ If your work provides one of the above, we would be thrilled to integrate it int
 work simply relies on a version of the NeuralOperator codebase, we recommend publishing your code separately using 
 a procedure outlined :ref:`here <publishing_code_built_on_neuralop>`.
 
+First, ensure you have the latest version of the library installed for development, including requirements for the documentation, see :doc:`install` for more details.
+
+
 Extending NeuralOperator
-++++++++++++++++++++++++
+------------------------
 
 To add a new neural operator model:
 
@@ -89,49 +29,15 @@ To add a layer:
 2. Ensure the layer is a subclass of ``torch.nn.Module``.
 3. Add a parametrized unit test file in ``neuralop/layers/tests``.
 
-.. note ::
+.. note::
+
     For optional bonus points, add an interactive example featuring your new method to ``./examples``.
     This helps both us and you: the simpler it is for new users to understand and adapt your method, 
     the more visibility it will get! 
 
-Code Style and Standards
-++++++++++++++++++++++++
-
-To ensure code clarity and future maintainability, NeuralOperator adheres to simple style principles.
-
-In general, docstrings use the NumPy format:
-
-.. code-block:: python
-
-    def function(arg1: type1, arg2: type2=default)
-        """
-        Parameters
-        ----------
-        arg1 : type1
-            description of what arg1 'means'
-            for the function's behavior
-        arg2 : type2, optional
-            description arg2
-            by default default
-        """
-
-For *classes*, this docstring should go directly below the class declaration:
-
-.. code-block:: python
-
-    class MyClass(Superclass):
-        """
-        docstring goes here
-        """
-        def __init__(self, ...):
-        # Full NumPy docstring not needed here.
-        
-We also adhere to good in-line commenting practices. When a block's function is not
-obvious on its own, add in-line comments with a brief description. For tensor operations, 
-shape annotations are especially helpful where applicable.
 
 Submitting Contributions
-++++++++++++++++++++++++
+------------------------
 
 Follow these steps when making contributions:
 
@@ -158,7 +64,7 @@ Ensure your PR description clearly communicates what you've changed or added.
 .. _publishing_code_built_on_neuralop:
 
 Publishing code built on the library
-++++++++++++++++++++++++++++++++++++
+------------------------------------
 
 If you plan to use ``neuralop`` as the base of a project, we suggest the following workflow:
 

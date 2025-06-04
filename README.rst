@@ -41,8 +41,9 @@ on `PyPI <https://pypi.org/project/neuraloperator/>`_:
 
 
 .. code::
-  
+
   pip install neuraloperator
+
 
 Quickstart
 ----------
@@ -100,7 +101,7 @@ learning in action on small sample problems.
 If your work provides one of the above, we would be thrilled to integrate it into the library. 
 Otherwise, if your work simply relies on a version of the NeuralOperator codebase, we recommend 
 publishing your code separately using a procedure outlined in our
-`developer's guide <https://neuraloperator.github.io/dev/dev_guide.html>`_, under the section 
+`developer's guide <https://neuraloperator.github.io/dev/dev_guide/index.html>`_, under the section 
 "Publishing code built on the library". 
 
 If you spot a bug or a typo in the documentation, or have an idea for a feature you'd like to see,
@@ -119,6 +120,7 @@ OR
    
    pip install -e .[dev]
 
+
 Code formatting
 ----------------
 
@@ -128,6 +130,7 @@ easiest way to do this is with ``black``:
 .. code::
 
    black .
+
 
 Running the tests
 ------------------
@@ -141,6 +144,7 @@ To run the tests, simply run, in the terminal:
 .. code::
 
     pytest -v neuralop
+
 
 Building documentation
 -----------------------

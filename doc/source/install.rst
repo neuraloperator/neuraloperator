@@ -106,6 +106,53 @@ To force-downgrade PyTorch, run
 Developer Setup
 ---------------
 
+Install the library for development:
+++++++++++++++++++++++++++++++++++++
+
+To get started with development, fork the repository on GitHub, then download your fork. After cloning, 
+move to the top level of the repo in your terminal. 
+
+.. code-block:: bash
+
+    git clone https://github.com/YOURNAME/neuraloperator.git
+    cd neuraloperator
+
+.. note:: 
+
+    To manage the library's dependencies and minimize the risk of conflicts with other packages installed in your
+    default local Python environment, we recommend developing and building ``neuraloperator`` in a fresh Python
+    virtual environment. 
+
+.. warning::
+
+    Previous versions of our installation and build guides recommended starting with the Anaconda distribution. Our library
+    depends on `PyTorch <https://pytorch.org>`_. As of spring 2025, PyTorch has stopped releasing updates to the Anaconda
+    distribution. For the latest PyTorch we recommend you use ``pip``. 
+
+Create your virtual environment and store it in the top level:
+
+.. code-block:: bash
+
+    python -m venv .venv
+    source .venv/bin/activate
+
+Install PyTorch. These are generic instructions; if you require a specific build, or a specific CUDA version, your installation
+command will vary. Check PyTorch's `getting started page <https://pytorch.org/get-started/locally/>`_ for more detailed instructions
+
+
+To test your installation, run python in interactive mode and import the library as ``neuralop`` to ensure it is properly built:
+
+.. code-block:: bash
+
+    $ python
+    Python 3.10.14 (main, Month Day Year, Time of Day) [GCC VERSION] on linux
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>> import neuralop
+    >>> 
+
+You have now successfully built ``neuralop``. For instructions on contributing code, see below. 
+
+
 Running the tests
 +++++++++++++++++
 
