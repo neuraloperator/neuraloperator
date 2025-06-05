@@ -9,7 +9,7 @@ from neuralop.data.datasets import load_mini_burgers_1dtime
 from neuralop.data.transforms.data_processors import MGPatchingDataProcessor
 from neuralop.training import setup, AdamW, PINOTrainer
 from neuralop.utils import get_wandb_api_key, count_model_params, get_project_root
-from neuralop.losses.meta_losses import Relobralo, SoftAdapt
+from neuralop.losses.meta_losses import Relobralo_for_Trainer, SoftAdapt_for_Trainer
 
 #
 # This script uses config.opt.loss_aggregator to select the loss aggregator:
@@ -140,9 +140,9 @@ for i, loss in enumerate(training_loss):
 # Select loss aggregator
 agg = config.opt.loss_aggregator.lower()
 if agg == 'relobralo':
-    train_loss = Relobralo(losses=losses, mappings=mappings, alpha=0.5, beta=0.9, logging=True)
+    train_loss = Relobralo_for_Trainer(losses=losses, mappings=mappings, alpha=0.5, beta=0.9, logging=True)
 elif agg == 'softadapt':
-    train_loss = SoftAdapt(losses=losses, mappings=mappings, logging=True)
+    train_loss = SoftAdapt_for_Trainer(losses=losses, mappings=mappings, logging=True)
 else:
     raise ValueError(f"Unknown loss_aggregator: {agg}. Use 'relobralo' or 'softadapt'.")
 
