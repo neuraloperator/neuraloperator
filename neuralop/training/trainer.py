@@ -820,7 +820,7 @@ class PINOTrainer(Trainer):
                     log_dict = {f"train_loss_{field}": value.item() if hasattr(value, 'item') else value for field, value in training_loss.latest_loss_record.items()}
                     log_dict.update({f"train_weight_{field}": value for field, value in training_loss.latest_weight_record.items()})
                     log_dict["train_loss_total"] = training_loss.latest_total_loss.item() if hasattr(training_loss.latest_total_loss, 'item') else training_loss.latest_total_loss
-                    wandb.log(log_dict, commit=True)
+                    wandb.log(log_dict, commit=False)
             except ImportError:
                 pass
         return result
