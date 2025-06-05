@@ -6,7 +6,7 @@ from ..models import ModelConfig, FNO_Medium3d
 from ..opt import OptimizationConfig, PatchingConfig
 from ..wandb import WandbConfig
 
-class ActiveMatterOptConfig(OptimizationConfig):
+class MHD64OptConfig(OptimizationConfig):
     n_epochs: int = 600
     learning_rate: float = 3e-4
     training_loss: str = "h1"
@@ -33,7 +33,7 @@ class Default(ConfigBase):
     distributed: DistributedConfig = DistributedConfig()
     model: ModelConfig = FNO_Medium3d(data_channels=7,
                                       out_channels=7,)
-    opt: OptimizationConfig = ActiveMatterOptConfig()
+    opt: OptimizationConfig = MHD64OptConfig()
     data: MHD_64_DatasetConfig = MHD_64_DatasetConfig()
     patching: PatchingConfig = PatchingConfig()
     wandb: WandbConfig = WandbConfig()
