@@ -140,9 +140,9 @@ for i, loss in enumerate(training_loss):
 # Select loss aggregator
 agg = config.opt.loss_aggregator.lower()
 if agg == 'relobralo':
-    train_loss = Relobralo_for_Trainer(losses=losses, mappings=mappings, alpha=0.5, beta=0.9, logging=True)
+    train_loss = Relobralo_for_Trainer(losses=losses, mappings=mappings, alpha=0.5, beta=0.9, tau=1.0)
 elif agg == 'softadapt':
-    train_loss = SoftAdapt_for_Trainer(losses=losses, mappings=mappings, logging=True)
+    train_loss = SoftAdapt_for_Trainer(losses=losses, mappings=mappings)
 else:
     raise ValueError(f"Unknown loss_aggregator: {agg}. Use 'relobralo' or 'softadapt'.")
 
