@@ -33,7 +33,7 @@ class LpLoss(object):
         dimension of data on which to compute, by default 1
     p : int, optional
         order of L-norm, by default 2
-        L-p norm: [\sum_{i=0}^n (x_i - y_i)**p] ** (1/p)
+        L-p norm: [\\sum_{i=0}^n (x_i - y_i)**p] ** (1/p)
     measure : float or list, optional
         measure of the domain, by default 1.0
         either single scalar for each dim, or one per dim
