@@ -32,6 +32,7 @@ class BurgersOptConfig(OptimizationConfig):
     scheduler_patience: int = 100 # For ReduceLROnPlateau only
     step_size: int = 60
     gamma: float = 0.5
+    loss_aggregator: str = 'relobralo'  # Allowed: 'relobralo', 'softadapt'
 
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None
