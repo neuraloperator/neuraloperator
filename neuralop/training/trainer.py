@@ -798,30 +798,39 @@ class PINOTrainer(Trainer):
     """
     def train_one_epoch(self, epoch, train_loader, training_loss):
         
+        # Use usual Trainer for training one epoch
         result = super().train_one_epoch(epoch, train_loader, training_loss)
         
         # After epoch, log loss weights and values
         if hasattr(training_loss, 'latest_loss_record') and hasattr(training_loss, 'latest_weight_record'):
             
+            # Print loss values
             print(f"[Epoch {epoch}] Loss values:")
             for field, value in training_loss.latest_loss_record.items():
                 print(f"  {field}: {value.item() if hasattr(value, 'item') else value}")
             
+            # Print loss weights
             print(f"[Epoch {epoch}] Loss weights:")
             for field, value in training_loss.latest_weight_record.items():
                 print(f"  {field}: {value}")
             
+            # Print total loss
             if hasattr(training_loss, 'latest_total_loss'):
                 print(f"[Epoch {epoch}] Total loss: {training_loss.latest_total_loss.item() if hasattr(training_loss.latest_total_loss, 'item') else training_loss.latest_total_loss}")
             
-            # wandb logging
+            # Log loss values, loss weights, and total loss to wandb
             try:
                 if getattr(self, 'wandb_log', False) and wandb.run is not None and hasattr(training_loss, 'latest_total_loss'):
+                    # Add loss values, loss weights, and total loss to log_dict
                     log_dict = {f"train_loss_{field}": value.item() if hasattr(value, 'item') else value for field, value in training_loss.latest_loss_record.items()}
                     log_dict.update({f"train_weight_{field}": value for field, value in training_loss.latest_weight_record.items()})
                     log_dict["train_loss_total"] = training_loss.latest_total_loss.item() if hasattr(training_loss.latest_total_loss, 'item') else training_loss.latest_total_loss
+                    
+                    # log to wandb (commit=False here because we are logging other things later on at the end of the epoch)
                     wandb.log(log_dict, commit=False)
+                    
             except ImportError:
                 pass
+            
         return result
        
