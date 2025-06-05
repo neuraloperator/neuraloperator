@@ -790,3 +790,38 @@ class Trainer:
                 print(f"[Rank 0]: saved training state to {save_dir}")
 
        
+
+class PINOTrainer(Trainer):
+    """
+    Trainer subclass that logs per-field loss values and weights at the end of each epoch.
+    Works with meta-losses like Relobralo that expose latest_loss_record, latest_weight_record, and latest_total_loss attributes.
+    """
+    def train_one_epoch(self, epoch, train_loader, training_loss):
+        
+        result = super().train_one_epoch(epoch, train_loader, training_loss)
+        
+        # After epoch, log loss weights and values
+        if hasattr(training_loss, 'latest_loss_record') and hasattr(training_loss, 'latest_weight_record'):
+            
+            print(f"[Epoch {epoch}] Loss values:")
+            for field, value in training_loss.latest_loss_record.items():
+                print(f"  {field}: {value.item() if hasattr(value, 'item') else value}")
+            
+            print(f"[Epoch {epoch}] Loss weights:")
+            for field, value in training_loss.latest_weight_record.items():
+                print(f"  {field}: {value}")
+            
+            if hasattr(training_loss, 'latest_total_loss'):
+                print(f"[Epoch {epoch}] Total loss: {training_loss.latest_total_loss.item() if hasattr(training_loss.latest_total_loss, 'item') else training_loss.latest_total_loss}")
+            
+            # wandb logging
+            try:
+                if getattr(self, 'wandb_log', False) and wandb.run is not None and hasattr(training_loss, 'latest_total_loss'):
+                    log_dict = {f"train_loss_{field}": value.item() if hasattr(value, 'item') else value for field, value in training_loss.latest_loss_record.items()}
+                    log_dict.update({f"train_weight_{field}": value for field, value in training_loss.latest_weight_record.items()})
+                    log_dict["train_loss_total"] = training_loss.latest_total_loss.item() if hasattr(training_loss.latest_total_loss, 'item') else training_loss.latest_total_loss
+                    wandb.log(log_dict, commit=True)
+            except ImportError:
+                pass
+        return result
+       
