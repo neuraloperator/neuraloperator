@@ -98,12 +98,16 @@ class Relobralo_for_Trainer(FieldwiseAggregatorLoss):
     """
     Implements the Relative Loss Balancing with Random Lookback (ReLoBRaLo) algorithm.
     
-    This algorithm adaptively balances multiple loss terms by considering their relative
-    magnitudes and using a momentum-based update scheme.
+    Inherits from FieldwiseAggregatorLoss to maintain compatibility with the Trainer class.
     
     References
     ----------
     Bischoff et al., "Multi-objective loss balancing for physics-informed deep learning" (2021)
+    
+    Adapted from NVIDIA PhysicsNeMo
+    NVIDIA PhysicsNeMo: An open-source framework for physics-based deep learning in science and engineering
+    https://github.com/NVIDIA/physicsnemo
+    
     
     Parameters
     ----------
@@ -111,70 +115,99 @@ class Relobralo_for_Trainer(FieldwiseAggregatorLoss):
         Dictionary of loss functions to aggregate
     mappings : dict
         Dictionary mapping loss names to indices in the output tensor
-    alpha : float, default=0.5
-        Smoothing factor for loss updates
-    beta : float, default=0.9
-        Momentum factor for loss updates
+    alpha : float, default=0.95
+        Smoothing factor for exponential moving average
+    beta : float, default=0.99
+        Probability for random lookback
+    tau : float, default=1.0
+        Temperature parameter for softmax normalization
+    epsilon : float, default=1e-8
+        Small constant for numerical stability
     """
-    def __init__(self, losses, mappings, alpha=0.5, beta=0.9, logging=True):
-        super().__init__(losses=losses, mappings=mappings, logging=logging)
+    def __init__(self, losses, mappings, alpha=0.95, beta=0.99, tau=1.0, epsilon=1e-8):
+        super().__init__(losses=losses, mappings=mappings, logging=True)
         self.alpha = alpha
         self.beta = beta
-        self.loss_history = {field: [] for field in losses}
+        self.tau = tau
+        self.epsilon = epsilon
         self.weights = {field: 1.0 for field in losses}
         self.latest_loss_record = {}
         self.latest_weight_record = {}
         self.latest_total_loss = None
+        self.init_losses = {field: None for field in losses}
+        self.prev_losses = {field: None for field in losses}
+        self.lmbda_ema = {field: 1.0 for field in losses}
 
     def __call__(self, pred: torch.Tensor, y: torch.Tensor, **kwargs):
         total_loss = 0.0
         self.latest_loss_record = {}
         self.latest_weight_record = {}
         
+        # Compute current losses
+        current_losses = {}
         for field, indices in self.mappings.items():
             pred_field = pred[indices]
             truth_field = y[indices]
-            
-            # Call loss function with appropriate arguments based on its signature
             loss_fn = self.losses[field]
             sig = inspect.signature(loss_fn.__call__)
             
-            # Initialize empty dictionary to store arguments for the loss function call
+            # Prepare arguments for loss function
             call_args = {}
-
-            # Get prediction input parameter
-            # Some loss functions use 'pred', others use 'y_pred'
             if 'pred' in sig.parameters or 'y_pred' in sig.parameters:
-                # Use the appropriate parameter name and assign the prediction tensor
-                param_name = 'pred' if 'pred' in sig.parameters else 'y_pred'
-                call_args[param_name] = pred_field
-
-            # Get ground truth input parameter 
-            # Some loss functions use 'y', others use 'truth'
+                call_args['pred' if 'pred' in sig.parameters else 'y_pred'] = pred_field
             if 'y' in sig.parameters or 'truth' in sig.parameters:
-                # Use the appropriate parameter name and assign the ground truth tensor
-                param_name = 'y' if 'y' in sig.parameters else 'truth'
-                call_args[param_name] = truth_field
-
-            # Add any additional keyword arguments passed to this function
+                call_args['y' if 'y' in sig.parameters else 'truth'] = truth_field
             call_args.update(kwargs)
             
-            # Call the loss function with the appropriate arguments
+            # Compute loss
             field_loss = loss_fn(**call_args)
-            
-            # Update loss history with current loss value
-            self.loss_history[field].append(field_loss.item())
-            
-            # Calculate relative loss if we have previous history
-            if len(self.loss_history[field]) > 1:
-                prev_avg = sum(self.loss_history[field][:-1]) / len(self.loss_history[field][:-1])
-                rel_loss = field_loss.item() / prev_avg if prev_avg != 0 else 1.0
-                self.weights[field] = self.beta * self.weights[field] + (1 - self.beta) * (1 / (rel_loss + self.alpha))
-            total_loss += self.weights[field] * field_loss
-            
+            current_losses[field] = field_loss.item()
             self.latest_loss_record[field] = field_loss
-            self.latest_weight_record[field] = self.weights[field]
+
+        # Initialize losses at first step
+        if all(self.init_losses[field] is None for field in self.mappings):
+            for field in self.mappings:
+                self.init_losses[field] = current_losses[field]
+                self.prev_losses[field] = current_losses[field]
+                self.weights[field] = 1.0 / len(self.mappings)
+                self.latest_weight_record[field] = self.weights[field]
+        else:
+            # Stack losses for vectorized computation
+            losses_stacked = torch.tensor([current_losses[field] for field in self.mappings])
+            prev_losses_stacked = torch.tensor([self.prev_losses[field] for field in self.mappings])
+            init_losses_stacked = torch.tensor([self.init_losses[field] for field in self.mappings])
             
+            # Compute weights using ReLoBRaLo formula
+            with torch.no_grad():
+                # Compute normalizers
+                normalizer_prev = (losses_stacked / (self.tau * prev_losses_stacked)).max()
+                normalizer_init = (losses_stacked / (self.tau * init_losses_stacked)).max()
+                
+                # Random lookback
+                rho = torch.bernoulli(torch.tensor(self.beta))
+                
+                # Compute and normalize weights
+                lmbda_prev = torch.exp(losses_stacked / (self.tau * prev_losses_stacked + self.epsilon) - normalizer_prev)
+                lmbda_init = torch.exp(losses_stacked / (self.tau * init_losses_stacked + self.epsilon) - normalizer_init)
+                lmbda_prev = lmbda_prev / (lmbda_prev.sum() + self.epsilon)
+                lmbda_init = lmbda_init / (lmbda_init.sum() + self.epsilon)
+                
+                # Update weights using exponential moving average
+                for i, field in enumerate(self.mappings):
+                    self.lmbda_ema[field] = self.alpha * (rho * self.lmbda_ema[field] + (1.0 - rho) * lmbda_init[i].item())
+                    self.lmbda_ema[field] += (1.0 - self.alpha) * lmbda_prev[i].item()
+                    self.weights[field] = self.lmbda_ema[field]
+                    self.latest_weight_record[field] = self.weights[field]
+            
+            # Update previous losses
+            for field in self.mappings:
+                self.prev_losses[field] = current_losses[field]
+
+        # Compute weighted sum
+        for field, indices in self.mappings.items():
+            total_loss += self.weights[field] * self.latest_loss_record[field]
+
+        # Average the total loss by number of fields
         total_loss = total_loss / len(self.mappings)
         self.latest_total_loss = total_loss
         return total_loss
@@ -182,12 +215,19 @@ class Relobralo_for_Trainer(FieldwiseAggregatorLoss):
 
 class SoftAdapt_for_Trainer(FieldwiseAggregatorLoss):
     """
-    SoftAdapt loss aggregator that implements the SoftAdapt algorithm for loss weighting,
-    introduced in 
-    "SoftAdapt: Techniques for Adaptive Loss Weighting of Neural Networks 
-    with Multi-Part Loss Functions" (Heydari et al., 2019)
-    
+    SoftAdapt loss aggregator that implements the SoftAdapt algorithm for loss weighting
+
     Inherits from FieldwiseAggregatorLoss to maintain compatibility with the Trainer class.
+        
+    References
+    ----------
+    Heydari et al.,  "SoftAdapt: Techniques for Adaptive Loss Weighting of Neural Networks 
+    with Multi-Part Loss Functions" (2019)
+    
+    Adapted from NVIDIA PhysicsNeMo
+    NVIDIA PhysicsNeMo: An open-source framework for physics-based deep learning in science and engineering
+    https://github.com/NVIDIA/physicsnemo
+    
     
     Parameters
     ----------
@@ -195,74 +235,73 @@ class SoftAdapt_for_Trainer(FieldwiseAggregatorLoss):
         Dictionary of loss functions to aggregate
     mappings : dict
         Dictionary mapping loss names to indices in the output tensor
-    window_size : int, default=5
-        Number of previous losses to consider for weight updates
     epsilon : float, default=1e-8
         Small constant for numerical stability
     """
-    def __init__(self, losses, mappings, window_size=5, epsilon=1e-8, logging=True):
-        super().__init__(losses=losses, mappings=mappings, logging=logging)
-        self.window_size = window_size
+    def __init__(self, losses, mappings, epsilon=1e-8):
+        super().__init__(losses=losses, mappings=mappings, logging=True)
         self.epsilon = epsilon
-        self.loss_history = {field: [] for field in losses}
         self.weights = {field: 1.0 for field in losses}
         self.latest_loss_record = {}
         self.latest_weight_record = {}
         self.latest_total_loss = None
+        self.prev_losses = {field: None for field in losses}
 
     def __call__(self, pred: torch.Tensor, y: torch.Tensor, **kwargs):
         total_loss = 0.0
         self.latest_loss_record = {}
         self.latest_weight_record = {}
+        
+        # Compute current losses
         current_losses = {}
-
-        # First pass: compute field losses and update history
         for field, indices in self.mappings.items():
             pred_field = pred[indices]
             truth_field = y[indices]
             loss_fn = self.losses[field]
             sig = inspect.signature(loss_fn.__call__)
-
-            # Prepare arguments for the loss function
+            
+            # Prepare arguments for loss function
             call_args = {}
             if 'pred' in sig.parameters or 'y_pred' in sig.parameters:
                 call_args['pred' if 'pred' in sig.parameters else 'y_pred'] = pred_field
             if 'y' in sig.parameters or 'truth' in sig.parameters:
                 call_args['y' if 'y' in sig.parameters else 'truth'] = truth_field
             call_args.update(kwargs)
-
-            # Compute the field loss
+            
+            # Compute loss
             field_loss = loss_fn(**call_args)
             current_losses[field] = field_loss.item()
-
-            # Update loss history (sliding window)
-            self.loss_history[field].append(field_loss.item())
-            if len(self.loss_history[field]) > self.window_size:
-                self.loss_history[field].pop(0)
 
             # Store for logging
             self.latest_loss_record[field] = field_loss
 
-        # Update weights using SoftAdapt formula
-        # Only update if all fields have enough history
-        if all(len(h) >= 2 for h in self.loss_history.values()):
-            for field in self.mappings:
-                prev_avg = sum(self.loss_history[field][:-1]) / len(self.loss_history[field][:-1])
-                rel_change = current_losses[field] / prev_avg if prev_avg != 0 else 1.0
-                # SoftAdapt: weight = exp(rel_change - 1)
-                self.weights[field] = torch.exp(torch.tensor(rel_change - 1.0))
+        # Update weights using SoftAdapt formula if we have previous losses
+        if all(self.prev_losses[field] is not None for field in self.mappings):
+            # Stack losses for vectorized computation
+            losses_stacked = torch.tensor([current_losses[field] for field in self.mappings])
+            prev_losses_stacked = torch.tensor([self.prev_losses[field] for field in self.mappings])
+            
+            # Compute weights using softmax formula
+            with torch.no_grad():
+                # Compute normalizer as max of loss ratios
+                normalizer = (losses_stacked / (prev_losses_stacked + self.epsilon)).max()
+                
+                # Compute and normalize weights
+                weights = torch.exp(losses_stacked / (prev_losses_stacked + self.epsilon) - normalizer)
+                weights = weights / (weights.sum() + self.epsilon)
+                
+                # Update weights dictionary
+                for i, field in enumerate(self.mappings):
+                    self.weights[field] = weights[i].item()
+                    self.latest_weight_record[field] = self.weights[field]
 
-        # Normalize weights to sum to 1
-        weight_sum = sum(self.weights.values())
-        if weight_sum > 0:
-            for field in self.weights:
-                self.weights[field] = self.weights[field] / weight_sum
+        # Update previous losses for next iteration
+        for field in self.mappings:
+            self.prev_losses[field] = current_losses[field]
 
-        # Second pass: compute weighted sum and store weights for logging
+        # Compute weighted sum
         for field, indices in self.mappings.items():
-            field_loss = self.latest_loss_record[field]
-            total_loss += self.weights[field] * field_loss
-            self.latest_weight_record[field] = self.weights[field]
+            total_loss += self.weights[field] * self.latest_loss_record[field]
 
         # Average the total loss by number of fields
         total_loss = total_loss / len(self.mappings)
