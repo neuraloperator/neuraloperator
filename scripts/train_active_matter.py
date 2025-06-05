@@ -43,14 +43,10 @@ if config.wandb.log and is_logger:
             f"{var}"
             for var in [
                 config_name,
-                config.fno.n_layers,
-                config.fno.hidden_channels,
-                config.fno.n_modes_width,
-                config.fno.n_modes[0],
-                config.fno.factorization,
-                config.fno.rank,
-                config.patching.levels,
-                config.patching.padding,
+                config.model.model_arch,
+                config.model.n_layers,
+                config.model.n_modes,
+                config.model.hidden_channels,
             ]
         )
     wandb_args =  dict(

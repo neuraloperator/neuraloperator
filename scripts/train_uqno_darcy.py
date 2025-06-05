@@ -41,15 +41,10 @@ if config.wandb.log and is_logger:
         wandb_name = "_".join(
             f"{var}"
             for var in [
-                config_name,
+                config.model.model_arch,
                 config.model.n_layers,
+                config.model.n_modes,
                 config.model.hidden_channels,
-                config.model.n_modes_width,
-                config.model.n_modes_height,
-                config.model.factorization,
-                config.model.rank,
-                config.patching.levels,
-                config.patching.padding,
             ]
         )
     wandb_args =  dict(
