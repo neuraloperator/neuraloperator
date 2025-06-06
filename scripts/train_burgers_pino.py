@@ -11,10 +11,6 @@ from neuralop.training import setup, AdamW, PINOTrainer
 from neuralop.utils import get_wandb_api_key, count_model_params, get_project_root
 from neuralop.losses.meta_losses import Relobralo_for_Trainer, SoftAdapt_for_Trainer
 
-#
-# This script uses config.opt.loss_aggregator to select the loss aggregator:
-#   'relobralo' (default) or 'softadapt'
-#
 
 # Read the configuration
 config_name = "default"
@@ -26,7 +22,7 @@ from config.burgers_pino_config import Default
 config = cfg_from_commandline(Default)
 config = config.to_dict()
 
-# Set-up distributed communication, if using
+# Set-up distributed communication
 device, is_logger = setup(config)
 
 # Set up WandB logging
@@ -58,7 +54,7 @@ if config.wandb.log and is_logger:
     wandb.init(**wandb_init_args)
 else: 
     wandb_init_args = None
-# Make sure we only print information when needed
+
 config.verbose = config.verbose and is_logger
 
 # Print config to screen
@@ -91,6 +87,7 @@ optimizer = AdamW(
     weight_decay=config.opt.weight_decay,
 )
 
+# Create the scheduler
 if config.opt.scheduler == "ReduceLROnPlateau":
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
@@ -181,7 +178,7 @@ trainer = PINOTrainer(
     wandb_log = config.wandb.log
 )
 
-# Log parameter count
+# Log number of parameters
 if is_logger:
     n_params = count_model_params(model)
 
