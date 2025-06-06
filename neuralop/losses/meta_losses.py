@@ -313,10 +313,11 @@ class SoftAdapt_for_Trainer(FieldwiseAggregatorLoss):
 
 
 
-# Below are the implementations of the meta-losses from NVIDIA PhysicsNeMo
+# Below are the implementations of the meta-losses from NVIDIA PhysicsNeMo (with almost no changes).
+# These are more convenient to use when training without the Trainer/PINOTrainer class.
 # NVIDIA PhysicsNeMo: An open-source framework for physics-based deep learning in science and engineering
 # https://github.com/NVIDIA/physicsnemo
-# These are more convenient to use when training without the Trainer/PINOTrainer class.
+
 
 class Aggregator(nn.Module):
     """
@@ -405,6 +406,7 @@ class SoftAdapt(Aggregator):
             for i, key in enumerate(losses.keys()):
                 loss += losses[key]
                 self.prev_losses[i] = losses[key].clone().detach()
+            lmbda = torch.ones_like(self.prev_losses)
 
         # Aggregate losses using SoftAdapt for step > 0
         else:
@@ -421,7 +423,8 @@ class SoftAdapt(Aggregator):
                 loss += lmbda[i].clone() * losses[key]
                 self.prev_losses[i] = losses[key].clone().detach()
             loss *= self.num_losses / (lmbda_sum + self.eps)
-        return loss
+            
+        return loss, lmbda
 
 
 class Relobralo(Aggregator):
@@ -511,4 +514,5 @@ class Relobralo(Aggregator):
                     self.lmbda_ema[i] += (1.0 - self.alpha) * lmbda_prev[i]
                 loss += self.lmbda_ema[i].clone() * losses[key]
                 self.prev_losses[i] = losses[key].clone().detach()
-        return loss
+                
+        return loss, self.lmbda_ema
