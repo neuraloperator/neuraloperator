@@ -175,7 +175,7 @@ class SpectralConvLaplace(BaseSpectralConv):
         else:
             self.register_parameter('bias', None)
             
-        self.shape_enforcer = ShapeEnforcer() # Use your actual ShapeEnforcer
+        self.shape_enforcer = ShapeEnforcer()
 
     def _extract_poles_residues(self) -> Tuple[List[torch.Tensor], torch.Tensor]:
         """Extracts pole tensors (one per dim) and the residue tensor from self.weight."""
@@ -212,7 +212,9 @@ class SpectralConvLaplace(BaseSpectralConv):
         indices['intermediate'] = list(einsum_symbols[2 * self.order : 3 * self.order])
         return indices
 
-    def forward(self, x: torch.Tensor, output_shape: Optional[Tuple[int, ...]] = None) -> torch.Tensor:
+    def forward(
+        self, x: torch.Tensor, output_shape: Optional[Tuple[int, ...]] = None
+    ) -> torch.Tensor:
         """Forward pass for N-D Laplace spectral convolution."""
         batchsize, channels, *mode_sizes = x.shape
 
@@ -240,7 +242,7 @@ class SpectralConvLaplace(BaseSpectralConv):
         lambdas_list = []
         for d in range(self.order):
             # Ensure dt is positive, handle case of single point dimension
-            dt_d = dt_list[d] if dt_list[d] > 1e-9 else 1.0 
+            dt_d = dt_list[d] if dt_list[d] > 1e-9 else 1.0 # Avoid division by zero
             freqs = torch.fft.fftfreq(mode_sizes[d], d=dt_d, device=x.device)
             lambda_d = freqs * (2 * np.pi * 1j) # s = j * omega
             lambdas_list.append(lambda_d)
@@ -299,14 +301,8 @@ class SpectralConvLaplace(BaseSpectralConv):
         residues_reshaped = residues.view(list(residues.shape) + [1] * self.order) # same shape as full_denominator
 
         # Calculate Hw = Residues / Denominator
-        # Avoid division by zero or very small numbers
-        # epsilon = torch.finfo(full_denominator.dtype).eps
-        # Ensure epsilon has compatible shape or is scalar
-        
-        # denominator = torch.add(full_denominator, epsilon) # Avoid division by zero
-        denominator = full_denominator 
-        
-        Hw = torch.div(residues_reshaped, denominator) # Element-wise division
+                
+        Hw = torch.div(residues_reshaped, full_denominator) # Element-wise division
         # Hw shape: (i, o, poles0, ..., polesN, freqs0, ..., freqsN)
 
         # Determine Pk (term used for steady-state calculation)
@@ -352,7 +348,6 @@ class SpectralConvLaplace(BaseSpectralConv):
 
         # Apply IFFT
         x1 = torch.fft.ifftn(out1_summed, s=output_spatial_shape, dim=fft_dims) 
-        
         
         # If input was real, take real part (assuming output should also be real)
         if not x.is_complex(): # Check if input was complex
