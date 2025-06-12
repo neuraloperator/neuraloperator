@@ -170,12 +170,11 @@ class SpectralConvLaplace(BaseSpectralConv):
             std * torch.rand(in_channels, out_channels, total_weight_dim, dtype=torch.cfloat)
         )
     
-        # # Optional bias term
-        # if bias:
-        #     # Bias added in spatial domain, shape (out_channels, 1, ..., 1)
-        #     self.bias = nn.Parameter(std * torch.randn(out_channels, *(1,) * self.order))
-        # else:
-        #     self.register_parameter('bias', None)
+        if bias:
+            # Bias added in spatial domain, shape (out_channels, 1, ..., 1)
+            self.bias = nn.Parameter(std * torch.randn(out_channels, *(1,) * self.order))
+        else:
+            self.register_parameter('bias', None)
             
         self.fft_norm = fft_norm
         self.shape_enforcer = ShapeEnforcer() # Use your actual ShapeEnforcer
@@ -413,10 +412,10 @@ class SpectralConvLaplace(BaseSpectralConv):
         # --- Combine and Finalize ---
         x = x1 + x2
 
-        # if self.bias is not None:
-        #      # Reshape bias to broadcast correctly: (1, out_channels, 1, ..., 1)
-        #      bias_shape = [1, self.out_channels] + [1] * self.order
-        #      x = x + self.bias.view(bias_shape)
+        if self.bias is not None:
+             # Reshape bias to broadcast correctly: (1, out_channels, 1, ..., 1)
+             bias_shape = [1, self.out_channels] + [1] * self.order
+             x = x + self.bias.view(bias_shape)
 
         # Ensure final output shape matches expectation via resampling/enforcer
         if tuple(x.shape[2:]) != output_spatial_shape:
