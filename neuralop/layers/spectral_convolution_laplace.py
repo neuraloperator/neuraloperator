@@ -48,12 +48,14 @@ def _compute_dt_nd(shape: Tuple[int, ...],
     dt_list = []
 
     for i in range(dim):
-        # Create grid points for dimension i
-        # Note: linspace includes start and end, linspace(start, end, steps) gives steps points.
-        # fftfreq expects N samples. If shape[i] is the number of samples, 
-        # the domain length is (end - start) * (shape[i] / (shape[i]-1)) if using linspace directly?
-        # Let's assume shape[i] is the number of points, and calculate dt based on that.
-        # Alternative: regular_grid_nd might be more consistent if available and used elsewhere.
+        """
+        Create grid points for dimension i
+        Note: linspace includes start and end, linspace(start, end, steps) gives steps points.
+        fftfreq expects N samples. If shape[i] is the number of samples, 
+        the domain length is (end - start) * (shape[i] / (shape[i]-1)) if using linspace directly.
+        Let's assume shape[i] is the number of points, and calculate dt based on that.
+        Alternative: regular_grid_nd
+        """
         
         # Using linspace to define points:
         coords_i = torch.linspace(start_points[i], end_points[i], steps=shape[i], device=device)
@@ -93,8 +95,6 @@ class SpectralConvLaplace(BaseSpectralConv):
         Defaults to (-1)**(order + 1), based on observed pattern in 1D/2D/3D.
     init_std : str or float, default is "auto"
         Standard deviation for weight initialization
-    fft_norm : str, default is "forward"
-        Normalization mode for FFT ('forward', 'backward', 'ortho').
     device : torch.device, optional
         Device for computation.
     linspace_steps : tuple of int, optional
@@ -121,7 +121,6 @@ class SpectralConvLaplace(BaseSpectralConv):
         bias: bool = False,
         steady_state_sign: Optional[int] = None,
         init_std: Union[str, float] = "auto",
-        fft_norm: str = "forward",
         device: Optional[torch.device] = None,
         linspace_steps: Optional[Tuple[int, ...]] = None,
         linspace_startpoints: Optional[List[float]] = None,
@@ -154,7 +153,7 @@ class SpectralConvLaplace(BaseSpectralConv):
         # Calculate sizes for poles and residues
         self._num_poles_per_dim = list(self.n_modes)
         self._total_num_poles = sum(self._num_poles_per_dim)
-        self._num_residues = math_prod(self._num_poles_per_dim) # math.prod available in Python 3.8+
+        self._num_residues = math_prod(self._num_poles_per_dim) 
         
         total_weight_dim = self._total_num_poles + self._num_residues
 
@@ -176,7 +175,6 @@ class SpectralConvLaplace(BaseSpectralConv):
         else:
             self.register_parameter('bias', None)
             
-        self.fft_norm = fft_norm
         self.shape_enforcer = ShapeEnforcer() # Use your actual ShapeEnforcer
 
     def _extract_poles_residues(self) -> Tuple[List[torch.Tensor], torch.Tensor]:
