@@ -46,7 +46,7 @@ plt.show()
 x_in = torch.linspace(0, 2, nx)
 y_in = torch.linspace(0, 3, ny)
 
-x_in, y_in = torch.meshgrid(x_in, y_in)
+x_in, y_in = torch.meshgrid(x_in, y_in, indexing='ij')
 grid_in = torch.stack([x_in.reshape(-1), y_in.reshape(-1)])
 
 # compute the correct quadrature weights
@@ -85,7 +85,7 @@ nyo = 120
 x_out = torch.linspace(0, 2, nxo)
 y_out = torch.linspace(0, 3, nyo)
 
-x_out, y_out = torch.meshgrid(x_out, y_out)
+x_out, y_out = torch.meshgrid(x_out, y_out, indexing='ij')
 grid_out = torch.stack([x_out.reshape(-1), y_out.reshape(-1)])
 
 # compute the correct quadrature weights
