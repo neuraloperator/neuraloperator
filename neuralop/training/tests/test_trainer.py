@@ -42,7 +42,7 @@ def test_model_checkpoint_saves():
                   save_every=1
                   )
     
-    for file_ext in ['model_state_dict.pt', 'model_metadata.pkl', 'optimizer.pt', 'scheduler.pt']:
+    for file_ext in ['model_state_dict.pt', 'optimizer.pt', 'scheduler.pt']:
         file_pth = save_pth / file_ext
         assert file_pth.exists()
 
@@ -83,7 +83,7 @@ def test_model_checkpoint_and_resume():
                   save_dir=save_pth,
                   save_every=1
                   )
-    for file_ext in ['best_model_state_dict.pt', 'best_model_metadata.pkl', 'optimizer.pt', 'scheduler.pt']:
+    for file_ext in ['best_model_state_dict.pt', 'optimizer.pt', 'scheduler.pt']:
         file_pth = save_pth / file_ext
         
         assert file_pth.exists()
@@ -157,7 +157,7 @@ def test_load_from_checkpoint():
                   )
     
     # create a new model from saved checkpoint and evaluate
-    loaded_model = DummyModel.from_checkpoint(save_folder='./full_states', save_name='model')
+    loaded_model = DummyModel.from_checkpoint("./full_states/model_state_dict.pt")
     trainer = Trainer(model=loaded_model,
                       n_epochs=1,
     )

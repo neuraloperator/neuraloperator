@@ -1,13 +1,13 @@
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Literal
 
 Number = Union[float, int]
 
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from ..layers.embeddings import GridEmbeddingND, GridEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
+
 from ..layers.padding import DomainPadding
 from neuralop.layers.local_no_block import LocalNOBlocks
 from ..layers.channel_mlp import ChannelMLP
@@ -84,8 +84,8 @@ class LocalNO(BaseModel, name='LocalNO'):
 
         * If None, does nothing
 
-    non_linearity : nn.Module, optional
-        Non-Linear activation function module to use, by default F.gelu
+    non_linearity : Literal ["gelu", "relu", "elu", "sigmoid", "tanh"]
+        Non-linear activation function to use, by default "gelu"
     norm : str {"ada_in", "group_norm", "instance_norm"}, optional
         Normalization layer to use, by default None
     complex_data : bool, optional
@@ -148,8 +148,8 @@ class LocalNO(BaseModel, name='LocalNO'):
         * If 'reconstructed', implements with the reconstructed full tensorized weight.
     decomposition_kwargs : dict, optional
         extra kwargs for tensor decomposition (see `tltorch.FactorizedTensor`), by default dict()
-    conv_module : nn.Module, optional
-        module to use for FNOBlock's convolutions, by default SpectralConv
+    conv_module : Literal['spectral', 'spherical']
+        module to use for FNOBlock's convolutions, by default 'spectral'
     
     Examples
     ---------
@@ -196,7 +196,7 @@ class LocalNO(BaseModel, name='LocalNO'):
         lifting_channel_ratio: Number=2,
         projection_channel_ratio: Number=2,
         positional_embedding: Union[str, nn.Module]="grid",
-        non_linearity: nn.Module=F.gelu,
+        non_linearity: Literal["gelu", "relu", "elu", "sigmoid", "tanh"]="gelu",
         norm: str=None,
         complex_data: bool=False,
         use_channel_mlp: bool=False,
@@ -217,7 +217,7 @@ class LocalNO(BaseModel, name='LocalNO'):
         decomposition_kwargs: dict=dict(),
         separable: bool=False,
         preactivation: bool=False,
-        conv_module: nn.Module=SpectralConv,
+        conv_module: Literal['spectral', 'spherical']='spectral',
         **kwargs
     ):
         

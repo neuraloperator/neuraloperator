@@ -8,7 +8,6 @@ from .base_model import BaseModel
 from ..layers.channel_mlp import ChannelMLP
 from ..layers.embeddings import SinusoidalEmbedding
 from ..layers.fno_block import FNOBlocks
-from ..layers.spectral_convolution import SpectralConv
 from ..layers.gno_block import GNOBlock
 from ..layers.gno_weighting_functions import dispatch_weighting_fn
 
@@ -115,11 +114,11 @@ class GINO(BaseModel):
         dropout parameter of above ChannelMLP.
     fno_channel_mlp_expansion : float, defaults to 0.5
         expansion parameter of above ChannelMLP.
-    fno_non_linearity : nn.Module, defaults to F.gelu
-        nonlinear activation function between each FNO layer.
-    fno_stabilizer : nn.Module | None, defaults to None
-        By default None, otherwise tanh is used before FFT in the FNO block.
-    fno_norm : nn.Module | None, defaults to None
+    fno_non_linearity : Literal ["gelu", "relu", "elu", "sigmoid", "tanh"]
+        nonlinear activation function between each FNO layer, defaults to 'gelu'
+    fno_stabilizer : Literal["tanh"] | None, defaults to None
+        By default None, if ``"tanh"``, tanh is used before FFT in the FNO block.
+    fno_norm : Literal["ada_in", "group_norm", "instance_norm", "batch_norm"] | None, defaults to None
         normalization layer to use in FNO.
     fno_ada_in_features : int | None, defaults to 4
         if an adaptive mesh is used, number of channels of its positional embedding.
@@ -151,9 +150,12 @@ class GINO(BaseModel):
         * `factorized` : the input is directly contracted with the factors of the decomposition
     fno_decomposition_kwargs : dict, defaults to dict()
         Optionaly additional parameters to pass to the tensor decomposition.
-    fno_conv_module : nn.Module, defaults to SpectralConv
-        Spectral Convolution module to use.
-    
+    fno_conv_module : Literal['spectral', 'spherical']
+        Spectral Convolution module to use, by default ``'spectral'``
+
+        * If ``'spectral'``, uses ``SpectralConv``
+
+        * If ``'spherical'``, uses ``SphericalConv``
         
     References
     -----------
@@ -161,6 +163,7 @@ class GINO(BaseModel):
         Nabian, M., Stadler, M., Hundt, C., Azizzadenesheli, K., Anandkumar, A. (2023)
         Geometry-Informed Neural Operator for Large-Scale 3D PDEs. NeurIPS 2023,
         https://proceedings.neurips.cc/paper_files/paper/2023/hash/70518ea42831f02afc3a2828993935ad-Abstract-Conference.html
+
     .. _[2] : Lin, R. et al. Placeholder reference for Mollified Graph Neural Operators.
     """
     def __init__(
@@ -188,7 +191,7 @@ class GINO(BaseModel):
         gno_embed_max_positions=10000,
         in_gno_channel_mlp_hidden_layers=[80, 80, 80],
         out_gno_channel_mlp_hidden_layers=[512, 256],
-        gno_channel_mlp_non_linearity=F.gelu, 
+        gno_channel_mlp_non_linearity='gelu', 
         gno_use_open3d=True,
         gno_use_torch_scatter=True,
         out_gno_tanh=None,
@@ -199,7 +202,7 @@ class GINO(BaseModel):
         fno_use_channel_mlp=True, 
         fno_channel_mlp_dropout=0,
         fno_channel_mlp_expansion=0.5,
-        fno_non_linearity=F.gelu,
+        fno_non_linearity='gelu',
         fno_stabilizer=None, 
         fno_norm=None,
         fno_ada_in_features=4,
@@ -214,7 +217,7 @@ class GINO(BaseModel):
         fno_fixed_rank_modes=False,
         fno_implementation='factorized',
         fno_decomposition_kwargs=dict(),
-        fno_conv_module=SpectralConv,
+        fno_conv_module='spectral',
         **kwargs
         ):
         

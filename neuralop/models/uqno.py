@@ -1,7 +1,10 @@
 from copy import deepcopy
+from pathlib import Path
 
 import torch
 import torch.nn as nn
+
+from pprint import pprint
 
 
 from .base_model import BaseModel
@@ -38,12 +41,13 @@ class UQNO(BaseModel, name="UQNO"):
                  **kwargs
                  ):
         super().__init__()
+        self._version = '0.2.0'
 
         self.base_model = base_model
         if residual_model is None:
             residual_model = deepcopy(base_model)
         self.residual_model = residual_model
-    
+
     def forward(self, *args, **kwargs):
         """
         Forward pass returns the solution u(a,x)
@@ -53,8 +57,8 @@ class UQNO(BaseModel, name="UQNO"):
         self.base_model.eval() # base-model weights are frozen
         # another way to handle this would be to use LoRA, or similar
         # ie freeze the  weights, and train a low-rank matrix of weight perturbations
+
         with torch.no_grad():
             solution = self.base_model(*args, **kwargs)
         quantile = self.residual_model(*args, **kwargs)
         return (solution, quantile)
-    
