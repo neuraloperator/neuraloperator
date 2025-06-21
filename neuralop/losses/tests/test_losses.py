@@ -248,8 +248,8 @@ def test_fourier_diff_1d_non_periodic():
     L = 2*torch.pi
     x = torch.linspace(0, L, 101)[:-1]    
     f = torch.stack([torch.sin(3*x) - torch.cos(x), torch.exp(-0.8*x)+torch.sin(x)], dim=0)
-    dfdx = fourier_derivative_1d(f, order=1, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_points=30, FC_one_sided=False)
-    df2dx2 = fourier_derivative_1d(f, order=2, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_points=30, FC_one_sided=False)
+    dfdx = fourier_derivative_1d(f, order=1, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30, FC_one_sided=False)
+    df2dx2 = fourier_derivative_1d(f, order=2, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30, FC_one_sided=False)
 
     assert f.shape == dfdx.shape == df2dx2.shape
     
