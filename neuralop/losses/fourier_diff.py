@@ -63,7 +63,7 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_d=4, FC_n_a
     derivative_u = torch.fft.irfft(derivative_u_h, dim=-1, n=nx) 
 
     # If Fourier continuation is used, crop the result to retrieve the derivative on the original interval
-    if use_FC is not None:
+    if use_FC:
         if FC_one_sided:
             derivative_u = derivative_u[..., :-FC_n_additional_pts]
         else:
