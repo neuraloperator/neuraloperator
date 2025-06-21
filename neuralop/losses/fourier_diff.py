@@ -1,8 +1,8 @@
-from neuralop.layers.fourier_continuation import FCLegendre
+from neuralop.layers.fourier_continuation import FCLegendre, FCGram
 import torch
 import warnings
 
-def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=40, FC_one_sided=False, low_pass_filter_ratio=None):
+def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_d=4, FC_n_additional_points=40, FC_one_sided=False, low_pass_filter_ratio=None):
     """
     Compute the 1D Fourier derivative of a given tensor.
     Use Fourier continuation to extend the signal if it is non-periodic. 
@@ -16,11 +16,11 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=4
         Order of the derivative. Defaults to 1.
     L : float, optional
         Length of the domain considered. Defaults to 2*pi.
-    use_FC : bool, optional
-        Whether to use Fourier continuation. Use for non-periodic functions. Defaults to False.
-    FC_n : int, optional
-        Degree of the Fourier continuation. Defaults to 4.
+    use_FC : str, optional   [None, 'Legendre', 'Gram']
+        Whether to use Fourier continuation. Use for non-periodic functions. Defaults to None.
     FC_d : int, optional
+        'Degree' of the Fourier continuation. Defaults to 4.
+    FC_n_additional_points : int, optional
         Number of points to add using the Fourier continuation layer. Defaults to 40.
     FC_one_sided : bool, optional
         Whether to only add points on one side, or add an equal number of points on both sides. Defaults to False.
@@ -36,10 +36,14 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=4
     """
     
     # Extend signal using Fourier continuation if specified
-    if use_FC:
-        FC = FCLegendre(n=FC_n, d=FC_d).to(u.device)
+    if use_FC=='Legendre':
+        FC = FCLegendre(d=FC_d, n_additional_points=FC_n_additional_points).to(u.device)
         u = FC(u, dim=1, one_sided=FC_one_sided)
         L = L *  (u.shape[-1] + FC_d) / u.shape[-1]     # Define extended length
+    elif use_FC=='Gram':
+        FC = FCGram(d=FC_d, n_additional_points=FC_n_additional_points).to(u.device)
+        u = FC(u, dim=1, one_sided=FC_one_sided)
+        L = L *  (u.shape[-1] + FC_d) / u.shape[-1]    
     else:
         warnings.warn("Consider using Fourier continuation if the input is not periodic (use_FC=True).", category=UserWarning)
 
@@ -59,7 +63,7 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_n=4, FC_d=4
     derivative_u = torch.fft.irfft(derivative_u_h, dim=-1, n=nx) 
 
     # If Fourier continuation is used, crop the result to retrieve the derivative on the original interval
-    if use_FC:
+    if use_FC is not None:
         if FC_one_sided:
             derivative_u = derivative_u[..., :-FC_d]
         else:
