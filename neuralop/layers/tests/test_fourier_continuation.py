@@ -20,43 +20,43 @@ def test_Legendre_fourier_continuation_1d():
     torch.testing.assert_close(f, f_extend_one_side[...,:length_signal])
     torch.testing.assert_close(f, f_extend_both_sides[...,add_pts//2:-add_pts//2])
 
-    # Plot to verify
-    import matplotlib.pyplot as plt
-    x_extended_one_side = torch.linspace(0, 1.4, 141) 
-    x_extended_both_sides = torch.linspace(-0.2, 1.2, 141) 
-    # Add 0.5 and -0.5 for plotting purposes
-    f_extend_one_side = f_extend_one_side + 0.6
-    f_extend_both_sides = f_extend_both_sides - 0.6
-    plt.figure(figsize=(14, 5))
-    plt.plot(x[0], f[0], 'k', label='Original Function', lw=2.2)
-    plt.plot(x_extended_one_side, f_extend_one_side[0] , 'b',label='One-sided Extension', lw=2.2)
-    plt.plot(x_extended_both_sides, f_extend_both_sides[0] , 'g', label='Two-sided Extension', lw=2.2)
-    plt.plot([0, 0], [-2.7, 1.8], '-', color='gray', lw=1.5)  
-    plt.plot([1, 1], [-2.7, 1.8], '-', color='gray', lw=1.5)  
-    plt.plot([0, 1.4], [f_extend_one_side[0,0],f_extend_one_side[0,0]], '--', color='b', lw=1.4)  
-    plt.plot([-0.2, 1.2], [f_extend_both_sides[0,0],f_extend_both_sides[0,0]], '--', color='g', lw=1.4) 
-    # Create legend with FC-Legendre at the top
-    from matplotlib.lines import Line2D
-    legend_elements = [
-        Line2D([0], [0], color='none', label='FC-Legendre'),
-        Line2D([0], [0], color='k', lw=2.2, label='Original Function'),
-        Line2D([0], [0], color='b', lw=2.2, label='One-sided Extension'),
-        Line2D([0], [0], color='g', lw=2.2, label='Two-sided Extension')
-    ]
-    legend = plt.legend(handles=legend_elements, fontsize=19)
-    # Make the first legend entry bold
-    legend.get_texts()[0].set_fontweight('bold')
-    ax = plt.gca()
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.tick_params(axis='x', which='major', labelsize=19)
-    ax.tick_params(axis='y', which='major', labelsize=19)
-    plt.xticks([-0.2,0,1,1.2, 1.4])
-    plt.yticks([-2,2])
-    plt.xlim([-0.24, 1.52])
-    plt.ylim([-2.7, 2.5])
-    plt.tight_layout()
-    plt.savefig('1d_FCLegendre_examples.pdf', dpi=500, bbox_inches='tight')
+    # # Plot to verify
+    # import matplotlib.pyplot as plt
+    # x_extended_one_side = torch.linspace(0, 1.4, 141) 
+    # x_extended_both_sides = torch.linspace(-0.2, 1.2, 141) 
+    # # Add 0.5 and -0.5 for plotting purposes
+    # f_extend_one_side = f_extend_one_side + 0.6
+    # f_extend_both_sides = f_extend_both_sides - 0.6
+    # plt.figure(figsize=(14, 5))
+    # plt.plot(x[0], f[0], 'k', label='Original Function', lw=2.2)
+    # plt.plot(x_extended_one_side, f_extend_one_side[0] , 'b',label='One-sided Extension', lw=2.2)
+    # plt.plot(x_extended_both_sides, f_extend_both_sides[0] , 'g', label='Two-sided Extension', lw=2.2)
+    # plt.plot([0, 0], [-2.7, 1.8], '-', color='gray', lw=1.5)  
+    # plt.plot([1, 1], [-2.7, 1.8], '-', color='gray', lw=1.5)  
+    # plt.plot([0, 1.4], [f_extend_one_side[0,0],f_extend_one_side[0,0]], '--', color='b', lw=1.4)  
+    # plt.plot([-0.2, 1.2], [f_extend_both_sides[0,0],f_extend_both_sides[0,0]], '--', color='g', lw=1.4) 
+    # # Create legend with FC-Legendre at the top
+    # from matplotlib.lines import Line2D
+    # legend_elements = [
+    #     Line2D([0], [0], color='none', label='FC-Legendre'),
+    #     Line2D([0], [0], color='k', lw=2.2, label='Original Function'),
+    #     Line2D([0], [0], color='b', lw=2.2, label='One-sided Extension'),
+    #     Line2D([0], [0], color='g', lw=2.2, label='Two-sided Extension')
+    # ]
+    # legend = plt.legend(handles=legend_elements, fontsize=19)
+    # # Make the first legend entry bold
+    # legend.get_texts()[0].set_fontweight('bold')
+    # ax = plt.gca()
+    # ax.spines['top'].set_visible(False)
+    # ax.spines['right'].set_visible(False)
+    # ax.tick_params(axis='x', which='major', labelsize=19)
+    # ax.tick_params(axis='y', which='major', labelsize=19)
+    # plt.xticks([-0.2,0,1,1.2, 1.4])
+    # plt.yticks([-2,2])
+    # plt.xlim([-0.24, 1.52])
+    # plt.ylim([-2.7, 2.5])
+    # plt.tight_layout()
+    # plt.savefig('1d_FCLegendre_examples.pdf', dpi=500, bbox_inches='tight')
 
 
 def test_Legendre_fourier_continuation_2d():
