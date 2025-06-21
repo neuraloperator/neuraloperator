@@ -1,5 +1,10 @@
 import torch
+import os
+from pathlib import Path
 from ..fourier_continuation import FCLegendre, FCGram
+
+current_dir = Path(__file__).parent
+matrices_dir = current_dir.parent / 'FCGram_matrices'
 
 def test_Legendre_fourier_continuation_1d():
     
@@ -275,7 +280,7 @@ def test_FCGram_fourier_continuation_1d():
     x = torch.linspace(0, 1, length_signal, dtype=torch.float64).repeat(batch_size,1)
     f = torch.sin(16 * x) - torch.cos(8 * x)
 
-    Extension = FCGram(d=3, n_additional_pts=add_pts, matrices_path='../FCGram_matrices')
+    Extension = FCGram(d=3, n_additional_pts=add_pts, matrices_path=str(matrices_dir))
     f_extend_one_side = Extension(f, dim=1, one_sided=True)
     f_extend_both_sides = Extension(f, dim=1, one_sided=False)
 
@@ -334,7 +339,7 @@ def test_FCGram_fourier_continuation_2d():
     y = torch.linspace(0, 1, length_signal, dtype=torch.float64).view(1, 1, length_signal).repeat(batch_size, length_signal, 1)
     f = torch.sin(12 * x)  - torch.cos(14 * y) + 3*x*y
 
-    Extension = FCGram(d=3, n_additional_pts=add_pts, matrices_path='../FCGram_matrices')
+    Extension = FCGram(d=3, n_additional_pts=add_pts, matrices_path=str(matrices_dir))
     f_extend_one_side = Extension(f, dim=2, one_sided=True)
     f_extend_both_sides = Extension(f, dim=2, one_sided=False)
 
@@ -382,7 +387,7 @@ def test_FCGram_fourier_continuation_3d():
     # Create 3D function
     f = torch.exp(-2*z) + 2*z*x + torch.sin(12*x*y) + y*torch.sin(10*y*z)
 
-    Extension = FCGram(d=3, n_additional_pts=add_pts, matrices_path='../FCGram_matrices')
+    Extension = FCGram(d=3, n_additional_pts=add_pts, matrices_path=str(matrices_dir))
     f_extend_one_side = Extension(f, dim=3, one_sided=True)
     f_extend_both_sides = Extension(f, dim=3, one_sided=False)
 
