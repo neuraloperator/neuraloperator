@@ -38,7 +38,7 @@ f = torch.sin(16 * x) - torch.cos(8 * x)
 # We use the Fourier continuation layer to extend the signal
 # We try both extending the signal on one side (right) and on both sides (left and right)
 
-Extension = FCLegendre(n=2, d=add_pts)
+Extension = FCLegendre(d=2, n_additional_pts=add_pts)
 f_extend_one_side = Extension(f, dim=1, one_sided=True)
 f_extend_both_sides = Extension(f, dim=1, one_sided=False)
 
@@ -91,7 +91,7 @@ f = torch.sin(12 * x)  - torch.cos(14 * y) + 3*x*y
 # We use the Fourier continuation layer to extend the signal
 # We try both extending the signal on one side (right and bottom) and on both sides (left, right, top, and bottom)
 
-Extension = FCLegendre(n=3, d=add_pts)
+Extension = FCLegendre(d=3, n_additional_pts=add_pts)
 f_extend_one_side = Extension(f, dim=2, one_sided=True)
 f_extend_both_sides = Extension(f, dim=2, one_sided=False)
 
