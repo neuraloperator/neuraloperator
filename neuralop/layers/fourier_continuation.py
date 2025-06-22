@@ -8,20 +8,38 @@ import scipy.io as sio
 
 
 class FCLegendre(nn.Module):
+    """
+    Fourier Continuation using Legendre polynomials.
+    
+    This class implements Fourier Continuation using Legendre polynomial basis functions 
+    to extend non-periodic functions to periodic ones on larger domains
+    """
+    
     def __init__(self, d, n_additional_pts):
+        """
+        Initialize FCLegendre with specified parameters.
+        
+        Parameters
+        ----------
+        d : int
+            Number of matching points (degree of approximation)
+        n_additional_pts : int
+            Number of additional points to add for continuation
+        """
         super().__init__()
         
-        self.compute_extension_matrix(d, n_additional_pts)
-    
-    def compute_extension_matrix(self, d, n_additional_pts):
         self.d = d
         self.n_additional_pts = n_additional_pts 
+        self.compute_extension_matrix()
+    
+    def compute_extension_matrix(self):
+        # Compute the extension matrix using Legendre polynomials.
 
         a = 0.0
         h = 0.1
 
         #Generate grid for the extension
-        total_points = 2*d + n_additional_pts
+        total_points = 2*self.d + self.n_additional_pts
         full_grid = a + h*np.arange(total_points, dtype=np.float64)
         fit_grid = np.concatenate((full_grid[0:self.d], full_grid[-self.d:]), 0)
         extension_grid = full_grid[self.d:-self.d]
@@ -47,6 +65,21 @@ class FCLegendre(nn.Module):
         return self.ext_mat
 
     def extend_left_right(self, x, one_sided):
+        """
+        Extend function values using left-right extension.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (..., N) where N is the number of points
+        one_sided : bool
+            If True, extend only to the right. If False, extend to both sides.
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
+        """
         right_bnd = x[...,-self.d:]
         left_bnd = x[...,0:self.d]
         y = torch.cat((right_bnd, left_bnd), dim=-1)
@@ -64,6 +97,21 @@ class FCLegendre(nn.Module):
     
     
     def extend_top_bottom(self, x, one_sided):
+        """
+        Extend function values using top-bottom extension.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (..., M, N) where M, N are spatial dimensions
+        one_sided : bool
+            If True, extend only to the bottom. If False, extend to both sides.
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
+        """
         bottom_bnd = x[...,-self.d:,:]
         top_bnd = x[...,0:self.d,:]
         y = torch.cat((bottom_bnd, top_bnd), dim=-2)
@@ -80,6 +128,21 @@ class FCLegendre(nn.Module):
             return torch.cat((ext[...,self.n_additional_pts//2:,:], x, ext[...,:self.n_additional_pts//2,:]), dim=-2)
 
     def extend_front_back(self, x, one_sided):
+        """
+        Extend function values using front-back extension.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (..., L, M, N) where L, M, N are spatial dimensions
+        one_sided : bool
+            If True, extend only to the back. If False, extend to both sides.
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
+        """
         back_bnd = x[..., -self.d:, :, :]
         front_bnd = x[..., :self.d, :, :]
         y = torch.cat((back_bnd, front_bnd), dim=-3)
@@ -101,21 +164,82 @@ class FCLegendre(nn.Module):
             return torch.cat((ext[..., self.n_additional_pts//2:, :, :], x, ext[..., :self.n_additional_pts//2, :, :]), dim=-3)
 
     def extend1d(self, x, one_sided):
+        """
+        Extend 1D function values.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (..., N)
+        one_sided : bool
+            If True, extend only to the right. If False, extend to both sides.
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
+        """
         return self.extend_left_right(x, one_sided)
     
     def extend2d(self, x, one_sided):
+        """
+        Extend 2D function values.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (..., M, N)
+        one_sided : bool
+            If True, extend only to one side. If False, extend to both sides.
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
+        """
         x = self.extend_left_right(x, one_sided)
         x = self.extend_top_bottom(x, one_sided)
-
         return x
 
     def extend3d(self, x, one_sided):
+        """
+        Extend 3D function values.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (..., L, M, N)
+        one_sided : bool
+            If True, extend only to one side. If False, extend to both sides.
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
+        """
         x = self.extend_left_right(x, one_sided)
         x = self.extend_top_bottom(x, one_sided)
         x = self.extend_front_back(x, one_sided)
         return x
     
     def forward(self, x, dim=2, one_sided=True):
+        """
+        Forward pass for Fourier continuation.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor to extend
+        dim : int, optional
+            Dimension of the problem (1, 2, or 3), by default 2
+        one_sided : bool, optional
+            If True, extend only to one side. If False, extend to both sides, by default True
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
+        """
         if dim == 1:
             return self.extend1d(x, one_sided)
         if dim == 2:
@@ -143,10 +267,14 @@ class FCGram(nn.Module):
         """
         Initialize FCGram with specified parameters.
         
-        Args:
-            d (int): Number of matching points 
-            n_additional_pts (int): Number of continuation points (must be even, if odd, using n_additional_pts - 1)
-            matrices_path (str): Path to directory containing FCGram matrices
+        Parameters
+        ----------
+        d : int
+            Number of matching points 
+        n_additional_pts : int
+            Number of continuation points (must be even, if odd, using n_additional_pts - 1)
+        matrices_path : str, optional
+            Path to directory containing FCGram matrices, by default './FCGram_matrices'
         """
         super().__init__()
         
@@ -189,12 +317,17 @@ class FCGram(nn.Module):
         """
         Extend function values using FC-Gram algorithm for left-right extension.
         
-        Args:
-            x (torch.Tensor): Input tensor of shape (..., N) where N is the number of points
-            one_sided (bool): If True, extend only to the right. If False, extend to both sides.
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (..., N) where N is the number of points
+        one_sided : bool, optional
+            If True, extend only to the right. If False, extend to both sides, by default True
             
-        Returns:
-            torch.Tensor: Extended function values
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
         """
         # Extract boundary values for continuation, use d points from each boundary
         left_bnd = x[..., :self.d]      
@@ -220,12 +353,17 @@ class FCGram(nn.Module):
         """
         Extend function values using FC-Gram algorithm for top-bottom extension.
         
-        Args:
-            x (torch.Tensor): Input tensor of shape (..., M, N)
-            one_sided (bool): If True, extend only to the bottom. If False, extend to both sides.
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (..., M, N)
+        one_sided : bool, optional
+            If True, extend only to the bottom. If False, extend to both sides, by default True
             
-        Returns:
-            torch.Tensor: Extended function values
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
         """
         # Extract boundary values for continuation
         top_bnd = x[..., :self.d, :]     
@@ -252,27 +390,30 @@ class FCGram(nn.Module):
         """
         Extend function values using FC-Gram algorithm for front-back extension.
         
-        Args:
-            x (torch.Tensor): Input tensor of shape (..., D, M, N)
-            one_sided (bool): If True, extend only to the back. If False, extend to both sides.
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (..., D, M, N)
+        one_sided : bool, optional
+            If True, extend only to the back. If False, extend to both sides, by default True
             
-        Returns:
-            torch.Tensor: Extended function values
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
         """
         # Extract boundary values for continuation
-        front_bnd = x[..., :self.d, :, :]
-        back_bnd = x[..., -self.d:, :, :]
-
+        front_bnd = x[..., :self.d, :, :]     
+        back_bnd = x[..., -self.d:, :, :] 
+        
         AlQl = self.AlQl.to(dtype=x.dtype)
         ArQr = self.ArQr.to(dtype=x.dtype)
-
-        # Reshape for matmul, by flattening the last two dimensions
-        front_bnd_shape = front_bnd.shape
-        front_bnd_reshaped = front_bnd.reshape(*front_bnd_shape[:-3], self.d, -1)
         
-        back_bnd_shape = back_bnd.shape
-        back_bnd_reshaped = back_bnd.reshape(*back_bnd_shape[:-3], self.d, -1)
-
+        # Reshape for matrix multiplication
+        y_shape = x.shape
+        front_bnd_reshaped = front_bnd.reshape(*y_shape[:-3], self.d, -1)
+        back_bnd_reshaped = back_bnd.reshape(*y_shape[:-3], self.d, -1)
+        
         # Apply FC-Gram continuation
         if x.is_complex():
             front_continuation_reshaped = torch.matmul(AlQl, front_bnd_reshaped + 0j)
@@ -280,34 +421,96 @@ class FCGram(nn.Module):
         else:
             front_continuation_reshaped = torch.matmul(AlQl, front_bnd_reshaped)
             back_continuation_reshaped = torch.matmul(ArQr, back_bnd_reshaped)
-
-        # Reshape back to original tensor dimensions
-        front_continuation = front_continuation_reshaped.reshape(*front_bnd_shape[:-3], self.C, *front_bnd_shape[-2:])
-        back_continuation = back_continuation_reshaped.reshape(*back_bnd_shape[:-3], self.C, *back_bnd_shape[-2:])
-
+        
+        # Reshape back to original dimensions
+        front_continuation = front_continuation_reshaped.reshape(*y_shape[:-3], self.C, y_shape[-2], y_shape[-1])
+        back_continuation = back_continuation_reshaped.reshape(*y_shape[:-3], self.C, y_shape[-2], y_shape[-1])
+        
         if one_sided:
             return torch.cat((x, back_continuation, front_continuation), dim=-3)
         else:
             return torch.cat((front_continuation, x, back_continuation), dim=-3)
-    
+
     def extend1d(self, x, one_sided=True):
+        """
+        Extend 1D function values using FC-Gram algorithm.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (..., N)
+        one_sided : bool, optional
+            If True, extend only to the right. If False, extend to both sides, by default True
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
+        """
         return self.extend_left_right(x, one_sided)
     
     def extend2d(self, x, one_sided=True):
+        """
+        Extend 2D function values using FC-Gram algorithm.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (..., M, N)
+        one_sided : bool, optional
+            If True, extend only to one side. If False, extend to both sides, by default True
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
+        """
         x = self.extend_left_right(x, one_sided)
         x = self.extend_top_bottom(x, one_sided)
         return x
 
     def extend3d(self, x, one_sided=True):
+        """
+        Extend 3D function values using FC-Gram algorithm.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of shape (..., L, M, N)
+        one_sided : bool, optional
+            If True, extend only to one side. If False, extend to both sides, by default True
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
+        """
         x = self.extend_left_right(x, one_sided)
         x = self.extend_top_bottom(x, one_sided)
         x = self.extend_front_back(x, one_sided)
         return x
     
     def forward(self, x, dim=2, one_sided=True):
+        """
+        Forward pass for FC-Gram Fourier continuation.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor to extend
+        dim : int, optional
+            Dimension of the problem (1, 2, or 3), by default 2
+        one_sided : bool, optional
+            If True, extend only to one side. If False, extend to both sides, by default True
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended function values
+        """
         if dim == 1:
             return self.extend1d(x, one_sided)
-        elif dim == 2:
+        if dim == 2:
             return self.extend2d(x, one_sided)
-        elif dim == 3:
+        if dim == 3:
             return self.extend3d(x, one_sided)

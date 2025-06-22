@@ -2,37 +2,53 @@ from neuralop.layers.fourier_continuation import FCLegendre, FCGram
 import torch
 import warnings
 
+
 def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_d=4, FC_n_additional_pts=40, FC_one_sided=False, low_pass_filter_ratio=None):
     """
     Compute the 1D Fourier derivative of a given tensor.
+    
     Use Fourier continuation to extend the signal if it is non-periodic. 
     Use with care, as Fourier continuation and Fourier derivatives are not always stable.
-
+    
     Parameters
     ----------
     u : torch.Tensor
         Input tensor. The derivative will be computed along the last dimension.
     order : int, optional
-        Order of the derivative. Defaults to 1.
+        Order of the derivative, by default 1
     L : float, optional
-        Length of the domain considered. Defaults to 2*pi.
-    use_FC : str, optional   [None, 'Legendre', 'Gram']
-        Whether to use Fourier continuation. Use for non-periodic functions. Defaults to None.
+        Length of the domain considered, by default 2*pi
+    use_FC : str, optional
+        Whether to use Fourier continuation. Use for non-periodic functions.
+        Options: None, 'Legendre', 'Gram', by default False
     FC_d : int, optional
-        'Degree' of the Fourier continuation. Defaults to 4.
+        'Degree' of the Fourier continuation, by default 4
     FC_n_additional_pts : int, optional
-        Number of points to add using the Fourier continuation layer. Defaults to 40.
+        Number of points to add using the Fourier continuation layer, by default 40
     FC_one_sided : bool, optional
-        Whether to only add points on one side, or add an equal number of points on both sides. Defaults to False.
+        Whether to only add points on one side, or add an equal number of points 
+        on both sides, by default False
     low_pass_filter_ratio : float, optional
-        If not None, apply a low-pass filter to the Fourier coefficients. Can help reduce artificial oscillations. 
-        1.0 means no filtering, 0.5 means keep half of the coefficients, etc.
-        Defaults to None.
+        If not None, apply a low-pass filter to the Fourier coefficients. 
+        Can help reduce artificial oscillations. 1.0 means no filtering, 
+        0.5 means keep half of the coefficients, etc., by default None
 
     Returns
     -------
     torch.Tensor
         The derivative of the input tensor.
+        
+    Notes
+    -----
+    When using Fourier continuation, the function automatically adjusts the 
+    domain length L to account for the extended signal. The result is cropped 
+    back to the original interval size.
+    
+    Warnings
+    --------
+    Consider using Fourier continuation if the input is not periodic (use_FC=True).
+    Fourier continuation and Fourier derivatives can be numerically unstable
+    for certain functions and parameter combinations.
     """
     
     # Extend signal using Fourier continuation if specified

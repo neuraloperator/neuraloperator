@@ -1,30 +1,51 @@
 function [ArQr, AlQl] = FCGram_Matrices(d, C, Z, E, n_over, modes_to_reduce, num_digits)
+%FCGram_Matrices Compute Gram matrices for Fourier Continuation with FC-Gram
 %
-% This function computes the Gram matrices required for Fourier Continuation with FC-Gram
+% This function computes the Gram matrices required for Fourier Continuation 
+% with FC-Gram algorithm. The matrices enable efficient extension of 
+% non-periodic functions to periodic ones for spectral differentiation.
 %
-% INPUTS:
-%   d               - Number of matching points
-%   C               - Number of continuation points
-%   Z               - Number of zero padding points
-%   E               - Number of extra points
-%   n_over          - Oversampling factor for fine grid
-%   modes_to_reduce - Number of modes to reduce in SVD
-%   num_digits      - Number of digits for symbolic precision
+% Parameters
+% ----------
+% d : int
+%     Number of matching points (degree of approximation)
+% C : int
+%     Number of continuation points (must be even)
+% Z : int
+%     Number of zero padding points for smooth extension
+% E : int
+%     Number of extra points for numerical stability
+% n_over : int
+%     Oversampling factor for fine grid construction
+% modes_to_reduce : int
+%     Number of modes to reduce in SVD truncation
+% num_digits : int
+%     Number of digits for symbolic precision in computations
 %
-% OUTPUTS:
-%   ArQr            - Right boundary continuation matrix
-%   AlQl            - Left boundary continuation matrix
+% Returns
+% -------
+% ArQr : double matrix
+%     Right boundary continuation matrix (C x d)
+% AlQl : double matrix
+%     Left boundary continuation matrix (C x d)
 %
-% ALGORITHM:
-%   1. Construct monomial basis on coarse grid
-%   2. Orthonormalize using QR decomposition
-%   3. Evaluate basis on fine grid
-%   4. Build trigonometric basis for FC approximation
-%   5. Compute SVD and solve for coefficients
-%   6. Evaluate FC matrix at continuation points
-%   7. Construct boundary continuation matrices
+% Algorithm
+% ---------
+% 1. Construct monomial basis on coarse grid
+% 2. Orthonormalize using QR decomposition with full re-orthogonalization
+% 3. Evaluate basis on fine grid with oversampling
+% 4. Build trigonometric basis for FC approximation
+% 5. Compute SVD and solve for coefficients
+% 6. Evaluate FC matrix at continuation points
+% 7. Construct boundary continuation matrices with flip operations
 %
-% REFERENCE:
+% Notes
+% -----
+% The function automatically saves the computed matrices to a .mat file
+% in the format: FCGram_data_d{d}_C{C}.mat
+%
+% References
+% ----------
 % [1] Amlani, F., & Bruno, O. P. (2016). An FC-based spectral solver for
 %     elastodynamic problems in general three-dimensional domains. 
 %     Journal of Computational Physics, 307, 333-354.
@@ -162,26 +183,37 @@ end
 
 
 function [Q, R] = mgs(A)
-% Modified Gram-Schmidt routine to compute the QR decomposition
+%mgs Modified Gram-Schmidt routine with full re-orthogonalization
 %
 % This local function implements the Modified Gram-Schmidt algorithm
 % with full re-orthogonalization to ensure numerical stability and
 % orthogonality of the resulting Q matrix.
 %
-% INPUT:
-%   A : m x n sized matrix to decompose
+% Parameters
+% ----------
+% A : symbolic matrix
+%     Input matrix of size m x n to decompose
 %   
-% OUTPUTS:
-%   Q : m x n orthonormal matrix 
-%   R : n x n upper triangular matrix
+% Returns
+% -------
+% Q : symbolic matrix
+%     Orthonormal matrix of size m x n
+% R : symbolic matrix
+%     Upper triangular matrix of size n x n
 %
-% ALGORITHM:
-%   1. Initialize Q and R matrices
-%   2. For each column j of A:
-%      a. Project onto previous orthonormal vectors
-%      b. Perform full re-orthogonalization for numerical stability
-%      c. Normalize to get unit vector
-%   3. Store projection coefficients in R matrix
+% Algorithm
+% ---------
+% 1. Initialize Q and R matrices
+% 2. For each column j of A:
+%    a. Project onto previous orthonormal vectors
+%    b. Perform full re-orthogonalization for numerical stability
+%    c. Normalize to get unit vector
+% 3. Store projection coefficients in R matrix
+%
+% Notes
+% -----
+% The full re-orthogonalization step safeguards against roundoff errors
+% and ensures high-quality orthogonality of the resulting Q matrix.
 
     m = size(A,1);
     n = size(A,2);
