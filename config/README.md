@@ -1,0 +1,1 @@
+- `training_loss`: Loss function used during training (e.g., `"h1"` combines L2 loss and gradient penalty).

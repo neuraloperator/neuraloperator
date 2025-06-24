@@ -1,6 +1,7 @@
 # weights and biases
-.wandb/ 
+.wandb/
 wandb_api_key.txt
+scripts/wandb/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -77,5 +78,20 @@ docs/_build/
 # PyBuilder
 target/
 
-#Ipython Notebook
+# IPython Notebook
 .ipynb_checkpoints
+
+# VSCode
+.vscode
+
+# linting
+.mypy_cache
+
+# Venv
+.venv
+
+# Checkpoints
+checkpoints/
+
+# Logs
+logs/
