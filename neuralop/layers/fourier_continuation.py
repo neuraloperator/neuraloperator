@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 import numpy as np
 from numpy.polynomial.legendre import Legendre
-import os
 import warnings
 import scipy.io as sio
+from pathlib import Path
 
 
 class FCLegendre(nn.Module):
@@ -263,7 +263,7 @@ class FCGram(nn.Module):
     Fourier Continuation of discretized functions.
     """
     
-    def __init__(self, d, n_additional_pts, matrices_path='./FCGram_matrices'):
+    def __init__(self, d, n_additional_pts, matrices_path=None):
         """
         Initialize FCGram with specified parameters.
         
@@ -273,8 +273,9 @@ class FCGram(nn.Module):
             Number of matching points 
         n_additional_pts : int
             Number of continuation points (must be even, if odd, using n_additional_pts - 1)
-        matrices_path : str, optional
-            Path to directory containing FCGram matrices, by default './FCGram_matrices'
+        matrices_path : str or Path, optional
+            Path to directory containing FCGram matrices. 
+            If None, uses the directory containing this file, by default None
         """
         super().__init__()
         
@@ -283,7 +284,11 @@ class FCGram(nn.Module):
             warnings.warn("n_additional_pts must be even, rounding down.", UserWarning)
             n_additional_pts -= 1
         self.C = int(n_additional_pts // 2)
-        self.matrices_path = matrices_path
+        
+        if matrices_path is None:
+            self.matrices_path = Path(__file__).parent / 'FCGram_matrices'
+        else:
+            self.matrices_path = Path(matrices_path)
         
         # Load pre-computed FCGram matrices
         self.load_matrices()
@@ -296,17 +301,16 @@ class FCGram(nn.Module):
         - ArQr: Right boundary continuation matrix
         - AlQl: Left boundary continuation matrix
         """
-        filename = f'FCGram_data_d{self.d}_C{self.C}.mat'
-        filepath = os.path.join(self.matrices_path, filename)
+        filepath = self.matrices_path / f'FCGram_data_d{self.d}_C{self.C}.mat'
         
-        if not os.path.exists(filepath):
+        if not filepath.exists():
             raise FileNotFoundError(
                 f"FCGram matrices not found at {filepath}. \n"
                 f"Please run FCGram_Matrices.m with d={self.d}, C={self.C} first."
             )
         
         # Load matrices from .mat file
-        mat_data = sio.loadmat(filepath)
+        mat_data = sio.loadmat(str(filepath))
         
         # Extract matrices,  convert to torch tensors, and register as buffers so they are moved to GPU
         self.register_buffer('ArQr', torch.from_numpy(mat_data['ArQr']))

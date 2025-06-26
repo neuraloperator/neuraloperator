@@ -1,13 +1,6 @@
 import torch
-import os
 import pytest
-from pathlib import Path
 from ..fourier_continuation import FCLegendre, FCGram
-
-current_dir = Path(__file__).parent
-matrices_dir = current_dir.parent / 'FCGram_matrices'
-
-
 
 @pytest.mark.parametrize("FC_type", [FCLegendre, FCGram])
 @pytest.mark.parametrize("dim", [1, 2, 3])
@@ -25,7 +18,7 @@ def test_fourier_continuation(FC_type, dim: int):
         if FC_type == FCLegendre:
             Extension = FCLegendre(d=2, n_additional_pts=add_pts)
         elif FC_type == FCGram:
-            Extension = FCGram(d=3, n_additional_pts=add_pts, matrices_path=str(matrices_dir))
+            Extension = FCGram(d=3, n_additional_pts=add_pts)
 
         f_extend_one_side = Extension(f, dim=1, one_sided=True)
         f_extend_both_sides = Extension(f, dim=1, one_sided=False)
@@ -112,7 +105,7 @@ def test_fourier_continuation(FC_type, dim: int):
         if FC_type == FCLegendre:
             Extension = FCLegendre(d=3, n_additional_pts=add_pts)
         elif FC_type == FCGram:
-            Extension = FCGram(d=3, n_additional_pts=add_pts, matrices_path=str(matrices_dir))
+            Extension = FCGram(d=3, n_additional_pts=add_pts)
 
         f_extend_one_side = Extension(f, dim=2, one_sided=True)
         f_extend_both_sides = Extension(f, dim=2, one_sided=False)
@@ -171,7 +164,7 @@ def test_fourier_continuation(FC_type, dim: int):
         if FC_type == FCLegendre:
             Extension = FCLegendre(d=3, n_additional_pts=add_pts)
         elif FC_type == FCGram:
-            Extension = FCGram(d=3, n_additional_pts=add_pts, matrices_path=str(matrices_dir))
+            Extension = FCGram(d=3, n_additional_pts=add_pts)
 
         f_extend_one_side = Extension(f, dim=3, one_sided=True)
         f_extend_both_sides = Extension(f, dim=3, one_sided=False)
