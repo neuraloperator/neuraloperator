@@ -9,18 +9,27 @@ function [ArQr, AlQl] = FCGram_Matrices(d, C, Z, E, n_over, modes_to_reduce, num
 % ----------
 % d : int
 %     Number of matching points (degree of approximation)
+%     Typically vary between 2 and 10 (faster convergence for higher d),
 % C : int
 %     Number of continuation points (must be even)
+%     Seemed to be doing well with C around 25
 % Z : int
 %     Number of zero padding points for smooth extension
+%     Seems to work well with Z being roughly equal to C/2
 % E : int
 %     Number of extra points for numerical stability
+%     Seemed to work well with E being roughly equal to C
 % n_over : int
 %     Oversampling factor for fine grid construction
+%     Seemed to work well with n_over > 10
 % modes_to_reduce : int
 %     Number of modes to reduce in SVD truncation
+%     Could be set to 0 and then it essentially does not impact anything. 
+%     Found empirically that setting it to 2 helps a bit by removing the smallest singular values of the SVD, 
+%        and allows to get a slightly better approximation error. 
 % num_digits : int
 %     Number of digits for symbolic precision in computations
+%     Should use at least 128, or 256
 %
 % Returns
 % -------
