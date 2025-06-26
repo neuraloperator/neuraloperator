@@ -54,8 +54,8 @@ def test_fourier_continuation(FC_class, dim: int, d: int):
     if dim == 3:
         
         batch_size = 2
-        length_signal = 51
-        add_pts = 20
+        length_signal = 81
+        add_pts = 40
 
         # Create 3D grid
         x = torch.linspace(0, 1, length_signal).view(1, length_signal, 1, 1).repeat(batch_size, 1, length_signal, length_signal)
