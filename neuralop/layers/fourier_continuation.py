@@ -15,16 +15,16 @@ class FCLegendre(nn.Module):
     to extend non-periodic functions to periodic ones on larger domains
     """
     
-    def __init__(self, d, n_additional_pts):
+    def __init__(self, d=4, n_additional_pts=50):
         """
         Initialize FCLegendre with specified parameters.
         
         Parameters
         ----------
         d : int
-            Number of matching points (degree of approximation)
+            Number of matching points (degree of approximation), by default 4
         n_additional_pts : int
-            Number of additional points to add for continuation
+            Number of additional points to add for continuation, by default 50
         """
         super().__init__()
         
@@ -263,16 +263,17 @@ class FCGram(nn.Module):
     Fourier Continuation of discretized functions.
     """
     
-    def __init__(self, d, n_additional_pts, matrices_path=None):
+    def __init__(self, d=4, n_additional_pts=50, matrices_path=None):
         """
         Initialize FCGram with specified parameters.
         
         Parameters
         ----------
         d : int
-            Number of matching points 
+            Number of matching points, typically between 2 and 12. d=3,4,5 are typically good choices, by default 4.
         n_additional_pts : int
             Number of continuation points (must be even, if odd, using n_additional_pts - 1)
+            By default 50. It is usually not necessary to change this parameter. 
         matrices_path : str or Path, optional
             Path to directory containing FCGram matrices. 
             If None, uses the directory containing this file, by default None

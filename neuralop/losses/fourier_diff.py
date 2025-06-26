@@ -3,12 +3,22 @@ import torch
 import warnings
 
 
-def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_d=4, FC_n_additional_pts=40, FC_one_sided=False, low_pass_filter_ratio=None):
+def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_d=4, FC_n_additional_pts=50, FC_one_sided=False, low_pass_filter_ratio=None):
     """
     Compute the 1D Fourier derivative of a given tensor.
+    Use with care, as Fourier continuation and Fourier derivatives are not always stable.
+    
+    FC derivatives are more stable when the original signal is nearly periodic 
+        (i.e., values and slopes at boundaries match or are close).
+        and when the signal is smooth and has no sharp jumps/discontinuities at the boundaries.
     
     Use Fourier continuation to extend the signal if it is non-periodic. 
-    Use with care, as Fourier continuation and Fourier derivatives are not always stable.
+    
+    Unstable behavior can occur if the signal has strong discontinuities or non-matching derivatives at boundaries,
+        and if the continuation introduces artificial oscillations (Gibbs phenomenon).
+
+    Signs of instability include boundary artifacts, high-frequency ringing, or growing errors with higher resolution.
+    
     
     Parameters
     ----------
@@ -24,7 +34,9 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_d=4, FC_n_a
     FC_d : int, optional
         'Degree' of the Fourier continuation, by default 4
     FC_n_additional_pts : int, optional
-        Number of points to add using the Fourier continuation layer, by default 40
+        Number of points to add using the Fourier continuation layer, by default 50
+        For FC-Gram continuation, it is usually not necessary to change this parameter. 
+        This has a bigger effect on FC-Legendre continuation.
     FC_one_sided : bool, optional
         Whether to only add points on one side, or add an equal number of points 
         on both sides, by default False
