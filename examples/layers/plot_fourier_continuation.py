@@ -3,7 +3,7 @@
 
 Fourier Continuation
 ========================================================
-An example of usage of our Fourier continuation layer on 1d and 2d data.
+An example of usage of our Fourier continuation layer on 1d, 2d, and 3d data.
 """
 
 # %%
@@ -90,6 +90,7 @@ ax.tick_params(axis='y', which='major', labelsize=19)
 plt.xticks([-0.2,0,1,1.2, 1.4])
 plt.yticks([-2,2])
 plt.tight_layout()
+plt.show()
 
 
 
@@ -120,8 +121,14 @@ ax.tick_params(axis='y', which='major', labelsize=19)
 plt.xticks([-0.2,0,1,1.2, 1.4])
 plt.yticks([-2,2])
 plt.tight_layout()
+plt.show()
 
-    
+
+
+
+
+
+
     
 # %%
 # Creating an example of a 2D function
