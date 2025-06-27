@@ -224,31 +224,6 @@ def test_fourier_diff(periodic: bool):
         
         assert f.shape == dfdx.shape == df2dx2.shape == df3dx3.shape
 
-        # # Plot to check visually
-        # import numpy as np
-        # import matplotlib.pyplot as plt
-        # x_np    = x.cpu().numpy()
-        # plt.figure()
-        # plt.plot(x_np, dfdx[0].squeeze().cpu().numpy(), label='Fourier dfdx')
-        # plt.plot(x_np, np.cos(x_np), '--', label='dfdx')
-        # plt.plot(x_np, df2dx2[0].squeeze().cpu().numpy(), label='Fourier df2dx2')
-        # plt.plot(x_np, -np.sin(x_np), '--', label='df2dx2')
-        # plt.plot(x_np, df3dx3[0].squeeze().cpu().numpy(), label='Fourier df3dx3')
-        # plt.plot(x_np, -np.cos(x_np), '--', label='df3dx3')
-        # plt.xlabel('x')
-        # plt.legend()
-        # plt.savefig("fourier_diff_sin.png")
-
-        # plt.figure()
-        # plt.plot(x_np, dfdx[1].squeeze().cpu().numpy(), label='Fourier dfdx')
-        # plt.plot(x_np, -np.sin(x_np), '--', label='dfdx')
-        # plt.plot(x_np, df2dx2[1].squeeze().cpu().numpy(), label='Fourier df2dx2')
-        # plt.plot(x_np, -np.cos(x_np), '--', label='df2dx2')
-        # plt.plot(x_np, df3dx3[1].squeeze().cpu().numpy(), label='Fourier df3dx3')
-        # plt.plot(x_np, np.sin(x_np), '--', label='df3dx3')
-        # plt.xlabel('x')
-        # plt.legend()
-        # plt.savefig("fourier_diff_cos.png")
         
     else: 
     
@@ -261,24 +236,4 @@ def test_fourier_diff(periodic: bool):
         df2dx2 = fourier_derivative_1d(f, order=2, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30, FC_one_sided=False)
 
         assert f.shape == dfdx.shape == df2dx2.shape
-        
-        # # Plot to check visually
-        # import numpy as np
-        # import matplotlib.pyplot as plt
-        # x_np    = x.cpu().numpy()
-        # plt.figure()
-        # plt.plot(x_np, dfdx[0].squeeze().cpu().numpy(), label='Fourier dfdx')
-        # plt.plot(x_np, 3*torch.cos(3*x) + torch.sin(x), '--', label='dfdx')
-        # plt.plot(x_np, df2dx2[0].squeeze().cpu().numpy(), label='Fourier df2dx2')
-        # plt.plot(x_np, -9*torch.sin(3*x) + torch.cos(x), '--', label='df2dx2')
-        # plt.xlabel('x')
-        # plt.legend()
-        # plt.savefig("fourier_diff_non_periodic_sin_cos.png")
-        # plt.figure()
-        # plt.plot(x_np, dfdx[1].squeeze().cpu().numpy(), label='Fourier dfdx')
-        # plt.plot(x_np, -0.8*torch.exp(-0.8*x)+torch.cos(x), '--', label='dfdx')
-        # plt.plot(x_np, df2dx2[1].squeeze().cpu().numpy(), label='Fourier df2dx2')
-        # plt.plot(x_np, 0.64*torch.exp(-0.8*x)-torch.sin(x), '--', label='df2dx2')
-        # plt.xlabel('x')
-        # plt.legend()
-        # plt.savefig("fourier_diff_non_periodic_exp.png")
+   
