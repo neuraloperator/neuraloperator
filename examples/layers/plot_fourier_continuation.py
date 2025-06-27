@@ -37,7 +37,7 @@ f = torch.sin(16 * x) - torch.cos(8 * x)
 # %%
 # Extending the signal
 # -----------------------------------------
-# We use the FC-Legendre and FC-Gram Fourier continuation layers to extend the signal
+# We use the FC-Legendre and FC-Gram Fourier continuation layers to extend the signal. 
 # We try both extending the signal on one side (right) and on both sides (left and right)
 
 Extension_Legendre = FCLegendre(d=2, n_additional_pts=add_pts)
@@ -148,7 +148,7 @@ f = torch.sin(12 * x)  - torch.cos(14 * y) + 3*x*y
 # %%
 # Extending the signal
 # -----------------------------------------
-# We use the FC-Legendre and FC-Gram Fourier continuation layers to extend the signal
+# We use the FC-Legendre and FC-Gram Fourier continuation layers to extend the signal.
 # We try both extending the signal on one side (right and bottom) and on both sides (left, right, top, and bottom)
 
 Extension_Legendre = FCLegendre(d=3, n_additional_pts=add_pts)
@@ -226,7 +226,7 @@ f = torch.exp(-2*z) + 2*z*x + torch.sin(12*x*y) + y*torch.sin(10*y*z)
 # %%
 # Extending the signal
 # -----------------------------------------
-# We use the FC-Legendre and FC-Gram Fourier continuation layers to extend the signal
+# We use the FC-Legendre and FC-Gram Fourier continuation layers to extend the signal.
 # We try both extending the signal on one side (right, bottom, back) and on both sides (left, right, top, bottom, back, front)
 
 Extension_Legendre = FCLegendre(d=3, n_additional_pts=add_pts)

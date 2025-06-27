@@ -70,7 +70,7 @@ plt.show()
 # %%
 # Creating an example of non-periodic 1D curve
 # --------------------
-# Here we consider sin(16*x)-cos(8*x) and exp(-0.8x)
+# Here we consider sin(16x)-cos(8x) and exp(-0.8x)
 L = 2*torch.pi
 x = torch.linspace(0, L, 101)[:-1]    
 f = torch.stack([torch.sin(3*x) - torch.cos(x), torch.exp(-0.8*x)+torch.sin(x)], dim=0)
