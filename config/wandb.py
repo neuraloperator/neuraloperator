@@ -26,10 +26,10 @@ class WandbConfig(ConfigBase):
         to W&B, if logging to W&B (``log = True``)
 
     """
-    log: bool = False
+    log: bool = True
     entity: Optional[str] = None
-    project: Optional[str] = None
+    project: Optional[str] = "Burgers-Pino"
     name: Optional[str] = None
     group: str = None
     sweep: bool = False
-    log_output: bool = True
+    log_output: bool = False
