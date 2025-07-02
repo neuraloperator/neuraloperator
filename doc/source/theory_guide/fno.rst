@@ -5,29 +5,29 @@ Fourier Neural Operators
 
 
 This page (which takes about 10 minutes to read), introduces the Fourier neural operator that solves a family of PDEs from scratch.
-It the first work that can learn resolution-invariant solution operators on Navier-Stokes equation,
+It is the first work that can learn resolution-invariant solution operators on the Navier-Stokes equation,
 achieving state-of-the-art accuracy among all existing deep learning methods and
 up to 1000x faster than traditional solvers.
-Also check out the paper [1]_ and article [2]_.
+Also, check out the paper [1]_ and article [2]_.
 
 Operator learning
 =================
 
-Thinking in continuum gives us an advantage when dealing with PDE.
-We want to design mesh-indepedent, resolution-invariant operators.
+Thinking in continuum gives us an advantage when dealing with PDEs.
+We want to design mesh-independent, resolution-invariant operators.
 
 Problems in science and engineering involve solving
 partial differential equations (PDE) systems.
 Unfortunately, these PDEs can be very hard.
-Traditional PDE solver such as finite element methods (FEM) and finite difference methods (FDM)
+Traditional PDE solvers such as finite element methods (FEM) and finite difference methods (FDM)
 rely on discretizing the space into a very fine mesh.
-And it can be slow and inefficient.
+This can be slow and inefficient.
 
 In the previous doc,
 we introduced the neural operators that use neural networks
 to learn the solution operators for PDEs.
 That is, given the initial conditions or the boundary conditions,
-the neural network directly output the solution,
+the neural network directly outputs the solution,
 kind of like an image-to-image mapping.
 
 The neural operator is mesh-independent,
@@ -40,7 +40,7 @@ it learns the continuous function instead of discretized vectors.
  ========================================== ======================================
   Conventional PDE solvers                   Neural operators
  ========================================== ======================================
-  Solve one instance                         Learn a family of PDE
+  Solve one instance                         Learn a family of PDEs
   Require the explicit form                  Black-box, data-driven
   Speed-accuracy trade-off on resolution     Resolution-invariant, mesh-invariant
   Slow on fine grids; fast on coarse grids   Slow to train; fast to evaluate
@@ -53,7 +53,7 @@ The Fourier layer can be viewed as a substitute for the convolution layer.
 Framework of Neural Operators
 =============================
 
-Just like neural networks consist of linear transformations and non-linear activation functions,
+Just like how neural networks consist of linear transformations and non-linear activation functions,
 neural operators consist of linear operators and non-linear activation operators.
 
 Let :math:`v` be the input vector, :math:`u` be the output vector.
@@ -84,18 +84,18 @@ and implement it by Fourier transformation.
 
 Fourier Layer
 =============
-The real-world images have lots of edges and shapes,
-so CNN can capture them well with local convolution kernel.
+Real-world images have lots of edges and shapes,
+so CNNs can capture them well with a local convolution kernel.
 On the other hand, the inputs and outputs of PDEs are continuous functions.
-It is more efficient to represent them in Fourier space and do global convolution.
+It is more efficient to represent them in Fourier space and do a global convolution.
 
-There are two main motivations to use Fourier transformation.
+There are two main motivations for using the Fourier transform.
 First, it’s fast. A full standard integration of :math:`n` points has complexity :math:`O(n^2)`,
 while convolution via Fourier transform is quasilinear.
 Second, it’s efficient. The inputs and outputs of PDEs are continuous functions.
 So it’s usually more efficient to represent them in Fourier space.
 
-The convolution in the spatial domain is equivalent to the pointwise multiplication in the Fourier domain. To implement the (global) convolution operator,
+Convolution in the spatial domain is equivalent to a pointwise multiplication in the Fourier domain. To implement the (global) convolution operator,
 we first do a Fourier transform, then a linear transform, and an inverse Fourier transform,
 As shown in the top part of the figure:
 
@@ -113,15 +113,15 @@ with the bias term :math:`W v` (a linear transformation)
 and apply the activation function :math:`\sigma`.
 Simple as it is.
 
-In practice, it’s usually sufficient to only take the lower frequency modes
-and truncate out these higher frequency modes.
-Therefore, we apply the linear transformation on the lower frequency modes
+In practice, it’s usually sufficient to only take the lower-frequency modes
+and truncate out these higher-frequency modes.
+Therefore, we apply the linear transformation on the lower-frequency modes
 and set the higher modes to zeros.
 
 Notice the activation functions shall be applied on the spatial domain.
-They help to recover the Higher frequency modes and non-periodic boundary
+They help to recover the higher-frequency modes and non-periodic boundary
 which are left out in the Fourier layers.
-Therefore it’s necessary to the Fourier transform and its inverse at each layer.
+Therefore, it’s necessary to the Fourier transform and its inverse at each layer.
 
 .. _fourier_layer_impl :
 Implementation
@@ -134,7 +134,7 @@ We can easily create a 2d Fourier layer using `neuralop` as follows:
     from neuralop.models.spectral_convolution import FactorizedSpectralConv
     fourier_layer = FactorizedSpectralConv(in_channels=in_channels, out_channels=out_channels, n_modes=(modes1, modes2))
 
-To illustrate the implementation details of the Fourier layer, we provide a simple implementation from scratch that is equivalent to the above code based on PyTorch's fast Fourier transform (FFT) :code:`torch.fft.rfft()` and :code:`torch.fft.irfft()`. 
+To illustrate the implementation details of the Fourier layer, we provide a simple implementation from scratch that is equivalent to the above code based on PyTorch's fast Fourier transform (FFT) :code:`torch.fft.rfft()` and :code:`torch.fft.irfft()`.
 
 .. code:: python
 
@@ -142,7 +142,7 @@ To illustrate the implementation details of the Fourier layer, we provide a simp
     import torch.nn as nn
 
     class SpectralConv2d(nn.Module):
-        def __init__(self, 
+        def __init__(self,
                      in_channels,   # Number of input channels
                      out_channels,  # Number of output channels
                      modes1,        # Number of Fourier modes to multiply in the first dimension
@@ -164,8 +164,8 @@ To illustrate the implementation details of the Fourier layer, we provide a simp
             x_ft = torch.fft.rfft2(x)
 
             # Multiply relevant Fourier modes
-            out_ft = torch.zeros(batchsize, self.out_channels,  x.size(-2), x.size(-1)//2 + 1, dtype=torch.cfloat, device=x.device) 
-            out_ft[:, :, :self.modes1, :self.modes2] = \ 
+            out_ft = torch.zeros(batchsize, self.out_channels,  x.size(-2), x.size(-1)//2 + 1, dtype=torch.cfloat, device=x.device)
+            out_ft[:, :, :self.modes1, :self.modes2] = \
                 self.compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
             out_ft[:, :, -self.modes1:, :self.modes2] = \
                 self.compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
@@ -173,32 +173,32 @@ To illustrate the implementation details of the Fourier layer, we provide a simp
             #Return to physical space
             x = torch.fft.irfft2(out_ft, s=(x.size(-2), x.size(-1)))
             return x
-        
+
         def compl_mul2d(self, input, weights):
             # (batch, in_channel, x,y ), (in_channel, out_channel, x,y) -> (batch, out_channel, x,y)
             return torch.einsum("bixy,ioxy->boxy", input, weights)
 
 where the input :code:`x` has the shape (N,C,H,W),
 :code:`self.weights1` and :code:`self.weights2` are the weight matrices;
-:code:`self.mode1` and :code:`self.mode2` truncate the lower frequency modes;
+:code:`self.mode1` and :code:`self.mode2` truncate the lower-frequency modes;
 and :code:`compl_mul2d()` is the matrix multiplication for complex numbers.
 
 Note in the forward call above that :code:`torch.fft.rfft()` returns a matrix
 of size `n` along each dim that indexes Fourier modes :code:`0, 1, 2, ... n//2, -n//2, -n//2 - 1, ...-1`. Since our
-inputs are real-valued, we take the real-valued FFT, which is skew-symmetric, so information is repeated across 
-one axis. Therefore it is sufficient to keep only two of the four corners of the FFT matrix. 
+inputs are real-valued, we take the real-valued FFT, which is skew-symmetric, so information is repeated across
+one axis. Therefore it is sufficient to keep only two of the four corners of the FFT matrix.
 
 **Shifting the FFT signal**
 .. _fft_shift_explanation :
-Equivalently, we could also apply a periodic FFT-shift using :code:`torch.fft.fftshift` to move the zero-frequency component 
-to the center of the FFT matrix, such that the matrix would be indexed with modes :code:`-n//2, -n//2 + 1, ...-1, 0, 1, ...` 
+Equivalently, we could also apply a periodic FFT-shift using :code:`torch.fft.fftshift` to move the zero-frequency component
+to the center of the FFT matrix, such that the matrix would be indexed with modes :code:`-n//2, -n//2 + 1, ...-1, 0, 1, ...`
 as shown below:
 
 .. figure:: /_static/images/fft_shift.png
     :width: 800
-    
-    Visualizing the Fourier coefficients as returned by the Real Fast Fourier Transform implementation in PyTorch. 
-    Using :code:`torch.fft.fftshift`, we move the zero-frequency mode to the center and truncate modes 
+
+    Visualizing the Fourier coefficients as returned by the Real Fast Fourier Transform implementation in PyTorch.
+    Using :code:`torch.fft.fftshift`, we move the zero-frequency mode to the center and truncate modes
     from the middle out. Note that the last half of modes are only redundant when using the real-valued Fourier
     transform. For more details, see the source paper [3]_.
 
@@ -208,13 +208,13 @@ as shown below:
   :width: 800
 
 Filters in convolution neural networks are usually local.
-They are good to capture local patterns such as edges and shapes.
+They are good for capturing local patterns such as edges and shapes.
 Fourier filters are global sinusoidal functions.
 They are better for representing continuous functions.
 
 
-**Higher frequency modes and non-periodic boundary**
-The Fourier layer on its own loses higher frequency modes
+**Higher-frequency modes and non-periodic boundary**
+The Fourier layer on its own loses higher-frequency modes
 and works only with periodic boundary conditions.
 However, the Fourier neural operator as a whole does not have these limitations
 (examples shown in the experiments).
@@ -274,7 +274,7 @@ at time one, defined by :math:`u_0 \mapsto u(\cdot, 1)` for any :math:`r > 0`.
 
 **Darcy Flow**
 
-We consider the steady-state of the 2-d Darcy Flow equation
+We consider the steady state of the 2-d Darcy Flow equation
 on the unit box which is the second order, linear, elliptic PDE
 
 .. math::
@@ -283,7 +283,7 @@ on the unit box which is the second order, linear, elliptic PDE
 .. math::
     u(x) = 0 \qquad \quad \:\:x \in \partial (0,1)^2
 
-with a Dirichlet boundary where :math:`a \in L^\infty((0,1)^2;\mathbb{R}_+)`  is the diffusion coefficient and :math:`f \in L^2((0,1)^2;\mathbb{R})` is the forcing function.
+with a Dirichlet boundary where :math:`a \in L^\infty\left({(0,1)}^2;\mathbb{R}_+\right)`  is the diffusion coefficient and :math:`f \in L^2\left({(0,1)}^2;\mathbb{R}\right)` is the forcing function.
 This PDE has numerous applications including modeling the pressure of the subsurface flow,
 the deformation of linearly elastic materials, and the electric potential in conductive materials.
 We are interested in learning the operator mapping the diffusion coefficient to the solution,
@@ -306,7 +306,7 @@ Benchmarks for time-independent problems (Burgers and Darcy):
 
  - NN: a simple point-wise feedforward neural network.
  - RBM: the classical Reduced Basis Method (using a POD basis).
- - FCN: a the-state-of-the-art neural network architecture based on Fully Convolution Networks.
+ - FCN: a state-of-the-art neural network architecture based on Fully Convolution Networks.
  - PCANN: an operator method using PCA as an autoencoder on both the input and output data and interpolating the latent spaces with a neural network.
  - GNO: the original graph neural operator.
  - MGNO: the multipole graph neural operator.
@@ -339,15 +339,15 @@ We experiment with the viscosities
 :math:`\nu = 1\mathrm{e}{-3}, 1\mathrm{e}{-4}, 1\mathrm{e}{-5}`,
 decreasing the final time :math:`T` as the dynamic becomes chaotic.
 
- ========= ============ ================ ========= ========= ========= 
-  Configs   Parameters   Time per epoch   nu=1e-3   nu=1e-4   nu=1e-5  
- ========= ============ ================ ========= ========= ========= 
-  FNO-3D    6,558,537    38.99s           0.0086    0.0820    0.1893   
-  FNO-2D    414,517      127.80s          0.0128    0.0973    0.1556   
-  U-Net     24,950,491   48.67s           0.0245    0.1190    0.1982   
-  TF-Net    7,451,724    47.21s           0.0225    0.1168    0.2268   
-  ResNet    266,641      78.47s           0.0701    0.2311    0.2753   
- ========= ============ ================ ========= ========= ========= 
+ ========= ============ ================ ========= ========= =========
+  Configs   Parameters   Time per epoch   nu=1e-3   nu=1e-4   nu=1e-5
+ ========= ============ ================ ========= ========= =========
+  FNO-3D    6,558,537    38.99s           0.0086    0.0820    0.1893
+  FNO-2D    414,517      127.80s          0.0128    0.0973    0.1556
+  U-Net     24,950,491   48.67s           0.0245    0.1190    0.1982
+  TF-Net    7,451,724    47.21s           0.0225    0.1168    0.2268
+  ResNet    266,641      78.47s           0.0701    0.2311    0.2753
+ ========= ============ ================ ========= ========= =========
 
 .. image:: /_static/images/fourier_ns1e4.jpg
   :width: 800
@@ -371,7 +371,7 @@ Note that we only present results for spatial resolution :math:`64 \times 64`
 since all benchmarks we compare against are designed for this resolution.
 Increasing it degrades their performance while FNO achieves the same errors.
 
-FNO-2D, U-Net, TF-Net, and ResNet all use 2D-convolution in the spatial domain
+FNO-2D, U-Net, TF-Net, and ResNet all use 2D convolution in the spatial domain
 and recurrently propagate in the time domain (2D+RNN).
 On the other hand, FNO-3D performs convolution in space-time.
 
@@ -404,9 +404,9 @@ It is the first work that learns the resolution-invariant solution operator
 for the family of Navier-Stokes equation in the turbulent regime,
 where previous graph-based neural operators do not converge.
 By construction, the method shares the same learned network parameters
-irrespective of the dis- cretization used on the input and output spaces.
+irrespective of the discretization used on the input and output spaces.
 It can do zero-shot super-resolution: trained on a lower resolution
-directly evaluated on a higher resolution.
+and directly evaluated on a higher resolution.
 The proposed method consistently outperforms all existing deep learning methods for parametric PDEs.
 It achieves error rates that are :math:`30\%` lower on Burgers’ Equation,
 :math:`60\%` lower on Darcy Flow, and :math:`30\%` lower on Navier Stokes
@@ -420,12 +420,12 @@ References
 ==========
 
 .. [1] Fourier Neural Operator for Parametric Partial Differential Equations,
-       Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli 
+       Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli
        and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar, 2020.
 
-.. [2] Hao, K. (2021, October 20). Ai has cracked a key mathematical puzzle for understanding our world. 
+.. [2] Hao, K. (2021, October 20). Ai has cracked a key mathematical puzzle for understanding our world.
        MIT Technology Review. https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/
-    
+
 .. [3] Multi-Grid Tensorized Fourier Neural Operator for High-Resolution PDEs,
-       Jean Kossaifi, Nikola Kovachki, Kamyar Azizzadenesheli, Anima Anandkumar, 2024. 
+       Jean Kossaifi, Nikola Kovachki, Kamyar Azizzadenesheli, Anima Anandkumar, 2024.
        TMLR 2024. https://openreview.net/pdf?id=AWiDlO63bH
