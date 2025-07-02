@@ -5,6 +5,7 @@ import torch
 
 from .mesh_datamodule import MeshDataModule
 from .web_utils import download_from_zenodo_record
+from neuralop.utils import get_project_root
 
 class CarCFDDataset(MeshDataModule):
     """CarCFDDataset is a processed version of the dataset introduced in
@@ -49,9 +50,7 @@ class CarCFDDataset(MeshDataModule):
 
     References
     ----------
-    .. [1] :
-    
-    Umetani, N. and Bickel, B. (2018). "Learning three-dimensional flow for interactive 
+    .. [1] : Umetani, N. and Bickel, B. (2018). "Learning three-dimensional flow for interactive 
         aerodynamic design". ACM Transactions on Graphics, 2018. 
         https://dl.acm.org/doi/10.1145/3197517.3201325.
     """
@@ -92,3 +91,11 @@ class CarCFDDataset(MeshDataModule):
         for i, data in enumerate(self.test_data.data_list):
             press = data['press']
             self.test_data.data_list[i]['press'] = torch.cat((press[:,0:16], press[:,112:]), axis=1)
+
+def load_mini_car():
+    """
+    Load the 3-example mini Car-CFD dataset we package along with our module.
+
+    See `neuralop.data.datasets.CarCFDDataset` for more detailed references
+    """
+    return torch.load(get_project_root() / "neuralop/data/datasets/data/mini_car.pt")

@@ -7,9 +7,9 @@ from torch.nn.init import xavier_uniform_, zeros_
 class AttentionKernelIntegral(torch.nn.Module):
     """
     Kernel integral transform with attention
-    Computes \int_{Omega} k(x, y) * f(y) dy,
+    Computes \\int_{Omega} k(x, y) * f(y) dy,
     where:
-          K(x, y) = \sum_{c=1}^d q_c(x) * k_c(y), q(x) = [q_1(x); ...; q_d(x)], k(y) = [k_1(y); ...; k_d(y)]
+          K(x, y) = \\sum_{c=1}^d q_c(x) * k_c(y), q(x) = [q_1(x); ...; q_d(x)], k(y) = [k_1(y); ...; k_d(y)]
           f(y) = v(y)
     More specifically, this module supports using just one input function (self-attention) or
     two input functions (cross-attention) to compute the kernel integral transform.
@@ -30,7 +30,7 @@ class AttentionKernelIntegral(torch.nn.Module):
     Self-attention can be considered as a special case of cross-attention, where u = u_qry = u_src and D_x = D_y.
 
     The kernel integral transform will be numerically computed as:
-        \int_{Omega} k(x, y) * f(y) dy \appox \sum_{j=1}^M * k(x, y_j) * f(y_j) * w(y_j)
+        \\int_{Omega} k(x, y) * f(y) dy \\appox \\sum_{j=1}^M * k(x, y_j) * f(y_j) * w(y_j)
     For uniform quadrature, the weights w(y_j) = 1/M.
     For non-uniform quadrature, the weights w(y_j) is specified as an input to the forward function.
 
@@ -40,7 +40,7 @@ class AttentionKernelIntegral(torch.nn.Module):
     out_channels : int, output channels
     n_heads : int, number of attention heads in multi-head attention
     head_n_channels : int, dimension of each attention head, determines how many function bases to use for the kernel
-                      k(x, y) = \sum_{c=1}^d \q_c(x) * \k_c(y), head_n_channels controls the d
+                      k(x, y) = \\sum_{c=1}^d \\q_c(x) * \\k_c(y), head_n_channels controls the d
     pos_dim : int, dimension of the domain, determines the dimension of coordinates
     project_query : bool, whether to project the query function with pointwise linear layer
                    (this is sometimes not needed when using cross-attention)
