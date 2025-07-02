@@ -157,11 +157,11 @@ class GINO(BaseModel):
         
     References
     -----------
-    .. _[1] : Li, Z., Kovachki, N., Choy, C., Li, B., Kossaifi, J., Otta, S., 
+    .. [1] : Li, Z., Kovachki, N., Choy, C., Li, B., Kossaifi, J., Otta, S., 
         Nabian, M., Stadler, M., Hundt, C., Azizzadenesheli, K., Anandkumar, A. (2023)
         Geometry-Informed Neural Operator for Large-Scale 3D PDEs. NeurIPS 2023,
         https://proceedings.neurips.cc/paper_files/paper/2023/hash/70518ea42831f02afc3a2828993935ad-Abstract-Conference.html
-    .. _[2] : Lin, R. et al. Placeholder reference for Mollified Graph Neural Operators.
+    .. [2] : Lin, R. et al. Placeholder reference for Mollified Graph Neural Operators.
     """
     def __init__(
         self,
