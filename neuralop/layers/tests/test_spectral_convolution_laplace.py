@@ -26,7 +26,6 @@ def test_SpectralConvLaplace(dim, in_channels, out_channels, output_shape):
         out_channels=out_channels,
         n_modes=modes[:dim],
         bias=True,
-        fft_norm="forward"
     )
     
     # Input tensor
