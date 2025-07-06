@@ -3,7 +3,6 @@ import torch.nn as nn
 import numpy as np
 from numpy.polynomial.legendre import Legendre
 import warnings
-import scipy.io as sio
 from pathlib import Path
 
 
@@ -296,26 +295,26 @@ class FCGram(nn.Module):
     
     def load_matrices(self):
         """
-        Load the pre-computed FCGram matrices from .mat files.
+        Load the pre-computed FCGram matrices from .npz files.
         
         The matrices are:
         - ArQr: Right boundary continuation matrix
         - AlQl: Left boundary continuation matrix
         """
-        filepath = self.matrices_path / f'FCGram_data_d{self.d}_C{self.C}.mat'
+        filepath = self.matrices_path / f'FCGram_data_d{self.d}_C{self.C}.npz'
         
         if not filepath.exists():
             raise FileNotFoundError(
                 f"FCGram matrices not found at {filepath}. \n"
-                f"Please run FCGram_Matrices.m with d={self.d}, C={self.C} first."
+                f"Please ensure the .npz file exists with d={self.d}, C={self.C}."
             )
         
-        # Load matrices from .mat file
-        mat_data = sio.loadmat(str(filepath))
+        # Load matrices from .npz file
+        npz_data = np.load(str(filepath))
         
-        # Extract matrices,  convert to torch tensors, and register as buffers so they are moved to GPU
-        self.register_buffer('ArQr', torch.from_numpy(mat_data['ArQr']))
-        self.register_buffer('AlQl', torch.from_numpy(mat_data['AlQl']))
+        # Extract matrices, convert to torch tensors, and register as buffers so they are moved to GPU
+        self.register_buffer('ArQr', torch.from_numpy(npz_data['ArQr']))
+        self.register_buffer('AlQl', torch.from_numpy(npz_data['AlQl']))
         
     
     def extend_left_right(self, x, one_sided=True):
