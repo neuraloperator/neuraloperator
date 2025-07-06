@@ -269,10 +269,11 @@ class FCGram(nn.Module):
         Parameters
         ----------
         d : int
-            Number of matching points, typically between 2 and 12. d=3,4,5 are typically good choices, by default 4.
+            Number of matching points, typically between 2 and 8. 
+            d=3,4,5,6 are typically good choices, by default 4.
         n_additional_pts : int
-            Number of continuation points (must be even, if odd, using n_additional_pts - 1)
-            By default 50. It is usually not necessary to change this parameter. 
+            Number of continuation points. By default 50.
+            Unlike for FCLegendre, it is usually not necessary to change this parameter. 
         matrices_path : str or Path, optional
             Path to directory containing FCGram matrices. 
             If None, uses the directory containing this file, by default None
