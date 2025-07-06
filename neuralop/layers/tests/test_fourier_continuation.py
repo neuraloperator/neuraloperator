@@ -11,7 +11,7 @@ def test_fourier_continuation(FC_class, dim: int, d: int):
         
         batch_size = 3
         length_signal = 101
-        add_pts = 40
+        add_pts = 50
 
         x = torch.linspace(0, 1, length_signal).repeat(batch_size,1)
         f = torch.sin(16 * x) - torch.cos(8 * x)
@@ -31,7 +31,7 @@ def test_fourier_continuation(FC_class, dim: int, d: int):
         
         batch_size = 3
         length_signal = 101
-        add_pts = 40
+        add_pts = 50
 
         x = torch.linspace(0, 1, length_signal).view(1, length_signal, 1).repeat(batch_size, 1, length_signal)
         y = torch.linspace(0, 1, length_signal).view(1, 1, length_signal).repeat(batch_size, length_signal, 1)
@@ -55,7 +55,7 @@ def test_fourier_continuation(FC_class, dim: int, d: int):
         
         batch_size = 2
         length_signal = 81
-        add_pts = 40
+        add_pts = 50
 
         # Create 3D grid
         x = torch.linspace(0, 1, length_signal).view(1, length_signal, 1, 1).repeat(batch_size, 1, length_signal, length_signal)

@@ -25,7 +25,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Here we consider sin(16x) - cos(8x), which is not periodic on the interval [0,1]
 
 length_signal = 101   # length of the original 1D signal
-add_pts = 40          # number of points to add
+add_pts = 50          # number of points to add
 batch_size = 3        # the Fourier continuation layer can be applied to batches of signals
 
 x = torch.linspace(0, 1, length_signal).repeat(batch_size,1)
@@ -54,8 +54,8 @@ f_extend_both_sides_Gram = Extension_Gram(f, dim=1, one_sided=False)
 # ----------------------
 
 # Define the extended coordinates
-x_extended_one_side = torch.linspace(0, 1.4, 141) 
-x_extended_both_sides = torch.linspace(-0.2, 1.2, 141) 
+x_extended_one_side = torch.linspace(0, 1.5, 151) 
+x_extended_both_sides = torch.linspace(-0.25, 1.25, 151) 
 
 # Add 0.6 and -0.6 to the extended functions for visualization purposes
 f_extend_one_side_Legendre = f_extend_one_side_Legendre + 0.6
@@ -70,8 +70,8 @@ plt.plot(x_extended_one_side, f_extend_one_side_Legendre[0] , 'b',label='One-sid
 plt.plot(x_extended_both_sides, f_extend_both_sides_Legendre[0] , 'g', label='Two-sided Extension', lw=2.2)
 plt.plot([0, 0], [-2.7, 1.8], '-', color='gray', lw=1.5)  
 plt.plot([1, 1], [-2.7, 1.8], '-', color='gray', lw=1.5)  
-plt.plot([0, 1.4], [f_extend_one_side_Legendre[0,0],f_extend_one_side_Legendre[0,0]], '--', color='b', lw=1.4)  
-plt.plot([-0.2, 1.2], [f_extend_both_sides_Legendre[0,0],f_extend_both_sides_Legendre[0,0]], '--', color='g', lw=1.4) 
+plt.plot([0, 1.5], [f_extend_one_side_Legendre[0,0],f_extend_one_side_Legendre[0,0]], '--', color='b', lw=1.4)  
+plt.plot([-0.25, 1.25], [f_extend_both_sides_Legendre[0,0],f_extend_both_sides_Legendre[0,0]], '--', color='g', lw=1.4) 
 legend_elements = [
         Line2D([0], [0], color='none', label='FC-Legendre'),
         Line2D([0], [0], color='k', lw=2.2, label='Original Function'),
@@ -79,15 +79,15 @@ legend_elements = [
         Line2D([0], [0], color='g', lw=2.2, label='Two-sided Extension')
 ]
 legend = plt.legend(handles=legend_elements, fontsize=19)
-plt.xlim([-0.24, 1.52])
-plt.ylim([-2.7, 2.5])
+plt.xlim([-0.28, 1.56])
+plt.ylim([-3.05, 2.7])
 legend.get_texts()[0].set_fontweight('bold')
 ax = plt.gca()
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 ax.tick_params(axis='x', which='major', labelsize=19)
 ax.tick_params(axis='y', which='major', labelsize=19)
-plt.xticks([-0.2,0,1,1.2, 1.4])
+plt.xticks([-0.25,0,1,1.25, 1.5])
 plt.yticks([-2,2])
 plt.tight_layout()
 plt.show()
@@ -99,10 +99,10 @@ plt.figure(figsize=(14, 5))
 plt.plot(x[0], f[0], 'k', label='Original Function', lw=2.2)
 plt.plot(x_extended_one_side, f_extend_one_side_Gram[0] , 'b',label='One-sided Extension', lw=2.2)
 plt.plot(x_extended_both_sides, f_extend_both_sides_Gram[0] , 'g', label='Two-sided Extension', lw=2.2)
-plt.plot([0, 0], [-2.5, 1.9], '-', color='gray', lw=1.5)  
-plt.plot([1, 1], [-2.5, 1.9], '-', color='gray', lw=1.5)  
-plt.plot([0, 1.4], [f_extend_one_side_Gram[0,0],f_extend_one_side_Gram[0,0]], '--', color='b', lw=1.4)  
-plt.plot([-0.2, 1.2], [f_extend_both_sides_Gram[0,0],f_extend_both_sides_Gram[0,0]], '--', color='g', lw=1.4) 
+plt.plot([0, 0], [-2.7, 1.8], '-', color='gray', lw=1.5)  
+plt.plot([1, 1], [-2.7, 1.8], '-', color='gray', lw=1.5)  
+plt.plot([0, 1.5], [f_extend_one_side_Gram[0,0],f_extend_one_side_Gram[0,0]], '--', color='b', lw=1.4)  
+plt.plot([-0.25, 1.25], [f_extend_both_sides_Gram[0,0],f_extend_both_sides_Gram[0,0]], '--', color='g', lw=1.4) 
 legend_elements = [
         Line2D([0], [0], color='none', label='FC-Gram'),
         Line2D([0], [0], color='k', lw=2.2, label='Original Function'),
@@ -110,15 +110,15 @@ legend_elements = [
         Line2D([0], [0], color='g', lw=2.2, label='Two-sided Extension')
 ]
 legend = plt.legend(handles=legend_elements, fontsize=19)
-plt.xlim([-0.24, 1.52])
-plt.ylim([-2.5, 2.9])
+plt.xlim([-0.28, 1.56])
+plt.ylim([-2.95, 3.1])
 legend.get_texts()[0].set_fontweight('bold')
 ax = plt.gca()
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 ax.tick_params(axis='x', which='major', labelsize=19)
 ax.tick_params(axis='y', which='major', labelsize=19)
-plt.xticks([-0.2,0,1,1.2, 1.4])
+plt.xticks([-0.25,0,1,1.25,1.5])
 plt.yticks([-2,2])
 plt.tight_layout()
 plt.show()
@@ -136,7 +136,7 @@ plt.show()
 # Here we consider sin(12x) - cos(14y) + 3xy, which is not periodic on [0,1]x[0,1]
 
 length_signal = 101   # length of the signal in each dimension
-add_pts = 40          # number of points to add in each dimension
+add_pts = 50          # number of points to add in each dimension
 batch_size = 3        # the Fourier continuation layer can be applied to batches of signals
 
 
@@ -212,7 +212,7 @@ plt.show()
 
 batch_size = 2
 length_signal = 101
-add_pts = 40
+add_pts = 50
 
 # Create 3D grid
 x = torch.linspace(0, 1, length_signal).view(1, length_signal, 1, 1).repeat(batch_size, 1, length_signal, length_signal)
