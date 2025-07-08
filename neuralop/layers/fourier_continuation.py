@@ -260,6 +260,18 @@ class FCGram(nn.Module):
     
     The algorithm uses pre-computed Gram matrices (ArQr, AlQl) to perform
     Fourier Continuation of discretized functions.
+    
+    If the required pre-computed FCGram matrices are not available, they 
+    can be computed using the MATLAB code from the FCGram repository
+    https://github.com/neuraloperator/FCGram/
+    and then saved to the appropriate matrices_path directory in .npz format.
+    
+    The matrices are:
+    - ArQr: Right boundary continuation matrix
+    - AlQl: Left boundary continuation matrix
+    
+    The matrices are saved in the .npz format.
+    
     """
     
     def __init__(self, d=4, n_additional_pts=50, matrices_path=None):
@@ -297,6 +309,11 @@ class FCGram(nn.Module):
     def load_matrices(self):
         """
         Load the pre-computed FCGram matrices from .npz files.
+        
+        If the required pre-computed FCGram matrices are not available, they 
+        can be computed using the MATLAB code from the FCGram repository
+        https://github.com/neuraloperator/FCGram/
+        and then saved to the appropriate matrices_path directory in .npz format.
         
         The matrices are:
         - ArQr: Right boundary continuation matrix
