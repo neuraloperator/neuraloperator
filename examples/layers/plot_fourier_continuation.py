@@ -50,7 +50,7 @@ f_extend_both_sides_Gram = Extension_Gram(f, dim=1, one_sided=False)
 
 
 # %%
-# Plot the results
+# Plot the FC-Legendre results
 # ----------------------
 
 # Define the extended coordinates
@@ -60,10 +60,7 @@ x_extended_both_sides = torch.linspace(-0.25, 1.25, 151)
 # Add 0.6 and -0.6 to the extended functions for visualization purposes
 f_extend_one_side_Legendre = f_extend_one_side_Legendre + 0.6
 f_extend_both_sides_Legendre = f_extend_both_sides_Legendre - 0.6
-f_extend_one_side_Gram = f_extend_one_side_Gram + 0.6
-f_extend_both_sides_Gram = f_extend_both_sides_Gram - 0.6
 
-# Plot the FC-Legendre results
 plt.figure(figsize=(14, 5))
 plt.plot(x[0], f[0], 'k', label='Original Function', lw=2.2)
 plt.plot(x_extended_one_side, f_extend_one_side_Legendre[0] , 'b',label='One-sided Extension', lw=2.2)
@@ -94,7 +91,18 @@ plt.show()
 
 
 
+# %%
 # Plot the FC-Gram results
+# ----------------------
+
+# Define the extended coordinates
+x_extended_one_side = torch.linspace(0, 1.5, 151) 
+x_extended_both_sides = torch.linspace(-0.25, 1.25, 151) 
+
+# Add 0.6 and -0.6 to the extended functions for visualization purposes
+f_extend_one_side_Gram = f_extend_one_side_Gram + 0.6
+f_extend_both_sides_Gram = f_extend_both_sides_Gram - 0.6
+
 plt.figure(figsize=(14, 5))
 plt.plot(x[0], f[0], 'k', label='Original Function', lw=2.2)
 plt.plot(x_extended_one_side, f_extend_one_side_Gram[0] , 'b',label='One-sided Extension', lw=2.2)
@@ -122,8 +130,6 @@ plt.xticks([-0.25,0,1,1.25,1.5])
 plt.yticks([-2,2])
 plt.tight_layout()
 plt.show()
-
-
 
 
 
@@ -161,11 +167,10 @@ f_extend_both_sides_Gram = Extension_Gram(f, dim=2, one_sided=False)
 
 
 # %%
-# Plot the results
+# Plot the FC-Legendre results
 # ----------------------
 # We also add black lines to deliminate the original signal
 
-# Plot the FC-Legendre results
 fig, axs = plt.subplots(figsize=(14,6), nrows=1, ncols=3)
 axs[0].imshow(f[0])
 axs[0].set_title(r"Original Function", fontsize=15.5)
@@ -184,7 +189,12 @@ for ax in axs.flat:
         ax.set_yticks([])
 plt.show()
 
+
+# %%
 # Plot the FC-Gram results
+# ----------------------
+# We also add black lines to deliminate the original signal
+
 fig, axs = plt.subplots(figsize=(14,6), nrows=1, ncols=3)
 axs[0].imshow(f[0])
 axs[0].set_title(r"Original Function", fontsize=15.5)
@@ -245,9 +255,6 @@ f_extend_both_sides_Gram = Extension_Gram(f, dim=3, one_sided=False)
 # We also add white lines to deliminate the original signal
 
 
-fig = plt.figure(figsize=(20, 15))
-fig.suptitle('FC-Legendre 3D Examples: X-Slices', fontsize=24, fontweight='bold', y=0.98)
-
 f_min = f.min().item()
 f_max = f.max().item()
 f_ext1_min = f_extend_one_side_Legendre.min().item()
@@ -257,7 +264,11 @@ f_ext2_max = f_extend_both_sides_Legendre.max().item()
 global_min = min(f_min, f_ext1_min, f_ext2_min)
 global_max = max(f_max, f_ext1_max, f_ext2_max)
 
+
+# %%
 # Figure for X slices
+fig = plt.figure(figsize=(20, 15))
+fig.suptitle('FC-Legendre 3D Examples: X-Slices', fontsize=24, fontweight='bold', y=0.98)
 slice_indices = [length_signal//4, length_signal//2, 3*length_signal//4]
 slice_names = ['First Quarter', 'Middle', 'Third Quarter']
 
@@ -306,6 +317,7 @@ for i, (idx, name) in enumerate(zip(slice_indices, slice_names)):
 plt.subplots_adjust(hspace=0.3, wspace=0.2, top=0.92)
 plt.show()
 
+# %%
 # Figure for Y-slices
 fig2 = plt.figure(figsize=(20, 15))
 fig2.suptitle('FC-Legendre 3D Examples: Y-Slices', fontsize=24, fontweight='bold', y=0.98)
@@ -356,6 +368,7 @@ for i, (idx, name) in enumerate(zip(slice_indices, slice_names)):
 plt.subplots_adjust(hspace=0.3, wspace=0.2, top=0.92)
 plt.show()
 
+# %%
 # Figure for Z-slices
 fig3 = plt.figure(figsize=(20, 15))
 fig3.suptitle('FC-Legendre 3D Examples: Z-Slices', fontsize=24, fontweight='bold', y=0.98)
@@ -414,10 +427,6 @@ plt.show()
 # ----------------------
 # We also add white lines to deliminate the original signal
 
-
-fig = plt.figure(figsize=(20, 15))
-fig.suptitle('FC-Gram 3D Examples: X-Slices', fontsize=24, fontweight='bold', y=0.98)
-
 f_min = f.min().item()
 f_max = f.max().item()
 f_ext1_min = f_extend_one_side_Gram.min().item()
@@ -428,7 +437,10 @@ f_ext2_max = f_extend_both_sides_Gram.max().item()
 global_min = min(f_min, f_ext1_min, f_ext2_min)
 global_max = max(f_max, f_ext1_max, f_ext2_max)
 
+# %%
 # Figure for X slices
+fig = plt.figure(figsize=(20, 15))
+fig.suptitle('FC-Gram 3D Examples: X-Slices', fontsize=24, fontweight='bold', y=0.98)
 slice_indices = [length_signal//4, length_signal//2, 3*length_signal//4]
 slice_names = ['First Quarter', 'Middle', 'Third Quarter']
 
@@ -475,6 +487,7 @@ for i, (idx, name) in enumerate(zip(slice_indices, slice_names)):
 plt.subplots_adjust(hspace=0.3, wspace=0.2, top=0.92)
 plt.show()
 
+# %%
 # Figure for Y-slices
 fig2 = plt.figure(figsize=(20, 15))
 fig2.suptitle('FC-Gram 3D Examples: Y-Slices', fontsize=24, fontweight='bold', y=0.98)
@@ -522,6 +535,7 @@ for i, (idx, name) in enumerate(zip(slice_indices, slice_names)):
 plt.subplots_adjust(hspace=0.3, wspace=0.2, top=0.92)
 plt.show()
 
+# %%
 # Figure for Z-slices
 fig3 = plt.figure(figsize=(20, 15))
 fig3.suptitle('FC-Gram 3D Examples: Z-Slices', fontsize=24, fontweight='bold', y=0.98)
