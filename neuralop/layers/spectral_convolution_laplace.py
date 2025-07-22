@@ -104,13 +104,11 @@ class SpectralConvLaplace(BaseSpectralConv):
     linspace_endpoints : list of float, optional
         Domain end points for each dimension. Defaults to 1.0 for all.
         
-    References
-    -----------
-    .. [1] :
-    
-    Cao, Q., Goswami, S., and Karniadakis, G. E. "LNO: Laplace Neural Operator
+    .. [1] : Cao, Q., Goswami, S., and Karniadakis, G. E. "LNO: Laplace Neural Operator
         for Solving Differential Equations" (2023). arXiv preprint arXiv:2303.10528,
         https://arxiv.org/pdf/2303.10528.
+    
+    
         
     """
     def __init__(
