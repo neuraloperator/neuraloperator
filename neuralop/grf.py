@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from scipy.fft import idct
+from scipy.fft import idctn
 
 
 def get_fixed_coords(Ln1, Ln2):
@@ -111,40 +111,30 @@ class MaternKernelSampler(GRFSampler):
         # Store coefficient
         self.coeff = C
 
-    def _sample2d(self):
-        """
-        Single 2D Sample
-        :return: GRF numpy.ndarray (Ln, Ln)
-        """
-        # Sample from normal distribution
-        xr = np.random.standard_normal(size=(self.Ln, self.Ln))
-        # Coefficients in fourier domain
-        L = self.coeff * xr
-        L = self.Ln * L
-        # Apply boundary condition
-        L[0, 0] = 0.0
-        # Transform to real domain
-        # u = cv2.idct(L)
-        u = idct(idct(L, axis=0, norm="ortho"), axis=1, norm="ortho")
-        return u
-
     @torch.no_grad()
     def sample(self, N):
         """
-        Generate N samples of GRF using IDCT method.
+        Generate N samples of GRF using IDCT method with parallel channel generation.
 
         Returns:
             Tensor of shape (N, in_channels, Ln1, Ln2)
         """
-        # Generate samples for all channels
-        z_mat = np.zeros((N, self.in_channels, self.Ln, self.Ln), dtype=np.float32)
+        # Generate all samples at once: (N, in_channels, Ln, Ln)
+        xr = np.random.standard_normal(size=(N, self.in_channels, self.Ln, self.Ln))
 
-        for n in range(N):
-            for c in range(self.in_channels):
-                z_mat[n, c, :, :] = self._sample2d()
+        # Apply coefficients in fourier domain (broadcasting across N and in_channels)
+        L = self.coeff[None, None, :, :] * xr
+        L = self.Ln * L
+
+        # Apply boundary condition to all samples
+        L[:, :, 0, 0] = 0.0
+
+        # Transform to real domain using vectorized IDCT
+        # Apply IDCT along the last two dimensions
+        u = idctn(L, axes=[-1, -2], norm="ortho")
 
         # Convert to torch tensor
-        result = torch.from_numpy(z_mat)
+        result = torch.from_numpy(u.astype(np.float32))
         if self.device is not None:
             result = result.to(self.device)
 
