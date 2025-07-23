@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-import cv2
+from scipy.fft import idct
 
 
 def get_fixed_coords(Ln1, Ln2):
@@ -124,7 +124,8 @@ class MaternKernelSampler(GRFSampler):
         # Apply boundary condition
         L[0, 0] = 0.0
         # Transform to real domain
-        u = cv2.idct(L)
+        # u = cv2.idct(L)
+        u = idct(idct(L, axis=0, norm="ortho"), axis=1, norm="ortho")
         return u
 
     @torch.no_grad()
