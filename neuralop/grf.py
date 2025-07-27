@@ -66,13 +66,6 @@ class RBFKernelSampler(GRFSampler):
         return sample_rshp
 
 
-def normalize_to_unit_std(tensor):
-    current_std = tensor.std()
-    if current_std > 0:  # Avoid division by zero
-        return tensor / current_std
-    return tensor
-
-
 class MaternKernelSampler(GRFSampler):
     @torch.no_grad()
     def __init__(
@@ -125,6 +118,31 @@ class MaternKernelSampler(GRFSampler):
             self._setup_periodic()
         else:  # none
             self._setup_none()
+
+    @staticmethod
+    def _normalize_to_unit_std(tensor):
+        current_std = tensor.std()
+        if current_std > 0:  # Avoid division by zero
+            return tensor / current_std
+        return tensor
+
+    @staticmethod
+    def _ensure_hermitian_symmetry(L, Ln1, Ln2):
+        """Ensure Hermitian symmetry for real-valued output."""
+        # For real-valued output, we need L[k] = conj(L[-k])
+        # This is automatically satisfied for random complex numbers in most cases,
+        # but we explicitly enforce it here for numerical stability
+
+        # Handle DC component (should be real)
+        L[:, :, 0, 0] = np.real(L[:, :, 0, 0])
+
+        # Handle Nyquist frequencies if grid size is even
+        if Ln1 % 2 == 0:
+            L[:, :, Ln1 // 2, :] = np.real(L[:, :, Ln1 // 2, :])
+        if Ln2 % 2 == 0:
+            L[:, :, :, Ln2 // 2] = np.real(L[:, :, :, Ln2 // 2])
+
+        return L
 
     def _setup_zero_neumann(self):
         """Setup coefficients for zero Neumann boundary condition using IDCT."""
@@ -212,7 +230,7 @@ class MaternKernelSampler(GRFSampler):
 
         # Normalize to unit standard deviation if requested
         if self.normalize_std:
-            result = normalize_to_unit_std(result)
+            result = self._normalize_to_unit_std(result)
 
         return result
 
@@ -250,7 +268,7 @@ class MaternKernelSampler(GRFSampler):
 
         # Normalize to unit standard deviation if requested
         if self.normalize_std:
-            result = normalize_to_unit_std(result)
+            result = self._normalize_to_unit_std(result)
 
         return result
 
@@ -272,23 +290,6 @@ class MaternKernelSampler(GRFSampler):
 
         # Normalize to unit standard deviation if requested
         if self.normalize_std:
-            result = normalize_to_unit_std(result)
+            result = self._normalize_to_unit_std(result)
 
         return result
-
-    def _ensure_hermitian_symmetry(self, L, Ln1, Ln2):
-        """Ensure Hermitian symmetry for real-valued output."""
-        # For real-valued output, we need L[k] = conj(L[-k])
-        # This is automatically satisfied for random complex numbers in most cases,
-        # but we explicitly enforce it here for numerical stability
-
-        # Handle DC component (should be real)
-        L[:, :, 0, 0] = np.real(L[:, :, 0, 0])
-
-        # Handle Nyquist frequencies if grid size is even
-        if Ln1 % 2 == 0:
-            L[:, :, Ln1 // 2, :] = np.real(L[:, :, Ln1 // 2, :])
-        if Ln2 % 2 == 0:
-            L[:, :, :, Ln2 // 2] = np.real(L[:, :, :, Ln2 // 2])
-
-        return L
