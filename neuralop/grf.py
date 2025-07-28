@@ -98,8 +98,10 @@ class MaternKernelSampler(GRFSampler):
         in_channels,
         Ln1,
         Ln2,
-        length_scale=0.1,
-        nu=1.0,
+        length_scale=None,
+        nu=None,
+        alpha=None,
+        tau=None,
         normalize_std=True,
         boundary_condition="zero-neumann",
         device=None,
@@ -117,33 +119,66 @@ class MaternKernelSampler(GRFSampler):
         Args:
             in_channels (int): Number of input channels for the samples.
             Ln1, Ln2 (int): Grid dimensions.
-            length_scale (float): The length scale `l` of the Matérn kernel.
-                                  Controls the correlation distance.
-            nu (float): The smoothness parameter `ν` of the Matérn kernel.
-                        As ν → ∞, it approaches the RBF kernel. Must be > 0.
+            length_scale (float, optional): The length scale `l` of the Matérn kernel.
+                                          Controls the correlation distance.
+            nu (float, optional): The smoothness parameter `ν` of the Matérn kernel.
+                                As ν → ∞, it approaches the RBF kernel. Must be > 0.
+            alpha (float, optional): The spectral parameter α. Alternative to nu.
+            tau (float, optional): The spectral parameter τ. Alternative to length_scale.
             normalize_std (bool): If True, normalize output to have unit standard deviation.
             boundary_condition (str): One of "zero-neumann", "periodic", or "none".
             device (torch.device): The PyTorch device to use.
+
+        Note:
+            You must specify either (length_scale, nu) OR (alpha, tau).
         """
         self.in_channels = in_channels
         self.Ln1 = Ln1
         self.Ln2 = Ln2
         self.device = device
-        self.length_scale = length_scale
-        self.nu = nu
         self.normalize_std = normalize_std
         self.boundary_condition = boundary_condition
 
-        if self.nu <= 0:
-            raise ValueError("Smoothness parameter nu must be positive.")
-        if self.length_scale <= 0:
-            raise ValueError("Length scale must be positive.")
+        # Validate parameter specification
+        length_nu_specified = length_scale is not None and nu is not None
+        alpha_tau_specified = alpha is not None and tau is not None
 
-        # The dimension D of the grid is 2
-        D = 2.0
-        # Relate (length_scale, nu) to the (alpha, tau) used in the spectral method
-        self.alpha = self.nu + D / 2.0
-        self.tau = np.sqrt(2 * self.nu) / self.length_scale
+        if length_nu_specified and alpha_tau_specified:
+            raise ValueError(
+                "Cannot specify both (length_scale, nu) and (alpha, tau). Choose one parameterization."
+            )
+
+        if not length_nu_specified and not alpha_tau_specified:
+            raise ValueError("Must specify either (length_scale, nu) or (alpha, tau).")
+
+        if length_nu_specified:
+            if nu <= 0:
+                raise ValueError("Smoothness parameter nu must be positive.")
+            if length_scale <= 0:
+                raise ValueError("Length scale must be positive.")
+
+            # Convert (length_scale, nu) to (alpha, tau)
+            D = 2.0  # The dimension D of the grid is 2
+            self.alpha = nu + D / 2.0
+            self.tau = np.sqrt(2 * nu) / length_scale
+            self.length_scale = length_scale
+            self.nu = nu
+
+        else:  # alpha_tau_specified
+            if alpha <= 1.0:  # Since alpha = nu + D/2 and nu > 0, alpha > D/2 = 1
+                raise ValueError(
+                    "Parameter alpha must be > 1.0 (since alpha = nu + D/2 with D=2)."
+                )
+            if tau <= 0:
+                raise ValueError("Parameter tau must be positive.")
+
+            self.alpha = alpha
+            self.tau = tau
+
+            # Convert (alpha, tau) to (length_scale, nu) for completeness
+            D = 2.0
+            self.nu = alpha - D / 2.0
+            self.length_scale = np.sqrt(2 * self.nu) / tau
 
         if boundary_condition not in ["zero-neumann", "periodic", "none"]:
             raise ValueError(
