@@ -98,10 +98,8 @@ class MaternKernelSampler(GRFSampler):
         in_channels,
         Ln1,
         Ln2,
-        length_scale=None,
-        nu=None,
-        alpha=None,
-        tau=None,
+        scale,
+        nu,
         normalize_std=True,
         boundary_condition="zero-neumann",
         device=None,
@@ -119,18 +117,13 @@ class MaternKernelSampler(GRFSampler):
         Args:
             in_channels (int): Number of input channels for the samples.
             Ln1, Ln2 (int): Grid dimensions.
-            length_scale (float, optional): The length scale `l` of the Matérn kernel.
-                                          Controls the correlation distance.
-            nu (float, optional): The smoothness parameter `ν` of the Matérn kernel.
-                                As ν → ∞, it approaches the RBF kernel. Must be > 0.
-            alpha (float, optional): The spectral parameter α. Alternative to nu.
-            tau (float, optional): The spectral parameter τ. Alternative to length_scale.
+            scale (float): The length scale `l` of the Matérn kernel.
+                                 Controls the correlation distance.
+            nu (float): The smoothness parameter `ν` of the Matérn kernel.
+                       As ν → ∞, it approaches the RBF kernel. Must be > 0.
             normalize_std (bool): If True, normalize output to have unit standard deviation.
             boundary_condition (str): One of "zero-neumann", "periodic", or "none".
             device (torch.device): The PyTorch device to use.
-
-        Note:
-            You must specify either (length_scale, nu) OR (alpha, tau).
         """
         self.in_channels = in_channels
         self.Ln1 = Ln1
@@ -139,51 +132,18 @@ class MaternKernelSampler(GRFSampler):
         self.normalize_std = normalize_std
         self.boundary_condition = boundary_condition
 
-        # Validate parameter specification
-        length_nu_specified = length_scale is not None and nu is not None
-        alpha_tau_specified = alpha is not None and tau is not None
+        # Validate parameters
+        if nu <= 0:
+            raise ValueError("Smoothness parameter nu must be positive.")
+        if scale <= 0:
+            raise ValueError("Length scale must be positive.")
 
-        if length_nu_specified and alpha_tau_specified:
-            raise ValueError(
-                "Cannot specify both (length_scale, nu) and (alpha, tau). Choose one parameterization."
-            )
-
-        if not length_nu_specified and not alpha_tau_specified:
-            raise ValueError("Must specify either (length_scale, nu) or (alpha, tau).")
-
-        if length_nu_specified:
-            if nu <= 0:
-                raise ValueError("Smoothness parameter nu must be positive.")
-            if length_scale <= 0:
-                raise ValueError("Length scale must be positive.")
-
-            # Convert (length_scale, nu) to (alpha, tau)
-            D = 2.0  # The dimension D of the grid is 2
-            self.alpha = nu + D / 2.0
-            self.tau = np.sqrt(2 * nu) / length_scale
-            self.length_scale = length_scale
-            self.nu = nu
-
-        else:  # alpha_tau_specified
-            if alpha <= 1.0:  # Since alpha = nu + D/2 and nu > 0, alpha > D/2 = 1
-                raise ValueError(
-                    "Parameter alpha must be > 1.0 (since alpha = nu + D/2 with D=2)."
-                )
-            if tau <= 0:
-                raise ValueError("Parameter tau must be positive.")
-
-            self.alpha = alpha
-            self.tau = tau
-
-            # Convert (alpha, tau) to (length_scale, nu) for completeness
-            D = 2.0
-            self.nu = alpha - D / 2.0
-            self.length_scale = np.sqrt(2 * self.nu) / tau
-
-        if boundary_condition not in ["zero-neumann", "periodic", "none"]:
-            raise ValueError(
-                "boundary_condition must be one of 'zero-neumann', 'periodic', or 'none'"
-            )
+        # Convert (scale, nu) to (alpha, tau)
+        D = 2.0  # The dimension D of the grid is 2
+        self.alpha = nu + D / 2.0
+        self.tau = np.sqrt(2 * nu) / scale
+        self.scale = scale
+        self.nu = nu
 
         if boundary_condition == "zero-neumann":
             if Ln1 != Ln2:
@@ -194,8 +154,12 @@ class MaternKernelSampler(GRFSampler):
             self._setup_zero_neumann()
         elif boundary_condition == "periodic":
             self._setup_periodic()
-        else:  # "none"
+        elif boundary_condition == "none":
             self._setup_none()
+        else:
+            raise ValueError(
+                "boundary_condition must be one of 'zero-neumann', 'periodic', or 'none'"
+            )
 
     @staticmethod
     def _normalize_to_unit_std(tensor):
@@ -252,7 +216,7 @@ class MaternKernelSampler(GRFSampler):
             in_channels=self.in_channels,
             Ln1=2 * self.Ln1,
             Ln2=2 * self.Ln2,
-            length_scale=self.length_scale,
+            scale=self.scale,
             nu=self.nu,
             normalize_std=False,  # Normalization is handled after cropping
             boundary_condition="periodic",
