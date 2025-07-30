@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 from scipy.fft import idctn, ifftn
+from scipy.special import poch
 
 
 def get_fixed_coords(Ln1, Ln2):
@@ -72,9 +73,7 @@ class RBFKernelSampler(GRFSampler):
         Returns:
             torch.Tensor: A tensor of shape (N, in_channels, Ln1, Ln2).
         """
-        samples = torch.zeros((N, self.Ln1 * self.Ln2, self.in_channels)).to(
-            self.device
-        )
+        samples = torch.zeros((N, self.Ln1 * self.Ln2, self.in_channels)).to(self.device)
         # Generate samples iteratively to save memory
         for ix in range(N):
             # (Ln1*Ln2, in_channels)
@@ -100,19 +99,26 @@ class MaternKernelSampler(GRFSampler):
         Ln2,
         scale,
         nu,
-        normalize_std=True,
-        boundary_condition="zero-neumann",
+        normalize_std=False,
+        boundary_condition="none",
         device=None,
     ):
         """
         Gaussian random field sampler for a Matérn covariance function, implemented
         using spectral methods.
 
-        The Matérn covariance is defined by a length scale `l` and a smoothness
-        parameter `ν`. The covariance operator is C = (-Δ + τ²)^(-α), where Δ is
-        the Laplacian. The parameters are related via:
-        - α = ν + D/2  (D=2 for a 2D grid)
-        - τ² = 2ν / l²
+        The Matérn covariance function in the spatial domain is:
+            C_ν(d) = σ² × (2^(1-ν)/Γ(ν)) × (√(2ν) × d/ρ)^ν × K_ν(√(2ν) × d/ρ)
+
+        Where:
+        - d is the distance between points
+        - ρ (rho) is the length scale parameter
+        - ν (nu) is the smoothness parameter
+        - K_ν is the modified Bessel function of the second kind
+        - σ² is the variance
+
+        The spectral density in the frequency domain is:
+            S(f) = σ² × (2^n × π^(n/2) × Γ(ν + n/2) × (2ν)^ν) / (Γ(ν) × ρ^(2ν)) × (2ν/ρ² + 4π²f²)^(-(ν + n/2))
 
         Args:
             in_channels (int): Number of input channels for the samples.
@@ -138,18 +144,13 @@ class MaternKernelSampler(GRFSampler):
         if scale <= 0:
             raise ValueError("Length scale must be positive.")
 
-        # Convert (scale, nu) to (alpha, tau)
-        D = 2.0  # The dimension D of the grid is 2
-        self.alpha = nu + D / 2.0
-        self.tau = np.sqrt(2 * nu) / scale
+        # Store parameters
         self.scale = scale
         self.nu = nu
 
         if boundary_condition == "zero-neumann":
             if Ln1 != Ln2:
-                raise ValueError(
-                    "MaternKernelSampler with 'zero-neumann' currently supports square grids only"
-                )
+                raise ValueError("MaternKernelSampler with 'zero-neumann' currently supports square grids only")
             self.Ln = Ln1
             self._setup_zero_neumann()
         elif boundary_condition == "periodic":
@@ -157,9 +158,7 @@ class MaternKernelSampler(GRFSampler):
         elif boundary_condition == "none":
             self._setup_none()
         else:
-            raise ValueError(
-                "boundary_condition must be one of 'zero-neumann', 'periodic', or 'none'"
-            )
+            raise ValueError("boundary_condition must be one of 'zero-neumann', 'periodic', or 'none'")
 
     @staticmethod
     def _normalize_to_unit_std(tensor):
@@ -186,10 +185,20 @@ class MaternKernelSampler(GRFSampler):
         k = np.arange(self.Ln)
         K1, K2 = np.meshgrid(k, k, indexing="ij")
 
+        # Calculate parameters directly from scale and nu
+        D = 2.0  # spatial dimension
+        alpha = self.nu + D / 2.0
+        tau = np.sqrt(2 * self.nu) / self.scale
+
         # Define the (square root of) eigenvalues of the covariance operator
-        C = (np.pi**2) * (np.square(K1) + np.square(K2)) + self.tau**2
-        C = np.power(C, -self.alpha / 2.0)
-        C = (self.tau ** (self.alpha - 1)) * C
+        C = (np.pi**2) * (np.square(K1) + np.square(K2)) + tau**2
+        C = np.power(C, -alpha / 2.0)
+
+        # Calculate the constant factor from Matérn spectral density
+        gamma_ratio = poch(self.nu, D / 2)  # gamma(self.nu + n/2) / gamma(self.nu)
+        const_factor = np.sqrt((2**D * np.pi ** (D / 2) * gamma_ratio * (2 * self.nu) ** self.nu) / (self.scale ** (2 * self.nu)))
+
+        C = const_factor * C
 
         self.coeff = C
 
@@ -199,13 +208,22 @@ class MaternKernelSampler(GRFSampler):
         freq2 = np.fft.fftfreq(self.Ln2, 1 / self.Ln2)
         K1, K2 = np.meshgrid(freq1, freq2, indexing="ij")
 
-        # Define the (square root of) eigenvalues for periodic case
-        # Using 2π scaling for proper frequency scaling
-        C = (2 * np.pi) ** 2 * (np.square(K1) + np.square(K2)) + self.tau**2
-        C = np.power(C, -self.alpha / 2.0)
-        C = (self.tau ** (self.alpha - 1)) * C
+        # Calculate parameters directly from scale and nu
+        D = 2.0  # spatial dimension
+        alpha = self.nu + D / 2.0
+        tau = np.sqrt(2 * self.nu) / self.scale
 
-        C[0, 0] = 0.0  # Set DC component to zero
+        # Define the (square root of) eigenvalues for periodic case
+        C = (2 * np.pi) ** 2 * (np.square(K1) + np.square(K2)) + tau**2
+        C = np.power(C, -alpha / 2.0)
+
+        # Calculate the constant factor from Matérn spectral density
+        gamma_ratio = poch(self.nu, D / 2)  # gamma(self.nu + n/2) / gamma(self.nu)
+        const_factor = np.sqrt((2**D * np.pi ** (D / 2) * gamma_ratio * (2 * self.nu) ** self.nu) / (self.scale ** (2 * self.nu)))
+
+        C = const_factor * C
+
+        C[0, 0] = 0.0  # Set DC component to zero for zero mean
         self.coeff = C
 
     def _setup_none(self):
@@ -259,19 +277,15 @@ class MaternKernelSampler(GRFSampler):
 
     def _sample_periodic(self, N):
         """Samples using IFFT for periodic boundary."""
-        xr = np.random.standard_normal(
-            size=(N, self.in_channels, self.Ln1, self.Ln2)
-        ) + 1j * np.random.standard_normal(
-            size=(N, self.in_channels, self.Ln1, self.Ln2)
-        )
+        xr = np.random.standard_normal(size=(N, self.in_channels, self.Ln1, self.Ln2)) + 1j * np.random.standard_normal(size=(N, self.in_channels, self.Ln1, self.Ln2))
 
         # Apply spectral filter (coefficients)
         L = self.coeff[None, None, :, :] * xr
         L = self._ensure_hermitian_symmetry(L, self.Ln1, self.Ln2)
 
         # Transform to real domain using IFFT
-        u = ifftn(L, axes=[-1, -2])
-        u = np.real(u) * np.sqrt(self.Ln1 * self.Ln2)  # Take real part and scale
+        u = ifftn(L, axes=[-1, -2], norm="ortho")
+        u = np.real(u) * np.sqrt(self.Ln1 * self.Ln2)
         result = torch.from_numpy(u.astype(np.float32)).to(self.device)
 
         if self.normalize_std:
