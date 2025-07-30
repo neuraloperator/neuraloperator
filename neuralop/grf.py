@@ -234,7 +234,7 @@ class MaternKernelSampler(GRFSampler):
             in_channels=self.in_channels,
             Ln1=2 * self.Ln1,
             Ln2=2 * self.Ln2,
-            scale=self.scale,
+            scale=self.scale / 2,  # Corrected scale for larger grid
             nu=self.nu,
             normalize_std=False,  # Normalization is handled after cropping
             boundary_condition="periodic",
