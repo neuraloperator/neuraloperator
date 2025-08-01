@@ -4,7 +4,7 @@ configmypy
 zencfg
 tensorly
 tensorly-torch
-torch-harmonics
+torch-harmonics @ git+https://github.com/NVIDIA/torch-harmonics.git
 matplotlib
 opt-einsum
 h5py
