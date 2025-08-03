@@ -222,8 +222,6 @@ class MaternKernelSampler(GRFSampler):
         const_factor = np.sqrt((2**D * np.pi ** (D / 2) * gamma_ratio * (2 * self.nu) ** self.nu) / (self.scale ** (2 * self.nu)))
 
         C = const_factor * C
-
-        C[0, 0] = 0.0  # Set DC component to zero for zero mean
         self.coeff = C
 
     def _setup_none(self):
@@ -263,9 +261,6 @@ class MaternKernelSampler(GRFSampler):
         # Apply spectral filter (coefficients)
         L = self.coeff[None, None, :, :] * xr
         L = self.Ln * L
-
-        # Apply boundary condition to all samples
-        L[:, :, 0, 0] = 0.0
 
         # Transform to real domain using IDCT
         u = idctn(L, axes=[-1, -2], norm="ortho")
