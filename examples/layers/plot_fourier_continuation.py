@@ -41,7 +41,7 @@ f = torch.sin(16 * x) - torch.cos(8 * x)
 Extension_Legendre = FCLegendre(d=2, n_additional_pts=add_pts)
 f_extend_Legendre = Extension_Legendre(f, dim=1)
 
-Extension_Gram = FCGram(d=3, n_additional_pts=add_pts)
+Extension_Gram = FCGram(d=4, n_additional_pts=add_pts)
 f_extend_Gram = Extension_Gram(f, dim=1)
 
 
