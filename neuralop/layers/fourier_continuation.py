@@ -14,14 +14,14 @@ class FCLegendre(nn.Module):
     to extend non-periodic functions to periodic ones on larger domains
     """
     
-    def __init__(self, d=4, n_additional_pts=50):
+    def __init__(self, d=6, n_additional_pts=50):
         """
         Initialize FCLegendre with specified parameters.
         
         Parameters
         ----------
         d : int
-            Number of matching points (degree of approximation), by default 4
+            Number of matching points (degree of approximation), by default 6
         n_additional_pts : int
             Number of additional points to add for continuation, by default 50
         """
@@ -251,15 +251,15 @@ class FCGram(nn.Module):
     
     """
     
-    def __init__(self, d=4, n_additional_pts=50, matrices_path=None):
+    def __init__(self, d=6, n_additional_pts=50, matrices_path=None):
         """
         Initialize FCGram with specified parameters.
         
         Parameters
         ----------
         d : int
-            Number of matching points, typically between 2 and 8. 
-            d=3,4,5,6 are typically good choices, by default 4.
+            Number of matching points, typically between 3 and 8. 
+            d=3,4,5,6 are typically good choices, by default 6.
         n_additional_pts : int
             Number of continuation points. By default 50.
             Unlike for FCLegendre, it is usually not necessary to change this parameter. 
