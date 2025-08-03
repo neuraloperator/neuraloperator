@@ -1,7 +1,8 @@
 import torch
 import numpy as np
-from scipy.fft import idctn, ifftn
 from scipy.special import poch
+
+from .dct import idct, idct_2d, idct_3d
 
 
 def get_fixed_coords(Ln1, Ln2):
@@ -105,7 +106,7 @@ class MaternKernelSampler(GRFSampler):
     ):
         """
         Gaussian random field sampler for a Matérn covariance function, implemented
-        using spectral methods.
+        using spectral methods with PyTorch acceleration.
 
         The Matérn covariance function in the spatial domain is:
             C_ν(d) = σ² × (2^(1-ν)/Γ(ν)) × (√(2ν) × d/ρ)^ν × K_ν(√(2ν) × d/ρ)
@@ -173,17 +174,18 @@ class MaternKernelSampler(GRFSampler):
         """Enforces Hermitian symmetry on the spectral coefficients for real-valued output."""
         # For real-valued output from IFFT, we need L[k] = conj(L[-k]).
         # This is explicitly enforced for numerical stability.
-        L[:, :, 0, 0] = np.real(L[:, :, 0, 0])  # DC component
+        L_clone = L.clone()
+        L[:, :, 0, 0] = torch.real(L_clone[:, :, 0, 0])  # DC component
         if Ln1 % 2 == 0:
-            L[:, :, Ln1 // 2, :] = np.real(L[:, :, Ln1 // 2, :])  # Nyquist frequency
+            L[:, :, Ln1 // 2, :] = torch.real(L_clone[:, :, Ln1 // 2, :])  # Nyquist frequency
         if Ln2 % 2 == 0:
-            L[:, :, :, Ln2 // 2] = np.real(L[:, :, :, Ln2 // 2])  # Nyquist frequency
+            L[:, :, :, Ln2 // 2] = torch.real(L_clone[:, :, :, Ln2 // 2])  # Nyquist frequency
         return L
 
     def _setup_zero_neumann(self):
         """Sets up spectral coefficients for zero-Neumann boundary condition using IDCT."""
-        k = np.arange(self.Ln)
-        K1, K2 = np.meshgrid(k, k, indexing="ij")
+        k = torch.arange(self.Ln, device=self.device)
+        K1, K2 = torch.meshgrid(k, k, indexing="ij")
 
         # Calculate parameters directly from scale and nu
         D = 2.0  # spatial dimension
@@ -191,22 +193,21 @@ class MaternKernelSampler(GRFSampler):
         tau = np.sqrt(2 * self.nu) / self.scale
 
         # Define the (square root of) eigenvalues of the covariance operator
-        C = (np.pi**2) * (np.square(K1) + np.square(K2)) + tau**2
-        C = np.power(C, -alpha / 2.0)
+        C = (torch.pi**2) * (torch.square(K1) + torch.square(K2)) + tau**2
+        C = torch.pow(C, -alpha / 2.0)
 
         # Calculate the constant factor from Matérn spectral density
         gamma_ratio = poch(self.nu, D / 2)  # gamma(self.nu + n/2) / gamma(self.nu)
         const_factor = np.sqrt((2**D * np.pi ** (D / 2) * gamma_ratio * (2 * self.nu) ** self.nu) / (self.scale ** (2 * self.nu)))
 
         C = const_factor * C
-
         self.coeff = C
 
     def _setup_periodic(self):
         """Sets up spectral coefficients for periodic boundary condition using IFFT."""
-        freq1 = np.fft.fftfreq(self.Ln1, 1 / self.Ln1)
-        freq2 = np.fft.fftfreq(self.Ln2, 1 / self.Ln2)
-        K1, K2 = np.meshgrid(freq1, freq2, indexing="ij")
+        freq1 = torch.fft.fftfreq(self.Ln1, 1 / self.Ln1, device=self.device)
+        freq2 = torch.fft.fftfreq(self.Ln2, 1 / self.Ln2, device=self.device)
+        K1, K2 = torch.meshgrid(freq1, freq2, indexing="ij")
 
         # Calculate parameters directly from scale and nu
         D = 2.0  # spatial dimension
@@ -214,8 +215,8 @@ class MaternKernelSampler(GRFSampler):
         tau = np.sqrt(2 * self.nu) / self.scale
 
         # Define the (square root of) eigenvalues for periodic case
-        C = (2 * np.pi) ** 2 * (np.square(K1) + np.square(K2)) + tau**2
-        C = np.power(C, -alpha / 2.0)
+        C = (2 * torch.pi) ** 2 * (torch.square(K1) + torch.square(K2)) + tau**2
+        C = torch.pow(C, -alpha / 2.0)
 
         # Calculate the constant factor from Matérn spectral density
         gamma_ratio = poch(self.nu, D / 2)  # gamma(self.nu + n/2) / gamma(self.nu)
@@ -256,15 +257,14 @@ class MaternKernelSampler(GRFSampler):
 
     def _sample_zero_neumann(self, N):
         """Samples using IDCT for zero-Neumann boundary."""
-        xr = np.random.standard_normal(size=(N, self.in_channels, self.Ln, self.Ln))
+        xr = torch.randn(N, self.in_channels, self.Ln, self.Ln, device=self.device)
 
         # Apply spectral filter (coefficients)
         L = self.coeff[None, None, :, :] * xr
         L = self.Ln * L
 
         # Transform to real domain using IDCT
-        u = idctn(L, axes=[-1, -2], norm="ortho")
-        result = torch.from_numpy(u.astype(np.float32)).to(self.device)
+        result = idct_2d(L, norm="ortho")
 
         if self.normalize_std:
             result = self._normalize_to_unit_std(result)
@@ -272,16 +272,17 @@ class MaternKernelSampler(GRFSampler):
 
     def _sample_periodic(self, N):
         """Samples using IFFT for periodic boundary."""
-        xr = np.random.standard_normal(size=(N, self.in_channels, self.Ln1, self.Ln2)) + 1j * np.random.standard_normal(size=(N, self.in_channels, self.Ln1, self.Ln2))
+        xr_real = torch.randn(N, self.in_channels, self.Ln1, self.Ln2, device=self.device)
+        xr_imag = torch.randn(N, self.in_channels, self.Ln1, self.Ln2, device=self.device)
+        xr = xr_real + 1j * xr_imag
 
         # Apply spectral filter (coefficients)
         L = self.coeff[None, None, :, :] * xr
         L = self._ensure_hermitian_symmetry(L, self.Ln1, self.Ln2)
 
-        # Transform to real domain using IFFT
-        u = ifftn(L, axes=[-1, -2], norm="forward")
-        u = np.real(u)
-        result = torch.from_numpy(u.astype(np.float32)).to(self.device)
+        # Transform to real domain using PyTorch IFFT
+        u = torch.fft.ifft2(L, dim=(-2, -1), norm="forward")
+        result = torch.real(u)
 
         if self.normalize_std:
             result = self._normalize_to_unit_std(result)
