@@ -62,27 +62,28 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_d=4, FC_n_a
     
     # Extend signal using Fourier continuation if specified
     if use_FC=='Legendre':
+        L = L *  (u.shape[-1] + FC_n_additional_pts) / u.shape[-1]   # Define extended length
         FC = FCLegendre(d=FC_d, n_additional_pts=FC_n_additional_pts).to(u.device)
         u = FC(u, dim=1)
-        L = L *  (u.shape[-1] + FC_n_additional_pts) / u.shape[-1]     # Define extended length
     elif use_FC=='Gram':
+        L = L *  (u.shape[-1] + FC_n_additional_pts) / u.shape[-1]   # Define extended length
         FC = FCGram(d=FC_d, n_additional_pts=FC_n_additional_pts).to(u.device)
         u = FC(u, dim=1)
-        L = L *  (u.shape[-1] + FC_n_additional_pts) / u.shape[-1]    
     else:
         warnings.warn("Consider using Fourier continuation if the input is not periodic (use_FC=True).", category=UserWarning)
 
-    nx = u.size(-1)    
+    nx = u.size(-1) 
+    dx = L / nx   
     u_h = torch.fft.rfft(u, dim=-1) 
-    k_x = torch.fft.rfftfreq(nx, d=1/nx, device=u_h.device).view(*([1] * (u_h.dim() - 1)), u_h.size(-1))
+    k_x = torch.fft.rfftfreq(nx, d=dx, device=u_h.device) * (2*torch.pi)
     
     if low_pass_filter_ratio is not None:
         # Apply a low-pass filter to the Fourier coefficients
         cutoff = int(u_h.shape[-1] * low_pass_filter_ratio)
         u_h[..., cutoff:] = 0
     
-    # Fourier differentiation
-    derivative_u_h = (1j * k_x * 2*torch.pi/L)**order * u_h 
+    # Fourier differentiation    
+    derivative_u_h = (1j * k_x)**order * u_h
     
     # Inverse Fourier transform to get the derivative in physical space
     derivative_u = torch.fft.irfft(derivative_u_h, dim=-1, n=nx) 
