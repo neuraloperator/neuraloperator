@@ -279,8 +279,8 @@ class MaternKernelSampler(GRFSampler):
         L = self._ensure_hermitian_symmetry(L, self.Ln1, self.Ln2)
 
         # Transform to real domain using IFFT
-        u = ifftn(L, axes=[-1, -2], norm="ortho")
-        u = np.real(u) * np.sqrt(self.Ln1 * self.Ln2)
+        u = ifftn(L, axes=[-1, -2], norm="forward")
+        u = np.real(u)
         result = torch.from_numpy(u.astype(np.float32)).to(self.device)
 
         if self.normalize_std:
