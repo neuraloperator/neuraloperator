@@ -8,13 +8,13 @@ from neuralop import get_model
 
 
 # Read the configuration
-from zencfg import cfg_from_commandline
+from zencfg import make_config_from_cli 
 import sys 
 sys.path.insert(0, '../')
 from config.test_config import TestConfig
 
 
-config = cfg_from_commandline(TestConfig)
+config = make_config_from_cli(TestConfig)
 print(config)
 print(config.to_dict())
 config = config.to_dict()
