@@ -19,8 +19,8 @@ class CarCFDOptConfig(OptimizationConfig):
     training_loss: str = "l2"
     weight_decay: float = 1e-4
     scheduler: str = "StepLR"
-    step_size: str = 60
-    gamma: str = 0.5
+    step_size: int = 60
+    gamma: float = 0.5
 
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None

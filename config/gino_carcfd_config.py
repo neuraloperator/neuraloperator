@@ -14,7 +14,7 @@ class CarCFDDatasetConfig(ConfigBase):
 
 class CarCFDOptConfig(ConfigBase):
     n_epochs: int = 301
-    learning_rate: bool = 1e-3
+    learning_rate: float = 1e-3
     training_loss: str = "l2"
     testing_loss: str = "l2"
     weight_decay: float = 1e-4
