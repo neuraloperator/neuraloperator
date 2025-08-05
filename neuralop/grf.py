@@ -169,19 +169,6 @@ class MaternKernelSampler(GRFSampler):
             return tensor / current_std
         return tensor
 
-    @staticmethod
-    def _ensure_hermitian_symmetry(L, Ln1, Ln2):
-        """Enforces Hermitian symmetry on the spectral coefficients for real-valued output."""
-        # For real-valued output from IFFT, we need L[k] = conj(L[-k]).
-        # This is explicitly enforced for numerical stability.
-        L_clone = L.clone()
-        L[:, :, 0, 0] = torch.real(L_clone[:, :, 0, 0])  # DC component
-        if Ln1 % 2 == 0:
-            L[:, :, Ln1 // 2, :] = torch.real(L_clone[:, :, Ln1 // 2, :])  # Nyquist frequency
-        if Ln2 % 2 == 0:
-            L[:, :, :, Ln2 // 2] = torch.real(L_clone[:, :, :, Ln2 // 2])  # Nyquist frequency
-        return L
-
     def _setup_zero_neumann(self):
         """Sets up spectral coefficients for zero-Neumann boundary condition using IDCT."""
         k = torch.arange(self.Ln, device=self.device)
@@ -204,9 +191,9 @@ class MaternKernelSampler(GRFSampler):
         self.coeff = C
 
     def _setup_periodic(self):
-        """Sets up spectral coefficients for periodic boundary condition using IFFT."""
+        """Sets up spectral coefficients for periodic boundary using rfft frequencies."""
         freq1 = torch.fft.fftfreq(self.Ln1, 1 / self.Ln1, device=self.device)
-        freq2 = torch.fft.fftfreq(self.Ln2, 1 / self.Ln2, device=self.device)
+        freq2 = torch.fft.rfftfreq(self.Ln2, 1 / self.Ln2, device=self.device)  # Note: rfftfreq
         K1, K2 = torch.meshgrid(freq1, freq2, indexing="ij")
 
         # Calculate parameters directly from scale and nu
@@ -214,7 +201,7 @@ class MaternKernelSampler(GRFSampler):
         alpha = self.nu + D / 2.0
         tau = np.sqrt(2 * self.nu) / self.scale
 
-        # Define the (square root of) eigenvalues for periodic case
+        # Define the (square root of) eigenvalues of the covariance operator
         C = (2 * torch.pi) ** 2 * (torch.square(K1) + torch.square(K2)) + tau**2
         C = torch.pow(C, -alpha / 2.0)
 
@@ -223,7 +210,7 @@ class MaternKernelSampler(GRFSampler):
         const_factor = np.sqrt((2**D * np.pi ** (D / 2) * gamma_ratio * (2 * self.nu) ** self.nu) / (self.scale ** (2 * self.nu)))
 
         C = const_factor * C
-        self.coeff = C
+        self.coeff_rfft = C
 
     def _setup_none(self):
         """Sets up a nested sampler on a larger grid to simulate no boundary condition."""
@@ -272,17 +259,24 @@ class MaternKernelSampler(GRFSampler):
 
     def _sample_periodic(self, N):
         """Samples using IFFT for periodic boundary."""
-        xr_real = torch.randn(N, self.in_channels, self.Ln1, self.Ln2, device=self.device)
-        xr_imag = torch.randn(N, self.in_channels, self.Ln1, self.Ln2, device=self.device)
-        xr = xr_real + 1j * xr_imag
+        # Shape: (N, in_channels, Ln1, Ln2 // 2 + 1)
+        xr = torch.randn(N, self.in_channels, self.Ln1, self.Ln2 // 2 + 1, 2, device=self.device)
+        xr = torch.view_as_complex(xr) / np.sqrt(2)  # standard complex noise
 
-        # Apply spectral filter (coefficients)
-        L = self.coeff[None, None, :, :] * xr
-        L = self._ensure_hermitian_symmetry(L, self.Ln1, self.Ln2)
+        # Apply spectral filter
+        L = self.coeff_rfft[None, None, :, :] * xr
 
-        # Transform to real domain using PyTorch IFFT
-        u = torch.fft.ifft2(L, dim=(-2, -1), norm="forward")
-        result = torch.real(u)
+        # Special handling for DC and Nyquist frequencies
+        L[:, :, 0, 0] = L[:, :, 0, 0].real * np.sqrt(2)  # DC must be real
+        if self.Ln2 % 2 == 0:
+            L[:, :, :, -1] = L[:, :, :, -1].real * np.sqrt(2)  # Nyquist must be real
+        if self.Ln1 % 2 == 0:
+            L[:, :, self.Ln1 // 2, 0] = L[:, :, self.Ln1 // 2, 0].real * np.sqrt(2)
+            if self.Ln2 % 2 == 0:
+                L[:, :, self.Ln1 // 2, -1] = L[:, :, self.Ln1 // 2, -1].real * np.sqrt(2)
+
+        # Transform to real domain using IRFFT2
+        result = torch.fft.irfft2(L, s=(self.Ln1, self.Ln2), dim=(-2, -1), norm="forward")
 
         if self.normalize_std:
             result = self._normalize_to_unit_std(result)
