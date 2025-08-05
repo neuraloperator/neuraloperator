@@ -18,7 +18,7 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 # Read the configuration
 config_name = "default"
 # Read the configuration
-from zencfg import cfg_from_commandline, cfg_from_nested_dict
+from zencfg import cfg_from_commandline
 import sys 
 sys.path.insert(0, '../')
 from config.the_well.mhd_64_config import Default
