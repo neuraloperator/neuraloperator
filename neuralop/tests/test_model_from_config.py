@@ -9,7 +9,7 @@ import sys
 from neuralop import get_model
 
 # Read the configuration
-from zencfg.from_dict import make_config
+from zencfg.from_commandline import make_config
 import sys 
 from .test_config import TestConfig
 
