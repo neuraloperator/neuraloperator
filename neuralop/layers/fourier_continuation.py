@@ -12,56 +12,76 @@ class FCLegendre(nn.Module):
     
     This class implements Fourier Continuation using Legendre polynomial basis functions 
     to extend non-periodic functions to periodic ones on larger domains
+    
+    Legendre polynomials are orthogonal polynomials with the weight w=1 on the interval [-1, 1].
     """
     
-    def __init__(self, d=6, n_additional_pts=50):
+    def __init__(self, d=6, n_additional_pts=50, rcond=1e-15):
         """
         Initialize FCLegendre with specified parameters.
         
         Parameters
         ----------
         d : int
-            Number of matching points (degree of approximation), by default 6
+            Number of matching points on the left and right boundaries
+            Related to the degree of the Legendre polynomial basis used for extension (degree 2d-1).
+            By default 6
         n_additional_pts : int
             Number of additional points to add for continuation, by default 50
+            Lower values of d typically require more n_additional_pts points
+        rcond : float, optional
+            Cutoff for small singular values for the pseudoinverse of the extension matrix
+            Singular values less than or equal to rcond * largest_singular_value are set to zero 
+            This can be adjusted for numerical stability, especially for larger values of d.
+            A smaller value can lead to more stable results, but may also introduce numerical errors.
+            By default 1e-15 (same as numpy default for np.linalg.pinv)
         """
         super().__init__()
         
         self.d = d
         self.n_additional_pts = n_additional_pts 
+        self.rcond = rcond
         self.compute_extension_matrix()
+    
     
     def compute_extension_matrix(self):
         # Compute the extension matrix using Legendre polynomials.
 
-        a = 0.0
-        h = 0.1
-
-        #Generate grid for the extension
         total_points = 2*self.d + self.n_additional_pts
+
+        # Use [-1,1] interval where Legendre polynomials are orthogonal
+        a, b = -1.0, 1.0
+        
+        # Generate uniform grid on [-1,1] with total_points points
+        h = (b - a) / (total_points - 1)
         full_grid = a + h*np.arange(total_points, dtype=np.float64)
+        
+        # Extract points for fitting (d points from each end)
         fit_grid = np.concatenate((full_grid[0:self.d], full_grid[-self.d:]), 0)
+        
+        # Extract points for extension (middle points)
         extension_grid = full_grid[self.d:-self.d]
 
-        #Initialize orthogonal polynomial system
+        # Construct normalized Legendre polynomials
+        # numpy.polynomial.legendre.Legendre are orthogonal but not normalized on [-1,1]: 
+        #    \int_{-1}^{1} P_j(x) P_k(x) dx = 2/(2j+1) \delta_{jk}
+        # Normalization can improve numerical stability for larger values of d
         I = np.eye(2*self.d, dtype=np.float64)
-        polynomials = []
-        for j in range(2*self.d):
-            polynomials.append(Legendre(I[j,:], domain=[full_grid[0], full_grid[-1]]))
+        polynomials = [np.sqrt((2*j+1)/2) * Legendre(I[j, :]) for j in range(2 * self.d)]
+        
+        # Evaluate normalized polynomials on the fit and extension grids
+        X = np.stack([P(fit_grid) for P in polynomials], axis=1)  # Fit grid evaluations
+        Q = np.stack([P(extension_grid) for P in polynomials], axis=1)  # Extension grid evaluations
 
-        #Compute data and evaluation matrices
-        X = np.zeros((2*self.d,2*self.d), dtype=np.float64)
-        Q = np.zeros((self.n_additional_pts, 2*self.d), dtype=np.float64)
-        for j in range(2*self.d):
-            Q[:,j] = polynomials[j](extension_grid)
-            X[:,j] = polynomials[j](fit_grid)
-
-        #Compute extension matrix
-        ext_mat = np.matmul(Q, np.linalg.pinv(X, rcond=1e-31))
+        # Compute extension matrix using pseudoinverse
+        ext_mat = Q @ np.linalg.pinv(X, rcond=self.rcond)
+        
+        # Register matrices as persistent buffers for the module
         self.register_buffer('ext_mat', torch.from_numpy(ext_mat))
         self.register_buffer('ext_mat_T', self.ext_mat.T.clone())
 
         return self.ext_mat
+    
 
     def extend_left_right(self, x):
         """
@@ -258,10 +278,14 @@ class FCGram(nn.Module):
         Parameters
         ----------
         d : int
-            Number of matching points, typically between 3 and 8. 
+            Number of matching points on the left and right boundaries
+            Degree of the Gram polynomiald
+            Typically between 3 and 8 (precomputed matrices available for d in {2,3,4,5,6,7,8}).
             d=3,4,5,6 are typically good choices, by default 6.
         n_additional_pts : int
-            Number of continuation points. By default 50.
+            Number of continuation points. By default 50. 
+            Adds n_additional_pts//2 points on each side of the input signal.
+            Precomputed matrices available only for n_additional_pts = 50.
             Unlike for FCLegendre, it is usually not necessary to change this parameter. 
         matrices_path : str or Path, optional
             Path to directory containing FCGram matrices. 
