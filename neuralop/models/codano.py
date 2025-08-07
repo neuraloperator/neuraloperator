@@ -195,15 +195,15 @@ class CODANO(nn.Module):
         self.n_layers = n_layers
         assert len(n_modes) == n_layers, "number of modes for all layers are not given"
         assert (
-            len(n_heads) == n_layers or n_heads is None
+             n_heads is None or len(n_heads) == n_layers
         ), "number of Attention head for all layers are not given"
         assert (
+            per_layer_scaling_factors is None or
             len(per_layer_scaling_factors) == n_layers
-            or per_layer_scaling_factors is None
         ), "scaling for all layers are not given"
         assert (
+            attention_scaling_factors is None or
             len(attention_scaling_factors) == n_layers
-            or attention_scaling_factors is None
         ), "attention scaling for all layers are not given"
         if use_positional_encoding:
             assert positional_encoding_dim > 0, "positional encoding dim is not given"
