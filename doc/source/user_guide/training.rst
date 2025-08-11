@@ -34,10 +34,9 @@ accordance with your specific use case. See the `torchrun documentation <https:/
 CPU Offloading
 ==============
 
-We also provide guidance on using CPU offloading to reduce GPU memory usage during training with high-resolution inputs.
+For training with high-resolution inputs that exceed GPU memory limits, NeuralOperator supports CPU offloading of activations. This technique allows training larger models or higher-resolution problems by temporarily storing intermediate computations on CPU memory.
 
 .. toctree::
-    :maxdepth: 1
+   :maxdepth: 1
 
-    cpuoffloading
-
+   cpuoffloading
