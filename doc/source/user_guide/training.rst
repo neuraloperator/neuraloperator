@@ -30,3 +30,14 @@ so all you need to do on a multi-GPU system is the following:
 
 You may need to adjust the batch size, model parallel size and world size in 
 accordance with your specific use case. See the `torchrun documentation <https://pytorch.org/docs/stable/elastic/run.html>`_ for more details.
+
+CPU Offloading
+==============
+
+We also provide guidance on using CPU offloading to reduce GPU memory usage during training with high-resolution inputs.
+
+.. toctree::
+    :maxdepth: 1
+
+    cpuoffloading
+
