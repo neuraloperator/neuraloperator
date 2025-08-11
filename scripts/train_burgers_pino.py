@@ -11,12 +11,12 @@ from neuralop.losses.meta_losses import Relobralo, SoftAdapt
 
 # Read the configuration
 config_name = "default"
-from zencfg import cfg_from_commandline
+from zencfg import make_config_from_cli 
 import sys 
 sys.path.insert(0, '../')
 from config.burgers_pino_config import Default
 
-config = cfg_from_commandline(Default)
+config = make_config_from_cli(Default)
 config = config.to_dict()
 
 

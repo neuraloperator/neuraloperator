@@ -9,7 +9,7 @@ import sys
 from neuralop import get_model
 
 # Read the configuration
-from zencfg import cfg_from_flat_dict
+from zencfg.from_commandline import make_config
 import sys 
 from .test_config import TestConfig
 
@@ -17,7 +17,7 @@ from .test_config import TestConfig
 def test_from_config():
     """Test forward/backward from a config file"""
     # Read the configuration
-    config = cfg_from_flat_dict(TestConfig, {})
+    config = make_config(TestConfig)
     config = config.to_dict()
     from pprint import pprint
 

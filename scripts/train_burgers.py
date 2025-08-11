@@ -14,13 +14,13 @@ from neuralop.utils import get_wandb_api_key, count_model_params, get_project_ro
 # Read the configuration
 config_name = "default"
 # Read the configuration
-from zencfg import cfg_from_commandline, cfg_from_nested_dict
+from zencfg import make_config_from_cli 
 import sys 
 sys.path.insert(0, '../')
 from config.burgers_config import Default
 
 
-config = cfg_from_commandline(Default)
+config = make_config_from_cli(Default)
 config = config.to_dict()
 
 # Set-up distributed communication, if using
