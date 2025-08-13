@@ -91,7 +91,50 @@ class SpectralConvWavelet(nn.Module):
         if self.n_dim == 3 and not _HAS_PYWT_PTWT:
             raise ImportError("pywt + ptwt are required for n_dim=3")
         
+        # Initialization scale
+        self.scale = 1.0 / (self.in_channels * self.out_channels)
         
+        # Infer last-level approx subband shape to allocate weights
+        with torch.no_grad():
+            if self.n_dim == 1:
+                dummy = torch.randn(1, 1, self.size[0])
+                dwt = DWT1D(wave=self.wavelet, J=self.level, mode=self.mode)
+                yl, _ = dwt(dummy)
+                self.modes = (yl.shape[-1],)
+                # Weights: approx (A) and detail (D)
+                self.weights_A = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+                self.weights_D = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+
+            elif self.n_dim == 2:
+                dummy = torch.randn(1, 1, *self.size)
+                dwt = DWT(wave=self.wavelet, J=self.level, mode=self.mode)
+                yl, _ = dwt(dummy)
+                self.modes = (yl.shape[-2], yl.shape[-1])
+                # Weights: approx (A) and H/V/D details
+                self.weights_A = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+                self.weights_H = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+                self.weights_V = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+                self.weights_D = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+
+            else:  # n_dim == 3
+                # ptwt expects tensors; we can probe with a spatial-only dummy, shapes match coefficient dims
+                dummy = torch.randn(*self.size).unsqueeze(0)  # (1, Z, Y, X) no channel dim
+                mode_data = ptwt_wavedec3(dummy, pywt.Wavelet(self.wavelet), level=self.level, mode=self.mode)
+                A = mode_data[0]  # approx
+                self.modes = (A.shape[-3], A.shape[-2], A.shape[-1])
+                # Weights: approx + 7 detail combinations
+                self.weights_A   = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+                self.weights_aad = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+                self.weights_ada = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+                self.weights_add = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+                self.weights_daa = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+                self.weights_dad = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+                self.weights_dda = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+                self.weights_ddd = nn.Parameter(self.scale * torch.rand(self.in_channels, self.out_channels, *self.modes))
+                
+        # Precompute einsum pattern for mul
+        self._einsum = _einsum_pattern(self.n_dim)
+
     # ------------------------------- helpers -------------------------------
         
         
