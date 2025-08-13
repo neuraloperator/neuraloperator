@@ -30,6 +30,6 @@ class WandbConfig(ConfigBase):
     entity: Optional[str] = None
     project: Optional[str] = None
     name: Optional[str] = None
-    group: str = None
+    group: Optional[str] = None
     sweep: bool = False
     log_output: bool = True

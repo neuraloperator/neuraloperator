@@ -219,6 +219,6 @@ class PoissonEqnLoss(object):
             interior_loss = self.interior_weight * self.interior_loss(out['domain'], **kwargs)
             bc_loss = self.boundary_weight * self.boundary_loss(out['boundary'], y=y['boundary'],  **kwargs)
         else:
-            interior_loss = self.interior_weight + self.interior_loss(out, **kwargs)
+            interior_loss = self.interior_weight * self.interior_loss(out, **kwargs)
             bc_loss = self.boundary_weight * self.boundary_loss(out, y=y, **kwargs)
         return interior_loss + bc_loss

@@ -15,12 +15,12 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 
 # Read the configuration
 config_name = "default"
-from zencfg import cfg_from_commandline
+from zencfg import make_config_from_cli
 import sys 
 sys.path.insert(0, '../')
 from config.poisson_gino_config import Default
 
-config = cfg_from_commandline(Default)
+config = make_config_from_cli(Default)
 config = config.to_dict()
 
 
@@ -183,7 +183,7 @@ trainer = Trainer(
     data_processor=data_processor,
     device=device,
     mixed_precision=config.opt.mixed_precision,
-    eval_interval=config.wandb.log_test_interval,
+    eval_interval=config.opt.eval_interval,
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,

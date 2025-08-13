@@ -75,7 +75,7 @@ def download_from_url(
         whether to extract .tgz archives, by default True
     """
     if isinstance(root, str):
-        root = Path(str)
+        root = Path(root)
     
     root = root.expanduser()
     if not filename:
