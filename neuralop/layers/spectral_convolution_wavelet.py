@@ -18,6 +18,16 @@ try:
     _HAS_PYWT_PTWT = True
 except Exception:
     _HAS_PYWT_PTWT = False
+    
+def _ensure_tuple_size(size: Union[int, Sequence[int]], n_dim: int) -> Tuple[int, ...]:
+    if n_dim == 1:
+        if isinstance(size, int):
+            return (size,)
+        raise ValueError("For n_dim=1, size must be an int (signal length).")
+    else:
+        if not (isinstance(size, (list, tuple)) and len(size) == n_dim):
+            raise ValueError(f"For n_dim={n_dim}, size must be a list/tuple of length {n_dim}.")
+        return tuple(int(s) for s in size)
 
 
 class SpectralConvWavelet(nn.Module):
@@ -53,6 +63,34 @@ class SpectralConvWavelet(nn.Module):
         mode: str = "symmetric",
     ) -> None:
         super().__init__()
+        
+        if n_dim not in (1, 2, 3):
+            raise ValueError("n_dim must be 1, 2, or 3")
+        if in_channels <= 0 or out_channels <= 0:
+            raise ValueError("in_channels/out_channels must be positive")
+        if level < 1:
+            raise ValueError("level must be >= 1")
+        
+        self.in_channels = int(in_channels)
+        self.out_channels = int(out_channels)
+        self.level = int(level)
+        self.n_dim = int(n_dim)
+        self.wavelet = wavelet
+        self.mode = mode
+        self.size = _ensure_tuple_size(size, self.n_dim)
+        
+        # Dependency checks per-dimension
+        if self.n_dim in (1, 2) and not _HAS_PTW:
+            raise ImportError("pytorch_wavelets is required for n_dim=1 or 2")
+        if self.n_dim == 3 and not _HAS_PYWT_PTWT:
+            raise ImportError("pywt + ptwt are required for n_dim=3")
+        
+        # Dependency checks per-dimension
+        if self.n_dim in (1, 2) and not _HAS_PTW:
+            raise ImportError("pytorch_wavelets is required for n_dim=1 or 2")
+        if self.n_dim == 3 and not _HAS_PYWT_PTWT:
+            raise ImportError("pywt + ptwt are required for n_dim=3")
+        
         
     # ------------------------------- helpers -------------------------------
         
