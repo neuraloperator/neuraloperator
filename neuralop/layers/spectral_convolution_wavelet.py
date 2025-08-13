@@ -142,8 +142,99 @@ class SpectralConvWavelet(nn.Module):
         self._einsum = _einsum_pattern(self.n_dim)
 
     # ------------------------------- helpers -------------------------------
-        
+    @staticmethod
+    def _level_adjust(nominal_last: int, actual_last: int, base_level: int) -> int:
+        """Mimic reference logic: adjust DWT level only from the last axis length."""
+        if actual_last > nominal_last:
+            factor = int(np.log2(actual_last // nominal_last))
+            return max(1, base_level + factor)
+        elif actual_last < nominal_last:
+            factor = int(np.log2(nominal_last // actual_last))
+            return max(1, base_level - factor)
+        else:
+            return base_level
+
+    def _mul(self, coeff: torch.Tensor, W: torch.Tensor) -> torch.Tensor:
+        """Apply per-position linear mixing: (B,Cin,*S) × (Cin,Cout,*S) → (B,Cout,*S)."""
+        return torch.einsum(self._einsum, coeff, W)
         
     # ------------------------------- forward -------------------------------
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-         pass
+        
+        # Dimension check for incoming tensor (Assuming B,C,S... format)
+        assert x.ndim == 2 + self.n_dim, f"Expected (B,C,{self.n_dim}D), got {x.shape}"
+        B, Cin = x.shape[:2]
+        assert Cin == self.in_channels, "Input channels must match in_channels"
+
+        if self.n_dim == 1:
+            # Choose level based on last axis only (to match reference behavior)
+            J = self._level_adjust(self.size[-1], x.shape[-1], self.level)
+            dwt = DWT1D(wave=self.wavelet, J=J, mode=self.mode).to(x.device)
+            yl, yh = dwt(x)              # yl: (B,C,LJ), yh: list length J of (B,C,Lj)
+            out_yl = self._mul(yl, self.weights_A)
+            out_yh = [torch.zeros_like(t, device=x.device) for t in yh]
+            out_yh[-1] = self._mul(yh[-1].clone(), self.weights_D)
+            idwt = IDWT1D(wave=self.wavelet, mode=self.mode).to(x.device)
+            y = idwt((out_yl, out_yh))
+            return y
+        
+        if self.n_dim == 2:
+            J = self._level_adjust(self.size[-1], x.shape[-1], self.level)
+            dwt = DWT(wave=self.wavelet, J=J, mode=self.mode).to(x.device)
+            yl, yh = dwt(x)              # yl: (B,C,HJ,WJ); yh: list length J of (B,C,3,Hj,Wj)
+            out_yl = self._mul(yl, self.weights_A)
+            out_yh = [torch.zeros_like(t, device=x.device) for t in yh]
+            last = yh[-1]
+            # H,V,D at index 0,1,2
+            out_last = torch.zeros_like(last)
+            out_last[:, :, 0] = self._mul(last[:, :, 0].clone(), self.weights_H)
+            out_last[:, :, 1] = self._mul(last[:, :, 1].clone(), self.weights_V)
+            out_last[:, :, 2] = self._mul(last[:, :, 2].clone(), self.weights_D)
+            out_yh[-1] = out_last
+            idwt = IDWT(wave=self.wavelet, mode=self.mode).to(x.device)
+            y = idwt((out_yl, out_yh))
+            return y
+
+        # n_dim == 3
+        # ptwt APIs operate per-sample; loop over batch
+        out = torch.zeros((B, self.out_channels, *x.shape[-3:]), device=x.device, dtype=x.dtype)
+        wav = pywt.Wavelet(self.wavelet)
+        for b in range(B):
+            # Each slice has shape (C, Z, Y, X)
+            xb = x[b]
+            # Decompose
+            coeffs = ptwt_wavedec3(xb, wav, level=self.level, mode=self.mode)
+            # coeffs: [A, D1, D2, ..., DJ]; we use last level only
+            A = coeffs[0]           # (C_in, Zj, Yj, Xj)
+            Dj = coeffs[1]          # dict with keys among {'aad','ada','add','daa','dad','dda','ddd'}
+
+            # Apply weights
+            A_out = torch.einsum("i" + "xyz" + ",io" + "xyz" + "->o" + "xyz", A, self.weights_A)
+            D_out = {}
+            # map available keys safely
+            wmap = {
+                'aad': self.weights_aad,
+                'ada': self.weights_ada,
+                'add': self.weights_add,
+                'daa': self.weights_daa,
+                'dad': self.weights_dad,
+                'dda': self.weights_dda,
+                'ddd': self.weights_ddd,
+            }
+            for k, v in Dj.items():
+                Wk = wmap.get(k, None)
+                if Wk is None:
+                    # unseen detail key; pass zeros
+                    D_out[k] = torch.zeros_like(v)
+                else:
+                    D_out[k] = torch.einsum("i" + "xyz" + ",io" + "xyz" + "->o" + "xyz", v.clone(), Wk)
+
+            # Zero higher levels (>=2) to mirror reference
+            coeffs_out: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = [A_out, D_out]
+            for _ in range(2, len(coeffs)):
+                zero_dict = {k: torch.zeros_like(next(iter(D_out.values()))) for k in D_out.keys()}
+                coeffs_out.append(zero_dict)
+
+            yb = ptwt_waverec3(tuple(coeffs_out), wav, mode=self.mode)
+            out[b] = yb
+        return out
