@@ -1,4 +1,3 @@
-from __features__ import Feature
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 import numpy as np
 import torch
@@ -6,7 +5,7 @@ import torch.nn as nn
 
 try: 
     from pytorch_wavelets import DWT1D, IDWT1D
-    from pytorch_waqvelets import DWT, IDWT
+    from pytorch_wavelets import DWT, IDWT
     _HAS_PTW = True
 except Exception: 
     _HAS_PTW = False
@@ -84,7 +83,7 @@ class SpectralConvWavelet(nn.Module):
         self.wavelet = wavelet
         self.mode = mode
         self.size = _ensure_tuple_size(size, self.n_dim)
-        
+
         # Dependency checks per-dimension
         if self.n_dim in (1, 2) and not _HAS_PTW:
             raise ImportError("pytorch_wavelets is required for n_dim=1 or 2")
