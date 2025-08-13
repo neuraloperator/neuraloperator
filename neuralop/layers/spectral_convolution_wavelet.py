@@ -29,6 +29,12 @@ def _ensure_tuple_size(size: Union[int, Sequence[int]], n_dim: int) -> Tuple[int
             raise ValueError(f"For n_dim={n_dim}, size must be a list/tuple of length {n_dim}.")
         return tuple(int(s) for s in size)
 
+def _einsum_pattern(n_dim: int) -> str:
+    """Return einsum pattern to map (B, Cin, *S) x (Cin, Cout, *S) → (B, Cout, *S)."""
+    axes = "xyzuvw"
+    idx = axes[:n_dim]
+    return f"bi{idx},io{idx}->bo{idx}"
+
 
 class SpectralConvWavelet(nn.Module):
     """Implements Unified Wavelet-based Spectral Convolution for n_dim ∈ {1,2,3}.
