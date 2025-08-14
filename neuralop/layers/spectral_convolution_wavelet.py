@@ -159,7 +159,6 @@ class SpectralConvWavelet(nn.Module):
         
     # ------------------------------- forward -------------------------------
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        
         # Dimension check for incoming tensor (Assuming B,C,S... format)
         assert x.ndim == 2 + self.n_dim, f"Expected (B,C,{self.n_dim}D), got {x.shape}"
         B, Cin = x.shape[:2]
@@ -234,6 +233,6 @@ class SpectralConvWavelet(nn.Module):
                 zero_dict = {k: torch.zeros_like(next(iter(D_out.values()))) for k in D_out.keys()}
                 coeffs_out.append(zero_dict)
 
-            yb = ptwt_waverec3(tuple(coeffs_out), wav, mode=self.mode)
+            yb = ptwt_waverec3(tuple(coeffs_out), wav)
             out[b] = yb
         return out
