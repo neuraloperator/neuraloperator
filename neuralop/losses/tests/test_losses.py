@@ -96,14 +96,14 @@ def test_central_diff(dim: int):
         # assert f(x) = x
         # has derivative 1 everywhere when boundaries are fixed
         x = torch.arange(10)
-        dx = central_diff_1d(x, fix_x_bnd=True, h=1.)
+        dx = central_diff_1d(x, h=1., periodic_in_x=False)
         assert_close(dx,torch.ones_like(dx))
         
     if dim == 2:
 
         grid = regular_grid_nd(resolutions=[10,10], grid_boundaries=[[0,10]] * 2)
         x = torch.stack(grid, dim=0)
-        dx, dy = central_diff_2d(x, fix_x_bnd=True, fix_y_bnd=True, h=1.)
+        dx, dy = central_diff_2d(x, h=1., periodic_in_x=False, periodic_in_y=False)
         # pos encoding A[:,i,j] = [xi, yj]
 
         # dx[:,i,j] = f(x_i, y_j) vector valued <fx, fy>
@@ -119,7 +119,7 @@ def test_central_diff(dim: int):
         grid = regular_grid_nd(resolutions=[10,10,10], grid_boundaries=[[0,10]] * 3)
         x = torch.stack(grid, dim=0)
         # pos encoding A[:,i,j,k] = [xi, yj, zk]
-        dx, dy, dz = central_diff_3d(x, fix_x_bnd=True, fix_y_bnd=True, fix_z_bnd=True, h=1.)
+        dx, dy, dz = central_diff_3d(x, h=1., periodic_in_x=False, periodic_in_y=False, periodic_in_z=False)
         # dx[:,i,j,k] = f(x_i, y_j, z_k) vector valued <fx, fy, fz>
         # dfx(coords) == 1s
         
