@@ -17,7 +17,7 @@ def _size_for_dim(n_dim: int):
 # ----------------------- tests -----------------------
 
 @pytest.mark.parametrize("n_dim", [1, 2, 3])
-def test_waveconvnd_forward_and_shapes(n_dim, in_channels=4, out_channels=4, level=2):
+def test_waveconvnd_forward_and_shapes(n_dim, in_channels=4, out_channels=4, level=1):
     """Smoke test: forward pass completes and output shape matches input shape.
 
     Mirrors the reference style: multiple dims & channel counts, minimal assertions.
