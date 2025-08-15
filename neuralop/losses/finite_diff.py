@@ -5,17 +5,17 @@ finite_diff.py implements utilities for computing derivatives via finite-differe
 
 #x: (*, s)
 #y: (*, s)
-def central_diff_1d(x, h, fix_x_bnd=False):
+def central_diff_1d(x, h, periodic_in_x=True):
     """central_diff_1d computes the first spatial derivative
     of x using central finite-difference 
 
     This function computes df/dx using the central difference formula:
     df/dx \approx (f(x+h) - f(x-h)) / (2h)
     
-    For periodic domains (fix_x_bnd=False), the function uses torch.roll to handle
+    For periodic domains (periodic_in_x=True), the function uses torch.roll to handle
     boundary wrapping, treating the domain as periodic.
     
-    For non-periodic domains (fix_x_bnd=True), the function uses forward differences
+    For non-periodic domains (periodic_in_x=False), the function uses forward differences
     at the left boundary and backward differences at the right boundary to avoid
     accessing points outside the domain.
 
@@ -26,18 +26,21 @@ def central_diff_1d(x, h, fix_x_bnd=False):
         x[i] = f(x_i)
     h : float
         discretization size of input x
-    fix_x_bnd : bool, optional
-        whether to use non-periodic boundary conditions:
-        - False: periodic domain (default)
-        - True: non-periodic domain with forward/backward differences at boundaries
-        by default False
+    periodic_in_x : bool, optional
+        whether to use periodic boundary conditions:
+        - True: periodic domain (default)
+        - False: non-periodic domain with forward/backward differences at boundaries
+        by default True
 
     Returns
     -------
     dx : torch.Tensor
         output tensor of df(x)/dx at each point
     """
-    if fix_x_bnd:
+    if periodic_in_x:
+        # Periodic case: use torch.roll for boundary wrapping
+        dx = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1)) / (2.0 * h)
+    else:
         # Non-periodic case: handle boundaries separately
         dx = torch.zeros_like(x)
         
@@ -47,16 +50,12 @@ def central_diff_1d(x, h, fix_x_bnd=False):
         # Boundary points: forward and backward differences
         dx[..., 0] = (x[..., 1] - x[..., 0]) / h
         dx[..., -1] = (x[..., -1] - x[..., -2]) / h
-        
-    else:
-        # Periodic case: use torch.roll for boundary wrapping
-        dx = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1)) / (2.0 * h)
     
     return dx
 
 #x: (*, s1, s2)
 #y: (*, s1, s2)
-def central_diff_2d(x, h, fix_x_bnd=False, fix_y_bnd=False):
+def central_diff_2d(x, h, periodic_in_x=True, periodic_in_y=True):
     """central_diff_2d computes derivatives 
     df(x,y)/dx and df(x,y)/dy for f(x,y) defined 
     on a regular 2d grid using finite-difference
@@ -65,10 +64,10 @@ def central_diff_2d(x, h, fix_x_bnd=False, fix_y_bnd=False):
     df/dx \approx (f(x+h,y) - f(x-h,y)) / (2h_x)
     df/dy \approx (f(x,y+h) - f(x,y-h)) / (2h_y)
     
-    For periodic dimensions (fix_*_bnd=False), the function uses torch.roll to handle
+    For periodic dimensions (periodic_in_*=True), the function uses torch.roll to handle
     boundary wrapping, treating those dimensions as periodic.
     
-    For non-periodic dimensions (fix_*_bnd=True), the function uses forward differences
+    For non-periodic dimensions (periodic_in_*=False), the function uses forward differences
     at the left boundary and backward differences at the right boundary to avoid
     accessing points outside the domain.
 
@@ -78,16 +77,16 @@ def central_diff_2d(x, h, fix_x_bnd=False, fix_y_bnd=False):
         input function defined x[:,i,j] = f(x_i, y_j)
     h : float or list
         discretization size of grid for each dimension
-    fix_x_bnd : bool, optional
-        whether to use non-periodic boundary conditions in x-direction:
-        - False: periodic in x (default)
-        - True: non-periodic in x with forward/backward differences at boundaries
-        by default False
-    fix_y_bnd : bool, optional
-        whether to use non-periodic boundary conditions in y-direction:
-        - False: periodic in y (default)
-        - True: non-periodic in y with forward/backward differences at boundaries
-        by default False
+    periodic_in_x : bool, optional
+        whether to use periodic boundary conditions in x-direction:
+        - True: periodic in x (default)
+        - False: non-periodic in x with forward/backward differences at boundaries
+        by default True
+    periodic_in_y : bool, optional
+        whether to use periodic boundary conditions in y-direction:
+        - True: periodic in y (default)
+        - False: non-periodic in y with forward/backward differences at boundaries
+        by default True
 
     Returns
     -------
@@ -98,7 +97,10 @@ def central_diff_2d(x, h, fix_x_bnd=False, fix_y_bnd=False):
     if isinstance(h, float):
         h = [h, h]
 
-    if fix_x_bnd:
+    if periodic_in_x:
+        # Periodic case in x-direction: use torch.roll for boundary wrapping
+        dx = (torch.roll(x, -1, dims=-2) - torch.roll(x, 1, dims=-2)) / (2.0 * h[0])
+    else:
         # Non-periodic case in x-direction: handle boundaries separately
         dx = torch.zeros_like(x)
         
@@ -108,12 +110,11 @@ def central_diff_2d(x, h, fix_x_bnd=False, fix_y_bnd=False):
         # Boundary points: forward and backward differences
         dx[..., 0, :] = (x[..., 1, :] - x[..., 0, :]) / h[0]
         dx[..., -1, :] = (x[..., -1, :] - x[..., -2, :]) / h[0]
-        
-    else:
-        # Periodic case in x-direction: use torch.roll for boundary wrapping
-        dx = (torch.roll(x, -1, dims=-2) - torch.roll(x, 1, dims=-2)) / (2.0 * h[0])
 
-    if fix_y_bnd:
+    if periodic_in_y:
+        # Periodic case in y-direction: use torch.roll for boundary wrapping
+        dy = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1)) / (2.0 * h[1])
+    else:
         # Non-periodic case in y-direction: handle boundaries separately
         dy = torch.zeros_like(x)
         
@@ -124,15 +125,11 @@ def central_diff_2d(x, h, fix_x_bnd=False, fix_y_bnd=False):
         dy[..., :, 0] = (x[..., :, 1] - x[..., :, 0]) / h[1]
         dy[..., :, -1] = (x[..., :, -1] - x[..., :, -2]) / h[1]
         
-    else:
-        # Periodic case in y-direction: use torch.roll for boundary wrapping
-        dy = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1)) / (2.0 * h[1])
-        
     return dx, dy
 
 #x: (*, s1, s2, s3)
 #y: (*, s1, s2, s3)
-def central_diff_3d(x, h, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
+def central_diff_3d(x, h, periodic_in_x=True, periodic_in_y=True, periodic_in_z=True):
     """central_diff_3d computes derivatives 
     df(x,y,z)/dx, df(x,y,z)/dy, and df(x,y,z)/dz for f(x,y,z) defined 
     on a regular 3d grid using finite-difference
@@ -142,10 +139,10 @@ def central_diff_3d(x, h, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
     df/dy \approx (f(x,y+h,z) - f(x,y-h,z)) / (2h_y)
     df/dz \approx (f(x,y,z+h) - f(x,y,z-h)) / (2h_z)
     
-    For periodic dimensions (fix_*_bnd=False), the function uses torch.roll to handle
+    For periodic dimensions (periodic_in_*=True), the function uses torch.roll to handle
     boundary wrapping, treating those dimensions as periodic.
     
-    For non-periodic dimensions (fix_*_bnd=True), the function uses forward differences
+    For non-periodic dimensions (periodic_in_*=False), the function uses forward differences
     at the left boundary and backward differences at the right boundary to avoid
     accessing points outside the domain.
 
@@ -155,21 +152,21 @@ def central_diff_3d(x, h, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
         input function defined x[:,i,j,k] = f(x_i, y_j, z_k)
     h : float or list
         discretization size of grid for each dimension
-    fix_x_bnd : bool, optional
-        whether to use non-periodic boundary conditions in x-direction:
-        - False: periodic in x (default)
-        - True: non-periodic in x with forward/backward differences at boundaries
-        by default False
-    fix_y_bnd : bool, optional
-        whether to use non-periodic boundary conditions in y-direction:
-        - False: periodic in y (default)
-        - True: non-periodic in y with forward/backward differences at boundaries
-        by default False
-    fix_z_bnd : bool, optional
-        whether to use non-periodic boundary conditions in z-direction:
-        - False: periodic in z (default)
-        - True: non-periodic in z with forward/backward differences at boundaries
-        by default False
+    periodic_in_x : bool, optional
+        whether to use periodic boundary conditions in x-direction:
+        - True: periodic in x (default)
+        - False: non-periodic in x with forward/backward differences at boundaries
+        by default True
+    periodic_in_y : bool, optional
+        whether to use periodic boundary conditions in y-direction:
+        - True: periodic in y (default)
+        - False: non-periodic in y with forward/backward differences at boundaries
+        by default True
+    periodic_in_z : bool, optional
+        whether to use periodic boundary conditions in z-direction:
+        - True: periodic in z (default)
+        - False: non-periodic in z with forward/backward differences at boundaries
+        by default True
 
     Returns
     -------
@@ -181,7 +178,10 @@ def central_diff_3d(x, h, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
     if isinstance(h, float):
         h = [h, h, h]
 
-    if fix_x_bnd:
+    if periodic_in_x:
+        # Periodic case in x-direction: use torch.roll for boundary wrapping
+        dx = (torch.roll(x, -1, dims=-3) - torch.roll(x, 1, dims=-3)) / (2.0 * h[0])
+    else:
         # Non-periodic case in x-direction: handle boundaries separately
         dx = torch.zeros_like(x)
         
@@ -191,12 +191,11 @@ def central_diff_3d(x, h, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
         # Boundary points: forward and backward differences
         dx[..., 0, :, :] = (x[..., 1, :, :] - x[..., 0, :, :]) / h[0]
         dx[..., -1, :, :] = (x[..., -1, :, :] - x[..., -2, :, :]) / h[0]
-        
-    else:
-        # Periodic case in x-direction: use torch.roll for boundary wrapping
-        dx = (torch.roll(x, -1, dims=-3) - torch.roll(x, 1, dims=-3)) / (2.0 * h[0])
 
-    if fix_y_bnd:
+    if periodic_in_y:
+        # Periodic case in y-direction: use torch.roll for boundary wrapping
+        dy = (torch.roll(x, -1, dims=-2) - torch.roll(x, 1, dims=-2)) / (2.0 * h[1])
+    else:
         # Non-periodic case in y-direction: handle boundaries separately
         dy = torch.zeros_like(x)
         
@@ -206,12 +205,11 @@ def central_diff_3d(x, h, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
         # Boundary points: forward and backward differences
         dy[..., :, 0, :] = (x[..., :, 1, :] - x[..., :, 0, :]) / h[1]
         dy[..., :, -1, :] = (x[..., :, -1, :] - x[..., :, -2, :]) / h[1]
-        
-    else:
-        # Periodic case in y-direction: use torch.roll for boundary wrapping
-        dy = (torch.roll(x, -1, dims=-2) - torch.roll(x, 1, dims=-2)) / (2.0 * h[1])
 
-    if fix_z_bnd:
+    if periodic_in_z:
+        # Periodic case in z-direction: use torch.roll for boundary wrapping
+        dz = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1)) / (2.0 * h[2])
+    else:
         # Non-periodic case in z-direction: handle boundaries separately
         dz = torch.zeros_like(x)
         
@@ -221,10 +219,6 @@ def central_diff_3d(x, h, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
         # Boundary points: forward and backward differences
         dz[..., :, :, 0] = (x[..., :, :, 1] - x[..., :, :, 0]) / h[2]
         dz[..., :, :, -1] = (x[..., :, :, -1] - x[..., :, :, -2]) / h[2]
-        
-    else:
-        # Periodic case in z-direction: use torch.roll for boundary wrapping
-        dz = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1)) / (2.0 * h[2])
         
     return dx, dy, dz
 
