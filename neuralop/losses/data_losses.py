@@ -212,25 +212,25 @@ class H1Loss(object):
             `reduction` only applies to the batch and channel dimensions.
     eps : float, optional
         small number added to the denominator for numerical stability when using the relative loss
-    fix_x_bnd : bool, optional
-        whether to fix finite difference derivative
-        computation on the x boundary, by default False
-    fix_y_bnd : bool, optional
-        whether to fix finite difference derivative
-        computation on the y boundary, by default False
-    fix_z_bnd : bool, optional
-        whether to fix finite difference derivative
-        computation on the z boundary, by default False
+    periodic_in_x : bool, optional
+        whether to use periodic boundary conditions in x-direction when computing finite differences:
+        - True: periodic in x (default)
+        - False: non-periodic in x with forward/backward differences at boundaries
+        by default True
+    periodic_in_y : bool, optional
+        whether to use periodic boundary conditions in y-direction when computing finite differences:
+        - True: periodic in y (default)
+        - False: non-periodic in y with forward/backward differences at boundaries
+        by default True
     """
-    def __init__(self, d=1, measure=1., reduction='sum', eps=1e-8, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
+    def __init__(self, d=1, measure=1., reduction='sum', eps=1e-8, periodic_in_x=True, periodic_in_y=True):
         super().__init__()
 
         assert d > 0 and d < 4, "Currently only implemented for 1, 2, and 3-D."
 
         self.d = d
-        self.fix_x_bnd = fix_x_bnd
-        self.fix_y_bnd = fix_y_bnd
-        self.fix_z_bnd = fix_z_bnd
+        self.periodic_in_x = periodic_in_x
+        self.periodic_in_y = periodic_in_y
         
         self.eps = eps
         
@@ -270,8 +270,8 @@ class H1Loss(object):
             dict_x[0] = x
             dict_y[0] = y
 
-            x_x = central_diff_1d(x, quadrature[0], fix_x_bnd=self.fix_x_bnd)
-            y_x = central_diff_1d(y, quadrature[0], fix_x_bnd=self.fix_x_bnd)
+            x_x = central_diff_1d(x, quadrature[0], periodic_in_x=self.periodic_in_x)
+            y_x = central_diff_1d(y, quadrature[0], periodic_in_x=self.periodic_in_x)
 
             dict_x[1] = x_x
             dict_y[1] = y_x
@@ -280,8 +280,8 @@ class H1Loss(object):
             dict_x[0] = torch.flatten(x, start_dim=-2)
             dict_y[0] = torch.flatten(y, start_dim=-2)
 
-            x_x, x_y = central_diff_2d(x, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd)
-            y_x, y_y = central_diff_2d(y, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd)
+            x_x, x_y = central_diff_2d(x, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
+            y_x, y_y = central_diff_2d(y, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
 
             dict_x[1] = torch.flatten(x_x, start_dim=-2)
             dict_x[2] = torch.flatten(x_y, start_dim=-2)
@@ -293,8 +293,8 @@ class H1Loss(object):
             dict_x[0] = torch.flatten(x, start_dim=-3)
             dict_y[0] = torch.flatten(y, start_dim=-3)
 
-            x_x, x_y, x_z = central_diff_3d(x, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd, fix_z_bnd=self.fix_z_bnd)
-            y_x, y_y, y_z = central_diff_3d(y, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd, fix_z_bnd=self.fix_z_bnd)
+            x_x, x_y, x_z = central_diff_3d(x, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
+            y_x, y_y, y_z = central_diff_3d(y, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
 
             dict_x[1] = torch.flatten(x_x, start_dim=-3)
             dict_x[2] = torch.flatten(x_y, start_dim=-3)
@@ -462,25 +462,25 @@ class HdivLoss(object):
             `reduction` only applies to the batch and channel dimensions.
     eps : float, optional
         small number added to the denominator for numerical stability when using the relative loss
-    fix_x_bnd : bool, optional
-        whether to fix finite difference derivative
-        computation on the x boundary, by default False
-    fix_y_bnd : bool, optional
-        whether to fix finite difference derivative
-        computation on the y boundary, by default False
-    fix_z_bnd : bool, optional
-        whether to fix finite difference derivative
-        computation on the z boundary, by default False
+    periodic_in_x : bool, optional
+        whether to use periodic boundary conditions in x-direction when computing finite differences:
+        - True: periodic in x (default)
+        - False: non-periodic in x with forward/backward differences at boundaries
+        by default True
+    periodic_in_y : bool, optional
+        whether to use periodic boundary conditions in y-direction when computing finite differences:
+        - True: periodic in y (default)
+        - False: non-periodic in y with forward/backward differences at boundaries
+        by default True
     """
-    def __init__(self, d=1, measure=1., reduction='sum', eps=1e-8, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
+    def __init__(self, d=1, measure=1., reduction='sum', eps=1e-8, periodic_in_x=True, periodic_in_y=True):
         super().__init__()
 
         assert d > 0 and d < 4, "Currently only implemented for 1, 2, and 3-D."
 
         self.d = d
-        self.fix_x_bnd = fix_x_bnd
-        self.fix_y_bnd = fix_y_bnd
-        self.fix_z_bnd = fix_z_bnd
+        self.periodic_in_x = periodic_in_x
+        self.periodic_in_y = periodic_in_y
         
         self.eps = eps
         
@@ -521,15 +521,15 @@ class HdivLoss(object):
             dict_x[0] = x
             dict_y[0] = y
 
-            div_x = central_diff_1d(x, quadrature[0], fix_x_bnd=self.fix_x_bnd)
-            div_y = central_diff_1d(y, quadrature[0], fix_x_bnd=self.fix_x_bnd)
+            div_x = central_diff_1d(x, quadrature[0], periodic_in_x=self.periodic_in_x)
+            div_y = central_diff_1d(y, quadrature[0], periodic_in_x=self.periodic_in_x)
  
         elif self.d == 2:
             dict_x[0] = torch.flatten(x, start_dim=-2)
             dict_y[0] = torch.flatten(y, start_dim=-2)
 
-            x_x, x_y = central_diff_2d(x, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd)
-            y_x, y_y = central_diff_2d(y, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd)
+            x_x, x_y = central_diff_2d(x, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
+            y_x, y_y = central_diff_2d(y, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
 
             div_x = torch.flatten(x_x + x_y, start_dim=-2)
             div_y = torch.flatten(y_x + y_y, start_dim=-2)
@@ -538,8 +538,8 @@ class HdivLoss(object):
             dict_x[0] = torch.flatten(x, start_dim=-3)
             dict_y[0] = torch.flatten(y, start_dim=-3)
 
-            x_x, x_y, x_z = central_diff_3d(x, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd, fix_z_bnd=self.fix_z_bnd)
-            y_x, y_y, y_z = central_diff_3d(y, quadrature, fix_x_bnd=self.fix_x_bnd, fix_y_bnd=self.fix_y_bnd, fix_z_bnd=self.fix_z_bnd)
+            x_x, x_y, x_z = central_diff_3d(x, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
+            y_x, y_y, y_z = central_diff_3d(y, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
 
             div_x = torch.flatten(x_x + x_y + x_z, start_dim=-3)
             div_y = torch.flatten(y_x + y_y + y_z, start_dim=-3)
