@@ -77,7 +77,7 @@ class CarCFDDataset(MeshDataModule):
                                         root=root_dir)
         super().__init__(
             root_dir=root_dir,
-            item_dir_name='',
+            item_dir_name='data/',
             n_train=n_train,
             n_test=n_test,
             query_res=query_res,

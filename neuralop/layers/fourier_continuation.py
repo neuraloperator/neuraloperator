@@ -16,7 +16,7 @@ class FCLegendre(nn.Module):
     Legendre polynomials are orthogonal polynomials with the weight w=1 on the interval [-1, 1].
     """
     
-    def __init__(self, d=6, n_additional_pts=50, rcond=1e-15):
+    def __init__(self, d=4, n_additional_pts=50, rcond=1e-15):
         """
         Initialize FCLegendre with specified parameters.
         
@@ -271,7 +271,7 @@ class FCGram(nn.Module):
     
     """
     
-    def __init__(self, d=6, n_additional_pts=50, matrices_path=None):
+    def __init__(self, d=4, n_additional_pts=50, matrices_path=None):
         """
         Initialize FCGram with specified parameters.
         

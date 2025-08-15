@@ -27,7 +27,7 @@ class BurgersOptConfig(OptimizationConfig):
     learning_rate: float = 1e-4
     weight_decay: float = 1e-4
     eval_interval: int = 1
-    mixed_precision: False
+    mixed_precision: bool = False
     scheduler: str = 'ReduceLROnPlateau' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
     scheduler_patience: int = 100 # For ReduceLROnPlateau only
     step_size: int = 60
