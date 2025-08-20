@@ -2,6 +2,7 @@ import torch
 from ..codano import CODANO
 import pytest
 
+N_LAYERS = 5
 
 @pytest.mark.parametrize("hidden_variable_codimension", [1, 2])
 @pytest.mark.parametrize("lifting_channels", [4, 2, None])
@@ -11,6 +12,9 @@ import pytest
 @pytest.mark.parametrize("positional_encoding_modes", [[8, 8], [16, 16]])
 @pytest.mark.parametrize("static_channel_dim", [0, 2])
 @pytest.mark.parametrize("use_cls_token", [True, False])
+@pytest.mark.parametrize("n_heads", [[2]*N_LAYERS, None])
+@pytest.mark.parametrize("attention_scalings", [[0.5] * N_LAYERS, None])
+
 def test_CODANO(
     hidden_variable_codimension,
     lifting_channels,
@@ -20,12 +24,11 @@ def test_CODANO(
     positional_encoding_modes,
     static_channel_dim,
     use_cls_token,
+    n_heads,
+    attention_scalings
 ):
     output_variable_codimension = 1
-    n_layers = 5
-    n_heads = [2] * n_layers
-    n_modes = [[16, 16]] * n_layers
-    attention_scalings = [0.5] * n_layers
+    n_modes = [[16, 16]] * N_LAYERS
     scalings = [[1, 1], [0.5, 0.5], [1, 1], [2, 2], [1, 1]]
     use_horizontal_skip_connection = True
     horizontal_skips_map = {3: 1, 4: 0}
@@ -45,7 +48,7 @@ def test_CODANO(
         static_channel_dim=static_channel_dim,
         horizontal_skips_map=horizontal_skips_map,
         variable_ids=variable_ids,
-        n_layers=n_layers,
+        n_layers=N_LAYERS,
         n_heads=n_heads,
         n_modes=n_modes,
         attention_scaling_factors=attention_scalings,
