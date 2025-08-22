@@ -124,17 +124,18 @@ Citing
 
 If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
 
-   @misc{kossaifi2024neural,
+   @misc{kossaifi2025librarylearningneuraloperators,
       title={A Library for Learning Neural Operators}, 
       author={Jean Kossaifi and Nikola Kovachki and 
       Zongyi Li and David Pitt and 
-      Miguel Liu-Schiaffini and Robert Joseph George and 
-      Boris Bonev and Kamyar Azizzadenesheli and 
-      Julius Berner and Anima Anandkumar},
-      year={2024},
+      Miguel Liu-Schiaffini and Valentin Duruisseaux and 
+      Robert Joseph George and Boris Bonev and 
+      Kamyar Azizzadenesheli and Julius Berner and 
+      Anima Anandkumar},
+      year={2025},
       eprint={2412.10354},
       archivePrefix={arXiv},
-      primaryClass={cs.LG}
+      primaryClass={cs.LG},
    }
 
    @article{kovachki2021neural,
@@ -152,7 +153,7 @@ If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
    }
 
 
-.. [1] Kossaifi, J., Kovachki, N., Li, Z., Pitt, D., Liu-Schiaffini, M., George, R., Bonev, B., Azizzadenesheli, K., Berner, J., and Anandkumar, A., "A Library for Learning Neural Operators", ArXiV, 2024. doi:10.48550/arXiv.2412.10354.
+.. [1] Kossaifi, J., Kovachki, N., Li, Z., Pitt, D., Liu-Schiaffini, M., Duruisseaux, V., George, R., Bonev, B., Azizzadenesheli, K., Berner, J., and Anandkumar, A., "A Library for Learning Neural Operators", ArXiV, 2025. doi:10.48550/arXiv.2412.10354.
 
 
 .. [2] Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar A., “Neural Operator: Learning Maps Between Function Spaces”, JMLR, 2021. doi:10.48550/arXiv.2108.08481.
