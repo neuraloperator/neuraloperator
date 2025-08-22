@@ -243,6 +243,28 @@ class FCLegendre(nn.Module):
         if dim == 3:
             return self.extend3d(x)
 
+    def restrict(self, x, dim):
+        """
+        Remove Fourier continuation extension points to restore original domain size.
+        
+        Reverses the extension process by removing half of the additional points
+        on each side that were added during Fourier continuation.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Extended tensor from Fourier continuation
+        dim : int
+            Number of dimensions to restrict (1, 2, or 3)
+        
+        Returns
+        -------
+        torch.Tensor
+            Tensor with original domain size, half of extension points removed from each side
+        """
+        c = self.n_additional_pts // 2
+        return x[(Ellipsis,) + (slice(c, -c),) * dim]
+
 
 
 
@@ -516,3 +538,25 @@ class FCGram(nn.Module):
             return self.extend2d(x)
         if dim == 3:
             return self.extend3d(x)
+
+    def restrict(self, x, dim):
+        """
+        Remove Fourier continuation extension points to restore original domain size.
+        
+        Reverses the extension process by removing half of the additional points
+        on each side that were added during Fourier continuation.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Extended tensor from Fourier continuation
+        dim : int
+            Number of dimensions to restrict (1, 2, or 3)
+        
+        Returns
+        -------
+        torch.Tensor
+            Tensor with original domain size, half of extension points removed from each side
+        """
+        c = self.n_additional_pts // 2
+        return x[(Ellipsis,) + (slice(c, -c),) * dim]
