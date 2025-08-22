@@ -110,6 +110,14 @@ or even better, open a Pull-Request on `GitHub <https://github.com/neuraloperato
 
 For detailed development setup, testing, and contribution guidelines, please refer to our `Contributing Guide <CONTRIBUTING.md>`_.
 
+===============
+Code of Conduct
+===============
+
+This project follows the `Linux Foundation Code of Conduct <https://lfprojects.org/policies/code-of-conduct/>`_.
+
+All participants are expected to uphold this Code of Conduct to ensure a friendly and welcoming environment for everyone.
+
     
 Citing
 ------
