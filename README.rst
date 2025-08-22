@@ -98,8 +98,6 @@ methods that directly relate to operator learning: new architectures, meta-algor
 and benchmark datasets. We are also interested in integrating interactive examples that showcase operator 
 learning in action on small sample problems.
 
-For detailed information on how to contribute, please see our `Contributing Guide <CONTRIBUTING.md>`_. 
-
 If your work provides one of the above, we would be thrilled to integrate it into the library. 
 Otherwise, if your work simply relies on a version of the NeuralOperator codebase, we recommend 
 publishing your code separately using a procedure outlined in our
