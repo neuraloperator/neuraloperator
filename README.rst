@@ -96,7 +96,9 @@ Our mission for NeuralOperator is to provide access to well-documented, robust i
 neural operator methods from foundations to the cutting edge. The library is primarily intended for 
 methods that directly relate to operator learning: new architectures, meta-algorithms, training methods 
 and benchmark datasets. We are also interested in integrating interactive examples that showcase operator 
-learning in action on small sample problems. 
+learning in action on small sample problems.
+
+For detailed information on how to contribute, please see our `Contributing Guide <CONTRIBUTING.md>`_. 
 
 If your work provides one of the above, we would be thrilled to integrate it into the library. 
 Otherwise, if your work simply relies on a version of the NeuralOperator codebase, we recommend 
@@ -108,66 +110,7 @@ If you spot a bug or a typo in the documentation, or have an idea for a feature 
 please report it on our `issue tracker <https://github.com/neuraloperator/neuraloperator/issues>`_, 
 or even better, open a Pull-Request on `GitHub <https://github.com/neuraloperator/neuraloperator>`_. 
 
-NeuralOperator has additional dependencies for development, which are packaged as ``neuraloperator[dev]``
-
-.. code::
-   
-   pip install neuraloperator[dev]
-
-OR 
-
-.. code ::
-   
-   pip install -e .[dev]
-
-
-Code formatting
-----------------
-
-Before you submit your changes, you should make sure your code adheres to our style-guide. The
-easiest way to do this is with ``black``:
-
-.. code::
-
-   black .
-
-
-Running the tests
-------------------
-
-Testing and documentation are an essential part of this package and all
-functions come with unit-tests and documentation. The tests are run using the
-pytest package. 
-    
-To run the tests, simply run, in the terminal:
-
-.. code::
-
-    pytest -v neuralop
-
-
-Building documentation
------------------------
-The HTML for our documentation website is built using ``sphinx``. The documentation
-is built from inside the ``doc`` folder. 
-
-.. code::
-
-   cd doc
-   make html
-
-This will build the docs in ``./doc/build/html``.
-
-Note that the documentation requires other dependencies installable from ``./doc/requirements_doc.txt``. 
-
-To view the documentation locally, run:
-
-.. code::
-
-   cd doc/build/html
-   python -m http.server [PORT_NUM]
-
-The docs will then be viewable at ``localhost:PORT_NUM``.
+For detailed development setup, testing, and contribution guidelines, please refer to our `Contributing Guide <CONTRIBUTING.md>`_.
 
     
 Citing

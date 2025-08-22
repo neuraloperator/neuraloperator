@@ -21,6 +21,32 @@ If your work provides one of the above, we would be thrilled to integrate it int
 
 ## Getting Started
 
+
+
+### Development Setup
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork** locally:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/neuraloperator.git
+   cd neuraloperator
+   ```
+3. **Add the upstream remote**:
+   ```bash
+   git remote add upstream https://github.com/neuraloperator/neuraloperator.git
+   ```
+4. **Create a virtual environment**:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+5. **Install development dependencies**:
+   ```bash
+   pip install -e .[dev]
+   # OR
+   pip install neuraloperator[dev]
+   ```
+
 First, ensure you have the latest version of the library installed for development, including requirements for the documentation. See the [installation guide](https://neuraloperator.github.io/dev/install.html) for more details.
 
 
@@ -126,10 +152,24 @@ If you plan to use `neuralop` as the base of a project, we suggest the following
 - Use meaningful and descriptive names for variables, functions, and classes
 - Write clear comments and docstrings, using NumPy docstring format for functions and classes
 
+### Code Formatting
+Before you submit your changes, you should make sure your code adheres to our style-guide. The easiest way to do this is with ``black``:
+
+```bash
+black .
+```
+
 ### Testing
 - Ensure all new code has corresponding tests
 - Run the full test suite before submitting PRs
+- Use descriptive test names that explain what is being tested
 - Test both normal operation and edge cases
+
+To run the tests, simply run in the terminal:
+
+```bash
+pytest -v neuralop
+```
 
 ### Documentation
 - Update relevant documentation when adding new features
@@ -137,6 +177,32 @@ If you plan to use `neuralop` as the base of a project, we suggest the following
 - Consider adding interactive examples to the `examples/` directory
 - Follow the existing documentation style and format
 - Include paper references and mathematical formulations when relevant
+
+### Building Documentation
+The HTML for our documentation website is built using ``sphinx``. The documentation is built from inside the ``doc`` folder.
+
+```bash
+cd doc
+make html
+```
+
+This will build the docs in ``./doc/build/html``.
+
+Note that the documentation requires other dependencies installable from ``./doc/requirements_doc.txt``.
+
+To view the documentation locally, run:
+
+```bash
+cd doc/build/html
+python -m http.server [PORT_NUM]
+```
+
+The docs will then be viewable at ``localhost:PORT_NUM``.
+
+### Git Best Practices
+- Write clear, descriptive commit messages
+- Keep commits focused and atomic
+- Rebase your branch on main before submitting PRs
 
 
 ## Debugging and Troubleshooting
