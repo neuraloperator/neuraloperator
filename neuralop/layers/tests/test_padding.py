@@ -2,15 +2,14 @@ import torch
 from ..padding import DomainPadding
 import pytest
 
-@pytest.mark.parametrize('mode', ['one-sided', 'symmetric'])
-def test_DomainPadding(mode):
-    out_size = {'one-sided': 12, 'symmetric': 14}
+def test_DomainPadding():
     data = torch.randn((2, 3, 10, 10))
-    padder = DomainPadding(0.2, mode)
+    padder = DomainPadding(0.2)
     padded = padder.pad(data)
 
+    # With 0.2 padding and symmetric mode, output size should be 14
     target_shape = list(padded.shape)
-    target_shape[-1] = target_shape[-2] = out_size[mode]
+    target_shape[-1] = target_shape[-2] = 14
     assert list(padded.shape) == target_shape
 
     unpadded = padder.unpad(padded)

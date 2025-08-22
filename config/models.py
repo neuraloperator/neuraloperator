@@ -16,7 +16,6 @@ class FNOConfig(ModelConfig):
     projection_channel_ratio: int = 4
     n_layers: int = 4
     domain_padding: float = 0.0
-    domain_padding_mode: str = "one-sided"
     fft_norm: str = "forward"
     norm: str = "None"
     skip: str = "linear"

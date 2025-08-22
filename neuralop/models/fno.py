@@ -93,8 +93,7 @@ class FNO(BaseModel, name='FNO'):
         To vary the percentage of padding used along each input dimension,
         pass in a list of percentages e.g. [p1, p2, ..., pN] such that
         p1 corresponds to the percentage of padding along dim 1, etc.
-    domain_padding_mode : Literal ['symmetric', 'one-sided'], optional
-        How to perform domain padding, by default 'symmetric'
+
     fno_block_precision : str {'full', 'half', 'mixed'}, optional
         precision mode in which to perform spectral convolution, by default "full"
     stabilizer : str {'tanh'} | None, optional
@@ -181,7 +180,6 @@ class FNO(BaseModel, name='FNO'):
         fno_skip: Literal['linear', 'identity', 'soft-gating']="linear",
         resolution_scaling_factor: Union[Number, List[Number]]=None,
         domain_padding: Union[Number, List[Number]]=None,
-        domain_padding_mode: Literal['symmetric', 'one-sided']="symmetric",
         fno_block_precision: str="full",
         stabilizer: str=None,
         max_n_modes: Tuple[int, ...]=None,
@@ -254,13 +252,12 @@ class FNO(BaseModel, name='FNO'):
         ):
             self.domain_padding = DomainPadding(
                 domain_padding=domain_padding,
-                padding_mode=domain_padding_mode,
                 resolution_scaling_factor=resolution_scaling_factor,
             )
         else:
             self.domain_padding = None
 
-        self.domain_padding_mode = domain_padding_mode
+
         self.complex_data = self.complex_data
 
         if resolution_scaling_factor is not None:
@@ -438,7 +435,6 @@ class FNO1d(FNO):
         implementation="factorized",
         decomposition_kwargs=None,
         domain_padding=None,
-        domain_padding_mode="symmetric",
         **kwargs
     ):
         super().__init__(
@@ -467,7 +463,6 @@ class FNO1d(FNO):
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
-            domain_padding_mode=domain_padding_mode,
         )
         self.n_modes_height = n_modes_height
 
@@ -513,7 +508,6 @@ class FNO2d(FNO):
         implementation="factorized",
         decomposition_kwargs=None,
         domain_padding=None,
-        domain_padding_mode="symmetric",
         **kwargs,
     ):
 
@@ -543,7 +537,6 @@ class FNO2d(FNO):
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
-            domain_padding_mode=domain_padding_mode,
         )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
@@ -593,7 +586,6 @@ class FNO3d(FNO):
         implementation="factorized",
         decomposition_kwargs=None,
         domain_padding=None,
-        domain_padding_mode="symmetric",
         **kwargs
     ):
         super().__init__(
@@ -622,7 +614,6 @@ class FNO3d(FNO):
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
-            domain_padding_mode=domain_padding_mode,
         )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
