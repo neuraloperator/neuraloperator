@@ -16,7 +16,7 @@ class FCLegendre(nn.Module):
     Legendre polynomials are orthogonal polynomials with the weight w=1 on the interval [-1, 1].
     """
     
-    def __init__(self, d=4, n_additional_pts=50, rcond=1e-15):
+    def __init__(self, d=5, n_additional_pts=50, rcond=1e-15):
         """
         Initialize FCLegendre with specified parameters.
         
@@ -271,7 +271,7 @@ class FCGram(nn.Module):
     
     """
     
-    def __init__(self, d=4, n_additional_pts=50, matrices_path=None):
+    def __init__(self, d=5, n_additional_pts=50, matrices_path=None):
         """
         Initialize FCGram with specified parameters.
         
@@ -294,10 +294,12 @@ class FCGram(nn.Module):
         super().__init__()
         
         self.d = d
-        if n_additional_pts % 2 == 1:
+        self.n_additional_pts = n_additional_pts 
+        
+        if self.n_additional_pts % 2 == 1:
             warnings.warn("n_additional_pts must be even, rounding down.", UserWarning)
-            n_additional_pts -= 1
-        self.C = int(n_additional_pts // 2)
+            self.n_additional_pts -= 1
+        self.C = int(self.n_additional_pts // 2)
         
         if matrices_path is None:
             self.matrices_path = Path(__file__).parent / 'FCGram_matrices'
