@@ -80,8 +80,8 @@ x_np = x.cpu().numpy()
 # Differentiate the signal
 # -----------------------------------------
 # We use the Fourier differentiation function with Fourier continuation to differentiate the signal
-dfdx = fourier_derivative_1d(f, order=1, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30, FC_one_sided=False)
-df2dx2 = fourier_derivative_1d(f, order=2, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30, FC_one_sided=False)
+dfdx = fourier_derivative_1d(f, order=1, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30)
+df2dx2 = fourier_derivative_1d(f, order=2, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30)
 
      
 # %%

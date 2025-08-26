@@ -18,14 +18,12 @@ def test_fourier_continuation(FC_class, dim: int, d: int):
         
         Extension = FC_class(d=d, n_additional_pts=add_pts)
 
-        f_extend_one_side = Extension(f, dim=1, one_sided=True)
-        f_extend_both_sides = Extension(f, dim=1, one_sided=False)
+        f_extend = Extension(f, dim=1)
 
         # Check shape
-        assert f_extend_both_sides.shape[-1] == f_extend_one_side.shape[-1] == f.shape[-1] + add_pts
+        assert f_extend.shape[-1] == f.shape[-1] + add_pts
         # Check values of original signal
-        torch.testing.assert_close(f, f_extend_one_side[...,:length_signal])
-        torch.testing.assert_close(f, f_extend_both_sides[...,add_pts//2:-add_pts//2])
+        torch.testing.assert_close(f, f_extend[...,add_pts//2:-add_pts//2])
 
     if dim == 2:
         
@@ -39,17 +37,13 @@ def test_fourier_continuation(FC_class, dim: int, d: int):
         
         Extension = FC_class(d=d, n_additional_pts=add_pts)
 
-        f_extend_one_side = Extension(f, dim=2, one_sided=True)
-        f_extend_both_sides = Extension(f, dim=2, one_sided=False)
+        f_extend = Extension(f, dim=2)
 
         # Check shape
-        assert f_extend_one_side.shape[-1] == f.shape[-1] + add_pts
-        assert f_extend_one_side.shape[-2] == f.shape[-2] + add_pts
-        assert f_extend_both_sides.shape[-1] == f.shape[-1] + add_pts
-        assert f_extend_both_sides.shape[-2] == f.shape[-2] + add_pts
+        assert f_extend.shape[-1] == f.shape[-1] + add_pts
+        assert f_extend.shape[-2] == f.shape[-2] + add_pts
         # Check values of original signal
-        torch.testing.assert_close(f, f_extend_both_sides[...,add_pts//2:-add_pts//2, add_pts//2:-add_pts//2])
-        torch.testing.assert_close(f, f_extend_one_side[...,:length_signal, :length_signal])
+        torch.testing.assert_close(f, f_extend[...,add_pts//2:-add_pts//2, add_pts//2:-add_pts//2])
 
     if dim == 3:
         
@@ -67,13 +61,11 @@ def test_fourier_continuation(FC_class, dim: int, d: int):
 
         Extension = FC_class(d=d, n_additional_pts=add_pts)
 
-        f_extend_one_side = Extension(f, dim=3, one_sided=True)
-        f_extend_both_sides = Extension(f, dim=3, one_sided=False)
+        f_extend = Extension(f, dim=3)
 
         # Check shape
-        assert f_extend_one_side.shape[-1] == f.shape[-1] + add_pts
-        assert f_extend_one_side.shape[-2] == f.shape[-2] + add_pts
-        assert f_extend_one_side.shape[-3] == f.shape[-3] + add_pts
-        assert f_extend_both_sides.shape[-1] == f.shape[-1] + add_pts
-        assert f_extend_both_sides.shape[-2] == f.shape[-2] + add_pts
-        assert f_extend_both_sides.shape[-3] == f.shape[-3] + add_pts
+        assert f_extend.shape[-1] == f.shape[-1] + add_pts
+        assert f_extend.shape[-2] == f.shape[-2] + add_pts
+        assert f_extend.shape[-3] == f.shape[-3] + add_pts
+        # Check values of original signal
+        torch.testing.assert_close(f, f_extend[...,add_pts//2:-add_pts//2, add_pts//2:-add_pts//2, add_pts//2:-add_pts//2])

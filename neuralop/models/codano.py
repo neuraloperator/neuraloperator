@@ -144,12 +144,9 @@ class CODANO(nn.Module):
         Example: For a 5-layer architecture, horizontal_skips_map={4: 0, 3: 1} creates skip connections from layer 0 to layer 4 and layer 1 to layer 3.
 
     domain_padding : float
-        The padding factor for each input channel. It zero pads each of the channel following the `domain_padding_mode`.  Default is 0.25.
+        The padding factor for each input channel. It zero pads each of the channel. Default is 0.25.
 
-    domain_padding_mode : str
-        The domain padding mode, which can be 'one-sided' or 'two-sided'. Default is 'one-sided'.
-        if one-sided, padding is only done along one side of each dimension.
-        If two-sided, padding is done on both sides of each dimension.
+
 
     layer_kwargs : dict
         Additional arguments for the CoDA blocks. Default is an empty dictionary `{}`.
@@ -188,7 +185,7 @@ class CODANO(nn.Module):
         per_channel_attention=False,
         layer_kwargs={},
         domain_padding=0.25,
-        domain_padding_mode="one-sided",
+
         enable_cls_token=False,
     ):
         super().__init__()
@@ -286,12 +283,11 @@ class CODANO(nn.Module):
         if domain_padding is not None and domain_padding > 0:
             self.domain_padding = DomainPadding(
                 domain_padding=domain_padding,
-                padding_mode=domain_padding_mode,
                 resolution_scaling_factor=self.end_to_end_scaling,
             )
         else:
             self.domain_padding = None
-        self.domain_padding_mode = domain_padding_mode
+
 
         self.extended_variable_codimemsion = extended_variable_codimemsion
         if self.lifting:

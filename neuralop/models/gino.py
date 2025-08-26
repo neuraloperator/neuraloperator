@@ -334,7 +334,6 @@ class GINO(BaseModel):
                 implementation=fno_implementation,
                 decomposition_kwargs=fno_decomposition_kwargs,
                 domain_padding=None,
-                domain_padding_mode=None,
                 conv_module=fno_conv_module,
                 **kwargs
         )
