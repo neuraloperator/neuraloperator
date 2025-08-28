@@ -96,7 +96,7 @@ Our mission for NeuralOperator is to provide access to well-documented, robust i
 neural operator methods from foundations to the cutting edge. The library is primarily intended for 
 methods that directly relate to operator learning: new architectures, meta-algorithms, training methods 
 and benchmark datasets. We are also interested in integrating interactive examples that showcase operator 
-learning in action on small sample problems. 
+learning in action on small sample problems.
 
 If your work provides one of the above, we would be thrilled to integrate it into the library. 
 Otherwise, if your work simply relies on a version of the NeuralOperator codebase, we recommend 
@@ -108,66 +108,15 @@ If you spot a bug or a typo in the documentation, or have an idea for a feature 
 please report it on our `issue tracker <https://github.com/neuraloperator/neuraloperator/issues>`_, 
 or even better, open a Pull-Request on `GitHub <https://github.com/neuraloperator/neuraloperator>`_. 
 
-NeuralOperator has additional dependencies for development, which are packaged as ``neuraloperator[dev]``
+For detailed development setup, testing, and contribution guidelines, please refer to our `Contributing Guide <CONTRIBUTING.md>`_.
 
-.. code::
-   
-   pip install neuraloperator[dev]
+===============
+Code of Conduct
+===============
 
-OR 
+This project follows the `Linux Foundation Code of Conduct <https://lfprojects.org/policies/code-of-conduct/>`_.
 
-.. code ::
-   
-   pip install -e .[dev]
-
-
-Code formatting
-----------------
-
-Before you submit your changes, you should make sure your code adheres to our style-guide. The
-easiest way to do this is with ``black``:
-
-.. code::
-
-   black .
-
-
-Running the tests
-------------------
-
-Testing and documentation are an essential part of this package and all
-functions come with unit-tests and documentation. The tests are run using the
-pytest package. 
-    
-To run the tests, simply run, in the terminal:
-
-.. code::
-
-    pytest -v neuralop
-
-
-Building documentation
------------------------
-The HTML for our documentation website is built using ``sphinx``. The documentation
-is built from inside the ``doc`` folder. 
-
-.. code::
-
-   cd doc
-   make html
-
-This will build the docs in ``./doc/build/html``.
-
-Note that the documentation requires other dependencies installable from ``./doc/requirements_doc.txt``. 
-
-To view the documentation locally, run:
-
-.. code::
-
-   cd doc/build/html
-   python -m http.server [PORT_NUM]
-
-The docs will then be viewable at ``localhost:PORT_NUM``.
+All participants are expected to uphold this Code of Conduct to ensure a friendly and welcoming environment for everyone.
 
     
 Citing
@@ -175,17 +124,18 @@ Citing
 
 If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
 
-   @misc{kossaifi2024neural,
+   @misc{kossaifi2025librarylearningneuraloperators,
       title={A Library for Learning Neural Operators}, 
       author={Jean Kossaifi and Nikola Kovachki and 
       Zongyi Li and David Pitt and 
-      Miguel Liu-Schiaffini and Robert Joseph George and 
-      Boris Bonev and Kamyar Azizzadenesheli and 
-      Julius Berner and Anima Anandkumar},
-      year={2024},
+      Miguel Liu-Schiaffini and Valentin Duruisseaux and 
+      Robert Joseph George and Boris Bonev and 
+      Kamyar Azizzadenesheli and Julius Berner and 
+      Anima Anandkumar},
+      year={2025},
       eprint={2412.10354},
       archivePrefix={arXiv},
-      primaryClass={cs.LG}
+      primaryClass={cs.LG},
    }
 
    @article{kovachki2021neural,
@@ -203,7 +153,7 @@ If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
    }
 
 
-.. [1] Kossaifi, J., Kovachki, N., Li, Z., Pitt, D., Liu-Schiaffini, M., George, R., Bonev, B., Azizzadenesheli, K., Berner, J., and Anandkumar, A., "A Library for Learning Neural Operators", ArXiV, 2024. doi:10.48550/arXiv.2412.10354.
+.. [1] Kossaifi, J., Kovachki, N., Li, Z., Pitt, D., Liu-Schiaffini, M., Duruisseaux, V., George, R., Bonev, B., Azizzadenesheli, K., Berner, J., and Anandkumar, A., "A Library for Learning Neural Operators", ArXiV, 2025. doi:10.48550/arXiv.2412.10354.
 
 
 .. [2] Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar A., “Neural Operator: Learning Maps Between Function Spaces”, JMLR, 2021. doi:10.48550/arXiv.2108.08481.
