@@ -88,8 +88,7 @@ class UNO(nn.Module):
         Optionaly additional parameters to pass to the tensor decomposition
     domain_padding : None or float, optional
         If not None, percentage of padding to use, by default None
-    domain_padding_mode : {'symmetric', 'one-sided'}, optional
-        How to perform domain padding, by default 'one-sided'
+
     fft_norm : str, optional
         by default 'forward'
 
@@ -132,7 +131,6 @@ class UNO(nn.Module):
         implementation="factorized",
         decomposition_kwargs=dict(),
         domain_padding=None,
-        domain_padding_mode="one-sided",
         verbose=False,
         **kwargs
     ):
@@ -236,12 +234,11 @@ class UNO(nn.Module):
         ):
             self.domain_padding = DomainPadding(
                 domain_padding=domain_padding,
-                padding_mode=domain_padding_mode,
                 resolution_scaling_factor=self.end_to_end_scaling_factor,
             )
         else:
             self.domain_padding = None
-        self.domain_padding_mode = domain_padding_mode
+
 
         self.lifting = ChannelMLP(
             in_channels=in_channels,

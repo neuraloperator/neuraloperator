@@ -3,7 +3,7 @@ import torch
 import warnings
 
 
-def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_d=4, FC_n_additional_pts=50, FC_one_sided=False, low_pass_filter_ratio=None):
+def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_d=4, FC_n_additional_pts=50, low_pass_filter_ratio=None):
     """
     Compute the 1D Fourier derivative of a given tensor.
     Use with care, as Fourier continuation and Fourier derivatives are not always stable.
@@ -37,9 +37,6 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_d=4, FC_n_a
         Number of points to add using the Fourier continuation layer, by default 50
         For FC-Gram continuation, it is usually not necessary to change this parameter. 
         This has a bigger effect on FC-Legendre continuation.
-    FC_one_sided : bool, optional
-        Whether to only add points on one side, or add an equal number of points 
-        on both sides, by default False
     low_pass_filter_ratio : float, optional
         If not None, apply a low-pass filter to the Fourier coefficients. 
         Can help reduce artificial oscillations. 1.0 means no filtering, 
@@ -65,36 +62,34 @@ def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_d=4, FC_n_a
     
     # Extend signal using Fourier continuation if specified
     if use_FC=='Legendre':
+        L = L *  (u.shape[-1] + FC_n_additional_pts) / u.shape[-1]   # Define extended length
         FC = FCLegendre(d=FC_d, n_additional_pts=FC_n_additional_pts).to(u.device)
-        u = FC(u, dim=1, one_sided=FC_one_sided)
-        L = L *  (u.shape[-1] + FC_n_additional_pts) / u.shape[-1]     # Define extended length
+        u = FC(u, dim=1)
     elif use_FC=='Gram':
+        L = L *  (u.shape[-1] + FC_n_additional_pts) / u.shape[-1]   # Define extended length
         FC = FCGram(d=FC_d, n_additional_pts=FC_n_additional_pts).to(u.device)
-        u = FC(u, dim=1, one_sided=FC_one_sided)
-        L = L *  (u.shape[-1] + FC_n_additional_pts) / u.shape[-1]    
+        u = FC(u, dim=1)
     else:
         warnings.warn("Consider using Fourier continuation if the input is not periodic (use_FC=True).", category=UserWarning)
 
-    nx = u.size(-1)    
+    nx = u.size(-1) 
+    dx = L / nx   
     u_h = torch.fft.rfft(u, dim=-1) 
-    k_x = torch.fft.rfftfreq(nx, d=1/nx, device=u_h.device).view(*([1] * (u_h.dim() - 1)), u_h.size(-1))
+    k_x = torch.fft.rfftfreq(nx, d=dx, device=u_h.device) * (2*torch.pi)
     
     if low_pass_filter_ratio is not None:
         # Apply a low-pass filter to the Fourier coefficients
         cutoff = int(u_h.shape[-1] * low_pass_filter_ratio)
         u_h[..., cutoff:] = 0
     
-    # Fourier differentiation
-    derivative_u_h = (1j * k_x * 2*torch.pi/L)**order * u_h 
+    # Fourier differentiation    
+    derivative_u_h = (1j * k_x)**order * u_h
     
     # Inverse Fourier transform to get the derivative in physical space
     derivative_u = torch.fft.irfft(derivative_u_h, dim=-1, n=nx) 
 
     # If Fourier continuation is used, crop the result to retrieve the derivative on the original interval
     if use_FC:
-        if FC_one_sided:
-            derivative_u = derivative_u[..., :-FC_n_additional_pts]
-        else:
-            derivative_u = derivative_u[..., FC_n_additional_pts//2: -FC_n_additional_pts//2]
+        derivative_u = derivative_u[..., FC_n_additional_pts//2: -FC_n_additional_pts//2]
 
     return derivative_u

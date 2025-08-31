@@ -22,7 +22,6 @@ class Fno2d(ConfigBase):
     hidden_channels: int = 256
     n_layers: int = 4
     domain_padding: float = 0.078125
-    domain_padding_mode: str = "one-sided"
     fft_norm: str = "forward"
     norm: Optional[Any] = None
     skip: str = "linear"
