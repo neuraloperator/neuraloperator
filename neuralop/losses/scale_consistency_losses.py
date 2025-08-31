@@ -1,20 +1,14 @@
 import torch
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-from scale_no.data_augmentation import (
-    RandomCropResize,
-    RandomCropResizeTime,
-    RandomCropResizeTimeAR,
-)
 from neuralop.data.transforms.rescale import (
     DarcyExtractBC,
     BurgersExtractBC,
     HelmholtzExtractBC,
 )
-
-
-import time
+from neuralop.data.transforms.rescale import (
+    RandomCropResize,
+    RandomCropResizeTime,
+    RandomCropResizeTimeAR,
+)
 
 
 def LossSelfconsistency(
@@ -33,13 +27,48 @@ def LossSelfconsistency(
 ):
     """
     Selfconsistency loss:
+    Enforces that the model evaluated on the entire domain, and restricted to a subdomain
+    be equal to the model directly evaluated on the subdomain. The subdomain is chosen randomly each time.
 
-    Enforces that the model evaluated on the
-    entire domain, and restricted to a subdomain
-    be equal to the model directly evaluated on
-    the subdomain.
+    Code adapted from paper https://arxiv.org/abs/2507.18813
 
-    The subdomain is chosen randomly each time.
+    Use example:
+    ----------
+    loss_consistency = LossSelfconsistency(model, x, loss_fn, y=y)
+
+    Attributes
+    ----------
+        model : nn.Module
+            The neural operator.
+        x : torch.Tensor
+            The input tensor of shape (B, C, H, W) or (B, C, T, H, W).
+        loss_fn : callable
+            The loss function to compute the difference between the two evaluations (usually Lploss).
+        y : torch.Tensor, optional
+            The ground truth tensor of shape (B, C, H, W) or (B, C, T, H, W). If provided,
+            the loss is computed between model(x_small) and y_small.
+            If not provided, the loss is computed between model(x_small) and y_small where
+            y = model(x).
+        re : torch.Tensor, optional
+            Additional input tensor of shape (B, 1) if required by the model.
+        rate : float, optional
+            The rate at which to crop the input tensor. If None, a random rate is chosen.
+        new_y : torch.Tensor, optional
+            Not used in this function.
+        size_min : int, optional
+            The minimum size of the cropped subdomain.
+        type : str, optional
+            The type of PDE ('darcy', 'helmholtz', 'NS', 'burgers') to determine boundary extraction.
+        plot : bool, optional
+            If True, plots the cropped regions (not implemented here).
+        group_action : callable, optional
+            A function to apply group actions on (x_small, y_small) if needed.
+        align_corner : bool, optional
+            If True, aligns the corners of the cropped regions.
+
+    Returns:
+        torch.Tensor
+            The computed self-consistency loss.
     """
     #
 
