@@ -5,4 +5,4 @@ from .models import get_model
 from .data import datasets, transforms
 from . import mpu
 from .training import Trainer
-from .losses import LpLoss, H1Loss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Aggregator, Relobralo, SoftAdapt, fourier_derivative_1d, FourierDiff2D, FourierDiff3D, central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd, FiniteDiff1D, FiniteDiff2D, FiniteDiff3D
+from .losses import LpLoss, H1Loss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Aggregator, Relobralo, SoftAdapt, FourierDiff1D, FourierDiff2D, FourierDiff3D, central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd, FiniteDiff1D, FiniteDiff2D, FiniteDiff3D

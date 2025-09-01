@@ -5,7 +5,7 @@ from torch.testing import assert_close
 
 from ..data_losses import LpLoss, H1Loss, HdivLoss
 from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd, FiniteDiff1D, FiniteDiff2D, FiniteDiff3D
-from ..fourier_diff import fourier_derivative_1d, FourierDiff2D, FourierDiff3D
+from ..fourier_diff import FourierDiff1D, FourierDiff2D, FourierDiff3D
 from neuralop.layers.embeddings import regular_grid_nd
 
 
@@ -358,9 +358,11 @@ def test_fourier_diff(periodic: bool):
         L = 2*torch.pi
         x = torch.linspace(0, L, 101)[:-1]
         f = torch.stack([torch.sin(x), torch.cos(x)], dim=0)
-        dfdx = fourier_derivative_1d(f, order=1, L=L)
-        df2dx2 = fourier_derivative_1d(f, order=2, L=L)
-        df3dx3 = fourier_derivative_1d(f, order=3, L=L)
+        
+        # Use FourierDiff1D class
+        fd1d = FourierDiff1D(L=L, use_FC=False)
+        derivatives = fd1d.compute_multiple_derivatives(f, [1, 2, 3])
+        dfdx, df2dx2, df3dx3 = derivatives
         
         assert f.shape == dfdx.shape == df2dx2.shape == df3dx3.shape
 
@@ -372,8 +374,11 @@ def test_fourier_diff(periodic: bool):
         L = 2*torch.pi
         x = torch.linspace(0, L, 101)[:-1]    
         f = torch.stack([torch.sin(3*x) - torch.cos(x), torch.exp(-0.8*x)+torch.sin(x)], dim=0)
-        dfdx = fourier_derivative_1d(f, order=1, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30)
-        df2dx2 = fourier_derivative_1d(f, order=2, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30)
+        
+        # Use FourierDiff1D class with Fourier continuation
+        fd1d = FourierDiff1D(L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30)
+        derivatives = fd1d.compute_multiple_derivatives(f, [1, 2])
+        dfdx, df2dx2 = derivatives
 
         assert f.shape == dfdx.shape == df2dx2.shape
    

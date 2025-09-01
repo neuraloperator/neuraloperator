@@ -13,7 +13,7 @@ An example of usage of our Fourier Differentiation Function
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from neuralop.losses.fourier_diff import fourier_derivative_1d, FourierDiff2D, FourierDiff3D
+from neuralop.losses.fourier_diff import FourierDiff1D, FourierDiff2D, FourierDiff3D
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -31,10 +31,10 @@ x_np = x.cpu().numpy()
 # %%
 # Differentiate the signal
 # -----------------------------------------
-# We use the Fourier differentiation function to differentiate the signal
-dfdx = fourier_derivative_1d(f, order=1, L=L)
-df2dx2 = fourier_derivative_1d(f, order=2, L=L)
-df3dx3 = fourier_derivative_1d(f, order=3, L=L)
+# We use the FourierDiff1D class to differentiate the signal
+fd1d = FourierDiff1D(L=L, use_FC=False)
+derivatives = fd1d.compute_multiple_derivatives(f, [1, 2, 3])
+dfdx, df2dx2, df3dx3 = derivatives
 
 
 # %%
@@ -79,9 +79,10 @@ x_np = x.cpu().numpy()
 # %%
 # Differentiate the signal
 # -----------------------------------------
-# We use the Fourier differentiation function with Fourier continuation to differentiate the signal
-dfdx = fourier_derivative_1d(f, order=1, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=50)
-df2dx2 = fourier_derivative_1d(f, order=2, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=50)
+# We use the FourierDiff1D class with Fourier continuation to differentiate the signal
+fd1d = FourierDiff1D(L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=50)
+derivatives = fd1d.compute_multiple_derivatives(f, [1, 2])
+dfdx, df2dx2 = derivatives
 
      
 # %%

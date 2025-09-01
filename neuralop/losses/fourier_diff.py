@@ -3,96 +3,129 @@ import torch
 import warnings
 
 
-def fourier_derivative_1d(u, order=1, L=2*torch.pi, use_FC=False, FC_d=4, FC_n_additional_pts=50, low_pass_filter_ratio=None):
+class FourierDiff1D:
     """
-    Compute the 1D Fourier derivative of a given tensor.
-    Use with care, as Fourier continuation and Fourier derivatives are not always stable.
+    A class for computing 1D Fourier derivatives with Fourier continuation support.
     
-    FC derivatives are more stable when the original signal is nearly periodic 
-        (i.e., values and slopes at boundaries match or are close).
-        and when the signal is smooth and has no sharp jumps/discontinuities at the boundaries.
+    Provides methods for computing 1D Fourier derivatives,
+    with optional Fourier continuation for handling non-periodic functions.
+    """
     
-    Use Fourier continuation to extend the signal if it is non-periodic. 
-    
-    Unstable behavior can occur if the signal has strong discontinuities or non-matching derivatives at boundaries,
-        and if the continuation introduces artificial oscillations (Gibbs phenomenon).
+    def __init__(self, 
+                 L=2*torch.pi, 
+                 use_FC=False, FC_d=4, 
+                 FC_n_additional_pts=50, 
+                 low_pass_filter_ratio=None):
+        """
+        Parameters
+        ----------
+        L : float, optional
+            Length of the domain, by default 2*pi
+        use_FC : str, optional
+            Whether to use Fourier continuation. Use for non-periodic functions.
+            Options: None, 'Legendre', 'Gram', by default False
+        FC_d : int, optional
+            'Degree' of the Fourier continuation, by default 4
+        FC_n_additional_pts : int, optional
+            Number of points to add using the Fourier continuation layer, by default 50
+        low_pass_filter_ratio : float, optional
+            If not None, apply a low-pass filter to the Fourier coefficients, by default None
+        """
+        self.L = L
+        self.use_FC = use_FC
+        self.FC_d = FC_d
+        self.FC_n_additional_pts = FC_n_additional_pts
+        self.low_pass_filter_ratio = low_pass_filter_ratio
 
-    Signs of instability include boundary artifacts, high-frequency ringing, or growing errors with higher resolution.
     
-    
-    Parameters
-    ----------
-    u : torch.Tensor
-        Input tensor. The derivative will be computed along the last dimension.
-    order : int, optional
-        Order of the derivative, by default 1
-    L : float, optional
-        Length of the domain considered, by default 2*pi
-    use_FC : str, optional
-        Whether to use Fourier continuation. Use for non-periodic functions.
-        Options: None, 'Legendre', 'Gram', by default False
-    FC_d : int, optional
-        'Degree' of the Fourier continuation, by default 4
-    FC_n_additional_pts : int, optional
-        Number of points to add using the Fourier continuation layer, by default 50
-        For FC-Gram continuation, it is usually not necessary to change this parameter. 
-        This has a bigger effect on FC-Legendre continuation.
-    low_pass_filter_ratio : float, optional
-        If not None, apply a low-pass filter to the Fourier coefficients. 
-        Can help reduce artificial oscillations. 1.0 means no filtering, 
-        0.5 means keep half of the coefficients, etc., by default None
-
-    Returns
-    -------
-    torch.Tensor
-        The derivative of the input tensor.
+    def compute_multiple_derivatives(self, u, orders):
+        """
+        Compute multiple derivatives in a single FFT/IFFT call for better performance.
         
-    Notes
-    -----
-    When using Fourier continuation, the function automatically adjusts the 
-    domain length L to account for the extended signal. The result is cropped 
-    back to the original interval size.
-    
-    Warnings
-    --------
-    Consider using Fourier continuation if the input is not periodic (use_FC=True).
-    Fourier continuation and Fourier derivatives can be numerically unstable
-    for certain functions and parameter combinations.
-    """
-    
-    # Extend signal using Fourier continuation if specified
-    if use_FC == 'Legendre':
-        L = L * (u.shape[-1] + FC_n_additional_pts) / u.shape[-1]  # Define extended length
-        FC = FCLegendre(d=FC_d, n_additional_pts=FC_n_additional_pts).to(u.device)
-        u = FC(u, dim=1)
-    elif use_FC == 'Gram':
-        L = L * (u.shape[-1] + FC_n_additional_pts) / u.shape[-1]  # Define extended length
-        FC = FCGram(d=FC_d, n_additional_pts=FC_n_additional_pts).to(u.device)
-        u = FC(u, dim=1)
-    else:
-        warnings.warn("Consider using Fourier continuation if the input is not periodic (use_FC=True).", category=UserWarning)
+        Parameters
+        ----------
+        u : torch.Tensor
+            Input tensor. Expected shape: (..., length)
+        orders : list of int
+            List of derivative orders to compute.
+            Example: [1, 2, 3] for first, second, and third derivatives
+            
+        Returns
+        -------
+        list of torch.Tensor
+            List of computed derivatives in the same order as the input orders list
+        """
+        if u is None:
+            raise ValueError("Input tensor u is None")
 
-    nx = u.size(-1)
-    dx = L / nx
-    u_h = torch.fft.rfft(u, dim=-1)
-    k_x = torch.fft.rfftfreq(nx, d=dx, device=u_h.device) * (2 * torch.pi)
-    
-    if low_pass_filter_ratio is not None:
-        # Apply low-pass filter to Fourier coefficients
-        cutoff = int(u_h.shape[-1] * low_pass_filter_ratio)
-        u_h[..., cutoff:] = 0
-    
-    # Compute Fourier derivative
-    derivative_u_h = (1j * k_x)**order * u_h
-    
-    # Transform back to physical space
-    derivative_u = torch.fft.irfft(derivative_u_h, dim=-1, n=nx) 
+        L_x = self.L
+        nx = u.shape[-1]
+        u_clone = u.clone()
 
-    # Crop result if Fourier continuation was used
-    if use_FC:
-        derivative_u = derivative_u[..., FC_n_additional_pts//2: -FC_n_additional_pts//2]
+        # Apply Fourier continuation if specified
+        if self.use_FC == 'Legendre':
+            FC = FCLegendre(d=self.FC_d, n_additional_pts=self.FC_n_additional_pts).to(u_clone.device)
+            u_clone = FC(u_clone, dim=1)
+            L_x *= (nx + self.FC_n_additional_pts) / nx
+        elif self.use_FC == 'Gram':
+            FC = FCGram(d=self.FC_d, n_additional_pts=self.FC_n_additional_pts).to(u_clone.device)
+            u_clone = FC(u_clone, dim=1)
+            L_x *= (nx + self.FC_n_additional_pts) / nx
 
-    return derivative_u
+        # Update grid parameters after extension
+        nx = u_clone.shape[-1]
+        dx = L_x / nx
+
+        # FFT
+        u_h = torch.fft.rfft(u_clone, dim=-1)
+
+        # Frequency array
+        k_x = torch.fft.rfftfreq(nx, d=dx, device=u_h.device) * (2 * torch.pi)
+
+        # Apply low-pass filter if specified
+        if self.low_pass_filter_ratio is not None:
+            cutoff = int(u_h.shape[-1] * self.low_pass_filter_ratio)
+            u_h[..., cutoff:] = 0
+
+        # Compute derivatives
+        results = []
+        for order in orders:
+            derivative_u_h = ((1j * k_x) ** order) * u_h
+            results.append(derivative_u_h)
+
+        derivatives_ft = torch.stack(results, dim=0)
+        derivatives_real = torch.fft.irfft(derivatives_ft, dim=-1, n=nx)
+
+        # Crop result if Fourier continuation was used
+        if self.use_FC:
+            start_x = self.FC_n_additional_pts // 2
+            end_x = start_x + u.shape[-1]
+            derivatives_real = derivatives_real[..., start_x:end_x]
+
+        return [derivatives_real[i] for i in range(len(orders))]
+    
+    
+    def derivative(self, u, order=1):
+        """
+        Compute the 1D Fourier derivative of a given tensor.
+        
+        Parameters
+        ----------
+        u : torch.Tensor
+            Input tensor. Expected shape: (..., length)
+        order : int, optional
+            Order of the derivative, by default 1
+            
+        Returns
+        -------
+        torch.Tensor
+            The 1D derivative of the input tensor.
+        """
+        derivatives = self.compute_multiple_derivatives(u, [order])
+        return derivatives[0]
+    
+    
+
 
 
 class FourierDiff2D:
@@ -152,26 +185,26 @@ class FourierDiff2D:
 
         L_x, L_y = self.L[0], self.L[1]
         nx, ny = u.shape[-2], u.shape[-1]
-        u_work = u.clone()
+        u_clone = u.clone()
 
         # Apply Fourier continuation if specified
         if self.use_FC == 'Legendre':
-            FC = FCLegendre(d=self.FC_d, n_additional_pts=self.FC_n_additional_pts).to(u_work.device)
-            u_work = FC.extend2d(u_work)
+            FC = FCLegendre(d=self.FC_d, n_additional_pts=self.FC_n_additional_pts).to(u_clone.device)
+            u_clone = FC.extend2d(u_clone)
             L_x *= (nx + self.FC_n_additional_pts) / nx
             L_y *= (ny + self.FC_n_additional_pts) / ny
         elif self.use_FC == 'Gram':
-            FC = FCGram(d=self.FC_d, n_additional_pts=self.FC_n_additional_pts).to(u_work.device)
-            u_work = FC.extend2d(u_work)
+            FC = FCGram(d=self.FC_d, n_additional_pts=self.FC_n_additional_pts).to(u_clone.device)
+            u_clone = FC.extend2d(u_clone)
             L_x *= (nx + self.FC_n_additional_pts) / nx
             L_y *= (ny + self.FC_n_additional_pts) / ny
 
         # Update grid parameters after extension
-        nx, ny = u_work.shape[-2], u_work.shape[-1]
+        nx, ny = u_clone.shape[-2], u_clone.shape[-1]
         dx, dy = L_x / nx, L_y / ny
 
         # FFT with transposed axes (shape -> (ny, nx))
-        u_h = torch.fft.fft2(u_work.transpose(-2, -1), dim=(-2, -1))
+        u_h = torch.fft.fft2(u_clone.transpose(-2, -1), dim=(-2, -1))
 
         # Frequency arrays
         k_x = torch.fft.fftfreq(nx, d=dx, device=u_h.device) * (2 * torch.pi)
@@ -447,29 +480,29 @@ class FourierDiff3D:
 
         L_x, L_y, L_z = self.L[0], self.L[1], self.L[2]
         nx, ny, nz = u.shape[-3], u.shape[-2], u.shape[-1]
-        u_work = u.clone()
+        u_clone = u.clone()
 
         # Apply Fourier continuation if specified
         if self.use_FC == 'Legendre':
-            FC = FCLegendre(d=self.FC_d, n_additional_pts=self.FC_n_additional_pts).to(u_work.device)
-            u_work = FC.extend3d(u_work)
+            FC = FCLegendre(d=self.FC_d, n_additional_pts=self.FC_n_additional_pts).to(u_clone.device)
+            u_clone = FC.extend3d(u_clone)
             L_x *= (nx + self.FC_n_additional_pts) / nx
             L_y *= (ny + self.FC_n_additional_pts) / ny
             L_z *= (nz + self.FC_n_additional_pts) / nz
         elif self.use_FC == 'Gram':
-            FC = FCGram(d=self.FC_d, n_additional_pts=self.FC_n_additional_pts).to(u_work.device)
-            u_work = FC.extend3d(u_work)
+            FC = FCGram(d=self.FC_d, n_additional_pts=self.FC_n_additional_pts).to(u_clone.device)
+            u_clone = FC.extend3d(u_clone)
             L_x *= (nx + self.FC_n_additional_pts) / nx
             L_y *= (ny + self.FC_n_additional_pts) / ny
             L_z *= (nz + self.FC_n_additional_pts) / nz
 
         # Update grid parameters after extension
-        nx, ny, nz = u_work.shape[-3], u_work.shape[-2], u_work.shape[-1]
+        nx, ny, nz = u_clone.shape[-3], u_clone.shape[-2], u_clone.shape[-1]
         dx, dy, dz = L_x / nx, L_y / ny, L_z / nz
 
         # FFT with permuted axes (shape -> (nz, ny, nx))
-        u_work_permuted = u_work.permute(*range(u_work.ndim-3), -1, -2, -3)
-        u_h = torch.fft.fftn(u_work_permuted, dim=(-3, -2, -1))
+        u_clone_permuted = u_clone.permute(*range(u_clone.ndim-3), -1, -2, -3)
+        u_h = torch.fft.fftn(u_clone_permuted, dim=(-3, -2, -1))
 
         # Frequency arrays
         k_x = torch.fft.fftfreq(nx, d=dx, device=u_h.device) * (2 * torch.pi)
