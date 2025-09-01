@@ -104,7 +104,11 @@ def LossSelfconsistency(
 
         if group_action is not None:
             x_small, y_small = group_action(x_small, y_small)
-        y_small_ = model(x_small, re)
+
+        if type == "darcy":
+            y_small_ = model(x_small)
+        else:
+            y_small_ = model(x_small, re)
 
         return loss_fn(y_small_, y_small)
 
