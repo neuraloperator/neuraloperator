@@ -9,7 +9,7 @@ An example of usage of Finite Differences
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
-from neuralop.losses.finite_diff import central_diff_1d, FiniteDiff2D, FiniteDiff3D
+from neuralop.losses.finite_diff import central_diff_1d, FiniteDiff1D, FiniteDiff2D, FiniteDiff3D
 
 # %%
 # 1D Finite Difference Examples
@@ -29,12 +29,13 @@ f_1d = torch.exp(-x) * torch.sin(x)
 # %%
 # Differentiate the 1D signal 
 # ----------------------------------------------------------------
-# We use the central_diff_1d function
+# We use the FiniteDiff1D class
 h = L_x / nx
 
 # Compute derivatives
-df_dx = central_diff_1d(f_1d, h=h, periodic_in_x=False)
-d2f_dx2 = central_diff_1d(df_dx, h=h, periodic_in_x=False)
+fd1d = FiniteDiff1D(h=h, periodic_in_x=False)
+df_dx = fd1d.dx(f_1d)
+d2f_dx2 = fd1d.dx(f_1d, order=2)
 
 # Expected analytical results for f(x) = exp(-x) * sin(x)
 df_dx_expected = torch.exp(-x) * (torch.cos(x) - torch.sin(x))  # ∂f/∂x 
