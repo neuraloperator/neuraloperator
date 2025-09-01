@@ -85,7 +85,7 @@ df2dx2 = fourier_derivative_1d(f, order=2, L=L, use_FC='Legendre', FC_d=4, FC_n_
 
      
 # %%
-# Plot the results for sin(16x)-cos(8x)
+# Plot the results for sin(3x)-cos(x)
 # --------------------------------------
 plt.figure()
 plt.plot(x_np, dfdx[0].squeeze().cpu().numpy(), label='Fourier dfdx')
