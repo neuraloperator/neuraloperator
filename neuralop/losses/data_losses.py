@@ -10,7 +10,7 @@ from typing import List
 
 import torch
 
-from .finite_diff import central_diff_1d, central_diff_2d, central_diff_3d
+from .finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, FiniteDiff2D, FiniteDiff3D
 
 #loss function with rel/abs Lp loss
 class LpLoss(object):
@@ -280,8 +280,9 @@ class H1Loss(object):
             dict_x[0] = torch.flatten(x, start_dim=-2)
             dict_y[0] = torch.flatten(y, start_dim=-2)
 
-            x_x, x_y = central_diff_2d(x, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
-            y_x, y_y = central_diff_2d(y, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
+            fd2d = FiniteDiff2D(h=quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
+            x_x, x_y = fd2d.dx(x), fd2d.dy(x)
+            y_x, y_y = fd2d.dx(y), fd2d.dy(y)
 
             dict_x[1] = torch.flatten(x_x, start_dim=-2)
             dict_x[2] = torch.flatten(x_y, start_dim=-2)
@@ -293,8 +294,9 @@ class H1Loss(object):
             dict_x[0] = torch.flatten(x, start_dim=-3)
             dict_y[0] = torch.flatten(y, start_dim=-3)
 
-            x_x, x_y, x_z = central_diff_3d(x, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
-            y_x, y_y, y_z = central_diff_3d(y, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
+            fd3d = FiniteDiff3D(h=quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
+            x_x, x_y, x_z = fd3d.dx(x), fd3d.dy(x), fd3d.dz(x)
+            y_x, y_y, y_z = fd3d.dx(y), fd3d.dy(y), fd3d.dz(y)
 
             dict_x[1] = torch.flatten(x_x, start_dim=-3)
             dict_x[2] = torch.flatten(x_y, start_dim=-3)
@@ -472,8 +474,13 @@ class HdivLoss(object):
         - True: periodic in y (default)
         - False: non-periodic in y with forward/backward differences at boundaries
         by default True
+    periodic_in_z : bool, optional
+        whether to use periodic boundary conditions in z-direction when computing finite differences:
+        - True: periodic in z (default)
+        - False: non-periodic in z with forward/backward differences at boundaries
+        by default True
     """
-    def __init__(self, d=1, measure=1., reduction='sum', eps=1e-8, periodic_in_x=True, periodic_in_y=True):
+    def __init__(self, d=1, measure=1., reduction='sum', eps=1e-8, periodic_in_x=True, periodic_in_y=True, periodic_in_z=True):
         super().__init__()
 
         assert d > 0 and d < 4, "Currently only implemented for 1, 2, and 3-D."
@@ -481,6 +488,7 @@ class HdivLoss(object):
         self.d = d
         self.periodic_in_x = periodic_in_x
         self.periodic_in_y = periodic_in_y
+        self.periodic_in_z = periodic_in_z
         
         self.eps = eps
         
@@ -528,8 +536,9 @@ class HdivLoss(object):
             dict_x[0] = torch.flatten(x, start_dim=-2)
             dict_y[0] = torch.flatten(y, start_dim=-2)
 
-            x_x, x_y = central_diff_2d(x, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
-            y_x, y_y = central_diff_2d(y, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
+            fd2d = FiniteDiff2D(h=quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
+            x_x, x_y = fd2d.dx(x), fd2d.dy(x)
+            y_x, y_y = fd2d.dx(y), fd2d.dy(y)
 
             div_x = torch.flatten(x_x + x_y, start_dim=-2)
             div_y = torch.flatten(y_x + y_y, start_dim=-2)
@@ -538,9 +547,10 @@ class HdivLoss(object):
             dict_x[0] = torch.flatten(x, start_dim=-3)
             dict_y[0] = torch.flatten(y, start_dim=-3)
 
-            x_x, x_y, x_z = central_diff_3d(x, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
-            y_x, y_y, y_z = central_diff_3d(y, quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
-
+            fd3d = FiniteDiff3D(h=quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
+            x_x, x_y, x_z = fd3d.dx(x), fd3d.dy(x), fd3d.dz(x)
+            y_x, y_y, y_z = fd3d.dx(y), fd3d.dy(y), fd3d.dz(y)
+            
             div_x = torch.flatten(x_x + x_y + x_z, start_dim=-3)
             div_y = torch.flatten(y_x + y_y + y_z, start_dim=-3)
         
