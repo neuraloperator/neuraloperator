@@ -4,7 +4,7 @@ import pytest
 from torch.testing import assert_close
 
 from ..data_losses import LpLoss, H1Loss, HdivLoss
-from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd, FiniteDiff2D, FiniteDiff3D
+from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd, FiniteDiff1D, FiniteDiff2D, FiniteDiff3D
 from ..fourier_diff import fourier_derivative_1d, FourierDiff2D, FourierDiff3D
 from neuralop.layers.embeddings import regular_grid_nd
 
@@ -257,6 +257,36 @@ def test_finite_diff_2d(periodic_x, periodic_y):
     
     # Test that laplacian equals sum of second derivatives
     assert_close(laplacian, d2f_dx2 + d2f_dy2)
+
+
+@pytest.mark.parametrize("periodic_x", [True, False])
+def test_finite_diff_1d(periodic_x):
+    """Test the FiniteDiff1D class with various boundary conditions."""
+    
+    # Create a 1D test function: f(x) = cos(x) - x
+    nx = 64
+    x = torch.linspace(0, 2*torch.pi, nx, dtype=torch.float64)
+    f = torch.cos(x) - x
+    
+    # Initialize FiniteDiff1D with specified boundary conditions
+    fd1d = FiniteDiff1D(h=2*torch.pi/nx, periodic_in_x=periodic_x)
+    
+    # Test first order derivatives
+    df_dx = fd1d.dx(f)
+    
+    # Test second order derivatives
+    d2f_dx2 = fd1d.dx(f, order=2)
+    
+    # Basic shape assertions
+    assert df_dx.shape == f.shape
+    assert d2f_dx2.shape == f.shape
+    
+    # Test that first derivative is approximately correct for f(x) = cos(x) - x
+    # df/dx ≈ -sin(x) - 1 for f(x) = cos(x) - x
+    if not periodic_x:
+        # For non-periodic, interior points should be close to expected value
+        expected_df_dx = -torch.sin(x[2:-2]) - 1.0
+        assert_close(df_dx[2:-2], expected_df_dx, atol=0.01, rtol=0.1)
 
 
 @pytest.mark.parametrize("periodic_x", [True, False])

@@ -3,61 +3,95 @@ import torch
 finite_diff.py implements utilities for computing derivatives via finite-difference method
 """
 
-#x: (*, s)
-#y: (*, s)
-def central_diff_1d(x, h, periodic_in_x=True):
-    """central_diff_1d computes the first spatial derivative
-    of x using central finite-difference 
-
-    This function computes df/dx using the central difference formula:
-    df/dx \approx (f(x+h) - f(x-h)) / (2h)
+class FiniteDiff1D:
+    """
+    A comprehensive class for computing 1D finite differences with boundary handling.
     
-    For periodic domains (periodic_in_x=True), the function uses torch.roll to handle
-    boundary wrapping, treating the domain as periodic.
-    
-    For non-periodic domains (periodic_in_x=False), the function uses 3rd-order
-    one-sided differences at the boundaries for improved accuracy.
-
-    Parameters
-    ----------
-    x : torch.Tensor
-        input data on a regular 1d grid, such that
-        x[i] = f(x_i)
-    h : float
-        discretization size of input x
-    periodic_in_x : bool, optional
-        whether to use periodic boundary conditions:
-        - True: periodic domain (default)
-        - False: non-periodic domain with 3rd-order one-sided differences at boundaries
-        by default True
-
-    Returns
-    -------
-    dx : torch.Tensor
-        output tensor of df(x)/dx at each point
+    This class provides methods for computing derivatives of 1D fields using central finite differences.
     """
     
-    if periodic_in_x:
-        # Periodic case: use torch.roll for boundary wrapping
-        # Central difference: (f_{i+1} - f_{i-1})/(2h)
-        dx = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1)) / (2.0 * h)
-        
-    else:
-        # Non-periodic case: handle boundaries separately
-        dx = torch.zeros_like(x)
-        
-        # Interior points: Second-order central differences
-        # (f_{i+1} - f_{i-1})/(2h)
-        dx[..., 1:-1] = (x[..., 2:] - x[..., :-2]) / (2.0 * h)
-        
-        # Left boundary: 3rd-order forward differences (-11f_{0} + 18f_{1} - 9f_{2} + 2f_{3})/(6h)
-        dx[..., 0] = (-11*x[..., 0] + 18*x[..., 1] - 9*x[..., 2] + 2*x[..., 3]) / (6.0 * h)
-        
-        # Right boundary: 3rd-order backward differences (-2f_{n-4} + 9f_{n-3} - 18f_{n-2} + 11f_{n-1})/(6h)
-        dx[..., -1] = (-2*x[..., -4] + 9*x[..., -3] - 18*x[..., -2] + 11*x[..., -1]) / (6.0 * h)
+    def __init__(self, h=1.0, periodic_in_x=True):
+        """
+        Parameters
+        ----------
+        h : float, optional
+            Grid spacing, by default 1.0
+        periodic_in_x : bool, optional
+            Whether to use periodic boundary conditions, by default True
+        """
+        self.h = h
+        self.periodic_in_x = periodic_in_x
     
-    return dx
-
+    def dx(self, u, order=1):
+        """
+        Compute derivative with respect to x.
+        
+        Parameters
+        ----------
+        u : torch.Tensor
+            Input tensor
+        order : int, optional
+            Order of the derivative, by default 1
+            
+        Returns
+        -------
+        torch.Tensor
+            Derivative with respect to x
+        """
+        if order == 1:
+            return self._dx_1st(u)
+        elif order == 2:
+            return self._dx_2nd(u)
+        else:
+            raise ValueError("Only 1st and 2nd order derivatives currently supported")
+    
+    def _dx_1st(self, u):
+        """First order derivative with respect to x."""
+        
+        if self.periodic_in_x:
+            # Periodic case: use torch.roll for boundary wrapping
+            # Central difference: (f_{i+1} - f_{i-1})/(2h)
+            dx = (torch.roll(u, -1, dims=-1) - torch.roll(u, 1, dims=-1)) / (2.0 * self.h)
+            
+        else:
+            # Non-periodic case: handle boundaries separately
+            dx = torch.zeros_like(u)
+            
+            # Interior points: Second-order central differences
+            # (f_{i+1} - f_{i-1})/(2h)
+            dx[..., 1:-1] = (u[..., 2:] - u[..., :-2]) / (2.0 * self.h)
+            
+            # Left boundary: 3rd-order forward differences (-11f_{0} + 18f_{1} - 9f_{2} + 2f_{3})/(6h)
+            dx[..., 0] = (-11*u[..., 0] + 18*u[..., 1] - 9*u[..., 2] + 2*u[..., 3]) / (6.0 * self.h)
+            
+            # Right boundary: 3rd-order backward differences (-2f_{n-4} + 9f_{n-3} - 18f_{n-2} + 11f_{n-1})/(6h)
+            dx[..., -1] = (-2*u[..., -4] + 9*u[..., -3] - 18*u[..., -2] + 11*u[..., -1]) / (6.0 * self.h)
+        
+        return dx
+    
+    def _dx_2nd(self, u):
+        """Second order derivative with respect to x."""
+        
+        if self.periodic_in_x:
+            # Periodic case: use torch.roll for boundary wrapping
+            # Central difference: (f_{i+1} - 2f_{i} + f_{i-1})/(h²)
+            dxx = (torch.roll(u, -1, dims=-1) - 2*u + torch.roll(u, 1, dims=-1)) / (self.h**2)
+        
+        else:
+            # Non-periodic case: handle boundaries separately
+            dxx = torch.zeros_like(u)
+            
+            # Interior points: Second-order central differences
+            # (f_{i+1} - 2f_{i} + f_{i-1})/(h²)
+            dxx[..., 1:-1] = (u[..., 2:] - 2*u[..., 1:-1] + u[..., :-2]) / (self.h**2)
+            
+            # Boundary points: 3rd-order one-sided differences
+            # Left boundary: 3rd-order forward differences (2f_{0} - 5f_{1} + 4f_{2} - f_{3})/h²
+            dxx[..., 0] = (2*u[..., 0] - 5*u[..., 1] + 4*u[..., 2] - u[..., 3]) / (self.h**2)
+            # Right boundary: 3rd-order backward differences (-f_{n-4} + 4f_{n-3} - 5f_{n-2} + 2f_{n-1})/h²
+            dxx[..., -1] = (-u[..., -4] + 4*u[..., -3] - 5*u[..., -2] + 2*u[..., -1]) / (self.h**2)
+        
+        return dxx
 
 
 class FiniteDiff2D:
@@ -657,6 +691,15 @@ class FiniteDiff3D:
 
 
 # Backward compatibility functions
+def central_diff_1d(x, h, periodic_in_x=True):
+    """
+    Backward compatibility function for central_diff_1d.
+    Creates a FiniteDiff1D instance and returns dx.
+    """
+    fd1d = FiniteDiff1D(h=h, periodic_in_x=periodic_in_x)
+    return fd1d.dx(x)
+
+
 def central_diff_2d(x, h, periodic_in_x=True, periodic_in_y=True):
     """
     Backward compatibility function for central_diff_2d.

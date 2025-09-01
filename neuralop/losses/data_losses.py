@@ -10,7 +10,7 @@ from typing import List
 
 import torch
 
-from .finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, FiniteDiff2D, FiniteDiff3D
+from .finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, FiniteDiff1D, FiniteDiff2D, FiniteDiff3D
 
 #loss function with rel/abs Lp loss
 class LpLoss(object):
@@ -270,8 +270,9 @@ class H1Loss(object):
             dict_x[0] = x
             dict_y[0] = y
 
-            x_x = central_diff_1d(x, quadrature[0], periodic_in_x=self.periodic_in_x)
-            y_x = central_diff_1d(y, quadrature[0], periodic_in_x=self.periodic_in_x)
+            fd1d = FiniteDiff1D(h=quadrature[0], periodic_in_x=self.periodic_in_x)
+            x_x = fd1d.dx(x)
+            y_x = fd1d.dx(y)
 
             dict_x[1] = x_x
             dict_y[1] = y_x
@@ -529,8 +530,9 @@ class HdivLoss(object):
             dict_x[0] = x
             dict_y[0] = y
 
-            div_x = central_diff_1d(x, quadrature[0], periodic_in_x=self.periodic_in_x)
-            div_y = central_diff_1d(y, quadrature[0], periodic_in_x=self.periodic_in_x)
+            fd1d = FiniteDiff1D(h=quadrature[0], periodic_in_x=self.periodic_in_x)
+            div_x = fd1d.dx(x)
+            div_y = fd1d.dx(y)
  
         elif self.d == 2:
             dict_x[0] = torch.flatten(x, start_dim=-2)
