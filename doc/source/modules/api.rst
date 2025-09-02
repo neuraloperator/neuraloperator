@@ -32,16 +32,6 @@ We have a generic interface that works for any dimension, which is inferred base
 
     FNO
 
-We also have dimension-specific classes:
-
-.. autosummary::
-    :toctree: generated
-    :template: class.rst
-
-    FNO1d
-    FNO2d
-    FNO3d
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _tfno_api:
@@ -55,16 +45,6 @@ N-D version:
     :template: class.rst
 
     TFNO
-
-Dimension-specific classes:
-
-.. autosummary::
-    :toctree: generated
-    :template: class.rst
-
-    TFNO1d
-    TFNO2d
-    TFNO3d
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
