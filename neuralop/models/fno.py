@@ -426,3 +426,7 @@ def partialclass(new_name, cls, *args, **kwargs):
 
 
 TFNO = partialclass("TFNO", FNO, factorization="Tucker")
+# Tucker Tensorized FNO
+# uses a Tucker factorization of the weights. 
+# The forward pass is efficient by contracting directly the inputs with the factors of the decomposition. 
+# The Fourier layers will have a fraction of the parameters of an equivalent, dense FNO
