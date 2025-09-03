@@ -122,6 +122,7 @@ class PTDataset:
         train_input_indices = [slice(0, n_train, None)] + [slice(None, None, rate)\
                                                            for rate in input_subsampling_rate]
         train_input_indices.insert(channel_dim, slice(None))
+        train_input_indices = tuple(train_input_indices)
         x_train = x_train[train_input_indices]
         
         y_train = data["y"].clone()
@@ -145,6 +146,7 @@ class PTDataset:
         # Construct full indices along which to grab Y
         train_output_indices = [slice(0, n_train, None)] + [slice(None, None, rate) for rate in output_subsampling_rate]
         train_output_indices.insert(channel_dim, slice(None))
+        train_output_indices = tuple(train_output_indices)
         y_train = y_train[train_output_indices]
         
         del data
@@ -199,8 +201,9 @@ class PTDataset:
             if channels_squeezed:
                 x_test = x_test.unsqueeze(channel_dim)
             # optionally subsample along data indices
-            test_input_indices = [slice(0, n_test, None)] + [slice(None, None, rate) for rate in input_subsampling_rate] 
+            test_input_indices = [slice(0, n_test, None)] + [slice(None, None, rate) for rate in input_subsampling_rate]
             test_input_indices.insert(channel_dim, slice(None))
+            test_input_indices = tuple(test_input_indices)
             x_test = x_test[test_input_indices]
             
             y_test = data["y"].clone()
@@ -208,6 +211,7 @@ class PTDataset:
                 y_test = y_test.unsqueeze(channel_dim)
             test_output_indices = [slice(0, n_test, None)] + [slice(None, None, rate) for rate in output_subsampling_rate] 
             test_output_indices.insert(channel_dim, slice(None))
+            test_output_indices = tuple(test_output_indices)
             y_test = y_test[test_output_indices]
 
             del data
