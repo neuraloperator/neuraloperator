@@ -22,16 +22,17 @@ class BurgersDatasetConfig(ConfigBase):
 
 class BurgersOptConfig(OptimizationConfig):
     n_epochs: int = 10000
-    training_loss: List[str] = ["equation", "ic"] # ["equation", "l2"... or "ic"...]
+    training_loss: List[str] = ["equation", "ic", "l2"] # ["equation", "l2"... or "ic"...]
     testing_loss: str = "l2"
     learning_rate: float = 1e-4
     weight_decay: float = 1e-4
     eval_interval: int = 1
-    mixed_precision: False
+    mixed_precision: bool = False
     scheduler: str = 'ReduceLROnPlateau' # Or 'CosineAnnealingLR' OR 'ReduceLROnPlateau'
     scheduler_patience: int = 100 # For ReduceLROnPlateau only
     step_size: int = 60
     gamma: float = 0.5
+    loss_aggregator: str = 'relobralo'  # 'relobralo', 'softadapt'
 
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None

@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 from torch.autograd import grad
 
-from .data_losses import central_diff_2d
+from .finite_diff import central_diff_2d
 
 
 class BurgersEqnLoss(object):
@@ -32,7 +32,7 @@ class BurgersEqnLoss(object):
         dx = self.domain_length[1] / nx
 
         # du/dt and du/dx
-        dudt, dudx = central_diff_2d(u, [dt, dx], fix_x_bnd=True, fix_y_bnd=True)
+        dudt, dudx = central_diff_2d(u, [dt, dx], periodic_in_x=False, periodic_in_y=False)
 
         # d^2u/dxx
         dudxx = (
@@ -219,6 +219,6 @@ class PoissonEqnLoss(object):
             interior_loss = self.interior_weight * self.interior_loss(out['domain'], **kwargs)
             bc_loss = self.boundary_weight * self.boundary_loss(out['boundary'], y=y['boundary'],  **kwargs)
         else:
-            interior_loss = self.interior_weight + self.interior_loss(out, **kwargs)
+            interior_loss = self.interior_weight * self.interior_loss(out, **kwargs)
             bc_loss = self.boundary_weight * self.boundary_loss(out, y=y, **kwargs)
         return interior_loss + bc_loss

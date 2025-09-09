@@ -13,12 +13,12 @@ from copy import deepcopy
 # query points is [sdf_query_resolution] * 3 (taken from config ahmed)
 # Read the configuration
 config_name = 'cfd'
-from zencfg import cfg_from_commandline
+from zencfg import make_config_from_cli
 import sys 
 sys.path.insert(0, '../')
 from config.gino_carcfd_config import Default
 
-config = cfg_from_commandline(Default)
+config = make_config_from_cli(Default)
 config = config.to_dict()
 
 

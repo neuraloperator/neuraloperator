@@ -19,12 +19,12 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 
 # Read the configuration
 config_name = "default"
-from zencfg import cfg_from_commandline
+from zencfg import make_config_from_cli
 import sys 
 sys.path.insert(0, '../')
 from config.uqno_config import Default
 
-config = cfg_from_commandline(Default)
+config = make_config_from_cli(Default)
 config = config.to_dict()
 
 
@@ -41,15 +41,10 @@ if config.wandb.log and is_logger:
         wandb_name = "_".join(
             f"{var}"
             for var in [
-                config_name,
+                config.model.model_arch,
                 config.model.n_layers,
+                config.model.n_modes,
                 config.model.hidden_channels,
-                config.model.n_modes_width,
-                config.model.n_modes_height,
-                config.model.factorization,
-                config.model.rank,
-                config.patching.levels,
-                config.patching.padding,
             ]
         )
     wandb_args =  dict(

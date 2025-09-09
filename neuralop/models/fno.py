@@ -17,18 +17,18 @@ from .base_model import BaseModel
 
 class FNO(BaseModel, name='FNO'):
     """N-Dimensional Fourier Neural Operator. The FNO learns a mapping between
-    spaces of functions discretized over regular grids using Fourier convolutions, 
+    spaces of functions discretized over regular grids using Fourier convolutions,
     as described in [1]_.
-    
-    The key component of an FNO is its SpectralConv layer (see 
-    ``neuralop.layers.spectral_convolution``), which is similar to a standard CNN 
+
+    The key component of an FNO is its SpectralConv layer (see
+    ``neuralop.layers.spectral_convolution``), which is similar to a standard CNN
     conv layer but operates in the frequency domain.
 
     For a deeper dive into the FNO architecture, refer to :ref:`fno_intro`.
 
     Parameters
     ----------
-    n_modes : Tuple[int]
+    n_modes : Tuple[int, ...]
         number of modes to keep in Fourier Layer, along each dimension
         The dimensionality of the FNO is inferred from ``len(n_modes)``
     in_channels : int
@@ -46,7 +46,7 @@ class FNO(BaseModel, name='FNO'):
     ------------------
     lifting_channel_ratio : int, optional
         ratio of lifting channels to hidden_channels, by default 2
-        The number of liting channels in the lifting block of the FNO is
+        The number of lifting channels in the lifting block of the FNO is
         lifting_channel_ratio * hidden_channels (e.g. default 2 * hidden_channels)
     projection_channel_ratio : int, optional
         ratio of projection channels to hidden_channels, by default 2
@@ -56,7 +56,7 @@ class FNO(BaseModel, name='FNO'):
         Positional embedding to apply to last channels of raw input
         before being passed through the FNO. Defaults to "grid"
 
-        * If "grid", appends a grid positional embedding with default settings to 
+        * If "grid", appends a grid positional embedding with default settings to
         the last channels of raw input. Assumes the inputs are discretized
         over a grid with entry [0,0,...] at the origin and side lengths of 1.
 
@@ -84,7 +84,7 @@ class FNO(BaseModel, name='FNO'):
         Type of skip connection to use in FNO layers, by default 'linear'
     resolution_scaling_factor : Union[Number, List[Number]], optional
         layer-wise factor by which to scale the domain resolution of function, by default None
-        
+
         * If a single number n, scales resolution by n at each layer
 
         * if a list of numbers [n_0, n_1,...] scales layer i's resolution by n_i.
@@ -93,17 +93,16 @@ class FNO(BaseModel, name='FNO'):
         To vary the percentage of padding used along each input dimension,
         pass in a list of percentages e.g. [p1, p2, ..., pN] such that
         p1 corresponds to the percentage of padding along dim 1, etc.
-    domain_padding_mode : Literal ['symmetric', 'one-sided'], optional
-        How to perform domain padding, by default 'symmetric'
+
     fno_block_precision : str {'full', 'half', 'mixed'}, optional
         precision mode in which to perform spectral convolution, by default "full"
     stabilizer : str {'tanh'} | None, optional
         whether to use a tanh stabilizer in FNO block, by default None
 
         Note: stabilizer greatly improves performance in the case
-        `fno_block_precision='mixed'`. 
+        `fno_block_precision='mixed'`.
 
-    max_n_modes : Tuple[int] | None, optional
+    max_n_modes : Tuple[int, ...] | None, optional
 
         * If not None, this allows to incrementally increase the number of
         modes in Fourier domain during training. Has to verify n <= N
@@ -124,21 +123,21 @@ class FNO(BaseModel, name='FNO'):
         Modes to not factorize, by default False
     implementation : str {'factorized', 'reconstructed'}, optional
 
-        * If 'factorized', implements tensor contraction with the individual factors of the decomposition 
-        
+        * If 'factorized', implements tensor contraction with the individual factors of the decomposition
+
         * If 'reconstructed', implements with the reconstructed full tensorized weight.
     decomposition_kwargs : dict, optional
-        extra kwargs for tensor decomposition (see `tltorch.FactorizedTensor`), by default dict()
+        extra kwargs for tensor decomposition (see `tltorch.FactorizedTensor`), by default {}
     separable : bool, optional (**DEACTIVATED**)
-        if True, use a depthwise separable spectral convolution, by default False   
+        if True, use a depthwise separable spectral convolution, by default False
     preactivation : bool, optional (**DEACTIVATED**)
         whether to compute FNO forward pass with resnet-style preactivation, by default False
     conv_module : nn.Module, optional
         module to use for FNOBlock's convolutions, by default SpectralConv
-    
+
     Examples
     ---------
-    
+
     >>> from neuralop.models import FNO
     >>> model = FNO(n_modes=(12,12), in_channels=1, out_channels=1, hidden_channels=64)
     >>> model
@@ -156,14 +155,14 @@ class FNO(BaseModel, name='FNO'):
     -----------
     .. [1] :
 
-    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
+    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
         Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
 
     """
 
     def __init__(
         self,
-        n_modes: Tuple[int],
+        n_modes: Tuple[int, ...],
         in_channels: int,
         out_channels: int,
         hidden_channels: int,
@@ -181,24 +180,25 @@ class FNO(BaseModel, name='FNO'):
         fno_skip: Literal['linear', 'identity', 'soft-gating']="linear",
         resolution_scaling_factor: Union[Number, List[Number]]=None,
         domain_padding: Union[Number, List[Number]]=None,
-        domain_padding_mode: Literal['symmetric', 'one-sided']="symmetric",
         fno_block_precision: str="full",
         stabilizer: str=None,
-        max_n_modes: Tuple[int]=None,
+        max_n_modes: Tuple[int, ...]=None,
         factorization: str=None,
         rank: float=1.0,
         fixed_rank_modes: bool=False,
         implementation: str="factorized",
-        decomposition_kwargs: dict=dict(),
+        decomposition_kwargs: dict=None,
         separable: bool=False,
         preactivation: bool=False,
         conv_module: nn.Module=SpectralConv,
-        **kwargs
+        **kwargs,
     ):
-        
+
+        if decomposition_kwargs is None:
+            decomposition_kwargs = {}
         super().__init__()
         self.n_dim = len(n_modes)
-        
+
         # n_modes is a special property - see the class' property for underlying mechanism
         # When updated, change should be reflected in fno blocks
         self._n_modes = n_modes
@@ -227,11 +227,11 @@ class FNO(BaseModel, name='FNO'):
         self.preactivation = preactivation
         self.complex_data = complex_data
         self.fno_block_precision = fno_block_precision
-        
+
         if positional_embedding == "grid":
             spatial_grid_boundaries = [[0., 1.]] * self.n_dim
             self.positional_embedding = GridEmbeddingND(in_channels=self.in_channels,
-                                                        dim=self.n_dim, 
+                                                        dim=self.n_dim,
                                                         grid_boundaries=spatial_grid_boundaries)
         elif isinstance(positional_embedding, GridEmbedding2D):
             if self.n_dim == 2:
@@ -240,25 +240,24 @@ class FNO(BaseModel, name='FNO'):
                 raise ValueError(f'Error: expected {self.n_dim}-d positional embeddings, got {positional_embedding}')
         elif isinstance(positional_embedding, GridEmbeddingND):
             self.positional_embedding = positional_embedding
-        elif positional_embedding == None:
+        elif positional_embedding is None:
             self.positional_embedding = None
         else:
             raise ValueError(f"Error: tried to instantiate FNO positional embedding with {positional_embedding},\
                               expected one of \'grid\', GridEmbeddingND")
-        
+
         if domain_padding is not None and (
             (isinstance(domain_padding, list) and sum(domain_padding) > 0)
             or (isinstance(domain_padding, (float, int)) and domain_padding > 0)
         ):
             self.domain_padding = DomainPadding(
                 domain_padding=domain_padding,
-                padding_mode=domain_padding_mode,
                 resolution_scaling_factor=resolution_scaling_factor,
             )
         else:
             self.domain_padding = None
 
-        self.domain_padding_mode = domain_padding_mode
+
         self.complex_data = self.complex_data
 
         if resolution_scaling_factor is not None:
@@ -293,7 +292,7 @@ class FNO(BaseModel, name='FNO'):
             n_layers=n_layers,
             **kwargs
         )
-        
+
         # if adding a positional embedding, add those channels to lifting
         lifting_in_channels = self.in_channels
         if self.positional_embedding is not None:
@@ -336,14 +335,14 @@ class FNO(BaseModel, name='FNO'):
 
     def forward(self, x, output_shape=None, **kwargs):
         """FNO's forward pass
-        
+
         1. Applies optional positional encoding
 
         2. Sends inputs through a lifting layer to a high-dimensional latent space
 
         3. Applies optional domain padding to high-dimensional intermediate function representation
 
-        4. Applies `n_layers` Fourier/FNO layers in sequence (SpectralConvolution + skip connections, nonlinearity) 
+        4. Applies `n_layers` Fourier/FNO layers in sequence (SpectralConvolution + skip connections, nonlinearity)
 
         5. If domain padding was applied, domain padding is removed
 
@@ -353,10 +352,10 @@ class FNO(BaseModel, name='FNO'):
         ----------
         x : tensor
             input tensor
-        
+
         output_shape : {tuple, tuple list, None}, default is None
             Gives the option of specifying the exact output shape for odd shaped inputs.
-            
+
             * If None, don't specify an output shape
 
             * If tuple, specifies the output-shape of the **last** FNO Block
@@ -372,7 +371,7 @@ class FNO(BaseModel, name='FNO'):
         # append spatial pos embedding if set
         if self.positional_embedding is not None:
             x = self.positional_embedding(x)
-        
+
         x = self.lifting(x)
 
         if self.domain_padding is not None:
@@ -434,9 +433,8 @@ class FNO1d(FNO):
         rank=1.0,
         fixed_rank_modes=False,
         implementation="factorized",
-        decomposition_kwargs=dict(),
+        decomposition_kwargs=None,
         domain_padding=None,
-        domain_padding_mode="symmetric",
         **kwargs
     ):
         super().__init__(
@@ -465,7 +463,6 @@ class FNO1d(FNO):
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
-            domain_padding_mode=domain_padding_mode,
         )
         self.n_modes_height = n_modes_height
 
@@ -509,11 +506,11 @@ class FNO2d(FNO):
         rank=1.0,
         fixed_rank_modes=False,
         implementation="factorized",
-        decomposition_kwargs=dict(),
+        decomposition_kwargs=None,
         domain_padding=None,
-        domain_padding_mode="symmetric",
-        **kwargs
+        **kwargs,
     ):
+
         super().__init__(
             n_modes=(n_modes_height, n_modes_width),
             hidden_channels=hidden_channels,
@@ -540,7 +537,6 @@ class FNO2d(FNO):
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
-            domain_padding_mode=domain_padding_mode,
         )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
@@ -588,9 +584,8 @@ class FNO3d(FNO):
         rank=1.0,
         fixed_rank_modes=False,
         implementation="factorized",
-        decomposition_kwargs=dict(),
+        decomposition_kwargs=None,
         domain_padding=None,
-        domain_padding_mode="symmetric",
         **kwargs
     ):
         super().__init__(
@@ -619,7 +614,6 @@ class FNO3d(FNO):
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
-            domain_padding_mode=domain_padding_mode,
         )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
@@ -643,7 +637,7 @@ def partialclass(new_name, cls, *args, **kwargs):
     Instead, here, we define dynamically a new class, inheriting from the existing one.
     """
     __init__ = partialmethod(cls.__init__, *args, **kwargs)
-    new_class = type(
+    return type(
         new_name,
         (cls,),
         {
@@ -652,7 +646,6 @@ def partialclass(new_name, cls, *args, **kwargs):
             "forward": cls.forward,
         },
     )
-    return new_class
 
 
 TFNO = partialclass("TFNO", FNO, factorization="Tucker")

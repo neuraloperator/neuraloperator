@@ -1,10 +1,13 @@
 import math
 import torch
+import pytest
 from torch.testing import assert_close
 
 from ..data_losses import LpLoss, H1Loss, HdivLoss
 from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd
+from ..fourier_diff import fourier_derivative_1d
 from neuralop.layers.embeddings import regular_grid_nd
+
 
 def test_lploss():
     l2_2d_mean = LpLoss(d=2, p=2, reduction='mean', measure=1.)
@@ -85,114 +88,152 @@ def test_hdivloss():
     assert mean_abs_hdiv.item() == 1.
 
 
-def test_central_diff1d():
-    # assert f(x) = x
-    # has derivative 1 everywhere when boundaries are fixed
-    x = torch.arange(10)
-    dx = central_diff_1d(x, fix_x_bnd=True, h=1.)
-    assert_close(dx,torch.ones_like(dx))
 
-def test_central_diff2d():
-    grid = regular_grid_nd(resolutions=[10,10], grid_boundaries=[[0,10]] * 2)
-    x = torch.stack(grid, dim=0)
-    dx, dy = central_diff_2d(x, fix_x_bnd=True, fix_y_bnd=True, h=1.)
-    # pos encoding A[:,i,j] = [xi, yj]
+@pytest.mark.parametrize("dim", [1, 2, 3])
+def test_central_diff(dim: int):
+    
+    if dim == 1:
+        # assert f(x) = x
+        # has derivative 1 everywhere when boundaries are fixed
+        x = torch.arange(10)
+        dx = central_diff_1d(x, h=1., periodic_in_x=False)
+        assert_close(dx,torch.ones_like(dx))
+        
+    if dim == 2:
 
-    # dx[:,i,j] = f(x_i, y_j) vector valued <fx, fy>
-    # dfx(coords) == 1s
-    
-    assert_close(dx[0], torch.ones_like(dx[0]))
-    assert_close(dx[1], torch.zeros_like(dx[1]))
-    
-    assert_close(dy[0], torch.zeros_like(dy[0]))
-    assert_close(dy[1], torch.ones_like(dy[1]))
+        grid = regular_grid_nd(resolutions=[10,10], grid_boundaries=[[0,10]] * 2)
+        x = torch.stack(grid, dim=0)
+        dx, dy = central_diff_2d(x, h=1., periodic_in_x=False, periodic_in_y=False)
+        # pos encoding A[:,i,j] = [xi, yj]
 
-def test_central_diff3d():
-    grid = regular_grid_nd(resolutions=[10,10,10], grid_boundaries=[[0,10]] * 3)
-    x = torch.stack(grid, dim=0)
-    # pos encoding A[:,i,j,k] = [xi, yj, zk]
-    dx, dy, dz = central_diff_3d(x, fix_x_bnd=True, fix_y_bnd=True, fix_z_bnd=True, h=1.)
-    # dx[:,i,j,k] = f(x_i, y_j, z_k) vector valued <fx, fy, fz>
-    # dfx(coords) == 1s
-    
-    assert_close(dx[0], torch.ones_like(dx[0]))
-    assert_close(dx[1], torch.zeros_like(dx[1]))
-    assert_close(dx[2], torch.zeros_like(dx[1]))
-    
-    assert_close(dy[0], torch.zeros_like(dy[0]))
-    assert_close(dy[1], torch.ones_like(dy[1]))
-    assert_close(dy[2], torch.zeros_like(dy[2]))
+        # dx[:,i,j] = f(x_i, y_j) vector valued <fx, fy>
+        # dfx(coords) == 1s
+        
+        assert_close(dx[0], torch.ones_like(dx[0]))
+        assert_close(dx[1], torch.zeros_like(dx[1]))
+        
+        assert_close(dy[0], torch.zeros_like(dy[0]))
+        assert_close(dy[1], torch.ones_like(dy[1]))
 
-    assert_close(dz[0], torch.zeros_like(dz[0]))
-    assert_close(dz[1], torch.zeros_like(dz[1]))
-    assert_close(dz[2], torch.ones_like(dz[2]))
+    if dim == 3:
+        grid = regular_grid_nd(resolutions=[10,10,10], grid_boundaries=[[0,10]] * 3)
+        x = torch.stack(grid, dim=0)
+        # pos encoding A[:,i,j,k] = [xi, yj, zk]
+        dx, dy, dz = central_diff_3d(x, h=1., periodic_in_x=False, periodic_in_y=False, periodic_in_z=False)
+        # dx[:,i,j,k] = f(x_i, y_j, z_k) vector valued <fx, fy, fz>
+        # dfx(coords) == 1s
+        
+        assert_close(dx[0], torch.ones_like(dx[0]))
+        assert_close(dx[1], torch.zeros_like(dx[1]))
+        assert_close(dx[2], torch.zeros_like(dx[1]))
+        
+        assert_close(dy[0], torch.zeros_like(dy[0]))
+        assert_close(dy[1], torch.ones_like(dy[1]))
+        assert_close(dy[2], torch.zeros_like(dy[2]))
+
+        assert_close(dz[0], torch.zeros_like(dz[0]))
+        assert_close(dz[1], torch.zeros_like(dz[1]))
+        assert_close(dz[2], torch.ones_like(dz[2]))
 
 
-def test_nonuniform_fd_1d():
-    
-    x = torch.sort(torch.rand(256))[0].unsqueeze(1)
-    f = torch.exp(3*x) + torch.sin(10*x) - x**2
-    df_ref = (3*torch.exp(3*x) + 10*torch.cos(10*x) - 2 * x).squeeze()
-    df_dx = non_uniform_fd(x, f.squeeze(), num_neighbors=3, derivative_indices=[0], regularize_lstsq=False)[0]
-    
-    l2 = LpLoss(d=1, p=2, reduction='mean', measure=1.)
-    assert l2.rel(df_ref, df_dx).item() < 5e-2
-    
-    # # Plot to check visually
-    # import matplotlib.pyplot as plt
-    # plt.figure(figsize=(10,5))
-    # plt.plot(x.detach().numpy().squeeze(), df_ref.detach().numpy(), 'r', linewidth=0.8, label='Reference')
-    # plt.plot(x.detach().numpy(), df_dx.detach().numpy(), 'b', linewidth=0.8, label='FD')
-    # plt.legend()
-    # plt.xlabel(r'$x$')
-    # plt.ylabel(r'$df/dx$')
-    # plt.savefig('non_uniform_fd_1D.pdf')
-    
-    
-def test_nonuniform_fd_2d():
-    
-    num_points = 128
-    x = torch.linspace(-1, 1, num_points, dtype=torch.float64)
-    y = torch.linspace(-1, 1, num_points, dtype=torch.float64)
-    X, Y = torch.meshgrid(x, y, indexing='ij')
-    points = torch.stack([X.flatten(), Y.flatten()], dim=1)
-    f = torch.exp(Y) + 0.1 * torch.sin(10 * X) - (X**2) * (Y**2)
-    dfdx_ref =  torch.cos(10*X) - 2*X*(Y**2)
-    dfdy_ref = torch.exp(Y) - 2*(X**2)*Y
-    df = non_uniform_fd(points, f.flatten(), num_neighbors=5, derivative_indices=[0,1], regularize_lstsq=True)
-    df_dx = df[0].reshape(num_points, num_points)
-    df_dy = df[1].reshape(num_points, num_points)
 
-    l2 = LpLoss(d=2, p=2, reduction='mean', measure=1.)
-    assert l2.rel(dfdx_ref, df_dx).item() < 5e-2
-    assert l2.rel(dfdy_ref, df_dy).item() < 5e-2
+@pytest.mark.parametrize("dim", [1, 2])
+def test_nonuniform_fd(dim: int):
     
-    # # Plot to check visually
-    # import matplotlib.pyplot as plt
-    # plt.figure(figsize=(7, 7))
-    # plt.subplot(2, 2, 1)
-    # img1 = plt.imshow(df_dx.detach().numpy())
-    # plt.colorbar(img1, shrink=0.75)  
-    # plt.title(r'$df/dx$')
-    # plt.xticks([])  
-    # plt.yticks([]) 
-    # plt.subplot(2, 2, 2)
-    # img2 = plt.imshow(dfdx_ref.detach().numpy())
-    # plt.colorbar(img2, shrink=0.75)
-    # plt.title(r'$df/dx$_ref')
-    # plt.xticks([])
-    # plt.yticks([])
-    # plt.subplot(2, 2, 3)
-    # img3 = plt.imshow(df_dy.detach().numpy())
-    # plt.colorbar(img3, shrink=0.75)
-    # plt.title(r'$df/dy$')
-    # plt.xticks([])
-    # plt.yticks([])
-    # plt.subplot(2, 2, 4)
-    # img4 = plt.imshow(dfdy_ref.detach().numpy().reshape(num_points, num_points))
-    # plt.colorbar(img4, shrink=0.75)
-    # plt.title(r'$df/dy$_ref')
-    # plt.xticks([])
-    # plt.yticks([])
-    # plt.tight_layout()
-    # plt.savefig('non_uniform_fd_2D.pdf')
+    if dim == 1:
+        x = torch.sort(torch.rand(256))[0].unsqueeze(1)
+        f = torch.exp(3*x) + torch.sin(10*x) - x**2
+        df_ref = (3*torch.exp(3*x) + 10*torch.cos(10*x) - 2 * x).squeeze()
+        df_dx = non_uniform_fd(x, f.squeeze(), num_neighbors=3, derivative_indices=[0], regularize_lstsq=False)[0]
+        
+        l2 = LpLoss(d=1, p=2, reduction='mean', measure=1.)
+        assert l2.rel(df_ref, df_dx).item() < 5e-2
+        
+        # # Plot to check visually
+        # import matplotlib.pyplot as plt
+        # plt.figure(figsize=(10,5))
+        # plt.plot(x.detach().numpy().squeeze(), df_ref.detach().numpy(), 'r', linewidth=0.8, label='Reference')
+        # plt.plot(x.detach().numpy(), df_dx.detach().numpy(), 'b', linewidth=0.8, label='FD')
+        # plt.legend()
+        # plt.xlabel(r'$x$')
+        # plt.ylabel(r'$df/dx$')
+        # plt.savefig('non_uniform_fd_1D.pdf')
+    
+    if dim == 2:
+        num_points = 128
+        x = torch.linspace(-1, 1, num_points, dtype=torch.float64)
+        y = torch.linspace(-1, 1, num_points, dtype=torch.float64)
+        X, Y = torch.meshgrid(x, y, indexing='ij')
+        points = torch.stack([X.flatten(), Y.flatten()], dim=1)
+        f = torch.exp(Y) + 0.1 * torch.sin(10 * X) - (X**2) * (Y**2)
+        dfdx_ref =  torch.cos(10*X) - 2*X*(Y**2)
+        dfdy_ref = torch.exp(Y) - 2*(X**2)*Y
+        df = non_uniform_fd(points, f.flatten(), num_neighbors=5, derivative_indices=[0,1], regularize_lstsq=True)
+        df_dx = df[0].reshape(num_points, num_points)
+        df_dy = df[1].reshape(num_points, num_points)
+
+        l2 = LpLoss(d=2, p=2, reduction='mean', measure=1.)
+        assert l2.rel(dfdx_ref, df_dx).item() < 5e-2
+        assert l2.rel(dfdy_ref, df_dy).item() < 5e-2
+        
+        # # Plot to check visually
+        # import matplotlib.pyplot as plt
+        # plt.figure(figsize=(7, 7))
+        # plt.subplot(2, 2, 1)
+        # img1 = plt.imshow(df_dx.detach().numpy())
+        # plt.colorbar(img1, shrink=0.75)  
+        # plt.title(r'$df/dx$')
+        # plt.xticks([])  
+        # plt.yticks([]) 
+        # plt.subplot(2, 2, 2)
+        # img2 = plt.imshow(dfdx_ref.detach().numpy())
+        # plt.colorbar(img2, shrink=0.75)
+        # plt.title(r'$df/dx$_ref')
+        # plt.xticks([])
+        # plt.yticks([])
+        # plt.subplot(2, 2, 3)
+        # img3 = plt.imshow(df_dy.detach().numpy())
+        # plt.colorbar(img3, shrink=0.75)
+        # plt.title(r'$df/dy$')
+        # plt.xticks([])
+        # plt.yticks([])
+        # plt.subplot(2, 2, 4)
+        # img4 = plt.imshow(dfdy_ref.detach().numpy().reshape(num_points, num_points))
+        # plt.colorbar(img4, shrink=0.75)
+        # plt.title(r'$df/dy$_ref')
+        # plt.xticks([])
+        # plt.yticks([])
+        # plt.tight_layout()
+        # plt.savefig('non_uniform_fd_2D.pdf')
+    
+    
+
+@pytest.mark.parametrize("periodic", [True, False])
+def test_fourier_diff(periodic: bool):
+
+    if periodic:
+
+        ## Test on periodic functions without Fourier continuation
+        # Consider sin(x) and cos(x)
+        L = 2*torch.pi
+        x = torch.linspace(0, L, 101)[:-1]
+        f = torch.stack([torch.sin(x), torch.cos(x)], dim=0)
+        dfdx = fourier_derivative_1d(f, order=1, L=L)
+        df2dx2 = fourier_derivative_1d(f, order=2, L=L)
+        df3dx3 = fourier_derivative_1d(f, order=3, L=L)
+        
+        assert f.shape == dfdx.shape == df2dx2.shape == df3dx3.shape
+
+        
+    else: 
+    
+        ## Test on non-periodic functions using Fourier continuation
+        # Consider sin(16*x)-cos(8*x) and exp(-0.8x)
+        L = 2*torch.pi
+        x = torch.linspace(0, L, 101)[:-1]    
+        f = torch.stack([torch.sin(3*x) - torch.cos(x), torch.exp(-0.8*x)+torch.sin(x)], dim=0)
+        dfdx = fourier_derivative_1d(f, order=1, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30)
+        df2dx2 = fourier_derivative_1d(f, order=2, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30)
+
+        assert f.shape == dfdx.shape == df2dx2.shape
+   
