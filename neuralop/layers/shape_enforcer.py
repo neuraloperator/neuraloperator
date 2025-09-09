@@ -68,18 +68,18 @@ class ShapeEnforcer(torch.nn.Module):
             # Skip if dim_idx is out of bounds
             if dim_idx >= len(x.shape):
                 break
-                
+
             current_size = x.shape[dim_idx]
             # If current is bigger, crop
             if current_size > size_desired:
                 slices.append(slice(0, size_desired))
             else:
                 slices.append(slice(0, current_size))
-        
+
         # Add remaining dimensions as-is
         for i in range(self.start_dim + len(output_shape), len(x.shape)):
             slices.append(slice(None))
-            
+
         x = x[tuple(slices)]
 
         # -- 2) Pad if needed --
@@ -91,7 +91,7 @@ class ShapeEnforcer(torch.nn.Module):
                 output_idx = i - self.start_dim
                 size_desired = output_shape[output_idx]
                 current_size = x.shape[i]
-                
+
                 if current_size < size_desired:
                     pad_amount = size_desired - current_size
                     # Pad only on the "end" (right side)
@@ -101,7 +101,7 @@ class ShapeEnforcer(torch.nn.Module):
             else:
                 # Dimensions outside our range of interest don't need padding
                 pad_list.extend([0, 0])
-                
+
         if any(pad_list):
             x = F.pad(x, pad_list, mode="constant", value=0.0)
 
