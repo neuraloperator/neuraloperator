@@ -452,7 +452,8 @@ class SpectralConv(BaseSpectralConv):
             # The last mode already has redundant half removed in real FFT
             slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
             slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)]
-        
+
+        slices_w = tuple(slices_w)
         weight = self.weight[slices_w]
 
         ### Pick the first n_modes modes of FFT signal along each dim
@@ -482,7 +483,8 @@ class SpectralConv(BaseSpectralConv):
             slices_x[-1] = slice(None, weight.shape[-1])
         else:
             slices_x[-1] = slice(None)
-        
+
+        slices_x = tuple(slices_x)
         out_fft[slices_x] = self._contract(x[slices_x], weight, separable=self.separable)
 
         if self.resolution_scaling_factor is not None and output_shape is None:
