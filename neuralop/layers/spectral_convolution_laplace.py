@@ -107,10 +107,19 @@ class SpectralConvLaplace(BaseSpectralConv):
     .. [1] : Cao, Q., Goswami, S., and Karniadakis, G. E. "LNO: Laplace Neural Operator
         for Solving Differential Equations" (2023). arXiv preprint arXiv:2303.10528,
         https://arxiv.org/pdf/2303.10528.
-    
-    
         
+        LNO can handle non-periodic signals by incorporating the pole-residue
+        relationship between input and output space, offering great 
+        interpretability and generalizability.
+
+        Examples
+        --------
+        - High accuracy in ODEs such as the Duffing oscillator and Lorenz system.
+        - Strong performance in PDEs like the diffusion equation and
+        reaction-diffusion system.
+    
     """
+    
     def __init__(
         self,
         in_channels: int,
