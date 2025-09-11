@@ -31,7 +31,7 @@ class FNO(ConfigBase):
 
 
 class TFNO(ConfigBase):
-    n_modes: List[int] = [64, 64]  
+    n_modes: List[int] = [64, 64]
     width: int = 64
     hidden_channels: int = 256
     n_layers: int = 4
@@ -45,7 +45,7 @@ class TFNO(ConfigBase):
     channel_mlp_dropout: int = 0
     separable: bool = False
     factorization: str = "Tucker"
-    rank: float = 1.0
+    rank: float = 0.1
     fixed_rank_modes: Optional[Any] = None
 
 
