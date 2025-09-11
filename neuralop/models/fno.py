@@ -404,6 +404,8 @@ class FNO(BaseModel, name="FNO"):
 
 def partialclass(new_name, cls, *args, **kwargs):
     """Create a new class with different default values
+    
+    See the Spherical FNO class in neuralop/models/sfno.py for an example.
 
     Notes
     -----
