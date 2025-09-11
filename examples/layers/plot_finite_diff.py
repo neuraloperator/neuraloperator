@@ -9,7 +9,7 @@ An example of usage of Finite Differences
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
-from neuralop.losses.finite_diff import central_diff_1d, FiniteDiff1D, FiniteDiff2D, FiniteDiff3D
+from neuralop.losses.finite_diff import central_diff_1d, FiniteDiff
 
 # %%
 # 1D Finite Difference Examples
@@ -29,11 +29,11 @@ f_1d = torch.exp(-x) * torch.sin(x)
 # %%
 # Differentiate the 1D signal 
 # ----------------------------------------------------------------
-# We use the FiniteDiff1D class
+# We use the FiniteDiff class with dim=1
 h = L_x / nx
 
 # Compute derivatives
-fd1d = FiniteDiff1D(h=h, periodic_in_x=False)
+fd1d = FiniteDiff(dim=1, h=h, periodic_in_x=False)
 df_dx = fd1d.dx(f_1d)
 d2f_dx2 = fd1d.dx(f_1d, order=2)
 
@@ -75,7 +75,7 @@ plt.show()
 # %%
 # 2D Finite Difference Examples
 # =============================
-# Here we demonstrate the FiniteDiff2D class for 2D functions
+# Here we demonstrate the FiniteDiff class for 2D functions
 
 # %% fix 
 # Creating an example of 2D function
@@ -93,8 +93,8 @@ f_2d = torch.exp(-X) * torch.sin(Y)
 # %%
 # Differentiate the 2D signal 
 # ----------------------------------------------------------------
-# We use the FiniteDiff2D class to compute derivatives
-fd2d = FiniteDiff2D(h=(L_x/nx, L_y/ny), periodic_in_x=False, periodic_in_y=False)
+# We use the FiniteDiff class with dim=2 to compute derivatives
+fd2d = FiniteDiff(dim=2, h=(L_x/nx, L_y/ny), periodic_in_x=False, periodic_in_y=False)
 
 # Compute derivatives
 df_dx = fd2d.dx(f_2d)
@@ -311,7 +311,7 @@ plt.show()
 # %%
 # 3D Finite Difference Examples
 # =============================
-# Here we demonstrate the FiniteDiff3D class for 3D functions
+# Here we demonstrate the FiniteDiff class for 3D functions
 
 # %%
 # Creating an example of 3D function
@@ -330,8 +330,8 @@ f_3d = torch.exp(-X) * torch.sin(Y) * torch.cos(Z)
 # %%
 # Differentiate the 3D signal 
 # ----------------------------------------------------------------
-# We use the FiniteDiff3D class to compute derivatives
-fd3d = FiniteDiff3D(h=(L_x/nx, L_y/ny, L_z/nz), periodic_in_x=False, periodic_in_y=True, periodic_in_z=True)
+# We use the FiniteDiff class with dim=3 to compute derivatives
+fd3d = FiniteDiff(dim=3, h=(L_x/nx, L_y/ny, L_z/nz), periodic_in_x=False, periodic_in_y=True, periodic_in_z=True)
 
 # Compute derivatives
 df_dx = fd3d.dx(f_3d)
