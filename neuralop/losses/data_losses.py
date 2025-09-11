@@ -10,7 +10,7 @@ from typing import List
 
 import torch
 
-from .finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, FiniteDiff1D, FiniteDiff2D, FiniteDiff3D
+from .finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, FiniteDiff
 
 #loss function with rel/abs Lp loss
 class LpLoss(object):
@@ -270,7 +270,7 @@ class H1Loss(object):
             dict_x[0] = x
             dict_y[0] = y
 
-            fd1d = FiniteDiff1D(h=quadrature[0], periodic_in_x=self.periodic_in_x)
+            fd1d = FiniteDiff(dim=1, h=quadrature[0], periodic_in_x=self.periodic_in_x)
             x_x = fd1d.dx(x)
             y_x = fd1d.dx(y)
 
@@ -281,7 +281,7 @@ class H1Loss(object):
             dict_x[0] = torch.flatten(x, start_dim=-2)
             dict_y[0] = torch.flatten(y, start_dim=-2)
 
-            fd2d = FiniteDiff2D(h=quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
+            fd2d = FiniteDiff(dim=2, h=quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
             x_x, x_y = fd2d.dx(x), fd2d.dy(x)
             y_x, y_y = fd2d.dx(y), fd2d.dy(y)
 
@@ -295,7 +295,7 @@ class H1Loss(object):
             dict_x[0] = torch.flatten(x, start_dim=-3)
             dict_y[0] = torch.flatten(y, start_dim=-3)
 
-            fd3d = FiniteDiff3D(h=quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
+            fd3d = FiniteDiff(dim=3, h=quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
             x_x, x_y, x_z = fd3d.dx(x), fd3d.dy(x), fd3d.dz(x)
             y_x, y_y, y_z = fd3d.dx(y), fd3d.dy(y), fd3d.dz(y)
 
@@ -530,7 +530,7 @@ class HdivLoss(object):
             dict_x[0] = x
             dict_y[0] = y
 
-            fd1d = FiniteDiff1D(h=quadrature[0], periodic_in_x=self.periodic_in_x)
+            fd1d = FiniteDiff(dim=1, h=quadrature[0], periodic_in_x=self.periodic_in_x)
             div_x = fd1d.dx(x)
             div_y = fd1d.dx(y)
  
@@ -538,7 +538,7 @@ class HdivLoss(object):
             dict_x[0] = torch.flatten(x, start_dim=-2)
             dict_y[0] = torch.flatten(y, start_dim=-2)
 
-            fd2d = FiniteDiff2D(h=quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
+            fd2d = FiniteDiff(dim=2, h=quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y)
             x_x, x_y = fd2d.dx(x), fd2d.dy(x)
             y_x, y_y = fd2d.dx(y), fd2d.dy(y)
 
@@ -549,7 +549,7 @@ class HdivLoss(object):
             dict_x[0] = torch.flatten(x, start_dim=-3)
             dict_y[0] = torch.flatten(y, start_dim=-3)
 
-            fd3d = FiniteDiff3D(h=quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
+            fd3d = FiniteDiff(dim=3, h=quadrature, periodic_in_x=self.periodic_in_x, periodic_in_y=self.periodic_in_y, periodic_in_z=self.periodic_in_z)
             x_x, x_y, x_z = fd3d.dx(x), fd3d.dy(x), fd3d.dz(x)
             y_x, y_y, y_z = fd3d.dx(y), fd3d.dy(y), fd3d.dz(y)
             

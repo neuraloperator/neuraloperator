@@ -4,7 +4,7 @@ import pytest
 from torch.testing import assert_close
 
 from ..data_losses import LpLoss, H1Loss, HdivLoss
-from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd, FiniteDiff1D, FiniteDiff2D, FiniteDiff3D
+from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd, FiniteDiff
 from ..fourier_diff import FourierDiff1D, FourierDiff2D, FourierDiff3D
 from neuralop.layers.embeddings import regular_grid_nd
 
@@ -219,8 +219,8 @@ def test_finite_diff_2d(periodic_x, periodic_y):
     X, Y = torch.meshgrid(x, y, indexing='ij')
     f = X**2 + Y**2
     
-    # Initialize FiniteDiff2D with specified boundary conditions
-    fd2d = FiniteDiff2D(h=(0.2, 0.2), periodic_in_x=periodic_x, periodic_in_y=periodic_y)
+    # Initialize FiniteDiff with dim=2 and specified boundary conditions
+    fd2d = FiniteDiff(dim=2, h=(0.2, 0.2), periodic_in_x=periodic_x, periodic_in_y=periodic_y)
     
     # Test first order derivatives
     df_dx = fd2d.dx(f)
@@ -268,8 +268,8 @@ def test_finite_diff_1d(periodic_x):
     x = torch.linspace(0, 2*torch.pi, nx, dtype=torch.float64)
     f = torch.cos(x) - x
     
-    # Initialize FiniteDiff1D with specified boundary conditions
-    fd1d = FiniteDiff1D(h=2*torch.pi/nx, periodic_in_x=periodic_x)
+    # Initialize FiniteDiff with dim=1 and specified boundary conditions
+    fd1d = FiniteDiff(dim=1, h=2*torch.pi/nx, periodic_in_x=periodic_x)
     
     # Test first order derivatives
     df_dx = fd1d.dx(f)
@@ -303,8 +303,8 @@ def test_finite_diff_3d(periodic_x, periodic_y, periodic_z):
     X, Y, Z = torch.meshgrid(x, y, z, indexing='ij')
     f = X**2 + Y**2 + Z**2
     
-    # Initialize FiniteDiff3D with specified boundary conditions
-    fd3d = FiniteDiff3D(h=(0.4, 0.4, 0.4), periodic_in_x=periodic_x, periodic_in_y=periodic_y, periodic_in_z=periodic_z)
+    # Initialize FiniteDiff with dim=3 and specified boundary conditions
+    fd3d = FiniteDiff(dim=3, h=(0.4, 0.4, 0.4), periodic_in_x=periodic_x, periodic_in_y=periodic_y, periodic_in_z=periodic_z)
     
     # Test first order derivatives
     df_dx = fd3d.dx(f)
