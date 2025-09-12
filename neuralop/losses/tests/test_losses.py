@@ -5,7 +5,7 @@ from torch.testing import assert_close
 
 from ..data_losses import LpLoss, H1Loss, HdivLoss
 from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd, FiniteDiff
-from ..fourier_diff import FourierDiff1D, FourierDiff2D, FourierDiff3D
+from ..fourier_diff import FourierDiff
 from neuralop.layers.embeddings import regular_grid_nd
 
 
@@ -210,7 +210,7 @@ def test_nonuniform_fd(dim: int):
 @pytest.mark.parametrize("periodic_x", [True, False])
 @pytest.mark.parametrize("periodic_y", [True, False])
 def test_finite_diff_2d(periodic_x, periodic_y):
-    """Test the FiniteDiff2D class with various boundary conditions."""
+    """Test the FiniteDiff class with various boundary conditions for 2D."""
     
     # Create a 2D test function: f(x,y) = x^2 + y^2
     nx, ny = 32, 32
@@ -261,7 +261,7 @@ def test_finite_diff_2d(periodic_x, periodic_y):
 
 @pytest.mark.parametrize("periodic_x", [True, False])
 def test_finite_diff_1d(periodic_x):
-    """Test the FiniteDiff1D class with various boundary conditions."""
+    """Test the FiniteDiff class with various boundary conditions for 1D."""
     
     # Create a 1D test function: f(x) = cos(x) - x
     nx = 64
@@ -293,7 +293,7 @@ def test_finite_diff_1d(periodic_x):
 @pytest.mark.parametrize("periodic_y", [True, False])
 @pytest.mark.parametrize("periodic_z", [True, False])
 def test_finite_diff_3d(periodic_x, periodic_y, periodic_z):
-    """Test the FiniteDiff3D class with various boundary conditions."""
+    """Test the FiniteDiff class with various boundary conditions for 3D."""
     
     # Create a 3D test function: f(x,y,z) = x^2 + y^2 + z^2
     nx, ny, nz = 16, 16, 16
@@ -359,8 +359,8 @@ def test_fourier_diff(periodic: bool):
         x = torch.linspace(0, L, 101)[:-1]
         f = torch.stack([torch.sin(x), torch.cos(x)], dim=0)
         
-        # Use FourierDiff1D class
-        fd1d = FourierDiff1D(L=L, use_FC=False)
+        # Use FourierDiff class
+        fd1d = FourierDiff(dim=1, L=L, use_fc=False)
         derivatives = fd1d.compute_multiple_derivatives(f, [1, 2, 3])
         dfdx, df2dx2, df3dx3 = derivatives
         
@@ -375,21 +375,21 @@ def test_fourier_diff(periodic: bool):
         x = torch.linspace(0, L, 101)[:-1]    
         f = torch.stack([torch.sin(3*x) - torch.cos(x), torch.exp(-0.8*x)+torch.sin(x)], dim=0)
         
-        # Use FourierDiff1D class with Fourier continuation
-        fd1d = FourierDiff1D(L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30)
+        # Use FourierDiff class with Fourier continuation
+        fd1d = FourierDiff(dim=1, L=L, use_fc='Legendre', fc_degree=4, fc_n_additional_pts=30)
         derivatives = fd1d.compute_multiple_derivatives(f, [1, 2])
         dfdx, df2dx2 = derivatives
 
         assert f.shape == dfdx.shape == df2dx2.shape
    
 
-@pytest.mark.parametrize("use_FC", [False, 'Legendre'])
-def test_fourier_diff_2d(use_FC):
+@pytest.mark.parametrize("use_fc", [False, 'Legendre'])
+def test_fourier_diff_2d(use_fc):
     
-    if use_FC:
-        fd2d = FourierDiff2D(L=(2*torch.pi, 2*torch.pi), use_FC=use_FC, FC_d=4, FC_n_additional_pts=20)
+    if use_fc:
+        fd2d = FourierDiff(dim=2, L=(2*torch.pi, 2*torch.pi), use_fc=use_fc, fc_degree=4, fc_n_additional_pts=20)
     else:
-        fd2d = FourierDiff2D(L=(2*torch.pi, 2*torch.pi))
+        fd2d = FourierDiff(dim=2, L=(2*torch.pi, 2*torch.pi))
     
     # Create a 2D periodic function: sin(x) * cos(y)
     L_x, L_y = 2*torch.pi, 2*torch.pi
@@ -399,7 +399,7 @@ def test_fourier_diff_2d(use_FC):
     X, Y = torch.meshgrid(x, y, indexing='ij')
     
     # Test function: f(x,y) = sin(x) * cos(y) for periodic, exp(-x) * sin(y) for non-periodic
-    if use_FC:
+    if use_fc:
         f = torch.exp(-X) * torch.sin(Y)  # Non-periodic function
     else:
         f = torch.sin(X) * torch.cos(Y)  # Periodic function
@@ -444,15 +444,15 @@ def test_fourier_diff_2d(use_FC):
     assert divergence.shape == (nx, ny)
     assert curl.shape == (nx, ny)
     
-@pytest.mark.parametrize("use_FC", [False, 'Gram'])
-def test_fourier_diff_3d(use_FC):
-    """Test the FourierDiff3D class with various scenarios."""
+@pytest.mark.parametrize("use_fc", [False, 'Gram'])
+def test_fourier_diff_3d(use_fc):
+    """Test the FourierDiff class with various scenarios."""
     
     # Test basic functionality
-    if use_FC:
-        fd3d = FourierDiff3D(L=(2*torch.pi, 2*torch.pi, 2*torch.pi), use_FC=use_FC, FC_d=4, FC_n_additional_pts=50)
+    if use_fc:
+        fd3d = FourierDiff(dim=3, L=(2*torch.pi, 2*torch.pi, 2*torch.pi), use_fc=use_fc, fc_degree=4, fc_n_additional_pts=50)
     else:
-        fd3d = FourierDiff3D(L=(2*torch.pi, 2*torch.pi, 2*torch.pi))
+        fd3d = FourierDiff(dim=3, L=(2*torch.pi, 2*torch.pi, 2*torch.pi))
     
     # Create a 3D periodic function: sin(x) * cos(y) * sin(z)
     L_x, L_y, L_z = 2*torch.pi, 2*torch.pi, 2*torch.pi
@@ -463,7 +463,7 @@ def test_fourier_diff_3d(use_FC):
     X, Y, Z = torch.meshgrid(x, y, z, indexing='ij')
     
     # Test function: f(x,y,z) = sin(x) * cos(y) * sin(z) for periodic, exp(-x) * sin(y) * cos(z) for non-periodic
-    if use_FC:
+    if use_fc:
         f = torch.sin(X) * torch.cos(Y) * torch.sin(Z)  # Non-periodic function
     else:
         f = torch.sin(X) * torch.cos(Y) * torch.sin(Z)  # Periodic function

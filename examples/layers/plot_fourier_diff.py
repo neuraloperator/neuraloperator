@@ -13,7 +13,7 @@ An example of usage of our Fourier Differentiation Function
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from neuralop.losses.fourier_diff import FourierDiff1D, FourierDiff2D, FourierDiff3D
+from neuralop.losses.fourier_diff import FourierDiff
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -31,8 +31,8 @@ x_np = x.cpu().numpy()
 # %%
 # Differentiate the signal
 # -----------------------------------------
-# We use the FourierDiff1D class to differentiate the signal
-fd1d = FourierDiff1D(L=L, use_FC=False)
+# We use the FourierDiff class to differentiate the signal
+fd1d = FourierDiff(dim=1, L=L, use_fc=False)
 derivatives = fd1d.compute_multiple_derivatives(f, [1, 2, 3])
 dfdx, df2dx2, df3dx3 = derivatives
 
@@ -79,8 +79,8 @@ x_np = x.cpu().numpy()
 # %%
 # Differentiate the signal
 # -----------------------------------------
-# We use the FourierDiff1D class with Fourier continuation to differentiate the signal
-fd1d = FourierDiff1D(L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=50)
+# We use the FourierDiff class with Fourier continuation to differentiate the signal
+fd1d = FourierDiff(dim=1, L=L, use_fc='Legendre', fc_degree=4, fc_n_additional_pts=50)
 derivatives = fd1d.compute_multiple_derivatives(f, [1, 2])
 dfdx, df2dx2 = derivatives
 
@@ -113,7 +113,7 @@ plt.show()
 # %%
 # 2D Fourier Differentiation Examples
 # ===================================
-# Here we demonstrate the FourierDiff2D class for 2D functions
+# Here we demonstrate the FourierDiff class for 2D functions
 
 # %%
 # Creating an example of periodic 2D function
@@ -131,8 +131,8 @@ f_2d = torch.sin(X) * torch.cos(Y)
 # %%
 # Differentiate the 2D signal
 # -----------------------------------------
-# We use the FourierDiff2D class to compute derivatives
-fd2d = FourierDiff2D(L=(L_x, L_y))
+# We use the FourierDiff class to compute derivatives
+fd2d = FourierDiff(dim=2, L=(L_x, L_y))
 
 # Compute derivatives
 df_dx = fd2d.dx(f_2d)
@@ -195,7 +195,7 @@ plt.show()
 # %%
 # 3D Fourier Differentiation Examples
 # ===================================
-# Here we demonstrate the FourierDiff3D class for 3D functions
+# Here we demonstrate the FourierDiff class for 3D functions
 
 # %%
 # Creating an example of periodic 3D function
@@ -217,8 +217,8 @@ f_3d_alt = torch.randn(nx, ny, nz, dtype=torch.float64)
 # %%
 # Differentiate the 3D signal
 # -----------------------------------------
-# We use the FourierDiff3D class to compute derivatives
-fd3d = FourierDiff3D(L=(L_x, L_y, L_z))
+# We use the FourierDiff class to compute derivatives
+fd3d = FourierDiff(dim=3, L=(L_x, L_y, L_z))
 
 # Compute derivatives
 df_dx_3d = fd3d.dx(f_3d)
