@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 from torch.autograd import grad
 
-from .finite_diff import central_diff_2d
+from .differentiation import FiniteDiff
 
 
 class BurgersEqnLoss(object):
@@ -31,16 +31,10 @@ class BurgersEqnLoss(object):
         dt = self.domain_length[0] / (nt - 1)
         dx = self.domain_length[1] / nx
 
-        # du/dt and du/dx
-        dudt, dudx = central_diff_2d(u, [dt, dx], periodic_in_x=False, periodic_in_y=False)
-
-        # d^2u/dxx
-        dudxx = (
-            torch.roll(u, -1, dims=-1) - 2 * u + torch.roll(u, 1, dims=-1)
-        ) / dx**2
-        # fix boundary
-        dudxx[..., 0] = (u[..., 2] - 2 * u[..., 1] + u[..., 0]) / dx**2
-        dudxx[..., -1] = (u[..., -1] - 2 * u[..., -2] + u[..., -3]) / dx**2
+        # Get derivatives, du/dt and du/dx and d^2u/dxx
+        fd2d = FiniteDiff(dim=2, h=(dt, dx), periodic_in_x=False, periodic_in_y=False)
+        dudt, dudx = fd2d.dx(u), fd2d.dy(u)
+        dudxx = fd2d.dy(u, order=2)
 
         # right hand side
         right_hand_side = -dudx * u + self.visc * dudxx

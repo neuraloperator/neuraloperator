@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-from neuralop.losses.finite_diff import central_diff_2d  
+from neuralop.losses.differentiation import FiniteDiff  
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -45,6 +45,9 @@ dx = Lx / (nx - 1)
 dy = Ly / (ny - 1)
 nt = int(T / dt)
 
+## Initialize finite difference operator
+fd = FiniteDiff(dim=2, h=(dx, dy))
+
 
 ## Initial condition and source term
 u = (-torch.sin(2 * np.pi * Y) * torch.cos(2 * np.pi * X)
@@ -63,9 +66,10 @@ t = torch.tensor(0.0)
 for _ in range(nt):
     
     # Compute derivatives
-    u_x, u_y = central_diff_2d(u, [dx, dy])
-    u_xx, _ = central_diff_2d(u_x, [dx, dy])
-    _, u_yy = central_diff_2d(u_y, [dx, dy])
+    u_x = fd.dx(u)
+    u_y = fd.dy(u)
+    u_xx = fd.dx(u_x)
+    u_yy = fd.dy(u_y)
 
     # Evolve one step in time using Euler's method
     u = u + dt * (-cx * u_x - cy * u_y + nu * (u_xx + u_yy) + source_term(X, Y, t))

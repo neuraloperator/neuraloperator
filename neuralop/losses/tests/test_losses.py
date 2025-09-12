@@ -4,8 +4,7 @@ import pytest
 from torch.testing import assert_close
 
 from ..data_losses import LpLoss, H1Loss, HdivLoss
-from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd
-from ..fourier_diff import fourier_derivative_1d
+from ..differentiation import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd, FiniteDiff, FourierDiff
 from neuralop.layers.embeddings import regular_grid_nd
 
 
@@ -195,8 +194,8 @@ def test_nonuniform_fd(dim: int):
         # img3 = plt.imshow(df_dy.detach().numpy())
         # plt.colorbar(img3, shrink=0.75)
         # plt.title(r'$df/dy$')
-        # plt.xticks([])
-        # plt.yticks([])
+        # plt.xticks([])  
+        # plt.yticks([]) 
         # plt.subplot(2, 2, 4)
         # img4 = plt.imshow(dfdy_ref.detach().numpy().reshape(num_points, num_points))
         # plt.colorbar(img4, shrink=0.75)
@@ -205,8 +204,148 @@ def test_nonuniform_fd(dim: int):
         # plt.yticks([])
         # plt.tight_layout()
         # plt.savefig('non_uniform_fd_2D.pdf')
+
+
+@pytest.mark.parametrize("periodic_x", [True, False])
+@pytest.mark.parametrize("periodic_y", [True, False])
+def test_finite_diff_2d(periodic_x, periodic_y):
+    """Test the FiniteDiff class with various boundary conditions for 2D."""
     
+    # Create a 2D test function: f(x,y) = x^2 + y^2
+    nx, ny = 32, 32
+    x = torch.linspace(0, 2*torch.pi, nx, dtype=torch.float64)
+    y = torch.linspace(0, 2*torch.pi, ny, dtype=torch.float64)
+    X, Y = torch.meshgrid(x, y, indexing='ij')
+    f = X**2 + Y**2
     
+    # Initialize FiniteDiff with dim=2 and specified boundary conditions
+    fd2d = FiniteDiff(dim=2, h=(0.2, 0.2), periodic_in_x=periodic_x, periodic_in_y=periodic_y)
+    
+    # Test first order derivatives
+    df_dx = fd2d.dx(f)
+    df_dy = fd2d.dy(f)
+    
+    # Test second order derivatives
+    d2f_dx2 = fd2d.dx(f, order=2)
+    d2f_dy2 = fd2d.dy(f, order=2)
+    
+    # Test laplacian
+    laplacian = fd2d.laplacian(f)
+    
+    # Test gradient
+    gradient = fd2d.gradient(f)
+    
+    # Test with vector field for divergence and curl
+    # Create a simple vector field: u = [sin(x), cos(y)]
+    u1 = torch.sin(X)
+    u2 = torch.cos(Y)
+    u_vector = torch.stack([u1, u2], dim=0)
+    
+    divergence = fd2d.divergence(u_vector)
+    curl = fd2d.curl(u_vector)
+    
+    # Basic shape assertions
+    assert df_dx.shape == f.shape
+    assert df_dy.shape == f.shape
+    assert d2f_dx2.shape == f.shape
+    assert d2f_dy2.shape == f.shape
+    assert laplacian.shape == f.shape
+    assert gradient.shape == (2, nx, ny)
+    assert divergence.shape == (nx, ny)
+    assert curl.shape == (nx, ny)
+    
+    # Test that laplacian equals sum of second derivatives
+    assert_close(laplacian, d2f_dx2 + d2f_dy2)
+
+
+@pytest.mark.parametrize("periodic_x", [True, False])
+def test_finite_diff_1d(periodic_x):
+    """Test the FiniteDiff class with various boundary conditions for 1D."""
+    
+    # Create a 1D test function: f(x) = cos(x) - x
+    nx = 64
+    x = torch.linspace(0, 2*torch.pi, nx, dtype=torch.float64)
+    f = torch.cos(x) - x
+    
+    # Initialize FiniteDiff with dim=1 and specified boundary conditions
+    fd1d = FiniteDiff(dim=1, h=2*torch.pi/nx, periodic_in_x=periodic_x)
+    
+    # Test first order derivatives
+    df_dx = fd1d.dx(f)
+    
+    # Test second order derivatives
+    d2f_dx2 = fd1d.dx(f, order=2)
+    
+    # Basic shape assertions
+    assert df_dx.shape == f.shape
+    assert d2f_dx2.shape == f.shape
+    
+    # Test that first derivative is approximately correct for f(x) = cos(x) - x
+    # df/dx ≈ -sin(x) - 1 for f(x) = cos(x) - x
+    if not periodic_x:
+        # For non-periodic, interior points should be close to expected value
+        expected_df_dx = -torch.sin(x[2:-2]) - 1.0
+        assert_close(df_dx[2:-2], expected_df_dx, atol=0.01, rtol=0.1)
+
+
+@pytest.mark.parametrize("periodic_x", [True, False])
+@pytest.mark.parametrize("periodic_y", [True, False])
+@pytest.mark.parametrize("periodic_z", [True, False])
+def test_finite_diff_3d(periodic_x, periodic_y, periodic_z):
+    """Test the FiniteDiff class with various boundary conditions for 3D."""
+    
+    # Create a 3D test function: f(x,y,z) = x^2 + y^2 + z^2
+    nx, ny, nz = 16, 16, 16
+    x = torch.linspace(0, 2*torch.pi, nx, dtype=torch.float64)
+    y = torch.linspace(0, 2*torch.pi, ny, dtype=torch.float64)
+    z = torch.linspace(0, 2*torch.pi, nz, dtype=torch.float64)
+    X, Y, Z = torch.meshgrid(x, y, z, indexing='ij')
+    f = X**2 + Y**2 + Z**2
+    
+    # Initialize FiniteDiff with dim=3 and specified boundary conditions
+    fd3d = FiniteDiff(dim=3, h=(0.4, 0.4, 0.4), periodic_in_x=periodic_x, periodic_in_y=periodic_y, periodic_in_z=periodic_z)
+    
+    # Test first order derivatives
+    df_dx = fd3d.dx(f)
+    df_dy = fd3d.dy(f)
+    df_dz = fd3d.dz(f)
+    
+    # Test second order derivatives
+    d2f_dx2 = fd3d.dx(f, order=2)
+    d2f_dy2 = fd3d.dy(f, order=2)
+    d2f_dz2 = fd3d.dz(f, order=2)
+    
+    # Test laplacian
+    laplacian = fd3d.laplacian(f)
+    
+    # Test gradient
+    gradient = fd3d.gradient(f)
+    
+    # Test with vector field for divergence and curl
+    # Create a simple vector field: u = [sin(x), cos(y), sin(z)]
+    u1 = torch.sin(X)
+    u2 = torch.cos(Y)
+    u3 = torch.sin(Z)
+    u_vector = torch.stack([u1, u2, u3], dim=0)
+    
+    divergence = fd3d.divergence(u_vector)
+    curl = fd3d.curl(u_vector)
+    
+    # Basic shape assertions
+    assert df_dx.shape == f.shape
+    assert df_dy.shape == f.shape
+    assert df_dz.shape == f.shape
+    assert d2f_dx2.shape == f.shape
+    assert d2f_dy2.shape == f.shape
+    assert d2f_dz2.shape == f.shape
+    assert laplacian.shape == f.shape
+    assert gradient.shape == (3, nz, ny, nx)
+    assert divergence.shape == (nx, ny, nz)
+    assert curl.shape == (3, nz, ny, nx)
+    
+    # Test that laplacian equals sum of second derivatives
+    assert_close(laplacian, d2f_dx2 + d2f_dy2 + d2f_dz2)
+
 
 @pytest.mark.parametrize("periodic", [True, False])
 def test_fourier_diff(periodic: bool):
@@ -218,9 +357,11 @@ def test_fourier_diff(periodic: bool):
         L = 2*torch.pi
         x = torch.linspace(0, L, 101)[:-1]
         f = torch.stack([torch.sin(x), torch.cos(x)], dim=0)
-        dfdx = fourier_derivative_1d(f, order=1, L=L)
-        df2dx2 = fourier_derivative_1d(f, order=2, L=L)
-        df3dx3 = fourier_derivative_1d(f, order=3, L=L)
+        
+        # Use FourierDiff class
+        fd1d = FourierDiff(dim=1, L=L, use_fc=False)
+        derivatives = fd1d.compute_multiple_derivatives(f, [1, 2, 3])
+        dfdx, df2dx2, df3dx3 = derivatives
         
         assert f.shape == dfdx.shape == df2dx2.shape == df3dx3.shape
 
@@ -232,8 +373,148 @@ def test_fourier_diff(periodic: bool):
         L = 2*torch.pi
         x = torch.linspace(0, L, 101)[:-1]    
         f = torch.stack([torch.sin(3*x) - torch.cos(x), torch.exp(-0.8*x)+torch.sin(x)], dim=0)
-        dfdx = fourier_derivative_1d(f, order=1, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30)
-        df2dx2 = fourier_derivative_1d(f, order=2, L=L, use_FC='Legendre', FC_d=4, FC_n_additional_pts=30)
+        
+        # Use FourierDiff class with Fourier continuation
+        fd1d = FourierDiff(dim=1, L=L, use_fc='Legendre', fc_degree=4, fc_n_additional_pts=30)
+        derivatives = fd1d.compute_multiple_derivatives(f, [1, 2])
+        dfdx, df2dx2 = derivatives
 
         assert f.shape == dfdx.shape == df2dx2.shape
+   
+
+@pytest.mark.parametrize("use_fc", [False, 'Legendre'])
+def test_fourier_diff_2d(use_fc):
+    
+    if use_fc:
+        fd2d = FourierDiff(dim=2, L=(2*torch.pi, 2*torch.pi), use_fc=use_fc, fc_degree=4, fc_n_additional_pts=20)
+    else:
+        fd2d = FourierDiff(dim=2, L=(2*torch.pi, 2*torch.pi))
+    
+    # Create a 2D periodic function: sin(x) * cos(y)
+    L_x, L_y = 2*torch.pi, 2*torch.pi
+    nx, ny = 64, 64
+    x = torch.linspace(0, L_x, nx, dtype=torch.float64)
+    y = torch.linspace(0, L_y, ny, dtype=torch.float64)
+    X, Y = torch.meshgrid(x, y, indexing='ij')
+    
+    # Test function: f(x,y) = sin(x) * cos(y) for periodic, exp(-x) * sin(y) for non-periodic
+    if use_fc:
+        f = torch.exp(-X) * torch.sin(Y)  # Non-periodic function
+    else:
+        f = torch.sin(X) * torch.cos(Y)  # Periodic function
+    
+    # Test partial derivatives
+    df_dx_computed = fd2d.dx(f)
+    df_dy_computed = fd2d.dy(f)
+    
+    # Test higher order derivatives
+    d2f_dx2_computed = fd2d.dx(f, order=2)
+    d2f_dy2_computed = fd2d.dy(f, order=2)
+    
+    # Test laplacian
+    laplacian_computed = fd2d.laplacian(f)
+    
+    # Test multiple derivatives computation
+    derivatives = fd2d.compute_multiple_derivatives(f, [(1, 0), (0, 1), (2, 0), (0, 2)])
+    df_dx_multi, df_dy_multi, d2f_dx2_multi, d2f_dy2_multi = derivatives
+    
+    # Test gradient
+    gradient = fd2d.gradient(f)
+    assert gradient.shape == (2, nx, ny)
+    
+    # Test divergence with a vector field
+    # Create a vector field: u = [sin(x), cos(y)]
+    u1 = torch.sin(X)
+    u2 = torch.cos(Y)
+    u_vector = torch.stack([u1, u2], dim=0)
+    divergence = fd2d.divergence(u_vector)
+    
+    # Test curl with a vector field
+    curl = fd2d.curl(u_vector)
+    
+    # Basic shape assertions - just check that derivatives have correct shapes
+    assert df_dx_computed.shape == f.shape
+    assert df_dy_computed.shape == f.shape
+    assert d2f_dx2_computed.shape == f.shape
+    assert d2f_dy2_computed.shape == f.shape
+    assert laplacian_computed.shape == f.shape
+    assert len(derivatives) == 4
+    assert gradient.shape == (2, nx, ny)
+    assert divergence.shape == (nx, ny)
+    assert curl.shape == (nx, ny)
+    
+@pytest.mark.parametrize("use_fc", [False, 'Gram'])
+def test_fourier_diff_3d(use_fc):
+    """Test the FourierDiff class with various scenarios."""
+    
+    # Test basic functionality
+    if use_fc:
+        fd3d = FourierDiff(dim=3, L=(2*torch.pi, 2*torch.pi, 2*torch.pi), use_fc=use_fc, fc_degree=4, fc_n_additional_pts=50)
+    else:
+        fd3d = FourierDiff(dim=3, L=(2*torch.pi, 2*torch.pi, 2*torch.pi))
+    
+    # Create a 3D periodic function: sin(x) * cos(y) * sin(z)
+    L_x, L_y, L_z = 2*torch.pi, 2*torch.pi, 2*torch.pi
+    nx, ny, nz = 32, 32, 32
+    x = torch.linspace(0, L_x, nx, dtype=torch.float64)
+    y = torch.linspace(0, L_y, ny, dtype=torch.float64)
+    z = torch.linspace(0, L_z, nz, dtype=torch.float64)
+    X, Y, Z = torch.meshgrid(x, y, z, indexing='ij')
+    
+    # Test function: f(x,y,z) = sin(x) * cos(y) * sin(z) for periodic, exp(-x) * sin(y) * cos(z) for non-periodic
+    if use_fc:
+        f = torch.sin(X) * torch.cos(Y) * torch.sin(Z)  # Non-periodic function
+    else:
+        f = torch.sin(X) * torch.cos(Y) * torch.sin(Z)  # Periodic function
+    
+    # Test partial derivatives
+    df_dx_computed = fd3d.dx(f)
+    df_dy_computed = fd3d.dy(f)
+    df_dz_computed = fd3d.dz(f)
+    
+    # Test higher order derivatives
+    d2f_dx2_computed = fd3d.dx(f, order=2)
+    d2f_dy2_computed = fd3d.dy(f, order=2)
+    d2f_dz2_computed = fd3d.dz(f, order=2)
+    d2f_dxdy_computed = fd3d.dx(fd3d.dy(f))
+    d2f_dxdz_computed = fd3d.dx(fd3d.dz(f))
+    d2f_dydz_computed = fd3d.dy(fd3d.dz(f))
+    
+    # Test laplacian
+    laplacian_computed = fd3d.laplacian(f)
+    
+    # Test multiple derivatives computation
+    derivatives = fd3d.compute_multiple_derivatives(f, [(1, 0, 0), (0, 1, 0), (0, 0, 1), (2, 0, 0), (0, 2, 0), (0, 0, 2), (1, 1, 0), (1, 0, 1), (0, 1, 1)])
+    df_dx_multi, df_dy_multi, df_dz_multi, d2f_dx2_multi, d2f_dy2_multi, d2f_dz2_multi, d2f_dxdy_multi, d2f_dxdz_multi, d2f_dydz_multi = derivatives
+    
+    # Test gradient
+    gradient = fd3d.gradient(f)
+    assert gradient.shape == (3, nz, ny, nx)
+    
+    # Test divergence with a vector field
+    # Create a vector field: u = [sin(x), cos(y), sin(z)]
+    u1 = torch.sin(X)
+    u2 = torch.cos(Y)
+    u3 = torch.sin(Z)
+    u_vector = torch.stack([u1, u2, u3], dim=0)
+    divergence = fd3d.divergence(u_vector)
+    
+    # Test curl with a vector field
+    curl = fd3d.curl(u_vector)
+    
+    # Basic shape assertions - just check that derivatives have correct shapes
+    assert df_dx_computed.shape == f.shape
+    assert df_dy_computed.shape == f.shape
+    assert df_dz_computed.shape == f.shape
+    assert d2f_dx2_computed.shape == f.shape
+    assert d2f_dy2_computed.shape == f.shape
+    assert d2f_dz2_computed.shape == f.shape
+    assert d2f_dxdy_computed.shape == f.shape
+    assert d2f_dxdz_computed.shape == f.shape
+    assert d2f_dydz_computed.shape == f.shape
+    assert laplacian_computed.shape == f.shape
+    assert len(derivatives) == 9
+    assert gradient.shape == (3, nz, ny, nx)
+    assert divergence.shape == (nx, ny, nz)
+    assert curl.shape == (3, nz, ny, nx)
    
