@@ -4,8 +4,7 @@ import pytest
 from torch.testing import assert_close
 
 from ..data_losses import LpLoss, H1Loss, HdivLoss
-from ..finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd, FiniteDiff
-from ..fourier_diff import FourierDiff
+from ..differentiation import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd, FiniteDiff, FourierDiff
 from neuralop.layers.embeddings import regular_grid_nd
 
 

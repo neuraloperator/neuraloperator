@@ -13,7 +13,7 @@ An example of usage of our Fourier Differentiation Function
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from neuralop.losses.fourier_diff import FourierDiff
+from neuralop.losses.differentiation import FourierDiff
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

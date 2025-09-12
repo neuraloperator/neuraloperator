@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 from torch.autograd import grad
 
-from .finite_diff import FiniteDiff
+from .differentiation import FiniteDiff
 
 
 class BurgersEqnLoss(object):

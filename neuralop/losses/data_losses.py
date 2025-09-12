@@ -10,7 +10,7 @@ from typing import List
 
 import torch
 
-from .finite_diff import central_diff_1d, central_diff_2d, central_diff_3d, FiniteDiff
+from .differentiation import central_diff_1d, central_diff_2d, central_diff_3d, FiniteDiff
 
 #loss function with rel/abs Lp loss
 class LpLoss(object):
