@@ -5,15 +5,13 @@ import torch.nn as nn
 from ..mwno import MWNO
 
 
-@pytest.mark.parametrize("n_dim", [1, 2])
+@pytest.mark.parametrize("n_dim", [1, 2, 3])
 @pytest.mark.parametrize("alpha", [3, 5, 8])
 @pytest.mark.parametrize("k", [3, 4])
 @pytest.mark.parametrize("c", [1, 2])
 @pytest.mark.parametrize("n_layers", [2, 3])
 @pytest.mark.parametrize("L", [0, 1])
 @pytest.mark.parametrize("base", ["legendre"])
-@pytest.mark.parametrize("lifting_channels", [0, 128])
-@pytest.mark.parametrize("projection_channels", [0, 128])
 def test_mwno(
     n_dim,
     alpha,
@@ -22,9 +20,8 @@ def test_mwno(
     n_layers,
     L,
     base,
-    lifting_channels,
-    projection_channels
 ):
+    """Test MWNO with various configurations"""
     
     if torch.cuda.is_available():
         device = "cuda"
@@ -54,8 +51,6 @@ def test_mwno(
         c=c,
         n_layers=n_layers,
         L=L,
-        lifting_channels=lifting_channels,
-        projection_channels=projection_channels,
         base=base,
     ).to(device)
     
@@ -67,8 +62,9 @@ def test_mwno(
         in_data = torch.randn(batch_size, s, s, 3).to(device)
         expected_shape = [batch_size, s, s]
     elif n_dim == 3:
-        in_data = torch.randn(batch_size, s, s, s, 3).to(device)
-        expected_shape = [batch_size, s, s, s]
+        t = 8  # T dimension
+        in_data = torch.randn(batch_size, s, s, t, 3).to(device)
+        expected_shape = [batch_size, s, s, t]
     
     # Test forward pass
     out = model(in_data)
