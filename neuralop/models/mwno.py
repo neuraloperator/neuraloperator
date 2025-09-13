@@ -45,6 +45,7 @@ class MWNO(nn.Module):
     --------
     >>> model_1d = MWNO(alpha=5, in_channels=1, out_channels=1)
     >>> model_2d = MWNO((5, 5), in_channels=1, out_channels=1)
+    >>> model_3d = MWNO(alpha=5, n_dim=3, in_channels=1, out_channels=1)
     """
     
     def __init__(
@@ -58,7 +59,7 @@ class MWNO(nn.Module):
         c: int = 1,
         n_layers: int = 3,
         L: int = 0,
-        lifting_channels: int = 128,
+        lifting_channels: int = 0,
         projection_channels: int = 128,
         base: str = 'legendre',
         initializer=None,
@@ -83,9 +84,9 @@ class MWNO(nn.Module):
             self.n_modes = tuple([alpha] * self.n_dim)
         else:
             raise ValueError("Either n_modes or alpha must be specified")
-
-        if self.n_dim not in [1, 2]:
-            raise ValueError(f"MWNO only supports 1D and 2D. Got {self.n_dim}D")
+        
+        if self.n_dim not in [1, 2, 3]:
+            raise ValueError(f"MWNO only supports 1D, 2D, and 3D. Got {self.n_dim}D")
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -155,6 +156,7 @@ class MWNO(nn.Module):
             Input tensor with shape:
             - 1D: (B, N, in_channels)
             - 2D: (B, Nx, Ny, in_channels)  
+            - 3D: (B, Nx, Ny, T, in_channels)
             
         Returns
         -------
@@ -162,6 +164,7 @@ class MWNO(nn.Module):
             Output tensor with shape:
             - 1D: (B, N, out_channels) or (B, N) if out_channels=1
             - 2D: (B, Nx, Ny, out_channels) or (B, Nx, Ny) if out_channels=1
+            - 3D: (B, Nx, Ny, T, out_channels) or (B, Nx, Ny, T) if out_channels=1
         """
         
         x = self.lifting(x)
@@ -172,6 +175,9 @@ class MWNO(nn.Module):
         elif self.n_dim == 2:
             B, Nx, Ny, _ = x.shape
             x = x.view(B, Nx, Ny, self.c, self.k**2)
+        elif self.n_dim == 3:
+            B, Nx, Ny, T, _ = x.shape
+            x = x.view(B, Nx, Ny, T, self.c, self.k**2)
 
         for i, layer in enumerate(self.mwno_layers):
             x = layer(x)
@@ -182,6 +188,8 @@ class MWNO(nn.Module):
             x = x.view(B, N, -1)
         elif self.n_dim == 2:
             x = x.view(B, Nx, Ny, -1)
+        elif self.n_dim == 3:
+            x = x.view(B, Nx, Ny, T, -1)
         
         x = self.projection(x)
         

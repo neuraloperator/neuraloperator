@@ -287,7 +287,7 @@ class SparseKernel(nn.Module):
         
         if n_dim == 1:
             in_channels = c * k
-        elif n_dim in [2]:
+        elif n_dim in [2, 3]:
             in_channels = c * k**2
         else:
             raise ValueError(f"Unsupported dimension: {n_dim}")
@@ -307,6 +307,11 @@ class SparseKernel(nn.Module):
                 nn.Conv2d(in_channels, out_channels, 3, 1, 1),
                 nn.ReLU(inplace=True)
             )
+        elif self.n_dim == 3:
+            return nn.Sequential(
+                nn.Conv3d(in_channels, out_channels, 3, 1, 1),
+                nn.ReLU(inplace=True)
+            )
     
     def forward(self, x):
         original_shape = x.shape
@@ -317,6 +322,9 @@ class SparseKernel(nn.Module):
         elif self.n_dim == 2:
             B, Nx, Ny, c, k_sq = x.shape
             x = x.view(B, Nx, Ny, -1).permute(0, 3, 1, 2)
+        elif self.n_dim == 3:
+            B, Nx, Ny, T, c, k_sq = x.shape
+            x = x.view(B, Nx, Ny, T, -1).permute(0, 4, 1, 2, 3)
         
         x = self.conv(x)
         
@@ -324,6 +332,8 @@ class SparseKernel(nn.Module):
             x = x.permute(0, 2, 1)
         elif self.n_dim == 2:
             x = x.permute(0, 2, 3, 1)
+        elif self.n_dim == 3:
+            x = x.permute(0, 2, 3, 4, 1)
         
         x = self.output_proj(x)
         x = x.view(original_shape)
@@ -353,8 +363,16 @@ class SparseKernelFT(nn.Module):
             self.weights2 = nn.Parameter(torch.zeros(in_channels, in_channels, alpha, alpha, dtype=torch.cfloat))
             nn.init.xavier_normal_(self.weights1)
             nn.init.xavier_normal_(self.weights2)
+        elif n_dim == 3:
+            in_channels = c * k**2
+            self.weights1 = nn.Parameter(torch.zeros(in_channels, in_channels, alpha, alpha, alpha, dtype=torch.cfloat))
+            self.weights2 = nn.Parameter(torch.zeros(in_channels, in_channels, alpha, alpha, alpha, dtype=torch.cfloat))
+            self.weights3 = nn.Parameter(torch.zeros(in_channels, in_channels, alpha, alpha, alpha, dtype=torch.cfloat))
+            self.weights4 = nn.Parameter(torch.zeros(in_channels, in_channels, alpha, alpha, alpha, dtype=torch.cfloat))
+            for w in [self.weights1, self.weights2, self.weights3, self.weights4]:
+                nn.init.xavier_normal_(w)
         
-        if n_dim in [2]:
+        if n_dim in [2, 3]:
             self.output_proj = nn.Linear(in_channels, in_channels)
     
     def forward(self, x):
@@ -392,6 +410,31 @@ class SparseKernelFT(nn.Module):
             x = self.output_proj(x)
             x = x.view(original_shape)
             
+        elif self.n_dim == 3:
+            B, Nx, Ny, T, c, k_sq = x.shape
+            x = x.view(B, Nx, Ny, T, -1).permute(0, 4, 1, 2, 3)
+            x_fft = torch.fft.rfftn(x, dim=[-3, -2, -1])
+            
+            l1 = min(self.alpha, Nx//2+1)
+            l2 = min(self.alpha, Ny//2+1)
+            l3 = min(self.alpha, T//2+1)
+            out_ft = torch.zeros(B, c*k_sq, Nx, Ny, T//2 + 1, device=x.device, dtype=torch.cfloat)
+
+            out_ft[:, :, :l1, :l2, :l3] = torch.einsum("bixyz,ioxyz->boxyz",
+                x_fft[:, :, :l1, :l2, :l3], self.weights1[:, :, :l1, :l2, :l3])
+            out_ft[:, :, -l1:, :l2, :l3] = torch.einsum("bixyz,ioxyz->boxyz",
+                x_fft[:, :, -l1:, :l2, :l3], self.weights2[:, :, :l1, :l2, :l3])
+            out_ft[:, :, :l1, -l2:, :l3] = torch.einsum("bixyz,ioxyz->boxyz",
+                x_fft[:, :, :l1, -l2:, :l3], self.weights3[:, :, :l1, :l2, :l3])
+            out_ft[:, :, -l1:, -l2:, :l3] = torch.einsum("bixyz,ioxyz->boxyz",
+                x_fft[:, :, -l1:, -l2:, :l3], self.weights4[:, :, :l1, :l2, :l3])
+            
+            x = torch.fft.irfftn(out_ft, s=(Nx, Ny, T))
+            x = x.permute(0, 2, 3, 4, 1)
+            x = F.relu(x)
+            x = self.output_proj(x)
+            x = x.view(original_shape)
+        
         return x
 
 
@@ -455,10 +498,19 @@ class MWNO_CZ(nn.Module):
     def wavelet_transform(self, x):
         # Dimension-agnostic wavelet transform
         if self.n_dim == 1:
+            # 1D: downsample along the single spatial dimension
             xa = torch.cat([x[:, ::2, :, :], x[:, 1::2, :, :]], -1)
-        elif self.n_dim >= 2:
-            xa = torch.cat([x[..., ::2, ::2, :, :], x[..., ::2, 1::2, :, :], 
-                           x[..., 1::2, ::2, :, :], x[..., 1::2, 1::2, :, :]], -1)
+        elif self.n_dim == 2:
+            # 2D: downsample along both spatial dimensions
+            xa = torch.cat([x[:, ::2, ::2, :, :], x[:, ::2, 1::2, :, :], 
+                        x[:, 1::2, ::2, :, :], x[:, 1::2, 1::2, :, :]], -1)
+        elif self.n_dim == 3:
+            # 3D: x shape is (B, Nx, Ny, T, c, k**2)
+            # Only downsample Nx and Ny, keep T unchanged
+            xa = torch.cat([x[:, ::2, ::2, :, :, :],    # even-even
+                        x[:, ::2, 1::2, :, :, :],    # even-odd
+                        x[:, 1::2, ::2, :, :, :],    # odd-even
+                        x[:, 1::2, 1::2, :, :, :]], -1)  # odd-odd
         
         d = torch.matmul(xa, self.ec_d)
         s = torch.matmul(xa, self.ec_s)
@@ -492,33 +544,67 @@ class MWNO_CZ(nn.Module):
             result[:, 1::2, 1::2, :, :] = x_oo
             return result
             
+        elif self.n_dim == 3:
+            B, Nx, Ny, T, c, ich = x.shape
+            assert ich == 2*self.k**2
+            x_ee = torch.matmul(x, self.rc_ee)
+            x_eo = torch.matmul(x, self.rc_eo)
+            x_oe = torch.matmul(x, self.rc_oe)
+            x_oo = torch.matmul(x, self.rc_oo)
+            
+            result = torch.zeros(B, Nx*2, Ny*2, T, c, self.k**2, device=x.device)
+            result[:, ::2, ::2, :, :, :] = x_ee
+            result[:, ::2, 1::2, :, :, :] = x_eo
+            result[:, 1::2, ::2, :, :, :] = x_oe
+            result[:, 1::2, 1::2, :, :, :] = x_oo
+            return result
     
     def forward(self, x):
         if self.n_dim == 1:
             B, N, c, ich = x.shape
             ns = math.floor(np.log2(N))
-        else:
-            B, *spatial_dims, c, ich = x.shape
-            ns = math.floor(np.log2(spatial_dims[0]))
+        elif self.n_dim == 2:
+            B, Nx, Ny, c, ich = x.shape
+            ns = math.floor(np.log2(Nx))
+        elif self.n_dim == 3:
+            B, Nx, Ny, T, c, ich = x.shape
+            ns = math.floor(np.log2(Nx))
+
         
         Ud = torch.jit.annotate(List[Tensor], [])
         Us = torch.jit.annotate(List[Tensor], [])
         
         for i in range(ns - self.L):
             d, x = self.wavelet_transform(x)
-            Ud += [self.A(d) + self.B(x)]
-            Us += [self.C(d)]
+            Ud_i = self.A(d) + self.B(x)
+            Us_i = self.C(d)
+            Ud.append(Ud_i)
+            Us.append(Us_i)
+
         
         if self.n_dim == 1:
             x = self.T0(x)
-        else:
-            coarse_size = 2**self.L
-            if self.n_dim == 2:
-                x = self.T0(x.view(B, coarse_size, coarse_size, -1)).view(B, coarse_size, coarse_size, c, ich)
+        elif self.n_dim == 2:
+            # x shape: (B, 2^L, 2^L, c, k^2)
+            B, Nx_coarse, Ny_coarse, c, ich = x.shape
+            x_reshaped = x.reshape(B * Nx_coarse * Ny_coarse, c * ich)
+            x_reshaped = self.T0(x_reshaped)
+            x = x_reshaped.reshape(B, Nx_coarse, Ny_coarse, c, ich)
+        elif self.n_dim == 3:
+            # x shape: (B, 2^L, 2^L, T, c, k^2)
+            B, Nx_coarse, Ny_coarse, T, c, ich = x.shape
+            # Flatten spatial dimensions but keep T separate
+            x_reshaped = x.reshape(B * Nx_coarse * Ny_coarse * T, c * ich)
+            x_reshaped = self.T0(x_reshaped)
+            x = x_reshaped.reshape(B, Nx_coarse, Ny_coarse, T, c, ich)
         
+            # Reconstruct
         for i in range(ns - 1 - self.L, -1, -1):
+            
             x = x + Us[i]
+            
             x = torch.cat((x, Ud[i]), -1)
+            
             x = self.even_odd_reconstruction(x)
         
         return x
