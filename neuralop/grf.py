@@ -296,3 +296,105 @@ class MaternKernelSampler(GRFSampler):
         if self.normalize_std:
             result = self._normalize_to_unit_std(result)
         return result
+
+
+class ExponentialKernelSampler(GRFSampler):
+    """
+    Sampler for a Gaussian Random Field with an Exponential kernel using FFT-based method.
+    This implementation follows the efficient circulant embedding approach for fast generation
+    on regular grids, avoiding the memory-intensive Cholesky decomposition.
+
+    The exponential covariance kernel is:
+        C(d) = sigma^2 * exp(-d / L)
+    where d is the Euclidean distance and L is the correlation length.
+    """
+
+    @torch.no_grad()
+    def __init__(self, in_channels, Ln1, Ln2, corr_length=10.0, device=None):
+        """
+        Initialize the Exponential Kernel Sampler.
+
+        Args:
+            in_channels (int): Number of input channels for the samples.
+            Ln1, Ln2 (int): Grid dimensions (Ln1 x Ln2).
+            corr_length (float): Correlation length L. Default: 10.0.
+            device (torch.device): The PyTorch device to use.
+        """
+        self.in_channels = in_channels
+        self.Ln1 = Ln1
+        self.Ln2 = Ln2
+        self.device = device
+        self.corr_length = corr_length
+
+        # Validate parameters
+        if corr_length <= 0:
+            raise ValueError("Correlation length must be positive.")
+
+        # Pre-compute the circulant embedding and eigenvalues
+        self._setup_circulant_embedding()
+
+    def _setup_circulant_embedding(self):
+        """
+        Set up the circulant embedding for efficient FFT-based sampling.
+        This creates a larger periodic domain that makes the covariance matrix circulant.
+        """
+        # Size for the circulant embedding
+        # M = 2 * grid_size - 2
+        self.M1 = 2 * self.Ln1 - 2
+        self.M2 = 2 * self.Ln2 - 2
+
+        # Create coordinate grids for distance calculation
+        grid_I, grid_J = torch.meshgrid(torch.arange(self.M1, device=self.device), torch.arange(self.M2, device=self.device), indexing="ij")
+
+        # Calculate distances using the circulant property
+        dist_I = torch.minimum(grid_I, self.M1 - grid_I)
+        dist_J = torch.minimum(grid_J, self.M2 - grid_J)
+        Dist = torch.sqrt(dist_I.float() ** 2 + dist_J.float() ** 2)
+
+        # Apply the exponential kernel to get covariance values
+        C = torch.exp(-Dist / self.corr_length)
+
+        # Compute eigenvalues using FFT2
+        # The eigenvalues of a circulant matrix are the FFT of its first row
+        lambda_vals = torch.fft.fft2(C)
+
+        # Eigenvalues must be real and non-negative for a valid covariance matrix
+        # Handle numerical errors by taking real part and enforcing non-negativity
+        lambda_vals = torch.real(lambda_vals)
+        lambda_vals = torch.clamp(lambda_vals, min=0.0)
+
+        # Store the square root of eigenvalues for sampling
+        self.sqrt_eigenvals = torch.sqrt(lambda_vals)
+
+    @torch.no_grad()
+    def sample(self, N):
+        """
+        Generate N samples from the Gaussian Random Field with exponential kernel.
+
+        Args:
+            N (int): The number of samples to generate.
+
+        Returns:
+            torch.Tensor: A tensor of shape (N, in_channels, Ln1, Ln2).
+        """
+        # Generate all noise at once for efficiency
+        # Shape: (N, in_channels, M1, M2) for real and imaginary parts
+        noise_real = torch.randn(N, self.in_channels, self.M1, self.M2, device=self.device)
+        noise_imag = torch.randn(N, self.in_channels, self.M1, self.M2, device=self.device)
+        noise = torch.complex(noise_real, noise_imag)
+
+        # Create the field in frequency domain by multiplying noise with sqrt of eigenvalues
+        # f_hat = sqrt(lambda) * noise / sqrt(M*M)
+        f_hat = self.sqrt_eigenvals[None, None, :, :] * noise * np.sqrt(self.M1 * self.M2)
+
+        # Transform back to spatial domain using IFFT2
+        grf_full = torch.fft.ifft2(f_hat, dim=(-2, -1))
+
+        # Take real part (should be real, but numerical precision might introduce small imaginary parts)
+        grf_full = torch.real(grf_full)
+
+        # Crop to the original grid size (top-left corner)
+        # Shape: (N, in_channels, Ln1, Ln2)
+        samples = grf_full[:, :, : self.Ln1, : self.Ln2]
+
+        return samples
