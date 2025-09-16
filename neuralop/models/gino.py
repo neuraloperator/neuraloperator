@@ -110,8 +110,6 @@ class GINO(BaseModel):
         whether to use tanh to stabilize outputs of the output GNO, by default False
     fno_resolution_scaling_factor : float | None, optional
         factor by which to scale output of FNO, by default None
-    fno_incremental_n_modes : list[int] | None, defaults to None
-    if passed, sets n_modes separately for each FNO layer.
     fno_block_precision : str, defaults to 'full'
         data precision to compute within fno block
     fno_use_channel_mlp : bool, defaults to True
@@ -146,8 +144,6 @@ class GINO(BaseModel):
         Tensor factorization of the parameters weight to use
     fno_rank : float, defaults to 1.0
         Rank of the tensor factorization of the Fourier weights.
-    fno_joint_factorization : bool, defaults to False
-        Whether all the Fourier layers should be parameterized by a single tensor (vs one per layer).
     fno_fixed_rank_modes : bool, defaults to False
         Modes to not factorize.
     fno_implementation : str {'factorized', 'reconstructed'} | None, defaults to 'factorized'
@@ -199,7 +195,6 @@ class GINO(BaseModel):
         out_gno_tanh=None,
         # Other FNO Params
         fno_resolution_scaling_factor=None,
-        fno_incremental_n_modes=None,
         fno_block_precision='full',
         fno_use_channel_mlp=True, 
         fno_channel_mlp_dropout=0,
@@ -215,7 +210,6 @@ class GINO(BaseModel):
         fno_separable=False,
         fno_factorization=None,
         fno_rank=1.0,
-        fno_joint_factorization=False, 
         fno_fixed_rank_modes=False,
         fno_implementation='factorized',
         fno_decomposition_kwargs=dict(),
@@ -312,13 +306,10 @@ class GINO(BaseModel):
         # possibly concatenated feature channels `latent_features` 
         self.fno_blocks = FNOBlocks(
                 n_modes=fno_n_modes,
-                hidden_channels=fno_hidden_channels,
                 in_channels=fno_hidden_channels,
                 out_channels=fno_hidden_channels,
-                positional_embedding=None,
                 n_layers=fno_n_layers,
                 resolution_scaling_factor=fno_resolution_scaling_factor,
-                incremental_n_modes=fno_incremental_n_modes,
                 fno_block_precision=fno_block_precision,
                 use_channel_mlp=fno_use_channel_mlp,
                 channel_mlp_expansion=fno_channel_mlp_expansion,
@@ -333,11 +324,9 @@ class GINO(BaseModel):
                 separable=fno_separable,
                 factorization=fno_factorization,
                 rank=fno_rank,
-                joint_factorization=fno_joint_factorization, 
                 fixed_rank_modes=fno_fixed_rank_modes,
                 implementation=fno_implementation,
                 decomposition_kwargs=fno_decomposition_kwargs,
-                domain_padding=None,
                 conv_module=fno_conv_module,
             )
 

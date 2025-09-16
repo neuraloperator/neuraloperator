@@ -318,7 +318,6 @@ class LocalNO(BaseModel, name='LocalNO'):
             preactivation=preactivation,
             local_no_skip=local_no_skip,
             channel_mlp_skip=channel_mlp_skip,
-            complex_data=complex_data,
             max_n_modes=max_n_modes,
             local_no_block_precision=local_no_block_precision,
             rank=rank,

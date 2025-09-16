@@ -30,7 +30,7 @@ def test_FNOBlock_resolution_scaling_factor():
         # Downsample outputs
         block = FNOBlocks(
             3, 4, n_modes[:dim], n_layers=1, resolution_scaling_factor=0.5, 
-            use_mlp=True, channel_mlp_dropout=channel_mlp_dropout, 
+            use_channel_mlp=True, channel_mlp_dropout=channel_mlp_dropout, 
             channel_mlp_expansion=channel_mlp_expansion, channel_mlp_skip=channel_mlp_skip)
 
         x = torch.randn(2, 3, *size[:dim])
@@ -83,12 +83,12 @@ def test_FNOBlock_complex_data(n_dim):
     modes = (8, 8, 8)
     size = [10]*3
     channel_mlp_dropout=0
-    mlp_expansion=0.5
+    channel_mlp_expansion=0.5
     channel_mlp_skip='linear'
     # Instantiate a complex-valued FNO block
     block = FNOBlocks(
         3, 4, modes[:n_dim], n_layers=1,
-        channel_mlp_dropout=channel_mlp_dropout, channel_mlp_expansion=mlp_expansion, 
+        channel_mlp_dropout=channel_mlp_dropout, channel_mlp_expansion=channel_mlp_expansion, 
         channel_mlp_skip=channel_mlp_skip, complex_data=True)
 
     x = torch.randn(2, 3, *size[:n_dim], dtype=torch.cfloat)
