@@ -6,11 +6,16 @@ By default, losses expect arguments y_pred (model predictions) and y (ground y.)
 """
 
 import math
+import warnings
 from typing import List
 
 import torch
 
 from .finite_diff import central_diff_1d, central_diff_2d, central_diff_3d
+
+# Set warning filter to show each warning only once
+warnings.filterwarnings("once", category=UserWarning)
+
 
 #loss function with rel/abs Lp loss
 class LpLoss(object):
@@ -172,6 +177,13 @@ class LpLoss(object):
         return diff
 
     def __call__(self, y_pred, y, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"LpLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
         return self.rel(y_pred, y)
 
 class H1Loss(object):
@@ -422,6 +434,13 @@ class H1Loss(object):
         quadrature : float or list, optional
             normalization constant for reduction, by default None
         """
+        if kwargs:
+            warnings.warn(
+                f"H1Loss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
         return self.rel(y_pred, y, quadrature=quadrature)
 
 class HdivLoss(object):
@@ -663,6 +682,13 @@ class HdivLoss(object):
         quadrature : float or list, optional
             normalization constant for reduction, by default None
         """
+        if kwargs:
+            warnings.warn(
+                f"HdivLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
         return self.rel(y_pred, y, quadrature=quadrature)
 
 class PointwiseQuantileLoss(object):
@@ -723,6 +749,13 @@ class PointwiseQuantileLoss(object):
         y : torch.tensor
             true pointwise diffs (model pred - ytrue)
         """
+        if kwargs:
+            warnings.warn(
+                f"PointwiseQuantileLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
 
         quantile = 1 - self.alpha
         y_abs = torch.abs(y)
@@ -758,6 +791,13 @@ class MSELoss(object):
         dim : List[int], optional
             dimensions across which to compute MSE, by default None
         """
+        if kwargs:
+            warnings.warn(
+                f"MSELoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
         assert y_pred.shape == y.shape, (y.shape, y_pred.shape)
         if dim is None:
             dim = list(range(1, y_pred.ndim)) # no reduction across batch dim

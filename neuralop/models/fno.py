@@ -7,6 +7,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# Set warning filter to show each warning only once
+import warnings
+warnings.filterwarnings("once", category=UserWarning)
+
+
 from ..layers.embeddings import GridEmbeddingND, GridEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.padding import DomainPadding
@@ -192,7 +197,6 @@ class FNO(BaseModel, name="FNO"):
         separable: bool = False,
         preactivation: bool = False,
         conv_module: nn.Module = SpectralConv,
-        **kwargs,
     ):
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
@@ -295,7 +299,6 @@ class FNO(BaseModel, name="FNO"):
             decomposition_kwargs=decomposition_kwargs,
             conv_module=conv_module,
             n_layers=n_layers,
-            **kwargs,
         )
 
         # if adding a positional embedding, add those channels to lifting
@@ -367,6 +370,13 @@ class FNO(BaseModel, name="FNO"):
 
             * If tuple list, specifies the exact output-shape of each FNO Block
         """
+        if kwargs:
+            warnings.warn(
+                f"FNO.forward() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
 
         if output_shape is None:
             output_shape = [None] * self.n_layers

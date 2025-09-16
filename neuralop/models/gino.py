@@ -3,6 +3,11 @@ import torch
 import torch.nn.functional as F
 import time
 
+# Set warning filter to show each warning only once
+import warnings
+warnings.filterwarnings("once", category=UserWarning)
+
+
 from .base_model import BaseModel
 
 from ..layers.channel_mlp import ChannelMLP
@@ -215,7 +220,6 @@ class GINO(BaseModel):
         fno_implementation='factorized',
         fno_decomposition_kwargs=dict(),
         fno_conv_module=SpectralConv,
-        **kwargs
         ):
         
         super().__init__()
@@ -335,8 +339,7 @@ class GINO(BaseModel):
                 decomposition_kwargs=fno_decomposition_kwargs,
                 domain_padding=None,
                 conv_module=fno_conv_module,
-                **kwargs
-        )
+            )
 
         ### output GNO
         if gno_weighting_function is not None: #sq radius**2?
@@ -396,6 +399,14 @@ class GINO(BaseModel):
         return in_p 
     
     def forward(self, input_geom, latent_queries, output_queries, x=None, latent_features=None, ada_in=None, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"GINO.forward() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
+        
         """The GINO's forward call:
         Input GNO --> FNOBlocks --> output GNO + projection to output queries.
 

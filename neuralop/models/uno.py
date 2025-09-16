@@ -1,6 +1,11 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
+
+# Set warning filter to show each warning only once
+import warnings
+warnings.filterwarnings("once", category=UserWarning)
+
 from ..layers.channel_mlp import ChannelMLP
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.skip_connections import skip_connection
@@ -132,7 +137,6 @@ class UNO(nn.Module):
         decomposition_kwargs=dict(),
         domain_padding=None,
         verbose=False,
-        **kwargs
     ):
         super().__init__()
         self.n_layers = n_layers
@@ -272,9 +276,7 @@ class UNO(nn.Module):
                     preactivation=preactivation,
                     fno_skip=fno_skip,
                     channel_mlp_skip=channel_mlp_skip,
-                    incremental_n_modes=incremental_n_modes,
                     rank=rank,
-                    SpectralConv=self.integral_operator,
                     fixed_rank_modes=fixed_rank_modes,
                     implementation=implementation,
                     separable=separable,
@@ -303,6 +305,14 @@ class UNO(nn.Module):
         )
 
     def forward(self, x, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"UNO.forward() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
+        
         if self.positional_embedding is not None:
             x = self.positional_embedding(x)
         

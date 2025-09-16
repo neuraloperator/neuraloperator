@@ -1,6 +1,11 @@
 import torch
 import torch.nn.functional as F
 
+# Set warning filter to show each warning only once
+import warnings
+warnings.filterwarnings("once", category=UserWarning)
+
+
 from .base_model import BaseModel
 
 from ..layers.channel_mlp import ChannelMLP
@@ -178,7 +183,6 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         fno_implementation="factorized",
         fno_decomposition_kwargs=dict(),
         fno_conv_module=SpectralConv,
-        **kwargs,
     ):
         super().__init__()
 
@@ -265,8 +269,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
                 decomposition_kwargs=fno_decomposition_kwargs,
                 domain_padding=None,
                 conv_module=fno_conv_module,
-                **kwargs
-        )
+            )
 
         self.gno_radius = gno_radius
 
@@ -385,6 +388,14 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         return out
 
     def forward(self, in_p, out_p, f, ada_in=None, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"FNOGNO.forward() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
+        
         # Compute latent space embedding
         latent_embed = self.latent_embedding(in_p=in_p, f=f, ada_in=ada_in)
         # Integrate latent space

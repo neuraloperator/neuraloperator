@@ -165,7 +165,6 @@ class LocalNOBlocks(nn.Module):
         implementation="factorized",
         decomposition_kwargs=dict(),
         fft_norm="forward",
-        **kwargs,
     ):
         super().__init__()
         if isinstance(n_modes, int):

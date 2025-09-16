@@ -5,6 +5,11 @@ from typing import Dict, List, Optional, Callable
 
 logger = logging.getLogger(__name__)
 
+# Set warning filter to show each warning only once
+import warnings
+warnings.filterwarnings("once", category=UserWarning)
+
+
 class FieldwiseAggregatorLoss(object):
     """
     AggregatorLoss takes a dict of losses, keyed to correspond 
@@ -45,6 +50,13 @@ class FieldwiseAggregatorLoss(object):
         **kwargs: dict
             bonus args to pass to each fieldwise loss
         """
+        if kwargs:
+            warnings.warn(
+                f"FieldwiseLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
 
         loss = 0.
         if self.logging: 
