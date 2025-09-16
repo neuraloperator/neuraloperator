@@ -17,9 +17,8 @@ class FNO(ConfigBase):
     hidden_channels: int = 256
     n_layers: int = 4
     domain_padding: float = 0.078125
-    fft_norm: str = "forward"
     norm: Optional[Any] = None
-    skip: str = "linear"
+    fno_skip: str = "linear"
     use_channel_mlp: int = 0
     channel_mlp: Optional[Any] = None
     channel_mlp_expansion: float = 0.5
@@ -36,9 +35,8 @@ class TFNO(ConfigBase):
     hidden_channels: int = 256
     n_layers: int = 4
     domain_padding: float = 0.078125
-    fft_norm: str = "forward"
     norm: Optional[Any] = None
-    skip: str = "linear"
+    fno_skip: str = "linear"
     use_channel_mlp: int = 0
     channel_mlp: Optional[Any] = None
     channel_mlp_expansion: float = 0.5
