@@ -54,13 +54,6 @@ class UNO(nn.Module):
                     Example: For a 5 layer UNO architecture, the skip connections can be
                     horizontal_skips_map ={4:0,3:1}
 
-    incremental_n_modes : None or int tuple, default is None
-        * If not None, this allows to incrementally increase the number of modes in Fourier domain
-          during training. Has to verify n <= N for (n, m) in zip(incremental_n_modes, n_modes).
-
-        * If None, all the n_modes are used.
-
-        This can be updated dynamically during training.
     channel_mlp_dropout: float, optional
         dropout parameter for channelMLP after each FNO Block
     channel_mlp_expansions: float, optional
@@ -118,7 +111,6 @@ class UNO(nn.Module):
         uno_n_modes=None,
         uno_scalings=None,
         horizontal_skips_map=None,
-        incremental_n_modes=None,
         channel_mlp_dropout=0,
         channel_mlp_expansion=0.5,
         non_linearity=F.gelu,
@@ -173,7 +165,7 @@ class UNO(nn.Module):
         self.implementation = implementation
         self.separable = separable
         self.preactivation = preactivation
-        self._incremental_n_modes = incremental_n_modes
+
         self.operator_block = operator_block
         self.integral_operator = integral_operator
 
