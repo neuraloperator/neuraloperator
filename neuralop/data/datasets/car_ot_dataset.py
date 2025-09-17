@@ -1,6 +1,7 @@
 from typing import List, Union
 from pathlib import Path
 
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
@@ -77,9 +78,26 @@ class CarOTDataset(OTDataModule):
                 data_elem = self.data[j][attr]
                 self.data[j][attr] = self.normalizers[attr].transform(data_elem)
 
+        for j in range(len(self.data)):
+            batch_data = self.data[j]
+            n_s = batch_data['trans'].shape[1]
+            n_s_sqrt = int(np.sqrt(n_s))
+            normal = batch_data['nor_t']
+            ind_enc = batch_data['ind_enc']
+            normal = normal[ind_enc]
+            normal_features = torch.cross(normal , batch_data['nor_s'].reshape(-1,3), dim=1)
+            trans = torch.cat((batch_data['trans'][0], batch_data['source'], normal_features), dim=1).T.reshape(9, n_s_sqrt, n_s_sqrt).unsqueeze(0)
+            self.data[j]['trans']=trans
+
         # Datasets
-        self.train_data = DictDataset(data[0:n_train])
-        self.test_data = DictDataset(data[n_train:])
+        self.train_data = DictDataset(self.data[0:n_train])
+        self.test_data = DictDataset(self.data[n_train:])
+    
+    def train_loader(self, **kwargs):
+        return DataLoader(self.train_data, **kwargs)
+
+    def test_loader(self, **kwargs):
+        return DataLoader(self.test_data, **kwargs)
 
 def load_saved_ot():
     """

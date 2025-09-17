@@ -124,11 +124,13 @@ class OTDataModule:
             indices_decoder = torch.argmin(distances, dim=0) #find the closest point in "transport" (latent grids) to each point in "target" (car vertices)
 
             item_dict = {
-                "verts": target.cpu(),
+                "target": target.cpu(),
+                "source": source.cpu(),
                 "ind_enc": indices_encoder.cpu(),
                 "ind_dec": indices_decoder.cpu(),
                 "press": pressure,
-                "nor": normal,
+                "nor_t": normal,
+                "nor_s": self.torus_normals(n_s_sqrt),
                 "trans": transport.cpu()
             }
             data.append(item_dict)
@@ -141,18 +143,44 @@ class OTDataModule:
             indices = [line.strip() for line in file if line.strip().isdigit()]
         return indices
     
-    def torus_grid(self,n_s_sqrt):
+    def torus_grid(self, n_s_sqrt, r = 0.5, R = 1.0):
         theta = torch.linspace(0, 2 * torch.pi, n_s_sqrt + 1)[:-1]
         phi = torch.linspace(0, 2 * torch.pi, n_s_sqrt + 1)[:-1]
         # Create a grid using meshgrid
         X, Y = torch.meshgrid(theta, phi, indexing='ij')
         points = torch.stack((X, Y)).reshape((2, -1)).T
 
-        r = 0.5
-        R = 1.0
         x = (R + r * torch.cos(points[:, 0])) * torch.cos(points[:, 1])
         y = (R + r * torch.cos(points[:, 0])) * torch.sin(points[:, 1])
         z = r * torch.sin(points[:, 0])
         grid = torch.stack((x, y, z), axis=1)
         
         return grid
+
+    def torus_normals(self, n_s_sqrt, r = 0.5, R = 1.0):
+        theta = torch.linspace(0, 2 * np.pi, n_s_sqrt + 1)[:-1]
+        phi = torch.linspace(0, 2 * np.pi, n_s_sqrt + 1)[:-1]
+        theta, phi = torch.meshgrid(theta, phi, indexing='ij')
+
+        # Partial derivatives
+        # dP/dtheta
+        dx_dtheta = -r * torch.sin(theta) * torch.cos(phi)
+        dy_dtheta = -r * torch.sin(theta) * torch.sin(phi)
+        dz_dtheta = r * torch.cos(theta)
+
+        # dP/dphi
+        dx_dphi = -(R + r * torch.cos(theta)) * torch.sin(phi)
+        dy_dphi = (R + r * torch.cos(theta)) * torch.cos(phi)
+        dz_dphi = torch.zeros_like(dx_dphi)
+
+        # Cross product to find normal vectors
+        nx = dy_dtheta * dz_dphi - dz_dtheta * dy_dphi
+        ny = dz_dtheta * dx_dphi - dx_dtheta * dz_dphi
+        nz = dx_dtheta * dy_dphi - dy_dtheta * dx_dphi
+
+        # Stack and normalize
+        normals = torch.stack((nx, ny, nz), axis=-1)
+        norm = torch.linalg.norm(normals, dim=2, keepdim=True)
+        normals = normals / norm
+
+        return normals

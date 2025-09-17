@@ -5,6 +5,7 @@ from .burgers import Burgers1dTimeDataset, load_mini_burgers_1dtime
 from .dict_dataset import DictDataset
 from .mesh_datamodule import MeshDataModule
 from .car_cfd_dataset import CarCFDDataset, load_mini_car
+from .car_ot_dataset import CarOTDataset, load_saved_ot
 
 # only import SphericalSWEDataset if torch_harmonics is built locally
 try:

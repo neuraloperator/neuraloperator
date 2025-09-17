@@ -194,3 +194,16 @@ class GINO_Poisson2d(GINOConfig):
     fno_factorization: Optional[Any] = None
     fno_rank: float = 0.8
     fno_domain_padding: float = 0.0
+
+class OTNO_Small3d(ModelConfig):
+    model_arch: str = "otno"
+    n_modes: List[int] = [32, 32]
+    hidden_channels: int = 120
+    data_channels: int = 9
+    out_channels: int = 1
+    norm: str = 'group_norm'
+    use_mlp: bool = True
+    mlp_expansion: float = 1.0
+    domain_padding: float = 0.125
+    factorization: str = 'tucker'
+    rank: float = 0.4
