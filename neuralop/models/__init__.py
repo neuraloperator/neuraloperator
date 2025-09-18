@@ -10,4 +10,6 @@ from .uno import UNO
 from .uqno import UQNO
 from .fnogno import FNOGNO
 from .gino import GINO
+from .mwno import MWNO
+
 from .base_model import get_model
