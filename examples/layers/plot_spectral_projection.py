@@ -16,8 +16,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from neuralop.layers.spectral_projection import spectral_projection_divergence_free
-from neuralop.losses.fourier_diff import FourierDiff2D
-from neuralop.losses.finite_diff import FiniteDiff2D
+from neuralop.losses.differentiation import FourierDiff, FiniteDiff
     
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
@@ -32,17 +31,17 @@ print(f"Using device: {device}")
 
 def div_error_fourier(u, L):
     """Compute divergence error using spectral differentiation."""
-    fourier_diff_2d = FourierDiff2D(L=(L, L), use_FC=False)
+    fourier_diff_2d = FourierDiff(dim=2, L=(L, L), use_fc=False)
     div = fourier_diff_2d.divergence(u)
     error_val = torch.linalg.norm(div, dim=(1, 2)) * (L**2 / (div.shape[-1] * div.shape[-2]))**(0.5)
     return error_val.mean().item()
 
 
 def div_error_finite_diff(u, L):
-    """Compute divergence error using FiniteDiff2D."""
+    """Compute divergence error using FiniteDiff."""
     dx = L / u.shape[-1]
     dy = L / u.shape[-2]
-    finite_diff_2d = FiniteDiff2D(h=(dx, dy), periodic_in_x=True, periodic_in_y=True)
+    finite_diff_2d = FiniteDiff(dim=2, h=(dx, dy), periodic_in_x=True, periodic_in_y=True)
     div = finite_diff_2d.divergence(u)
     error_val = torch.linalg.norm(div, dim=(1, 2)) * (L**2 / (div.shape[-1] * div.shape[-2]))**(0.5)
     return error_val.mean().item()

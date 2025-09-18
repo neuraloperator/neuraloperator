@@ -24,17 +24,6 @@ def spectral_projection_divergence_free(u, domain_size, constraint_modes):
         C. M. Jiang, K. Kashinath, P. Prabhat, and P. Marcus
         ICLR 2020 Workshop on Integration of Deep Neural Models and Differential Equations, 2020.
         https://openreview.net/pdf?id=q2noHUqMkK
-    
-        [1] Towards Enforcing Hard Physics Constraints in Operator Learning Frameworks
-        V. Duruisseaux, M. Liu-Schiaffini, J. Berner, and A. Anandkumar
-        ICML 2024 AI for Science Workshop
-        https://openreview.net/pdf?id=Zvxm14Rd1F
-        
-        [2] Enforcing physical constraints in CNNs through differentiable PDE layer. 
-        C. M. Jiang, K. Kashinath, P. Prabhat, and P. Marcus
-        ICLR 2020 Workshop on Integration of Deep Neural Models and Differential Equations, 2020.
-        https://openreview.net/pdf?id=q2noHUqMkK
-
 
 
     Mathematical formulation:
