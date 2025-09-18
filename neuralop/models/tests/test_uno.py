@@ -14,8 +14,7 @@ def test_UNO(input_shape):
                 uno_scalings=  [[1.0,1.0],[0.5,0.25],[1,1],[1,1],[2,4]],\
                  horizontal_skips_map = horizontal_skips_map, 
                  n_layers = 5, domain_padding = 0.2, 
-                 channel_mlp_skip="linear",
-                 resolution_scaling_factor = 1)
+                 channel_mlp_skip="linear")
 
     t1 = time.time()
     in_data = torch.randn(input_shape)
@@ -45,7 +44,6 @@ def test_UNO(input_shape):
         horizontal_skips_map=None,
         n_layers=5,
         domain_padding=0.2,
-        resolution_scaling_factor=1,
         channel_mlp_skip="linear" 
     )
 

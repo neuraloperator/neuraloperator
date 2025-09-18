@@ -23,7 +23,6 @@ def test_local_no_without_disco(
         s = 32
         modes = 8
         width = 16
-        fc_channels = 16
         batch_size = 4
         n_layers = 4
     else:
@@ -32,7 +31,6 @@ def test_local_no_without_disco(
         s = 32
         modes = 5
         width = 15
-        fc_channels = 32
         batch_size = 3
         n_layers = 2
 
@@ -53,7 +51,6 @@ def test_local_no_without_disco(
         rank=rank,
         fixed_rank_modes=False,
         n_layers=n_layers,
-        fc_channels=fc_channels,
     ).to(device)
 
     in_data = torch.randn(batch_size, 3, *size).to(device)
@@ -94,7 +91,6 @@ def test_local_no_with_disco(
         s = 32
         modes = 8
         width = 16
-        fc_channels = 16
         batch_size = 4
         n_layers = 4
     else:
@@ -102,7 +98,6 @@ def test_local_no_with_disco(
         s = 32
         modes = 5
         width = 15
-        fc_channels = 32
         batch_size = 3
         n_layers = 2
 
@@ -123,7 +118,6 @@ def test_local_no_with_disco(
         rank=rank,
         fixed_rank_modes=False,
         n_layers=n_layers,
-        fc_channels=fc_channels,
     ).to(device)
 
     in_data = torch.randn(batch_size, 3, *size).to(device)
