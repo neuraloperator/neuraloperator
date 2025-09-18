@@ -4,13 +4,4 @@ from .models import TFNO, FNO, get_model
 from .data import datasets, transforms
 from . import mpu
 from .training import Trainer
-from .losses import (
-    LpLoss,
-    H1Loss,
-    BurgersEqnLoss,
-    ICLoss,
-    WeightedSumLoss,
-    Aggregator,
-    Relobralo,
-    SoftAdapt,
-)
+from .losses import LpLoss, H1Loss, BurgersEqnLoss, ICLoss, WeightedSumLoss, Aggregator, Relobralo, SoftAdapt, FourierDiff, central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd, FiniteDiff
