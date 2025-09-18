@@ -128,9 +128,9 @@ class FNO(BaseModel, name='FNO'):
         * If 'reconstructed', implements with the reconstructed full tensorized weight.
     decomposition_kwargs : dict, optional
         extra kwargs for tensor decomposition (see `tltorch.FactorizedTensor`), by default {}
-    separable : bool, optional (**DEACTIVATED**)
+    separable : bool, optional
         if True, use a depthwise separable spectral convolution, by default False
-    preactivation : bool, optional (**DEACTIVATED**)
+    preactivation : bool, optional
         whether to compute FNO forward pass with resnet-style preactivation, by default False
     conv_module : nn.Module, optional
         module to use for FNOBlock's convolutions, by default SpectralConv
