@@ -1,4 +1,5 @@
 import torch
+import warnings
 from ..layers.fourier_continuation import FCLegendre, FCGram
 
 """
@@ -671,7 +672,17 @@ def central_diff_1d(x, h, periodic_in_x=True):
     """
     Backward compatibility function for central_diff_1d.
     Creates a FiniteDiff instance with dim=1 and returns dx.
+    
+    .. deprecated:: 
+        This function is deprecated and may not be maintained in future versions.
+        Please use the FiniteDiff class instead for better performance and features.
     """
+    warnings.warn(
+        "central_diff_1d is deprecated and may not be maintained. "
+        "Please use FiniteDiff class instead for better performance and features.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     fd1d = FiniteDiff(dim=1, h=h, periodic_in_x=periodic_in_x)
     return fd1d.dx(x)
 
@@ -680,7 +691,17 @@ def central_diff_2d(x, h, periodic_in_x=True, periodic_in_y=True):
     """
     Backward compatibility function for central_diff_2d.
     Creates a FiniteDiff instance with dim=2 and returns dx, dy.
+    
+    .. deprecated:: 
+        This function is deprecated and may not be maintained in future versions.
+        Please use the FiniteDiff class instead for better performance and features.
     """
+    warnings.warn(
+        "central_diff_2d is deprecated and may not be maintained. "
+        "Please use FiniteDiff class instead for better performance and features.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     fd2d = FiniteDiff(
         dim=2, h=h, periodic_in_x=periodic_in_x, periodic_in_y=periodic_in_y
     )
@@ -696,7 +717,17 @@ def central_diff_3d(
     """
     Backward compatibility function for central_diff_3d.
     Creates a FiniteDiff instance with dim=3 and returns dx, dy, dz.
+    
+    .. deprecated:: 
+        This function is deprecated and may not be maintained in future versions.
+        Please use the FiniteDiff class instead for better performance and features.
     """
+    warnings.warn(
+        "central_diff_3d is deprecated and may not be maintained. "
+        "Please use FiniteDiff class instead for better performance and features.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     fd3d = FiniteDiff(
         dim=3,
         h=h,
