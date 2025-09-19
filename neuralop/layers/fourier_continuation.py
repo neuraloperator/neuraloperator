@@ -4,6 +4,7 @@ import numpy as np
 from numpy.polynomial.legendre import Legendre
 import warnings
 from pathlib import Path
+import tensorly as tl
 
 
 class FourierContinuation(nn.Module):
@@ -43,7 +44,8 @@ class FourierContinuation(nn.Module):
         Extend tensor along specified dimensions using Fourier Continuation.
 
         This method extends non-periodic functions to periodic ones by adding
-        continuation points on both sides of the specified dimensions.
+        continuation points on both sides of the specified dimensions using
+        TensorLy's multi_mode_dot for efficient multi-dimensional extension.
 
         Parameters
         ----------
@@ -61,20 +63,86 @@ class FourierContinuation(nn.Module):
             Extended tensor with additional points added along specified dimensions.
             Each extended dimension will have n_additional_pts more points than the input.
         """
+        
         # Convert input dimension(s) to list of axes to extend along:
-        # If dim is an integer n, extend along the last n dimensions
         if isinstance(dim, int):
+            # If dim is an integer n, extend along the last n dimensions
             axes = list(range(-dim, 0))
-        # If dim is a tuple, extend along those specific dimensions
         else:
-            # Convert positive indices to negative indices for consistency
-            axes = [a if a < 0 else a - x.ndim for a in dim]
+            # If dim is a tuple, extend along those specific dimensions
+            axes = list(dim)
 
-        # Extend along each axis sequentially
+        # Convert negative axes to positive indices
+        axes = [a if a >= 0 else x.ndim + a for a in axes]
+        
+        # Create extension matrices for each axis
+        # Each matrix maps input tensor along one axis to extended tensor
+        extension_matrices = []  # List of torch tensors, each shape: (extended_size, original_size)
+        modes = []  # List of axis indices to extend along
+        
         for axis in axes:
-            x = self.extend_along_axis(x, axis)
+            # Get the extension matrix for this axis
+            ext_mat = self._get_extension_matrix_for_axis(x, axis)
+            extension_matrices.append(ext_mat)
+            modes.append(axis)
+        
+        # Use TensorLy's multi_mode_dot to apply all extensions simultaneously
+        # Input: x (original shape), matrices (list of extension matrices), modes (axis indices)
+        # Output: extended tensor with shape modified along specified axes
+        return tl.tenalg.multi_mode_dot(x, extension_matrices, modes=modes)
+    
+    
+    def _get_extension_matrix_for_axis(self, x, axis):
+        """
+        Get the extension matrix for a specific axis using Fourier continuation.
+        
+        This method creates a matrix that maps the input tensor along one axis
+        to the extended tensor using the Fourier continuation approach.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor
+        axis : int
+            Axis for which to get the extension matrix
             
-        return x
+        Returns
+        -------
+        torch.Tensor
+            Extension matrix for the specified axis
+        """
+        
+        axis_size = x.shape[axis]       # Original size along the axis to extend
+        extended_size = axis_size + self.n_additional_pts       # Final size after extension
+        c = self.n_additional_pts // 2       # Number of continuation points on each side
+        
+        # Create the extension matrix, which maps the input to the extended output
+        # Shape: (extended_size, axis_size) where extended_size = axis_size + n_additional_pts
+        ext_mat = torch.zeros((extended_size, axis_size), dtype=x.dtype, device=x.device)
+        
+        # Place identity matrix in the middle (original values)
+        ext_mat[c:c+axis_size, :] = torch.eye(axis_size, dtype=x.dtype, device=x.device)
+        
+        # Get the extension matrix for boundary points
+        ext_mat_boundary = self.ext_mat.to(dtype=x.dtype, device=x.device)
+        
+        # Fill in the continuation regions
+        if c > 0:
+            # The extension matrix maps [right_bnd, left_bnd] to continuation values
+            # where ext_mat_boundary has shape (n_additional_pts, 2*d)
+            # and maps [right_bnd, left_bnd] to [left_cont, right_cont]
+            
+            # Left continuation: use the last c rows of the extension matrix
+            # These map [right_bnd, left_bnd] to left continuation values
+            ext_mat[:c, :self.d] = ext_mat_boundary[-c:, self.d:]  # right_bnd -> left_cont
+            ext_mat[:c, axis_size-self.d:] = ext_mat_boundary[-c:, :self.d]  # left_bnd -> left_cont
+            
+            # Right continuation: use the first c rows of the extension matrix  
+            # These map [right_bnd, left_bnd] to right continuation values
+            ext_mat[-c:, :self.d] = ext_mat_boundary[:c, self.d:]  # right_bnd -> right_cont
+            ext_mat[-c:, axis_size-self.d:] = ext_mat_boundary[:c, :self.d]  # left_bnd -> right_cont
+        
+        return ext_mat
 
 
     def forward(self, x, dim):
@@ -103,57 +171,14 @@ class FourierContinuation(nn.Module):
         return self.extend(x, dim)
 
 
-    def extend_along_axis(self, x, axis):
-        """
-        Extend function values along a specific axis.
-
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor to extend. Must have at least 2*d points along
-            the specified axis for boundary value extraction.
-        axis : int
-            Axis along which to extend (supports negative indexing)
-            
-        Returns
-        -------
-        torch.Tensor
-            Extended tensor with n_additional_pts more points along the
-            specified axis. The extension is symmetric (n_additional_pts//2
-            points added on each side).
-        """
-        # Convert negative axis to positive
-        if axis < 0:
-            axis = x.ndim + axis
-        
-        # If already extending along the last axis, use direct method
-        if axis == x.ndim - 1:
-            return self._extend_last_axis(x)
-        
-        # Otherwise, permute to move target axis to last position
-        axes = list(range(x.ndim))
-        axes[axis], axes[-1] = axes[-1], axes[axis]  # Swap target axis with last axis
-        
-        # Permute tensor and extend along the (now last) axis
-        x_swapped = x.permute(axes)
-        x_extended = self._extend_last_axis(x_swapped)
-        
-        # Create inverse permutation to restore original axis order
-        inverse_axes = list(range(len(axes)))
-        inverse_axes = [axes.index(i) for i in range(len(axes))]
-        
-        # Permute back to original order
-        return x_extended.permute(inverse_axes)
-    
-    
-
     def restrict(self, x, dim):
         """
         Remove Fourier continuation extension points to restore original domain size.
         
         This method reverses the extension process by removing the continuation points
-        that were added during Fourier continuation. It removes n_additional_pts//2 points
-        from each side of the specified dimensions.
+        that were added during Fourier continuation. 
+        
+        It removes n_additional_pts//2 points from each side of the specified dimensions.
         
         Parameters
         ----------
@@ -172,24 +197,29 @@ class FourierContinuation(nn.Module):
             n_additional_pts fewer points than the input (n_additional_pts//2 removed
             from each side).
         """
+        
         # Convert input dimension(s) to list of axes to restrict along:
-        # If dim is an integer n, restrict along the last n dimensions
         if isinstance(dim, int):
+            # If dim is an integer n, restrict along the last n dimensions
             axes = list(range(-dim, 0))
-        # If dim is a tuple, restrict along those specific dimensions
         else:
-            axes = [a if a < 0 else a - x.ndim for a in dim]
+            # If dim is a tuple, restrict along those specific dimensions
+            axes = list(dim)
+
+        # Convert negative axes to positive for easier handling
+        axes = [a if a >= 0 else x.ndim + a for a in axes]
 
         # Create slices to restrict along each axis
-        c = self.n_additional_pts // 2
-        slices = [slice(None)] * x.ndim
+        c = self.n_additional_pts // 2  # Number of points to remove from each side
+        slices = [slice(None)] * x.ndim  
+        
         for axis in axes:
+            # For each axis to restrict, remove c points from each side
             slices[axis] = slice(c, -c)
 
-        # Return restricted tensor
+        # Return restricted tensor with reduced size along specified axes
         return x[tuple(slices)]
     
-
 
 
 class FCLegendre(FourierContinuation):
@@ -281,45 +311,8 @@ class FCLegendre(FourierContinuation):
 
         return self.ext_mat
     
-
-    def _extend_last_axis(self, x):
-        """
-        Extend function values along the last axis.
-        
-        This method extracts boundary values, applies the pre-computed extension matrix, 
-        and concatenates the continuation with the original signal.
-        
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor to extend. Must have at least 2*d points along the last axis
-            for boundary value extraction.
-            
-        Returns
-        -------
-        torch.Tensor
-            Extended tensor with n_additional_pts more points along the last axis.
-            The extension is symmetric: n_additional_pts//2 points added on each side.
-        """
-        # Extract boundaries and concatenate them
-        right_bnd = x[...,-self.d:]
-        left_bnd = x[...,0:self.d]
-        y = torch.cat((right_bnd, left_bnd), dim=-1)
-        
-        # Reshape for matrix multiplication
-        y_shape = y.shape
-        y = y.reshape(-1, y_shape[-1])
-        
-        # Apply extension matrix to compute continuation values
-        ext_mat_T = self.ext_mat_T.to(dtype=x.dtype)
-        ext = torch.matmul(y, ext_mat_T + 0j if x.is_complex() else ext_mat_T)
-        
-        # Reshape back to original shape
-        ext = ext.reshape(*y_shape[:-1], ext.shape[-1])
-        
-        # Concatenate extensions with original signal
-        return torch.cat((ext[...,self.n_additional_pts//2:], x, ext[...,:self.n_additional_pts//2]), dim=-1)
-
+    
+    
 
 class FCGram(FourierContinuation):
     """
@@ -372,7 +365,7 @@ class FCGram(FourierContinuation):
             warnings.warn("n_additional_pts must be even, rounding down.", UserWarning)
             self.n_additional_pts -= 1
         
-        self.C = int(self.n_additional_pts // 2)
+        self.c = int(self.n_additional_pts // 2)
         
         if matrices_path is None:
             self.matrices_path = Path(__file__).parent / 'fcgram_matrices'
@@ -382,13 +375,58 @@ class FCGram(FourierContinuation):
         # Load pre-computed FCGram matrices
         self.load_matrices()
     
+    def _get_extension_matrix_for_axis(self, x, axis):
+        """
+        Get the extension matrix for a specific axis using FC-Gram algorithm.
+        
+        This method creates a matrix that maps the input tensor along one axis
+        to the extended tensor using pre-computed Gram matrices.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor
+        axis : int
+            Axis for which to get the extension matrix
+            
+        Returns
+        -------
+        torch.Tensor
+            Extension matrix for the specified axis
+        """
+        axis_size = x.shape[axis]
+        extended_size = axis_size + self.n_additional_pts
+        c = self.n_additional_pts // 2
+        
+        # Create the extension matrix
+        ext_mat = torch.zeros((extended_size, axis_size), dtype=x.dtype, device=x.device)
+        
+        # Place identity matrix in the middle (original values)
+        ext_mat[c:c+axis_size, :] = torch.eye(axis_size, dtype=x.dtype, device=x.device)
+        
+        # Get pre-computed Gram matrices
+        AlQl = self.AlQl.to(dtype=x.dtype, device=x.device)
+        ArQr = self.ArQr.to(dtype=x.dtype, device=x.device)
+        
+        # Fill in the continuation regions
+        if c > 0:
+            # Left continuation: map left boundary to left continuation
+            ext_mat[:c, :self.d] = AlQl[:c, :]
+            
+            # Right continuation: map right boundary to right continuation
+            ext_mat[-c:, axis_size-self.d:] = ArQr[:c, :]
+        
+        return ext_mat
+    
+    
+    
     def load_matrices(self):
         """
         Load the pre-computed FCGram matrices from .npz files.
         
         This method loads the pre-computed Gram matrices required for the FC-Gram
         algorithm. The matrices are stored in .npz format and contain the optimized
-        continuation matrices for the specified (d, C) parameter combination.
+        continuation matrices for the specified (d, c) parameter combination.
         
         The loaded matrices are:
         - ArQr: Right boundary continuation matrix
@@ -401,7 +439,7 @@ class FCGram(FourierContinuation):
         ------
         FileNotFoundError
             If the required .npz file is not found in the matrices_path directory.
-            The file should be named 'FCGram_data_d{d}_C{C}.npz' where C = n_additional_pts // 2.
+            The file should be named 'FCGram_data_d{d}_c{c}.npz' where c = n_additional_pts // 2.
             
         Note
         ----
@@ -412,12 +450,12 @@ class FCGram(FourierContinuation):
         The computed matrices should be saved in .npz format in the matrices_path
         directory with the correct naming convention.
         """
-        filepath = self.matrices_path / f'FCGram_data_d{self.d}_C{self.C}.npz'
+        filepath = self.matrices_path / f'FCGram_data_d{self.d}_c{self.c}.npz'
         
         if not filepath.exists():
             raise FileNotFoundError(
                 f"FCGram matrices not found at {filepath}. \n"
-                f"Please ensure the .npz file exists with d={self.d}, C={self.C}."
+                f"Please ensure the .npz file exists with d={self.d}, c={self.c}."
             )
         
         # Load matrices from .npz file
@@ -427,48 +465,3 @@ class FCGram(FourierContinuation):
         self.register_buffer('ArQr', torch.from_numpy(npz_data['ArQr']))
         self.register_buffer('AlQl', torch.from_numpy(npz_data['AlQl']))
         
-    
-    def _extend_last_axis(self, x):
-        """
-        Extend function values along the last axis using FC-Gram algorithm.
-        
-        This method uses the pre-computed Gram matrices (AlQl, ArQr) to compute 
-        continuation values from boundary values and concatenates them 
-        with the original signal.
-        
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor to extend. Must have at least 2*d points along the last axis
-            for boundary value extraction.
-            
-        Returns
-        -------
-        torch.Tensor
-            Extended tensor with n_additional_pts more points along the last axis.
-            The extension is symmetric: n_additional_pts//2 points added on each side.
-        """
-        # Extract boundaries
-        left_bnd = x[..., :self.d]      
-        right_bnd = x[..., -self.d:]    
-        left_shape = left_bnd.shape[:-1]
-        right_shape = right_bnd.shape[:-1]
-        
-        # Convert matrices to correct dtype
-        AlQl = self.AlQl.to(dtype=x.dtype)
-        ArQr = self.ArQr.to(dtype=x.dtype)
-        
-        # Reshape for matrix multiplication
-        left_bnd = left_bnd.reshape(-1, left_bnd.shape[-1])
-        right_bnd = right_bnd.reshape(-1, right_bnd.shape[-1])
-        
-        # Apply FC-Gram continuation using pre-computed matrices
-        left_continuation = torch.matmul(left_bnd, AlQl.T + 0j if x.is_complex() else AlQl.T)
-        right_continuation = torch.matmul(right_bnd, ArQr.T + 0j if x.is_complex() else ArQr.T)
-        
-        # Reshape back to original shape
-        left_continuation = left_continuation.reshape(*left_shape, left_continuation.shape[-1])
-        right_continuation = right_continuation.reshape(*right_shape, right_continuation.shape[-1])
-        
-        # Concatenate extensions with original signal
-        return torch.cat((left_continuation, x, right_continuation), dim=-1)
