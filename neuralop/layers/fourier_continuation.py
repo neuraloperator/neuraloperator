@@ -29,83 +29,96 @@ class FourierContinuation(nn.Module):
         
         self.d = d
         self.n_additional_pts = n_additional_pts
-        
 
-    def extend1d(self, x):
+
+    def extend(self, x, dim=2):
         """
-        Extend 1D function values.
-        
+        Extend tensor along specified dimensions.
+
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor of shape (..., N)
+            Input tensor
+        dim : int or tuple of ints
+            If int: extend along last dim axes
+            If tuple: extend along the given axes (supports negative indexing)
+        """
+        # Convert input dimension(s) to list of axes to extend along:
+        # If dim is an integer n, extend along the last n dimensions
+        if isinstance(dim, int):
+            axes = list(range(-dim, 0))
+        # If dim is a tuple, extend along those specific dimensions
+        else:
+            # Convert positive indices to negative indices for consistency
+            axes = [a if a < 0 else a - x.ndim for a in dim]
+
+        # Extend along each axis
+        for axis in axes:
+            x = self.extend_along_axis(x, axis)
             
-        Returns
-        -------
-        torch.Tensor
-            Extended function values
-        """
-        return self.extend_left_right(x)
-    
-    def extend2d(self, x):
-        """
-        Extend 2D function values.
-        
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor of shape (..., M, N)
-            
-        Returns
-        -------
-        torch.Tensor
-            Extended function values
-        """
-        x = self.extend_left_right(x)
-        x = self.extend_top_bottom(x)
         return x
 
-    def extend3d(self, x):
-        """
-        Extend 3D function values.
-        
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor of shape (..., L, M, N)
-            
-        Returns
-        -------
-        torch.Tensor
-            Extended function values
-        """
-        x = self.extend_left_right(x)
-        x = self.extend_top_bottom(x)
-        x = self.extend_front_back(x)
-        return x
-    
     def forward(self, x, dim=2):
         """
-        Forward pass for Fourier continuation.
+        Forward pass that calls the extend method.
+        
+        This allows the module to be used as a standard PyTorch module.
         
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor to extend
-        dim : int, optional
-            Dimension of the problem (1, 2, or 3), by default 2
+            Input tensor
+        dim : int or tuple of ints
+            If int: extend along last dim axes
+            If tuple: extend along the given axes (supports negative indexing)
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended tensor
+        """
+        return self.extend(x, dim)
+
+    def extend_along_axis(self, x, axis):
+        """
+        Extend function values along a specific axis.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor
+        axis : int
+            Axis along which to extend (supports negative indexing)
             
         Returns
         -------
         torch.Tensor
             Extended function values
         """
-        if dim == 1:
-            return self.extend1d(x)
-        if dim == 2:
-            return self.extend2d(x)
-        if dim == 3:
-            return self.extend3d(x)
+        # Convert negative axis to positive
+        if axis < 0:
+            axis = x.ndim + axis
+        
+        # If already extending along the last axis, use direct method
+        if axis == x.ndim - 1:
+            return self._extend_last_axis(x)
+        
+        # Otherwise, permute to move axis to last position
+        axes = list(range(x.ndim))
+        axes[axis], axes[-1] = axes[-1], axes[axis]  # Swap target axis with last axis
+        
+        # Permute tensor and extend along the (now last) axis
+        x_swapped = x.permute(axes)
+        x_extended = self._extend_last_axis(x_swapped)
+        
+        # Create inverse permutation to restore original axis order
+        inverse_axes = list(range(len(axes)))
+        inverse_axes = [axes.index(i) for i in range(len(axes))]
+        
+        # Permute back to original order
+        return x_extended.permute(inverse_axes)
+    
+    
 
     def restrict(self, x, dim):
         """
@@ -118,16 +131,31 @@ class FourierContinuation(nn.Module):
         ----------
         x : torch.Tensor
             Extended tensor from Fourier continuation
-        dim : int
-            Number of dimensions to restrict (1, 2, or 3)
+        dim : int or tuple of ints
+            If int: restrict along last `dim` axes
+            If tuple: restrict along the given axes (supports negative indexing)
         
         Returns
         -------
         torch.Tensor
             Tensor with original domain size, half of extension points removed from each side
         """
+        # Convert input dimension(s) to list of axes to restrict along:
+        # If dim is an integer n, restrict along the last n dimensions
+        if isinstance(dim, int):
+            axes = list(range(-dim, 0))
+        # If dim is a tuple, restrict along those specific dimensions
+        else:
+            axes = [a if a < 0 else a - x.ndim for a in dim]
+
+        # Create slices to restrict along each axis
         c = self.n_additional_pts // 2
-        return x[(Ellipsis,) + (slice(c, -c),) * dim]
+        slices = [slice(None)] * x.ndim
+        for axis in axes:
+            slices[axis] = slice(c, -c)
+
+        # Return restricted tensor
+        return x[tuple(slices)]
     
 
 
@@ -207,80 +235,27 @@ class FCLegendre(FourierContinuation):
         return self.ext_mat
     
 
-    def extend_left_right(self, x):
-        """
-        Extend function values using left-right extension.
+    def _extend_last_axis(self, x):
+        """Extend function values along the last axis."""
         
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor of shape (..., N) where N is the number of points
-            
-        Returns
-        -------
-        torch.Tensor
-            Extended function values
-        """
+        # Extract boundaries and concatenate them
         right_bnd = x[...,-self.d:]
         left_bnd = x[...,0:self.d]
         y = torch.cat((right_bnd, left_bnd), dim=-1)
         
+        # Reshape for matrix multiplication
+        y_shape = y.shape
+        y = y.reshape(-1, y_shape[-1])
+        
+        # Apply extension matrix
         ext_mat_T = self.ext_mat_T.to(dtype=x.dtype)
         ext = torch.matmul(y, ext_mat_T + 0j if x.is_complex() else ext_mat_T)
         
+        # Reshape back to original shape
+        ext = ext.reshape(*y_shape[:-1], ext.shape[-1])
+        
+        # Concatenate extensions with original signal
         return torch.cat((ext[...,self.n_additional_pts//2:], x, ext[...,:self.n_additional_pts//2]), dim=-1)
-    
-    
-    def extend_top_bottom(self, x):
-        """
-        Extend function values using top-bottom extension.
-        
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor of shape (..., M, N) where M, N are spatial dimensions
-            
-        Returns
-        -------
-        torch.Tensor
-            Extended function values
-        """
-        bottom_bnd = x[...,-self.d:,:]
-        top_bnd = x[...,0:self.d,:]
-        y = torch.cat((bottom_bnd, top_bnd), dim=-2)
-        
-        ext_mat = self.ext_mat.to(dtype=x.dtype)
-        ext = torch.matmul(ext_mat, y + 0j if x.is_complex() else y)
-        
-        return torch.cat((ext[...,self.n_additional_pts//2:,:], x, ext[...,:self.n_additional_pts//2,:]), dim=-2)
-
-    def extend_front_back(self, x):
-        """
-        Extend function values using front-back extension.
-        
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor of shape (..., L, M, N) where L, M, N are spatial dimensions
-            
-        Returns
-        -------
-        torch.Tensor
-            Extended function values
-        """
-        back_bnd = x[..., -self.d:, :, :]
-        front_bnd = x[..., :self.d, :, :]
-        y = torch.cat((back_bnd, front_bnd), dim=-3)
-
-        y_shape = y.shape
-        y_reshaped = y.reshape(*y_shape[:-3], y_shape[-3], -1)
-
-        ext_mat = self.ext_mat.to(dtype=x.dtype)
-        ext_reshaped = torch.matmul(ext_mat, y_reshaped + 0j if x.is_complex() else y_reshaped)
-
-        ext = ext_reshaped.reshape(*y_shape[:-3], self.n_additional_pts, y_shape[-2], y_shape[-1])
-
-        return torch.cat((ext[..., self.n_additional_pts//2:, :, :], x, ext[..., :self.n_additional_pts//2, :, :]), dim=-3)
 
 
 class FCGram(FourierContinuation):
@@ -373,93 +348,30 @@ class FCGram(FourierContinuation):
         self.register_buffer('AlQl', torch.from_numpy(npz_data['AlQl']))
         
     
-    def extend_left_right(self, x):
-        """
-        Extend function values using FC-Gram algorithm for left-right extension.
+    def _extend_last_axis(self, x):
+        """Extend function values along the last axis using FC-Gram algorithm."""
         
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor of shape (..., N) where N is the number of points
-            
-        Returns
-        -------
-        torch.Tensor
-            Extended function values
-        """
-        # Extract boundary values for continuation, use d points from each boundary
+        # Extract boundaries
         left_bnd = x[..., :self.d]      
         right_bnd = x[..., -self.d:]    
+        left_shape = left_bnd.shape[:-1]
+        right_shape = right_bnd.shape[:-1]
         
-        AlQl = self.AlQl.to(dtype=x.dtype)
-        ArQr = self.ArQr.to(dtype=x.dtype)
-        
-        # Apply FC-Gram continuation using ArQr matrix
-        left_continuation = torch.matmul(left_bnd, AlQl.T + 0j if x.is_complex() else AlQl.T)
-        right_continuation = torch.matmul(right_bnd, ArQr.T + 0j if x.is_complex() else ArQr.T)
-        
-        return torch.cat((left_continuation, x, right_continuation), dim=-1)
-    
-    def extend_top_bottom(self, x):
-        """
-        Extend function values using FC-Gram algorithm for top-bottom extension.
-        
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor of shape (..., M, N)
-            
-        Returns
-        -------
-        torch.Tensor
-            Extended function values
-        """
-        # Extract boundary values for continuation
-        top_bnd = x[..., :self.d, :]     
-        bottom_bnd = x[..., -self.d:, :] 
-        
-        AlQl = self.AlQl.to(dtype=x.dtype)
-        ArQr = self.ArQr.to(dtype=x.dtype)
-        
-        # Apply FC-Gram continuation using ArQr matrix
-        bottom_continuation = torch.matmul(ArQr, bottom_bnd + 0j if x.is_complex() else bottom_bnd)
-        top_continuation = torch.matmul(AlQl, top_bnd + 0j if x.is_complex() else top_bnd)
-        
-        return torch.cat((top_continuation, x, bottom_continuation), dim=-2)
-    
-    
-    def extend_front_back(self, x):
-        """
-        Extend function values using FC-Gram algorithm for front-back extension.
-        
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor of shape (..., D, M, N)
-            
-        Returns
-        -------
-        torch.Tensor
-            Extended function values
-        """
-        # Extract boundary values for continuation
-        front_bnd = x[..., :self.d, :, :]     
-        back_bnd = x[..., -self.d:, :, :] 
-        
+        # Convert matrices to correct dtype
         AlQl = self.AlQl.to(dtype=x.dtype)
         ArQr = self.ArQr.to(dtype=x.dtype)
         
         # Reshape for matrix multiplication
-        y_shape = x.shape
-        front_bnd_reshaped = front_bnd.reshape(*y_shape[:-3], self.d, -1)
-        back_bnd_reshaped = back_bnd.reshape(*y_shape[:-3], self.d, -1)
+        left_bnd = left_bnd.reshape(-1, left_bnd.shape[-1])
+        right_bnd = right_bnd.reshape(-1, right_bnd.shape[-1])
         
         # Apply FC-Gram continuation
-        front_continuation_reshaped = torch.matmul(AlQl, front_bnd_reshaped + 0j if x.is_complex() else front_bnd_reshaped)
-        back_continuation_reshaped = torch.matmul(ArQr, back_bnd_reshaped + 0j if x.is_complex() else back_bnd_reshaped)
+        left_continuation = torch.matmul(left_bnd, AlQl.T + 0j if x.is_complex() else AlQl.T)
+        right_continuation = torch.matmul(right_bnd, ArQr.T + 0j if x.is_complex() else ArQr.T)
         
-        # Reshape back to original dimensions
-        front_continuation = front_continuation_reshaped.reshape(*y_shape[:-3], self.C, y_shape[-2], y_shape[-1])
-        back_continuation = back_continuation_reshaped.reshape(*y_shape[:-3], self.C, y_shape[-2], y_shape[-1])
+        # Reshape back to original shape
+        left_continuation = left_continuation.reshape(*left_shape, left_continuation.shape[-1])
+        right_continuation = right_continuation.reshape(*right_shape, right_continuation.shape[-1])
         
-        return torch.cat((front_continuation, x, back_continuation), dim=-3)
+        # Concatenate extensions with original signal
+        return torch.cat((left_continuation, x, right_continuation), dim=-1)
