@@ -1213,7 +1213,7 @@ class FourierDiff:
         # Apply Fourier continuation if specified
         if self.use_fc and self.FC is not None:
             FC = self.FC.to(u_clone.device)
-            u_clone = FC.extend2d(u_clone)
+            u_clone = FC(u_clone, dim=2)
             L_x *= (nx + self.fc_n_additional_pts) / nx
             L_y *= (ny + self.fc_n_additional_pts) / ny
 
@@ -1283,7 +1283,7 @@ class FourierDiff:
         # Apply Fourier continuation if specified
         if self.use_fc and self.FC is not None:
             FC = self.FC.to(u_clone.device)
-            u_clone = FC.extend3d(u_clone)
+            u_clone = FC(u_clone, dim=3)
             L_x *= (nx + self.fc_n_additional_pts) / nx
             L_y *= (ny + self.fc_n_additional_pts) / ny
             L_z *= (nz + self.fc_n_additional_pts) / nz
