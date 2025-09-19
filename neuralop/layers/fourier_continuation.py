@@ -10,8 +10,13 @@ class FourierContinuation(nn.Module):
     """
     Base class for Fourier Continuation implementations.
     
-    This class provides the common interface and methods for Fourier Continuation
-    using different approaches (Legendre polynomials, Gram matrices, etc.).
+    Fourier Continuation is a technique for extending non-periodic functions to periodic
+    ones on larger domains, enabling the use of spectral methods for differentiation
+    and solving PDEs. This base class provides the common interface and methods for
+    different Fourier Continuation approaches (Legendre polynomials, Gram matrices, etc.).
+    
+    This allows spectral methods such as spectral differentiation to be applied to 
+    non-periodic functions by working on the extended periodic domain.
     """
     
     def __init__(self, d=5, n_additional_pts=50):
@@ -22,8 +27,10 @@ class FourierContinuation(nn.Module):
         ----------
         d : int
             Number of matching points on the left and right boundaries
+            By default 5
         n_additional_pts : int
             Number of additional points to add for continuation
+            By default 50
         """
         super().__init__()
         
@@ -33,15 +40,26 @@ class FourierContinuation(nn.Module):
 
     def extend(self, x, dim=2):
         """
-        Extend tensor along specified dimensions.
+        Extend tensor along specified dimensions using Fourier Continuation.
+
+        This method extends non-periodic functions to periodic ones by adding
+        continuation points on both sides of the specified dimensions.
 
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor
-        dim : int or tuple of ints
-            If int: extend along last dim axes
-            If tuple: extend along the given axes (supports negative indexing)
+            Input tensor to extend. Must have at least `2*d` points along each
+            dimension to be extended (for boundary value extraction).
+        dim : int or tuple of ints, 
+            Dimensions along which to extend:
+            - If int: extend along the last dim axes (e.g. dim=2 extends along the last 2 axes)
+            - If tuple: extend along the specified axes (supports negative indexing)
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended tensor with additional points added along specified dimensions.
+            Each extended dimension will have n_additional_pts more points than the input.
         """
         # Convert input dimension(s) to list of axes to extend along:
         # If dim is an integer n, extend along the last n dimensions
@@ -52,32 +70,38 @@ class FourierContinuation(nn.Module):
             # Convert positive indices to negative indices for consistency
             axes = [a if a < 0 else a - x.ndim for a in dim]
 
-        # Extend along each axis
+        # Extend along each axis sequentially
         for axis in axes:
             x = self.extend_along_axis(x, axis)
             
         return x
 
+
     def forward(self, x, dim=2):
         """
         Forward pass that calls the extend method.
-        
-        This allows the module to be used as a standard PyTorch module.
-        
+    
+        This method extends non-periodic functions to periodic ones by adding
+        continuation points on both sides of the specified dimensions.
+
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor
-        dim : int or tuple of ints
-            If int: extend along last dim axes
-            If tuple: extend along the given axes (supports negative indexing)
+            Input tensor to extend. Must have at least `2*d` points along each
+            dimension to be extended (for boundary value extraction).
+        dim : int or tuple of ints, 
+            Dimensions along which to extend:
+            - If int: extend along the last dim axes (e.g. dim=2 extends along the last 2 axes)
+            - If tuple: extend along the specified axes (supports negative indexing)
             
         Returns
         -------
         torch.Tensor
-            Extended tensor
+            Extended tensor with additional points added along specified dimensions.
+            Each extended dimension will have n_additional_pts more points than the input.
         """
         return self.extend(x, dim)
+
 
     def extend_along_axis(self, x, axis):
         """
@@ -86,14 +110,17 @@ class FourierContinuation(nn.Module):
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor
+            Input tensor to extend. Must have at least `2*d` points along
+            the specified axis for boundary value extraction.
         axis : int
             Axis along which to extend (supports negative indexing)
             
         Returns
         -------
         torch.Tensor
-            Extended function values
+            Extended tensor with n_additional_pts more points along the
+            specified axis. The extension is symmetric (n_additional_pts//2
+            points added on each side).
         """
         # Convert negative axis to positive
         if axis < 0:
@@ -103,7 +130,7 @@ class FourierContinuation(nn.Module):
         if axis == x.ndim - 1:
             return self._extend_last_axis(x)
         
-        # Otherwise, permute to move axis to last position
+        # Otherwise, permute to move target axis to last position
         axes = list(range(x.ndim))
         axes[axis], axes[-1] = axes[-1], axes[axis]  # Swap target axis with last axis
         
@@ -124,21 +151,26 @@ class FourierContinuation(nn.Module):
         """
         Remove Fourier continuation extension points to restore original domain size.
         
-        Reverses the extension process by removing half of the additional points
-        on each side that were added during Fourier continuation.
+        This method reverses the extension process by removing the continuation points
+        that were added during Fourier continuation. It removes n_additional_pts//2 points
+        from each side of the specified dimensions.
         
         Parameters
         ----------
         x : torch.Tensor
-            Extended tensor from Fourier continuation
+            Extended tensor from Fourier continuation. Must have been extended using
+            the same n_additional_pts parameter as this instance.
         dim : int or tuple of ints
-            If int: restrict along last `dim` axes
-            If tuple: restrict along the given axes (supports negative indexing)
+            Dimensions along which to restrict:
+            - If int: restrict along the last dim axes (e.g. dim=2 restricts along the last 2 axes)
+            - If tuple: restrict along the specified axes (supports negative indexing)
         
         Returns
         -------
         torch.Tensor
-            Tensor with original domain size, half of extension points removed from each side
+            Tensor with original domain size. Each restricted dimension will have
+            n_additional_pts fewer points than the input (n_additional_pts//2 removed
+            from each side).
         """
         # Convert input dimension(s) to list of axes to restrict along:
         # If dim is an integer n, restrict along the last n dimensions
@@ -165,9 +197,19 @@ class FCLegendre(FourierContinuation):
     Fourier Continuation using Legendre polynomials.
     
     This class implements Fourier Continuation using Legendre polynomial basis functions 
-    to extend non-periodic functions to periodic ones on larger domains
+    to extend non-periodic functions to periodic ones on larger domains. The method works
+    by fitting Legendre polynomials to boundary values and using them to compute
+    continuation values that make the extended function periodic.
     
-    Legendre polynomials are orthogonal polynomials with the weight w=1 on the interval [-1, 1].
+    Legendre polynomials P_n(x) are orthogonal polynomials with weight w=1 on [-1, 1]:
+        ∫_{-1}^{1} P_j(x) P_k(x) dx = 2/(2j+1) δ_{jk}
+    
+    The extension process:
+    1. Extract d boundary points from each end of the input signal
+    2. Fit a linear combination of Legendre polynomials to these boundary values
+    3. Use the fitted polynomials to compute continuation values
+    4. Concatenate the continuation with the original signal
+    
     """
     
     def __init__(self, d=5, n_additional_pts=50, rcond=1e-15):
@@ -197,7 +239,12 @@ class FCLegendre(FourierContinuation):
     
     
     def compute_extension_matrix(self):
-        # Compute the extension matrix using Legendre polynomials.
+        """
+        Compute the extension matrix using Legendre polynomials.
+        
+        This method constructs the matrix that maps boundary values to continuation
+        values using Legendre polynomial basis functions.
+        """
 
         total_points = 2*self.d + self.n_additional_pts
 
@@ -216,7 +263,7 @@ class FCLegendre(FourierContinuation):
 
         # Construct normalized Legendre polynomials
         # numpy.polynomial.legendre.Legendre are orthogonal but not normalized on [-1,1]: 
-        #    \int_{-1}^{1} P_j(x) P_k(x) dx = 2/(2j+1) \delta_{jk}
+        #    ∫_{-1}^{1} P_j(x) P_k(x) dx = 2/(2j+1) δ_{jk}
         # Normalization can improve numerical stability for larger values of d
         I = np.eye(2*self.d, dtype=np.float64)
         polynomials = [np.sqrt((2*j+1)/2) * Legendre(I[j, :]) for j in range(2 * self.d)]
@@ -236,8 +283,24 @@ class FCLegendre(FourierContinuation):
     
 
     def _extend_last_axis(self, x):
-        """Extend function values along the last axis."""
+        """
+        Extend function values along the last axis.
         
+        This method extracts boundary values, applies the pre-computed extension matrix, 
+        and concatenates the continuation with the original signal.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor to extend. Must have at least 2*d points along the last axis
+            for boundary value extraction.
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended tensor with n_additional_pts more points along the last axis.
+            The extension is symmetric: n_additional_pts//2 points added on each side.
+        """
         # Extract boundaries and concatenate them
         right_bnd = x[...,-self.d:]
         left_bnd = x[...,0:self.d]
@@ -247,7 +310,7 @@ class FCLegendre(FourierContinuation):
         y_shape = y.shape
         y = y.reshape(-1, y_shape[-1])
         
-        # Apply extension matrix
+        # Apply extension matrix to compute continuation values
         ext_mat_T = self.ext_mat_T.to(dtype=x.dtype)
         ext = torch.matmul(y, ext_mat_T + 0j if x.is_complex() else ext_mat_T)
         
@@ -260,7 +323,7 @@ class FCLegendre(FourierContinuation):
 
 class FCGram(FourierContinuation):
     """
-    FCGram class for Fourier Continuation using Gram matrices.
+    Fourier Continuation using pre-computed Gram matrices (FC-Gram algorithm).
     
     This class implements the FC-Gram algorithm described in Section 3.1 of:
     Amlani, F., & Bruno, O. P. (2016). An FC-based spectral solver for
@@ -291,7 +354,7 @@ class FCGram(FourierContinuation):
         ----------
         d : int
             Number of matching points on the left and right boundaries
-            Degree of the Gram polynomiald
+            Degree of the Gram polynomial d
             Typically between 3 and 8 (precomputed matrices available for d in {2,3,4,5,6,7,8}).
             d=3,4,5,6 are typically good choices, by default 6.
         n_additional_pts : int
@@ -323,14 +386,31 @@ class FCGram(FourierContinuation):
         """
         Load the pre-computed FCGram matrices from .npz files.
         
-        If the required pre-computed FCGram matrices are not available, they 
-        can be computed using the MATLAB code from the FCGram repository
-        https://github.com/neuraloperator/FCGram/
-        and then saved to the appropriate matrices_path directory in .npz format.
+        This method loads the pre-computed Gram matrices required for the FC-Gram
+        algorithm. The matrices are stored in .npz format and contain the optimized
+        continuation matrices for the specified (d, C) parameter combination.
         
-        The matrices are:
+        The loaded matrices are:
         - ArQr: Right boundary continuation matrix
         - AlQl: Left boundary continuation matrix
+        
+        These matrices are registered as PyTorch buffers so they are automatically
+        moved to the correct device (CPU/GPU) when the module is moved.
+        
+        Raises
+        ------
+        FileNotFoundError
+            If the required .npz file is not found in the matrices_path directory.
+            The file should be named 'FCGram_data_d{d}_C{C}.npz' where C = n_additional_pts // 2.
+            
+        Note
+        ----
+        If the required matrices are not available, they can be computed using the
+        MATLAB code from the FCGram repository:
+        https://github.com/neuraloperator/FCGram/
+        
+        The computed matrices should be saved in .npz format in the matrices_path
+        directory with the correct naming convention.
         """
         filepath = self.matrices_path / f'FCGram_data_d{self.d}_C{self.C}.npz'
         
@@ -349,8 +429,25 @@ class FCGram(FourierContinuation):
         
     
     def _extend_last_axis(self, x):
-        """Extend function values along the last axis using FC-Gram algorithm."""
+        """
+        Extend function values along the last axis using FC-Gram algorithm.
         
+        This method uses the pre-computed Gram matrices (AlQl, ArQr) to compute 
+        continuation values from boundary values and concatenates them 
+        with the original signal.
+        
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor to extend. Must have at least 2*d points along the last axis
+            for boundary value extraction.
+            
+        Returns
+        -------
+        torch.Tensor
+            Extended tensor with n_additional_pts more points along the last axis.
+            The extension is symmetric: n_additional_pts//2 points added on each side.
+        """
         # Extract boundaries
         left_bnd = x[..., :self.d]      
         right_bnd = x[..., -self.d:]    
@@ -365,7 +462,7 @@ class FCGram(FourierContinuation):
         left_bnd = left_bnd.reshape(-1, left_bnd.shape[-1])
         right_bnd = right_bnd.reshape(-1, right_bnd.shape[-1])
         
-        # Apply FC-Gram continuation
+        # Apply FC-Gram continuation using pre-computed matrices
         left_continuation = torch.matmul(left_bnd, AlQl.T + 0j if x.is_complex() else AlQl.T)
         right_continuation = torch.matmul(right_bnd, ArQr.T + 0j if x.is_complex() else ArQr.T)
         
