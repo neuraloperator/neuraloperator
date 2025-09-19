@@ -1221,15 +1221,15 @@ class FourierDiff:
         nx, ny = u_clone.shape[-2], u_clone.shape[-1]
         dx, dy = L_x / nx, L_y / ny
 
-        # FFT with transposed axes (shape -> (ny, nx))
-        u_h = torch.fft.fft2(u_clone.transpose(-2, -1), dim=(-2, -1))
+        # 2D FFT
+        u_h = torch.fft.fft2(u_clone, dim=(-2, -1))
 
         # Frequency arrays
         k_x = torch.fft.fftfreq(nx, d=dx, device=u_h.device) * (2 * torch.pi)
         k_y = torch.fft.fftfreq(ny, d=dy, device=u_h.device) * (2 * torch.pi)
 
-        # Create frequency meshgrid
-        KY, KX = torch.meshgrid(k_y, k_x, indexing="ij")  
+        # Create frequency meshgrid 
+        KX, KY = torch.meshgrid(k_x, k_y, indexing="ij")  
 
         # Apply low-pass filter if specified
         if self.low_pass_filter_ratio is not None:
@@ -1250,9 +1250,6 @@ class FourierDiff:
 
         derivatives_ft = torch.stack(results, dim=0)
         derivatives_real = torch.fft.ifft2(derivatives_ft, dim=(-2, -1)).real
-
-        # Transpose back to original shape (nx, ny)
-        derivatives_real = derivatives_real.transpose(-2, -1)
 
         # Crop result if Fourier continuation was used
         if self.use_fc and self.FC is not None:
@@ -1292,17 +1289,17 @@ class FourierDiff:
         nx, ny, nz = u_clone.shape[-3], u_clone.shape[-2], u_clone.shape[-1]
         dx, dy, dz = L_x / nx, L_y / ny, L_z / nz
 
-        # FFT with permuted axes (shape -> (nz, ny, nx))
-        u_clone_permuted = u_clone.permute(*range(u_clone.ndim-3), -1, -2, -3)
-        u_h = torch.fft.fftn(u_clone_permuted, dim=(-3, -2, -1))
+        # 3D FFT
+        u_h = torch.fft.fftn(u_clone, dim=(-3, -2, -1))
+
 
         # Frequency arrays
         k_x = torch.fft.fftfreq(nx, d=dx, device=u_h.device) * (2 * torch.pi)
         k_y = torch.fft.fftfreq(ny, d=dy, device=u_h.device) * (2 * torch.pi)
         k_z = torch.fft.fftfreq(nz, d=dz, device=u_h.device) * (2 * torch.pi)
 
-        # Create frequency meshgrid
-        KZ, KY, KX = torch.meshgrid(k_z, k_y, k_x, indexing="ij")
+        # Create frequency meshgrid 
+        KX, KY, KZ = torch.meshgrid(k_x, k_y, k_z, indexing="ij")
    
         # Apply low-pass filter if specified
         if self.low_pass_filter_ratio is not None:
@@ -1326,9 +1323,6 @@ class FourierDiff:
 
         derivatives_ft = torch.stack(results, dim=0)
         derivatives_real = torch.fft.ifftn(derivatives_ft, dim=(-3, -2, -1)).real
-
-        # Permute back to original shape (..., nx, ny, nz)
-        derivatives_real = derivatives_real.permute(*range(derivatives_real.ndim-3), -1, -2, -3)
 
         # Crop result if Fourier continuation was used
         if self.use_fc and self.FC is not None:
