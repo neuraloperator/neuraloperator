@@ -38,7 +38,7 @@ class FourierContinuation(nn.Module):
         self.n_additional_pts = n_additional_pts
 
 
-    def extend(self, x, dim=2):
+    def extend(self, x, dim):
         """
         Extend tensor along specified dimensions using Fourier Continuation.
 
@@ -48,7 +48,7 @@ class FourierContinuation(nn.Module):
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor to extend. Must have at least `2*d` points along each
+            Input tensor to extend. Must have at least 2*d points along each
             dimension to be extended (for boundary value extraction).
         dim : int or tuple of ints, 
             Dimensions along which to extend:
@@ -77,7 +77,7 @@ class FourierContinuation(nn.Module):
         return x
 
 
-    def forward(self, x, dim=2):
+    def forward(self, x, dim):
         """
         Forward pass that calls the extend method.
     
@@ -87,7 +87,7 @@ class FourierContinuation(nn.Module):
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor to extend. Must have at least `2*d` points along each
+            Input tensor to extend. Must have at least 2*d points along each
             dimension to be extended (for boundary value extraction).
         dim : int or tuple of ints, 
             Dimensions along which to extend:
@@ -110,7 +110,7 @@ class FourierContinuation(nn.Module):
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor to extend. Must have at least `2*d` points along
+            Input tensor to extend. Must have at least 2*d points along
             the specified axis for boundary value extraction.
         axis : int
             Axis along which to extend (supports negative indexing)
