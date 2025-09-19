@@ -2,7 +2,12 @@ import torch
 import numpy as np
 from scipy.special import poch
 
-from .dct import idct, idct_2d, idct_3d
+import sys
+
+sys.path.append("./neuralop")
+from dct import idct, idct_2d, idct_3d
+
+# from .dct import idct, idct_2d, idct_3d
 
 
 def get_fixed_coords(Ln1, Ln2):
@@ -28,67 +33,6 @@ class GRFSampler(object):
 
     def sample(self, N):
         raise NotImplementedError()
-
-
-class RBFKernelSampler(GRFSampler):
-    """
-    Sampler for a Gaussian Random Field with a Radial Basis Function (RBF) kernel.
-    This method uses a Cholesky decomposition of the covariance matrix. It can be
-    memory-intensive for large grids.
-    """
-
-    @torch.no_grad()
-    def __init__(self, in_channels, Ln1, Ln2, scale=1, eps=0.01, device=None):
-        self.in_channels = in_channels
-        self.Ln1 = Ln1
-        self.Ln2 = Ln2
-        self.device = device
-        self.scale = scale
-
-        # (Ln1*Ln2, 2)
-        meshgrid = get_fixed_coords(self.Ln1, self.Ln2).to(device)
-        # (Ln1*Ln2, Ln1*Ln2)
-        C = torch.exp(-torch.cdist(meshgrid, meshgrid) / (2 * scale**2))
-
-        # Add a small regularization term for numerical stability
-        I = torch.eye(C.size(-1)).to(device)
-
-        # Not memory efficient
-        # C = C + (eps**2) * I
-        I.mul_(eps**2)  # In-place multiply by eps**2
-        C.add_(I)  # In-place add by I
-        del I
-
-        # Cholesky decomposition
-        self.L = torch.linalg.cholesky(C)
-        del C  # Free up memory
-
-    @torch.no_grad()
-    def sample(self, N):
-        """
-        Generates N samples from the GRF.
-
-        Args:
-            N (int): The number of samples to generate.
-
-        Returns:
-            torch.Tensor: A tensor of shape (N, in_channels, Ln1, Ln2).
-        """
-        samples = torch.zeros((N, self.Ln1 * self.Ln2, self.in_channels)).to(self.device)
-        # Generate samples iteratively to save memory
-        for ix in range(N):
-            # (Ln1*Ln2, in_channels)
-            this_z = torch.randn(self.Ln1 * self.Ln2, self.in_channels).to(self.device)
-            # (Ln1*Ln2, Ln1*Ln2) @ (Ln1*Ln2, in_channels) -> (Ln1*Ln2, in_channels)
-            samples[ix] = torch.matmul(self.L, this_z)
-
-        # Reshape into (N, Ln1, Ln2, in_channels)
-        sample_rshp = samples.reshape(-1, self.Ln1, self.Ln2, self.in_channels)
-
-        # Transpose to (N, in_channels, Ln1, Ln2)
-        sample_rshp = sample_rshp.permute(0, 3, 1, 2)
-
-        return sample_rshp
 
 
 class MaternKernelSampler(GRFSampler):
@@ -256,6 +200,162 @@ class MaternKernelSampler(GRFSampler):
         if self.normalize_std:
             result = self._normalize_to_unit_std(result)
         return result
+
+    def _sample_periodic(self, N):
+        """Samples using IFFT for periodic boundary."""
+        # Shape: (N, in_channels, Ln1, Ln2 // 2 + 1)
+        xr = torch.randn(N, self.in_channels, self.Ln1, self.Ln2 // 2 + 1, 2, device=self.device)
+        xr = torch.view_as_complex(xr) / np.sqrt(2)  # standard complex noise
+
+        # Apply spectral filter
+        L = self.coeff_rfft[None, None, :, :] * xr
+
+        # Special handling for DC and Nyquist frequencies
+        L[:, :, 0, 0] = L[:, :, 0, 0].real * np.sqrt(2)  # DC must be real
+        if self.Ln2 % 2 == 0:
+            L[:, :, :, -1] = L[:, :, :, -1].real * np.sqrt(2)  # Nyquist must be real
+        if self.Ln1 % 2 == 0:
+            L[:, :, self.Ln1 // 2, 0] = L[:, :, self.Ln1 // 2, 0].real * np.sqrt(2)
+            if self.Ln2 % 2 == 0:
+                L[:, :, self.Ln1 // 2, -1] = L[:, :, self.Ln1 // 2, -1].real * np.sqrt(2)
+
+        # Transform to real domain using IRFFT2
+        result = torch.fft.irfft2(L, s=(self.Ln1, self.Ln2), dim=(-2, -1), norm="forward")
+
+        if self.normalize_std:
+            result = self._normalize_to_unit_std(result)
+        return result
+
+    def _sample_none(self, N):
+        """Samples by cropping from a larger periodic field."""
+        large_samples = self.nested_sampler.sample(N)
+
+        # Crop the central region to get the desired grid size
+        start1 = self.Ln1 // 2
+        end1 = start1 + self.Ln1
+        start2 = self.Ln2 // 2
+        end2 = start2 + self.Ln2
+        result = large_samples[:, :, start1:end1, start2:end2]
+
+        if self.normalize_std:
+            result = self._normalize_to_unit_std(result)
+        return result
+
+
+class RBFKernelSpectralSampler(GRFSampler):
+    """
+    Efficient sampler for a Gaussian Random Field with a Radial Basis Function (RBF) kernel
+    using spectral methods. This implementation avoids the memory-intensive Cholesky decomposition
+    used in RBFKernelSampler and instead uses FFT-based spectral methods for efficient sampling.
+
+    The RBF (Gaussian) covariance kernel is:
+        C(d) = σ² * exp(-d² / (2 * ℓ²))
+    where d is the Euclidean distance and ℓ is the length scale parameter.
+
+    The spectral density in the frequency domain is:
+        S(f) = σ² * (2π)^(n/2) * ℓ^n * exp(-2π² * ℓ² * |f|²)
+    where n is the spatial dimension (2 for 2D) and |f| is the magnitude of the frequency vector.
+    """
+
+    @torch.no_grad()
+    def __init__(
+        self,
+        in_channels,
+        Ln1,
+        Ln2,
+        scale=1.0,
+        normalize_std=False,
+        boundary_condition="none",
+        device=None,
+    ):
+        """
+        Initialize the RBF Kernel Spectral Sampler.
+
+        Args:
+            in_channels (int): Number of input channels for the samples.
+            Ln1, Ln2 (int): Grid dimensions.
+            scale (float): The length scale `ℓ` of the RBF kernel.
+                          Controls the correlation distance. Default: 1.0.
+            normalize_std (bool): If True, normalize output to have unit standard deviation.
+            boundary_condition (str): One of "periodic" or "none".
+            device (torch.device): The PyTorch device to use.
+        """
+        self.in_channels = in_channels
+        self.Ln1 = Ln1
+        self.Ln2 = Ln2
+        self.device = device
+        self.normalize_std = normalize_std
+        self.boundary_condition = boundary_condition
+
+        # Validate parameters
+        if scale <= 0:
+            raise ValueError("Length scale must be positive.")
+
+        # Store parameters
+        self.scale = scale
+
+        if boundary_condition == "periodic":
+            self._setup_periodic()
+        elif boundary_condition == "none":
+            self._setup_none()
+        else:
+            raise ValueError("boundary_condition must be one of 'periodic' or 'none'")
+
+    @staticmethod
+    def _normalize_to_unit_std(tensor):
+        """Normalizes a tensor to have a standard deviation of 1."""
+        current_std = tensor.std()
+        if current_std > 0:  # Avoid division by zero
+            return tensor / current_std
+        return tensor
+
+    def _setup_periodic(self):
+        """Sets up spectral coefficients for periodic boundary using rfft frequencies."""
+        freq1 = torch.fft.fftfreq(self.Ln1, 1 / self.Ln1, device=self.device)
+        freq2 = torch.fft.rfftfreq(self.Ln2, 1 / self.Ln2, device=self.device)  # Note: rfftfreq
+        K1, K2 = torch.meshgrid(freq1, freq2, indexing="ij")
+
+        # Spatial dimension
+        D = 2
+
+        # Frequency magnitude squared
+        freq_mag_sq = K1**2 + K2**2
+
+        # RBF spectral density for periodic frequencies
+        C = (2 * torch.pi) ** (D / 2) * self.scale**D * torch.exp(-2 * torch.pi**2 * self.scale**2 * freq_mag_sq)
+
+        # Take square root for sampling
+        self.coeff_rfft = torch.sqrt(C)
+
+    def _setup_none(self):
+        """Sets up a nested sampler on a larger grid to simulate no boundary condition."""
+        # This works by generating a larger periodic field and cropping the center,
+        # which mitigates wrap-around effects from the periodic boundary.
+        self.nested_sampler = RBFKernelSpectralSampler(
+            in_channels=self.in_channels,
+            Ln1=2 * self.Ln1,
+            Ln2=2 * self.Ln2,
+            scale=self.scale,  # Keep same scale for consistent correlation structure
+            normalize_std=False,  # Normalization is handled after cropping
+            boundary_condition="periodic",
+            device=self.device,
+        )
+
+    @torch.no_grad()
+    def sample(self, N):
+        """
+        Generates N samples of the GRF using the specified boundary condition.
+
+        Args:
+            N (int): The number of samples to generate.
+
+        Returns:
+            torch.Tensor: A tensor of shape (N, in_channels, Ln1, Ln2).
+        """
+        if self.boundary_condition == "periodic":
+            return self._sample_periodic(N)
+        else:  # "none"
+            return self._sample_none(N)
 
     def _sample_periodic(self, N):
         """Samples using IFFT for periodic boundary."""
