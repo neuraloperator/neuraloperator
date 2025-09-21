@@ -1,15 +1,14 @@
 import torch
 from neuralop.data.transforms.rescale import (
-    DarcyExtractBC,
-    BurgersExtractBC,
-    HelmholtzExtractBC,
+    extract_boundary_2D,
+    extract_boundary_1D_Time,
+    extract_boundary_2D_complex,
 )
 from neuralop.data.transforms.rescale import (
-    RandomCropResize,
-    RandomCropResizeTime,
-    RandomCropResizeTimeAR,
+    RandomCropResize2D,
+    RandomCropResize1DTime,
+    RandomCropResize2DTimeAR,
 )
-
 
 def LossSelfconsistency(
     model,
@@ -75,17 +74,17 @@ def LossSelfconsistency(
     batch_size = x.shape[0]
 
     if type == "darcy":
-        ExtractBD = DarcyExtractBC
-        transform_xy = RandomCropResize(p=1.0, size_min=size_min)
+        ExtractBD = extract_boundary_2D
+        transform_xy = RandomCropResize2D(p=1.0, size_min=size_min)
     elif type == "helmholtz":
-        ExtractBD = HelmholtzExtractBC
-        transform_xy = RandomCropResize(p=1.0, size_min=size_min)
+        ExtractBD = extract_boundary_2D_complex
+        transform_xy = RandomCropResize2D(p=1.0, size_min=size_min)
     elif type == "NS":
         ExtractBD = lambda x, y: x  # No boundary
-        transform_xy = RandomCropResizeTimeAR(p=1.0, size_min=size_min)
+        transform_xy = RandomCropResize2DTimeAR(p=1.0, size_min=size_min)
     elif type == "burgers":
         ExtractBD = lambda x, y: BurgersExtractBC(y)
-        transform_xy = RandomCropResizeTime(p=1.0, size_min=size_min)
+        transform_xy = RandomCropResize1DTime(p=1.0, size_min=size_min)
     else:
         print("boundary type not supported")
 
@@ -114,7 +113,7 @@ def LossSelfconsistency(
 
     # If y is not given, we set y=model(x). We treat the subdomain as ground truth can detach y_small_
     else:
-        mode = "sc"
+        mode = "self_supervised"
 
         y = model(x, re)
 

@@ -3,7 +3,7 @@ import numpy as np
 import torchvision.transforms.functional as F
 
 
-def DarcyExtractBC(x, y):
+def extract_boundary_2D(x, y, batched=True):
     """
     Extract boundary conditions for Darcy Equation: 2D boundary value problem.
     Code adapted from paper https://arxiv.org/abs/2507.18813
@@ -11,25 +11,25 @@ def DarcyExtractBC(x, y):
     Attributes
     ----------
     x: torch.Tensor
-        initial condition, a tensor of shape (batch, channels, X, Y)
+        coefficient condition, a tensor of shape (batch, channels, X, Y)
     y: torch.Tensor
-        boundary condition, a tensor of shape (batch, channels, X, Y)
+        solution function, a tensor of shape (batch, channels, X, Y)
+    batched: bool
+        whether the input tensors have a batch dimension
 
     Returns
     -------
     x: torch.Tensor
         the combined input tensor with boundary conditions added in channels 1,...,4
     """
-    unsqueeze_x = x.ndim == 3  # check whether batch dimension is missing
-    unsqueeze_y = y.ndim == 3
 
     # add batch dimension if there was no batch dimension
-    if unsqueeze_x:
+    if not batched:
         x = x.unsqueeze(0)
-    if unsqueeze_y:
         y = y.unsqueeze(0)
 
-    # extract BC
+    # extract boundary conditions. for 2D problems, we have 4 boundaries.
+    # the boundary conditions are added in channels 1,...,4 of returned modelinput x.
     Nx, Ny = y.shape[-2], y.shape[-1]
     x[:, 1, :, :] = y[:, 0, 0, :].unsqueeze(1).repeat(1, Nx, 1)  # left boundary
     x[:, 2, :, :] = y[:, 0, :, 0].unsqueeze(2).repeat(1, 1, Ny)  # lower boundary
@@ -37,36 +37,34 @@ def DarcyExtractBC(x, y):
     x[:, 4, :, :] = y[:, 0, :, -1].unsqueeze(2).repeat(1, 1, Ny)  # upper boundary
 
     # undo adding of batch dimension if there was no batch dimension
-    if unsqueeze_x:
+    if not batched:
         x = x[0]
-    if unsqueeze_y:
         y = y[0]
-
     return x
 
 
-def BurgersExtractBC(y):
+def extract_boundary_1D_Time(y, batched=True):
     """
     Extract boundary conditions for Burgers equation: 1D+time initial value problem.
     Code adapted from paper https://arxiv.org/abs/2507.18813
 
     Attributes
     ----------
-    x: torch.Tensor
-        initial condition, a tensor of shape (batch, channels, X, T)
     y: torch.Tensor
-        boundary condition, a tensor of shape (batch, channels, X, T)
+        solution function, a tensor of shape (batch, T, X)
+    batched: bool
+        whether the input tensors have a batch dimension
 
     Returns
     -------
     x: torch.Tensor
         the combined input tensor with boundary conditions added in channels 1 and 2
     """
-    if y.ndim > 3:
-        y = y.squeeze()
+    if not batched:
+        y = y.unsqueeze(0)
     T, S = y.shape[1], y.shape[2]
 
-    # extract BC
+    # extract boundary conditions. The boundary is x=0 and x=1.
     boundary0 = y[..., 0]
     boundary1 = y[..., -1]
     boundary = torch.stack([boundary0, boundary1], dim=1)  # (batch, 2, T)
@@ -75,10 +73,13 @@ def BurgersExtractBC(y):
     x = y[:, 0, :]  # x (batch, x)
     x = x.reshape(-1, 1, 1, S).repeat(1, 1, T, 1)  # x (batch, 1, T, x)
     x = torch.cat([x, boundary], dim=1)  # x (batch, 1+2, T, x)
+
+    if not batched:
+        x = x[0]
     return x
 
 
-def HelmholtzExtractBC(x, y):
+def extract_boundary_2D_complex(x, y, batched=True):
     """
     Extract boundary conditions for Helmholtz Equation: 2D boundary value problem.
     Different from Darcy, the Helmholtz Equation is complex-valued and have two channels for real and imaginary parts.
@@ -87,35 +88,33 @@ def HelmholtzExtractBC(x, y):
     Attributes
     ----------
     x: torch.Tensor
-        initial condition, a tensor of shape (batch, channels, X, Y)
+        coefficient condition, a tensor of shape (batch, channels, X, Y)
     y: torch.Tensor
-        boundary condition, a tensor of shape (batch, channels, X, Y)
+        solution function, a tensor of shape (batch, channels, X, Y)
+    batched: bool
+        whether the input tensors have a batch dimension
 
     Returns
     -------
     x: torch.Tensor
         the combined input tensor with boundary conditions added in channels 1,...,8
     """
-    unsqueeze_x = x.ndim == 3  # check whether batch dimension is missing
-    unsqueeze_y = y.ndim == 3
-
-    # add batch dimension
-    if unsqueeze_x:
+    # add batch dimension if there was no batch dimension
+    if not batched:
         x = x.unsqueeze(0)
-    if unsqueeze_y:
         y = y.unsqueeze(0)
 
-    # extract BC
+    # extract boundary conditions. for 2D problems, we have 4 boundaries.
+    # for complex-valued problems, each boundary has two channels (real and imaginary parts).
     Nx, Ny = y.shape[-2], y.shape[-1]
     x[:, 1:3, :, :] = y[:, :, 0, :].unsqueeze(-2).repeat(1, 1, Nx, 1)  # left boundary
     x[:, 3:5, :, :] = y[:, :, :, 0].unsqueeze(-1).repeat(1, 1, 1, Ny)  # lower boundary
     x[:, 5:7, :, :] = y[:, :, -1, :].unsqueeze(-2).repeat(1, 1, Nx, 1)  # right boundary
     x[:, 7:9, :, :] = y[:, :, :, -1].unsqueeze(-1).repeat(1, 1, 1, Ny)  # upper boundary
 
-    # undo adding of batch dimension
-    if unsqueeze_x:
+    # undo adding of batch dimension if there was no batch dimension
+    if not batched:
         x = x[0]
-    if unsqueeze_y:
         y = y[0]
 
     return x
@@ -148,7 +147,7 @@ def GridResize(x, grid_size, mode="bilinear"):
 
 # data augmentation routines
 class GridResizing:
-    def __init__(self, grid_size, ExtractBC=DarcyExtractBC):
+    def __init__(self, grid_size, ExtractBC=extract_boundary_2D):
         self.grid_size = grid_size
 
     def __call__(self, x, y):
@@ -162,7 +161,7 @@ class GridResizing:
 
 
 class RandomFlip:
-    def __init__(self, p=0.5, ExtractBC=DarcyExtractBC):
+    def __init__(self, p=0.5, ExtractBC=extract_boundary_2D):
         self.p = p
         self.ExtractBC = ExtractBC
 
@@ -179,22 +178,7 @@ class RandomFlip:
         x = self.ExtractBC(x, y)
         return x, y
 
-
-class RandomRotation:
-    def __init__(self, p=0.5, ExtractBC=DarcyExtractBC):
-        raise NotImplementedError
-
-    def __call__(self, x, y):
-        return self.forward(x, y)
-
-    def forward(self, x, y):
-        if torch.rand(1) < self.p:
-            x, y = x.transpose(-1, -2), y.transpose(-1, -2)
-        x = ExtractBC(x, y)
-        return x, y
-
-
-class RandomCropResize:
+class RandomCropResize2D:
     def __init__(self, p=0.5, scale_min=0.1, size_min=32):
         """
         Args:
@@ -255,7 +239,7 @@ class RandomCropResize:
         return x[..., i : i + h, j : j + w]
 
 
-class RandomCropResizeTime:
+class RandomCropResize1DTime:
     def __init__(self, p=0.5, scale_min=0.1, size_min=32):
         """
         Args:
@@ -312,7 +296,7 @@ class RandomCropResizeTime:
         return x[..., i : i + h, j : j + w]
 
 
-class RandomCropResizeTimeAR:
+class RandomCropResize2DTimeAR:
     def __init__(self, p=0.5, scale_min=0.1, size_min=32):
         """
         Args:
