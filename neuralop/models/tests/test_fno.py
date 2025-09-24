@@ -36,7 +36,6 @@ def test_tfno(
         s = 16
         modes = 8
         width = 16
-        fc_channels = 16
         batch_size = 4
         n_layers = 4
     else:
@@ -45,7 +44,6 @@ def test_tfno(
         s = 16
         modes = 5
         width = 15
-        fc_channels = 32
         batch_size = 3
         n_layers = 2
 
@@ -64,7 +62,6 @@ def test_tfno(
         fixed_rank_modes=False,
         n_layers=n_layers,
         stabilizer=stabilizer,
-        fc_channels=fc_channels,
         lifting_channel_ratio=lifting_channel_ratio,
         preactivation=preactivation,
         complex_data=complex_data,
@@ -108,7 +105,6 @@ def test_fno_superresolution(resolution_scaling_factor):
     s = 16
     modes = 5
     hidden_channels = 15
-    fc_channels = 32
     batch_size = 3
     n_layers = 3
     n_dim = 2
@@ -126,7 +122,6 @@ def test_fno_superresolution(resolution_scaling_factor):
         rank=rank,
         resolution_scaling_factor=resolution_scaling_factor,
         n_layers=n_layers,
-        fc_channels=fc_channels,
     ).to(device)
 
     print(f"{model.resolution_scaling_factor=}")

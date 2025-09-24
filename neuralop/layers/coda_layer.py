@@ -110,7 +110,6 @@ class CODALayer(nn.Module):
         fixed_rank_modes=False,
         implementation='factorized',
         decomposition_kwargs=None,
-        **_kwargs,
     ):
         super().__init__()
 
@@ -169,8 +168,7 @@ class CODALayer(nn.Module):
             use_channel_mlp=use_channel_mlp,
             preactivation=preactivation,
             channel_mlp_skip=channel_mlp_skip,
-            mlp_dropout=0,
-            incremental_n_modes=incremental_n_modes,
+            channel_mlp_dropout=0,
             rank=rank,
             channel_mlp_expansion=channel_mlp_expansion,
             fixed_rank_modes=fixed_rank_modes,
@@ -178,7 +176,6 @@ class CODALayer(nn.Module):
             separable=separable,
             factorization=factorization,
             decomposition_kwargs=decomposition_kwargs,
-            joint_factorization=joint_factorization,
         )
 
         kqv_args = dict(

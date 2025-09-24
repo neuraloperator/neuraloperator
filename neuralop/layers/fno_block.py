@@ -121,7 +121,6 @@ class FNOBlocks(nn.Module):
         fixed_rank_modes=False, #undoc
         implementation="factorized", #undoc
         decomposition_kwargs=dict(),
-        **kwargs,
     ):
         super().__init__()
         if isinstance(n_modes, int):

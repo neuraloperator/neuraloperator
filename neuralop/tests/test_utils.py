@@ -3,6 +3,10 @@ from ..utils import count_model_params, count_tensor_params
 from pathlib import Path
 import pytest
 
+# Set warning filter to show each warning only once
+import warnings
+warnings.filterwarnings("once", category=UserWarning)
+
 # Only import wandb and use if installed
 wandb_available = False
 try:
@@ -133,7 +137,7 @@ class DummyModel(BaseModel, name='Dummy'):
     Simple linear model to mock-up our model API
     """
 
-    def __init__(self, features, **kwargs):
+    def __init__(self, features):
         super().__init__()
         self.net = nn.Linear(features, 1)
 
@@ -141,4 +145,11 @@ class DummyModel(BaseModel, name='Dummy'):
         """
         Throw out extra args as in FNO and other models
         """
+        if kwargs:
+            warnings.warn(
+                f"SimpleLinearModel.forward() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
         return self.net(x)

@@ -691,7 +691,6 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
         groups: Optional[int] = 1,
         bias: Optional[bool] = True,
         radius_cutoff: Optional[float] = None,
-        **kwargs
     ):
         super().__init__(in_channels=in_channels,
                          out_channels=out_channels,
@@ -849,7 +848,6 @@ class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
         groups: Optional[int] = 1,
         bias: Optional[bool] = True,
         radius_cutoff: Optional[float] = None,
-        **kwargs
     ):
         super().__init__(in_channels=in_channels,
                          out_channels=out_channels,

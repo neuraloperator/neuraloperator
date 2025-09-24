@@ -16,19 +16,16 @@ class FNOConfig(ModelConfig):
     projection_channel_ratio: int = 4
     n_layers: int = 4
     domain_padding: float = 0.0
-    fft_norm: str = "forward"
     norm: str = "None"
-    skip: str = "linear"
-    implementation: str = "reconstructed"
+    fno_skip: str = "linear"
+    implementation: str = "factorized"
     use_channel_mlp: bool = True
     channel_mlp_expansion: float = 0.5
     channel_mlp_dropout: float = 0
     separable: bool = False
     factorization: str = "None"
     rank: float = 1.0
-    fixed_rank_modes: str = "None"
-    dropout: float = 0.0
-    joint_factorization: bool = False
+    fixed_rank_modes: bool = False
     stabilizer: str = "None"
 
 class SimpleFNOConfig(FNOConfig):
