@@ -9,12 +9,12 @@ An example of usage of Finite Differences
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
-from neuralop.losses.differentiation import central_diff_1d, FiniteDiff
+from neuralop.losses.differentiation import FiniteDiff
 
 # %%
 # 1D Finite Difference Examples
 # =============================
-# Here we demonstrate the central_diff_1d function
+# Here we demonstrate the FiniteDiff class for 1D functions
 
 # %%
 # Creating an example of 1D function

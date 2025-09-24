@@ -4,7 +4,7 @@ import pytest
 from torch.testing import assert_close
 
 from ..data_losses import LpLoss, H1Loss, HdivLoss
-from ..differentiation import central_diff_1d, central_diff_2d, central_diff_3d, non_uniform_fd, FiniteDiff, FourierDiff
+from ..differentiation import non_uniform_fd, FiniteDiff, FourierDiff
 from neuralop.layers.embeddings import regular_grid_nd
 
 
@@ -88,53 +88,6 @@ def test_hdivloss():
 
 
 
-@pytest.mark.parametrize("dim", [1, 2, 3])
-def test_central_diff(dim: int):
-    
-    if dim == 1:
-        # assert f(x) = x
-        # has derivative 1 everywhere when boundaries are fixed
-        x = torch.arange(10)
-        dx = central_diff_1d(x, h=1., periodic_in_x=False)
-        assert_close(dx,torch.ones_like(dx))
-        
-    if dim == 2:
-
-        grid = regular_grid_nd(resolutions=[10,10], grid_boundaries=[[0,10]] * 2)
-        x = torch.stack(grid, dim=0)
-        dx, dy = central_diff_2d(x, h=1., periodic_in_x=False, periodic_in_y=False)
-        # pos encoding A[:,i,j] = [xi, yj]
-
-        # dx[:,i,j] = f(x_i, y_j) vector valued <fx, fy>
-        # dfx(coords) == 1s
-        
-        assert_close(dx[0], torch.ones_like(dx[0]))
-        assert_close(dx[1], torch.zeros_like(dx[1]))
-        
-        assert_close(dy[0], torch.zeros_like(dy[0]))
-        assert_close(dy[1], torch.ones_like(dy[1]))
-
-    if dim == 3:
-        grid = regular_grid_nd(resolutions=[10,10,10], grid_boundaries=[[0,10]] * 3)
-        x = torch.stack(grid, dim=0)
-        # pos encoding A[:,i,j,k] = [xi, yj, zk]
-        dx, dy, dz = central_diff_3d(x, h=1., periodic_in_x=False, periodic_in_y=False, periodic_in_z=False)
-        # dx[:,i,j,k] = f(x_i, y_j, z_k) vector valued <fx, fy, fz>
-        # dfx(coords) == 1s
-        
-        assert_close(dx[0], torch.ones_like(dx[0]))
-        assert_close(dx[1], torch.zeros_like(dx[1]))
-        assert_close(dx[2], torch.zeros_like(dx[1]))
-        
-        assert_close(dy[0], torch.zeros_like(dy[0]))
-        assert_close(dy[1], torch.ones_like(dy[1]))
-        assert_close(dy[2], torch.zeros_like(dy[2]))
-
-        assert_close(dz[0], torch.zeros_like(dz[0]))
-        assert_close(dz[1], torch.zeros_like(dz[1]))
-        assert_close(dz[2], torch.ones_like(dz[2]))
-
-
 
 @pytest.mark.parametrize("dim", [1, 2])
 def test_nonuniform_fd(dim: int):
@@ -206,6 +159,37 @@ def test_nonuniform_fd(dim: int):
         # plt.savefig('non_uniform_fd_2D.pdf')
 
 
+
+@pytest.mark.parametrize("periodic_x", [True, False])
+def test_finite_diff_1d(periodic_x):
+    """Test the FiniteDiff class with various boundary conditions for 1D."""
+    
+    # Create a 1D test function: f(x) = cos(x) - x
+    nx = 64
+    x = torch.linspace(0, 2*torch.pi, nx, dtype=torch.float64)
+    f = torch.cos(x) - x
+    
+    # Initialize FiniteDiff with dim=1 and specified boundary conditions
+    fd1d = FiniteDiff(dim=1, h=2*torch.pi/nx, periodic_in_x=periodic_x)
+    
+    # Test first order derivatives
+    df_dx = fd1d.dx(f)
+    
+    # Test second order derivatives
+    d2f_dx2 = fd1d.dx(f, order=2)
+    
+    # Basic shape assertions
+    assert df_dx.shape == f.shape
+    assert d2f_dx2.shape == f.shape
+    
+    # Test that first derivative is approximately correct for f(x) = cos(x) - x
+    # df/dx ≈ -sin(x) - 1 for f(x) = cos(x) - x
+    if not periodic_x:
+        # For non-periodic, interior points should be close to expected value
+        expected_df_dx = -torch.sin(x[2:-2]) - 1.0
+        assert_close(df_dx[2:-2], expected_df_dx, atol=0.01, rtol=0.1)
+        
+
 @pytest.mark.parametrize("periodic_x", [True, False])
 @pytest.mark.parametrize("periodic_y", [True, False])
 def test_finite_diff_2d(periodic_x, periodic_y):
@@ -258,34 +242,6 @@ def test_finite_diff_2d(periodic_x, periodic_y):
     assert_close(laplacian, d2f_dx2 + d2f_dy2)
 
 
-@pytest.mark.parametrize("periodic_x", [True, False])
-def test_finite_diff_1d(periodic_x):
-    """Test the FiniteDiff class with various boundary conditions for 1D."""
-    
-    # Create a 1D test function: f(x) = cos(x) - x
-    nx = 64
-    x = torch.linspace(0, 2*torch.pi, nx, dtype=torch.float64)
-    f = torch.cos(x) - x
-    
-    # Initialize FiniteDiff with dim=1 and specified boundary conditions
-    fd1d = FiniteDiff(dim=1, h=2*torch.pi/nx, periodic_in_x=periodic_x)
-    
-    # Test first order derivatives
-    df_dx = fd1d.dx(f)
-    
-    # Test second order derivatives
-    d2f_dx2 = fd1d.dx(f, order=2)
-    
-    # Basic shape assertions
-    assert df_dx.shape == f.shape
-    assert d2f_dx2.shape == f.shape
-    
-    # Test that first derivative is approximately correct for f(x) = cos(x) - x
-    # df/dx ≈ -sin(x) - 1 for f(x) = cos(x) - x
-    if not periodic_x:
-        # For non-periodic, interior points should be close to expected value
-        expected_df_dx = -torch.sin(x[2:-2]) - 1.0
-        assert_close(df_dx[2:-2], expected_df_dx, atol=0.01, rtol=0.1)
 
 
 @pytest.mark.parametrize("periodic_x", [True, False])
