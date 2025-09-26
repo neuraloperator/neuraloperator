@@ -6,7 +6,7 @@ from tensorly import tenalg
 from configmypy import Bunch
 
 from neuralop import TFNO
-from neuralop.models import FNO
+from neuralop.models import FNO, FNO1d
 
 tenalg.set_backend("einsum")
 
@@ -139,3 +139,24 @@ def test_fno_superresolution(resolution_scaling_factor):
     factor = prod(resolution_scaling_factor)
 
     assert list(out.shape) == [batch_size, 1] + [int(round(factor * s)) for s in size]
+
+
+@pytest.mark.parametrize("n_dim", [1])
+def test_fno1d_kwargs_fix(n_dim):
+    s = 16
+    modes = 8
+    width = 16
+    n_modes = (modes,) * n_dim
+    n_modes_height = modes
+
+    model_fixed = FNO1d(
+        n_modes_height=n_modes_height,
+        hidden_channels=width,
+        in_channels=1,
+        out_channels=1,
+        n_layers=2,
+        positional_embedding=None
+    )
+
+    assert model_fixed.positional_embedding is None
+    assert model_fixed.lifting.in_channels == 1
