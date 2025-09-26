@@ -463,6 +463,7 @@ class FNO1d(FNO):
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
+            **kwargs
         )
         self.n_modes_height = n_modes_height
 
@@ -537,6 +538,7 @@ class FNO2d(FNO):
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
+            **kwargs
         )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
@@ -614,6 +616,7 @@ class FNO3d(FNO):
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
             domain_padding=domain_padding,
+            **kwargs
         )
         self.n_modes_height = n_modes_height
         self.n_modes_width = n_modes_width
