@@ -6,7 +6,7 @@ from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
 from neuralop.losses.data_losses import LpLoss
 from neuralop.training.trainer import Trainer
-from neuralop.data.datasets import CarOTDataset
+from neuralop.data.datasets import CarOTDataset, load_saved_ot
 from neuralop.data.transforms.data_processors import DataProcessor
 from copy import deepcopy
 
@@ -46,7 +46,7 @@ if config.wandb.log and is_logger:
             config.params[key] = wandb.config[key]
     wandb.init(**wandb_init_args)
 
-#Load CFD body data
+#Load CFD body data (once the OT dataset is generated, we can use "load_saved_ot", avoiding recomputation)
 data_module = CarOTDataset(root_dir=config.data.root,  
                              n_train=config.data.n_train, 
                              n_test=config.data.n_test, 
@@ -55,7 +55,6 @@ data_module = CarOTDataset(root_dir=config.data.root,
                              device=device,
                              )
 
-
 train_loader = data_module.train_loader(batch_size=1, shuffle=True)
 test_loader = data_module.test_loader(batch_size=1, shuffle=False)
 
@@ -63,8 +62,8 @@ model = get_model(config)
 
 #Create the optimizer
 optimizer = AdamW(model.parameters(), 
-                                lr=config.opt.learning_rate, 
-                                weight_decay=config.opt.weight_decay)
+                lr=config.opt.learning_rate, 
+                weight_decay=config.opt.weight_decay)
 
 if config.opt.scheduler == 'ReduceLROnPlateau':
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=config.opt.gamma, patience=config.opt.scheduler_patience, mode='min')
@@ -95,7 +94,7 @@ else:
 class CFDDataProcessor(DataProcessor):
     """
     Implements logic to preprocess data/handle model outputs
-    to train an FNOGNO on the CFD car-pressure dataset
+    to train an OTNO on the CFD car-pressure dataset
     """
 
     def __init__(self, normalizer, device='cuda'):

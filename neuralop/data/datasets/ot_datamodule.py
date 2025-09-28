@@ -32,19 +32,26 @@ class OTDataModule:
         n_total: int = None,
         expand_factor: float = 3.0, 
         reg: float = 1e-06,
-        device: Union[str, torch.device] = 'cpu',
+        device: Union[str, torch.device] = 'cuda',
     ):
-        """MeshDataModule provides a general dataset for irregular coordinate meshes
-            for use in a GNO-based architecture
+        """OTDataModule generate OT data from physical mesh
 
         Parameters
         ----------
         root_dir : Union[str, Path]
             str or Path to root directory of CFD dataset
-        expand_factor:
-            expand the pysical size (car, target) to latent size (torus, source)
-        latent_res : List[int], optional
-            resolution of latent query points along each dimension
+        item_dir_name : Union[str, Path]
+            directory in which individual item subdirs are stored
+        n_total : int, optional
+            hard limit on number of total examples
+            if n_total is greater than the actual number
+            of total examples available, nothing is changed
+        expand_factor : float, optional
+            Scale factor to map physical mesh size to latent mesh size (e.g., torus/sphere).
+        reg : float, optional
+            Regularization coefficient for the Sinkhorn algorithm.
+        device : Union[str, torch.device], optional
+            Device for OT computation.
         """
         self.device = device
 
@@ -94,13 +101,8 @@ class OTDataModule:
             n_t = len(target) # number of target samples
             n_s_sqrt = int(np.sqrt(expand_factor)*np.ceil(np.sqrt(n_t))) # sqrt of the number of source samples
             source = self.torus_grid(n_s_sqrt) # build source gird
-            #_, log = empirical_sinkhorn2_geomloss(X_s=source.to(self.device), X_t=target, reg=reg, log=True) # utilize weighted Sinkhorn a=a.to(device), b=b.to(device),
-            #gamma = log['lazy_plan'][:].detach() # convert the lazy tensor to torch.tensor (dense)
-            n_s = n_s_sqrt**2
-            a, b = np.ones((n_s,)) / n_s, np.ones((n_t,)) / n_t
-            M = ot.dist(source.numpy(), target.numpy())
-            gamma = ot.emd(a, b, M, numItermax=1000000)
-            gamma = torch.from_numpy(gamma.astype(np.float32()))
+            _, log = empirical_sinkhorn2_geomloss(X_s=source.to(self.device), X_t=target, reg=reg, log=True) # utilize weighted Sinkhorn a=a.to(device), b=b.to(device),
+            gamma = log['lazy_plan'][:].detach() # convert the lazy tensor to torch.tensor (dense)            
 
             # normalize the OT plan matrix by column
             row_norms = torch.norm(gamma, p=1, dim=1, keepdim=True)

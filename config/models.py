@@ -197,10 +197,12 @@ class GINO_Poisson2d(GINOConfig):
 
 class OTNO_Small3d(ModelConfig):
     model_arch: str = "otno"
-    n_modes: List[int] = [32, 32]
+    n_modes: List[int] = [24, 24]
     hidden_channels: int = 120
     data_channels: int = 9
     out_channels: int = 1
+    lifting_channel_ratio: int = 3
+    projection_channel_ratio: int = 3
     norm: str = 'group_norm'
     use_mlp: bool = True
     mlp_expansion: float = 1.0

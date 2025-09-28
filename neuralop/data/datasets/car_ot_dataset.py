@@ -22,12 +22,12 @@ class CarOTDataset(OTDataModule):
         Number of training instances to load, by default 1
     n_test : int, optional
         Number of testing instances to load, by default 1
-    query_res : List[int], optional
-        Dimension-wise resolution of signed distance function 
-        (SDF) query cube, by default [32,32,32]
-    download : bool, optional
-        Whether to download data from Zenodo, by default True
-    
+    expand_factor : float, optional
+        Scale factor to map physical mesh size to latent mesh size (e.g., torus/sphere).
+    reg : float, optional
+        Regularization coefficient for the Sinkhorn algorithm.
+    device : Union[str, torch.device], optional
+        Device for OT computation.
 
     Attributes
     ----------
@@ -44,7 +44,7 @@ class CarOTDataset(OTDataModule):
         n_test: int = 1,
         expand_factor: float = 3.0, 
         reg: float = 1e-06,
-        device: Union[str, torch.device] = 'cpu',
+        device: Union[str, torch.device] = 'cuda',
         ):
 
         if isinstance(root_dir, str):
@@ -78,6 +78,7 @@ class CarOTDataset(OTDataModule):
                 data_elem = self.data[j][attr]
                 self.data[j][attr] = self.normalizers[attr].transform(data_elem)
 
+        # prepare the complete features presenting transport map/plan on latent mesh
         for j in range(len(self.data)):
             batch_data = self.data[j]
             n_s = batch_data['trans'].shape[1]
@@ -99,10 +100,54 @@ class CarOTDataset(OTDataModule):
     def test_loader(self, **kwargs):
         return DataLoader(self.test_data, **kwargs)
 
-def load_saved_ot():
-    """
-    Load the 3-example mini Car-CFD dataset we package along with our module.
+class load_saved_ot:
+    def __init__(self,
+        n_train: int = 1,
+        n_test: int = 1,
+        expand_factor: float = 3.0, 
+        reg: float = 1e-06,
+        ):
+        """
+        Load the saved Car-OT dataset we package along with our module.
 
-    See `neuralop.data.datasets.CarCFDDataset` for more detailed references
-    """
-    return torch.load(get_project_root() / "neuralop/data/datasets/data/mini_car.pt")
+        See `neuralop.data.datasets.ot_datamodule` for more detailed references
+        """
+        n_total = n_train + n_test
+        data = torch.load(get_project_root() / "neuralop/data/datasets/data" / f"ot_expand{expand_factor}_reg{reg}_num{n_total}.pt")
+        # process data list to remove specific vertices from pressure to match number of vertices
+        for i, item_data in enumerate(data):
+            press = item_data['press']
+            data[i]['press'] = torch.cat((press[0:16], press[112:]), axis=0)
+        
+        # encode transport and pressure
+        normalizer_keys = ['trans','press']
+        self.normalizers = UnitGaussianNormalizer.from_dataset(
+                data[0:n_train], dim=[1], keys=normalizer_keys
+            )
+        
+        for attr in normalizer_keys:
+            for j in range(len(data)):
+                data_elem = data[j][attr]
+                data[j][attr] = self.normalizers[attr].transform(data_elem)
+
+        # prepare the complete features presenting transport map/plan on latent mesh
+        for j in range(len(data)):
+            batch_data = data[j]
+            n_s = batch_data['trans'].shape[1]
+            n_s_sqrt = int(np.sqrt(n_s))
+            normal = batch_data['nor_t']
+            ind_enc = batch_data['ind_enc']
+            normal = normal[ind_enc]
+            normal_features = torch.cross(normal , batch_data['nor_s'].reshape(-1,3), dim=1)
+            trans = torch.cat((batch_data['trans'][0], batch_data['source'], normal_features), dim=1).T.reshape(9, n_s_sqrt, n_s_sqrt).unsqueeze(0)
+            data[j]['trans']=trans
+
+        # Datasets
+        self.train_data = DictDataset(data[0:n_train])
+        self.test_data = DictDataset(data[n_train:n_test+n_train])
+    
+    def train_loader(self, **kwargs):
+        return DataLoader(self.train_data, **kwargs)
+
+    def test_loader(self, **kwargs):
+        return DataLoader(self.test_data, **kwargs)
