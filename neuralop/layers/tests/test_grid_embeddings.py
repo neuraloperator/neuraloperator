@@ -37,7 +37,7 @@ def test_GridEmbeddingND(dim):
     index = [random.randint(0, res-1) for res in input_res]
     # grab pos encoding channels at coord index
     pos_channels = x[0,1:,...]
-    indices = [slice(None), *index]
+    indices = (slice(None), *index)
     true_coords = pos_channels[indices]
     expected_coords = torch.tensor([i/j for i,j in zip(index,input_res)])
     assert_close(true_coords, expected_coords)
