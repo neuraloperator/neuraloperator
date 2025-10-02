@@ -441,7 +441,98 @@ class SparseKernelFT(nn.Module):
 
 class MWNO_CZ(nn.Module):
     """
-    Dimension-agnostic MWNO core layer
+    Multiwavelet Neural Operator Core Z-transform Layer.
+
+    This layer implements the core multiwavelet decomposition and reconstruction
+    mechanism for the MWNO architecture. It performs multi-level wavelet transforms
+    with learnable sparse kernels operating in both spatial and Fourier domains.
+
+    The layer supports 1D, 2D, and 3D inputs:
+    - 1D: Applies wavelet transform along single spatial dimension
+    - 2D: Applies wavelet transform along both spatial dimensions
+    - 3D: Applies wavelet transform only to first two dimensions (Nx, Ny),
+          preserving the third dimension (T) as temporal/feature dimension
+
+    Parameters
+    ----------
+    k : int, default=3
+        Wavelet kernel size. Determines the support of the wavelet basis functions.
+        Common values are 3 or 4.
+
+    alpha : int, default=5
+        Number of Fourier modes retained in the sparse Fourier kernels.
+        Controls the expressiveness of frequency domain operations.
+
+    L : int, default=0
+        Number of coarsest decomposition levels to skip.
+        When L>0, the decomposition stops L levels before reaching the
+        coarsest possible scale, reducing computational cost.
+
+    c : int, default=1
+        Number of channels in the wavelet transform.
+        Increases the capacity of the wavelet representation.
+
+    base : str, default='legendre'
+        Type of polynomial basis for wavelet construction.
+        Options: 'legendre', 'chebyshev'
+
+    n_dim : int, default=1
+        Dimensionality of the input (1, 2, or 3).
+        Determines which wavelet transform variant to use.
+
+    initializer : callable or None, default=None
+        Custom weight initialization function for the T0 linear layer.
+        If None, uses PyTorch default initialization.
+
+    Attributes
+    ----------
+    A : SparseKernelFT
+        Learnable sparse Fourier kernel applied to detail coefficients
+
+    B : SparseKernelFT or SparseKernel
+        Learnable kernel applied to approximation coefficients
+        (Fourier kernel for 1D, spatial kernel for 2D/3D)
+
+    C : SparseKernel
+        Learnable sparse spatial kernel applied to detail coefficients
+        for skip connections
+
+    T0 : nn.Linear
+        Linear transformation applied at the coarsest scale
+
+    Methods
+    -------
+    forward(x)
+        Apply multiwavelet decomposition, transformation, and reconstruction
+
+    wavelet_transform(x)
+        Perform one level of wavelet decomposition
+
+    even_odd_reconstruction(x)
+        Perform one level of wavelet reconstruction using even-odd splitting
+
+    Input Shape
+    -----------
+    - 1D: (B, N, c, k) where N must be power of 2
+    - 2D: (B, Nx, Ny, c, k**2) where Nx, Ny must be powers of 2
+    - 3D: (B, Nx, Ny, T, c, k**2) where Nx, Ny must be powers of 2
+
+    Output Shape
+    ------------
+    Same as input shape
+
+    Examples
+    --------
+    >>> # 2D example
+    >>> layer = MWNO_CZ(k=3, alpha=5, L=0, c=1, base='legendre', n_dim=2)
+    >>> x = torch.randn(4, 16, 16, 1, 9)  # (batch, height, width, channels, k^2)
+    >>> output = layer(x)
+    >>> assert output.shape == x.shape
+
+    Notes
+    -----
+    The wavelet filters are precomputed based on the chosen polynomial basis
+    and stored as buffers for efficient computation during forward passes.
     """
 
     def __init__(self, k=3, alpha=5, L=0, c=1, base='legendre', n_dim=1, initializer=None, **kwargs):

@@ -15,6 +15,31 @@ from ..layers.mwno_block import MWNO_CZ
 
 class MWNO(nn.Module):
     """
+    Reference:
+    Gupta, G., Xiao, X. and Bogdan, P., 2021.
+    Multiwavelet-based operator learning for differential equations.
+    Advances in neural information processing systems, 34, pp.24048-24062.
+
+    @article{gupta2021multiwavelet,
+      title={Multiwavelet-based operator learning for differential equations},
+      author={Gupta, Gaurav and Xiao, Xiongye and Bogdan, Paul},
+      journal={Advances in neural information processing systems},
+      volume={34},
+      pages={24048--24062},
+      year={2021}
+    }
+
+
+    Description: Multiwavelet Neural Operator (MWNO) is a neural operator framework
+    that employs multiwavelet bases to represent operators in localized, multiscale domains.
+    By leveraging the orthogonality, compact support, and multi-resolution properties of multiwavelets,
+    MWNO effectively captures both global structures and local irregularities,
+    making it particularly well-suited for learning operators from data with high fluctuations.
+    This enables end-to-end learning of mappings between infinite-dimensional function spaces and
+    supports accurate modeling of complex dynamical systems governed by partial differential equations.
+
+
+
     Parameters
     ----------
     n_modes : Tuple[int] or int
@@ -145,19 +170,19 @@ class MWNO(nn.Module):
         for module in self.modules():
             if isinstance(module, nn.Linear):
                 initializer(module.weight)
-    
+
     def forward(self, x):
         """
         Forward propagation
-        
+
         Parameters
         ----------
         x : tensor
             Input tensor with shape:
             - 1D: (B, N, in_channels)
-            - 2D: (B, Nx, Ny, in_channels)  
+            - 2D: (B, Nx, Ny, in_channels)
             - 3D: (B, Nx, Ny, T, in_channels)
-            
+
         Returns
         -------
         output : tensor
@@ -166,33 +191,90 @@ class MWNO(nn.Module):
             - 2D: (B, Nx, Ny, out_channels) or (B, Nx, Ny) if out_channels=1
             - 3D: (B, Nx, Ny, T, out_channels) or (B, Nx, Ny, T) if out_channels=1
         """
-        
-        x = self.lifting(x)
-        
+
+        # Validate input dimensions
+        expected_dims = self.n_dim + 2  # batch + spatial dims + channel
+        assert x.ndim == expected_dims, (
+            f"Expected {expected_dims}D input for {self.n_dim}D MWNO, "
+            f"but got {x.ndim}D tensor with shape {x.shape}"
+        )
+
+        # Validate channel dimension
+        assert x.shape[-1] == self.in_channels, (
+            f"Expected {self.in_channels} input channels, "
+            f"but got {x.shape[-1]} channels. Input shape: {x.shape}"
+        )
+
+        # Validate spatial dimensions are powers of 2
         if self.n_dim == 1:
-            B, N, _ = x.shape
+            N = x.shape[1]
+            assert N & (N - 1) == 0, (
+                f"Spatial dimension must be power of 2, but got N={N}. "
+                f"Input shape: {x.shape}"
+            )
+        elif self.n_dim == 2:
+            Nx, Ny = x.shape[1], x.shape[2]
+            assert Nx & (Nx - 1) == 0 and Ny & (Ny - 1) == 0, (
+                f"Spatial dimensions must be powers of 2, but got Nx={Nx}, Ny={Ny}. "
+                f"Input shape: {x.shape}"
+            )
+        elif self.n_dim == 3:
+            Nx, Ny = x.shape[1], x.shape[2]
+            assert Nx & (Nx - 1) == 0 and Ny & (Ny - 1) == 0, (
+                f"Spatial dimensions (Nx, Ny) must be powers of 2, "
+                f"but got Nx={Nx}, Ny={Ny}. Input shape: {x.shape}"
+            )
+
+        x = self.lifting(x)
+
+        # Reshape to add wavelet dimension with validation
+        if self.n_dim == 1:
+            B, N, lifted_channels = x.shape
+            expected_channels = self.c * self.k
+            assert lifted_channels == expected_channels, (
+                f"Lifting produced {lifted_channels} channels, "
+                f"expected {expected_channels} (c={self.c}, k={self.k})"
+            )
             x = x.view(B, N, self.c, self.k)
         elif self.n_dim == 2:
-            B, Nx, Ny, _ = x.shape
-            x = x.view(B, Nx, Ny, self.c, self.k**2)
+            B, Nx, Ny, lifted_channels = x.shape
+            expected_channels = self.c * self.k ** 2
+            assert lifted_channels == expected_channels, (
+                f"Lifting produced {lifted_channels} channels, "
+                f"expected {expected_channels} (c={self.c}, k^2={self.k ** 2})"
+            )
+            x = x.view(B, Nx, Ny, self.c, self.k ** 2)
         elif self.n_dim == 3:
-            B, Nx, Ny, T, _ = x.shape
-            x = x.view(B, Nx, Ny, T, self.c, self.k**2)
+            B, Nx, Ny, T, lifted_channels = x.shape
+            expected_channels = self.c * self.k ** 2
+            assert lifted_channels == expected_channels, (
+                f"Lifting produced {lifted_channels} channels, "
+                f"expected {expected_channels} (c={self.c}, k^2={self.k ** 2})"
+            )
+            x = x.view(B, Nx, Ny, T, self.c, self.k ** 2)
 
+        # Apply MWNO layers
         for i, layer in enumerate(self.mwno_layers):
             x = layer(x)
             if i < self.n_layers - 1:
                 x = F.relu(x)
-        
+
+        # Reshape back and project
         if self.n_dim == 1:
             x = x.view(B, N, -1)
         elif self.n_dim == 2:
             x = x.view(B, Nx, Ny, -1)
         elif self.n_dim == 3:
             x = x.view(B, Nx, Ny, T, -1)
-        
+
         x = self.projection(x)
-        
+
+        # Validate output channels
+        assert x.shape[-1] == self.out_channels, (
+            f"Expected {self.out_channels} output channels, "
+            f"but got {x.shape[-1]}. Output shape: {x.shape}"
+        )
+
         if self.out_channels == 1:
             return x.squeeze(-1)
         return x
