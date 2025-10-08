@@ -41,6 +41,7 @@ extensions = [
     'sphinx.ext.mathjax', #'sphinx.ext.imgmath',
     'numpydoc.numpydoc',
     'sphinx_gallery.gen_gallery',
+    'sphinx_design',
 ]
 
 # -- sphinx_gallery configuration ---------------------------------
@@ -52,6 +53,7 @@ sphinx_gallery_conf = {
      'examples_dirs': [sg_examples_dir],   # path to your example scripts
      'gallery_dirs': [sg_gallery_dir],  # path to where to save gallery generated output
      'nested_sections': True, # ensure we can nest multiple levels in the gallery toctree
+     'matplotlib_animations': True, # ensure that we can render MPL animations in the gallery
 }
 
 # -- Template configuration 
@@ -100,10 +102,11 @@ html_theme_options = {
     'github_url': 'https://github.com/neuraloperator/neuraloperator',
     # 'google_analytics' : 'G-QSPLEF75VT',
     'nav_links' : [('Install', 'install'),
+                   ('Theory Guide', 'theory_guide/index'),
                    ('User Guide', 'user_guide/index'),
                    ('API', 'modules/api'),
                    ('Examples', 'auto_examples/index'),
-                   ('Developer\'s Guide', 'dev_guide')
+                   ('Developer\'s Guide', 'dev_guide/index'),
                   ],
     # 'external_nav_links' : [('TensorLy', 'http://tensorly.org/dev')]
 }

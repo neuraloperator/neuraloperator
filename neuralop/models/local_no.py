@@ -31,7 +31,7 @@ class LocalNO(BaseModel, name='LocalNO'):
     out_channels : int
         Number of channels in output function
     hidden_channels : int
-        width of the Local NO (i.e. number of channels), by default 256
+        width of the Local NO (i.e. number of channels)
     default_in_shape : Tuple[int]
         Default input shape on spatiotemporal dimensions for structured DISCO convolutions
     n_layers : int, optional
@@ -66,11 +66,11 @@ class LocalNO(BaseModel, name='LocalNO'):
     lifting_channel_ratio : int, optional
         ratio of lifting channels to hidden_channels, by default 2
         The number of liting channels in the lifting block of the Local FNO is
-        lifting_channel_ratio * hidden_channels (e.g. default 512)
+        lifting_channel_ratio * hidden_channels (e.g. default 2 * hidden_channels )
     projection_channel_ratio : int, optional
         ratio of projection channels to hidden_channels, by default 2
         The number of projection channels in the projection block of the Local FNO is
-        projection_channel_ratio * hidden_channels (e.g. default 512)
+        projection_channel_ratio * hidden_channels (e.g. default 2 * hidden_channels )
     positional_embedding : Union[str, nn.Module], optional
         Positional embedding to apply to last channels of raw input
         before being passed through the Local FNO. Defaults to "grid"
@@ -91,14 +91,16 @@ class LocalNO(BaseModel, name='LocalNO'):
     complex_data : bool, optional
         Whether data is complex-valued (default False)
         if True, initializes complex-valued modules.
+    use_channel_mlp : bool, optional
+        Whether to use an MLP layer after each LocalNO block, by default False
     channel_mlp_dropout : float, optional
-        dropout parameter for ChannelMLP in FNO Block, by default 0
+        dropout parameter for ChannelMLP in LocalNO Block, by default 0
     channel_mlp_expansion : float, optional
-        expansion parameter for ChannelMLP in FNO Block, by default 0.5
+        expansion parameter for ChannelMLP in LocalNO Block, by default 0.5
     channel_mlp_skip : str {'linear', 'identity', 'soft-gating'}, optional
         Type of skip connection to use in channel-mixing mlp, by default 'soft-gating'
     local_no_skip : str {'linear', 'identity', 'soft-gating'}, optional
-        Type of skip connection to use in FNO layers, by default 'linear'
+        Type of skip connection to use in LocalNO layers, by default 'linear'
     resolution_scaling_factor : Union[Number, List[Number]], optional
         layer-wise factor by which to scale the domain resolution of function, by default None
         
@@ -110,8 +112,7 @@ class LocalNO(BaseModel, name='LocalNO'):
         To vary the percentage of padding used along each input dimension,
         pass in a list of percentages e.g. [p1, p2, ..., pN] such that
         p1 corresponds to the percentage of padding along dim 1, etc.
-    domain_padding_mode : str {'symmetric', 'one-sided'}, optional
-        How to perform domain padding, by default 'one-sided'
+
     local_no_block_precision : str {'full', 'half', 'mixed'}, optional
         precision mode in which to perform spectral convolution, by default "full"
     stabilizer : str {'tanh'} | None, optional
@@ -191,19 +192,20 @@ class LocalNO(BaseModel, name='LocalNO'):
         conv_padding_mode: str='periodic',
         fin_diff_kernel_size: int=3,
         mix_derivatives: bool=True,
-        lifting_channel_ratio: int=2,
-        projection_channel_ratio: int=2,
+        lifting_channel_ratio: Number=2,
+        projection_channel_ratio: Number=2,
         positional_embedding: Union[str, nn.Module]="grid",
         non_linearity: nn.Module=F.gelu,
         norm: str=None,
         complex_data: bool=False,
+        use_channel_mlp: bool=False,
         channel_mlp_dropout: float=0,
         channel_mlp_expansion: float=0.5,
         channel_mlp_skip: str="soft-gating",
         local_no_skip: str="linear",
         resolution_scaling_factor: Union[Number, List[Number]]=None,
         domain_padding: Union[Number, List[Number]]=None,
-        domain_padding_mode: str="one-sided",
+
         local_no_block_precision: str="full",
         stabilizer: str=None,
         max_n_modes: Tuple[int]=None,
@@ -232,10 +234,10 @@ class LocalNO(BaseModel, name='LocalNO'):
 
         # init lifting and projection channels using ratios w.r.t hidden channels
         self.lifting_channel_ratio = lifting_channel_ratio
-        self.lifting_channels = lifting_channel_ratio * self.hidden_channels
+        self.lifting_channels = int(lifting_channel_ratio * self.hidden_channels)
 
         self.projection_channel_ratio = projection_channel_ratio
-        self.projection_channels = projection_channel_ratio * self.hidden_channels
+        self.projection_channels = int(projection_channel_ratio * self.hidden_channels)
 
         self.non_linearity = non_linearity
         self.rank = rank
@@ -274,13 +276,12 @@ class LocalNO(BaseModel, name='LocalNO'):
         ):
             self.domain_padding = DomainPadding(
                 domain_padding=domain_padding,
-                padding_mode=domain_padding_mode,
                 resolution_scaling_factor=resolution_scaling_factor,
             )
         else:
             self.domain_padding = None
 
-        self.domain_padding_mode = domain_padding_mode
+
         self.complex_data = self.complex_data
 
         if resolution_scaling_factor is not None:
@@ -304,6 +305,7 @@ class LocalNO(BaseModel, name='LocalNO'):
             conv_padding_mode=conv_padding_mode,
             fin_diff_kernel_size=fin_diff_kernel_size,
             mix_derivatives=mix_derivatives,
+            use_channel_mlp=use_channel_mlp,
             channel_mlp_dropout=channel_mlp_dropout,
             channel_mlp_expansion=channel_mlp_expansion,
             non_linearity=non_linearity,

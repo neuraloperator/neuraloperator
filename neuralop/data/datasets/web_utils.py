@@ -75,7 +75,7 @@ def download_from_url(
         whether to extract .tgz archives, by default True
     """
     if isinstance(root, str):
-        root = Path(str)
+        root = Path(root)
     
     root = root.expanduser()
     if not filename:
@@ -106,7 +106,9 @@ def download_from_url(
                     prog = curr_size / size
                     print(f"Download in progress: {prog:.2%}", end='\r')
 
-            assert fpath.stat().st_size == size
+            assert fpath.stat().st_size == size, f"Error: mismatch between expected\
+                 and true size of downloaded file {fpath}. Delete the file\
+                    and try again. "
 
     # check integrity of downloaded file
     if not check_integrity(fpath, md5):

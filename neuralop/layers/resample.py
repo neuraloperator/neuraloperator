@@ -54,6 +54,7 @@ def resample(x, res_scale, axis, output_shape=None):
 
         idx_tuple = [slice(None), slice(None)] + [slice(*b) for b in boundaries]
 
+        idx_tuple = tuple(idx_tuple)
         out_fft[idx_tuple] = X[idx_tuple]
     y = torch.fft.irfftn(out_fft, s= new_size ,norm='forward', dim=axis)
 

@@ -7,6 +7,7 @@ authors = [
 dependencies = [
     "wandb",
     "ruamel-yaml",
+    "zencfg",
     "configmypy",
     "tensorly",
     "tensorly-torch",
@@ -14,6 +15,7 @@ dependencies = [
     "numpy>=1.25",
     "opt-einsum",
     "h5py",
+    "zencfg>=0.3.0",
 ]
 requires-python = ">=3.9"
 readme = "README.rst"
@@ -51,6 +53,7 @@ doc = [
     "numpy>=1.25",
     "sphinx",
     "sphinx-gallery",
+    "sphinx-design",
     "tensorly_sphinx_theme",
     "torchtnt",
     "torch_harmonics==0.7.4"
@@ -64,6 +67,7 @@ all = [
     "numpydoc",
     "sphinx",
     "sphinx-gallery",
+    "sphinx-design",
     "tensorly_sphinx_theme",
     "torchtnt",
     "numpy>=1.25",

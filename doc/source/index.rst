@@ -135,10 +135,11 @@ of an equivalent, dense Fourier Neural Operator!
    :hidden:
 
    install
+   theory_guide/index
    user_guide/index
    modules/api
    auto_examples/index
-   dev_guide
+   dev_guide/index
 
 
 .. only:: html

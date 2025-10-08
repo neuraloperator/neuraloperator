@@ -1,8 +1,14 @@
 import torch
-from torch.autograd import grad
 import pytest
 from tensorly import tenalg
 tenalg.set_backend("einsum")
+
+# Parameterize use of torch_scatter if it is built
+try: 
+    from torch_scatter import segment_csr
+    use_torch_scatter = [True, False]
+except:
+    use_torch_scatter = [False]
 
 from ..gino import GINO
 
@@ -28,7 +34,8 @@ fno_ada_in_features = 4
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
 )
 @pytest.mark.parametrize("latent_feature_dim", [None, 2])
-def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_embed_type, batch_size, fno_norm):
+@pytest.mark.parametrize("use_torch_scatter", use_torch_scatter)
+def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_embed_type, batch_size, fno_norm, use_torch_scatter):
     if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")
     else:
@@ -38,7 +45,9 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
         in_channels=in_channels,
         out_channels=out_channels,
         latent_feature_channels=latent_feature_dim,
-        gno_radius=0.3,# make this large to ensure neighborhoods fit
+        in_gno_radius=0.3,# make this large to ensure neighborhoods overlap with queries on the domain
+        out_gno_radius=0.3,
+        use_torch_scatter=use_torch_scatter,
         projection_channels=projection_channels,
         gno_coord_dim=gno_coord_dim,
         gno_pos_embed_type=gno_pos_embed_type,
@@ -57,7 +66,7 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
     # create grid of latent queries on the unit cube
     latent_geom = torch.stack(torch.meshgrid([torch.linspace(0,1,latent_density)] * gno_coord_dim, indexing='xy'))
     latent_geom = latent_geom.permute(*list(range(1,gno_coord_dim+1)),0).to(device)
-
+    
     if latent_feature_dim is not None:
         latent_features_shape = [batch_size, *latent_geom.shape[:-1], latent_feature_dim]
         latent_features = torch.randn(*latent_features_shape, device=device)
@@ -75,7 +84,10 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
     # require and retain grad to check for backprop
     x.requires_grad_(True)
 
-    ada_in = torch.randn(1, device=device)
+    if fno_norm is not None:
+        ada_in = torch.randn(1, device=device)
+    else:
+        ada_in = None
 
     # Test forward pass
     out = model(x=x,
@@ -96,8 +108,9 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
         loss = out.sum()
     loss.backward()
     n_unused_params = 0
-    for param in model.parameters():
+    for name, param in model.named_parameters():
         if param.grad is None:
+            print(name)
             n_unused_params += 1
     assert n_unused_params == 0, f"{n_unused_params} parameters were unused!"
     if batch_size > 1:

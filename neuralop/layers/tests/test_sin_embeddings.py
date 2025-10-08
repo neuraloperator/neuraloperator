@@ -60,12 +60,12 @@ def test_NeRFEmbedding():
 
 
 def test_TransformerEmbedding():
-    nerf_embed = SinusoidalEmbedding(in_channels=in_channels,
+    sin_embed = SinusoidalEmbedding(in_channels=in_channels,
                                     num_frequencies=3,
                                     embedding_type='transformer',
                                     max_positions=max_pos)
     unbatched_inputs = torch.arange(in_channels) * torch.tensor([[1.], [0.5]])
-    embeds = nerf_embed(unbatched_inputs.to(device))
+    embeds = sin_embed(unbatched_inputs.to(device))
 
     true_outputs = torch.zeros(n_in, in_channels * num_freqs * 2).to(device)
 
@@ -74,7 +74,7 @@ def test_TransformerEmbedding():
         for wavenumber in range(num_freqs):
             for i in range(2):
                 idx = channel * (num_freqs * 2) + wavenumber * 2 + i
-                freqs = ((1 / max_pos) ** (wavenumber / in_channels)) * unbatched_inputs[:, channel]
+                freqs = ((1 / max_pos) ** (wavenumber / (sin_embed.num_frequencies * 2))) * unbatched_inputs[:, channel]
                 if i == 0:
                     true_outputs[:, idx] = freqs.sin()
                 else:
@@ -82,7 +82,7 @@ def test_TransformerEmbedding():
     assert_close(embeds, true_outputs)
 
     batched_inputs = torch.stack([torch.arange(in_channels) * torch.tensor([[1.], [0.5]])] * batch_size)
-    embeds = nerf_embed(batched_inputs.to(device))
+    embeds = sin_embed(batched_inputs.to(device))
 
     true_outputs = torch.zeros(batch_size, n_in, in_channels * num_freqs * 2).to(device)
 
@@ -91,7 +91,7 @@ def test_TransformerEmbedding():
         for wavenumber in range(num_freqs):
             for i in range(2):
                 idx = channel * (num_freqs * 2) + wavenumber * 2 + i
-                freqs = ((1 / max_pos) ** (wavenumber / in_channels)) * batched_inputs[:, :, channel]
+                freqs = ((1 / max_pos) ** (wavenumber / (sin_embed.num_frequencies * 2))) * batched_inputs[:, :, channel]
                 if i == 0:
                     true_outputs[:, :, idx] = freqs.sin()
                 else:

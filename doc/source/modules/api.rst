@@ -17,6 +17,7 @@ Models
 
 In :mod:`neuralop.models`, we provide neural operator models you can directly use on your applications.
 
+.. _fno_api:
 FNO
 ----
 
@@ -43,6 +44,7 @@ We also have dimension-specific classes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _tfno_api:
 Tensorized FNO (TFNO)
 ----------------------
 
@@ -66,6 +68,7 @@ Dimension-specific classes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _sfno_api:
 Spherical Fourier Neural Operators (SFNO)
 --------------------------------------------
 
@@ -77,6 +80,7 @@ Spherical Fourier Neural Operators (SFNO)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _gino_api:
 Geometry-Informed Neural Operators (GINO)
 ------------------------------------------
 
@@ -88,6 +92,7 @@ Geometry-Informed Neural Operators (GINO)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _local_no_api:
 Local Neural Operators (LocalNO)
 --------------------------------------------
 
@@ -100,6 +105,7 @@ Local Neural Operators (LocalNO)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _uno_api:
 U-shaped Neural Operators (U-NO)
 ---------------------------------
 
@@ -111,6 +117,7 @@ U-shaped Neural Operators (U-NO)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _neuralop_layers_ref:
 Layers
 =======
 
@@ -118,18 +125,15 @@ Layers
     :no-members:
     :no-inherited-members:
 
-.. _neuralop_layers_ref:
 
 
 In addition to the full architectures, we also provide 
 in :mod:`neuralop.layers` building blocks,
 in the form of PyTorch layers, that you can use to build your own models:
 
-Neural operator layers
-------------------------
-
-**Spectral convolutions** (in Fourier domain):
-
+.. _spectral_conv_api:
+Fourier Convolutions
+---------------------
 .. automodule:: neuralop.layers.spectral_convolution
     :no-members:
     :no-inherited-members:
@@ -142,19 +146,11 @@ General SpectralConv layer:
 
     SpectralConv
 
-Dimension-specific versions: 
-
-.. autosummary::
-    :toctree: generated
-    :template: class.rst
-
-    SpectralConv1d
-    SpectralConv2d
-    SpectralConv3d
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Spherical convolutions**: (using Spherical Harmonics)
+.. _sfno_api:
+Spherical Convolutions
+-----------------------
 
 .. automodule:: neuralop.layers.spherical_convolution
     :no-members:
@@ -168,9 +164,12 @@ Dimension-specific versions:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To support geometry-informed (GINO) models, we also offer the ability to integrate kernels in the spatial domain, which we formulate as mappings between arbitrary coordinate meshes.
+To support geometry-informed (GINO) models, we also offer the ability to integrate kernels in the spatial domain,
+ which we formulate as mappings between arbitrary coordinate meshes.
 
-**Graph convolutions and kernel integration**:
+.. _gno_api:
+Graph convolutions and kernel integration
+-----------------------------------------
 
 .. automodule:: neuralop.layers.gno_block
     :no-members:
@@ -198,7 +197,9 @@ To support geometry-informed (GINO) models, we also offer the ability to integra
 
 We also provide additional layers that implement standard deep learning architectures as neural operators.
 
-**Local Integral/Differential Convolutions**
+.. _diff_conv_api:
+Local Integral/Differential Convolutions
+----------------------------------------
 
 .. automodule:: neuralop.layers.differential_conv
     :no-members:
@@ -210,7 +211,9 @@ We also provide additional layers that implement standard deep learning architec
 
     FiniteDifferenceConvolution
 
-**Discrete-Continuous (DISCO) Convolutions**
+.. _disco_conv_api:
+Discrete-Continuous (DISCO) Convolutions
+----------------------------------------
 
 .. automodule:: neuralop.layers.discrete_continuous_convolution
     :no-members:
@@ -225,8 +228,8 @@ We also provide additional layers that implement standard deep learning architec
     EquidistantDiscreteContinuousConv2d
     EquidistantDiscreteContinuousConvTranspose2d
 
-**Local NO Blocks**
-
+Local NO Blocks
+---------------
 .. automodule:: neuralop.layers.local_no_block
     :no-members:
     :no-inherited-members:
@@ -237,8 +240,8 @@ We also provide additional layers that implement standard deep learning architec
 
     LocalNOBlocks
 
-**Codomain Attention (Transformer) Blocks**
-
+Codomain Attention (Transformer) Blocks
+---------------------------------------
 .. automodule:: neuralop.layers.coda_layer
     :no-members:
     :no-inherited-members:
@@ -269,7 +272,8 @@ Apply positional embeddings as additional channels on a function:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Neighbor search**
+Neighbor search
+---------------
 
 Find neighborhoods on arbitrary coordinate meshes:
 
@@ -393,6 +397,10 @@ Data
 ========
 In `neuralop.data`, we provide APIs for standardizing PDE datasets (`.datasets`) and transforming raw data into model inputs (`.transforms`).
 
+.. _darcy_flow_api:
+Darcy-Flow
+----------
+
 We also ship a small dataset for testing:
 
 .. automodule:: neuralop.data.datasets
@@ -417,6 +425,10 @@ We provide downloadable datasets for Darcy-Flow, Navier-Stokes, and Car-CFD, as 
 
     DarcyDataset
 
+.. _navier_stokes_api:
+Navier-Stokes
+-------------
+
 .. automodule:: neuralop.data.datasets.navier_stokes
     :no-members:
     :no-inherited-members:
@@ -426,6 +438,10 @@ We provide downloadable datasets for Darcy-Flow, Navier-Stokes, and Car-CFD, as 
     :template: class.rst
 
     NavierStokesDataset
+
+.. _car_cfd_dataset_api:
+Airflow over Car Surfaces
+-------------------------
 
 .. automodule:: neuralop.data.datasets.car_cfd_dataset
     :no-members:
@@ -437,6 +453,8 @@ We provide downloadable datasets for Darcy-Flow, Navier-Stokes, and Car-CFD, as 
 
     CarCFDDataset
 
+General Tensor Dataset
+----------------------
 .. automodule:: neuralop.data.datasets.tensor_dataset
     :no-members:
     :no-inherited-members:

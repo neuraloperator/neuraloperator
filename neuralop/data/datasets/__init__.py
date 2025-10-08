@@ -4,10 +4,18 @@ from .pt_dataset import PTDataset
 from .burgers import Burgers1dTimeDataset, load_mini_burgers_1dtime
 from .dict_dataset import DictDataset
 from .mesh_datamodule import MeshDataModule
-from .car_cfd_dataset import CarCFDDataset
+from .car_cfd_dataset import CarCFDDataset, load_mini_car
 
 # only import SphericalSWEDataset if torch_harmonics is built locally
 try:
     from .spherical_swe import load_spherical_swe
+except ModuleNotFoundError:
+    pass
+
+# only import TheWell if the_well is built
+try:
+    from .the_well_dataset import (TheWellDataset,
+                           ActiveMatterDataset,
+                           MHD64Dataset)
 except ModuleNotFoundError:
     pass
