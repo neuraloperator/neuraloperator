@@ -99,11 +99,7 @@ truth_sp = spectrum_2d(dataset_pred.reshape(samples * batchsize, s, s), s)
 # Configure pyplot and generate the plot
 plt.style.use('classic')
 fig, ax = plt.subplots(figsize=(10, 10), dpi=150)
-
-# Set background 
 ax.set_facecolor('white')
-
-# Plot settings
 ax.set_yscale('log')
 length = dataset_pred.shape[-1]  # the resolution length of the dataset
 buffer = 10  # just add a buffer to the plot
@@ -112,6 +108,7 @@ k = np.arange(length + buffer) * 1.0
 # Plot the spectrum
 ax.plot(truth_sp, color='navy', linestyle="--", linewidth=2.5)
 
+# Customizing the plot
 ax.set_xlim(1, length+buffer)
 ax.set_ylim(0.1, 100)
 ax.set_xlabel('Wavenumber', fontsize=14, fontweight='bold')
