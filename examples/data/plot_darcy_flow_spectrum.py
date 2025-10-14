@@ -97,26 +97,26 @@ grid = torch.cat((gridx, gridy), dim=-1)
 truth_sp = spectrum_2d(dataset_pred.reshape(samples * batchsize, s, s), s)
 
 # Configure pyplot and generate the plot
-fig, ax = plt.subplots(figsize=(10,10))
-
-linewidth = 3
+plt.style.use('classic')
+fig, ax = plt.subplots(figsize=(10, 10), dpi=150)
+ax.set_facecolor('white')
 ax.set_yscale('log')
-
-length = dataset_pred.shape[-1] # the resolution length of the dataset
-buffer = 10 # just add a buffer to the plot
+length = dataset_pred.shape[-1]  # the resolution length of the dataset
+buffer = 10  # just add a buffer to the plot
 k = np.arange(length + buffer) * 1.0
-ax.plot(truth_sp, 'k', linestyle=":", label="NS", linewidth=4)
 
-ax.set_xlim(1,length+buffer)
+# Plot the spectrum
+ax.plot(truth_sp, color='navy', linestyle="--", linewidth=2.5)
+
+# Customizing the plot
+ax.set_xlim(1, length+buffer)
 ax.set_ylim(0.1, 100)
-plt.legend(prop={'size': 20})
-plt.title('Spectrum of {} Datset'.format(dataset_name))
+ax.set_xlabel('Wavenumber', fontsize=14, fontweight='bold')
+ax.set_ylabel('Energy', fontsize=14, fontweight='bold')
+ax.set_title(f'Spectrum of {dataset_name} Dataset', 
+             fontsize=16, fontweight='bold', pad=20)
+ax.tick_params(axis='both', which='major', labelsize=12)
 
-plt.xlabel('wavenumber')
-plt.ylabel('energy')
-
-# show the figure
-leg = plt.legend(loc='best')
-leg.get_frame().set_alpha(0.5)
+plt.tight_layout()
 plt.show()
 # %%
