@@ -2,6 +2,14 @@ import pytest
 import torch
 from ..spectral_convolution_wavelet import SpectralConvWavelet 
 
+try:
+    from pytorch_wavelets import DWT1D, IDWT1D
+    from pytorch_wavelets import DWT, IDWT
+    import pywt
+    from ptwt.conv_transform_3 import wavedec3 as ptwt_wavedec3
+    from ptwt.conv_transform_3 import waverec3 as ptwt_waverec3 
+except ModuleNotFoundError:
+    pytest.skip("Skipping because Wavelet transform libreries are not installed", allow_module_level=True)
 
 # ----------------------- helpers -----------------------
 
