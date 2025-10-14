@@ -158,9 +158,7 @@ class CODALayer(nn.Module):
         # this scale used for downsampling Q,K functions
         if scale is None:
             scale = 0.5 if per_channel_attention else 1
-            scale = min(self.n_heads, scale)
 
-        mixer_modes = [int(i*scale) for i in n_modes]
 
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
@@ -184,7 +182,7 @@ class CODALayer(nn.Module):
         kqv_args = dict(
             in_channels=self.token_codimension,
             out_channels=self.n_heads * self.head_codimension,
-            n_modes=mixer_modes,
+            n_modes=n_modes,
             # args below are shared with Projection block
             non_linearity=kqv_activation,
             fno_skip='linear',
