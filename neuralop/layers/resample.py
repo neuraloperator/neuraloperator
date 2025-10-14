@@ -8,6 +8,16 @@ def resample(x, res_scale, axis, output_shape=None):
     """
     A module for generic n-dimentional interpolation (Fourier resampling).
 
+    For 1D and 2D inputs, the ``resample`` function uses PyTorch’s built-in spatial interpolators 
+    for efficiency, applying linear interpolation for 1D data and bicubic interpolation for 2D data 
+    directly in the spatial domain. 
+
+    For 3D or higher-dimensional inputs, the ``resample`` function switches to a spectral interpolation 
+    method  based on the Fourier transform. The input is transformed into the frequency domain using a 
+    real n-dimensional FFT, which decomposes the signal into its frequency components. By resizing 
+    this frequency representation and then applying an inverse FFT, the function achieves smooth, 
+    alias-free interpolation that preserves the signal’s overall structure.
+
     Parameters
     ----------
     x : torch.Tensor
