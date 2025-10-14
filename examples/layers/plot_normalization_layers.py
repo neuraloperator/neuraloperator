@@ -7,7 +7,7 @@ In `neuralop`, we provide several normalization layers that can be used to stabi
 """
 
 # %%
-# First, let's import the necessary libraries.
+# We first import our neuralop library and required dependencies.
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
@@ -15,7 +15,7 @@ import numpy as np
 
 from neuralop.layers.normalization_layers import InstanceNorm, BatchNorm, AdaIN
 
-device = 'cpu'
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # %%
 # Understanding Normalization with 1D Functions
@@ -68,7 +68,6 @@ data_in = instance_norm(data)
 plt.figure(figsize=(12, 6))
 plt.title("After InstanceNorm", fontsize=16)
 for i in range(n_samples):
-    # .detach().numpy() is needed to convert a tensor with gradients to a numpy array for plotting
     y_plot = data_in[i, 0, :].detach().numpy()
     if i < 5:
         plt.plot(x, y_plot, 'b-', label='Group 1' if i == 0 else "")
@@ -95,7 +94,6 @@ data_bn = batch_norm(data)
 plt.figure(figsize=(12, 6))
 plt.title("After BatchNorm", fontsize=16)
 for i in range(n_samples):
-    # .detach().numpy() is needed here as well
     y_plot = data_bn[i, 0, :].detach().numpy()
     if i < 5:
         plt.plot(x, y_plot, 'b-', label='Group 1' if i == 0 else "")
@@ -113,17 +111,16 @@ plt.show()
 # %%
 # AdaIN (Adaptive Instance Normalization)
 # ---------------------------------------
-# `AdaIN` is a more advanced normalization that allows for "style transfer." It first normalizes an input (like `InstanceNorm`) and then applies a new style (a scaling `weight` and a shifting `bias`) derived from an external embedding vector. This is powerful for generative models where we want to control the output's characteristics based on a conditioning signal.
+# `AdaIN` is a more advanced normalization that allows for "style transfer." It first normalizes an input (like `InstanceNorm`) and then applies a new style (a scaling `weight` and a shifting `bias`) derived from an external embedding vector. This is powerful for models where we want to control the output's characteristics based on a conditioning signal.
 #
 # To guarantee a clear and deterministic result for this tutorial, we will define our own simple MLP. This MLP will map our chosen style embeddings directly to a desired `weight` and `bias`.
 
 content_function = torch.sin(2 * x).unsqueeze(0).unsqueeze(0)  # (1, 1, 100)
 
-# A simple, predictable MLP for the tutorial
+# A simple, predictable MLP
 # It learns to map an embedding directly to a (weight, bias) pair
 class ToyMLP(nn.Module):
     def forward(self, embedding):
-        # We design this to just pass through the embedding as the weight and bias
         return embedding
 
 # Style 1: A simple change in amplitude and mean
@@ -144,7 +141,6 @@ output_1 = adain(content_function)
 # Apply the second style
 adain.set_embedding(style_embedding_2)
 output_2 = adain(content_function)
-
 
 plt.figure(figsize=(12, 6))
 plt.title("AdaIN for Style Transfer", fontsize=16)
