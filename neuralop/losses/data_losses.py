@@ -12,6 +12,7 @@ import torch
 
 from .differentiation import FiniteDiff
 
+
 #loss function with rel/abs Lp loss
 class LpLoss(object):
     """
@@ -120,7 +121,7 @@ class LpLoss(object):
         
         return x
 
-    def abs(self, x, y, quadrature=None):
+    def abs(self, x, y, quadrature=None, take_root=True):
         """absolute Lp-norm
 
         Parameters
@@ -132,6 +133,8 @@ class LpLoss(object):
         quadrature : float or list, optional
             quadrature weights for integral
             either single scalar or one per dimension
+        take_root : bool, optional
+            whether to take the p-th root of the norm, by default True
         """
         #Assume uniform mesh
         if quadrature is None:
@@ -140,15 +143,26 @@ class LpLoss(object):
             if isinstance(quadrature, float):
                 quadrature = [quadrature]*self.d
         
-        const = math.prod(quadrature)**(1.0/self.p)
-        diff = const*torch.norm(torch.flatten(x, start_dim=-self.d) - torch.flatten(y, start_dim=-self.d), \
-                                              p=self.p, dim=-1, keepdim=False)
+        diff_flat = torch.flatten(x, start_dim=-self.d) - torch.flatten(y, start_dim=-self.d)
+        
+        if self.p == 1:
+            const = math.prod(quadrature)
+            diff = const * torch.sum(torch.abs(diff_flat), dim=-1, keepdim=False)
+        elif self.p % 2 == 0:   # Even power p: no need for abs() since x^p > 0 
+            const = math.prod(quadrature)
+            diff = const * torch.sum(diff_flat**self.p, dim=-1, keepdim=False)
+        else:
+            const = math.prod(quadrature)
+            diff = const * torch.sum(torch.abs(diff_flat)**self.p, dim=-1, keepdim=False)
+
+        if take_root and self.p != 1:
+            diff = diff**(1.0/self.p)
 
         diff = self.reduce_all(diff).squeeze()
             
         return diff
 
-    def rel(self, x, y):
+    def rel(self, x, y, take_root=True):
         """
         rel: relative LpLoss
         computes ||x-y||/(||y|| + eps)
@@ -159,20 +173,35 @@ class LpLoss(object):
             inputs
         y : torch.Tensor
             targets
+        take_root : bool, optional
+            whether to take the p-th root of the norm, by default True
         """
 
-        diff = torch.norm(torch.flatten(x, start_dim=-self.d) - torch.flatten(y, start_dim=-self.d), \
-                          p=self.p, dim=-1, keepdim=False)
-        ynorm = torch.norm(torch.flatten(y, start_dim=-self.d), p=self.p, dim=-1, keepdim=False)
+        diff_flat = torch.flatten(x, start_dim=-self.d) - torch.flatten(y, start_dim=-self.d)
+        y_flat = torch.flatten(y, start_dim=-self.d)
+        
+        if self.p == 1:
+            diff = torch.sum(torch.abs(diff_flat), dim=-1, keepdim=False)
+            ynorm = torch.sum(torch.abs(y_flat), dim=-1, keepdim=False)
+        elif self.p % 2 == 0:   # Even power p: no need for abs() since x^p > 0 
+            diff = torch.sum(diff_flat**self.p, dim=-1, keepdim=False)
+            ynorm = torch.sum(y_flat**self.p, dim=-1, keepdim=False)
+        else:
+            diff = torch.sum(torch.abs(diff_flat)**self.p, dim=-1, keepdim=False)
+            ynorm = torch.sum(torch.abs(y_flat)**self.p, dim=-1, keepdim=False)
 
-        diff = diff/(ynorm + self.eps)
+        if take_root and self.p != 1:
+            diff = (diff**(1.0/self.p))/(ynorm**(1.0/self.p) + self.eps)
+        else:
+            diff = diff/(ynorm + self.eps)
 
         diff = self.reduce_all(diff).squeeze()
             
         return diff
 
-    def __call__(self, y_pred, y, **kwargs):
-        return self.rel(y_pred, y)
+    def __call__(self, y_pred, y, take_root=True, **kwargs):
+        return self.rel(y_pred, y, take_root=take_root)
+
 
 class H1Loss(object):
     """
@@ -223,7 +252,7 @@ class H1Loss(object):
         - False: non-periodic in y with forward/backward differences at boundaries
         by default True
     """
-    def __init__(self, d=1, measure=1., reduction='sum', eps=1e-8, periodic_in_x=True, periodic_in_y=True):
+    def __init__(self, d=1, measure=1., reduction='sum', eps=1e-8, periodic_in_x=True, periodic_in_y=True, periodic_in_z=True):
         super().__init__()
 
         assert d > 0 and d < 4, "Currently only implemented for 1, 2, and 3-D."
@@ -231,6 +260,7 @@ class H1Loss(object):
         self.d = d
         self.periodic_in_x = periodic_in_x
         self.periodic_in_y = periodic_in_y
+        self.periodic_in_z = periodic_in_z
         
         self.eps = eps
         
@@ -347,7 +377,7 @@ class H1Loss(object):
         
         return x
         
-    def abs(self, x, y, quadrature=None):
+    def abs(self, x, y, quadrature=None, take_root=True):
         """absolute H1 norm
 
         Parameters
@@ -358,6 +388,8 @@ class H1Loss(object):
             targets
         quadrature : float or list, optional
             quadrature constant for reduction along each dim, by default None
+        take_root : bool, optional
+            whether to take the square root of the norm, by default True
         """
         #Assume uniform mesh
         if quadrature is None:
@@ -369,18 +401,19 @@ class H1Loss(object):
         dict_x, dict_y = self.compute_terms(x, y, quadrature)
 
         const = math.prod(quadrature)
-        diff = const*torch.norm(dict_x[0] - dict_y[0], p=2, dim=-1, keepdim=False)**2
+        diff = const*torch.sum((dict_x[0] - dict_y[0])**2, dim=-1, keepdim=False)
 
         for j in range(1, self.d + 1):
-            diff += const*torch.norm(dict_x[j] - dict_y[j], p=2, dim=-1, keepdim=False)**2
+            diff += const*torch.sum((dict_x[j] - dict_y[j])**2, dim=-1, keepdim=False)
         
-        diff = diff**0.5
+        if take_root:
+            diff = diff**0.5
 
         diff = self.reduce_all(diff).squeeze()
             
         return diff
         
-    def rel(self, x, y, quadrature=None):
+    def rel(self, x, y, quadrature=None, take_root=True):
         """relative H1-norm
 
         Parameters
@@ -391,6 +424,8 @@ class H1Loss(object):
             targets
         quadrature : float or list, optional
             quadrature constant for reduction along each dim, by default None
+        take_root : bool, optional
+            whether to take the square root of the norm, by default True
         """
         #Assume uniform mesh
         if quadrature is None:
@@ -401,20 +436,23 @@ class H1Loss(object):
         
         dict_x, dict_y = self.compute_terms(x, y, quadrature)
 
-        diff = torch.norm(dict_x[0] - dict_y[0], p=2, dim=-1, keepdim=False)**2
-        ynorm = torch.norm(dict_y[0], p=2, dim=-1, keepdim=False)**2
+        diff = torch.sum((dict_x[0] - dict_y[0])**2, dim=-1, keepdim=False)
+        ynorm = torch.sum(dict_y[0]**2, dim=-1, keepdim=False)
 
         for j in range(1, self.d + 1):
-            diff += torch.norm(dict_x[j] - dict_y[j], p=2, dim=-1, keepdim=False)**2
-            ynorm += torch.norm(dict_y[j], p=2, dim=-1, keepdim=False)**2
+            diff += torch.sum((dict_x[j] - dict_y[j])**2, dim=-1, keepdim=False)
+            ynorm += torch.sum(dict_y[j]**2, dim=-1, keepdim=False)
         
-        diff = (diff**0.5)/(ynorm**0.5 + self.eps)
+        if take_root:
+            diff = (diff**0.5)/(ynorm**0.5 + self.eps)
+        else:
+            diff = diff/(ynorm + self.eps)
 
         diff = self.reduce_all(diff).squeeze()
             
         return diff
 
-    def __call__(self, y_pred, y, quadrature=None, **kwargs):
+    def __call__(self, y_pred, y, quadrature=None, take_root=True, **kwargs):
         """
         Parameters
         ----------
@@ -424,8 +462,10 @@ class H1Loss(object):
             targets
         quadrature : float or list, optional
             normalization constant for reduction, by default None
+        take_root : bool, optional
+            whether to take the square root of the norm, by default True
         """
-        return self.rel(y_pred, y, quadrature=quadrature)
+        return self.rel(y_pred, y, quadrature=quadrature, take_root=take_root)
 
 class HdivLoss(object):
     """
@@ -599,7 +639,7 @@ class HdivLoss(object):
         
         return x
         
-    def abs(self, x, y, quadrature=None):
+    def abs(self, x, y, quadrature=None, take_root=True):
         """absolute Hdiv norm
 
         Parameters
@@ -610,6 +650,8 @@ class HdivLoss(object):
             targets
         quadrature : float or list, optional
             quadrature constant for reduction along each dim, by default None
+        take_root : bool, optional
+            whether to take the square root of the norm, by default True
         """
         #Assume uniform mesh
         if quadrature is None:
@@ -621,17 +663,18 @@ class HdivLoss(object):
         dict_x, dict_y = self.compute_terms(x, y, quadrature)
 
         const = math.prod(quadrature)
-        diff = const*torch.norm(dict_x[0] - dict_y[0], p=2, dim=-1, keepdim=False)**2  #compute L2 norm of x-y
+        diff = const*torch.sum((dict_x[0] - dict_y[0])**2, dim=-1, keepdim=False)
 
-        diff += const*torch.norm(dict_x[1] - dict_y[1], p=2, dim=-1, keepdim=False)**2
+        diff += const*torch.sum((dict_x[1] - dict_y[1])**2, dim=-1, keepdim=False)
         
-        diff = diff**0.5
+        if take_root:
+            diff = diff**0.5
 
         diff = self.reduce_all(diff).squeeze()
             
         return diff
         
-    def rel(self, x, y, quadrature=None):
+    def rel(self, x, y, quadrature=None, take_root=True):
         """relative Hdiv norm
 
         Parameters
@@ -642,6 +685,8 @@ class HdivLoss(object):
             targets
         quadrature : float or list, optional
             quadrature constant for reduction along each dim, by default None
+        take_root : bool, optional
+            whether to take the square root of the norm, by default True
         """
         #Assume uniform mesh
         if quadrature is None:
@@ -652,19 +697,22 @@ class HdivLoss(object):
         
         dict_x, dict_y = self.compute_terms(x, y, quadrature)
 
-        diff = torch.norm(dict_x[0] - dict_y[0], p=2, dim=-1, keepdim=False)**2
-        ynorm = torch.norm(dict_y[0], p=2, dim=-1, keepdim=False)**2
+        diff = torch.sum((dict_x[0] - dict_y[0])**2, dim=-1, keepdim=False)
+        ynorm = torch.sum(dict_y[0]**2, dim=-1, keepdim=False)
 
-        diff += torch.norm(dict_x[1] - dict_y[1], p=2, dim=-1, keepdim=False) ** 2
-        ynorm += torch.norm(dict_y[1], p=2, dim=-1, keepdim=False) ** 2
+        diff += torch.sum((dict_x[1] - dict_y[1])**2, dim=-1, keepdim=False)
+        ynorm += torch.sum(dict_y[1]**2, dim=-1, keepdim=False)
 
-        diff = (diff**0.5)/(ynorm**0.5 + self.eps)
+        if take_root:
+            diff = (diff**0.5)/(ynorm**0.5 + self.eps)
+        else:
+            diff = diff/(ynorm + self.eps)
 
         diff = self.reduce_all(diff).squeeze()
             
         return diff
 
-    def __call__(self, y_pred, y, quadrature=None, **kwargs):
+    def __call__(self, y_pred, y, quadrature=None, take_root=True, **kwargs):
         """
         Parameters
         ----------
@@ -674,8 +722,10 @@ class HdivLoss(object):
             targets
         quadrature : float or list, optional
             normalization constant for reduction, by default None
+        take_root : bool, optional
+            whether to take the square root of the norm, by default True
         """
-        return self.rel(y_pred, y, quadrature=quadrature)
+        return self.rel(y_pred, y, quadrature=quadrature, take_root=take_root)
 
 class PointwiseQuantileLoss(object):
     """PointwiseQuantileLoss computes Quantile Loss described in [1]_
