@@ -125,7 +125,7 @@ def spectrum_2d(signal, n_observations, normalize=True):
     k_y = wavenumers
 
     # Sum wavenumbers
-    sum_k = torch.abs(k_x) + torch.abs(k_y)
+    sum_k = torch.sqrt(k_x**2 + k_y**2)
     sum_k = sum_k
 
     # Remove symmetric components from wavenumbers
@@ -136,7 +136,7 @@ def spectrum_2d(signal, n_observations, normalize=True):
     spectrum = torch.zeros((T, n_observations))
     for j in range(1, n_observations + 1):
         ind = torch.where(index == j)
-        spectrum[:, j - 1] = (signal[:, ind[0], ind[1]].sum(dim=1)).abs() ** 2
+        spectrum[:, j - 1] = (signal[:, ind[0], ind[1]].abs()**2).sum(dim=1)
 
     spectrum = spectrum.mean(dim=0)
     return spectrum
