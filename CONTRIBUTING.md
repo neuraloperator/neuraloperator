@@ -165,7 +165,9 @@ black .
 
 ### 4. Submit a Pull Request
 
-Go to your fork on GitHub and click "Compare & pull request". Ensure your PR description clearly communicates what you have changed or added.
+Go to your fork on GitHub and click "Compare & pull request". 
+
+Ensure your PR description clearly communicates what you have changed or added.
 
 ## Development Guidelines
 
@@ -284,12 +286,6 @@ class MyCustomFNO(FNO):
 - **GitHub Issues**: Create an issue for bugs or feature requests
 - **GitHub Discussions**: Use for questions and ideas
 - **Documentation**: Check the [official documentation](https://neuraloperator.github.io/)
-
-### Before Asking for Help
-1. Check the documentation and existing issues
-2. Provide a minimal reproducible example
-3. Include error messages and stack traces
-4. Specify your environment (OS, Python version, PyTorch version)
 
 ---
 
