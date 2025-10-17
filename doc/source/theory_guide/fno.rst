@@ -4,7 +4,7 @@ Fourier Neural Operators
 ========================
 
 
-This page (which takes about 10 minutes to read) introduces the Fourier neural operator that solves a family of PDEs from scratch.
+This guide introduces the Fourier neural operator which can be used to solve a family of PDEs from scratch.
 It is the first work that can learn resolution-invariant solution operators for the Navier-Stokes equation,
 achieving state-of-the-art accuracy among all existing deep learning methods and
 up to 1000x faster than traditional solvers.
@@ -17,9 +17,6 @@ Also, check out the paper [1]_ and article [2]_.
 Operator learning
 =================
 
-Thinking in continuum gives us an advantage when dealing with PDEs.
-We want to design mesh-independent, resolution-invariant operators.
-
 Problems in science and engineering involve solving
 partial differential equations (PDE) systems.
 Unfortunately, these PDEs can be very hard.
@@ -27,18 +24,22 @@ Traditional PDE solvers such as finite element methods (FEM) and finite differen
 rely on discretizing the space into a very fine mesh.
 This can be slow and inefficient.
 
-In the previous doc,
+Thinking in continuous space gives us an advantage when dealing with PDEs since these typically
+involve solving for functions on a continuous domain.
+We want to design mesh-independent, resolution-invariant operators.
+
+In the previous :ref:`neuralop_intro` guide,
 we introduced the neural operators that use neural networks
 to learn the solution operators for PDEs.
 That is, given the initial conditions or the boundary conditions,
-the neural network directly outputs the solution,
+the neural network directly outputs the solution of the PDE on a fixed discretization or mesh,
 kind of like an image-to-image mapping.
 
 The neural operator is mesh-independent,
 different from the standard deep learning methods such as CNN.
 It can be trained on one mesh and evaluated on another.
 By parameterizing the model in function space,
-it learns the continuous function instead of discretized vectors.
+it learns the continuous solution function instead of discretized vectors.
 
 
  ========================================== ======================================
@@ -50,8 +51,9 @@ it learns the continuous function instead of discretized vectors.
   Slow on fine grids; fast on coarse grids   Slow to train; fast to evaluate
  ========================================== ======================================
 
-Operator learning can be taken as an image-to-image problem.
-The Fourier layer can be viewed as a substitute for the convolution layer.
+Operator learning can be viewed as an image-to-image problem.
+In the Fourier Neural Operator,
+the Fourier layer can be viewed as a substitute for the convolution layer.
 
 
 .. raw:: html
@@ -68,13 +70,13 @@ Let :math:`v` be the input vector, :math:`u` be the output vector.
 A standard deep neural network can be written in the form:
 
 .. math::
-    u = \left(K_l \circ \sigma_l \circ \cdots \circ \sigma_1 \circ K_0 \right) v
+    u = (K_l \circ \sigma_l \circ \ldots \circ \sigma_1 \circ K_0)(v)
 
 where :math:`K` are the linear layer or convolution layer,
 and :math:`\sigma` are the activation function such as ReLU.
 
 The neural operator shares a similar framework.
-It’s just now :math:`v` and :math:`u` are functions with different discretizations
+The only difference is that now :math:`v` and :math:`u` are functions with can be given on different discretizations
 (say, some inputs are :math:`28 \times 28`, some are :math:`256 \times 256`,
 and some are in triangular mesh).
 To deal with functions input, the linear transformation :math:`K` is formulated as an integral operator.
@@ -85,10 +87,10 @@ The map :math:`K: v_{t} \mapsto v_{t+1}` is parameterized as
 .. math::
     v'(x) = \int \kappa(x,y) v(y) dy + W v(x)
 
-Where :math:`\kappa` is a kernel function and :math:`W` is the bias term.
+where :math:`\kappa` is a kernel function and :math:`W` is the bias term.
 
 For the Fourier neural operator, we formulate :math:`K` as a convolution
-and implement it by Fourier transformation.
+and implement it using the Fourier transform.
 
 .. raw:: html
 
@@ -102,13 +104,13 @@ On the other hand, the inputs and outputs of PDEs are continuous functions.
 It is more efficient to represent them in Fourier space and do a global convolution.
 
 There are two main motivations for using the Fourier transform.
-First, it’s fast. A full standard integration of :math:`n` points has complexity :math:`O(n^2)`,
-while convolution via Fourier transform is quasilinear.
-Second, it’s efficient. The inputs and outputs of PDEs are continuous functions.
-So it’s usually more efficient to represent them in Fourier space.
+First, it is fast. A full standard integration of :math:`n` points has complexity :math:`O(n^2)`,
+while convolution via Fourier transform on a regular grid is quasilinear.
+Second, it is efficient. The inputs and outputs of PDEs are continuous functions.
+So it is usually more efficient to represent them in Fourier space.
 
 Convolution in the spatial domain is equivalent to a pointwise multiplication in the Fourier domain. To implement the (global) convolution operator,
-we first do a Fourier transform, then a linear transform, and an inverse Fourier transform,
+we first do a Fourier transform, then a linear transform, and an inverse Fourier transform.
 As shown in the top part of the figure:
 
 .. image:: /_static/images/fourier_layer.jpg
@@ -125,15 +127,15 @@ with the bias term :math:`W v` (a linear transformation)
 and apply the activation function :math:`\sigma`.
 Simple as it is.
 
-In practice, it’s usually sufficient to only take the lower-frequency modes
+In practice, it is usually sufficient to only take the lower-frequency modes
 and truncate out these higher-frequency modes.
 Therefore, we apply the linear transformation on the lower-frequency modes
 and set the higher modes to zeros.
 
-Notice the activation functions shall be applied on the spatial domain.
+Notice that the activation functions shall be applied on the spatial domain.
 They help to recover the higher-frequency modes and non-periodic boundary
 which are left out in the Fourier layers.
-Therefore, it’s necessary to the Fourier transform and its inverse at each layer.
+Therefore, it is necessary to add them after the inverse Fourier transform at each layer.
 
 .. _fourier_layer_impl :
 .. raw:: html
@@ -143,7 +145,7 @@ Therefore, it’s necessary to the Fourier transform and its inverse at each lay
 Implementation
 ==============
 
-We can easily create a 2d Fourier layer using `neuralop` as follows:
+We can easily create a 2D Fourier layer using `neuralop` as follows:
 
 .. code:: python
 
@@ -221,18 +223,18 @@ To illustrate the implementation details of the Fourier layer, we provide a simp
             Returns
             -------
             torch.Tensor
-                Complex matrix multiplication result
+                Result of the complex matrix multiplication
             """
-            # (batch, in_channel, x,y ), (in_channel, out_channel, x,y) -> (batch, out_channel, x,y)
+            # (batch, in_channel, x,y ), (in_channel, out_channel, x, y) -> (batch, out_channel, x, y)
             return torch.einsum("bixy,ioxy->boxy", input, weights)
 
-where the input :code:`x` has the shape (N,C,H,W),
+where the input :code:`x` has the shape :code:`(N, C, H, W)`,
 :code:`self.weights1` and :code:`self.weights2` are the weight matrices;
 :code:`self.modes1` and :code:`self.modes2` truncate the lower-frequency modes;
 and :code:`compl_mul2d()` is the matrix multiplication for complex numbers.
 
 Note in the forward call above that :code:`torch.fft.rfft()` returns a matrix
-of size `n` along each dim that indexes Fourier modes :code:`0, 1, 2, ... n//2, -n//2, -n//2 - 1, ...-1`. Since our
+of size :code:`n` along each dim that indexes Fourier modes :code:`0, 1, 2, ... n//2, -n//2, -n//2 - 1, ...-1`. Since our
 inputs are real-valued, we take the real-valued FFT, which is skew-symmetric, so information is repeated across
 one axis. Therefore it is sufficient to keep only two of the four corners of the FFT matrix.
 
@@ -312,9 +314,9 @@ which are discretized in an arbitrary way.
 Since parameters are learned directly in Fourier space,
 resolving the functions in physical space simply amounts to projecting on the basis
 of wave functions which are well-defined everywhere on the space.
-This allows us to transfer among discretization.
+This allows us to transfer among discretizations.
 If implemented with standard FFT, then it will be restricted to uniform mesh,
-but still resolution-invariant.
+but it is still resolution-invariant.
 
 .. raw:: html
 
@@ -329,7 +331,7 @@ Experiments
 
 Burgers Equation
 ----------------
-The 1-d Burgers’ equation is a non-linear PDE with various applications
+The 1D Burgers’ equation is a non-linear PDE with various applications
 including modeling the one-dimensional flow of a viscous fluid. It takes the form
 
 .. math::
@@ -360,8 +362,8 @@ at time one, defined by :math:`u_0 \mapsto u(\cdot, 1)` for any :math:`r > 0`.
 Darcy Flow
 ----------
 
-We consider the steady state of the 2-d Darcy Flow equation
-on the unit box which is the second order, linear, elliptic PDE
+We consider the steady state of the 2D Darcy Flow equation
+on the unit box which is a second order, linear, elliptic PDE
 
 .. math::
     - \nabla \cdot (a(x) \nabla u(x)) = f(x) \qquad x \in (0,1)^2
@@ -369,7 +371,7 @@ on the unit box which is the second order, linear, elliptic PDE
 .. math::
     u(x) = 0 \qquad \quad \:\:x \in \partial (0,1)^2
 
-with a Dirichlet boundary where :math:`a \in L^\infty\left({(0,1)}^2;\mathbb{R}_+\right)`  is the diffusion coefficient and :math:`f \in L^2\left({(0,1)}^2;\mathbb{R}\right)` is the forcing function.
+with a Dirichlet boundary condition where :math:`a \in L^\infty\left({(0,1)}^2;\mathbb{R}_+\right)` is the diffusion coefficient and :math:`f \in L^2\left({(0,1)}^2;\mathbb{R}\right)` is the forcing function.
 This PDE has numerous applications including modeling the pressure of the subsurface flow,
 the deformation of linearly elastic materials, and the electric potential in conductive materials.
 We are interested in learning the operator mapping the diffusion coefficient to the solution,
@@ -411,7 +413,7 @@ Benchmarks for time-independent problems (Burgers and Darcy):
 Navier-Stokes Equation
 -----------------------
 
-We consider the 2-d Navier-Stokes equation for a viscous,
+We consider the 2D Navier-Stokes equation for a viscous,
 incompressible fluid in vorticity form on the unit torus:
 
 .. math::
@@ -457,8 +459,8 @@ Benchmarks for time-dependent problems (Navier-Stokes):
  - ResNet: 18 layers of 2-d convolution with residual connections.
  - U-Net: A popular choice for image-to-image regression tasks consisting of four blocks with 2-d convolutions and deconvolutions.
  - TF-Net: A network designed for learning turbulent flows based on a combination of spatial and temporal convolutions.
- - FNO-2d: 2-d Fourier neural operator with an RNN structure in time.
- - FNO-3d: 3-d Fourier neural operator that directly convolves in space-time.
+ - FNO-2d: 2D Fourier neural operator with an RNN structure in time.
+ - FNO-3d: 3D Fourier neural operator that directly convolves in space-time.
 
 
 The FNO-3D has the best performance
@@ -497,7 +499,7 @@ The top left panel shows the true initial vorticity while the bottom left panel 
 the true observed vorticity at :math:`T=50` with black dots indicating
 the locations of the observation points placed on a :math:`7 \times 7` grid.
 The top middle panel shows the posterior mean of the initial vorticity
-given the noisy observations estimated with MCMC using the traditional solver,
+given the noisy observations estimated with MCMC using the traditional solver.
 while the top right panel shows the same thing but using FNO as a surrogate model.
 The bottom middle and right panels show the vorticity at :math:`T=50`
 when the respective approximate posterior means are used as initial conditions.
@@ -508,7 +510,7 @@ when the respective approximate posterior means are used as initial conditions.
 
 Conclusion
 ==========
-We propose a neural operator based on Fourier Transformation.
+We propose a neural operator based on the Fourier transform.
 It is the first work that learns the resolution-invariant solution operator
 for the family of Navier-Stokes equation in the turbulent regime,
 where previous graph-based neural operators do not converge.

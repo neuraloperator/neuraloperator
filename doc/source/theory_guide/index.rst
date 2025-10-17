@@ -8,7 +8,7 @@ Theory Guide
     neural_operators
     fno
 
-This page contains a comprehensive primer on the theoretical foundations of operator learning, 
+This section contains a comprehensive primer on the theoretical foundations of operator learning, 
 as well as an introduction to the Fourier Neural Operator. These guides provide the mathematical 
 background and practical insights needed to understand and implement neural operators for 
 solving partial differential equations.
