@@ -7,10 +7,13 @@ Theory Guide
 
     neural_operators
     fno
+    advantages
+    applications
 
 This section contains a comprehensive primer on the theoretical foundations of operator learning, 
-as well as an introduction to the Fourier Neural Operator. These guides provide the mathematical 
-background and practical insights needed to understand and implement neural operators for 
+an introduction to the Fourier Neural Operator, an exploration of the key advantages of neural operators, 
+and a showcase of diverse applications across scientific and engineering domains. 
+These guides provide the mathematical background and practical insights needed to understand and implement neural operators for 
 solving partial differential equations.
 
 .. card:: Introduction to Neural Operators
@@ -34,3 +37,25 @@ solving partial differential equations.
     
     Discover how FNOs achieve state-of-the-art performance on challenging PDEs 
     like Navier-Stokes equations with up to 1000x speedup over traditional solvers.
+
+.. card:: Advantages of Neural Operators
+    :link: advantages
+    :link-type: doc
+    :class-body: sd-text-muted
+    :img-bottom: /_static/images/fourier_ns1e4.jpg
+
+    Explore the key advantages of neural operators over traditional methods.
+    
+    Learn about resolution invariance, universal approximation, flexible inference, 
+    and data efficiency that make neural operators uniquely powerful for scientific computing.
+
+.. card:: Applications of Neural Operators
+    :link: applications
+    :link-type: doc
+    :class-body: sd-text-muted
+    :img-bottom: /_static/images/fourier_ns1e4.jpg
+
+    Discover diverse applications of neural operators across scientific domains.
+    
+    Explore real-world applications in fluid dynamics, climate modeling, materials science, 
+    biomedical engineering, and more, showcasing the transformative impact of neural operators.

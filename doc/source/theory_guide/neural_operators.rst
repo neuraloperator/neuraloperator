@@ -23,9 +23,11 @@ Solving the resulting large number of equations on these grids is computationall
 
 To address these challenges, researchers have started to develop data-driven 
 approaches using machine learning.
-Rather than explicitly solving the equations for each new scenario, data-driven solvers are trained on data that pairs problems with their solutions.
+Rather than explicitly solving the equations for each new scenario, data-driven solvers are 
+trained on data that pairs problems with their solutions.
 Once trained, these solvers can quickly make predictions for new problems based on input data.
-Because they do not require breaking the domain into tiny pieces and solving every equation from scratch, data-driven methods are often much faster than traditional numerical solvers.
+Because they do not require breaking the domain into tiny pieces and solving every equation 
+from scratch, data-driven methods are often much faster than traditional numerical solvers.
 
 However, data-driven solvers are subject to the quality of the input and training data.
 If the training data is not good enough, they will learn to emulate that unreliable data 
@@ -45,7 +47,8 @@ As a result, while machine learning-based methods can significantly speed up eva
 the process of obtaining and preparing suitable training data can remain time-consuming and difficult.
 
 To address this challenge, we introduce operator learning. By encoding appropriate structures,
-we enable neural networks to learn mappings between functions and to generalize across different discretizations.
+we enable neural networks to learn mappings between functions and to generalize across 
+ifferent discretizations.
 This means we can use numerical methods to generate less-accurate, low-resolution data,
 yet the trained solver can still produce accurate, high-resolution predictions.
 As a result, both training and evaluation can become significantly more efficient and straightforward.
