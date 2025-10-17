@@ -1,3 +1,11 @@
+"""
+Training script for Burgers equation using standard neural operator training.
+
+This script trains a neural operator on the 1D time-dependent Burgers equation
+using the standard training approach with weighted loss functions and optional
+multi-grid patching for improved performance on high-resolution data.
+"""
+
 import sys
 import torch
 import wandb
@@ -13,7 +21,6 @@ from neuralop.utils import get_wandb_api_key, count_model_params, get_project_ro
 
 # Read the configuration
 config_name = "default"
-# Read the configuration
 from zencfg import make_config_from_cli 
 import sys 
 sys.path.insert(0, '../')
@@ -23,7 +30,7 @@ from config.burgers_config import Default
 config = make_config_from_cli(Default)
 config = config.to_dict()
 
-# Set-up distributed communication, if using
+# Distributed training setup, if enabled
 device, is_logger = setup(config)
 
 # Set up WandB logging
@@ -58,14 +65,15 @@ else:
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
 
-# Print config to screen
+# Print configuration details
 if config.verbose:
     print("##### CONFIG ######")
     print(config)
     sys.stdout.flush()
 
+# Data loading setup
 data_path = get_project_root() / config.data.folder
-# Load the Burgers dataset
+# Load the Burgers dataset with specified parameters
 train_loader, test_loaders, data_processor = load_mini_burgers_1dtime(data_path=data_path,
         n_train=config.data.n_train, batch_size=config.data.batch_size, 
         n_test=config.data.n_tests[0], test_batch_size=config.data.test_batch_sizes[0],
@@ -73,9 +81,10 @@ train_loader, test_loaders, data_processor = load_mini_burgers_1dtime(data_path=
         spatial_subsample=config.data.get("spatial_subsample", 1),
         )
 
+# Model initialization
 model = get_model(config)
 
-# Use distributed data parallel
+# Distributed data parallel setup
 if config.distributed.use_distributed:
     model = DDP(
         model, device_ids=[device.index], output_device=device.index, static_graph=True
@@ -107,7 +116,7 @@ else:
     raise ValueError(f"Got scheduler={config.opt.scheduler}")
 
 
-# Creating the losses
+# Create the loss functions
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
 ic_loss = ICLoss()
@@ -152,7 +161,7 @@ if config.verbose:
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
 
-# only perform MG patching if config patching levels > 0
+# only perform multi-grid patching if config patching levels > 0
 if config.patching.levels > 0:
     data_processor = MGPatchingDataProcessor(model=model,
                                         levels=config.patching.levels,
@@ -175,7 +184,7 @@ trainer = Trainer(
     wandb_log = config.wandb.log
 )
 
-# Log parameter count
+# Log model parameter count
 if is_logger:
     n_params = count_model_params(model)
 
@@ -193,6 +202,7 @@ if is_logger:
         wandb.watch(model)
 
 
+# Start training process
 trainer.train(
     train_loader,
     test_loaders,
@@ -203,5 +213,6 @@ trainer.train(
     eval_losses=eval_losses,
 )
 
+# Finalize WandB logging
 if config.wandb.log and is_logger:
     wandb.finish()

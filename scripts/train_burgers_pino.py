@@ -1,3 +1,11 @@
+"""
+Training script for Burgers equation using Physics-Informed Neural Operator (PINO).
+
+This script trains a neural operator on the 1D time-dependent Burgers equation
+using physics-informed loss functions and advanced loss aggregation methods.
+The script supports both Relobralo and SoftAdapt loss aggregation strategies.
+"""
+
 import sys
 import torch
 import wandb
@@ -54,14 +62,15 @@ else:
     wandb_init_args = None
 
 
-# Print config
+# Print configuration details
 if config.verbose:
     print("##### CONFIG ######")
     print(config)
     sys.stdout.flush()
 
+# Data loading
 data_path = get_project_root() / config.data.folder
-# Load the Burgers dataset
+# Load the Burgers dataset with specified parameters
 train_loader, test_loaders, data_processor = load_mini_burgers_1dtime(data_path=data_path,
         n_train=config.data.n_train, batch_size=config.data.batch_size, 
         n_test=config.data.n_tests[0], test_batch_size=config.data.test_batch_sizes[0],
@@ -99,7 +108,7 @@ elif config.opt.scheduler == "StepLR":
 else:
     raise ValueError(f"Got scheduler={config.opt.scheduler}")
 
-# Create the losses
+# Create the loss functions
 l2_loss = LpLoss(d=2, p=2)
 h1_loss = H1Loss(d=2)
 ic_loss = ICLoss()
@@ -114,7 +123,7 @@ loss_map = {
 
 training_losses = [loss_map[name] for name in config.opt.training_loss]
 
-# Create loss aggregator
+# Loss aggregation strategy setup
 if config.opt.loss_aggregator.lower() == 'relobralo':
     train_loss = Relobralo(
         num_losses=len(training_losses),
@@ -131,7 +140,7 @@ elif config.opt.loss_aggregator.lower() == 'softadapt':
 else:
     raise ValueError(f"Unknown loss_aggregator: {config.opt.loss_aggregator}. Use 'relobralo' or 'softadapt'.")
 
-# Evaluation losses
+# Evaluation loss functions
 eval_losses = {
     "h1": h1_loss,
     "l2": l2_loss
@@ -147,7 +156,7 @@ if config.verbose:
     print(f"\n### Beginning Training...\n")
     sys.stdout.flush()
 
-# Log number of parameter
+# Log model parameter count
 if config.verbose:
     n_params = count_model_params(model)
     print(f"\nn_params: {n_params}")
@@ -158,14 +167,14 @@ if config.wandb.log:
 
 
 
-# Training loop
+# Main training loop
 model.train()
 for epoch in range(config.opt.n_epochs):
     model.train()
     train_losses = []
     loss_values = {name: [] for name in config.opt.training_loss}
     
-    # Training batches
+    # Process training batches
     for batch_idx, sample in enumerate(train_loader):
         
         # Move tensors to device
@@ -173,7 +182,7 @@ for epoch in range(config.opt.n_epochs):
         
         optimizer.zero_grad(set_to_none=True)
         
-        # Preprocess data
+        # Preprocess data if processor is available
         if data_processor is not None:
             sample = data_processor.preprocess(sample)
             sample = {k: v.to(device).float() if torch.is_tensor(v) else v for k, v in sample.items()}
@@ -181,33 +190,35 @@ for epoch in range(config.opt.n_epochs):
         # Forward pass
         pred = model(**sample)
         
-        # Postprocess output
+        # Postprocess model output
         if data_processor is not None:
             pred, sample = data_processor.postprocess(pred, sample)
             sample = {k: v.to(device).float() if torch.is_tensor(v) else v for k, v in sample.items()}
         
-        # Compute individual losses
+        # Compute individual loss components
         loss_vals = {}
         for loss_name in config.opt.training_loss:
             if loss_name == 'equation':
+                # Physics-informed loss requires input coordinates
                 loss_val = loss_map[loss_name](pred, x=sample['x'])
             else:
+                # Standard data losses
                 loss_val = loss_map[loss_name](pred, sample['y'])
             
             loss_vals[loss_name] = loss_val 
             loss_values[loss_name].append(loss_val.item())
         
-        # Compute total loss using loss aggregator
+        # Aggregate losses using adaptive strategy
         total_loss, weights = train_loss(loss_vals, step=epoch)
 
-        # Backward pass
+        # Backward pass and optimization step
         total_loss.backward()
         optimizer.step()
         
-        # Record losses
+        # Record losses for monitoring
         train_losses.append(total_loss.item())
     
-    # Calculate average losses
+    # Calculate average losses for this epoch
     avg_train_loss = sum(train_losses) / len(train_losses)
     avg_losses = {name: sum(vals) / len(vals) for name, vals in loss_values.items()}
     
@@ -219,13 +230,14 @@ for epoch in range(config.opt.n_epochs):
         for name, avg_val in avg_losses.items():
             print(f"  {name.upper()} Loss: {avg_val:.4f}")
         
+        # Display adaptive loss weights if available
         if hasattr(train_loss, 'weights'):
             print("Loss Weights:")
             for i, name in enumerate(config.opt.training_loss):
                 print(f"  {name.upper()} Weight: {weights[i]:.4f}")
         sys.stdout.flush()
     
-    # Evaluation
+    # Periodic evaluation on test set
     eval_losses_dict = {}
     if epoch % config.opt.eval_interval == 0:
         model.eval()
@@ -256,13 +268,13 @@ for epoch in range(config.opt.n_epochs):
                 if config.verbose:
                     print(f"\nTest {test_name} loss: {avg_test_loss:.4f}")
     
-    # Update learning rate
+    # Update learning rate scheduler
     if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
         scheduler.step(eval_losses_dict.get("test_loss", avg_train_loss))
     else:
         scheduler.step()
     
-    # Log everything
+    # Log metrics to WandB
     if config.wandb.log:
         log_dict = {
             "train_loss": avg_train_loss,
@@ -282,8 +294,10 @@ for epoch in range(config.opt.n_epochs):
             
         wandb.log(log_dict)
     
+    # Periodic GPU memory cleanup
     if device.type == 'cuda' and epoch % 10 == 0:
         torch.cuda.empty_cache()
 
+# Finalize WandB logging
 if config.wandb.log:
     wandb.finish() 

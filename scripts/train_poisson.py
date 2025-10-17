@@ -1,3 +1,11 @@
+"""
+Training script for nonlinear Poisson equation using GINO.
+
+This script trains a Graph Neural Operator (GINO) on the nonlinear Poisson
+equation with boundary conditions. The model learns to solve elliptic PDEs
+with complex geometries and boundary conditions using graph-based representations.
+"""
+
 import sys
 import torch
 import wandb
@@ -12,8 +20,7 @@ from neuralop.losses.meta_losses import WeightedSumLoss
 from neuralop.models import get_model
 from neuralop.utils import get_wandb_api_key, count_model_params
 
-
-# Read the configuration
+# Configuration setup
 config_name = "default"
 from zencfg import make_config_from_cli
 import sys 
@@ -23,11 +30,10 @@ from config.poisson_gino_config import Default
 config = make_config_from_cli(Default)
 config = config.to_dict()
 
-
-# Set-up distributed communication, if using
+# Distributed training setup, if enabled
 device, is_logger = setup(config)
 
-# Set up WandB logging
+# WandB logging configuration
 wandb_args = None
 if config.wandb.log and is_logger:
     wandb.login(key=get_wandb_api_key())
@@ -65,13 +71,13 @@ else:
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
 
-# Print config to screen
+# Print configuration details
 if config.verbose:
     print(f"##### CONFIG #####\n")
     print(config)
     sys.stdout.flush()
 
-# Load the Nonlinear Poisson dataset
+# Load the nonlinear Poisson dataset
 train_loader, test_loader, data_processor = load_nonlinear_poisson_pt(
     data_path=config.data.file,
     query_res=config.data.query_resolution,
@@ -90,12 +96,14 @@ train_loader, test_loader, data_processor = load_nonlinear_poisson_pt(
     return_dict=config.data.return_queries_dict
 )
 
+# Create test loaders dictionary
 test_loaders = {"test": test_loader}
 
+# Model initialization
 model = get_model(config)
 model = model.to(device)
 
-# Use distributed data parallel
+# Distributed data parallel setup
 if config.distributed.use_distributed:
     model = DDP(
         model, device_ids=[device.index], output_device=device.index, static_graph=True
@@ -131,10 +139,34 @@ mse_loss = MSELoss()
 l2_loss = LpLoss(d=2, p=2)
 
 class GINOLoss(object):
+    """
+    Custom loss wrapper for GINO models that handle dictionary outputs.
+    
+    This loss function concatenates dictionary outputs from GINO models
+    before applying the base loss function.
+    """
     def __init__(self, base_loss):
         super().__init__()
         self.base_loss = base_loss
+        
     def __call__(self, out, y, **kwargs):
+        """
+        Apply loss to GINO model outputs.
+        
+        Parameters
+        ----------
+        out : dict or torch.Tensor
+            Model output, either dictionary of field outputs or tensor
+        y : dict or torch.Tensor
+            Ground truth, either dictionary of field targets or tensor
+        **kwargs
+            Additional arguments passed to base loss
+            
+        Returns
+        -------
+        torch.Tensor
+            Computed loss value
+        """
         if isinstance(out, dict) and isinstance(y, dict):
             y = torch.cat([y[field] for field in out.keys()], dim=1)
             out = torch.cat([out[field] for field in out.keys()], dim=1)
@@ -190,7 +222,7 @@ trainer = Trainer(
     wandb_log=config.wandb.log
 )
 
-# Log parameter count
+# Log model parameter count
 if is_logger:
     n_params = count_model_params(model)
 
@@ -207,6 +239,7 @@ if is_logger:
         wandb.log(to_log)
         wandb.watch(model)
 
+# Start training process
 trainer.train(
     train_loader,
     test_loaders,
@@ -217,5 +250,6 @@ trainer.train(
     eval_losses=eval_losses,
 )
 
+# Finalize WandB logging
 if config.wandb.log and is_logger:
     wandb.finish()

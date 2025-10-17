@@ -1,3 +1,12 @@
+"""
+Training script for MHD64 dataset using neural operators.
+
+This script trains a neural operator on the 3D magnetohydrodynamics (MHD)
+dataset with 64x64x64 resolution. The model learns to predict the next time step
+in the MHD simulation, supporting both next-step prediction and autoregressive
+evaluation modes.
+"""
+
 import sys
 
 from configmypy import ConfigPipeline, YamlConfig, ArgparseConfig
@@ -14,10 +23,8 @@ from neuralop.training import setup, AdamW
 from neuralop.mpu.comm import get_local_rank
 from neuralop.utils import get_wandb_api_key, count_model_params
 
-
-# Read the configuration
+# Configuration setup
 config_name = "default"
-# Read the configuration
 from zencfg import make_config_from_cli
 import sys 
 sys.path.insert(0, '../')
@@ -26,8 +33,7 @@ from config.the_well.mhd_64_config import Default
 config = make_config_from_cli(Default)
 config = config.to_dict()
 
-
-# Set-up distributed communication, if using
+# Distributed training setup, if enabled
 device, is_logger = setup(config)
 
 # Set up WandB logging
@@ -61,27 +67,32 @@ if config.wandb.log and is_logger:
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
 
-# Print config to screen
+# Print configuration details
 if config.verbose and is_logger:
     print(f"##### CONFIG #####\n\n{config}\n")
     sys.stdout.flush()
 
-# Loading the Darcy flow dataset
+# Load the MHD64 dataset
 dataset = MHD64Dataset(root_dir=Path(config.data.root).expanduser(),
                               train_task='next_step',
                               eval_tasks=['next_step', 'autoregression'],
                               first_only=True)
 
+# Print dataset metadata
 print(dataset.train_db.metadata.n_steps_per_trajectory)
+
+# Create data loaders
 train_loader = DataLoader(dataset.train_db, batch_size=config.data.batch_size)
 
 test_loaders = {}
 for mode, db in dataset.test_dbs.items():
     test_loaders[mode] = DataLoader(db, batch_size=config.data.test_batch_size)
 
+# Get data processor from dataset
 data_processor = dataset.data_processor
 print(data_processor)
 
+# Model initialization
 model = get_model(config)
 
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
@@ -136,7 +147,7 @@ else:
     raise ValueError(f"Got scheduler={config.opt.scheduler}")
 
 
-# Creating the losses
+# Loss function configuration
 l2loss = LpLoss(d=3, p=2)
 h1loss = H1Loss(d=3)
 if config.opt.training_loss == "l2":
@@ -173,7 +184,7 @@ trainer = Trainer(
     verbose=config.verbose and is_logger,
               )
 
-# Log parameter count
+# Log model parameter count
 if is_logger:
     n_params = count_model_params(model)
 
@@ -190,7 +201,7 @@ if is_logger:
         wandb.log(to_log, commit=False)
         wandb.watch(model)
 
-# Train the model
+# Start training process with autoregressive evaluation
 trainer.train(
     train_loader=train_loader,
     test_loaders=test_loaders,
@@ -201,5 +212,7 @@ trainer.train(
     training_loss=train_loss,
     eval_losses=eval_losses,
 )
+
+# Finalize WandB logging
 if config.wandb.log and is_logger:
     wandb.finish()

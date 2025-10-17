@@ -1,3 +1,11 @@
+"""
+Training script for Navier-Stokes equation using neural operators.
+
+This script trains a neural operator on the 2D Navier-Stokes equations
+for fluid dynamics simulation. The model learns to predict velocity fields
+from initial conditions, supporting multiple resolutions and distributed training.
+"""
+
 import sys
 
 from pathlib import Path
@@ -13,8 +21,7 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 from neuralop.mpu.comm import get_local_rank
 from neuralop.training import setup, AdamW
 
-
-# Read the configuration
+# Configuration setup
 config_name = "default"
 from zencfg import make_config_from_cli
 import sys 
@@ -24,9 +31,10 @@ from config.navier_stokes_config import Default
 config = make_config_from_cli(Default)
 config = config.to_dict()
 
-# Set-up distributed communication, if using
+# Distributed training setup, if enabled
 device, is_logger = setup(config)
-# Set up WandB logging
+
+# WandB logging configuration
 wandb_init_args = None
 if config.wandb.log and is_logger:
     print(config.wandb.log)
@@ -63,14 +71,15 @@ if config.wandb.log and is_logger:
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
 
-# Print config to screen
+# Print configuration details
 if config.verbose:
     print(f"##### CONFIG #####\n")
     print(config)
 
+# Data directory setup
 data_dir = Path(config.data.folder).expanduser()
 
-# Loading the Navier-Stokes dataset in 128x128 resolution
+# Load the Navier-Stokes dataset
 train_loader, test_loaders, data_processor = load_navier_stokes_pt(
     data_root=data_dir,
     train_resolution=config.data.train_resolution,
@@ -83,6 +92,7 @@ train_loader, test_loaders, data_processor = load_navier_stokes_pt(
     encode_output=config.data.encode_output,
 )
 
+# Model initialization
 model = get_model(config)
 model = model.to(device)
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
@@ -96,10 +106,8 @@ if config.patching.levels > 0:
                                              use_distributed=config.distributed.use_distributed)
 data_processor = data_processor.to(device)
 
-# Use distributed data parallel
-
-# Reconfigure DataLoaders to use a DistributedSampler 
-# if in distributed data parallel mode
+# Distributed data parallel setup
+# Reconfigure DataLoaders to use a DistributedSampler if in distributed mode
 if config.distributed.use_distributed:
     train_db = train_loader.dataset
     train_sampler = DistributedSampler(train_db, rank=get_local_rank())
@@ -141,7 +149,7 @@ else:
     raise ValueError(f"Got scheduler={config.opt.scheduler}")
 
 
-# Creating the losses
+# Loss function configuration
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
 if config.opt.training_loss == "l2":
@@ -179,7 +187,7 @@ trainer = Trainer(
     wandb_log = config.wandb.log
 )
 
-# Log parameter count
+# Log model parameter count
 if is_logger:
     n_params = count_model_params(model)
 
@@ -197,6 +205,7 @@ if is_logger:
         wandb.watch(model)
 
 
+# Start training process
 trainer.train(
     train_loader,
     test_loaders,
@@ -207,8 +216,10 @@ trainer.train(
     eval_losses=eval_losses,
 )
 
+# Finalize WandB logging
 if config.wandb.log and is_logger:
     wandb.finish()
 
+# Clean up distributed training
 if dist.is_initialized():
     dist.destroy_process_group()

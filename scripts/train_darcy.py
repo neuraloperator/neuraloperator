@@ -1,3 +1,11 @@
+"""
+Training script for Darcy flow equation using neural operators.
+
+This script trains a neural operator on the 2D Darcy flow equation,
+which models fluid flow through porous media. The script supports
+distributed training and multi-grid patching for high-resolution data.
+"""
+
 from pathlib import Path
 import sys
 
@@ -24,7 +32,7 @@ from config.darcy_config import Default
 config = make_config_from_cli(Default)
 config = config.to_dict()
 
-# Set-up distributed communication, if using
+# Distributed training setup, if enabled
 device, is_logger = setup(config)
 
 # Set up WandB logging
@@ -58,13 +66,13 @@ if config.wandb.log and is_logger:
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
 
-# Print config to screen
+# Print configuration details
 if config.verbose and is_logger:
     print(f"##### CONFIG #####\n")
     print(config)
     sys.stdout.flush()
 
-# Loading the Darcy flow dataset
+# Load the Darcy flow dataset
 data_root = Path(config.data.folder).expanduser()
 train_loader, test_loaders, data_processor = load_darcy_flow_small(
     data_root=data_root,
@@ -76,9 +84,10 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
     encode_input=False,
     encode_output=False,
 )
+# Model initialization
 model = get_model(config)
 
-# convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
+# convert dataprocessor to an MGPatchingDataProcessor if patching levels > 0
 if config.patching.levels > 0:
     data_processor = MGPatchingDataProcessor(model=model,
                                              in_normalizer=data_processor.in_normalizer,
@@ -89,8 +98,8 @@ if config.patching.levels > 0:
                                              use_distributed=config.distributed.use_distributed,
                                              device=device)
 
-# Reconfigure DataLoaders to use a DistributedSampler 
-# if in distributed data parallel mode
+# Distributed data parallel setup
+# Reconfigure DataLoaders to use a DistributedSampler if in distributed mode
 if config.distributed.use_distributed:
     train_db = train_loader.dataset
     train_sampler = DistributedSampler(train_db, rank=get_local_rank())
@@ -131,7 +140,7 @@ else:
     raise ValueError(f"Got scheduler={config.opt.scheduler}")
 
 
-# Creating the losses
+# Create the losses functions
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
 if config.opt.training_loss == "l2":
@@ -168,7 +177,7 @@ trainer = Trainer(
     verbose=config.verbose and is_logger,
               )
 
-# Log parameter count
+# Log model parameter count
 if is_logger:
     n_params = count_model_params(model)
 
@@ -185,7 +194,7 @@ if is_logger:
         wandb.log(to_log, commit=False)
         wandb.watch(model)
 
-# Train the model
+# Start training process
 trainer.train(
     train_loader=train_loader,
     test_loaders=test_loaders,
@@ -196,5 +205,6 @@ trainer.train(
     eval_losses=eval_losses,
 )
 
+# Finalize WandB logging
 if config.wandb.log and is_logger:
     wandb.finish()

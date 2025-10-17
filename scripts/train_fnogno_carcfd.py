@@ -1,3 +1,11 @@
+"""
+Training script for FNOGNO on Car CFD dataset.
+
+This script trains a Fourier Neural Operator with Graph Neural Operator (FNOGNO)
+on computational fluid dynamics data for car pressure prediction.
+The model learns to predict pressure fields from geometric inputs.
+"""
+
 import torch
 import wandb
 import sys
@@ -21,12 +29,12 @@ from config.fnogno_carcfd_config import Default
 config = make_config_from_cli(Default)
 config = config.to_dict()
 
-#Set-up distributed communication, if using
+# Distributed training setup, if enabled
 device, is_logger = setup(config)
 
-# if the model's number of modes is greater than the query res, 
+# Model architecture adjustment for query resolution
+# If the model's number of modes is greater than the query resolution,
 # shrink the model to avoid an ill-posed FNO
-
 if config.data.sdf_query_resolution < config.model.fno_n_modes[0]:
     config.model.fno_n_modes = [config.data.sdf_query_resolution]*3
 
@@ -52,7 +60,7 @@ if config.wandb.log and is_logger:
             config.params[key] = wandb.config[key]
     wandb.init(**wandb_init_args)
 
-#Load CFD body data
+# Load CFD dataset
 data_module = CarCFDDataset(root_dir=config.data.root, 
                              query_res=[config.data.sdf_query_resolution]*3, 
                              n_train=config.data.n_train, 
@@ -60,13 +68,14 @@ data_module = CarCFDDataset(root_dir=config.data.root,
                              download=True
                              )
 
-
+# Create data loaders
 train_loader = data_module.train_loader(batch_size=1, shuffle=True)
 test_loader = data_module.test_loader(batch_size=1, shuffle=False)
 
+# Model initialization
 model = get_model(config)
 
-#Create the optimizer
+# Create the optimizer
 optimizer = AdamW(model.parameters(), 
                                 lr=config.opt.learning_rate, 
                                 weight_decay=config.opt.weight_decay)
@@ -95,12 +104,15 @@ if config.opt.testing_loss == 'l2':
 else:
     raise ValueError(f'Got {config.opt.testing_loss=}')
 
-# Handle data preprocessing to FNOGNO 
+# Custom data processor for FNOGNO CFD training
 
 class CFDDataProcessor(DataProcessor):
     """
-    Implements logic to preprocess data/handle model outputs
-    to train an FNOGNO on the CFD car-pressure dataset
+    Data processor for FNOGNO training on CFD car-pressure dataset.
+    
+    This processor handles the conversion of CFD mesh data into the format
+    expected by the FNOGNO model, including coordinate transformations
+    and feature extraction from geometric inputs.
     """
 
     def __init__(self, normalizer, device='cuda'):
@@ -110,8 +122,12 @@ class CFDDataProcessor(DataProcessor):
         self.model = None
 
     def preprocess(self, sample):
-        # Turn a data dictionary returned by MeshDataModule's DictDataset
-        # into the form expected by the FNOGNO
+        """
+        Convert CFD mesh data into FNOGNO input format.
+        
+        Transforms the data dictionary from MeshDataModule's DictDataset
+        into the form expected by the FNOGNO model.
+        """
         
         in_p = sample['query_points'].squeeze(0).to(self.device)
         out_p = sample['centroids'].squeeze(0).to(self.device)
@@ -120,7 +136,7 @@ class CFDDataProcessor(DataProcessor):
 
         weights = sample['triangle_areas'].squeeze(0).to(self.device)
 
-        #Output data
+        # Output pressure data
         truth = sample['press'].squeeze(0).unsqueeze(-1)
 
         # Take the first 3682 vertices of the output mesh to correspond to pressure
@@ -147,6 +163,12 @@ class CFDDataProcessor(DataProcessor):
         return sample
     
     def postprocess(self, out, sample):
+        """
+        Postprocess model output and ground truth data.
+        
+        Applies inverse normalization to both predictions and ground truth
+        when not in training mode.
+        """
         if not self.training:
             out = self.normalizer.inverse_transform(out)
             y = self.normalizer.inverse_transform(sample['y'].squeeze(0))
@@ -163,14 +185,19 @@ class CFDDataProcessor(DataProcessor):
         self.model = model
 
     def forward(self, sample):
+        """
+        Complete forward pass through the data processor and model.
+        """
         sample = self.preprocess(sample)
         out = self.model(sample)
         out, sample = self.postprocess(out, sample)
         return out, sample
 
+# Initialize data processor
 output_encoder = deepcopy(data_module.normalizers['press']).to(device)
 data_processor = CFDDataProcessor(normalizer=output_encoder, device=device)
 
+# Trainer setup
 trainer = Trainer(model=model, 
                   n_epochs=config.opt.n_epochs,
                   data_processor=data_processor,
@@ -179,15 +206,16 @@ trainer = Trainer(model=model,
                   verbose=is_logger
                   )
 
+# Log additional dataset information
 if config.wandb.log:
     wandb.log({'time_to_distance': data_module.time_to_distance}, commit=False)
 
+# Start training process
 trainer.train(
               train_loader=train_loader,
               test_loaders={'':test_loader},
               optimizer=optimizer,
               scheduler=scheduler,
               training_loss=train_loss_fn,
-              #eval_losses={config.opt.testing_loss: test_loss_fn, 'drag': DragLoss},
-              eval_losses={config.opt.testing_loss: test_loss_fn},
+              eval_losses={config.opt.testing_loss: test_loss_fn},  # can add 'drag' : DragLoss 
               regularizer=None,)
