@@ -112,22 +112,25 @@ Neural operators possess universal approximation properties, meaning they can
 approximate any continuous operator between function spaces to arbitrary accuracy, 
 given sufficient network capacity. This theoretical guarantee ensures that:
 
-**No fundamental limitations**: Neural operators are not restricted to specific 
-types of operators or function spaces
+**No fundamental limitations**
+    Neural operators are not restricted to specific 
+    types of operators or function spaces
 
 .. raw:: html
 
    <div style="margin-top: 2em;"></div>
 
-**Convergence guarantees**: The approximation error can be made arbitrarily 
-small with sufficient network capacity
+**Convergence guarantees**
+    The approximation error can be made arbitrarily 
+    small with sufficient network capacity
 
 .. raw:: html
 
    <div style="margin-top: 2em;"></div>
 
-**Broad applicability**: The same architecture can be applied to diverse 
-scientific problems
+**Broad applicability**
+    The same architecture can be applied to diverse scientific problems,
+    from fluid dynamics to materials science.
 
 The universal approximation property is particularly important for complex, 
 nonlinear operators that arise in real-world applications, such as turbulent 
@@ -307,28 +310,28 @@ The advantages of neural operators become clear when compared to alternative app
 
 **Traditional Neural Networks vs. Neural Operators**
 
-+-------------------------------+-------------------------------+
-| Traditional Neural Networks   | Neural Operators              |
-+-------------------------------+-------------------------------+
-| Fixed discretization          | Resolution-invariant          |
-| Vector-to-vector mapping      | Function-to-function mapping  |
-| Limited generalization        | Universal approximation       |
-| Resolution-dependent training | Mixed-resolution training     |
-| Discrete outputs              | Continuous function outputs   |
-| Single problem instance       | Parametrized family of problems|
-+-------------------------------+-------------------------------+
+ ================================ ==================================
+  Traditional Neural Networks      Neural Operators
+ ================================ ==================================
+  Fixed discretization             Resolution-invariant
+  Vector-to-vector mapping         Function-to-function mapping
+  Limited generalization           Universal approximation
+  Resolution-dependent training    Mixed-resolution training
+  Discrete outputs                 Continuous function outputs
+  Single problem instance          Parametrized family of problems
+ ================================ ==================================
 
 **Traditional Numerical Methods vs. Neural Operators**
 
-+-------------------------------+-------------------------------+
-| Traditional Numerical Methods | Neural Operators              |
-+-------------------------------+-------------------------------+
-| Solve one instance            | Learn solution operators      |
-| Require explicit PDE form     | Black-box, data-driven        |
-| Slow on fine grids            | Fast at all resolutions       |
-| High computational cost       | Fast inference after training |
-| Parameter-specific            | Parameter-agnostic            |
-+-------------------------------+-------------------------------+
+ ================================ ==================================
+  Traditional Numerical Methods    Neural Operators
+ ================================ ==================================
+  Solve one instance               Learn solution operators
+  Require explicit PDE form        Black-box, data-driven
+  Slow on fine grids               Fast at all resolutions
+  High computational cost          Fast inference after training
+  Parameter-specific               Parameter-agnostic
+ ================================ ==================================
 
 
 .. raw:: html

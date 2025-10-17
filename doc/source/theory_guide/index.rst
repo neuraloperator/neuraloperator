@@ -48,12 +48,12 @@ solving partial differential equations.
     Learn about resolution invariance, universal approximation, flexible inference, 
     and data efficiency that make neural operators uniquely powerful for scientific computing.
 
-.. card:: Applications of Neural Operators
+.. card:: Examples of Neural Operator Applications
     :link: applications
     :link-type: doc
     :class-body: sd-text-muted
 
-    Discover diverse applications of neural operators across scientific domains.
+    Discover diverse examples of neural operator applications across scientific domains.
     
     Explore real-world applications in fluid dynamics, climate modeling, materials science, 
     biomedical engineering, and more, showcasing the transformative impact of neural operators.
