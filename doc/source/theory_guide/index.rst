@@ -13,8 +13,8 @@ Theory Guide
 This section contains a comprehensive primer on the theoretical foundations of operator learning, 
 an introduction to the Fourier Neural Operator, an exploration of the key advantages of neural operators, 
 and a showcase of diverse applications across scientific and engineering domains. 
-These guides provide the mathematical background and practical insights needed to understand and implement neural operators for 
-solving partial differential equations.
+These guides provide the mathematical background and practical insights needed to understand 
+neural operators for solving partial differential equations.
 
 .. card:: Introduction to Neural Operators
     :link: neural_operators

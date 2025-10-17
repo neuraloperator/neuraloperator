@@ -93,7 +93,7 @@ over a spatial domain, rather than as discrete :math:`32 \times 32` pixel arrays
 By embracing this perspective, we gain the flexibility to reason about, and learn mappings between, 
 functions defined on arbitrary continuous domains, transcending the constraints of fixed discretizations.
 
-In this work, we aim to generalize neural networks so that they can learn operators,
+We discuss how to generalize neural networks so that they can learn operators,
 the mappings between infinite-dimensional spaces, with a special focus on PDEs.
 For a comprehensive guide on principled approaches for extending neural architectures 
 to function spaces for operator learning, see [3]_.
@@ -145,6 +145,7 @@ From a mathematical perspective, a continuous, discretization-invariant represen
 aligns more closely with the true analytic solution of a problem. 
 This approach is not only conceptually elegant but also carries significant theoretical meaning. 
 Keeping this motivation in mind, let us now build a rigorous mathematical framework.
+
 .. raw:: html
 
    <div style="margin-top: 3em;"></div>
@@ -193,7 +194,7 @@ For a general PDE of the form:
     (\mathcal{L}_a u)(x)= f(x), \quad x \in D
 
 .. math::
-    u(x) = 0, \quad x \in \partial D
+    u(x) = 0, \quad x \in \partial D.
 
 Under fairly general conditions on :math:`\mathcal{L}_a`,
 we may define the Green’s function :math:`G : D \times D \to \mathbb{R}` as the
@@ -207,16 +208,16 @@ Note that :math:`G` will depend on the coefficient :math:`a` thus we will hencef
 Then the true operator :math:`\mathcal{F}_{true}` can be written as an integral operator of Green’s function:
 
 .. math::
-    u(x) = \int_D G_a(x,y)f(y) \: dy
+    u(x) = \int_D G_a(x,y)f(y) \: dy.
 
 Generally, the Green’s function is continuous at points :math:`x \neq y`,
 for example, when :math:`\mathcal{L}_a` is uniformly elliptic.
 Hence it is natural to model the kernel via a neural network :math:`\kappa`.
 Just as the Green’s function, the kernel network :math:`\kappa` takes input :math:`(x,y)`.
-Since the kernel depends on :math:`a`, we let :math:`\kappa` also take input :math:`(a(x),a(y))`.
+Since the kernel depends on :math:`a`, we let :math:`\kappa` also take input :math:`(a(x),a(y))`, i.e.
 
 .. math::
-    u(x) = \int_D \kappa(x,y,a(x),a(y))f(y) \: dy
+    u(x) = \int_D \kappa(x,y,a(x),a(y))f(y) \: dy.
 
 .. raw:: html
 
@@ -233,10 +234,10 @@ where :math:`t = 0,\ldots,T` is the time step.
 
 The algorithm starts from an initialization :math:`u_0`,
 for which we use :math:`u_0(x) = (x, a(x))`.
-At each time step :math:`t`, it updates :math:`u_{t+1}` via a kernel convolution of :math:`u_{t}`.
+At each time step :math:`t`, it updates :math:`u_{t+1}` via a kernel convolution of :math:`u_{t}`, i.e.
 
 .. math::
-    u_{t+1}(x) = \int_D \kappa(x,y,a(x),a(y))u_{t}(y) \: dy
+    u_{t+1}(x) = \int_D \kappa(x,y,a(x),a(y))u_{t}(y) \: dy.
 
 It works like an implicit iteration, where at each iteration the algorithm solves an equation 
 for :math:`u_{t}(x)` and :math:`u_{t+1}(x)` using the kernel integral. 
@@ -282,7 +283,7 @@ the integral :math:`\int_{B(x,r)} \kappa_{\phi}\big(x,y,a(x),a(y)\big)
 v_t(y)\: \mathrm{d}y` can be approximated by a sum:
 
 .. math::
-    \frac{1}{|N(x)|}\sum_{y \in N(x)} \kappa(x,y,a(x),a(y))v_t(y)
+    \frac{1}{|N(x)|}\sum_{y \in N(x)} \kappa(x,y,a(x),a(y))v_t(y).
 
 
 Observation: The kernel integral is equivalent to message passing on graphs.
@@ -326,12 +327,15 @@ we should construct :math:`K` nodes in the graph for all the points in the discr
 It is quite expensive.
 Thankfully, we don’t need all the points to get an accurate approximation.
 For each graph, the error of Monte Carlo approximation of the kernel integral
-:math:`\int_{B(x,r)} \kappa_{\phi}(x,y,a(x),a(y)) v_t(y)\: \mathrm{d}y` scales with :math:`m^{-1/2}`,
-where :math:`m` is the number of nodes sampled.
+
+.. math::
+    \int_{B(x,r)} \kappa_{\phi}(x, y, a(x), a(y)) v_t(y)\: \mathrm{d}y 
+
+scales with :math:`m^{-1/2}`, where :math:`m` is the number of nodes sampled.
 
 Since we will sample :math:`N` graphs in total for all :math:`N` training examples :math:`\{a_j, u_j\}^N`,
 the overall error of the kernel is much smaller than :math:`m^{-1/2}`, where :math:`m` is the number of nodes sampled.
-In practice, sampling :math:`m \sim 200` nodes is sufficient for :math:`K \sim 100,000` points.
+In practice, sampling :math:`m \sim 200` nodes is sufficient for :math:`K \sim 100,\!000` points.
 
 The approximation can be further improved by employing advanced Nystrom methods.
 For instance, by estimating the significance or influence of each point, 
@@ -348,7 +352,7 @@ Experiments: Poisson Equations
 Let's first consider a simple Poisson equation:
 
 .. math::
-    -\Delta u = f
+    -\Delta u = f.
 
 We set :math:`v_0 = f` and :math:`T=1`, and use one iteration of the graph kernel network
 to learn the operator :math:`\mathcal{F}: f \mapsto u`.
