@@ -9,6 +9,10 @@ in 2D velocity fields
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import the library
 # ------------------
 # We first import our `neuralop` library and required dependencies.
@@ -23,6 +27,10 @@ print(f"Using device: {device}")
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Divergence error computation functions
 # -------------------------------------
 # We define two functions to compute the divergence error 
@@ -48,6 +56,10 @@ def div_error_finite_diff(u, L):
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Setting considered
 # ------------------
 # We start from a divergence-free velocity field on [0, 2*pi] x [0, 2*pi]  
@@ -124,6 +136,10 @@ for target_resolution in resolutions:
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Divergence Errors using Spectral Differentiation 
 # ------------------------------------------------
 # The Fourier differentiation method computes derivatives in the spectral domain  
@@ -166,6 +182,10 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Divergence Errors using Finite Differences
 # --------------------------
 # The finite difference method approximates derivatives using central differences.  
