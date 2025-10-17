@@ -17,35 +17,59 @@ If your work provides one of the above, we would be thrilled to integrate it int
 
 
 
-
-
 ## Getting Started
-
 
 
 ### Development Setup
 
 1. **Fork the repository** on GitHub
-2. **Clone your fork** locally:
+
+
+2. **Clone the library and connect your fork**:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/neuraloperator.git
+   git clone https://github.com/neuraloperator/neuraloperator.git
    cd neuraloperator
+   git remote rename origin upstream
+   git remote add origin https://github.com/<YOUR_GIT_NAME>/neuraloperator.git
+   git remote -v
    ```
-3. **Add the upstream remote**:
-   ```bash
-   git remote add upstream https://github.com/neuraloperator/neuraloperator.git
+   This should show:
    ```
-4. **Create a virtual environment**:
+   origin  https://github.com/<YOUR_GIT_NAME>/neuraloperator.git (fetch)
+   origin  https://github.com/<YOUR_GIT_NAME>/neuraloperator.git (push)
+   upstream        https://github.com/neuraloperator/neuraloperator.git (fetch)
+   upstream        https://github.com/neuraloperator/neuraloperator.git (push)
+   ```
+3. **Create a virtual environment**:
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
-5. **Install development dependencies**:
+4. **Install development dependencies**:
    ```bash
    pip install -e .[dev]
    # OR
    pip install neuraloperator[dev]
    ```
+
+### Setting up for Pull Requests
+
+To start working on a pull request:
+
+1. **Create a branch for your changes**:
+   ```bash
+   git checkout -b <PR_name>
+   git push -u origin <PR_name>
+   ```
+
+2. **Make your changes** and commit them:
+   ```bash
+   git add .
+   git commit -m "Your descriptive commit message"
+   git push
+   ```
+
+3. **Create the pull request**: Go to your fork on GitHub and click "Compare & pull request"
 
 First, ensure you have the latest version of the library installed for development, including requirements for the documentation. See the [installation guide](https://neuraloperator.github.io/dev/install.html) for more details.
 
