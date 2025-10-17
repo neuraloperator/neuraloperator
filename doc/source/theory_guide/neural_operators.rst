@@ -441,12 +441,24 @@ References
 .. [1] Neural operator: Graph kernel network for partial differential equations,
     Zongyi Li, Nikola Kovachki, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar
 
+.. raw:: html
+
+   <div style="margin-top: 1em"></div>
+
 .. [2] Neural operator: Learning maps between function spaces,
     Nikola Kovachki, Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar
+
+.. raw:: html
+
+   <div style="margin-top: 1em"></div>
 
 .. [3] Principled Approaches for Extending Neural Architectures to Function Spaces for Operator Learning,
        Julius Berner, Miguel Liu-Schiaffini, Jean Kossaifi, Valentin Duruisseaux, 
        Boris Bonev, Kamyar Azizzadenesheli, Anima Anandkumar, 2025.
        arXiv:2506.10973. https://arxiv.org/abs/2506.10973
+
+.. raw:: html
+
+   <div style="margin-top: 1em"></div>
 
 .. [4] Blog post by Zongyi Li, https://zongyi-li.github.io/blog/2020/graph-pde/

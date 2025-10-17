@@ -30,7 +30,7 @@ and practical applications.
 Mathematical Well-Posedness
 ===========================
 
-**Ground-truth mapping is an operator**
+The ground-truth mapping is an operator.
 
 The fundamental advantage of neural operators lies in their mathematical foundation. 
 In scientific computing, the problems we aim to solve are inherently operator learning tasks. 
@@ -41,14 +41,23 @@ Consider a general differential equation:
 
 where :math:`\mathcal{L}` is a differential operator, :math:`f` is the input function, 
 and :math:`u` is the solution function. 
-The task is to learn the inverse operator :math:`\mathcal{L}^{-1}` that maps :math:`f \mapsto u`.
 
 Neural operators are designed to approximate these true operators directly, 
 rather than learning discretized approximations. 
 This alignment with the underlying mathematical structure ensures that:
 
 - The learned mapping respects the continuous nature of the problem
+
+.. raw:: html
+
+   <div style="margin-top: 1em;"></div>
+
 - The approximation error can be bounded theoretically
+
+.. raw:: html
+
+   <div style="margin-top: 1em;"></div>
+
 - The method converges to the true operator as the neural network capacity increases
 
 This well-posedness property is crucial for scientific applications where 
@@ -61,7 +70,7 @@ mathematical rigor is essential.
 Function Representation and Computational Flexibility
 ====================================================
 
-**Useful for follow-up computations**
+The ability to output continuous functions is useful for follow-up computations.
 
 One of the most significant advantages of neural operators is their ability 
 to output continuous functions that can be queried at arbitrary coordinates. 
@@ -73,19 +82,24 @@ This capability enables:
     high-resolution predictions are needed but training data is only available at 
     lower resolutions.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 **Downstream Operations**
     Since neural operators output functions rather than discrete values, 
     they enable natural computation of derivatives, integrals, and other mathematical 
     operations on the solution.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 **Consistent Interpolation**
     The output functions are consistent across different query points, 
     avoiding artifacts that might arise from discrete-to-continuous interpolation.
 
-**Example**: In fluid dynamics simulations, a neural operator trained 
-on :math:`64 \times 64` grids can produce solutions at :math:`256 \times 256` 
-resolution while maintaining physical consistency and enabling accurate 
-computation of derived quantities like velocity gradients.
+
 
 .. raw:: html
 
@@ -94,17 +108,25 @@ computation of derived quantities like velocity gradients.
 Universal Approximation Capability
 ===================================
 
-**Can approximate any sufficiently regular operator with arbitrarily low error**
-
 Neural operators possess universal approximation properties, meaning they can 
 approximate any continuous operator between function spaces to arbitrary accuracy, 
 given sufficient network capacity. This theoretical guarantee ensures that:
 
-- **No fundamental limitations**: Neural operators are not restricted to specific 
+**No fundamental limitations**: Neural operators are not restricted to specific 
 types of operators or function spaces
-- **Convergence guarantees**: The approximation error can be made arbitrarily 
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
+**Convergence guarantees**: The approximation error can be made arbitrarily 
 small with sufficient network capacity
-- **Broad applicability**: The same architecture can be applied to diverse 
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
+**Broad applicability**: The same architecture can be applied to diverse 
 scientific problems
 
 The universal approximation property is particularly important for complex, 
@@ -118,8 +140,6 @@ fluid flows or multi-physics simulations.
 Solving Parametrized PDEs
 =========================
 
-**Not limited to a single PDE instance**
-
 Traditional numerical methods solve one specific instance of a PDE with fixed parameters, 
 boundary conditions, and initial conditions. Neural operators, in contrast, 
 can learn solution operators for entire families of PDEs:
@@ -128,13 +148,25 @@ can learn solution operators for entire families of PDEs:
     A single neural operator can handle different parameter values 
     (e.g., different viscosities, conductivities, or material properties) without retraining.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 **Boundary Condition Generalization**
     The same model can work with various boundary conditions, from Dirichlet to Neumann 
     to mixed conditions.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 **Geometry Adaptation**
     Neural operators can generalize across different domain geometries, 
     making them valuable for shape optimization and design problems.
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
 
 **Multi-Physics Capability**
     A single operator can learn mappings for coupled systems involving multiple 
@@ -151,20 +183,32 @@ quantification, and design exploration.
 Flexible Inference and Resolution Invariance
 ============================================
 
-**Neural operators can be queried at arbitrary resolution**
+Neural operators can be queried at arbitrary resolution
 
 **Discretization Invariance**
     Neural operators produce consistent results regardless of the input discretization. 
     The same model can process inputs on regular grids, irregular meshes, or even 
     point clouds, maintaining mathematical consistency.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 **Resolution Convergence**
     The approximation quality improves as the input resolution increases, with the 
     error vanishing in the limit of infinite resolution.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 **Multi-Scale Capability**
     A single neural operator can capture phenomena across multiple scales, 
     from fine-scale details to large-scale patterns.
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
 
 **Computational Efficiency**
     Once trained, neural operators can produce high-resolution solutions much 
@@ -178,23 +222,39 @@ Flexible Inference and Resolution Invariance
 Data Efficiency and Training Advantages
 =======================================
 
-**Can learn from mixed-resolution datasets**
+Neural operators can learn from mixed-resolution datasets
 
 **Mixed-Resolution Training**
     Neural operators can be trained on datasets containing samples at different resolutions, 
     making efficient use of available computational resources and data.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 **Curriculum Learning**
     Training can follow a curriculum: start with low-resolution samples for fast 
     initial learning, then progressively incorporate higher-resolution data for fine-tuning.
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
 
 **Faster Training**
     The ability to use low-resolution data for initial training significantly 
     reduces computational costs while maintaining learning effectiveness.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 **Data Augmentation**
     The same physical system can be represented at multiple resolutions, 
     effectively increasing the training dataset size.
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
 
 **Transfer Learning**
     Models trained on one resolution can be fine-tuned for different resolutions 
@@ -212,13 +272,25 @@ Practical Implementation Benefits
     proportionally large memory, as they operate in function space rather than on dense 
     discretizations.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 **Parallelization**
     The function-to-function mapping nature of neural operators enables efficient 
     parallelization across different spatial and temporal scales.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 **Robustness**
     The continuous nature of the learned operators provides robustness to noise and 
     discretization artifacts.
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
 
 **Interpretability**
     The learned operators often have interpretable structure, with different components 
@@ -288,10 +360,19 @@ References
        Boris Bonev, Kamyar Azizzadenesheli, Anima Anandkumar, 2025.
        arXiv:2506.10973. https://arxiv.org/abs/2506.10973
 
+.. raw:: html
+
+   <div style="margin-top: 1em;"></div>
+
 .. [2] Neural operator: Graph kernel network for partial differential equations,
        Zongyi Li, Nikola Kovachki, Kamyar Azizzadenesheli, Burigede Liu, 
        Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar, 2020.
 
+.. raw:: html
+
+   <div style="margin-top: 1em;"></div>
+
 .. [3] Fourier Neural Operator for Parametric Partial Differential Equations,
        Zongyi Li, Nikola Kovachki, Kamyar Azizzadenesheli, Burigede Liu, 
        Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar, 2020.
+

@@ -42,7 +42,6 @@ solving partial differential equations.
     :link: advantages
     :link-type: doc
     :class-body: sd-text-muted
-    :img-bottom: /_static/images/fourier_ns1e4.jpg
 
     Explore the key advantages of neural operators over traditional methods.
     
@@ -53,7 +52,6 @@ solving partial differential equations.
     :link: applications
     :link-type: doc
     :class-body: sd-text-muted
-    :img-bottom: /_static/images/fourier_ns1e4.jpg
 
     Discover diverse applications of neural operators across scientific domains.
     

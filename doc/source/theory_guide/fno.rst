@@ -537,8 +537,16 @@ References
        Zongyi Li and Nikola Kovachki and Kamyar Azizzadenesheli
        and Burigede Liu and Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar, 2020.
 
+.. raw:: html
+
+   <div style="margin-top: 1em"></div>
+
 .. [2] Hao, K. (2021, October 20). Ai has cracked a key mathematical puzzle for understanding our world.
        MIT Technology Review. https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/
+
+.. raw:: html
+
+   <div style="margin-top: 1em"></div>
 
 .. [3] Multi-Grid Tensorized Fourier Neural Operator for High-Resolution PDEs,
        Jean Kossaifi, Nikola Kovachki, Kamyar Azizzadenesheli, Anima Anandkumar, 2024.
