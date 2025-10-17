@@ -6,24 +6,19 @@ If your work provides one of the above, we would be thrilled to integrate it int
 
 ## Table of Contents
 
-- [Getting Started](#getting-started)
-- [Extending NeuralOperator](#extending-neuraloperator)
-- [Submitting Contributions](#submitting-contributions)
-- [Publishing Code Built on the Library](#publishing-code-built-on-the-library)
+- [Development Setup](#development-setup)
+- [Types of Contributions](#types-of-contributions)
+- [Development Workflow](#development-workflow)
 - [Development Guidelines](#development-guidelines)
-- [Debugging and Troubleshooting](#debugging-and-troubleshooting)
+- [Publishing Code Built on the Library](#publishing-code-built-on-the-library)
 - [Getting Help](#getting-help)
 - [License](#license)
 
+## Development Setup
 
+### 1. Fork and Clone the Repository
 
-## Getting Started
-
-
-### Development Setup
-
-1. **Fork the repository** on GitHub
-
+1. **Fork the repository** on GitHub by clicking the "Fork" button
 
 2. **Clone the library and connect your fork**:
    ```bash
@@ -40,41 +35,24 @@ If your work provides one of the above, we would be thrilled to integrate it int
    upstream        https://github.com/neuraloperator/neuraloperator.git (fetch)
    upstream        https://github.com/neuraloperator/neuraloperator.git (push)
    ```
-3. **Create a virtual environment**:
+
+### 2. Set Up Development Environment
+
+1. **Create a virtual environment**:
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
-4. **Install development dependencies**:
+
+2. **Install development dependencies**:
    ```bash
    pip install -e .[dev]
    # OR
    pip install neuraloperator[dev]
    ```
 
-### Setting up for Pull Requests
 
-To start working on a pull request:
-
-1. **Create a branch for your changes**:
-   ```bash
-   git checkout -b <PR_name>
-   git push -u origin <PR_name>
-   ```
-
-2. **Make your changes** and commit them:
-   ```bash
-   git add .
-   git commit -m "Your descriptive commit message"
-   git push
-   ```
-
-3. **Create the pull request**: Go to your fork on GitHub and click "Compare & pull request"
-
-First, ensure you have the latest version of the library installed for development, including requirements for the documentation. See the [installation guide](https://neuraloperator.github.io/dev/install.html) for more details.
-
-
-## Extending NeuralOperator
+## Types of Contributions
 
 We welcome various types of contributions:
 
@@ -87,160 +65,224 @@ We welcome various types of contributions:
 
 To add a new neural operator model:
 
-1. Create a new file in `neuralop/models/`.
-2. Implement the model as a subclass of `BaseModel`.
-3. Add a parametrized unit test file in `neuralop/models/tests`.
-4. Update the `__init__.py` files accordingly to import your new model.
+1. **Create a new file** in `neuralop/models/your_model.py`
+2. **Implement the model** as a subclass of `BaseModel`
+3. **Add comprehensive tests** in `neuralop/models/tests/test_your_model.py`
+4. **Update imports** in the appropriate `__init__.py` files
+5. **Add documentation** with examples and mathematical formulations
+
+**Example structure:**
+```python
+from neuralop.models import BaseModel
+
+class YourModel(BaseModel):
+    """Your model docstring here."""
+    
+    def __init__(self, ...):
+        super().__init__()
+        # Your implementation
+    
+    def forward(self, x):
+        # Your forward pass
+        return x
+```
 
 ### Adding a New Layer
 
 To add a new layer:
 
-1. Create a new file in `neuralop/layers/`.
-2. Ensure the layer is a subclass of `torch.nn.Module`.
-3. Add a parametrized unit test file in `neuralop/layers/tests`.
-4. Update the `__init__.py` files accordingly to import your new layer.
+1. **Create a new file** in `neuralop/layers/your_layer.py`
+2. **Ensure the layer** is a subclass of `torch.nn.Module`
+3. **Add comprehensive tests** in `neuralop/layers/tests/test_your_layer.py`
+4. **Update imports** in the appropriate `__init__.py` files
 
-> **Note**: For optional bonus points, add an interactive example featuring your new method to `./examples`. This helps both us and you: the simpler it is for new users to understand and adapt your method, the more visibility it will get!
+> **💡 Pro Tip**: For bonus points, add an interactive example featuring your new method to `./examples`. This helps both us and you: the simpler it is for new users to understand and adapt your method, the more visibility it will get!
 
-## Submitting Contributions
+## Development Workflow
 
-Follow these steps when making contributions:
+### 1. Create a Branch and Make Changes
 
-1. **Create a new branch** for your feature or bug fix:
-   ```bash
-   git checkout -b feature-branch
-   ```
+```bash
+# Create and switch to a new branch
+git checkout -b feature/your-feature-name
 
-2. **Write clean, well-documented code** following the library's coding standards.
+# Make your changes
+# ... edit files ...
 
-3. **Add or update tests** in the appropriate directory. For instance, if your feature adds a model in `neuralop/models/mymodel.py`, you would add tests to `neuralop/models/tests/test_mymodel.py`.
+# Stage and commit your changes
+git add .
+git commit -m "Add: brief description of your changes
 
-4. **Run the test suite**:
-   ```bash
-   pytest neuralop
-   ```
+- More detailed explanation of what you changed
+- Why you made these changes
+- Any relevant context"
 
-5. **Submit a pull request (PR)** on GitHub from your branch to the upstream `origin/main`. Ensure your PR description clearly communicates what you have changed or added.
+# Push to your fork
+git push -u origin feature/your-feature-name
+```
 
-## Publishing Code Built on the Library
+### 2. Write Tests
 
-If you plan to use `neuralop` as the base of a project, we suggest the following workflow:
+**Always add tests for new functionality!**
 
-1. **Set up a clean virtual environment**.
+- **For models**: Add tests in `neuralop/models/tests/test_your_model.py`
+- **For layers**: Add tests in `neuralop/layers/tests/test_your_layer.py`
+- **For utilities**: Add tests in the appropriate test directory
 
-2. **Install `neuralop` via `pip`**. There are two ways to do this:
+**Example test structure:**
+```python
+import pytest
+import torch
+from neuralop.models import YourModel
 
-   - **Latest PyPI release**:
-     ```bash
-     pip install neuralop
-     ```
+class TestYourModel:
+    def test_forward_pass(self):
+        model = YourModel(...)
+        x = torch.randn(1, 3, 32, 32)
+        output = model(x)
+        assert output.shape == expected_shape
+    
+    def test_gradient_flow(self):
+        # Test that gradients flow properly
+        pass
+```
 
-   - **From a specific git commit hash** (if you need access to functionality added after the last PyPI release):
-     
-     Go to the repository's commit history page and locate the commit hash that corresponds to the repository state at which you want to install the repo. For most use cases, this will be the most recent commit.
-     
-     To find the commit hash, click the commit title, which will take you to the commit's URL. The hash will be the last component of the commit's URL, e.g., `https://github.com/neuraloperator/neuraloperator/commit/<COMMIT_HASH>`. Copy this hash to your clipboard.
-     
-     Then, use `pip` to install the library with the hash you just saved:
-     ```bash
-     pip install git+https://github.com/neuraloperator/neuraloperator.git@<COMMIT_HASH>
-     ```
+### 3. Run Tests and Quality Checks
 
-3. **Subclass functionality** when implementing new features. For instance, to create a modified `FNO` that performs extra steps during the forward pass:
+```bash
+# Run all tests
+pytest neuralop
 
-   ```python
-   from neuralop.models import FNO
+# Run tests with verbose output
+pytest neuralop -v
 
-   class MyFNO(FNO):
-       def __init__(self, ...):
-           super().__init__()
+# Run specific test file
+pytest neuralop/models/tests/test_your_model.py
 
-       def forward(self, x, ...):
-           # do your special operations here
-           x = my_operations(x, ...)
-           
-           # pass through the standard FNO.forward()
-           x = super().forward(x, ...)
-           
-           # more operations could go here
-           x = my_other_operations(x, ...)
-           
-           return x
-   ```
+# Format code
+black .
+```
+
+### 4. Submit a Pull Request
+
+Go to your fork on GitHub and click "Compare & pull request". Ensure your PR description clearly communicates what you have changed or added.
 
 ## Development Guidelines
 
 ### Code Style
-- Follow PEP 8 style guidelines for Python code
-- Use meaningful and descriptive names for variables, functions, and classes
-- Write clear comments and docstrings, using NumPy docstring format for functions and classes
+- **Follow PEP 8** style guidelines for Python code
+- **Use meaningful names** for variables, functions, and classes
+- **Write clear docstrings** using NumPy docstring format
+- **Add type hints** where appropriate
 
 ### Code Formatting
-Before you submit your changes, you should make sure your code adheres to our style-guide. The easiest way to do this is with ``black``:
+Before submitting, ensure your code follows our style guide:
 
 ```bash
+# Format with black
 black .
 ```
 
-### Testing
-- Ensure all new code has corresponding tests
-- Run the full test suite before submitting PRs
-- Use descriptive test names that explain what is being tested
-- Test both normal operation and edge cases
+Validate every update made by the ``black`` command
 
-To run the tests, simply run in the terminal:
+### Testing Requirements
+- **All new code must have tests**
+- **Run the full test suite** before submitting PRs
+- **Use descriptive test names** that explain what is being tested
+- **Test both normal operation and edge cases**
+- **Aim for complete code coverage** for new functionality
 
-```bash
-pytest -v neuralop
-```
-
-### Documentation
-- Update relevant documentation when adding new features
-- Include clear examples in docstrings
-- Consider adding interactive examples to the `examples/` directory
-- Follow the existing documentation style and format
-- Include paper references and mathematical formulations when relevant
+### Documentation Standards
+- **Update relevant documentation** when adding new features
+- **Include clear examples** in docstrings
+- **Add interactive examples** to the `examples/` directory when possible
+- **Follow existing documentation style** and format
+- **Include paper references** and mathematical formulations when relevant
 
 ### Building Documentation
-The HTML for our documentation website is built using ``sphinx``. The documentation is built from inside the ``doc`` folder.
+The HTML documentation is built using Sphinx:
 
 ```bash
 cd doc
 make html
 ```
 
-This will build the docs in ``./doc/build/html``.
+This builds the docs in `./doc/build/html`. Note that documentation requires additional dependencies from `./doc/requirements_doc.txt`.
 
-Note that the documentation requires other dependencies installable from ``./doc/requirements_doc.txt``.
-
-To view the documentation locally, run:
-
+To view documentation locally:
 ```bash
 cd doc/build/html
-python -m http.server [PORT_NUM]
+python -m http.server 8000
+# Visit http://localhost:8000
 ```
 
-The docs will then be viewable at ``localhost:PORT_NUM``.
-
 ### Git Best Practices
-- Write clear, descriptive commit messages
-- Keep commits focused and atomic
-- Rebase your branch on main before submitting PRs
+- **Write clear, descriptive commit messages**
+- **Keep commits focused and atomic** (one logical change per commit)
+- **Rebase your branch** on main before submitting PRs
+- **Use conventional commit format** when possible (feat:, fix:, docs:, etc.)
 
+## Publishing Code Built on the Library
 
-## Debugging and Troubleshooting
+If you plan to use `neuralop` as the base of a project, we suggest the following workflow:
 
-- Use `torch.set_detect_anomaly(True)` for debugging NaN gradients
-- Check GPU memory usage with `nvidia-smi`
-- Use `torch.autograd.profiler` for performance profiling
-- Ensure dependencies are up to date with `pip list --outdated`
+### 1. Set Up Clean Environment
+```bash
+python -m venv my_project_env
+source my_project_env/bin/activate
+```
+
+### 2. Install NeuralOperator
+
+**Option A: Latest PyPI release**
+```bash
+pip install neuralop
+```
+
+**Option B: From specific commit (for latest features)**
+```bash
+# Find commit hash from GitHub commit history
+pip install git+https://github.com/neuraloperator/neuraloperator.git@<COMMIT_HASH>
+```
+
+### 3. Subclass Functionality
+
+Create your own models by subclassing:
+
+```python
+from neuralop.models import FNO
+
+class MyCustomFNO(FNO):
+    def __init__(self, custom_param, **kwargs):
+        super().__init__(**kwargs)
+        self.custom_param = custom_param
+        # Add your custom layers here
+    
+    def forward(self, x):
+        # Preprocessing
+        x = self.custom_preprocessing(x)
+        
+        # Use the base FNO forward pass
+        x = super().forward(x)
+        
+        # Postprocessing
+        x = self.custom_postprocessing(x)
+        
+        return x
+```
 
 ## Getting Help
 
-For questions or issues:
+### Before Asking for Help
+1. **Check the documentation** and existing issues
+2. **Search GitHub issues** for similar problems
+3. **Provide a minimal reproducible example**
+4. **Include error messages** and stack traces
+5. **Specify your environment** (OS, Python version, PyTorch version)
+
+### Contact Methods
 - **GitHub Issues**: Create an issue for bugs or feature requests
-- **Discussions**: Use GitHub Discussions for questions and ideas
+- **GitHub Discussions**: Use for questions and ideas
 - **Documentation**: Check the [official documentation](https://neuraloperator.github.io/)
 
 ### Before Asking for Help
