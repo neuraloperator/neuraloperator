@@ -1,8 +1,8 @@
 """
 .. _diffusion_advection_fd_vis :
 
-A simple finite-difference solver
-=================================
+A simple finite-difference solver for the diffusion-advection equation
+======================================================================
 An intro to our loss module's finite difference utility demonstrating
 its use to create a simple numerical solver for the diffusion-advection equation.
 """
@@ -33,9 +33,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # --------------------
 # We aim to solve the 2D diffusion advection equation:
 # 
-# :math:`u_t + cx \cdot u_x + cy \cdot u_y = \nu (u_xx + u_yy) + f(x,y,t)`,
+# .. math::
+#    \frac{\partial u}{\partial t} + c_x \frac{\partial u}{\partial x} + c_y \frac{\partial u}{\partial y} = \nu \left(\frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2}\right) + f(x,y,t)
 # 
-# Where :math:`f(x,y,t)` is a source term and :math:`cx` and :math:`cy` are advection speeds in x and y.
+# Where :math:`f(x,y,t)` is a source term and :math:`c_x` and :math:`c_y` are advection speeds in x and y.
 # We set simulation parameters below:
 
 ## Simulation parameters

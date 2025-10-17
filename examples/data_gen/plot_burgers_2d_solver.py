@@ -1,8 +1,8 @@
 """
 .. _burgers_2d_fd_vis :
 
-A Numerical Solver for Burgers' Equation in 2 Dimensions 
-========================================================
+A finite difference solver for Burgers' equation in 2 dimensions 
+===============================================================
 An intro to our loss module's finite difference utility demonstrating
 its use to create a simple numerical solver for Burgers' equation in 2d.
 """
@@ -32,9 +32,11 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # --------------------
 # We aim to solve the 2D viscous Burger's equations:
 #
-# :math: `u_t + u \cdot u_x + v \cdot u_y = \nu (u_xx + u_yy)`
+# .. math::
+#    \frac{\partial u}{\partial t} + u \frac{\partial u}{\partial x} + v \frac{\partial u}{\partial y} = \nu \left(\frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2}\right)
 #
-# :math: `v_t + u \cdot v_x + v \cdot v_y = \nu (v_xx + v_yy)`
+# .. math::
+#    \frac{\partial v}{\partial t} + u \frac{\partial v}{\partial x} + v \frac{\partial v}{\partial y} = \nu \left(\frac{\partial^2 v}{\partial x^2} + \frac{\partial^2 v}{\partial y^2}\right)
 
 ## Simulation parameters
 Lx, Ly = 2.0, 2.0   # Domain lengths
