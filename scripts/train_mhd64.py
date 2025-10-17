@@ -26,8 +26,9 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 # Configuration setup
 config_name = "default"
 from zencfg import make_config_from_cli
-import sys 
-sys.path.insert(0, '../')
+import sys
+
+sys.path.insert(0, "../")
 from config.the_well.mhd_64_config import Default
 
 config = make_config_from_cli(Default)
@@ -52,7 +53,7 @@ if config.wandb.log and is_logger:
                 config.model.hidden_channels,
             ]
         )
-    wandb_args =  dict(
+    wandb_args = dict(
         config=config,
         name=wandb_name,
         group=config.wandb.group,
@@ -73,10 +74,12 @@ if config.verbose and is_logger:
     sys.stdout.flush()
 
 # Load the MHD64 dataset
-dataset = MHD64Dataset(root_dir=Path(config.data.root).expanduser(),
-                              train_task='next_step',
-                              eval_tasks=['next_step', 'autoregression'],
-                              first_only=True)
+dataset = MHD64Dataset(
+    root_dir=Path(config.data.root).expanduser(),
+    train_task="next_step",
+    eval_tasks=["next_step", "autoregression"],
+    first_only=True,
+)
 
 # Print dataset metadata
 print(dataset.train_db.metadata.n_steps_per_trajectory)
@@ -97,18 +100,20 @@ model = get_model(config)
 
 # convert dataprocessor to an MGPatchingDataprocessor if patching levels > 0
 if config.patching.levels > 0:
-    data_processor = MGPatchingDataProcessor(model=model,
-                                             in_normalizer=data_processor.normalizer,
-                                             out_normalizer=data_processor.normalizer,
-                                             padding_fraction=config.patching.padding,
-                                             stitching=config.patching.stitching,
-                                             levels=config.patching.levels,
-                                             use_distributed=config.distributed.use_distributed,
-                                             device=device)
+    data_processor = MGPatchingDataProcessor(
+        model=model,
+        in_normalizer=data_processor.normalizer,
+        out_normalizer=data_processor.normalizer,
+        padding_fraction=config.patching.padding,
+        stitching=config.patching.stitching,
+        levels=config.patching.levels,
+        use_distributed=config.distributed.use_distributed,
+        device=device,
+    )
 
-# Reconfigure DataLoaders to use a DistributedSampler 
+# Reconfigure DataLoaders to use a DistributedSampler
 # if in distributed data parallel mode
-'''if config.distributed.use_distributed:
+"""if config.distributed.use_distributed:
     train_sampler = DistributedSampler(dataset.train_db, rank=get_local_rank())
     train_loader = DataLoader(dataset=dataset.train_db,
                               batch_size=config.data.batch_size,
@@ -120,7 +125,7 @@ if config.patching.levels > 0:
         test_loaders[res] = DataLoader(dataset=test_db,
                               batch_size=batch_size,
                               shuffle=False,
-                              sampler=test_sampler)'''
+                              sampler=test_sampler)"""
 # Create the optimizer
 optimizer = AdamW(
     model.parameters(),
@@ -156,7 +161,7 @@ elif config.opt.training_loss == "h1":
     train_loss = h1loss
 else:
     raise ValueError(
-        f'Got training_loss={config.opt.training_loss} '
+        f"Got training_loss={config.opt.training_loss}"
         f'but expected one of ["l2", "h1"]'
     )
 eval_losses = {"h1": h1loss, "l2": l2loss}
@@ -182,7 +187,7 @@ trainer = Trainer(
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
-              )
+)
 
 # Log model parameter count
 if is_logger:
@@ -205,7 +210,7 @@ if is_logger:
 trainer.train(
     train_loader=train_loader,
     test_loaders=test_loaders,
-    eval_modes={'autoregression': 'autoregression'},
+    eval_modes={"autoregression": "autoregression"},
     optimizer=optimizer,
     scheduler=scheduler,
     regularizer=False,

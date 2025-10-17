@@ -24,8 +24,9 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 
 # Read the configuration
 from zencfg import make_config_from_cli
-import sys 
-sys.path.insert(0, '../')
+import sys
+
+sys.path.insert(0, "../")
 from config.darcy_config import Default
 
 
@@ -51,7 +52,7 @@ if config.wandb.log and is_logger:
                 config.model.hidden_channels,
             ]
         )
-    wandb_args =  dict(
+    wandb_args = dict(
         config=config,
         name=wandb_name,
         group=config.wandb.group,
@@ -89,31 +90,33 @@ model = get_model(config)
 
 # convert dataprocessor to an MGPatchingDataProcessor if patching levels > 0
 if config.patching.levels > 0:
-    data_processor = MGPatchingDataProcessor(model=model,
-                                             in_normalizer=data_processor.in_normalizer,
-                                             out_normalizer=data_processor.out_normalizer,
-                                             padding_fraction=config.patching.padding,
-                                             stitching=config.patching.stitching,
-                                             levels=config.patching.levels,
-                                             use_distributed=config.distributed.use_distributed,
-                                             device=device)
+    data_processor = MGPatchingDataProcessor(
+        model=model,
+        in_normalizer=data_processor.in_normalizer,
+        out_normalizer=data_processor.out_normalizer,
+        padding_fraction=config.patching.padding,
+        stitching=config.patching.stitching,
+        levels=config.patching.levels,
+        use_distributed=config.distributed.use_distributed,
+        device=device,
+    )
 
 # Distributed data parallel setup
 # Reconfigure DataLoaders to use a DistributedSampler if in distributed mode
 if config.distributed.use_distributed:
     train_db = train_loader.dataset
     train_sampler = DistributedSampler(train_db, rank=get_local_rank())
-    train_loader = DataLoader(dataset=train_db,
-                              batch_size=config.data.batch_size,
-                              sampler=train_sampler)
-    for (res, loader), batch_size in zip(test_loaders.items(), config.data.test_batch_sizes):
-        
+    train_loader = DataLoader(
+        dataset=train_db, batch_size=config.data.batch_size, sampler=train_sampler
+    )
+    for (res, loader), batch_size in zip(
+        test_loaders.items(), config.data.test_batch_sizes
+    ):
         test_db = loader.dataset
         test_sampler = DistributedSampler(test_db, rank=get_local_rank())
-        test_loaders[res] = DataLoader(dataset=test_db,
-                              batch_size=batch_size,
-                              shuffle=False,
-                              sampler=test_sampler)
+        test_loaders[res] = DataLoader(
+            dataset=test_db, batch_size=batch_size, shuffle=False, sampler=test_sampler
+        )
 # Create the optimizer
 optimizer = AdamW(
     model.parameters(),
@@ -149,7 +152,7 @@ elif config.opt.training_loss == "h1":
     train_loss = h1loss
 else:
     raise ValueError(
-        f'Got training_loss={config.opt.training_loss} '
+        f"Got training_loss={config.opt.training_loss} "
         f'but expected one of ["l2", "h1"]'
     )
 eval_losses = {"h1": h1loss, "l2": l2loss}
@@ -175,7 +178,7 @@ trainer = Trainer(
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose and is_logger,
-              )
+)
 
 # Log model parameter count
 if is_logger:

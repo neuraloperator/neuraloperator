@@ -21,9 +21,10 @@ from neuralop.utils import get_wandb_api_key, count_model_params, get_project_ro
 
 # Read the configuration
 config_name = "default"
-from zencfg import make_config_from_cli 
-import sys 
-sys.path.insert(0, '../')
+from zencfg import make_config_from_cli
+import sys
+
+sys.path.insert(0, "../")
 from config.burgers_config import Default
 
 
@@ -60,7 +61,7 @@ if config.wandb.log and is_logger:
         for key in wandb.config.keys():
             config.params[key] = wandb.config[key]
     wandb.init(**wandb_init_args)
-else: 
+else:
     wandb_init_args = None
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
@@ -74,12 +75,15 @@ if config.verbose:
 # Data loading setup
 data_path = get_project_root() / config.data.folder
 # Load the Burgers dataset with specified parameters
-train_loader, test_loaders, data_processor = load_mini_burgers_1dtime(data_path=data_path,
-        n_train=config.data.n_train, batch_size=config.data.batch_size, 
-        n_test=config.data.n_tests[0], test_batch_size=config.data.test_batch_sizes[0],
-        temporal_subsample=config.data.get("temporal_subsample", 1),
-        spatial_subsample=config.data.get("spatial_subsample", 1),
-        )
+train_loader, test_loaders, data_processor = load_mini_burgers_1dtime(
+    data_path=data_path,
+    n_train=config.data.n_train,
+    batch_size=config.data.batch_size,
+    n_test=config.data.n_tests[0],
+    test_batch_size=config.data.test_batch_sizes[0],
+    temporal_subsample=config.data.get("temporal_subsample", 1),
+    spatial_subsample=config.data.get("spatial_subsample", 1),
+)
 
 # Model initialization
 model = get_model(config)
@@ -120,8 +124,9 @@ else:
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
 ic_loss = ICLoss()
-equation_loss = BurgersEqnLoss(method=config.opt.get('pino_method', 'fdm'), 
-                               visc=0.01, loss=F.mse_loss)
+equation_loss = BurgersEqnLoss(
+    method=config.opt.get("pino_method", "fdm"), visc=0.01, loss=F.mse_loss
+)
 
 training_loss = config.opt.training_loss
 if not isinstance(training_loss, (tuple, list)):
@@ -131,22 +136,22 @@ losses = []
 weights = []
 for loss in training_loss:
     # Append loss
-    if loss == 'l2':
+    if loss == "l2":
         losses.append(l2loss)
-    elif loss == 'h1':
+    elif loss == "h1":
         losses.append(h1loss)
-    elif loss == 'equation':
+    elif loss == "equation":
         losses.append(equation_loss)
-    elif loss == 'ic':
+    elif loss == "ic":
         losses.append(ic_loss)
     else:
-        raise ValueError(f'Training_loss={loss} is not supported.')
+        raise ValueError(f"Training_loss={loss} is not supported.")
 
     # Append loss weight
     if "loss_weights" in config.opt:
-        weights.append(config.opt.loss_weights.get(loss, 1.))
+        weights.append(config.opt.loss_weights.get(loss, 1.0))
     else:
-        weights.append(1.)
+        weights.append(1.0)
 
 train_loss = WeightedSumLoss(losses=losses, weights=weights)
 eval_losses = {"h1": h1loss, "l2": l2loss}
@@ -163,13 +168,15 @@ if config.verbose:
 
 # only perform multi-grid patching if config patching levels > 0
 if config.patching.levels > 0:
-    data_processor = MGPatchingDataProcessor(model=model,
-                                        levels=config.patching.levels,
-                                        padding_fraction=config.patching.padding,
-                                        stitching=config.patching.stitching,
-                                        device=device,
-                                        in_normalizer=data_processor.in_normalizer,
-                                        out_normalizer=data_processor.out_normalizer)
+    data_processor = MGPatchingDataProcessor(
+        model=model,
+        levels=config.patching.levels,
+        padding_fraction=config.patching.padding,
+        stitching=config.patching.stitching,
+        device=device,
+        in_normalizer=data_processor.in_normalizer,
+        out_normalizer=data_processor.out_normalizer,
+    )
 
 trainer = Trainer(
     model=model,
@@ -181,7 +188,7 @@ trainer = Trainer(
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,
-    wandb_log = config.wandb.log
+    wandb_log=config.wandb.log,
 )
 
 # Log model parameter count

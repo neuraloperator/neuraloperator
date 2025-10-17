@@ -23,8 +23,9 @@ from neuralop.utils import get_wandb_api_key, count_model_params
 # Configuration setup
 config_name = "default"
 from zencfg import make_config_from_cli
-import sys 
-sys.path.insert(0, '../')
+import sys
+
+sys.path.insert(0, "../")
 from config.poisson_gino_config import Default
 
 config = make_config_from_cli(Default)
@@ -54,7 +55,7 @@ if config.wandb.log and is_logger:
                 config.data.n_test,
             ]
         )
-    wandb_args =  dict(
+    wandb_args = dict(
         config=config,
         name=wandb_name,
         group=config.wandb.group,
@@ -66,7 +67,7 @@ if config.wandb.log and is_logger:
             config.params[key] = wandb.config[key]
     wandb.init(**wandb_args)
 
-else: 
+else:
     wandb_init_args = None
 # Make sure we only print information when needed
 config.verbose = config.verbose and is_logger
@@ -81,7 +82,7 @@ if config.verbose:
 train_loader, test_loader, data_processor = load_nonlinear_poisson_pt(
     data_path=config.data.file,
     query_res=config.data.query_resolution,
-    n_train=config.data.n_train, 
+    n_train=config.data.n_train,
     n_test=config.data.n_test,
     n_in=config.data.n_in,
     n_out=config.data.n_out,
@@ -93,7 +94,7 @@ train_loader, test_loader, data_processor = load_nonlinear_poisson_pt(
     input_max_sample_points=config.data.input_max,
     input_subsample_level=config.data.sample_random_in,
     output_subsample_level=config.data.sample_random_out,
-    return_dict=config.data.return_queries_dict
+    return_dict=config.data.return_queries_dict,
 )
 
 # Create test loaders dictionary
@@ -138,21 +139,23 @@ else:
 mse_loss = MSELoss()
 l2_loss = LpLoss(d=2, p=2)
 
+
 class GINOLoss(object):
     """
     Custom loss wrapper for GINO models that handle dictionary outputs.
-    
+
     This loss function concatenates dictionary outputs from GINO models
     before applying the base loss function.
     """
+
     def __init__(self, base_loss):
         super().__init__()
         self.base_loss = base_loss
-        
+
     def __call__(self, out, y, **kwargs):
         """
         Apply loss to GINO model outputs.
-        
+
         Parameters
         ----------
         out : dict or torch.Tensor
@@ -161,7 +164,7 @@ class GINOLoss(object):
             Ground truth, either dictionary of field targets or tensor
         **kwargs
             Additional arguments passed to base loss
-            
+
         Returns
         -------
         torch.Tensor
@@ -170,8 +173,9 @@ class GINOLoss(object):
         if isinstance(out, dict) and isinstance(y, dict):
             y = torch.cat([y[field] for field in out.keys()], dim=1)
             out = torch.cat([out[field] for field in out.keys()], dim=1)
-        
+
         return self.base_loss(out, y, **kwargs)
+
 
 gino_mseloss = GINOLoss(mse_loss)
 
@@ -182,13 +186,15 @@ if not isinstance(training_loss, (tuple, list)):
 losses = []
 weights = []
 
-if 'mse' in training_loss:
+if "mse" in training_loss:
     losses.append(gino_mseloss)
-    weights.append(config.opt.loss_weights.get('mse', 1.))
-if 'equation' in training_loss:
-    equation_loss = PoissonEqnLoss(interior_weight=config.opt.loss_weights.get('interior', 1.), 
-                                    boundary_weight=config.opt.loss_weights.get('boundary', 1.),
-                                    diff_method=config.opt.get('pino_method', 'autograd'))
+    weights.append(config.opt.loss_weights.get("mse", 1.0))
+if "equation" in training_loss:
+    equation_loss = PoissonEqnLoss(
+        interior_weight=config.opt.loss_weights.get("interior", 1.0),
+        boundary_weight=config.opt.loss_weights.get("boundary", 1.0),
+        diff_method=config.opt.get("pino_method", "autograd"),
+    )
     losses.append(equation_loss)
     weights.append(1)
 
@@ -197,7 +203,7 @@ if len(losses) == 1:
 else:
     train_loss = WeightedSumLoss(losses=losses, weights=weights)
 
-eval_losses = {"mse": mse_loss, 'relative_l2': l2_loss}
+eval_losses = {"mse": mse_loss, "relative_l2": l2_loss}
 
 if config.verbose:
     print("\n### MODEL ###\n", model)
@@ -219,7 +225,7 @@ trainer = Trainer(
     log_output=config.wandb.log_output,
     use_distributed=config.distributed.use_distributed,
     verbose=config.verbose,
-    wandb_log=config.wandb.log
+    wandb_log=config.wandb.log,
 )
 
 # Log model parameter count
