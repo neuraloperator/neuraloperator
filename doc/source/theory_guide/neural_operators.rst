@@ -45,7 +45,7 @@ In some sense, both training and evaluation can be pain-free.
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Operator Learning
 =================
@@ -86,7 +86,7 @@ the mappings between infinite-dimensional spaces, with a special focus on PDEs.
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Limitation of Fixed Discretization
 ==================================
@@ -130,7 +130,7 @@ Bear the motivation in mind. Let’s develop a rigorous formulation.
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Problem Setting
 ===============
@@ -163,7 +163,7 @@ We will show how to learn a discretization-invariant mapping based on discretize
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Kernel Formulation
 ==================
@@ -201,7 +201,7 @@ Since the kernel depends on :math:`a`, we let :math:`\kappa` also take input :ma
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 As an Iterative Solver
 ======================
@@ -251,7 +251,7 @@ but a linear transformation :math:`\kappa_{\phi}\big(x,y,a(x),a(y)\big)\in \math
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Graph Neural Networks
 =====================
@@ -295,7 +295,7 @@ Relating to our kernel formulation, :math:`e(x,y) = (x,y,a(x),a(y))`.
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Nystrom Approximation
 =====================
@@ -320,7 +320,7 @@ and add more nodes to the difficult and singularity areas in the PDEs.
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Experiments: Poisson Equations
 ==============================
@@ -333,7 +333,11 @@ First let’s do a sanity check. Consider a simple poisson equation:
 We set :math:`v_0 = f` and :math:`T=1`, using one iteration of the graph kernel network
 to learn the operator :math:`\mathcal{F}: f \mapsto u`.
 
-poisson equation
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
+
+Poisson equation
 ----------------
 
 .. image:: /_static/images/nik_kernel.jpg
@@ -344,7 +348,11 @@ with the learned kernel :math:`\kappa_{\phi}(x,y)`  (right).
 The learned kernel is almost the same as the true kernel,
 which means our neural network formulation matches the Green function expression.
 
-2D poisson equation
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
+
+2D Poisson equation
 -------------------
 
 .. image:: /_static/images/GKN_compare.jpg
@@ -357,7 +365,7 @@ which a feedforward neural network need at least :math:`100` training examples.
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Experiments: generalization of resolution
 =========================================
@@ -389,7 +397,7 @@ A figure for :math:`s=16, s'=241` is shown below (where error is absolute square
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Conclusion
 ==========
@@ -399,6 +407,10 @@ By varying the underlying graph and discretization,
 the learned kernel is invariant of the discretization.
 Experiments confirm the graph kernel networks are able to generalize among different discretizations.
 And in the fixed discretization setting, the graph kernel networks also have good performance compared to several benchmarks.
+
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
 
 References
 ==========

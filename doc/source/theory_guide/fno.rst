@@ -12,7 +12,7 @@ Also, check out the paper [1]_ and article [2]_.
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Operator learning
 =================
@@ -56,7 +56,7 @@ The Fourier layer can be viewed as a substitute for the convolution layer.
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Framework of Neural Operators
 =============================
@@ -92,7 +92,7 @@ and implement it by Fourier transformation.
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Fourier Layer
 =============
@@ -138,7 +138,7 @@ Therefore, it’s necessary to the Fourier transform and its inverse at each lay
 .. _fourier_layer_impl :
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Implementation
 ==============
@@ -236,7 +236,12 @@ of size `n` along each dim that indexes Fourier modes :code:`0, 1, 2, ... n//2, 
 inputs are real-valued, we take the real-valued FFT, which is skew-symmetric, so information is repeated across
 one axis. Therefore it is sufficient to keep only two of the four corners of the FFT matrix.
 
-**Shifting the FFT signal**
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
+
+Shifting the FFT signal
+-----------------------
 .. _fft_shift_explanation :
 Equivalently, we could also apply a periodic FFT-shift using :code:`torch.fft.fftshift` to move the zero-frequency component
 to the center of the FFT matrix, such that the matrix would be indexed with modes :code:`-n//2, -n//2 + 1, ...-1, 0, 1, ...`
@@ -250,7 +255,12 @@ as shown below:
     from the middle out. Note that the last half of modes are only redundant when using the real-valued Fourier
     transform. For more details, see the source paper [3]_.
 
-**Convolutional Filters in Fourier Space**
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
+
+Convolutional Filters in Fourier Space
+---------------------------------------
 
 .. image:: /_static/images/filters.jpg
   :width: 800
@@ -261,7 +271,12 @@ Fourier filters are global sinusoidal functions.
 They are better for representing continuous functions.
 
 
-**Higher-frequency modes and non-periodic boundary**
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
+
+Higher-frequency modes and non-periodic boundary
+------------------------------------------------
 The Fourier layer on its own loses higher-frequency modes
 and works only with periodic boundary conditions.
 However, the Fourier neural operator as a whole does not have these limitations
@@ -271,7 +286,12 @@ helps to recover the higher Fourier modes.
 And the bias term :math:`W`
 helps to recover the non-periodic boundary.
 
-**Complexity**
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
+
+Complexity
+----------
 The Fourier layer has a quasilinear complexity.
 Denote the number of points (pixels) :math:`n` and truncating at :math:`k_{max}` frequency modes.
 The multiplication has complexity :math:`O(k_{max}) < O(n)`.
@@ -280,7 +300,12 @@ General Fourier transforms have complexity :math:`O(n^2)`,
 however, since we truncate the series the complexity is in fact :math:`O(n k_{max})`,
 while the FFT has complexity :math:`O(n \log n)`.
 
-**Resolution-invariance**
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
+
+Resolution-invariance
+---------------------
 The Fourier layers are discretization-invariant,
 because they can learn from and evaluate functions
 which are discretized in an arbitrary way.
@@ -293,12 +318,17 @@ but still resolution-invariant.
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Experiments
 ===========
 
-**Burgers Equation**
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
+
+Burgers Equation
+----------------
 The 1-d Burgers’ equation is a non-linear PDE with various applications
 including modeling the one-dimensional flow of a viscous fluid. It takes the form
 
@@ -323,7 +353,12 @@ at time one, defined by :math:`u_0 \mapsto u(\cdot, 1)` for any :math:`r > 0`.
  ========== ======== ======== ======== ======== ======== ========
 
 
-**Darcy Flow**
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
+
+Darcy Flow
+----------
 
 We consider the steady state of the 2-d Darcy Flow equation
 on the unit box which is the second order, linear, elliptic PDE
@@ -353,7 +388,12 @@ defined by :math:`a \mapsto u`. Note that although the PDE is linear, the soluti
 .. image:: /_static/images/fourier_error.jpg
   :width: 800
 
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
+
 Benchmarks for time-independent problems (Burgers and Darcy):
+-----------------------------------------------------------
 
  - NN: a simple point-wise feedforward neural network.
  - RBM: the classical Reduced Basis Method (using a POD basis).
@@ -364,7 +404,12 @@ Benchmarks for time-independent problems (Burgers and Darcy):
  - LNO: a neural operator method based on the low-rank decomposition of the kernel.
  - FNO: the newly purposed Fourier neural operator.
 
-**Navier-Stokes Equation**
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
+
+Navier-Stokes Equation
+-----------------------
 
 We consider the 2-d Navier-Stokes equation for a viscous,
 incompressible fluid in vorticity form on the unit torus:
@@ -390,18 +435,22 @@ We experiment with the viscosities
 :math:`\nu = 1\mathrm{e}{-3}, 1\mathrm{e}{-4}, 1\mathrm{e}{-5}`,
 decreasing the final time :math:`T` as the dynamic becomes chaotic.
 
- ========= ============ ================ ========= ========= =========
-  Configs   Parameters   Time per epoch   ν=1e-3   ν=1e-4   ν=1e-5
- ========= ============ ================ ========= ========= =========
-  FNO-3D    6,558,537    38.99s           0.0086    0.0820    0.1893
-  FNO-2D    414,517      127.80s          0.0128    0.0973    0.1556
-  U-Net     24,950,491   48.67s           0.0245    0.1190    0.1982
-  TF-Net    7,451,724    47.21s           0.0225    0.1168    0.2268
-  ResNet    266,641      78.47s           0.0701    0.2311    0.2753
- ========= ============ ================ ========= ========= =========
+ ========= ============ ============= ======== ======== ========
+  Configs   Parameters   Time/epoch    ν=1e-3   ν=1e-4   ν=1e-5
+ ========= ============ ============= ======== ======== ========
+  FNO-3D    6,558,537    38.99s       0.0086   0.0820   0.1893
+  FNO-2D    414,517      127.80s      0.0128   0.0973   0.1556
+  U-Net     24,950,491   48.67s       0.0245   0.1190   0.1982
+  TF-Net    7,451,724    47.21s       0.0225   0.1168   0.2268
+  ResNet    266,641      78.47s       0.0701   0.2311   0.2753
+ ========= ============ ============= ======== ======== ========
 
 .. image:: /_static/images/fourier_ns1e4.jpg
   :width: 800
+
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
 
 Benchmarks for time-dependent problems (Navier-Stokes):
 
@@ -426,7 +475,12 @@ FNO-2D, U-Net, TF-Net, and ResNet all use 2D convolution in the spatial domain
 and recurrently propagate in the time domain (2D+RNN).
 On the other hand, FNO-3D performs convolution in space-time.
 
-**Bayesian Inverse Problem**
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
+
+Bayesian Inverse Problem
+------------------------
 
 In this experiment, we use a function space Markov chain Monte Carlo (MCMC) method
 to draw samples from the posterior distribution of the initial vorticity
@@ -450,7 +504,7 @@ when the respective approximate posterior means are used as initial conditions.
 
 .. raw:: html
 
-   <div style="margin-top: 2em;"></div>
+   <div style="margin-top: 3em;"></div>
 
 Conclusion
 ==========
@@ -470,6 +524,9 @@ On a :math:`256 \times 256` grid,
 the Fourier neural operator has an inference time of only :math:`0.005`
 compared to the :math:`2.2s` of the pseudo-spectral method used to solve Navier-Stokes.
 
+.. raw:: html
+
+   <div style="margin-top: 3em;"></div>
 
 References
 ==========
