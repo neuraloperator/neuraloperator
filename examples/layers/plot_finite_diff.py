@@ -2,8 +2,18 @@
 .. _finite_diff :
 
 Finite Differences
-========================================================
-An example of usage of Finite Differences 
+==================
+
+This tutorial demonstrates the use of finite difference methods for computing
+derivatives of functions in neural operators. Finite differences are crucial for:
+
+- Computing gradients and higher-order derivatives
+- Implementing physics-informed loss functions
+- Enforcing differential equation constraints
+- Computing divergence, curl, and Laplacian operators
+
+The `FiniteDiff` class provides efficient implementations of finite difference
+schemes for computing derivatives in 1D, 2D, and 3D domains.
 """
 
 import torch

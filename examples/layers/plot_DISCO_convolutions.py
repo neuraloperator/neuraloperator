@@ -1,9 +1,20 @@
 """
-Visualizing discrete-continuous convolutions
-===================================================
-Visualizing the behavior of DISCO convolutions, the building block of the localized neural operator framework.
 
-These modules can be used on both equidistant and unstructured grids.
+DISCO Convolutions
+==================
+
+This tutorial demonstrates Discrete-Continuous (DISCO) convolutions, which are
+the building blocks of localized neural operator frameworks. DISCO convolutions
+are crucial for:
+
+- Learning localized patterns in data
+- Handling both equidistant and unstructured grids
+- Enabling efficient computation on irregular domains
+- Bridging discrete and continuous representations
+
+The tutorial covers various DISCO convolution types and their applications
+in neural operator architectures.
+    
 """
 
 # %%

@@ -2,8 +2,16 @@
 .. _fourier_diff :
 
 Fourier Differentiation
-========================================================
-An example of usage of our Fourier Differentiation Function
+======================
+
+This tutorial demonstrates Fourier-based differentiation methods for computing
+derivatives of periodic functions. Fourier differentiation is crucial for:
+
+- Computing derivatives of functions with spectral accuracy
+- Implementing physics-informed loss functions
+
+The `FourierDiff` class provides efficient implementations of spectral
+differentiation for periodic functions in 1D, 2D, and 3D domains.
 """
 
 # %%
