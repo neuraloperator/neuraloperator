@@ -165,10 +165,13 @@ class BaseModel(torch.nn.Module):
         metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.pkl').as_posix()
         init_kwargs = torch.load(metadata_filepath, weights_only=False)
         
-        version = init_kwargs.pop('_version')
+        version = init_kwargs.pop('_version', None)
         if hasattr(cls, '_version') and version != cls._version:
             print(version)
             warnings.warn(f'Checkpoint saved for version {version} of model {cls._name} but current code is version {cls._version}')
+        
+        # Remove metadata fields that shouldn't be passed to __init__
+        init_kwargs.pop('_name', None)
         
         if 'args' in init_kwargs:
             init_args = init_kwargs.pop('args')
@@ -208,7 +211,10 @@ def get_model(config):
         the instanciated module
     """
     arch = config.model['model_arch'].lower()
-    model_config = config.model
+    model_config = config.model.copy()
+
+    # Remove model_arch from config as it's not a model parameter
+    model_config.pop("model_arch", None)
 
     # Set the number of input channels depending on channels in data + mg patching
     data_channels = model_config.pop("data_channels")

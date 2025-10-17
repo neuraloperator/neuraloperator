@@ -5,6 +5,11 @@ from torch.autograd import grad
 
 from .differentiation import FiniteDiff
 
+# Set warning filter to show each warning only once
+import warnings
+warnings.filterwarnings("once", category=UserWarning)
+
+
 
 class BurgersEqnLoss(object):
     """
@@ -43,6 +48,13 @@ class BurgersEqnLoss(object):
         return self.loss(dudt, right_hand_side)
 
     def __call__(self, y_pred, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"BurgersLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
         if self.method == "fdm":
             return self.fdm(u=y_pred)
         raise NotImplementedError()
@@ -63,6 +75,13 @@ class ICLoss(object):
         return self.loss(boundary_pred, boundary_true)
 
     def __call__(self, y_pred, x, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"ICLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
         return self.initial_condition_loss(y_pred, x)
 
 
@@ -164,6 +183,13 @@ class PoissonInteriorLoss(object):
         return loss
     
     def __call__(self, y_pred, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"PoissonInteriorLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
         if self.method == "autograd":
             return self.autograd(u=y_pred, **kwargs)
         elif self.method == "finite_difference":
@@ -178,6 +204,13 @@ class PoissonBoundaryLoss(object):
         self.counter = 0
 
     def __call__(self, y_pred, num_boundary, out_sub_level, y, output_queries, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"PoissonBoundaryLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
         num_boundary = int(num_boundary.item() * out_sub_level)
         boundary_pred = y_pred.squeeze(0).squeeze(-1)[:num_boundary]
         y_bound = y.squeeze(0).squeeze(-1)[:num_boundary]
@@ -209,6 +242,13 @@ class PoissonEqnLoss(object):
         self.interior_loss = PoissonInteriorLoss(method=diff_method, loss=base_loss)
 
     def __call__(self, out, y, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"PoissonEqnLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
         if isinstance(out, dict):
             interior_loss = self.interior_weight * self.interior_loss(out['domain'], **kwargs)
             bc_loss = self.boundary_weight * self.boundary_loss(out['boundary'], y=y['boundary'],  **kwargs)

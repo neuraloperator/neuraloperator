@@ -1,6 +1,11 @@
 import torch
 import torch.nn.functional as F
 
+# Set warning filter to show each warning only once
+import warnings
+warnings.filterwarnings("once", category=UserWarning)
+
+
 from .base_model import BaseModel
 
 from ..layers.channel_mlp import ChannelMLP
@@ -85,8 +90,6 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         "batched" mode. If False, sets batched=False.
     fno_resolution_scaling_factor : float | None, defaults to None
         factor by which to rescale output predictions in the original domain
-    fno_incremental_n_modes : list[int] | None, defaults to None
-        if passed, sets n_modes separately for each FNO layer.
     fno_block_precision : str, defaults to 'full'
         data precision to compute within fno block
     fno_channel_mlp_dropout : float, defaults to 0
@@ -118,8 +121,6 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         Tensor factorization of the parameters weight to use
     fno_rank : float, defaults to 1.0
         Rank of the tensor factorization of the Fourier weights.
-    fno_joint_factorization : bool, defaults to False
-        Whether all the Fourier layers should be parameterized by a single tensor (vs one per layer).
     fno_fixed_rank_modes : bool, defaults to False
         Modes to not factorize.
     fno_implementation : str {'factorized', 'reconstructed'} | None, defaults to 'factorized'
@@ -157,7 +158,6 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         gno_batched=False,
         # Other FNO params
         fno_resolution_scaling_factor=None,
-        fno_incremental_n_modes=None,
         fno_block_precision="full",
         fno_use_channel_mlp=True,
         fno_channel_mlp_dropout=0,
@@ -173,12 +173,10 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         fno_separable=False,
         fno_factorization=None,
         fno_rank=1.0,
-        fno_joint_factorization=False,
         fno_fixed_rank_modes=False,
         fno_implementation="factorized",
         fno_decomposition_kwargs=dict(),
         fno_conv_module=SpectralConv,
-        **kwargs,
     ):
         super().__init__()
 
@@ -238,13 +236,10 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         self.fno_hidden_channels = fno_hidden_channels
         self.fno_blocks = FNOBlocks(
                 n_modes=fno_n_modes,
-                hidden_channels=fno_hidden_channels,
                 in_channels=fno_hidden_channels,
                 out_channels=fno_hidden_channels,
-                positional_embedding=None,
                 n_layers=fno_n_layers,
                 resolution_scaling_factor=fno_resolution_scaling_factor,
-                incremental_n_modes=fno_incremental_n_modes,
                 fno_block_precision=fno_block_precision,
                 use_channel_mlp=fno_use_channel_mlp,
                 channel_mlp_expansion=fno_channel_mlp_expansion,
@@ -259,14 +254,11 @@ class FNOGNO(BaseModel, name="FNOGNO"):
                 separable=fno_separable,
                 factorization=fno_factorization,
                 rank=fno_rank,
-                joint_factorization=fno_joint_factorization, 
                 fixed_rank_modes=fno_fixed_rank_modes,
                 implementation=fno_implementation,
                 decomposition_kwargs=fno_decomposition_kwargs,
-                domain_padding=None,
                 conv_module=fno_conv_module,
-                **kwargs
-        )
+            )
 
         self.gno_radius = gno_radius
 
@@ -385,6 +377,14 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         return out
 
     def forward(self, in_p, out_p, f, ada_in=None, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"FNOGNO.forward() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
+        
         # Compute latent space embedding
         latent_embed = self.latent_embedding(in_p=in_p, f=f, ada_in=ada_in)
         # Integrate latent space

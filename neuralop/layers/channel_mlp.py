@@ -31,7 +31,6 @@ class ChannelMLP(nn.Module):
         n_dim=2,
         non_linearity=F.gelu,
         dropout=0.0,
-        **kwargs,
     ):
         super().__init__()
         self.n_layers = n_layers
