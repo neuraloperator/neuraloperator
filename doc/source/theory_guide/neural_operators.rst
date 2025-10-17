@@ -75,8 +75,6 @@ where  :math:`u` and :math:`f` are some functions on the physical domain, and
 the function :math:`u` to the function :math:`f`.
 In most cases, :math:`\mathcal{L}` and :math:`f` are specified, and 
 the objective is to find the solution :math:`u`.
-Essentially, we seek to learn an operator—serving as the inverse of :math:`\mathcal{L}`,
-that maps the input function :math:`f` to the solution function :math:`u`.
 Viewed from this perspective, solving a PDE is fundamentally an operator learning task: 
 we wish to learn the mapping from input functions to solution functions.
 

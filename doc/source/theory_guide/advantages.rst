@@ -305,26 +305,31 @@ Comparison with Traditional Methods
 
 The advantages of neural operators become clear when compared to alternative approaches:
 
- ========================================== ======================================
-  Traditional Neural Networks               Neural Operators
- ========================================== ======================================
-  Fixed discretization                     Resolution-invariant
-  Vector-to-vector mapping                 Function-to-function mapping
-  Limited generalization                   Universal approximation
-  Resolution-dependent training            Mixed-resolution training
-  Discrete outputs                         Continuous function outputs
-  Single problem instance                  Parametrized family of problems
- ========================================== ======================================
+**Traditional Neural Networks vs. Neural Operators**
 
- ========================================== ======================================
-  Traditional Numerical Methods            Neural Operators
- ========================================== ======================================
-  Solve one instance                       Learn solution operators
-  Require explicit PDE form                Black-box, data-driven
-  Slow on fine grids                       Fast at all resolutions
-  High computational cost                  Fast inference after training
-  Parameter-specific                       Parameter-agnostic
- ========================================== ======================================
++-------------------------------+-------------------------------+
+| Traditional Neural Networks   | Neural Operators              |
++-------------------------------+-------------------------------+
+| Fixed discretization          | Resolution-invariant          |
+| Vector-to-vector mapping      | Function-to-function mapping  |
+| Limited generalization        | Universal approximation       |
+| Resolution-dependent training | Mixed-resolution training     |
+| Discrete outputs              | Continuous function outputs   |
+| Single problem instance       | Parametrized family of problems|
++-------------------------------+-------------------------------+
+
+**Traditional Numerical Methods vs. Neural Operators**
+
++-------------------------------+-------------------------------+
+| Traditional Numerical Methods | Neural Operators              |
++-------------------------------+-------------------------------+
+| Solve one instance            | Learn solution operators      |
+| Require explicit PDE form     | Black-box, data-driven        |
+| Slow on fine grids            | Fast at all resolutions       |
+| High computational cost       | Fast inference after training |
+| Parameter-specific            | Parameter-agnostic            |
++-------------------------------+-------------------------------+
+
 
 .. raw:: html
 
@@ -340,8 +345,8 @@ numerical methods. Their mathematical foundation in operator theory, combined wi
 practical benefits like resolution invariance and computational efficiency, 
 makes them uniquely suited for the challenges of modern scientific computing.
 
-The key advantages—well-posedness, function representation, universal approximation, 
-parametrized PDE solving, flexible inference, and data efficiency—work together to 
+The key advantages (well-posedness, function representation, universal approximation, 
+parametrized PDE solving, flexible inference, and data efficiency) work together to 
 enable new capabilities in scientific computing that were previously impossible or 
 computationally prohibitive.
 
