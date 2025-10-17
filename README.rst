@@ -122,7 +122,7 @@ All participants are expected to uphold this Code of Conduct to ensure a friendl
 Citing
 ------
 
-If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
+If you use NeuralOperator in an academic paper, please cite [1]_ and consider citing [2]_, [3]_::
 
    @misc{kossaifi2025librarylearningneuraloperators,
       title={A Library for Learning Neural Operators}, 
@@ -152,8 +152,22 @@ If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
       year      = {2021},
    }
 
+   @article{berner2025principled,
+      author    = {Julius Berner and
+                     Miguel Liu-Schiaffini and
+                     Jean Kossaifi and
+                     Valentin Duruisseaux and
+                     Boris Bonev and
+                     Kamyar Azizzadenesheli and
+                     Anima Anandkumar},
+      title     = {Principled Approaches for Extending Neural Architectures to Function Spaces for Operator Learning},
+      journal   = {arXiv preprint arXiv:2506.10973},
+      year      = {2025},
+   }
+
 
 .. [1] Kossaifi, J., Kovachki, N., Li, Z., Pitt, D., Liu-Schiaffini, M., Duruisseaux, V., George, R., Bonev, B., Azizzadenesheli, K., Berner, J., and Anandkumar, A., "A Library for Learning Neural Operators", ArXiV, 2025. doi:10.48550/arXiv.2412.10354.
 
+.. [2] Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar A., "Neural Operator: Learning Maps Between Function Spaces", JMLR, 2021. doi:10.48550/arXiv.2108.08481.
 
-.. [2] Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar A., “Neural Operator: Learning Maps Between Function Spaces”, JMLR, 2021. doi:10.48550/arXiv.2108.08481.
+.. [3] Berner, J., Liu-Schiaffini, M., Kossaifi, J., Duruisseaux, V., Bonev, B., Azizzadenesheli, K., and Anandkumar, A., "Principled Approaches for Extending Neural Architectures to Function Spaces for Operator Learning", arXiv preprint arXiv:2506.10973, 2025. https://arxiv.org/abs/2506.10973.
