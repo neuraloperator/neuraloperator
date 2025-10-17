@@ -12,6 +12,10 @@ dataset structure and visualize how the data is processed for neural operator tr
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import the library
 # ------------------
 # We first import our `neuralop` library and required dependencies.
@@ -21,6 +25,10 @@ from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.layers.embeddings import GridEmbedding2D
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Load the dataset
 # ----------------
 # Training samples are 16x16 and we load testing samples at both 
@@ -34,6 +42,10 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
 train_dataset = train_loader.dataset
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing the data
 # --------------------
 # Let's examine the shape and structure of our dataset at different resolutions.
@@ -70,6 +82,10 @@ x = positional_embedding(data['x'].unsqueeze(0)).squeeze(0)
 y = data['y']
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing the processed data
 # ------------------------------
 # We can see how the positional embedding adds coordinate information to our input data.

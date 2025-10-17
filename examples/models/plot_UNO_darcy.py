@@ -12,8 +12,13 @@ and global features in the data, making it particularly effective for complex PD
 """
 
 # %%
+# .. raw:: html
 # 
-
+#    <div style="margin-top: 3em;"></div>
+# 
+# Import dependencies
+# -------------------
+# We import the necessary modules for working with the UNO model
 
 import torch
 import matplotlib.pyplot as plt
@@ -29,6 +34,10 @@ device = 'cpu'
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Loading the Darcy-Flow dataset
 # ------------------------------
 # We load the Darcy-Flow dataset with multiple resolutions for training and testing.
@@ -40,6 +49,10 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
 )
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating the U-NO model
 # ------------------------
 # We create a U-shaped Neural Operator with the following architecture:
@@ -72,6 +85,10 @@ sys.stdout.flush()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating the optimizer and scheduler
 # ------------------------------------
 # We use AdamW optimizer with weight decay for regularization
@@ -81,6 +98,10 @@ optimizer = AdamW(model.parameters(),
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Setting up loss functions
 # -------------------------
 # We use H1 loss for training and L2 loss for evaluation
@@ -92,7 +113,13 @@ eval_losses={'h1': h1loss, 'l2': l2loss}
 
 
 # %%
-
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Displaying configuration
+# ------------------------
+# We print the model architecture, optimizer, scheduler, and loss functions
 
 print('\n### MODEL ###\n', model)
 print('\n### OPTIMIZER ###\n', optimizer)
@@ -104,6 +131,10 @@ sys.stdout.flush()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating the trainer
 # ---------------------
 # We create a Trainer object that handles the training loop for the U-NO
@@ -117,6 +148,10 @@ trainer = Trainer(model=model,
                   verbose=True)          # Print training progress
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Training the U-NO model
 # ------------------------
 # We train the model on our Darcy-Flow dataset. The trainer will:
@@ -135,6 +170,10 @@ trainer.train(train_loader=train_loader,
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing U-NO predictions
 # -----------------------------
 # We visualize the model's predictions on the Darcy-Flow dataset.

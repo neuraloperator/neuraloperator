@@ -18,6 +18,10 @@ used by a FNO model.
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import dependencies
 # -------------------
 # We import the necessary modules for FLOPS counting and model creation
@@ -31,6 +35,10 @@ from neuralop.models import FNO
 device = 'cpu'
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating the FNO model for analysis
 # ------------------------------------
 # We create a moderately-sized FNO model to demonstrate FLOPS counting
@@ -46,6 +54,10 @@ model_input = torch.randn(batch_size, 1, 128, 128)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Counting FLOPS for forward and backward passes
 # ----------------------------------------------
 # We use the FlopTensorDispatchMode to count FLOPS during both forward and backward passes
@@ -60,6 +72,10 @@ with FlopTensorDispatchMode(fno) as ftdm:
     fno_backward_flops = deepcopy(ftdm.flop_counts)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Analyzing FLOPS breakdown
 # --------------------------
 # The output is organized as a defaultdict object that counts the FLOPS used in each submodule.
@@ -68,6 +84,10 @@ print("Forward pass FLOPS breakdown:")
 print(fno_forward_flops)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Finding maximum FLOPS usage
 # ----------------------------
 # To check the maximum FLOPS used during the forward pass, let's create a recursive function 

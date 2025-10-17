@@ -15,6 +15,10 @@ differentiation for periodic functions in 1D, 2D, and 3D domains.
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import the library
 # ------------------
 # We first import our `neuralop` library and required dependencies.
@@ -28,6 +32,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating an example of periodic 1D curve
 # ----------------------------------------
 # Here we consider sin(x) and cos(x), which are periodic on the interval [0, 2π]
@@ -37,6 +45,10 @@ f = torch.stack([torch.sin(x), torch.cos(x)], dim=0)
 x_np = x.cpu().numpy()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Differentiate the signal
 # -----------------------------------------
 # We use the FourierDiff class to differentiate the signal
@@ -46,6 +58,10 @@ dfdx, df2dx2, df3dx3 = derivatives
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Plot the results for sin(x)
 # ---------------------------
 plt.figure()
@@ -60,6 +76,10 @@ plt.legend()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Plot the results for cos(x)
 # ---------------------------
 plt.figure()
@@ -76,6 +96,10 @@ plt.show()
         
         
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating an example of non-periodic 1D curve
 # -------------------------------------------
 # Here we consider sin(3x)-cos(x) and exp(-0.8x)+sin(x)
@@ -85,6 +109,10 @@ f = torch.stack([torch.sin(3*x) - torch.cos(x), torch.exp(-0.8*x) + torch.sin(x)
 x_np = x.cpu().numpy()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Differentiate the signal
 # -----------------------------------------
 # We use the FourierDiff class with Fourier continuation to differentiate the signal
@@ -94,6 +122,10 @@ dfdx, df2dx2 = derivatives
 
      
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Plot the results for sin(3x)-cos(x)
 # --------------------------------------
 plt.figure()
@@ -106,6 +138,10 @@ plt.legend()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Plot the results for exp(-0.8x)+sin(x)
 # ---------------------------------------
 plt.figure()
@@ -119,11 +155,19 @@ plt.show()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # 2D Fourier Differentiation Examples
 # ===================================
 # Here we demonstrate the FourierDiff class for 2D functions
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating an example of periodic 2D function
 # -----------------------------------------
 # Here we consider f(x,y) = sin(x) * cos(y), which is periodic on the interval [0, 2π] × [0, 2π]
@@ -137,6 +181,10 @@ X, Y = torch.meshgrid(x, y, indexing='ij')
 f_2d = torch.sin(X) * torch.cos(Y)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Differentiate the 2D signal
 # -----------------------------------------
 # We use the FourierDiff class to compute derivatives
@@ -153,6 +201,10 @@ df_dy_expected = -torch.sin(X) * torch.sin(Y)
 laplacian_expected = -2 * torch.sin(X) * torch.cos(Y) 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Plot the 2D results
 # ----------------------
 fig, axes = plt.subplots(2, 3, figsize=(15, 10))
@@ -201,11 +253,19 @@ plt.show()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # 3D Fourier Differentiation Examples
 # ===================================
 # Here we demonstrate the FourierDiff class for 3D functions
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating an example of periodic 3D function
 # -----------------------------------------
 # Here we consider f(x,y,z) = sin(x) * cos(y) * sin(z), which is periodic on [0, 2π]³
@@ -223,6 +283,10 @@ f_3d = torch.sin(X) * torch.cos(Y) * torch.sin(Z)
 f_3d_alt = torch.randn(nx, ny, nz, dtype=torch.float64)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Differentiate the 3D signal
 # -----------------------------------------
 # We use the FourierDiff class to compute derivatives
@@ -241,6 +305,10 @@ df_dz_expected_3d = torch.sin(X) * torch.cos(Y) * torch.cos(Z)
 laplacian_expected_3d = -3 * torch.sin(X) * torch.cos(Y) * torch.sin(Z)  
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Plot a slice of the 3D results (z=0 plane)
 # ------------------------------------------
 z_slice_idx = nz // 2

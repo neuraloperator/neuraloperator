@@ -17,6 +17,10 @@ The tutorial covers both FC-Legendre and FC-Gram methods for 1D, 2D, and 3D data
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import the library
 # ------------------
 # We first import our `neuralop` library and required dependencies.
@@ -29,6 +33,10 @@ from neuralop.layers.fourier_continuation import FCLegendre, FCGram
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating an example of 1D non-periodic function
 # ----------------------------------------------
 # We consider f(x) = sin(16x) - cos(8x) on the interval [0,1].
@@ -47,6 +55,10 @@ f = torch.sin(16 * x) - torch.cos(8 * x)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Extending the signal
 # -----------------------------------------
 # We use the FC-Legendre and FC-Gram Fourier continuation layers to extend the signal.
@@ -61,6 +73,10 @@ f_extend_Gram = Extension_Gram(f, dim=1)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing the 1D Fourier continuation results
 # ----------------------------------------------
 # We plot the original function and both continuation methods to compare
@@ -100,6 +116,10 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating an example of 2D non-periodic function
 # ------------------------------------------------
 # We consider f(x,y) = sin(12x) - cos(14y) + 3xy on the domain [0,1]×[0,1].
@@ -119,6 +139,10 @@ f = torch.sin(12 * x) - torch.cos(14 * y) + 3*x*y
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Extending the signal
 # -----------------------------------------
 # We use the FC-Legendre and FC-Gram Fourier continuation layers to extend the signal.
@@ -133,6 +157,10 @@ f_extend_Gram = Extension_Gram(f, dim=2)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing the 2D Fourier continuation results
 # ----------------------------------------------
 # We plot the original function and both continuation methods to compare
@@ -164,6 +192,10 @@ plt.show()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating an example of a 3D function
 # --------------------
 # Here we consider f(x,y,z) = exp(-2z) + 2xz + sin(12xy) + y sin(10yz) 
@@ -183,6 +215,10 @@ f = torch.exp(-2*z) + 2*z*x + torch.sin(12*x*y) + y*torch.sin(10*y*z)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Extending the signal
 # -----------------------------------------
 # We use the FC-Legendre and FC-Gram Fourier continuation layers to extend the signal.
@@ -196,6 +232,10 @@ f_extend_Gram = Extension_Gram(f, dim=3)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Plot the FC-Legendre and FC-Gram results for 3D
 # ----------------------
 # We also add white lines to deliminate the original signal
@@ -211,6 +251,10 @@ global_max = max(f_max, f_ext_legendre_max, f_ext_gram_max)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Figure for X slices
 fig = plt.figure(figsize=(24, 20))
 slice_indices = [length_signal//4, length_signal//2, 3*length_signal//4]
@@ -265,6 +309,10 @@ plt.subplots_adjust(hspace=0.15, wspace=0.05, top=0.95)
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Figure for Y-slices
 fig2 = plt.figure(figsize=(24, 20))
 
@@ -317,6 +365,10 @@ plt.subplots_adjust(hspace=0.15, wspace=0.05, top=0.95)
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Figure for Z-slices
 fig3 = plt.figure(figsize=(24, 20))
 

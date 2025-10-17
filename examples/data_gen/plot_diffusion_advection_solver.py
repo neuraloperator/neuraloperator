@@ -7,6 +7,10 @@ An intro to our loss module's finite difference utility demonstrating
 its use to create a simple numerical solver for the diffusion-advection equation.
 """
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import the library
 # ------------------
 # We first import our `neuralop` library and required dependencies.
@@ -21,6 +25,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Defining our problem
 # --------------------
 # We aim to solve the 2D diffusion advection equation:
@@ -58,6 +66,10 @@ def source_term(X, Y, t):
     return 0.2 * torch.sin(3 * np.pi * X) * torch.cos(3 * np.pi * Y) * torch.cos(4 * np.pi * t)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Simulate evolution using numerical solver
 # -----------------------------------------
 u_evolution = [u.clone()]
@@ -80,6 +92,10 @@ u_evolution = torch.stack(u_evolution).cpu().numpy()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Animate our solution
 # --------------------
 

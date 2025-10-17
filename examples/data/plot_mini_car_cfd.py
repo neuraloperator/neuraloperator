@@ -14,6 +14,10 @@ The CarCFD dataset contains:
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import dependencies
 # --------------------
 # We first import our `neuralop` library and required dependencies.
@@ -30,6 +34,10 @@ torch.manual_seed(0)
 np.random.seed(0)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Understanding the data structure
 # ---------------------------------
 # The data in a ``MeshDataModule`` is structured as a dictionary of tensors and important scalar values encoding 
@@ -48,18 +56,22 @@ sample = data_list[0]
 print(f'Available data keys: {sample.keys()}')
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing the car surface with pressure distribution
 # ------------------------------------------------------
 # Let's take a look at the vertices and pressure values to understand the 3D structure
 # and how pressure varies across the car surface.
 
-fig = plt.figure()
+fig = plt.figure(figsize=(10, 8))
 ax = fig.add_subplot(projection='3d')
 
 # By default the data is normalized into the unit cube. To get a 
 # better look at it, we scale the z-direction up.
 scatter = ax.scatter(sample['vertices'][:,0],sample['vertices'][:,1],
-                     sample['vertices'][:,2]*2, s=2, c=sample['press']) 
+                     sample['vertices'][:,2]*2, s=2, c=sample['press'].numpy(), cmap='viridis') 
 ax.set_xlim(0,2)
 ax.set_ylim(0,2)
 ax.set_xlabel("x")
@@ -70,6 +82,10 @@ ax.set_title("Pressure distribution over car mesh vertices")
 fig.colorbar(scatter, pad=0.2, label="normalized pressure", ax=ax)
 plt.draw()
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Understanding query points for neural operator training
 # --------------------------------------------------------
 # Each sample in the ``CarCFDDataset`` also includes a set of latent query points on which we learn a function
@@ -91,6 +107,10 @@ ax.legend()
 ax.view_init(elev=20, azim=150, roll=0, vertical_axis='y')
 ax.set_title("Query points and car surface vertices")
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Neighbor search between 3D point clouds
 # ----------------------------------------
 # In :doc:`../layers/plot_neighbor_search` we demonstrate our neighbor search
@@ -144,8 +164,12 @@ plt.draw()
 
 
 # %%
-# **Connecting neighbors to query**
-#
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Connecting neighbors to query
+# ----------------------------
 # First, let's make a simple utiltiy to add arrows to our 3D plot:
 
 import numpy as np

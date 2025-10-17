@@ -12,6 +12,10 @@ Grid embeddings are key for PDE solving, computer vision, and other spatially-st
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import dependencies
 # -------------------
 # We import the necessary modules for working with grid embeddings
@@ -23,6 +27,10 @@ import torch
 device = 'cpu'
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Understanding grid embeddings
 # -----------------------------
 # As we show in :ref:`small_darcy_vis`, we apply a 2D grid positional encoding to our data 
@@ -44,6 +52,10 @@ plt.ylabel("Y coordinate")
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Applying grid embeddings to data
 # ---------------------------------
 # In practice, we concatenate these two channels, representing the x- and y-coordinates 
@@ -74,6 +86,10 @@ x = grid_embedding(x)
 print(f"After embedding, x is of shape: {x.shape}")
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing the embedded data
 # -----------------------------
 # We can visualize how the grid embedding adds coordinate information to our data.
@@ -104,6 +120,10 @@ fig.show()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Discretization invariance
 # --------------------------
 # Our embeddings are also designed with discretization-invariance in mind.
@@ -120,6 +140,10 @@ x = grid_embedding(x)
 print(f"After embedding, x is of shape: {x.shape}")
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing higher-resolution embeddings
 # ----------------------------------------
 # We can see how the grid embedding scales to different resolutions.
@@ -149,6 +173,10 @@ plt.tight_layout()
 fig.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Understanding discretization invariance
 # ---------------------------------------
 # The grid embeddings automatically adapt to different resolutions:
@@ -156,7 +184,12 @@ fig.show()
 # 2. The spatial relationships are preserved across different grid sizes
 # 3. This allows neural operators to work seamlessly at different resolutions
 # 4. The same model can be applied to data of varying spatial discretization
+
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Working with 3D grid embeddings
 # --------------------------------
 # Let's also demonstrate how to embed a 3D tensor.
@@ -176,6 +209,10 @@ embedding_3d = GridEmbeddingND(in_channels=1, dim=3, grid_boundaries=[[0,1]]*3)
 x = embedding_3d(x)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing 3D grid embeddings
 # ------------------------------
 # We can visualize the 3D embeddings by showing the coordinate information

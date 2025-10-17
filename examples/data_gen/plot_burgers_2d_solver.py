@@ -8,6 +8,10 @@ its use to create a simple numerical solver for Burgers' equation in 2d.
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import the library
 # ------------------
 # We first import our `neuralop` library and required dependencies.
@@ -20,6 +24,10 @@ from neuralop.losses.differentiation import FiniteDiff
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Defining our problem
 # --------------------
 # We aim to solve the 2D viscous Burger's equations:
@@ -51,6 +59,10 @@ v =  torch.cos(2 * np.pi * X).to(device)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Simulate evolution using numerical solver
 # -----------------------------------------
 
@@ -83,6 +95,10 @@ u_evolution = torch.stack(u_evolution).cpu().numpy()
 v_evolution = torch.stack(v_evolution).cpu().numpy()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Animating the solution
 # ----------------------
 

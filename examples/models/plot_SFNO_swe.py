@@ -15,6 +15,10 @@ fundamental in atmospheric and oceanic dynamics.
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import dependencies
 # -------------------
 # We import the necessary modules for training a Spherical Fourier Neural Operator
@@ -32,6 +36,10 @@ from neuralop import LpLoss, H1Loss
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Loading the Spherical Shallow Water Equations dataset
 # -----------------------------------------------------
 # We load the spherical shallow water equations dataset with multiple resolutions.
@@ -43,6 +51,10 @@ train_loader, test_loaders = load_spherical_swe(n_train=200, batch_size=4, train
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating the Spherical FNO model
 # ---------------------------------
 
@@ -62,6 +74,10 @@ sys.stdout.flush()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating the optimizer and scheduler
 # ------------------------------------
 # We use AdamW optimizer with a lower learning rate for spherical data
@@ -71,6 +87,10 @@ optimizer = AdamW(model.parameters(),
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Setting up loss functions
 # -------------------------
 # For spherical data, we use L2 loss with sum reduction to handle the varying
@@ -94,6 +114,10 @@ sys.stdout.flush()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating the trainer
 # ---------------------
 # We create a Trainer object that handles the training loop for spherical data
@@ -105,6 +129,10 @@ trainer = Trainer(model=model, n_epochs=20,
                   verbose=True)          # Print training progress
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Training the SFNO model
 # ------------------------
 # We train the model on the spherical shallow water equations dataset.
@@ -121,6 +149,10 @@ trainer.train(train_loader=train_loader,
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing SFNO predictions on spherical data
 # ------------------------------------------------
 # We visualize the model's predictions on spherical shallow water equations data.

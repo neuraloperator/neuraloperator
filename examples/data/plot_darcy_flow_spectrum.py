@@ -25,6 +25,10 @@ provides insights into the behavior of turbulence and the underlying physical pr
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import dependencies
 # --------------------
 # We first import our `neuralop` library and required dependencies.
@@ -42,6 +46,10 @@ torch.manual_seed(0)
 np.random.seed(0)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Define analysis parameters
 # --------------------------
 # These parameters control the spectral analysis of our Darcy-Flow dataset
@@ -50,6 +58,10 @@ s = 16        # Resolution of the dataset (16x16 grid)
 dataset_name = "Darcy Flow"
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Loading the Darcy-Flow dataset
 # --------------------------------
 # We load the Darcy-Flow dataset with multiple resolutions for spectral analysis
@@ -61,6 +73,10 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
 )
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Preparing data for spectral analysis
 # ------------------------------------
 # The dataset structure is ['x', 'y'] where 'x' is the permeability field and 'y' is the pressure field
@@ -76,6 +92,10 @@ shape = dataset_pred.shape
 print(f"Pressure field shape: {shape}")
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating coordinate grids for spectral analysis
 # ------------------------------------------------
 # We need to define the spatial grid for proper spectral analysis
@@ -90,6 +110,10 @@ gridy = gridy.reshape(1, 1, size_y).repeat([batchsize, size_x, 1])
 grid = torch.cat((gridx, gridy), dim=-1)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Computing the energy spectrum
 # -----------------------------
 # We compute the 2D energy spectrum of the pressure fields using the spectrum_2d utility
@@ -100,6 +124,10 @@ grid = torch.cat((gridx, gridy), dim=-1)
 truth_sp = spectrum_2d(dataset_pred.reshape(samples * batchsize, s, s), s)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing the energy spectrum
 # --------------------------------
 # The energy spectrum shows how much energy is contained in each wavenumber (spatial frequency)

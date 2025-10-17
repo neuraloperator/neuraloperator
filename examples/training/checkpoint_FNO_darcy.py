@@ -8,7 +8,13 @@ which makes it easy to checkpoint and resume training states.
 """
 
 # %%
+# .. raw:: html
 # 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Import dependencies
+# -------------------
+
 import torch
 import matplotlib.pyplot as plt
 import sys
@@ -23,7 +29,12 @@ device = 'cpu'
 
 
 # %%
-# Loading the Navier-Stokes dataset in 128x128 resolution
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Loading the Darcy-Flow dataset
+# ------------------------------
 train_loader, test_loaders, data_processor = load_darcy_flow_small(
         n_train=1000, batch_size=32, 
         test_resolutions=[16, 32], n_tests=[100, 50],
@@ -32,7 +43,12 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
 
 
 # %%
-# We create an FNO model
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Creating the FNO model
+# ----------------------
 
 model = FNO(n_modes=(16, 16),
              in_channels=1, 
@@ -50,7 +66,12 @@ sys.stdout.flush()
 
 
 # %%
-#Create the optimizer
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Creating the optimizer and scheduler
+# ------------------------------------
 optimizer = AdamW(model.parameters(), 
                                 lr=8e-3, 
                                 weight_decay=1e-4)
@@ -58,7 +79,12 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating the losses
+# ------------------
 l2loss = LpLoss(d=2, p=2)
 h1loss = H1Loss(d=2)
 
@@ -67,7 +93,12 @@ eval_losses={'h1': h1loss, 'l2': l2loss}
 
 
 # %%
-
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Displaying configuration
+# ------------------------
 
 print('\n### MODEL ###\n', model)
 print('\n### OPTIMIZER ###\n', optimizer)
@@ -78,8 +109,13 @@ print(f'\n * Test: {eval_losses}')
 sys.stdout.flush()
 
 
-# %% 
-# Create the trainer
+# %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Creating the trainer
+# --------------------
 trainer = Trainer(model=model, n_epochs=20,
                   device=device,
                   data_processor=data_processor,
@@ -90,7 +126,13 @@ trainer = Trainer(model=model, n_epochs=20,
 
 
 # %%
-# Actually train the model on our small Darcy-Flow dataset
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Training the model
+# ------------------
+# We train and save checkpoints
 
 trainer.train(train_loader=train_loader,
               test_loaders={},

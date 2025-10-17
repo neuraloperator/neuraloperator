@@ -16,6 +16,10 @@ dimension-agnostic and flexible for various neural operator architectures.
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import dependencies
 # -------------------
 # We import the necessary modules for working with normalization layers
@@ -30,6 +34,10 @@ from neuralop.layers.normalization_layers import InstanceNorm, BatchNorm, AdaIN
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Understanding Normalization with 1D Functions
 # ---------------------------------------------
 # To clearly see how these layers work, we create a synthetic dataset of 1D functions.
@@ -56,6 +64,10 @@ for i in range(n_samples):
         data[i, 0, :] = amplitude * torch.cos(frequency * x) + shift
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing the original data
 # ------------------------------
 # We plot the synthetic functions to see their different statistical properties.
@@ -114,6 +126,10 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Notice how all functions are now perfectly scaled to the same range, centered around zero. The original differences in amplitude and shift between the functions have been completely removed by instance-wise normalization.
 
 # %%
@@ -204,4 +220,8 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # As you can see, the same content function is transformed into two very different outputs. **Style 1** produces a simple sinusoidal wave with larger amplitude and positive shift. **Style 2** produces a more complex transformation: the function is inverted (phase-shifted), its amplitude is reduced, and it's shifted downwards. This demonstrates how AdaIN can modulate network layer output in diverse ways based on the style embedding.

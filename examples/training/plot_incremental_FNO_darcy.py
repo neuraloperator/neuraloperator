@@ -15,6 +15,10 @@ increases the model capacity as training progresses.
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import dependencies
 # -------------------
 # We import the necessary modules for incremental FNO training
@@ -31,6 +35,10 @@ from neuralop.data.transforms.data_processors import IncrementalDataProcessor
 from neuralop import LpLoss, H1Loss
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Loading the Darcy-Flow dataset
 # ------------------------------
 # We load the Darcy-Flow dataset with multiple resolutions for incremental training.
@@ -46,6 +54,10 @@ train_loader, test_loaders, output_encoder = load_darcy_flow_small(
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Configuring incremental training
 # --------------------------------
 # We set up the incremental FNO model with a small starting number of modes.
@@ -58,6 +70,10 @@ else:
     starting_modes = (16, 16)  # Standard number of modes
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating the incremental FNO model
 # ----------------------------------
 # We create an FNO model with a maximum number of modes that can be reached
@@ -73,6 +89,10 @@ model = model.to(device)
 n_params = count_model_params(model)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Setting up the optimizer and scheduler
 # -------------------------------------
 # We use AdamW optimizer with weight decay for regularization
@@ -80,6 +100,10 @@ optimizer = AdamW(model.parameters(), lr=8e-3, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Configuring incremental data processing
 # ---------------------------------------
 # If one wants to use Incremental Resolution, one should use the IncrementalDataProcessor.
@@ -108,6 +132,10 @@ data_transform = IncrementalDataProcessor(
 
 data_transform = data_transform.to(device)
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Setting up loss functions
 # -------------------------
 # We use H1 loss for training and L2 loss for evaluation
@@ -117,6 +145,10 @@ train_loss = h1loss
 eval_losses = {"h1": h1loss, "l2": l2loss}
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Displaying training configuration
 # ---------------------------------
 # We display the model parameters, optimizer, scheduler, and loss functions
@@ -131,6 +163,10 @@ print(f"\n * Test: {eval_losses}")
 sys.stdout.flush()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Configuring the IncrementalFNOTrainer
 # --------------------------------------
 # We set up the IncrementalFNOTrainer with various incremental learning options.
@@ -168,6 +204,10 @@ trainer = IncrementalFNOTrainer(
 )
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Training the incremental FNO model
 # ----------------------------------
 # We train the model using incremental meta-learning. The trainer will:
@@ -187,6 +227,10 @@ trainer.train(
 )
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing incremental FNO predictions
 # ----------------------------------------
 # We visualize the model's predictions after incremental training.

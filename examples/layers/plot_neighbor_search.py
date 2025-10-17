@@ -15,6 +15,10 @@ The tutorial covers the `native_neighbor_search` function and its role in GNO ar
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import dependencies
 # -------------------
 # We import the necessary modules for neighbor search and visualization
@@ -30,6 +34,10 @@ from neuralop.layers.embeddings import regular_grid_2d
 device = 'cpu'
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Understanding Graph Neural Operators and neighbor search
 # --------------------------------------------------------
 # Many problems involve data collected over irregular point clouds.
@@ -44,6 +52,10 @@ device = 'cpu'
 # The first step is neighbor search to find spatial relationships.
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Setting up the point cloud data
 # --------------------------------
 # We create a regular grid of input coordinates and random output query points
@@ -65,12 +77,16 @@ plt.ylabel("y")
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Performing neighbor search
 # ---------------------------
 # We select a query point and find all input coordinates within a specified radius.
 # This demonstrates how the neighbor search algorithm identifies spatial relationships.
 
-query_index = 25
+query_index = 12
 query_point = output_queries[query_index]
 
 # Perform neighbor search with radius 0.25
@@ -79,6 +95,10 @@ query_point = output_queries[query_index]
 nbr_data = native_neighbor_search(data=input_coords, queries=query_point.unsqueeze(0), radius=0.25)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualizing the neighbor search results
 # --------------------------------------
 # We plot the query point, its neighbors, and the search radius to understand

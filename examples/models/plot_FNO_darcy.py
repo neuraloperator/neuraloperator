@@ -19,6 +19,10 @@ without retraining, which we will demonstrate in the zero-shot super-resolution 
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import dependencies
 # -------------------
 # We import the necessary modules from `neuralop` for training a Fourier Neural Operator
@@ -36,6 +40,10 @@ from neuralop import LpLoss, H1Loss
 device = 'cpu'
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Loading the Darcy-Flow dataset
 # ------------------------------
 # We load the small Darcy-Flow dataset with multiple resolutions for training and testing.
@@ -50,6 +58,10 @@ data_processor = data_processor.to(device)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating the FNO model
 # ----------------------
 
@@ -67,6 +79,10 @@ sys.stdout.flush()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating the optimizer and scheduler
 # ------------------------------------
 # We use AdamW optimizer with weight decay for regularization
@@ -76,6 +92,10 @@ optimizer = AdamW(model.parameters(),
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Setting up loss functions
 # -------------------------
 # We use H1 loss for training and L2 loss for evaluation
@@ -88,6 +108,10 @@ eval_losses={'h1': h1loss, 'l2': l2loss}
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Training the model
 # ---------------------
 # We display the training configuration and then train the model
@@ -101,6 +125,10 @@ print(f'\n * Test: {eval_losses}')
 sys.stdout.flush()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating the trainer
 # --------------------
 # We create a Trainer object that handles the training loop, evaluation, and logging
@@ -113,6 +141,10 @@ trainer = Trainer(model=model, n_epochs=20,
                   verbose=True)          # Print training progress
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Training the model
 # ------------------
 # We train the model on our Darcy-Flow dataset. The trainer will:
@@ -130,6 +162,10 @@ trainer.train(train_loader=train_loader,
               eval_losses=eval_losses)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # .. _plot_preds :
 # Visualizing predictions
 # ------------------------
@@ -184,6 +220,10 @@ fig.show()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # .. zero_shot :
 # Zero-shot super-resolution evaluation
 # -------------------------------------
@@ -235,6 +275,10 @@ plt.tight_layout()
 fig.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Understanding zero-shot super-resolution
 # ----------------------------------------
 # We only trained the model on data at a resolution of 16x16, and with no modifications 
