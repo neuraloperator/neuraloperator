@@ -1,6 +1,6 @@
 
 Theory Guide
-===========
+============
 
 .. toctree::
     :hidden:
@@ -8,19 +8,21 @@ Theory Guide
     neural_operators
     fno
 
-This page contains a primer on the theoretical foundations of operator learning, as well
-as an introduction to the Fourier Neural Operator. 
+This page contains a comprehensive primer on the theoretical foundations of operator learning, 
+as well as an introduction to the Fourier Neural Operator. These guides provide the mathematical 
+background and practical insights needed to understand and implement neural operators for 
+solving partial differential equations.
 
-
-.. card:: Intro to Neural Operators
+.. card:: Introduction to Neural Operators
     :link: neural_operators
     :link-type: doc
     :class-body: sd-text-muted
     :img-bottom: /_static/images/nik_kernel.jpg
 
-    All you need to know about operator learning!
+    A comprehensive introduction to operator learning and neural operators.
     
-    This card links to the full doc.
+    Learn the mathematical foundations, kernel formulations, and how neural operators 
+    generalize across different discretizations to solve PDEs efficiently.
 
 .. card:: The Fourier Neural Operator
     :link: fno
@@ -29,8 +31,6 @@ as an introduction to the Fourier Neural Operator.
     :img-bottom: /_static/images/fourier_ns1e4.jpg
 
     A practitioner's guide to the Fourier Neural Operator.
-
-~~~~~~~~~~~~
-
-
     
+    Discover how FNOs achieve state-of-the-art performance on challenging PDEs 
+    like Navier-Stokes equations with up to 1000x speedup over traditional solvers.

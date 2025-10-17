@@ -43,6 +43,10 @@ As a result, we can first use a numerical method to generate some less-accurate,
 but the learned solver is still able to give reasonable, high-resolution predictions.
 In some sense, both training and evaluation can be pain-free.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 Operator Learning
 =================
 
@@ -80,6 +84,10 @@ instead of as :math:`32 \times 32` pixel vectors.
 In this work, we aim to generalize neural networks so that they can learn operators,
 the mappings between infinite-dimensional spaces, with a special focus on PDEs.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 Limitation of Fixed Discretization
 ==================================
 
@@ -91,7 +99,8 @@ such as the finite element method and finite difference method.
 
 .. image:: /_static/images/grids.jpg
   :width: 800
-Three examples of discretization.
+
+Three examples of discretization:
 The left one is a regular grid used in the finite difference method;
 the middle one is a triangulated grid used in the finite element method;
 the right one is a cylinder mesh for real-world airfoil problem.
@@ -118,6 +127,10 @@ Furthermore, mathematically speaking, such continuous,
 discretization-invariant format is in some sense, closer to the real, analytic solution.
 It has an important mathematical meaning.
 Bear the motivation in mind. Let’s develop a rigorous formulation.
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
 
 Problem Setting
 ===============
@@ -147,6 +160,10 @@ Let :math:`P_K = \{x_1,\dots,x_K\} \subset D` be a :math:`K`-point discretizatio
 :math:`D` and assume we have observations :math:`a_j|_{P_K}, u_j|_{P_K}`, for a finite
 collection  of input-output pairs indexed by :math:`j`.
 We will show how to learn a discretization-invariant mapping based on discretized data.
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
 
 Kernel Formulation
 ==================
@@ -182,6 +199,10 @@ Since the kernel depends on :math:`a`, we let :math:`\kappa` also take input :ma
 .. math::
     u(x) = \int_D \kappa(x,y,a(x),a(y))f(y) \: dy
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 As an Iterative Solver
 ======================
 
@@ -196,7 +217,7 @@ for which we use :math:`u_0(x) = (x, a(x))`.
 At each time step :math:`t`, it updates :math:`u_{t+1}` by an kernel convolution of :math:`u_{t}`.
 
 .. math::
-    u_{t+1}(x) = \int_D \kappa(x,y,a(x),a(y))u_{t}(x) \: dy
+    u_{t+1}(x) = \int_D \kappa(x,y,a(x),a(y))u_{t}(y) \: dy
 
 It works like an implicit iteration.
 At each iteration the algorithm solves an equation of :math:`u_{t}(x)` and :math:`u_{t+1}(x)`
@@ -213,7 +234,7 @@ The overall algorithmic framework follow:
     v_0(x) = NN_1 (x, a(x))
 
 .. math::
-    v_{t+1}(x) = \sigma\Big( W v_t(x) + \int_{B(x,r)} \kappa_{\phi}\big(x,y,a(x),a(y)\big) v_t(y)\: \mathrm{d}y \Big) \quad \text{for } \ t=1,\ldots,T
+    v_{t+1}(x) = \sigma\Big( W v_t(x) + \int_{B(x,r)} \kappa_{\phi}\big(x,y,a(x),a(y)\big) v_t(y)\: \mathrm{d}y \Big) \quad \text{for } \ t=0,\ldots,T-1
 
 .. math::
     u(x) = NN_2 (v_T (x))
@@ -228,6 +249,10 @@ Notice, since the kernel integration happens in the high dimensional representat
 the output of :math:`\kappa_{\phi}` is not a scalar,
 but a linear transformation :math:`\kappa_{\phi}\big(x,y,a(x),a(y)\big)\in \mathbb{R}^{n \times n}`.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 Graph Neural Networks
 =====================
 
@@ -237,13 +262,13 @@ the integral :math:`\int_{B(x,r)} \kappa_{\phi}\big(x,y,a(x),a(y)\big)
 v_t(y)\: \mathrm{d}y` can be approximated by a sum:
 
 .. math::
-    \frac{1}{|N|}\sum_{y \in N(x)} \kappa(x,y,a(x),a(y))v_t(y)
+    \frac{1}{|N(x)|}\sum_{y \in N(x)} \kappa(x,y,a(x),a(y))v_t(y)
 
 
 Observation: the kernel integral is equivalent to message passing on graphs.
 
 
-If you are similar with graph neural network,
+If you are familiar with graph neural networks,
 you may have already realized this formulation is the same as
 the aggregation of messages in graph networks.
 Message passing graph networks comprise a standard architecture employing edge features
@@ -268,6 +293,10 @@ Relating to our kernel formulation, :math:`e(x,y) = (x,y,a(x),a(y))`.
 .. image:: /_static/images/graph.jpg
   :width: 800
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 Nystrom Approximation
 =====================
 
@@ -277,7 +306,7 @@ we should construct :math:`K` nodes in the graph for all the points in the discr
 It is quite expensive.
 Thankfully, we don’t need all the points to get an accurate approximation.
 For each graph, the error of Monte Carlo approximation of the kernel integral
-:math:`\int_{B(x,r)} \kappa_{\phi}(x,y) v_t(y)\: \mathrm{d}y` scales with :math:`m^{-1/2}`,
+:math:`\int_{B(x,r)} \kappa_{\phi}(x,y,a(x),a(y)) v_t(y)\: \mathrm{d}y` scales with :math:`m^{-1/2}`,
 where :math:`m` is the number of nodes sampled.
 
 Since we will sample :math:`N` graphs in total for all :math:`N` training examples :math:`\{a_j, u_j\}^N`,
@@ -288,6 +317,10 @@ It is possible to further improve the approximation
 using more sophisticated Nystrom Approximation methods.
 For example, we can estimate the importance of each point,
 and add more nodes to the difficult and singularity areas in the PDEs.
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
 
 Experiments: Poisson Equations
 ==============================
@@ -322,6 +355,10 @@ graph kernel networks need only a few training examples to learn the shape of so
 As shown in the figure above, the graph kernel network can roughly learn :math:`u` with :math:`5` training pairs,
 which a feedforward neural network need at least :math:`100` training examples.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 Experiments: generalization of resolution
 =========================================
 
@@ -345,15 +382,19 @@ As shown in the table above for each row,
 the test errors on different resolutions are about the same,
 which means the graph kernel network can
 also generalize in the semi-supervised setting.
-An figure for :math:`s=16, s'=241` is following (where error is absolute squared error):
+A figure for :math:`s=16, s'=241` is shown below (where error is absolute squared error):
 
 .. image:: /_static/images/uai_16to241.jpg
   :width: 800
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 Conclusion
 ==========
 
-In the work we purposed to use graph networks for operator learning in PDE problems.
+In this work we proposed to use graph networks for operator learning in PDE problems.
 By varying the underlying graph and discretization,
 the learned kernel is invariant of the discretization.
 Experiments confirm the graph kernel networks are able to generalize among different discretizations.

@@ -4,11 +4,15 @@ Fourier Neural Operators
 ========================
 
 
-This page (which takes about 10 minutes to read), introduces the Fourier neural operator that solves a family of PDEs from scratch.
-It is the first work that can learn resolution-invariant solution operators on the Navier-Stokes equation,
+This page (which takes about 10 minutes to read) introduces the Fourier neural operator that solves a family of PDEs from scratch.
+It is the first work that can learn resolution-invariant solution operators for the Navier-Stokes equation,
 achieving state-of-the-art accuracy among all existing deep learning methods and
 up to 1000x faster than traditional solvers.
 Also, check out the paper [1]_ and article [2]_.
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
 
 Operator learning
 =================
@@ -50,6 +54,10 @@ Operator learning can be taken as an image-to-image problem.
 The Fourier layer can be viewed as a substitute for the convolution layer.
 
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 Framework of Neural Operators
 =============================
 
@@ -81,6 +89,10 @@ Where :math:`\kappa` is a kernel function and :math:`W` is the bias term.
 
 For the Fourier neural operator, we formulate :math:`K` as a convolution
 and implement it by Fourier transformation.
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
 
 Fourier Layer
 =============
@@ -124,6 +136,10 @@ which are left out in the Fourier layers.
 Therefore, it’s necessary to the Fourier transform and its inverse at each layer.
 
 .. _fourier_layer_impl :
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 Implementation
 ==============
 
@@ -142,6 +158,10 @@ To illustrate the implementation details of the Fourier layer, we provide a simp
     import torch.nn as nn
 
     class SpectralConv2d(nn.Module):
+        """
+        2D spectral convolution layer for Fourier Neural Operators.
+        Performs convolution in Fourier space by truncating high-frequency modes.
+        """
         def __init__(self,
                      in_channels,   # Number of input channels
                      out_channels,  # Number of output channels
@@ -159,8 +179,21 @@ To illustrate the implementation details of the Fourier layer, we provide a simp
             self.weights2 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
 
         def forward(self, x):
+            """
+            Forward pass of the spectral convolution layer.
+            
+            Parameters
+            ----------
+            x : torch.Tensor
+                Input tensor (batch_size, in_channels, height, width)
+                
+            Returns
+            -------
+            torch.Tensor
+                Output tensor (batch_size, out_channels, height, width)
+            """
             batchsize = x.shape[0]
-            #Compute Fourier coeffcients
+            # Compute Fourier coefficients
             x_ft = torch.fft.rfft2(x)
 
             # Multiply relevant Fourier modes
@@ -170,17 +203,32 @@ To illustrate the implementation details of the Fourier layer, we provide a simp
             out_ft[:, :, -self.modes1:, :self.modes2] = \
                 self.compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
 
-            #Return to physical space
+            # Return to physical space
             x = torch.fft.irfft2(out_ft, s=(x.size(-2), x.size(-1)))
             return x
 
         def compl_mul2d(self, input, weights):
+            """
+            Complex matrix multiplication for Fourier coefficients.
+            
+            Parameters
+            ----------
+            input : torch.Tensor
+                Input Fourier coefficients
+            weights : torch.Tensor
+                Learnable weight matrix
+                
+            Returns
+            -------
+            torch.Tensor
+                Complex matrix multiplication result
+            """
             # (batch, in_channel, x,y ), (in_channel, out_channel, x,y) -> (batch, out_channel, x,y)
             return torch.einsum("bixy,ioxy->boxy", input, weights)
 
 where the input :code:`x` has the shape (N,C,H,W),
 :code:`self.weights1` and :code:`self.weights2` are the weight matrices;
-:code:`self.mode1` and :code:`self.mode2` truncate the lower-frequency modes;
+:code:`self.modes1` and :code:`self.modes2` truncate the lower-frequency modes;
 and :code:`compl_mul2d()` is the matrix multiplication for complex numbers.
 
 Note in the forward call above that :code:`torch.fft.rfft()` returns a matrix
@@ -226,14 +274,13 @@ helps to recover the non-periodic boundary.
 **Complexity**
 The Fourier layer has a quasilinear complexity.
 Denote the number of points (pixels) :math:`n` and truncating at :math:`k_{max}` frequency modes.
-The multiplication has complexity :math:`% <![CDATA[
-O(k_{max}) < O(n) %]]>` .
+The multiplication has complexity :math:`O(k_{max}) < O(n)`.
 The majority of the computational cost lies in computing the Fourier transform and its inverse.
 General Fourier transforms have complexity :math:`O(n^2)`,
 however, since we truncate the series the complexity is in fact :math:`O(n k_{max})`,
 while the FFT has complexity :math:`O(n \log n)`.
 
-**resolution-invariance">Resolution-invariance**
+**Resolution-invariance**
 The Fourier layers are discretization-invariant,
 because they can learn from and evaluate functions
 which are discretized in an arbitrary way.
@@ -243,6 +290,10 @@ of wave functions which are well-defined everywhere on the space.
 This allows us to transfer among discretization.
 If implemented with standard FFT, then it will be restricted to uniform mesh,
 but still resolution-invariant.
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
 
 Experiments
 ===========
@@ -329,7 +380,7 @@ incompressible fluid in vorticity form on the unit torus:
 
 where :math:`u` is the velocity field,
 :math:`w = \nabla \times u` is the vorticity,
-:math:`w_0` is the initial vorticity,<br />
+:math:`w_0` is the initial vorticity,
 :math:`\nu` is the viscosity coefficient,
 and :math:`f` is the forcing function.
 We are interested in learning the operator mapping the vorticity up to time 10
@@ -340,7 +391,7 @@ We experiment with the viscosities
 decreasing the final time :math:`T` as the dynamic becomes chaotic.
 
  ========= ============ ================ ========= ========= =========
-  Configs   Parameters   Time per epoch   nu=1e-3   nu=1e-4   nu=1e-5
+  Configs   Parameters   Time per epoch   ν=1e-3   ν=1e-4   ν=1e-5
  ========= ============ ================ ========= ========= =========
   FNO-3D    6,558,537    38.99s           0.0086    0.0820    0.1893
   FNO-2D    414,517      127.80s          0.0128    0.0973    0.1556
@@ -396,6 +447,10 @@ given the noisy observations estimated with MCMC using the traditional solver,
 while the top right panel shows the same thing but using FNO as a surrogate model.
 The bottom middle and right panels show the vorticity at :math:`T=50`
 when the respective approximate posterior means are used as initial conditions.
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
 
 Conclusion
 ==========
