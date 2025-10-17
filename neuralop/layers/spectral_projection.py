@@ -5,29 +5,35 @@ import torch.nn.functional as F
 
 def spectral_projection_divergence_free(u, domain_size, constraint_modes):
     """
-    Apply spectral projection to make velocity field divergence-free.
-    
-    This method implements a Helmholtz-Hodge projection in the spectral domain
-    to project velocity fields onto the divergence-free subspace.
+    Apply spectral projection layer to make a velocity field divergence-free.
     
     
-    References:
-    -----------
-    The method is based on the spectral projection approach described in:
+    Parameters
+    ----------
+    u : torch.Tensor
+        Input velocity field [batch, 2, height, width] where the last two
+        dimensions represent the 2D velocity components (u_x, u_y)
+    domain_size : float or tuple of float
+        Physical domain size. If float, assumes square domain with same size for height and width.
+        If tuple, should be (height_size, width_size) for non-square domains.
+    constraint_modes : tuple
+        Number of modes to use for constraint resolution (height_modes, width_modes).
+        If larger than input dimensions, they are truncated to the input dimensions.
     
-        [1] Towards Enforcing Hard Physics Constraints in Operator Learning Frameworks
-        V. Duruisseaux, M. Liu-Schiaffini, J. Berner, and A. Anandkumar
-        ICML 2024 AI for Science Workshop
-        https://openreview.net/pdf?id=Zvxm14Rd1F
-        
-        [2] Enforcing physical constraints in CNNs through differentiable PDE layer. 
-        C. M. Jiang, K. Kashinath, P. Prabhat, and P. Marcus
-        ICLR 2020 Workshop on Integration of Deep Neural Models and Differential Equations, 2020.
-        https://openreview.net/pdf?id=q2noHUqMkK
-
+    Returns
+    -------
+    torch.Tensor
+        Divergence-free projected velocity field with [batch, 2, height, width] shape.
+        The output maintains the same shape as the input while satisfying ∇·u = 0.
+    
+    
 
     Mathematical formulation:
     -------------------------
+    
+    This method implements a Helmholtz-Hodge projection in the spectral domain
+    to project velocity fields onto the space of divergence-free functions.
+    
     The Helmholtz-Hodge projection is given by:
         û_proj = û - (k·û)/|k|² * k
     where û is the Fourier transform of the velocity field, k is the wavenumber vector, 
@@ -53,24 +59,21 @@ def spectral_projection_divergence_free(u, domain_size, constraint_modes):
     on non-periodic fields (see neuralop.losses.fourier_diff for implementation details).
     
 
+    References:
+    -----------
     
-    Parameters
-    ----------
-    u : torch.Tensor
-        Input velocity field [batch, 2, height, width] where the last two
-        dimensions represent the 2D velocity components (u_x, u_y)
-    domain_size : float or tuple of float
-        Physical domain size. If float, assumes square domain with same size for height and width.
-        If tuple, should be (height_size, width_size) for non-square domains.
-    constraint_modes : tuple
-        Number of modes to use for constraint resolution (height_modes, width_modes).
-        If larger than input dimensions, they are truncated to the input dimensions.
+    The method is based on the spectral projection approach described in:
     
-    Returns
-    -------
-    torch.Tensor
-        Divergence-free projected velocity field in [batch, 2, height, width] format.
-        The output maintains the same shape as the input while satisfying ∇·u = 0.
+        [1] Towards Enforcing Hard Physics Constraints in Operator Learning Frameworks
+        V. Duruisseaux, M. Liu-Schiaffini, J. Berner, and A. Anandkumar
+        ICML 2024 AI for Science Workshop
+        https://openreview.net/pdf?id=Zvxm14Rd1F
+        
+        [2] Enforcing physical constraints in CNNs through differentiable PDE layer. 
+        C. M. Jiang, K. Kashinath, P. Prabhat, and P. Marcus
+        ICLR 2020 Workshop on Integration of Deep Neural Models and Differential Equations, 2020.
+        https://openreview.net/pdf?id=q2noHUqMkK
+    
     
     """
     
