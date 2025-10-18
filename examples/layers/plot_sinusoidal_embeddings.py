@@ -13,6 +13,10 @@ lifting enhances the model's ability to capture fine-scale variations and high-f
 dynamics.
 """
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Setup in One-Dimension
 # ----------------------
 # To build intuition, consider a simple one-dimensional example. Let :math:`x \in \mathbb{R}` 
@@ -38,6 +42,10 @@ dynamics.
 #
 # preserving the original input, while augmenting it with a hierarchy of frequency components.
 #
+# .. raw:: html
+# 
+#    <div style="margin-top: 2em;"></div>
+# 
 # Domain Normalization
 # ~~~~~~~~~~~~~~~~~~~~
 # When applying sinusoidal embeddings, it is often useful to normalize the input coordinates 
@@ -53,6 +61,10 @@ dynamics.
 # while ensuring that the lowest-frequency sine and cosine components complete exactly one 
 # full oscillation over the interval.
 #
+# .. raw:: html
+# 
+#    <div style="margin-top: 2em;"></div>
+# 
 # Choosing L to Satisfy the Nyquist-Criterion
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # When choosing the number of frequency levels :math:`L`, it is important to ensure that the 
@@ -60,27 +72,46 @@ dynamics.
 # the discretisation of the input domain. For a domain of :math:`N` points, the Nyquist frequency is 
 #
 # .. math::
-#    f_{\text{Nyquist}}=\frac{N}{2}.
+#    f_{\text{Nyquist}} = \frac{N}{2}.
 #
 # For the sinusoidal embedding defined above, the Nyquist constraint becomes:
 #
 # .. math::
 #    L < \frac{N}{2}.
 #
+# The Nyquist frequency represents the maximum frequency that can be correctly captured 
+# when sampling a signal, equal to half the sampling rate. If frequencies higher than this 
+# limit are used, they will not be represented as true high frequencies but will instead appear 
+# as lower ones, producing distortion known as aliasing.
+#
+# .. raw:: html
+# 
+#    <div style="margin-top: 2em;"></div>
+# 
+# Visualizing the Sinusoidal Embeddings
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Below, we visualize the sinusoidal embeddings for a spatial input domain 
 # :math:`\vec{x} \in[0,1]` consisting of 1000 equally spaced points, using :math:`L = 3` frequency levels.
 
 # %%
+# Import required libraries
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
 from neuralop.layers.embeddings import SinusoidalEmbedding
 
+# Set default font sizes for better readability
+plt.rcParams.update({'font.size': 14, 'axes.titlesize': 18, 'axes.labelsize': 16, 
+                     'xtick.labelsize': 14, 'ytick.labelsize': 14, 'legend.fontsize': 14})
+
 device = 'cpu'
 
 # Define a spatial domain and number of frequencies
+# Create 1000 equally spaced points in [0, 1] 
+#  and normalize to [0, 2π] for proper sinusoidal embedding
 x = torch.linspace(0, 1, 1000)
 x_normalized = torch.linspace(0, 2 * torch.pi, len(x))
+# Number of frequency levels for the embedding
 L = 3
 
 # Check if the number of frequencies satisfies the Nyquist-Criterion
@@ -90,19 +121,21 @@ else:
     print(f"Nyquist-Shannon sampling theorem is violated for the given number of frequencies {L}.")
 
 # Build embedding: [sin(x), cos(x), sin(2x), cos(2x), ...]
+# Each frequency level contributes a sine and cosine pair
 g = []
 for l in range(1, L + 1):
     g.append(torch.sin(l * x_normalized))
     g.append(torch.cos(l * x_normalized))
 
 # Construct input by concatenating the original input and the embedding
-input_arr    = np.asarray([x, *g])
+# This preserves the original coordinates while adding spectral information
+input_arr = np.asarray([x, *g])
 input_tensor = torch.tensor(input_arr)
 
-# Plot the embedding
+# Plot the embedding components
 colors = plt.cm.tab10.colors 
 
-plt.figure(figsize=(10, 4))
+plt.figure(figsize=(10, 5))
 for freq_idx in range(L):
     color = colors[freq_idx % len(colors)]
     sin_idx = 2 * freq_idx + 1
@@ -111,13 +144,19 @@ for freq_idx in range(L):
     plt.plot(x, input_tensor[sin_idx], color=color, label=f"Frequency {freq_idx + 1}")
     plt.plot(x, input_tensor[cos_idx], color=color)
 
-plt.xlabel("x")
-plt.ylabel("Embedding value")
-plt.title("Sinusoidal Embedding Components (L = 3)")
-plt.legend(loc='lower left', framealpha=1.0)
+plt.xlabel("x", fontsize=16)
+plt.ylabel("Embedding value", fontsize=16)
+plt.title("Sinusoidal Embedding Components (L = 3)", fontsize=18)
+plt.legend(loc='lower left', framealpha=1.0, fontsize=14)
+plt.locator_params(axis='y', nbins=5) 
+plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 4em;"></div>
+# 
 # Encoding Constant Parameters
 # ----------------------------
 # A particularly useful extension of sinusoidal embeddings is their ability to encode constant 
@@ -180,13 +219,13 @@ for l in range(1, L + 1):
     g_frequency.append(torch.sin(l * x_normalized * m_tensor))
     g_frequency.append(torch.cos(l * x_normalized * m_tensor))
 
-# Convert to arrays
+# Convert to arrays for visualization
 input_amplitude = torch.tensor(np.asarray([x, *g_amplitude]))
 input_frequency = torch.tensor(np.asarray([x, *g_frequency]))
 
 # Plot both embeddings
 colors = plt.cm.tab10.colors
-fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+fig, axes = plt.subplots(2, 1, figsize=(10, 9), sharex=True)
 
 ## Amplitude modulation
 for freq_idx in range(L):
@@ -194,9 +233,10 @@ for freq_idx in range(L):
     sin_idx, cos_idx = 2 * freq_idx + 1, 2 * freq_idx + 2
     axes[0].plot(x, input_amplitude[sin_idx], color=color, label=f"Channel {freq_idx + 1}")
     axes[0].plot(x, input_amplitude[cos_idx], color=color)
-axes[0].set_title("Amplitude Modulation")
-axes[0].set_ylabel("Embedding value")
-axes[0].legend(loc="lower left", framealpha=1.0)
+axes[0].set_title("Amplitude Modulation", fontsize=18, pad=20)
+axes[0].set_ylabel("Embedding value", fontsize=16)
+axes[0].legend(loc="lower left", framealpha=1.0, fontsize=14)
+axes[0].locator_params(axis='y', nbins=5) 
 
 ## Frequency modulation
 for freq_idx in range(L):
@@ -204,14 +244,20 @@ for freq_idx in range(L):
     sin_idx, cos_idx = 2 * freq_idx + 1, 2 * freq_idx + 2
     axes[1].plot(x, input_frequency[sin_idx], color=color, label=f"Channel {freq_idx + 1}")
     axes[1].plot(x, input_frequency[cos_idx], color=color)
-axes[1].set_title("Frequency Modulation")
-axes[1].set_ylabel("Embedding value")
-axes[1].set_xlabel("x")
+axes[1].set_title("Frequency Modulation", fontsize=18, pad=20)
+axes[1].set_ylabel("Embedding value", fontsize=16)
+axes[1].set_xlabel("x", fontsize=16)
+axes[1].locator_params(axis='y', nbins=5) 
 
-plt.suptitle(f"Sinusoidal Embeddings with Parameter m = {m}", y=0.95)
+plt.suptitle(f"Sinusoidal Embeddings with Parameter m = {m}", y=0.98, fontsize=20)
+plt.tight_layout() 
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 4em;"></div>
+# 
 # Neural Operator SinusoidalEmbedding Class
 # -----------------------------------------
 # The ``neuralop`` library provides a unified sinusoidal positional embedding class, 
@@ -223,6 +269,10 @@ plt.show()
 # The `SinusoidalEmbedding` class expects inputs to be of shape 
 # ``(batch_size, N, input_channels)`` or ``(N, input_channels)``.
 #
+# .. raw:: html
+# 
+#    <div style="margin-top: 2em;"></div>
+# 
 # Embedding Variants
 # ~~~~~~~~~~~~~~~~~~
 # Let :math:`\vec{x} \in \mathbb{R}^N` denote a one-dimensional input domain consisting of 
@@ -257,7 +307,7 @@ plt.show()
 
 # %%
 # Define a spatial domain and the number of frequencies
-x            = torch.linspace(0, 1, 1000)
+x = torch.linspace(0, 1, 1000)
 x_normalized = torch.linspace(0, 2 * torch.pi, len(x)).reshape(-1, 1)
 L = 3
 
@@ -268,12 +318,14 @@ else:
     print(f"Nyquist-Shannon sampling theorem is violated for the given number of frequencies {L}.")
 
 # Define the transformer embedding
+# max_positions controls the frequency scaling in transformer-style embeddings
 max_positions = 1000
 transformer_embedder = SinusoidalEmbedding(in_channels=1, 
                                            num_frequencies=L,
                                            embedding_type='transformer',
                                            max_positions=max_positions).to(device)
 
+# Apply transformer-style embedding
 transformer_embedding = transformer_embedder(x_normalized).permute(1, 0)
 
 # Define the NeRF embedding
@@ -281,11 +333,12 @@ nerf_embedder = SinusoidalEmbedding(in_channels=1,
                                     num_frequencies=L,
                                     embedding_type='nerf').to(device)
 
+# Apply NeRF-style embedding
 nerf_embedding = nerf_embedder(x_normalized).permute(1, 0)
 
 # Plot both embeddings
 colors = plt.cm.tab10.colors
-fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+fig, axes = plt.subplots(2, 1, figsize=(10, 9), sharex=True)
 
 ## Transformer embedding
 for freq_idx in range(L):
@@ -293,11 +346,12 @@ for freq_idx in range(L):
     sin_idx, cos_idx = 2 * freq_idx, 2 * freq_idx + 1
 
     axes[0].plot(x, transformer_embedding[sin_idx], color=color, label=f"Channel {freq_idx + 1}")
-    axes[0].plot(x,transformer_embedding[cos_idx], color=color)
+    axes[0].plot(x, transformer_embedding[cos_idx], color=color)
 
-axes[0].set_title("Transformer embedding")
-axes[0].set_ylabel("Embedding value")
-axes[0].legend(loc="lower left", framealpha=1.0)
+axes[0].set_title("Transformer embedding", fontsize=18, pad=20)
+axes[0].set_ylabel("Embedding value", fontsize=16)
+axes[0].legend(loc="lower left", framealpha=1.0, fontsize=14)
+axes[0].locator_params(axis='y', nbins=5) 
 
 ## NeRF embedding
 for freq_idx in range(L):
@@ -307,14 +361,20 @@ for freq_idx in range(L):
     axes[1].plot(x, nerf_embedding[sin_idx], color=color, label=f"Channel {freq_idx + 1}")
     axes[1].plot(x, nerf_embedding[cos_idx], color=color)
     
-axes[1].set_title("NeRF embedding")
-axes[1].set_xlabel("x")
-axes[1].set_ylabel("Embedding value")
+axes[1].set_title("NeRF embedding", fontsize=18, pad=20)
+axes[1].set_xlabel("x", fontsize=16)
+axes[1].set_ylabel("Embedding value", fontsize=16)
+axes[1].locator_params(axis='y', nbins=5) 
 
-plt.suptitle(f"Sinusoidal Embeddings using transformer and NeRF embedding types", y=0.95)
+plt.suptitle(f"Sinusoidal Embeddings using transformer and NeRF embedding types", y=0.98, fontsize=20)
+plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 2em;"></div>
+# 
 # Encoding Constant Parameters with NeuralOp Class
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Similar to the illustrative examples above (not using the `neuralop` class), we can also encode 
@@ -334,12 +394,12 @@ plt.show()
 
 # %%
 # Define a spatial domain and the number of frequencies
-x            = torch.linspace(0, 1, 1000)
+x = torch.linspace(0, 1, 1000)
 x_normalized = torch.linspace(0, 2 * torch.pi, len(x)).reshape(-1, 1)
 L = 3
 
 # Define the parameter to encode
-m        = 2.5
+m = 2.5
 m_tensor = torch.tensor([m])
 
 # Check if the number of frequencies and parameter satisfies the Nyquist-Criterion
@@ -348,17 +408,19 @@ if L <= 1 + torch.log2(torch.tensor(len(x_normalized)/2 * m)):
 else:
     print(f"Nyquist-Shannon sampling theorem is violated for the given parameter {m} and number of frequencies {L}.")
 
-# Define the embedding
+# Define the NeRF embedding
 nerf_embedder = SinusoidalEmbedding(in_channels=1, 
                                     num_frequencies=L,
                                     embedding_type='nerf').to(device)
 
+# Apply frequency modulation: multiply input by parameter before embedding
+# This scales all frequencies by the parameter m
 nerf_embedding = nerf_embedder(x_normalized * m_tensor).permute(1, 0)
 
 # Plot the embedding
 colors = plt.cm.tab10.colors
 
-plt.figure(figsize=(10, 4))
+plt.figure(figsize=(10, 5))
 for freq_idx in range(L):
     color = colors[freq_idx % len(colors)]
     sin_idx = 2 * freq_idx
@@ -367,10 +429,12 @@ for freq_idx in range(L):
     plt.plot(x, nerf_embedding[sin_idx], color=color, label=f'Channel {freq_idx}')
     plt.plot(x, nerf_embedding[cos_idx], color=color)
 
-plt.xlabel('x')
-plt.ylabel('Embedding')
-plt.title('NeRF-style embedding with modulated frequency')
-plt.legend(loc='lower left', framealpha=1.0)
+plt.xlabel('x', fontsize=16)
+plt.ylabel('Embedding', fontsize=16)
+plt.title('NeRF-style embedding with modulated frequency', fontsize=18, pad=20)
+plt.legend(loc='lower left', framealpha=1.0, fontsize=14)
+plt.locator_params(axis='y', nbins=5) 
+plt.tight_layout()
 plt.show()
 
 # %%
@@ -379,12 +443,12 @@ plt.show()
 
 # %%
 # Define a spatial domain and the number of frequencies
-x            = torch.linspace(0, 1, 1000)
+x = torch.linspace(0, 1, 1000)
 x_normalized = torch.linspace(0, 2 * torch.pi, len(x)).reshape(-1, 1)
 L = 3
 
 # Define the parameter to encode
-m        = 2.5
+m = 2.5
 m_tensor = torch.tensor([m])
 
 # Check if the number of frequencies and parameter satisfies the Nyquist-Criterion
@@ -398,12 +462,14 @@ nerf_embedder = SinusoidalEmbedding(in_channels=1,
                                     num_frequencies=L,
                                     embedding_type='nerf').to(device)
 
+# Apply amplitude modulation: multiply embedding by parameter after computation
+# This scales all embedding components by the parameter m
 nerf_embedding = nerf_embedder(x_normalized).permute(1, 0) * m_tensor
 
 # Plot the embedding
 colors = plt.cm.tab10.colors
 
-plt.figure(figsize=(10, 4))
+plt.figure(figsize=(10, 5))
 for freq_idx in range(L):
     color = colors[freq_idx % len(colors)]
     sin_idx = 2 * freq_idx
@@ -412,13 +478,19 @@ for freq_idx in range(L):
     plt.plot(x, nerf_embedding[sin_idx], color=color, label=f'Channel {freq_idx}')
     plt.plot(x, nerf_embedding[cos_idx], color=color)
 
-plt.xlabel('x')
-plt.ylabel('Embedding')
-plt.title('NeRF-style embedding with amplitude modulation')
-plt.legend(loc='lower left', framealpha=1.0)
+plt.xlabel('x', fontsize=16)
+plt.ylabel('Embedding', fontsize=16)
+plt.title('NeRF-style embedding with amplitude modulation', fontsize=18, pad=20)
+plt.legend(loc='lower left', framealpha=1.0, fontsize=14)
+plt.locator_params(axis='y', nbins=5) 
+plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 4em;"></div>
+# 
 # Application to Fourier Neural Operators (FNOs)
 # ----------------------------------------------
 # FNOs learn mappings between functions by operating in the frequency domain. They use the Fourier 
@@ -438,6 +510,10 @@ plt.show()
 #    2^{L-1} < \text{n_modes} \implies L < 1 + \log_2\left(\text{n_modes}\right).
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 4em;"></div>
+# 
 # Setup in Higher Dimensions
 # --------------------------
 # Let :math:`X \in \mathbb{R}^{d \times N}` denote a :math:`d`-dimensional input domain consisting of 
@@ -463,14 +539,17 @@ plt.show()
 # %%
 # Define a 1D spatial domain and construct 3D input by repeating the normalized 1D domain
 dim = 3
-x_1d            = torch.linspace(0, 1, 1000)
+x_1d = torch.linspace(0, 1, 1000)
+# Normalize to [0, 2π] and add channel dimension
 x_normalized_1d = torch.linspace(0, 2 * torch.pi, x_1d.size(0), device=x_1d.device).unsqueeze(1)
-x_normalized    = x_normalized_1d.repeat(1, dim)
+# Repeat for 3D input: shape (N, 3)
+x_normalized = x_normalized_1d.repeat(1, dim)
 
 # Define the number of frequencies
 L = 3
 
 # Check if the number of frequencies satisfies the Nyquist-Criterion
+# For multi-dimensional inputs, the constraint applies to each dimension independently
 if L <= 1 + torch.log2(torch.tensor(len(x_normalized)/2)):
     print(f"Nyquist-Shannon sampling theorem is satisfied for the given number of frequencies {L}.")
 else:
@@ -483,6 +562,7 @@ transformer_embedder = SinusoidalEmbedding(in_channels=3,
                                            embedding_type='transformer',
                                            max_positions=max_positions).to(device)
 
+# Apply transformer-style embedding
 transformer_embedding = transformer_embedder(x_normalized).permute(1, 0)
 
 # Define the NeRF embedding
@@ -490,4 +570,5 @@ nerf_embedder = SinusoidalEmbedding(in_channels=dim,
                                     num_frequencies=L,
                                     embedding_type='nerf').to(device)
 
+# Apply NeRF-style embedding
 nerf_embedding = nerf_embedder(x_normalized).permute(1, 0)
