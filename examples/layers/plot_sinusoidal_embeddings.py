@@ -33,7 +33,7 @@ dynamics.
 # denote a discretized domain of :math:`N` points. Then the embedding function becomes
 #
 # .. math::
-#    g: \mathbb{R}^N \rightarrow \mathbb{R}^{N \times 2 L}, \quad g(\vec{x})=\operatorname{concat}(\sin (\vec{x}), \cos (\vec{x}), \ \sin (2 \vec{x}), \ \cos (2 \vec{x}), \ldots, \ \sin (L \vec{x}), \ \cos (L \vec{x})),
+#    g: \mathbb{R}^N \rightarrow \mathbb{R}^{N \times 2 L}, \quad g(\vec{x})=\operatorname{concat}(\sin (\vec{x}), \cos (\vec{x}), \sin (2 \vec{x}), \cos (2 \vec{x}), \ldots, \sin (L \vec{x}), \cos (L \vec{x})),
 #
 # In practice, both the original coordinate and its embedding are passed to the model:
 #
@@ -67,9 +67,12 @@ dynamics.
 # 
 # Choosing :math:`L` to Satisfy the Nyquist-Criterion
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# When choosing the number of frequency levels :math:`L`, it is important to ensure that the 
-# highest frequency component in the embedding does not exceed the Nyquist limit imposed by 
-# the discretisation of the input domain. For a domain of :math:`N` points, the Nyquist frequency is 
+# .. warning::
+#    When choosing the number of frequency levels :math:`L`, it is important to ensure that the 
+#    highest frequency component in the embedding does not exceed the Nyquist limit imposed by 
+#    the discretisation of the input domain. 
+# 
+# For a domain of :math:`N` points, the Nyquist frequency is 
 #
 # .. math::
 #    f_{\text{Nyquist}} = \frac{N}{2}.
@@ -94,9 +97,8 @@ dynamics.
 # Below, we visualize the sinusoidal embeddings for a spatial input domain 
 # :math:`\vec{x} \in[0,1]` consisting of 1000 equally spaced points, using :math:`L = 3` frequency levels.
 
-
 # %%
-#
+
 # Import required libraries
 import torch
 import matplotlib.pyplot as plt
@@ -168,6 +170,10 @@ plt.show()
 # Instead of treating :math:`m` as a fixed scalar input, we can represent it using periodic 
 # functions, either by modulating the amplitude or the frequency of the sinusoidal components.
 #
+# .. raw:: html
+# 
+#    <div style="margin-top: 2em;"></div>
+#
 # **1. Amplitude Modulation:** To encode :math:`m` by scaling the amplitudes of the sinusoidal 
 # functions, we define the embedding as
 #
@@ -175,6 +181,10 @@ plt.show()
 #    m \rightarrow m g(\vec{x}),
 #
 # where each element of the embedding :math:`g(\vec{x})` is multiplied by :math:`m`.
+#
+# .. raw:: html
+# 
+#    <div style="margin-top: 2em;"></div>
 #
 # **2. Frequency Modulation:** Alternatively, to encode :math:`m` by scaling the frequencies, 
 # we define
@@ -188,11 +198,15 @@ plt.show()
 # that the Nyquist criterion is satisfied. In this case, where the modulation factor :math:`m` 
 # scales the frequencies, the Nyquist constraint becomes :math:`L < \frac{N}{2m}`.
 #
+# .. raw:: html
+# 
+#    <div style="margin-top: 2em;"></div>
+#
 # Below, we demonstrate an example of encoding the parameter :math:`m = 2.5` through both 
 # amplitude and frequency modulation.
 
 # %%
-#
+
 # Define a spatial domain and number of frequencies
 x = torch.linspace(0, 1, 1000)
 x_normalized = torch.linspace(0, 2 * torch.pi, len(x))
@@ -286,8 +300,8 @@ plt.show()
 # leading to distinct representations.
 #
 # .. raw:: html
-# 
-#    <div style="margin-top: 1em;"></div>
+#
+#    <div style="margin-top: 2em;"></div>
 #
 # **1. Transformer-style embedding:** For :math:`0 \leq k < L`:
 #
@@ -298,7 +312,7 @@ plt.show()
 #
 # .. raw:: html
 # 
-#    <div style="margin-top: 1em;"></div>
+#    <div style="margin-top: 2em;"></div>
 #
 # **2. NeRF-style embedding:** For :math:`0 \leq k < L`:
 #
@@ -315,12 +329,13 @@ plt.show()
 #
 # .. raw:: html
 # 
-#    <div style="margin-top: 2em;"></div>
+#    <div style="margin-top: 3em;"></div>
 #
 # Below, we include examples of using the `SinusoidalEmbedding` class with both the 
 # transformer- and NeRF-style embeddings.
 
 # %%
+
 # Define a spatial domain and the number of frequencies
 x = torch.linspace(0, 1, 1000)
 x_normalized = torch.linspace(0, 2 * torch.pi, len(x)).reshape(-1, 1)
@@ -409,13 +424,13 @@ plt.show()
 #
 # .. raw:: html
 # 
-#    <div style="margin-top: 1em;"></div>
+#    <div style="margin-top: 2em;"></div>
 #
 # Below, we demonstrate an example of encoding the parameter :math:`m = 2.5` through frequency 
 # modulation of the NeRF-style embedding.
 
 # %%
-#
+
 # Define a spatial domain and the number of frequencies
 x = torch.linspace(0, 1, 1000)
 x_normalized = torch.linspace(0, 2 * torch.pi, len(x)).reshape(-1, 1)
@@ -465,7 +480,7 @@ plt.show()
 # an example using the NeRF-style embedding below.
 
 # %%
-#
+
 # Define a spatial domain and the number of frequencies
 x = torch.linspace(0, 1, 1000)
 x_normalized = torch.linspace(0, 2 * torch.pi, len(x)).reshape(-1, 1)
@@ -531,6 +546,7 @@ plt.show()
 # When dealing with FNOs with a specified number of Fourier modes, :math:`\text{n_modes}`, the 
 # highest embedded frequency should ideally also remain below :math:`\text{n_modes}`,
 # as higher frequencies will be zeroed out and not acted upon by the spectral convolution operation.  
+#
 # For the NeRF-style embedding, this condition leads to an explicit upper bound on :math:`L`:
 #
 # .. math::
@@ -562,11 +578,15 @@ plt.show()
 # along the feature axis. This approach allows the model to capture 
 # frequency patterns along each dimension separately while maintaining the overall structure.
 #
+# .. raw:: html
+# 
+#    <div style="margin-top: 2em;"></div>
+#
 # Below, we include an example of using the `SinusoidalEmbedding` class to construct NeRF-style 
 # embeddings for a 3D input.
 
 # %%
-#
+
 # Define a 1D spatial domain and construct 3D input by repeating the normalized 1D domain
 dim = 3
 x_1d = torch.linspace(0, 1, 1000)
