@@ -7,11 +7,11 @@ If your work provides one of the above, we would be thrilled to integrate it int
 ## Table of Contents
 
 - [Development Setup](#development-setup)
-- [Types of Contributions](#types-of-contributions)
 - [Development Workflow](#development-workflow)
 - [Development Guidelines](#development-guidelines)
-- [Publishing Code Built on the Library](#publishing-code-built-on-the-library)
+- [Adding a New Model or Layer](#adding-a-new-model-or-layer)
 - [Getting Help](#getting-help)
+- [Publishing Code Built on the Library](#publishing-code-built-on-the-library)
 - [License](#license)
 
 ## Development Setup
@@ -52,51 +52,6 @@ If your work provides one of the above, we would be thrilled to integrate it int
    ```
 
 
-## Types of Contributions
-
-We welcome various types of contributions:
-
-- **Bug fixes** - Report and fix bugs
-- **New features** - Add new models, layers, or datasets
-- **Examples** - Create new examples or improve existing ones
-- **Performance** - Optimize existing code
-
-### Adding a New Neural Operator Model
-
-To add a new neural operator model:
-
-1. **Create a new file** in `neuralop/models/your_model.py`
-2. **Implement the model** as a subclass of `BaseModel`
-3. **Add comprehensive tests** in `neuralop/models/tests/test_your_model.py`
-4. **Update imports** in the appropriate `__init__.py` files
-5. **Add documentation** with examples and mathematical formulations
-
-**Example structure:**
-```python
-from neuralop.models import BaseModel
-
-class YourModel(BaseModel):
-    """Your model docstring here."""
-    
-    def __init__(self, ...):
-        super().__init__()
-        # Your implementation
-    
-    def forward(self, x):
-        # Your forward pass
-        return x
-```
-
-### Adding a New Layer
-
-To add a new layer:
-
-1. **Create a new file** in `neuralop/layers/your_layer.py`
-2. **Ensure the layer** is a subclass of `torch.nn.Module`
-3. **Add comprehensive tests** in `neuralop/layers/tests/test_your_layer.py`
-4. **Update imports** in the appropriate `__init__.py` files
-
-> **💡 Pro Tip**: For bonus points, add an interactive example featuring your new method to `./examples`. This helps both us and you: the simpler it is for new users to understand and adapt your method, the more visibility it will get!
 
 ## Development Workflow
 
@@ -224,6 +179,66 @@ python -m http.server 8000
 - **Rebase your branch** on main before submitting PRs
 - **Use conventional commit format** when possible (feat:, fix:, docs:, etc.)
 
+## Adding a New Model or Layer
+
+We welcome various types of contributions:
+
+- **Bug fixes** - Report and fix bugs
+- **New features** - Add new models, layers, or datasets
+- **Examples** - Create new examples or improve existing ones
+- **Performance** - Optimize existing code
+
+### Adding a New Neural Operator Model
+
+To add a new neural operator model:
+
+1. **Create a new file** in `neuralop/models/your_model.py`
+2. **Implement the model** as a subclass of `BaseModel`
+3. **Add comprehensive tests** in `neuralop/models/tests/test_your_model.py`
+4. **Update imports** in the appropriate `__init__.py` files
+5. **Add documentation** with examples and mathematical formulations
+
+**Example structure:**
+```python
+from neuralop.models import BaseModel
+
+class YourModel(BaseModel):
+    """Your model docstring here."""
+    
+    def __init__(self, ...):
+        super().__init__()
+        # Your implementation
+    
+    def forward(self, x):
+        # Your forward pass
+        return x
+```
+
+### Adding a New Layer
+
+To add a new layer:
+
+1. **Create a new file** in `neuralop/layers/your_layer.py`
+2. **Ensure the layer** is a subclass of `torch.nn.Module`
+3. **Add comprehensive tests** in `neuralop/layers/tests/test_your_layer.py`
+4. **Update imports** in the appropriate `__init__.py` files
+
+> **💡 Pro Tip**: For bonus points, add an interactive example featuring your new method to `./examples`. This helps both us and you: the simpler it is for new users to understand and adapt your method, the more visibility it will get!
+
+## Getting Help
+
+### Before Asking for Help
+1. **Check the documentation** and existing issues
+2. **Search GitHub issues** for similar problems
+3. **Provide a minimal reproducible example**
+4. **Include error messages** and stack traces
+5. **Specify your environment** (OS, Python version, PyTorch version)
+
+### Contact Methods
+- **GitHub Issues**: Create an issue for bugs or feature requests
+- **GitHub Discussions**: Use for questions and ideas
+- **Documentation**: Check the [official documentation](https://neuraloperator.github.io/)
+
 ## Publishing Code Built on the Library
 
 If you plan to use `neuralop` as the base of a project, we suggest the following workflow:
@@ -272,20 +287,6 @@ class MyCustomFNO(FNO):
         
         return x
 ```
-
-## Getting Help
-
-### Before Asking for Help
-1. **Check the documentation** and existing issues
-2. **Search GitHub issues** for similar problems
-3. **Provide a minimal reproducible example**
-4. **Include error messages** and stack traces
-5. **Specify your environment** (OS, Python version, PyTorch version)
-
-### Contact Methods
-- **GitHub Issues**: Create an issue for bugs or feature requests
-- **GitHub Discussions**: Use for questions and ideas
-- **Documentation**: Check the [official documentation](https://neuraloperator.github.io/)
 
 ---
 
