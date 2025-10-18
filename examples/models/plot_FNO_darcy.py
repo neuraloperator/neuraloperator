@@ -65,7 +65,7 @@ data_processor = data_processor.to(device)
 # Creating the FNO model
 # ----------------------
 
-model = FNO(n_modes=(16, 16),
+model = FNO(n_modes=(8, 8),
              in_channels=1, 
              out_channels=1,
              hidden_channels=32, 
@@ -250,7 +250,7 @@ for index in range(3):
     ax = fig.add_subplot(3, 3, index*3 + 1)
     ax.imshow(x[0], cmap='gray')
     if index == 0: 
-        ax.set_title('Input at higher resolution 32x32')
+        ax.set_title('Input at 32x32')
     plt.xticks([], [])
     plt.yticks([], [])
 
@@ -258,7 +258,7 @@ for index in range(3):
     ax = fig.add_subplot(3, 3, index*3 + 2)
     ax.imshow(y.squeeze())
     if index == 0: 
-        ax.set_title('Ground-truth output at higher resolution 32x32')
+        ax.set_title('Ground-truth at 32x32')
     plt.xticks([], [])
     plt.yticks([], [])
 
@@ -266,7 +266,7 @@ for index in range(3):
     ax = fig.add_subplot(3, 3, index*3 + 3)
     ax.imshow(out.squeeze().detach().numpy())
     if index == 0: 
-        ax.set_title('Model prediction at higher-resolution 32x32')
+        ax.set_title('FNO prediction at 32x32')
     plt.xticks([], [])
     plt.yticks([], [])
 
