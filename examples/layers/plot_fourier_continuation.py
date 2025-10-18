@@ -2,11 +2,25 @@
 .. _fourier_continuation :
 
 Fourier Continuation
-========================================================
-An example of usage of our Fourier continuation layer on 1d, 2d, and 3d data.
+====================
+
+This tutorial demonstrates Fourier continuation methods for extending non-periodic
+functions to periodic ones, enabling efficient spectral analysis and neural operator
+applications. Fourier continuation is crucial for:
+
+- Converting non-periodic data to periodic form
+- Enabling spectral methods on arbitrary domains
+- Improving convergence of Fourier-based neural operators
+- Handling boundary conditions in spectral computations
+
+The tutorial covers both FC-Legendre and FC-Gram methods for 1D, 2D, and 3D data.
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import the library
 # ------------------
 # We first import our `neuralop` library and required dependencies.
@@ -19,14 +33,21 @@ from neuralop.layers.fourier_continuation import FCLegendre, FCGram
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # %%
-# Creating an example of 1D curve
-# --------------------
-# Here we consider sin(16x) - cos(8x), which is not periodic on the interval [0,1]
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Creating an example of 1D non-periodic function
+# ----------------------------------------------
+# We consider f(x) = sin(16x) - cos(8x) on the interval [0,1].
+# This function is not periodic on [0,1], making it a good test case
+# for Fourier continuation methods.
 
-length_signal = 101   # length of the original 1D signal
-add_pts = 50          # number of points to add
-batch_size = 3        # the Fourier continuation layer can be applied to batches of signals
+length_signal = 101   # Length of the original 1D signal
+add_pts = 50          # Number of additional points for continuation
+batch_size = 3        # Batch size for processing multiple signals
 
+# Create the input signal
 x = torch.linspace(0, 1, length_signal).repeat(batch_size,1)
 f = torch.sin(16 * x) - torch.cos(8 * x)
 
@@ -34,20 +55,32 @@ f = torch.sin(16 * x) - torch.cos(8 * x)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Extending the signal
 # -----------------------------------------
 # We use the FC-Legendre and FC-Gram Fourier continuation layers to extend the signal.
 
+# FC-Legendre: Uses Legendre polynomial basis for continuation
 Extension_Legendre = FCLegendre(d=2, n_additional_pts=add_pts)
 f_extend_Legendre = Extension_Legendre(f, dim=1)
 
+# FC-Gram: Uses Gram polynomial basis for continuation
 Extension_Gram = FCGram(d=4, n_additional_pts=add_pts)
 f_extend_Gram = Extension_Gram(f, dim=1)
 
 
 # %%
-# Plot the FC-Legendre and FC-Gram results for 1D
-# ----------------------
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Visualizing the 1D Fourier continuation results
+# ----------------------------------------------
+# We plot the original function and both continuation methods to compare
+# their effectiveness in creating smooth periodic extensions.
 
 # Define the extended coordinates
 x_extended = torch.linspace(-0.25, 1.25, 151) 
@@ -83,38 +116,60 @@ plt.tight_layout()
 plt.show()
 
 # %%
-# Creating an example of a 2D function
-# --------------------
-# Here we consider sin(12x) - cos(14y) + 3xy, which is not periodic on [0,1]x[0,1]
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Creating an example of 2D non-periodic function
+# ------------------------------------------------
+# We consider f(x,y) = sin(12x) - cos(14y) + 3xy on the domain [0,1]×[0,1].
+# This function is not periodic on the unit square, making it suitable
+# for testing 2D Fourier continuation methods.
 
-length_signal = 101   # length of the signal in each dimension
-add_pts = 50          # number of points to add in each dimension
-batch_size = 3        # the Fourier continuation layer can be applied to batches of signals
+length_signal = 101   # Length of the signal in each dimension
+add_pts = 50          # Number of additional points for continuation in each dimension
+batch_size = 3        # Batch size for processing multiple signals
 
-
+# Create the 2D coordinate grids
 x = torch.linspace(0, 1, length_signal).view(1, length_signal, 1).repeat(batch_size, 1, length_signal)
 y = torch.linspace(0, 1, length_signal).view(1, 1, length_signal).repeat(batch_size, length_signal, 1)
-f = torch.sin(12 * x)  - torch.cos(14 * y) + 3*x*y
+
+# Define the 2D test function
+f = torch.sin(12 * x) - torch.cos(14 * y) + 3*x*y
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Extending the signal
 # -----------------------------------------
 # We use the FC-Legendre and FC-Gram Fourier continuation layers to extend the signal.
 
+# FC-Legendre: Uses Legendre polynomial basis for 2D continuation
 Extension_Legendre = FCLegendre(d=3, n_additional_pts=add_pts)
 f_extend_Legendre = Extension_Legendre(f, dim=2)
 
+# FC-Gram: Uses Gram polynomial basis for 2D continuation
 Extension_Gram = FCGram(d=3, n_additional_pts=add_pts)
 f_extend_Gram = Extension_Gram(f, dim=2)
 
 
 # %%
-# Plot the FC-Legendre and FC-Gram results for 2D
-# ----------------------
-# We also add black lines to deliminate the original signal
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Visualizing the 2D Fourier continuation results
+# ----------------------------------------------
+# We plot the original function and both continuation methods to compare
+# their effectiveness in creating smooth 2D periodic extensions.
+# Black lines delineate the original domain boundaries.
 
 fig, axs = plt.subplots(figsize=(15,5), nrows=1, ncols=3)
+
+# Plot the original function
 axs[0].imshow(f[0])
 axs[0].set_title(r"Original Function", fontsize=15.5)
 axs[1].imshow(f_extend_Legendre[0])
@@ -137,6 +192,10 @@ plt.show()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating an example of a 3D function
 # --------------------
 # Here we consider f(x,y,z) = exp(-2z) + 2xz + sin(12xy) + y sin(10yz) 
@@ -156,6 +215,10 @@ f = torch.exp(-2*z) + 2*z*x + torch.sin(12*x*y) + y*torch.sin(10*y*z)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Extending the signal
 # -----------------------------------------
 # We use the FC-Legendre and FC-Gram Fourier continuation layers to extend the signal.
@@ -169,6 +232,10 @@ f_extend_Gram = Extension_Gram(f, dim=3)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Plot the FC-Legendre and FC-Gram results for 3D
 # ----------------------
 # We also add white lines to deliminate the original signal
@@ -184,6 +251,10 @@ global_max = max(f_max, f_ext_legendre_max, f_ext_gram_max)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Figure for X slices
 fig = plt.figure(figsize=(24, 20))
 slice_indices = [length_signal//4, length_signal//2, 3*length_signal//4]
@@ -238,6 +309,10 @@ plt.subplots_adjust(hspace=0.15, wspace=0.05, top=0.95)
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Figure for Y-slices
 fig2 = plt.figure(figsize=(24, 20))
 
@@ -290,6 +365,10 @@ plt.subplots_adjust(hspace=0.15, wspace=0.05, top=0.95)
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Figure for Z-slices
 fig3 = plt.figure(figsize=(24, 20))
 

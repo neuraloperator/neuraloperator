@@ -1,12 +1,28 @@
 """
-Visualizing neighbor search
-=============================
+Neighbor Search for Graph Neural Operators
+===========================================
 
-Understanding the spatial search used to compute neighborhoods for the Graph Neural Operator. 
+This tutorial demonstrates neighbor search algorithms used in Graph Neural Operators (GNO).
+Neighbor search is crucial for:
+
+- Finding spatial relationships in irregular point clouds
+- Computing Nyström approximations of kernel integrals
+- Enabling GNO to work with arbitrary point cloud data
+- Implementing efficient spatial queries for neural operators
+
+The tutorial covers the `native_neighbor_search` function and its role in GNO architectures.
+
 """
 
 # %%
+# .. raw:: html
 # 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Import dependencies
+# -------------------
+# We import the necessary modules for neighbor search and visualization
+
 import random
 import matplotlib.pyplot as plt
 import torch
@@ -18,36 +34,76 @@ from neuralop.layers.embeddings import regular_grid_2d
 device = 'cpu'
 
 # %%
-# Basic logic
-# ---------------
-# Many problems involve data collected over irregular point clouds.
-# The Graph Neural Operator (GNO) is a simple neural operator architecture
-# that learns a map between functions evaluated on (potentially different) arbitrary point clouds.
-# For a set of input coordinates Y, an input function f evaluated at all y ∈ Y, 
-# and a set of output coordinates X, our goal is to map to a new function g evaluated at all x ∈ X.  
-# To do so, the GNO computes the Nyström approximation of a continuous kernel integral by 
-# summing the values of f across a neighborhood of each point x drawn from the input coordinates Y (with an optional kernel k):
-# \int_{N_r(x)} f(y) k(x,y) dy
+# .. raw:: html
 # 
-# The first step of this process is a neighbor search:
+#    <div style="margin-top: 3em;"></div>
+# 
+# Understanding Graph Neural Operators and neighbor search
+# --------------------------------------------------------
+# Many problems involve data collected over irregular point clouds.
+# The Graph Neural Operator (GNO) is a neural operator architecture
+# that learns mappings between functions evaluated on arbitrary point clouds.
+#
+# For input coordinates Y, input function f evaluated at all y ∈ Y, 
+# and output coordinates X, our goal is to map to function g evaluated at all x ∈ X.
+# The GNO computes the Nyström approximation of a continuous kernel integral:
+# ∫_{N_r(x)} f(y) k(x,y) dy
+#
+# The first step is neighbor search to find spatial relationships.
+
 # %%
-input_coords = torch.stack(regular_grid_2d(spatial_dims=(8,8))).permute(1,2,0).view(-1,2) #reshape into (64, 2)
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Setting up the point cloud data
+# --------------------------------
+# We create a regular grid of input coordinates and random output query points
+# to demonstrate the neighbor search functionality.
+
+# Create a regular 8x8 grid of input coordinates
+input_coords = torch.stack(regular_grid_2d(spatial_dims=(8,8))).permute(1,2,0).view(-1,2)
+
+# Generate random output query points
 output_queries = torch.rand([50, 2])
 
-plt.scatter(input_coords[:, 0], input_coords[:, 1], color='orange', label="Input coordinates")
-plt.scatter(output_queries[:, 0], output_queries[:, 1], color='blue', label="Output queries")
+# Visualize the input coordinates and query points
+plt.scatter(input_coords[:, 0], input_coords[:, 1], color='orange', label="Input coordinates", s=50)
+plt.scatter(output_queries[:, 0], output_queries[:, 1], color='blue', label="Output queries", s=30)
 plt.legend()
+plt.title("Input coordinates and output query points")
+plt.xlabel("x")
+plt.ylabel("y")
+plt.show()
 
 # %%
-# Visualizing neighborhoods
-# -------------------------
-# Now, let's select a point in the output and visualize its neighbors.
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Performing neighbor search
+# ---------------------------
+# We select a query point and find all input coordinates within a specified radius.
+# This demonstrates how the neighbor search algorithm identifies spatial relationships.
 
-query_index = 25
+query_index = 12
 query_point = output_queries[query_index]
-# Let's search, assuming a radius of 0.25. Note that this is quite high for the density of our data.
-# in practice we tend to use values that find on the order of 10 neighbors. 
+
+# Perform neighbor search with radius 0.25
+# Note: This radius is relatively large for our data density.
+# In practice, we typically use values that find around 10 neighbors.
 nbr_data = native_neighbor_search(data=input_coords, queries=query_point.unsqueeze(0), radius=0.25)
+
+# %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Visualizing the neighbor search results
+# --------------------------------------
+# We plot the query point, its neighbors, and the search radius to understand
+# how the neighbor search algorithm works.
+
 fig, ax = plt.subplots()
 neighbors = input_coords[nbr_data['neighbors_index']]
 ax.scatter(input_coords[:, 0], input_coords[:, 1])
@@ -55,6 +111,7 @@ ax.scatter(query_point[0], query_point[1])
 ax.scatter(neighbors[:, 0], neighbors[:, 1], label="neighbors of x")
 c = plt.Circle(query_point, radius=0.25, fill=False)
 ax.add_patch(c)
+
 ax.legend()
 ax.set_xlim(0,1)
 ax.set_ylim(0,1)

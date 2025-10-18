@@ -2,14 +2,28 @@
 Normalization Layers
 ====================
 
-We provide several normalization layers that can be used to stabilize and accelerate model training. These layers are designed to be dimension-agnostic, making them flexible for use in various neural operator models. 
+This tutorial demonstrates normalization layers designed for neural operators.
+Normalization is crucial for:
 
-In this tutorial, we explore `InstanceNorm`, `BatchNorm`, and `AdaIN`, and visualize their effects on 1D data.
+- Stabilizing training dynamics
+- Accelerating convergence
+- Improving generalization
+- Handling different data distributions
+
+The tutorial covers `InstanceNorm`, `BatchNorm`, and `AdaIN` layers, which are
+dimension-agnostic and flexible for various neural operator architectures.
 
 """
 
 # %%
-# We first import the neuralop library and required dependencies.
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Import dependencies
+# -------------------
+# We import the necessary modules for working with normalization layers
+
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
@@ -20,6 +34,10 @@ from neuralop.layers.normalization_layers import InstanceNorm, BatchNorm, AdaIN
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Understanding Normalization with 1D Functions
 # ---------------------------------------------
 # To clearly see how these layers work, we create a synthetic dataset of 1D functions.
@@ -30,22 +48,32 @@ n_points = 100
 x = torch.linspace(0, 2 * torch.pi, n_points)
 data = torch.zeros((n_samples, 1, n_points))
 
+# Generate two groups of functions with different characteristics
 for i in range(n_samples):
     if i < 5:
-        # Group 1: High amplitude, positive shift
+        # Group 1: High amplitude sine waves with positive vertical shift
         amplitude = np.random.uniform(2.0, 3.0)
         shift = np.random.uniform(1.0, 2.0)
         frequency = np.random.uniform(2.0, 3.0)
         data[i, 0, :] = amplitude * torch.sin(frequency * x) + shift
     else:
-        # Group 2: Low amplitude, negative shift
+        # Group 2: Low amplitude cosine waves with negative vertical shift
         amplitude = np.random.uniform(0.5, 1.0)
         shift = np.random.uniform(-2.0, -1.0)
         frequency = np.random.uniform(1.0, 2.0)
         data[i, 0, :] = amplitude * torch.cos(frequency * x) + shift
 
 # %%
-# Let's visualize the original data
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Visualizing the original data
+# ------------------------------
+# We plot the synthetic functions to see their different statistical properties.
+# The blue functions have high amplitude and positive shift, while the red functions
+# have low amplitude and negative shift.
+
 plt.figure(figsize=(12, 6))
 plt.title("Original Data", fontsize=20)
 for i in range(n_samples):
@@ -53,6 +81,7 @@ for i in range(n_samples):
         plt.plot(x, data[i, 0, :], 'b-', label='High Amplitude Functions with Positive Shift' if i == 0 else "")
     else:
         plt.plot(x, data[i, 0, :], 'r-', label='Low Amplitude Functions with Negative Shift' if i == 5 else "")
+
 plt.legend(fontsize=20, loc='lower center', bbox_to_anchor=(0.5, -0.5), ncol=1)
 plt.xlabel("$x$", fontsize=18)
 plt.ylabel("$f(x)$", fontsize=18)
@@ -73,6 +102,7 @@ plt.show()
 # ------------
 # `InstanceNorm` normalizes each sample in the batch **independently**. This means it rescales each of the 10 functions to have a mean of 0 and a standard deviation of 1, regardless of the other functions in the batch. This is useful when the statistical properties of each sample are distinct and should be treated separately.
 
+# Apply instance normalization
 instance_norm = InstanceNorm()
 data_in = instance_norm(data)
 
@@ -96,6 +126,10 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Notice how all functions are now perfectly scaled to the same range, centered around zero. The original differences in amplitude and shift between the functions have been completely removed by instance-wise normalization.
 
 # %%
@@ -186,4 +220,8 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # As you can see, the same content function is transformed into two very different outputs. **Style 1** produces a simple sinusoidal wave with larger amplitude and positive shift. **Style 2** produces a more complex transformation: the function is inverted (phase-shifted), its amplitude is reduced, and it's shifted downwards. This demonstrates how AdaIN can modulate network layer output in diverse ways based on the style embedding.

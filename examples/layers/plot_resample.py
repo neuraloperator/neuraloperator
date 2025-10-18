@@ -29,6 +29,10 @@ import matplotlib.pyplot as plt
 from neuralop.layers.resample import resample
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # First, let's generate a data input. We create a high-resolution Gaussian Random Field (GRF), which 
 # is a smooth, continuous signal, making it ideal for visualizing the effects of resampling.
 device = 'cpu'
@@ -80,6 +84,10 @@ high_res_data = generate_grf((high_res, high_res), device=device)
 low_res = 32
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Now, let's use the ``resample`` function to simulate downsampling and upsampling operations.
 # This could for instance be used in the encoder and decoder of a U-Net architecture.
 # The function takes an input tensor, a `scale_factor`, and a list of 
@@ -95,6 +103,10 @@ upsampled_data = resample(downsampled_data, upsample_factor, [2, 3])
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Finally, let's visualize the results to see the effect of the ``resample`` function.
 
 fig, axs = plt.subplots(1, 3, figsize=(14, 6))
@@ -128,6 +140,10 @@ plt.tight_layout(rect=[0, 0.03, 1, 1.08])
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # The ``resample`` function effectively changes the resolution of the data.
 # Notice that the upsampled image on the right is a faithful, if slightly blurrier,
 # reconstruction of the original. This is because the downsampling step is lossy;
