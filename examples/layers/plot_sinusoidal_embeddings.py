@@ -11,65 +11,66 @@ Sinusoidal embeddings encode inputs as periodic functions (sines and cosines) th
 lifting low-dimensional coordinates into a richer spectral representation. This spectral 
 lifting enhances the model's ability to capture fine-scale variations and high-frequency 
 dynamics.
-
-Setup in One-Dimension
-----------------------
-To build intuition, consider a simple one-dimensional example. Let :math:`x \in \mathbb{R}` 
-be a single input, and define the embedding function
-
-.. math::
-   g: \mathbb{R} \rightarrow \mathbb{R}^{2 L}, \quad g(x)=[\sin (x), \cos (x), \sin (2 x), \cos (2 x), \ldots, \sin (L x), \cos (L x)],
-
-where :math:`L` defines the number of frequencies we wish to use for the embedding. Each 
-pair of sine and cosine terms introduces a higher frequency, enriching how positional 
-information is represented.
-
-This idea naturally extends to an entire one-dimensional input. Let :math:`\vec{x} \in \mathbb{R}^N` 
-denote a discretized domain of :math:`N` points. Then the embedding function becomes
-
-.. math::
-   g: \mathbb{R}^N \rightarrow \mathbb{R}^{N \times 2 L}, \quad g(\vec{x})=\operatorname{concat}(\sin (\vec{x}), \cos (\vec{x}), \sin (2 \vec{x}), \cos (2 \vec{x}), \ldots, \sin (L \vec{x}), \cos (L \vec{x})),
-
-In practice, both the original coordinate and its embedding are passed to the model:
-
-.. math::
-   \operatorname{input}(\vec{x})=\operatorname{concat}(\vec{x}, g(\vec{x})) \in \mathbb{R}^{N \times 2 L + 1},
-
-preserving the original input, while augmenting it with a hierarchy of frequency components.
-
-Domain Normalization
-~~~~~~~~~~~~~~~~~~~~
-When applying sinusoidal embeddings, it is often useful to normalize the input coordinates 
-to a periodic interval that aligns with the natural period of the sine and cosine functions. 
-For example, a one-dimensional spatial domain :math:`\vec{x} \in[0,1]` of :math:`N` points can be rescaled to
-
-.. math::
-   \vec{x}^{\prime}=2 \pi \vec{x},
-
-so that :math:`\vec{x}^{\prime} \in[0,2 \pi]`.
-
-This mapping preserves the number of samples :math:`N` and the overall shape of the domain 
-while ensuring that the lowest-frequency sine and cosine components complete exactly one 
-full oscillation over the interval.
-
-Choosing L to Satisfy the Nyquist-Criterion
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-When choosing the number of frequency levels :math:`L`, it is important to ensure that the 
-highest frequency component in the embedding does not exceed the Nyquist limit imposed by 
-the discretisation of the input domain. For a domain of :math:`N` points, the Nyquist frequency is 
-
-.. math::
-   f_{\text{Nyquist}}=\frac{N}{2}.
-
-For the sinusoidal embedding defined above, the Nyquist constraint becomes:
-
-.. math::
-   L < \frac{N}{2}.
-
-Below, we visualize the sinusoidal embeddings for a spatial input domain 
-:math:`\vec{x} \in[0,1]` consisting of 1000 equally spaced points, using :math:`L = 3` frequency levels.
-
 """
+# %%
+# Setup in One-Dimension
+# ----------------------
+# To build intuition, consider a simple one-dimensional example. Let :math:`x \in \mathbb{R}` 
+# be a single input, and define the embedding function
+
+# .. math::
+#    g: \mathbb{R} \rightarrow \mathbb{R}^{2 L}, \quad g(x)=[\sin (x), \cos (x), \sin (2 x), \cos (2 x), \ldots, \sin (L x), \cos (L x)],
+
+# where :math:`L` defines the number of frequencies we wish to use for the embedding. Each 
+# pair of sine and cosine terms introduces a higher frequency, enriching how positional 
+# information is represented.
+
+# This idea naturally extends to an entire one-dimensional input. Let :math:`\vec{x} \in \mathbb{R}^N` 
+# denote a discretized domain of :math:`N` points. Then the embedding function becomes
+
+# .. math::
+#    g: \mathbb{R}^N \rightarrow \mathbb{R}^{N \times 2 L}, \quad g(\vec{x})=\operatorname{concat}(\sin (\vec{x}), \cos (\vec{x}), \sin (2 \vec{x}), \cos (2 \vec{x}), \ldots, \sin (L \vec{x}), \cos (L \vec{x})),
+
+# In practice, both the original coordinate and its embedding are passed to the model:
+
+# .. math::
+#    \operatorname{input}(\vec{x})=\operatorname{concat}(\vec{x}, g(\vec{x})) \in \mathbb{R}^{N \times 2 L + 1},
+
+# preserving the original input, while augmenting it with a hierarchy of frequency components.
+
+# Domain Normalization
+# ~~~~~~~~~~~~~~~~~~~~
+# When applying sinusoidal embeddings, it is often useful to normalize the input coordinates 
+# to a periodic interval that aligns with the natural period of the sine and cosine functions. 
+# For example, a one-dimensional spatial domain :math:`\vec{x} \in[0,1]` of :math:`N` points can be rescaled to
+
+# .. math::
+#    \vec{x}^{\prime}=2 \pi \vec{x},
+
+# so that :math:`\vec{x}^{\prime} \in[0,2 \pi]`.
+
+# This mapping preserves the number of samples :math:`N` and the overall shape of the domain 
+# while ensuring that the lowest-frequency sine and cosine components complete exactly one 
+# full oscillation over the interval.
+
+# Choosing L to Satisfy the Nyquist-Criterion
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# When choosing the number of frequency levels :math:`L`, it is important to ensure that the 
+# highest frequency component in the embedding does not exceed the Nyquist limit imposed by 
+# the discretisation of the input domain. For a domain of :math:`N` points, the Nyquist frequency is 
+
+# .. math::
+#    f_{\text{Nyquist}}=\frac{N}{2}.
+
+# For the sinusoidal embedding defined above, the Nyquist constraint becomes:
+
+# .. math::
+#    L < \frac{N}{2}.
+
+# Below, we visualize the sinusoidal embeddings for a spatial input domain 
+# :math:`\vec{x} \in[0,1]` consisting of 1000 equally spaced points, using :math:`L = 3` frequency levels.
+
+
 
 # %%
 import torch
@@ -100,7 +101,6 @@ for l in range(1, L + 1):
 input_arr    = np.asarray([x, *g])
 input_tensor = torch.tensor(input_arr)
 
-# %%
 # Plot the embedding
 colors = plt.cm.tab10.colors 
 
@@ -186,30 +186,31 @@ for l in range(1, L + 1):
 input_amplitude = torch.tensor(np.asarray([x, *g_amplitude]))
 input_frequency = torch.tensor(np.asarray([x, *g_frequency]))
 
-# %%
 # Plot both embeddings
 colors = plt.cm.tab10.colors
-fig, axes = plt.subplots(1, 2, figsize=(20, 4), sharey=True)
+fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
+## Amplitude modulation
 for freq_idx in range(L):
     color = colors[freq_idx % len(colors)]
     sin_idx, cos_idx = 2 * freq_idx + 1, 2 * freq_idx + 2
     axes[0].plot(x, input_amplitude[sin_idx], color=color, label=f"Channel {freq_idx + 1}")
     axes[0].plot(x, input_amplitude[cos_idx], color=color)
 axes[0].set_title("Amplitude Modulation")
-axes[0].set_xlabel("x")
 axes[0].set_ylabel("Embedding value")
 axes[0].legend(loc="lower left", framealpha=1.0)
 
+## Frequency modulation
 for freq_idx in range(L):
     color = colors[freq_idx % len(colors)]
     sin_idx, cos_idx = 2 * freq_idx + 1, 2 * freq_idx + 2
     axes[1].plot(x, input_frequency[sin_idx], color=color, label=f"Channel {freq_idx + 1}")
     axes[1].plot(x, input_frequency[cos_idx], color=color)
 axes[1].set_title("Frequency Modulation")
+axes[1].set_ylabel("Embedding value")
 axes[1].set_xlabel("x")
 
-plt.suptitle(f"Sinusoidal Embeddings with Parameter m = {m}")
+plt.suptitle(f"Sinusoidal Embeddings with Parameter m = {m}", y=0.95)
 plt.show()
 
 # %%
@@ -217,6 +218,7 @@ plt.show()
 # -----------------------------------------
 # The ``neuralop`` library provides a unified sinusoidal positional embedding class, 
 # ``neuralop.layers.embeddings.SinusoidalEmbedding``, with the following embedding techniques:
+#
 # - ``transformer`` - Vaswani, A. et al (2017), "Attention Is All You Need". 
 # - ``nerf`` - Mildenhall, B. et al (2020), "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis".
 #
@@ -235,9 +237,9 @@ plt.show()
 # **1. Transformer-style embedding:** For :math:`0 \leq k < L`:
 #
 # .. math::
-#    g(\vec{x})_{:, 2 k}=\sin \left(\frac{\vec{x}}{\text { max\_positions }^{k / L}}\right), \quad g(x)_{:, 2 k+1}=\cos \left(\frac{\vec{x}}{\text { max\_positions }^{k / L}}\right) .
+#    g(\vec{x})_{:, 2 k}=\sin \left(\frac{\vec{x}}{\text { max_positions }^{k / L}}\right), \quad g(x)_{:, 2 k+1}=\cos \left(\frac{\vec{x}}{\text { max_positions }^{k / L}}\right) .
 #
-# Here, :math:`\text{max\_positions}` controls the maximum position for the embedding.
+# Here, :math:`\text{max_positions}` controls the maximum position for the embedding.
 #
 # **2. NeRF-style embedding:** For :math:`0 \leq k < L`:
 #
@@ -283,12 +285,11 @@ nerf_embedder = SinusoidalEmbedding(in_channels=1,
 
 nerf_embedding = nerf_embedder(x_normalized).permute(1, 0)
 
-# %%
 # Plot both embeddings
 colors = plt.cm.tab10.colors
-fig, axes = plt.subplots(1, 2, figsize=(20, 4), sharey=True)
+fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
-# Transformer embedding
+## Transformer embedding
 for freq_idx in range(L):
     color = colors[freq_idx % len(colors)]
     sin_idx, cos_idx = 2 * freq_idx, 2 * freq_idx + 1
@@ -297,11 +298,10 @@ for freq_idx in range(L):
     axes[0].plot(x,transformer_embedding[cos_idx], color=color)
 
 axes[0].set_title("Transformer embedding")
-axes[0].set_xlabel("x")
 axes[0].set_ylabel("Embedding value")
 axes[0].legend(loc="lower left", framealpha=1.0)
 
-# NeRF embedding
+## NeRF embedding
 for freq_idx in range(L):
     color = colors[freq_idx % len(colors)]
     sin_idx, cos_idx = 2 * freq_idx, 2 * freq_idx + 1
@@ -311,8 +311,9 @@ for freq_idx in range(L):
     
 axes[1].set_title("NeRF embedding")
 axes[1].set_xlabel("x")
+axes[1].set_ylabel("Embedding value")
 
-plt.suptitle(f"Sinusoidal Embeddings using transformer and NeRF embedding types")
+plt.suptitle(f"Sinusoidal Embeddings using transformer and NeRF embedding types", y=0.95)
 plt.show()
 
 # %%
@@ -356,7 +357,6 @@ nerf_embedder = SinusoidalEmbedding(in_channels=1,
 
 nerf_embedding = nerf_embedder(x_normalized * m_tensor).permute(1, 0)
 
-# %%
 # Plot the embedding
 colors = plt.cm.tab10.colors
 
@@ -402,7 +402,6 @@ nerf_embedder = SinusoidalEmbedding(in_channels=1,
 
 nerf_embedding = nerf_embedder(x_normalized).permute(1, 0) * m_tensor
 
-# %%
 # Plot the embedding
 colors = plt.cm.tab10.colors
 
@@ -433,12 +432,12 @@ plt.show()
 # :math:`L` such that the Nyquist-Criterion is not violated. Earlier, we provided simple guidelines 
 # for selecting :math:`L` in both transformer- and NeRF-style embeddings.
 #
-# When dealing with FNOs with a specified number of Fourier modes, :math:`\text{n\_modes}`, the 
-# highest embedded frequency should satisfy :math:`\text{n\_modes}`. For the NeRF-style embedding, 
+# When dealing with FNOs with a specified number of Fourier modes, :math:`\text{n_modes}`, the 
+# highest embedded frequency should satisfy :math:`\text{n_modes}`. For the NeRF-style embedding, 
 # this condition leads to an explicit upper bound on :math:`L`:
 #
 # .. math::
-#    2^{L-1} < \text{n\_modes} \implies L < 1 + \log_2\left(\text{n\_modes}\right).
+#    2^{L-1} < \text{n_modes} \implies L < 1 + \log_2\left(\text{n_modes}\right).
 
 # %%
 # Setup in Higher Dimensions
