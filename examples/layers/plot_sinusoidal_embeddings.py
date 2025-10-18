@@ -17,60 +17,58 @@ dynamics.
 # ----------------------
 # To build intuition, consider a simple one-dimensional example. Let :math:`x \in \mathbb{R}` 
 # be a single input, and define the embedding function
-
+#
 # .. math::
 #    g: \mathbb{R} \rightarrow \mathbb{R}^{2 L}, \quad g(x)=[\sin (x), \cos (x), \sin (2 x), \cos (2 x), \ldots, \sin (L x), \cos (L x)],
-
+#
 # where :math:`L` defines the number of frequencies we wish to use for the embedding. Each 
 # pair of sine and cosine terms introduces a higher frequency, enriching how positional 
 # information is represented.
-
+#
 # This idea naturally extends to an entire one-dimensional input. Let :math:`\vec{x} \in \mathbb{R}^N` 
 # denote a discretized domain of :math:`N` points. Then the embedding function becomes
-
+#
 # .. math::
 #    g: \mathbb{R}^N \rightarrow \mathbb{R}^{N \times 2 L}, \quad g(\vec{x})=\operatorname{concat}(\sin (\vec{x}), \cos (\vec{x}), \sin (2 \vec{x}), \cos (2 \vec{x}), \ldots, \sin (L \vec{x}), \cos (L \vec{x})),
-
+#
 # In practice, both the original coordinate and its embedding are passed to the model:
-
+#
 # .. math::
 #    \operatorname{input}(\vec{x})=\operatorname{concat}(\vec{x}, g(\vec{x})) \in \mathbb{R}^{N \times 2 L + 1},
-
+#
 # preserving the original input, while augmenting it with a hierarchy of frequency components.
-
+#
 # Domain Normalization
 # ~~~~~~~~~~~~~~~~~~~~
 # When applying sinusoidal embeddings, it is often useful to normalize the input coordinates 
 # to a periodic interval that aligns with the natural period of the sine and cosine functions. 
 # For example, a one-dimensional spatial domain :math:`\vec{x} \in[0,1]` of :math:`N` points can be rescaled to
-
+#
 # .. math::
 #    \vec{x}^{\prime}=2 \pi \vec{x},
-
+#
 # so that :math:`\vec{x}^{\prime} \in[0,2 \pi]`.
-
+#
 # This mapping preserves the number of samples :math:`N` and the overall shape of the domain 
 # while ensuring that the lowest-frequency sine and cosine components complete exactly one 
 # full oscillation over the interval.
-
+#
 # Choosing L to Satisfy the Nyquist-Criterion
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # When choosing the number of frequency levels :math:`L`, it is important to ensure that the 
 # highest frequency component in the embedding does not exceed the Nyquist limit imposed by 
 # the discretisation of the input domain. For a domain of :math:`N` points, the Nyquist frequency is 
-
+#
 # .. math::
 #    f_{\text{Nyquist}}=\frac{N}{2}.
-
+#
 # For the sinusoidal embedding defined above, the Nyquist constraint becomes:
-
+#
 # .. math::
 #    L < \frac{N}{2}.
-
+#
 # Below, we visualize the sinusoidal embeddings for a spatial input domain 
 # :math:`\vec{x} \in[0,1]` consisting of 1000 equally spaced points, using :math:`L = 3` frequency levels.
-
-
 
 # %%
 import torch
