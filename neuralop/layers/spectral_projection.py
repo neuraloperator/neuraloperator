@@ -96,12 +96,12 @@ def spectral_projection_divergence_free(u, domain_size, constraint_modes):
     u_ft = torch.fft.fftn(u, dim=(2, 3))  
     
     # Extract lower modes for both dimensions where the constraint is applied
-    u_ft = torch.fft.fftshift(u_ft, dim=(2, 3))
     if (height != constraint_modes[0]) or (width != constraint_modes[1]):
+        u_ft = torch.fft.fftshift(u_ft, dim=(2, 3))
         u_ft = u_ft[:, :, 
                     (height - constraint_modes[0])//2 : (height - constraint_modes[0])//2 + constraint_modes[0],
                     (width - constraint_modes[1])//2 : (width - constraint_modes[1])//2 + constraint_modes[1]]
-    u_ft = torch.fft.ifftshift(u_ft, dim=(2, 3))
+        u_ft = torch.fft.ifftshift(u_ft, dim=(2, 3))
     
     # Set up wavenumber grids for spectral operations
     ky = 2*np.pi * torch.fft.fftfreq(constraint_modes[0], d=domain_height/constraint_modes[0]).to(dtype).to(device)
@@ -121,15 +121,10 @@ def spectral_projection_divergence_free(u, domain_size, constraint_modes):
     
     # Pad zeros back to full resolution if needed
     if height != constraint_modes[0] or width != constraint_modes[1]:
-        # Apply ffshift to shift the modes
         projected_u_ft = torch.fft.fftshift(projected_u_ft)
-        
-        # Apply padding 
         pad_h = height - constraint_modes[0]
         pad_w = width - constraint_modes[1]
         projected_u_ft = F.pad(projected_u_ft, [pad_w//2, pad_w - pad_w//2, pad_h//2, pad_h - pad_h//2])
-        
-        # Apply ifftshift to shift the modes back
         projected_u_ft = torch.fft.ifftshift(projected_u_ft)
     
     # Transform back to physical space
