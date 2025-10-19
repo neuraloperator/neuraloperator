@@ -667,7 +667,7 @@ def central_diff_1d(x, h, periodic_in_x=True):
     Creates a FiniteDiff instance with dim=1 and returns dx.
 
     .. deprecated::
-        This function is deprecated and may not be maintained in future versions.
+        This function is deprecated and will be removed in future versions.
         Please use the FiniteDiff class instead for better performance and features.
     """
     warnings.warn(
@@ -686,7 +686,7 @@ def central_diff_2d(x, h, periodic_in_x=True, periodic_in_y=True):
     Creates a FiniteDiff instance with dim=2 and returns dx, dy.
 
     .. deprecated::
-        This function is deprecated and may not be maintained in future versions.
+        This function is deprecated and will be removed in future versions.
         Please use the FiniteDiff class instead for better performance and features.
     """
     warnings.warn(
@@ -707,7 +707,7 @@ def central_diff_3d(x, h, periodic_in_x=True, periodic_in_y=True, periodic_in_z=
     Creates a FiniteDiff instance with dim=3 and returns dx, dy, dz.
 
     .. deprecated::
-        This function is deprecated and may not be maintained in future versions.
+        This function is deprecated and will be removed in future versions.
         Please use the FiniteDiff class instead for better performance and features.
     """
     warnings.warn(
