@@ -4,6 +4,7 @@ from ...utils import count_tensor_params
 from .base_transforms import Transform, DictTransform
 import torch
 
+
 class Normalizer(Transform):
     def __init__(self, mean, std, eps=1e-6):
         self.mean = mean
@@ -11,15 +12,15 @@ class Normalizer(Transform):
         self.eps = eps
 
     def transform(self, data):
-        return (data - self.mean)/(self.std + self.eps)
-    
+        return (data - self.mean) / (self.std + self.eps)
+
     def inverse_transform(self, data):
         return (data * (self.std + self.eps)) + self.mean
 
     def to(self, device):
         self.mean = self.mean.to(device)
         self.std = self.std.to(device)
-    
+
     def cuda(self):
         self.mean = self.mean.cuda()
         self.std = self.std.cuda()
@@ -27,6 +28,7 @@ class Normalizer(Transform):
     def cpu(self):
         self.mean = self.mean.cpu()
         self.std = self.std.cpu()
+
 
 class UnitGaussianNormalizer(Transform):
     """
@@ -142,7 +144,11 @@ class UnitGaussianNormalizer(Transform):
         # 1/(n_i + n_j) * (n_i * sum(x_i^2)/n_i + sum(x_j^2) - (n_i*sum(x_i)/n_i + sum(x_j))^2)
         # = 1/(n_i + n_j)  * (sum(x_i^2) + sum(x_j^2) - sum(x_i)^2 - 2sum(x_i)sum(x_j) - sum(x_j)^2))
         # multiply by (n_i + n_j) / (n_i + n_j + 1) for unbiased estimator
-        self.std = torch.sqrt(self.squared_mean - self.mean**2) * self.n_elements / (self.n_elements - 1)
+        self.std = (
+            torch.sqrt(self.squared_mean - self.mean**2)
+            * self.n_elements
+            / (self.n_elements - 1)
+        )
 
     def transform(self, x):
         return (x - self.mean) / (self.std + self.eps)
@@ -194,6 +200,7 @@ class UnitGaussianNormalizer(Transform):
                     instances[key].partial_fit(sample.unsqueeze(0))
         return instances
 
+
 class DictUnitGaussianNormalizer(DictTransform):
     """DictUnitGaussianNormalizer composes
     DictTransform and UnitGaussianNormalizer to normalize different
@@ -208,20 +215,27 @@ class DictUnitGaussianNormalizer(DictTransform):
             slices of input tensor to grab per field, must share keys with above
         return_mappings : Dict[slice]
             _description_
-        """
-    def __init__(self, 
-                 normalizer_dict: Dict[str, UnitGaussianNormalizer],
-                 input_mappings: Dict[str, slice],
-                 return_mappings: Dict[str, slice]):
-        assert set(normalizer_dict.keys()) == set(input_mappings.keys()), \
-            "Error: normalizers and model input fields must be keyed identically"
-        assert set(normalizer_dict.keys()) == set(return_mappings.keys()), \
-            "Error: normalizers and model output fields must be keyed identically"
+    """
 
-        super().__init__(transform_dict=normalizer_dict,
-                         input_mappings=input_mappings,
-                         return_mappings=return_mappings)
-    
+    def __init__(
+        self,
+        normalizer_dict: Dict[str, UnitGaussianNormalizer],
+        input_mappings: Dict[str, slice],
+        return_mappings: Dict[str, slice],
+    ):
+        assert set(normalizer_dict.keys()) == set(
+            input_mappings.keys()
+        ), "Error: normalizers and model input fields must be keyed identically"
+        assert set(normalizer_dict.keys()) == set(
+            return_mappings.keys()
+        ), "Error: normalizers and model output fields must be keyed identically"
+
+        super().__init__(
+            transform_dict=normalizer_dict,
+            input_mappings=input_mappings,
+            return_mappings=return_mappings,
+        )
+
     @classmethod
     def from_dataset(cls, dataset, dim=None, keys=None, mask=None):
         """Return a dictionary of normalizer instances, fitted on the given dataset
