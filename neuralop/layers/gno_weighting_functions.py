@@ -2,26 +2,57 @@ from functools import partial
 import torch
 
 def bump_cutoff(x, radius=1., scale=1., eps=1e-7):
+    """
+    Bump cutoff function with exponential decay.
+    
+    Formula: w(x) = scale * e * exp(-1/(1-d² + ε))
+    where d = x/radius, x ∈ [0, radius], and ε is a small constant for numerical stability.
+    """
     out = x.clip(0., radius) / radius
     out = - 1 / ((1 - out ** 2) + eps)
     return out.exp() * torch.e * scale
 
 def half_cos_cutoff(x, radius=1., scale=1.):
+    """
+    Half-cosine cutoff function with smooth decay.
+    
+    Formula: w(x) = scale * (0.5 * cos(π * d) + 0.5)
+    where d = x/radius, x ∈ [0, radius].
+    """
     x = x / radius
     return scale * (0.5 * torch.cos(torch.pi * x) + 0.5)
 
 def quadr_cutoff(x, radius=1., scale=1.):
+    """
+    Quadratic cutoff function with piecewise definition.
+    
+    Formula: w(x) = scale * {1 - 2d², if d < 0.5
+                           {2(1 - d)², if d ≥ 0.5
+    where d = x/radius, x ∈ [0, radius].
+    """
     x = x / radius
     left = 1 - 2 * x ** 2
     right = 2 * (1 - x) ** 2
     return scale * torch.where(x < 0.5, left, right)
 
 def quartic_cutoff(x, radius=1., scale=1.):
+    """
+    Quartic cutoff function with fourth-order polynomial.
+    
+    Formula: w(x) = (scale/radius⁴) * x⁴ - (2*scale/radius²) * x² + scale
+    where d = x/radius, x ∈ [0, radius].
+    """
     a = scale / radius ** 4
     c = - 2 * scale / radius ** 2 
     return a * x ** 4 + c * x ** 2 + scale
 
 def octic_cutoff(x, radius=1., scale=1.):
+    """
+    Octic cutoff function with eighth-order polynomial.
+    
+    Formula: w(x) = scale * (-3d⁸ + 8d⁶ - 6d⁴ + 1)
+    where d = x/radius, x ∈ [0, radius].
+    """
     x = x / radius
     return scale * (-3 * x ** 8 + 8 * x ** 6 - 6 * x ** 4  + 1)
 
