@@ -16,8 +16,8 @@ Number = Union[int, float]
 
 
 class FNOBlocks(nn.Module):
-    """FNOBlocks implements a sequence of Fourier layers, the operations of which 
-    are first described in [1]_. The exact implementation details of the Fourier 
+    """FNOBlocks implements a sequence of Fourier layers, the operations of which
+    are first described in [1]_. The exact implementation details of the Fourier
     layer architecture are discussed in [2]_.
 
     Parameters
@@ -27,8 +27,8 @@ class FNOBlocks(nn.Module):
     out_channels : int
         Number of output channels after Fourier layers
     n_modes : int or List[int]
-        Number of modes to keep along each dimension in frequency space. 
-        Can either be specified as an int (for all dimensions) or an iterable 
+        Number of modes to keep along each dimension in frequency space.
+        Can either be specified as an int (for all dimensions) or an iterable
         with one number per dimension
     resolution_scaling_factor : Optional[Union[Number, List[Number]]], optional
         Factor by which to scale outputs for super-resolution, by default None
@@ -83,15 +83,16 @@ class FNOBlocks(nn.Module):
         Implementation parameter for SpectralConv. Options: "factorized", "reconstructed", by default "factorized"
     decomposition_kwargs : dict, optional
         Kwargs for tensor decomposition in SpectralConv, by default dict()
-    
+
     References
     -----------
-    .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
+    .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
            Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
     .. [2] Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
-           Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024). 
+           Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024).
            TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
     """
+
     def __init__(
         self,
         in_channels,
@@ -116,8 +117,8 @@ class FNOBlocks(nn.Module):
         factorization=None,
         rank=1.0,
         conv_module=SpectralConv,
-        fixed_rank_modes=False, #undoc
-        implementation="factorized", #undoc
+        fixed_rank_modes=False,
+        implementation="factorized",
         decomposition_kwargs=dict(),
     ):
         super().__init__()
@@ -157,24 +158,29 @@ class FNOBlocks(nn.Module):
             self.non_linearity = CGELU
         else:
             self.non_linearity = non_linearity
-        
-        self.convs = nn.ModuleList([
+
+        self.convs = nn.ModuleList(
+            [
                 conv_module(
-                self.in_channels,
-                self.out_channels,
-                self.n_modes,
-                resolution_scaling_factor=None if resolution_scaling_factor is None else self.resolution_scaling_factor[i],
-                max_n_modes=max_n_modes,
-                rank=rank,
-                fixed_rank_modes=fixed_rank_modes,
-                implementation=implementation,
-                separable=separable,
-                factorization=factorization,
-                fno_block_precision=fno_block_precision,
-                decomposition_kwargs=decomposition_kwargs,
-                complex_data=complex_data
-            ) 
-            for i in range(n_layers)])
+                    self.in_channels,
+                    self.out_channels,
+                    self.n_modes,
+                    resolution_scaling_factor=None
+                    if resolution_scaling_factor is None
+                    else self.resolution_scaling_factor[i],
+                    max_n_modes=max_n_modes,
+                    rank=rank,
+                    fixed_rank_modes=fixed_rank_modes,
+                    implementation=implementation,
+                    separable=separable,
+                    factorization=factorization,
+                    fno_block_precision=fno_block_precision,
+                    decomposition_kwargs=decomposition_kwargs,
+                    complex_data=complex_data,
+                )
+                for i in range(n_layers)
+            ]
+        )
 
         if fno_skip is not None:
             self.fno_skips = nn.ModuleList(
@@ -191,9 +197,7 @@ class FNOBlocks(nn.Module):
         else:
             self.fno_skips = None
         if self.complex_data and self.fno_skips is not None:
-            self.fno_skips = nn.ModuleList(
-                [ComplexValued(x) for x in self.fno_skips]
-                )
+            self.fno_skips = nn.ModuleList([ComplexValued(x) for x in self.fno_skips])
 
         if self.use_channel_mlp:
             self.channel_mlp = nn.ModuleList(
@@ -236,11 +240,8 @@ class FNOBlocks(nn.Module):
             self.norm = None
         elif norm == "instance_norm":
             self.norm = nn.ModuleList(
-                    [
-                        InstanceNorm()
-                        for _ in range(n_layers * self.n_norms)
-                    ]
-                )
+                [InstanceNorm() for _ in range(n_layers * self.n_norms)]
+            )
         elif norm == "group_norm":
             self.norm = nn.ModuleList(
                 [
@@ -248,7 +249,7 @@ class FNOBlocks(nn.Module):
                     for _ in range(n_layers * self.n_norms)
                 ]
             )
-        
+
         elif norm == "batch_norm":
             self.norm = nn.ModuleList(
                 [
@@ -256,7 +257,7 @@ class FNOBlocks(nn.Module):
                     for _ in range(n_layers * self.n_norms)
                 ]
             )
-        
+
         elif norm == "ada_in":
             self.norm = nn.ModuleList(
                 [
@@ -269,11 +270,9 @@ class FNOBlocks(nn.Module):
                 f"Got norm={norm} but expected None or one of "
                 "[instance_norm, group_norm, batch_norm, ada_in]"
             )
-        
+
         if self.complex_data and self.norm is not None:
-            self.norm = nn.ModuleList(
-                [ComplexValued(x) for x in self.norm]
-            )
+            self.norm = nn.ModuleList([ComplexValued(x) for x in self.norm])
 
     def set_ada_in_embeddings(self, *embeddings):
         """Sets the embeddings of each Ada-IN norm layers
@@ -299,7 +298,6 @@ class FNOBlocks(nn.Module):
             return self.forward_with_postactivation(x, index, output_shape)
 
     def forward_with_postactivation(self, x, index=0, output_shape=None):
-        
         if self.fno_skips is not None:
             x_skip_fno = self.fno_skips[index](x)
             x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
@@ -321,10 +319,10 @@ class FNOBlocks(nn.Module):
 
         x = x_fno + x_skip_fno if self.fno_skips is not None else x_fno
 
-        if (index < (self.n_layers - 1)):
+        if index < (self.n_layers - 1):
             x = self.non_linearity(x)
 
-        if self.use_channel_mlp:  
+        if self.use_channel_mlp:
             if self.channel_mlp_skips is not None:
                 x = self.channel_mlp[index](x) + x_skip_channel_mlp
             else:
@@ -370,7 +368,7 @@ class FNOBlocks(nn.Module):
         if self.norm is not None:
             x = self.norm[self.n_norms * index + 1](x)
 
-        if self.use_channel_mlp:  
+        if self.use_channel_mlp:
             if self.channel_mlp_skips is not None:
                 x = self.channel_mlp[index](x) + x_skip_channel_mlp
             else:

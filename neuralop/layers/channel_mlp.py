@@ -6,17 +6,17 @@ import torch.nn.functional as F
 class ChannelMLP(nn.Module):
     """
     Multi-layer perceptron applied channel-wise across spatial dimensions.
-    
+
     ChannelMLP applies a series of 1D convolutions and nonlinearities to the channel
     dimension of input tensors, making it invariant to spatial resolution. This is
     particularly useful in neural operators where the spatial dimensions may vary
     but the channel processing should remain consistent.
-    
+
     The implementation uses 1D convolutions with kernel size 1, which effectively
     performs linear transformations on the channel dimension while preserving
     spatial structure. This approach is more efficient than reshaping to 2D and
     using fully connected layers.
-    
+
     Parameters
     ----------
     in_channels : int
@@ -32,7 +32,7 @@ class ChannelMLP(nn.Module):
     non_linearity : callable, optional
         Nonlinear activation function to apply between layers, by default F.gelu
     dropout : float, optional
-        Dropout probability applied after each layer (except the last). 
+        Dropout probability applied after each layer (except the last).
         If 0, no dropout is applied, by default 0.0
     """
 
@@ -59,7 +59,7 @@ class ChannelMLP(nn.Module):
             if dropout > 0.0
             else None
         )
-        
+
         # Build the MLP layers using 1D convolutions with kernel size 1
         # This effectively performs linear transformations on the channel dimension
         # while preserving spatial structure and being more efficient than FC layers
@@ -76,17 +76,19 @@ class ChannelMLP(nn.Module):
                 self.fcs.append(nn.Conv1d(self.hidden_channels, self.out_channels, 1))
             else:
                 # Internal layers: hidden -> hidden
-                self.fcs.append(nn.Conv1d(self.hidden_channels, self.hidden_channels, 1))
+                self.fcs.append(
+                    nn.Conv1d(self.hidden_channels, self.hidden_channels, 1)
+                )
 
     def forward(self, x):
         """
         Forward pass through the channel MLP.
-        
+
         Parameters
         ----------
         x : torch.Tensor
             Input tensor of shape (batch, in_channels, *spatial_dims)
-            
+
         Returns
         -------
         torch.Tensor
@@ -94,13 +96,13 @@ class ChannelMLP(nn.Module):
         """
         reshaped = False
         size = list(x.shape)
-        
+
         # Handle high-dimensional inputs (4D+) by flattening spatial dimensions
         # This allows the 1D convolutions to process all spatial positions uniformly
-        if x.ndim > 3:  
+        if x.ndim > 3:
             # Flatten spatial dimensions: (batch, channels, x1, x2, ...) -> (batch, channels, -1)
             # Use reshape() instead of view() to handle non-contiguous tensors
-            x = x.reshape((*size[:2], -1)) 
+            x = x.reshape((*size[:2], -1))
             reshaped = True
 
         # Apply MLP layers with nonlinearity and dropout
@@ -108,7 +110,7 @@ class ChannelMLP(nn.Module):
             x = fc(x)  # Linear transformation (1D conv with kernel size 1)
             if i < self.n_layers - 1:  # Apply nonlinearity to all layers except the last
                 x = self.non_linearity(x)
-            if self.dropout is not None:  
+            if self.dropout is not None:
                 x = self.dropout[i](x)
 
         # Restore original spatial dimensions if input was reshaped
@@ -121,10 +123,10 @@ class ChannelMLP(nn.Module):
 class LinearChannelMLP(torch.nn.Module):
     """
     Multi-layer perceptron using fully connected layers for channel processing.
-    
+
     This is an alternative implementation of ChannelMLP that uses standard Linear
-    layers instead of 1D convolutions. 
-    
+    layers instead of 1D convolutions.
+
     Parameters
     ----------
     layers : list of int
@@ -136,13 +138,15 @@ class LinearChannelMLP(torch.nn.Module):
         Dropout probability applied after each layer (except the last).
         If 0, no dropout is applied, by default 0.0
     """
-    
+
     def __init__(self, layers, non_linearity=F.gelu, dropout=0.0):
         super().__init__()
 
         self.n_layers = len(layers) - 1
 
-        assert self.n_layers >= 1, "Error: trying to instantiate \
+        assert (
+            self.n_layers >= 1
+        ), "Error: trying to instantiate \
             a LinearChannelMLP with only one linear layer."
 
         self.fcs = nn.ModuleList()
@@ -160,13 +164,13 @@ class LinearChannelMLP(torch.nn.Module):
     def forward(self, x):
         """
         Forward pass through the linear channel MLP.
-        
+
         Parameters
         ----------
         x : torch.Tensor
             Input tensor of shape (batch, in_channels) or (batch*spatial, in_channels)
             Note: Input must be pre-reshaped to 2D format
-            
+
         Returns
         -------
         torch.Tensor

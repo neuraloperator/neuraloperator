@@ -52,13 +52,14 @@ class AttentionKernelIntegral(torch.nn.Module):
         (this is sometimes not needed when using cross-attention), by default True
     """
 
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 n_heads,
-                 head_n_channels,
-                 project_query=True,
-                 ):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        n_heads,
+        head_n_channels,
+        project_query=True,
+    ):
         super().__init__()
         self.n_heads = n_heads
         self.head_n_channels = head_n_channels
@@ -78,8 +79,11 @@ class AttentionKernelIntegral(torch.nn.Module):
 
         self.to_v = nn.Linear(in_channels, head_n_channels * n_heads, bias=False)
 
-        self.to_out = nn.Linear(head_n_channels * n_heads, out_channels) \
-            if head_n_channels * n_heads != out_channels else nn.Identity()
+        self.to_out = (
+            nn.Linear(head_n_channels * n_heads, out_channels)
+            if head_n_channels * n_heads != out_channels
+            else nn.Identity()
+        )
 
         self.init_gain = 1 / math.sqrt(head_n_channels)
         self.diagonal_weight = self.init_gain
@@ -128,15 +132,17 @@ class AttentionKernelIntegral(torch.nn.Module):
         u = norm_fn(u)    # layer norm with channel dimension or instance norm with spatial dimension
         return u.view(batch_size, self.n_heads, -1, self.head_n_channels)
 
-    def forward(self,
-                u_src,
-                pos_src,
-                positional_embedding_module=None,    # positional encoding module for encoding q/k
-                u_qry=None,
-                pos_qry=None,
-                weights=None,
-                associative=True,   # can be much faster if num_grid_points is larger than the channel number c
-                return_kernel=False):
+    def forward(
+        self,
+        u_src,
+        pos_src,
+        positional_embedding_module=None,  # positional encoding module for encoding q/k
+        u_qry=None,
+        pos_qry=None,
+        weights=None,
+        associative=True,  # can be much faster if num_grid_points is larger than the channel number c
+        return_kernel=False,
+    ):
         """
         Computes kernel integral transform with attention
 
@@ -164,7 +170,7 @@ class AttentionKernelIntegral(torch.nn.Module):
         """
 
         if u_qry is None:
-            u_qry = u_src   # go back to self attention
+            u_qry = u_src  # go back to self attention
             if pos_qry is not None:
                 raise ValueError('Query coordinates are provided but query function is not provided')
         else:
@@ -172,7 +178,7 @@ class AttentionKernelIntegral(torch.nn.Module):
                 raise ValueError('Query coordinates are required if query function is provided')
 
         if return_kernel and associative:
-            raise ValueError('Cannot get kernel matrix when associative is set to True')
+            raise ValueError("Cannot get kernel matrix when associative is set to True")
 
         batch_size, num_grid_points = u_src.shape[:2]   # batch size and number of grid points
         pos_dim = pos_src.shape[-1]   # position dimension
@@ -206,7 +212,6 @@ class AttentionKernelIntegral(torch.nn.Module):
                 q = positional_embedding_module.apply_2d_rotary_pos_emb(q, q_freqs_1, q_freqs_2)
                 k = positional_embedding_module.apply_2d_rotary_pos_emb(k, k_freqs_1, k_freqs_2)
             elif pos_dim == 1:
-
                 k_freqs = positional_embedding_module.forward(pos_src[..., 0])
                 k_freqs = k_freqs.unsqueeze(1).repeat([batch_size, self.n_heads, 1, 1])
 
@@ -239,4 +244,3 @@ class AttentionKernelIntegral(torch.nn.Module):
         if return_kernel:
             return u, kxy
         return u
-

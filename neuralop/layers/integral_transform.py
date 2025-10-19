@@ -73,7 +73,7 @@ class IntegralTransform(nn.Module):
         channel_mlp_non_linearity=F.gelu,
         transform_type="linear",
         weighting_fn=None,
-        reduction='sum',
+        reduction="sum",
         use_torch_scatter=True,
     ):
         super().__init__()
@@ -95,15 +95,17 @@ class IntegralTransform(nn.Module):
             )
 
         if channel_mlp is None:
-            self.channel_mlp = LinearChannelMLP(layers=channel_mlp_layers, non_linearity=channel_mlp_non_linearity)
+            self.channel_mlp = LinearChannelMLP(
+                layers=channel_mlp_layers, non_linearity=channel_mlp_non_linearity
+            )
         else:
             self.channel_mlp = channel_mlp
-        
+
         self.weighting_fn = weighting_fn
 
     def forward(self, y, neighbors, x=None, f_y=None, weights=None):
-        """Compute a kernel integral transform. Assumes x=y if not specified. 
-        
+        """Compute a kernel integral transform. Assumes x=y if not specified.
+
         Integral is taken w.r.t. the neighbors.
 
         If no weights are given, a Monte-Carlo approximation is made.
@@ -193,7 +195,7 @@ class IntegralTransform(nn.Module):
             if rep_features.ndim == 2 and batched:
                 rep_features = rep_features.unsqueeze(0).repeat([batch_size] + [1] * rep_features.ndim)
             rep_features.mul_(in_features)
-        
+
         # Weight neighbors in each neighborhood, first according to the neighbor search (mollified GNO)
         # and second according to individually-provided weights.
         nbr_weights = neighbors.get("weights")
@@ -206,14 +208,19 @@ class IntegralTransform(nn.Module):
             if self.weighting_fn is not None:
                 nbr_weights = self.weighting_fn(nbr_weights)
             rep_features.mul_(nbr_weights)
-            reduction = "sum" # Force sum reduction for weighted GNO layers
+            reduction = "sum"  # Force sum reduction for weighted GNO layers
 
         else:
             reduction = self.reduction
-        
+
         splits = neighbors["neighbors_row_splits"]
         if batched:
             splits = splits.unsqueeze(0).repeat([batch_size] + [1] * (splits.ndim))
 
-        out_features = segment_csr(rep_features, splits, reduction=reduction, use_scatter=self.use_torch_scatter)
+        out_features = segment_csr(
+            rep_features,
+            splits,
+            reduction=reduction,
+            use_scatter=self.use_torch_scatter,
+        )
         return out_features

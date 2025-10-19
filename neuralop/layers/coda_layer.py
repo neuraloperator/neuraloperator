@@ -12,6 +12,7 @@ from .spectral_convolution import SpectralConv
 
 einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+
 class CODALayer(nn.Module):
     """Co-domain Attention Blocks (CODALayer) implement the transformer
     architecture in the operator learning framework, as described in [1]_.
@@ -45,7 +46,7 @@ class CODALayer(nn.Module):
         Higher scale will downsample more, by default None
     resolution_scaling_factor : float, optional
         Scaling factor for the output, by default None
-    
+
     Other Parameters
     ----------------
     incremental_n_modes : list, optional
@@ -72,14 +73,15 @@ class CODALayer(nn.Module):
         Spectral convolution module to be used, by default SpectralConv
     joint_factorization : bool, optional
         Whether to factorize all spectralConv weights as one tensor, by default False
-    
+
     References
     ----------
-    .. [1]: M. Rahman, R. George, M. Elleithy, D. Leibovici, Z. Li, B. Bonev, 
+    .. [1]: M. Rahman, R. George, M. Elleithy, D. Leibovici, Z. Li, B. Bonev,
         C. White, J. Berner, R. Yeh, J. Kossaifi, K. Azizzadenesheli, A. Anandkumar (2024).
         "Pretraining Codomain Attention Neural Operators for Solving Multiphysics PDEs."
         arxiv:2403.12553
     """
+
     def __init__(
         self,
         n_modes,
@@ -98,16 +100,16 @@ class CODALayer(nn.Module):
         non_linearity=F.gelu,
         use_channel_mlp=True,
         channel_mlp_expansion=1.0,
-        fno_skip='linear',
-        channel_mlp_skip='linear',
+        fno_skip="linear",
+        channel_mlp_skip="linear",
         preactivation=False,
         separable=False,
-        factorization='tucker',
+        factorization="tucker",
         rank=1.0,
         joint_factorization=False,
         conv_module=SpectralConv,
         fixed_rank_modes=False,
-        implementation='factorized',
+        implementation="factorized",
         decomposition_kwargs=None,
     ):
         super().__init__()
@@ -122,9 +124,9 @@ class CODALayer(nn.Module):
         self.token_codimension = token_codimension
 
         # codim of attention from each head
-        self.head_codimension = (head_codimension
-                                 if head_codimension is not None
-                                 else token_codimension)
+        self.head_codimension = (
+            head_codimension if head_codimension is not None else token_codimension
+        )
 
         self.n_heads = n_heads  # number of heads
         self.resolution_scaling_factor = resolution_scaling_factor
@@ -134,11 +136,11 @@ class CODALayer(nn.Module):
         if norm is None:
             norm_module = torch.nn.Identity
         elif norm == "instance_norm":
-            norm_module = partial(
-                nn.InstanceNorm2d,
-                affine=True) if self.n_dim == 2 else partial(
-                nn.InstanceNorm3d,
-                affine=True)
+            norm_module = (
+                partial(nn.InstanceNorm2d, affine=True)
+                if self.n_dim == 2
+                else partial(nn.InstanceNorm3d, affine=True)
+            )
         else:
             raise ValueError(f"Unknown normalization type {norm}")
 
@@ -156,7 +158,6 @@ class CODALayer(nn.Module):
         # this scale used for downsampling Q,K functions
         if scale is None:
             scale = 0.5 if per_channel_attention else 1
-
 
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
@@ -181,7 +182,7 @@ class CODALayer(nn.Module):
             n_modes=n_modes,
             # args below are shared with Projection block
             non_linearity=kqv_activation,
-            fno_skip='linear',
+            fno_skip="linear",
             norm=None,
             n_layers=1,
         )
@@ -212,7 +213,7 @@ class CODALayer(nn.Module):
                 resolution_scaling_factor=1,
                 # args below are shared with KQV blocks
                 non_linearity=torch.nn.Identity(),
-                fno_skip='linear',
+                fno_skip="linear",
                 norm=None,
                 conv_module=conv_module,
                 n_layers=1,
@@ -227,7 +228,7 @@ class CODALayer(nn.Module):
             n_modes=n_modes,
             resolution_scaling_factor=1,
             non_linearity=non_linearity,
-            norm='instance_norm',
+            norm="instance_norm",
             fno_skip=fno_skip,
             conv_module=conv_module,
         )
@@ -245,8 +246,7 @@ class CODALayer(nn.Module):
             )
             self.norm1 = norm_module(self.token_codimension)
             self.mixer_in_normalizer = norm_module(self.mixer_token_codimension)
-            self.mixer_out_normalizer = norm_module(
-                self.mixer_token_codimension)
+            self.mixer_out_normalizer = norm_module(self.mixer_token_codimension)
             print("print token code dimension", self.token_codimension, self.mixer_token_codimension)
 
         else:
@@ -274,7 +274,7 @@ class CODALayer(nn.Module):
             d is the token codimension,
             and h, w, ... are the domain dimensions.
             Assumes input tokens have been normalized.
-        
+
         batch_size : int
             The size of the batch.
         """
@@ -282,9 +282,9 @@ class CODALayer(nn.Module):
         k = self.Key(tokens)
         q = self.Query(tokens)
         v = self.Value(tokens)
-        assert k.size(
-            1) % self.n_heads == 0,\
-                  "Number of channels in k, q, and v should be divisible by number of heads"
+        assert (
+            k.size(1) % self.n_heads == 0
+        ), "Number of channels in k, q, and v should be divisible by number of heads"
 
         # reshape from (b*t) (n*d) h w -> b n t (d*h*w ...)
         t = k.size(0) // batch_size  # Compute the number of tokens `t`
@@ -292,9 +292,9 @@ class CODALayer(nn.Module):
         d = k.size(1) // self.n_heads
 
         # reshape from (b*t) (n*d) h w ... to b n t d h w ...
-        k = k.view(batch_size, t, self.n_heads, d, *k.shape[-self.n_dim:])
-        q = q.view(batch_size, t, self.n_heads, d, *q.shape[-self.n_dim:])
-        v = v.view(batch_size, t, self.n_heads, d, *v.shape[-self.n_dim:])
+        k = k.view(batch_size, t, self.n_heads, d, *k.shape[-self.n_dim :])
+        q = q.view(batch_size, t, self.n_heads, d, *q.shape[-self.n_dim :])
+        v = v.view(batch_size, t, self.n_heads, d, *v.shape[-self.n_dim :])
 
         k = torch.transpose(k, 1, 2)
         q = torch.transpose(q, 1, 2)
@@ -305,8 +305,9 @@ class CODALayer(nn.Module):
         v = v.view(batch_size, self.n_heads, t, -1)
 
         # attention mechanism
-        dprod = (torch.matmul(q, k.transpose(-1, -2)) /
-                 (np.sqrt(k.shape[-1]) * self.temperature))
+        dprod = torch.matmul(q, k.transpose(-1, -2)) / (
+            np.sqrt(k.shape[-1]) * self.temperature
+        )
         dprod = F.softmax(dprod, dim=-1)
 
         attention = torch.matmul(dprod, v)
@@ -317,11 +318,14 @@ class CODALayer(nn.Module):
             attention.size(1),
             attention.size(2),
             d,
-            *tokens.shape[-self.n_dim:])
+            *tokens.shape[-self.n_dim :],
+        )
         attention = torch.transpose(attention, 1, 2)
-        attention = attention.reshape(attention.size(0) * attention.size(1),
-                                      attention.size(2) * d,
-                                      *tokens.shape[-self.n_dim:])
+        attention = attention.reshape(
+            attention.size(0) * attention.size(1),
+            attention.size(2) * d,
+            *tokens.shape[-self.n_dim :],
+        )
 
         return attention
 
@@ -344,7 +348,10 @@ class CODALayer(nn.Module):
         """
 
         if self.resolution_scaling_factor is not None and output_shape is None:
-            output_shape = [int(i * j) for (i,j) in zip(x.shape[-self.n_dim:], self.resolution_scaling_factor)]
+            output_shape = [
+                int(i * j)
+                for (i, j) in zip(x.shape[-self.n_dim :], self.resolution_scaling_factor)
+            ]
 
         if self.permutation_eq:
             return self._forward_equivariant(x, output_shape=output_shape)
@@ -364,17 +371,15 @@ class CODALayer(nn.Module):
             b is the batch size, t is the number of tokens, and d is the token codimension.
         """
         batch_size = x.shape[0]
-        input_shape = x.shape[-self.n_dim:]
+        input_shape = x.shape[-self.n_dim :]
 
-        assert x.shape[1] % self.token_codimension == 0,\
-              "Number of channels in x should be divisible by token_codimension"
+        assert (
+            x.shape[1] % self.token_codimension == 0
+        ), "Number of channels in x should be divisible by token_codimension"
 
         # reshape from shape b (t*d) h w ... to (b*t) d h w ...
         t = x.size(1) // self.token_codimension
-        tokens = x.view(
-            x.size(0) * t,
-            self.token_codimension,
-            *x.shape[-self.n_dim:])
+        tokens = x.view(x.size(0) * t, self.token_codimension, *x.shape[-self.n_dim :])
 
         # normalization and attention mechanism
         tokens_norm = self.norm1(tokens)
@@ -390,15 +395,18 @@ class CODALayer(nn.Module):
         # reshape from shape (b*t) d h w... to b (t d) h w ...
         t = output.size(0) // batch_size
         output = output.view(
-            batch_size,
-            t * output.size(1),
-            *output.shape[-self.n_dim:])
-        
+            batch_size, t * output.size(1), *output.shape[-self.n_dim :]
+        )
+
         if output_shape is not None:
-            output = resample(output,
-                              res_scale=[j/i for (i, j) in zip(output.shape[-self.n_dim:], output_shape)],
-                              axis=list(range(-self.n_dim, 0)),
-                              output_shape=output_shape)
+            output = resample(
+                output,
+                res_scale=[
+                    j / i for (i, j) in zip(output.shape[-self.n_dim :], output_shape)
+                ],
+                axis=list(range(-self.n_dim, 0)),
+                output_shape=output_shape,
+            )
 
         return output
 
@@ -410,25 +418,25 @@ class CODALayer(nn.Module):
 
         Parameters
         ----------
-        x: torch.tensor. 
-            Has shape (b, t*d, h, w, ...) 
+        x: torch.tensor.
+            Has shape (b, t*d, h, w, ...)
             where, t = number of tokens, d = token codimension
         """
 
         batch_size = x.shape[0]
-        input_shape = x.shape[-self.n_dim:]
+        input_shape = x.shape[-self.n_dim :]
 
-        assert x.shape[1] % self.token_codimension == 0,\
-              "Number of channels in x should be divisible by token_codimension"
+        assert (
+            x.shape[1] % self.token_codimension == 0
+        ), "Number of channels in x should be divisible by token_codimension"
 
         # reshape from shape b (t*d) h w ... to (b*t) d h w ...
         t = x.size(1) // self.token_codimension
         # Normalize the input first
         tokens = self.norm1(x)
         tokens = tokens.view(
-            x.size(0) * t,
-            self.token_codimension,
-            *x.shape[-self.n_dim:])
+            x.size(0) * t, self.token_codimension, *x.shape[-self.n_dim :]
+        )
 
         # apply attention mechanism
         attention = self.compute_attention(tokens, batch_size)
@@ -440,9 +448,8 @@ class CODALayer(nn.Module):
         # reshape for shape '(b*t) d h w.." to "b (t*d) h w ...'
         t = attention.size(0) // batch_size
         attention = attention.view(
-            batch_size,
-            t * attention.size(2),
-            *attention.shape[-self.n_dim:])
+            batch_size, t * attention.size(2), *attention.shape[-self.n_dim :]
+        )
 
         output = self.mixer_in_normalizer(attention)
         for i in range(self.mixer.n_layers):
@@ -451,9 +458,13 @@ class CODALayer(nn.Module):
         output = self.mixer_out_normalizer(output) + attention
 
         if output_shape is not None:
-            output = resample(output,
-                              res_scale=[j/i for (i, j) in zip(output.shape[-self.n_dim:], output_shape)],
-                              axis=list(range(-self.n_dim, 0)),
-                              output_shape=output_shape)
+            output = resample(
+                output,
+                res_scale=[
+                    j / i for (i, j) in zip(output.shape[-self.n_dim :], output_shape)
+                ],
+                axis=list(range(-self.n_dim, 0)),
+                output_shape=output_shape,
+            )
 
         return output

@@ -21,19 +21,19 @@ Number = Union[int, float]
 class LocalNOBlocks(nn.Module):
     """
     Local Neural Operator blocks with localized integral and differential kernels [3]_.
-    
+
     This class implements neural operator blocks that combine Fourier neural operators
     with localized integral and differential kernels to capture both global and local
     features in PDE solutions [3]_. The architecture addresses the over-smoothing limitations
     of purely global FNOs while maintaining resolution-independence through principled
     local operations.
-    
+
     The key innovation is the integration of two types of local operations:
-    1. Differential kernels: Learn finite difference stencils that converge to 
+    1. Differential kernels: Learn finite difference stencils that converge to
        differential operators under appropriate scaling.
     2. Local integral kernels: Use discrete-continuous convolutions with locally
        supported kernels to capture local interactions.
-    
+
     Parameters
     ----------
     in_channels : int
@@ -41,8 +41,8 @@ class LocalNOBlocks(nn.Module):
     out_channels : int
         Number of output channels after Fourier layers
     n_modes : int, List[int]
-        Number of modes to keep along each dimension in frequency space. 
-        Can either be specified as an int (for all dimensions) 
+        Number of modes to keep along each dimension in frequency space.
+        Can either be specified as an int (for all dimensions)
         or an iterable with one number per dimension
     default_in_shape : Tuple[int]
         Default input shape for spatiotemporal dimensions
@@ -68,7 +68,7 @@ class LocalNOBlocks(nn.Module):
         Whether to include differential kernel connections at each layer.
         If a single bool, applies to all layers. If a list, must match n_layers.
     conv_padding_mode : str, optional
-        Padding mode for spatial convolution kernels. 
+        Padding mode for spatial convolution kernels.
         Options: 'periodic', 'circular', 'replicate', 'reflect', 'zeros'. By default 'periodic'
     fin_diff_kernel_size : int, optional
         Kernel size for finite difference convolution (must be odd), by default 3
@@ -104,7 +104,7 @@ class LocalNOBlocks(nn.Module):
         Module to use for ChannelMLP skip connections, by default "soft-gating"
         Options: "linear", "identity", "soft-gating", None.
         If None, no skip connection is added. See layers.skip_connections for more details
-    
+
     Other Parameters
     ---------------
     complex_data : bool, optional
@@ -126,23 +126,24 @@ class LocalNOBlocks(nn.Module):
         Implementation method for SpectralConv, by default "factorized"
     decomposition_kwargs : dict, optional
         Keyword arguments for tensor decomposition in SpectralConv, by default dict()
-    
+
     Notes
     -----
     - Differential kernels are only implemented for dimensions ≤ 3
     - Local integral kernels are only implemented for 2D domains
-    
+
     References
     ----------
-    .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
+    .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
            Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
     .. [2] Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
-           Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024). 
+           Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024).
            TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
     .. [3] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.;
-           "Neural Operators with Localized Integral and Differential Kernels" (2024).  
+           "Neural Operators with Localized Integral and Differential Kernels" (2024).
            ICML 2024, https://arxiv.org/pdf/2402.16845.
     """
+
     def __init__(
         self,
         in_channels,
@@ -152,13 +153,13 @@ class LocalNOBlocks(nn.Module):
         resolution_scaling_factor=None,
         n_layers=1,
         disco_layers=True,
-        disco_kernel_shape=[2,4],
+        disco_kernel_shape=[2, 4],
         radius_cutoff=None,
-        domain_length=[2,2],
+        domain_length=[2, 2],
         disco_groups=1,
         disco_bias=True,
         diff_layers=True,
-        conv_padding_mode='periodic',
+        conv_padding_mode="periodic",
         fin_diff_kernel_size=3,
         mix_derivatives=True,
         max_n_modes=None,
@@ -194,7 +195,7 @@ class LocalNOBlocks(nn.Module):
             disco_layers = [disco_layers] * n_layers
         if isinstance(diff_layers, bool):
             diff_layers = [diff_layers] * n_layers
-        
+
         if len(n_modes) > 3 and True in diff_layers:
             NotImplementedError("Differential convs not implemented for dimensions higher than 3.")
 
@@ -244,13 +245,15 @@ class LocalNOBlocks(nn.Module):
         self.domain_length = domain_length
         self.disco_groups = disco_groups
         self.disco_bias = disco_bias
-        self.periodic = (self.conv_padding_mode in ['circular', 'periodic'])
+        self.periodic = self.conv_padding_mode in ["circular", "periodic"]
 
-        assert len(diff_layers) == n_layers,\
-            f"diff_layers must either provide a single bool value or a list of booleans of length n_layers,\
+        assert (
+            len(diff_layers) == n_layers
+        ), f"diff_layers must either provide a single bool value or a list of booleans of length n_layers,\
                 got {len(diff_layers)=}"
-        assert len(disco_layers) == n_layers,\
-            f"disco_layers must either provide a single bool value or a list of booleans of length n_layers,\
+        assert (
+            len(disco_layers) == n_layers
+        ), f"disco_layers must either provide a single bool value or a list of booleans of length n_layers,\
                     got {len(disco_layers)=}"
 
         self.convs = nn.ModuleList(
@@ -267,7 +270,8 @@ class LocalNOBlocks(nn.Module):
                     separable=separable,
                     factorization=factorization,
                     decomposition_kwargs=decomposition_kwargs,
-                ) for i in range(n_layers)
+                )
+                for i in range(n_layers)
             ]
         )
 
@@ -289,18 +293,32 @@ class LocalNOBlocks(nn.Module):
         self.diff_groups = 1 if mix_derivatives else in_channels
         self.differential = nn.ModuleList(
             [
-                FiniteDifferenceConvolution(self.in_channels, self.out_channels,
-                                            self.n_dim, self.fin_diff_kernel_size, 
-                                            self.diff_groups, self.conv_padding_mode)
+                FiniteDifferenceConvolution(
+                    self.in_channels,
+                    self.out_channels,
+                    self.n_dim,
+                    self.fin_diff_kernel_size,
+                    self.diff_groups,
+                    self.conv_padding_mode,
+                )
                 for _ in range(sum(self.diff_layers))
             ]
         )
 
         self.local_convs = nn.ModuleList(
             [
-                EquidistantDiscreteContinuousConv2d(self.in_channels, self.out_channels, in_shape=self.default_in_shape, out_shape=self.default_in_shape,
-                                                    kernel_shape=self.disco_kernel_shape, domain_length=self.domain_length,
-                                                    radius_cutoff=self.radius_cutoff, periodic=self.periodic, groups=self.disco_groups, bias=self.disco_bias)
+                EquidistantDiscreteContinuousConv2d(
+                    self.in_channels,
+                    self.out_channels,
+                    in_shape=self.default_in_shape,
+                    out_shape=self.default_in_shape,
+                    kernel_shape=self.disco_kernel_shape,
+                    domain_length=self.domain_length,
+                    radius_cutoff=self.radius_cutoff,
+                    periodic=self.periodic,
+                    groups=self.disco_groups,
+                    bias=self.disco_bias,
+                )
                 for _ in range(sum(self.disco_layers))
             ]
         )
@@ -364,11 +382,8 @@ class LocalNOBlocks(nn.Module):
             self.norm = None
         elif norm == "instance_norm":
             self.norm = nn.ModuleList(
-                    [
-                        InstanceNorm()
-                        for _ in range(n_layers * self.n_norms)
-                    ]
-                )
+                [InstanceNorm() for _ in range(n_layers * self.n_norms)]
+            )
         elif norm == "group_norm":
             self.norm = nn.ModuleList(
                 [
@@ -412,7 +427,6 @@ class LocalNOBlocks(nn.Module):
             return self.forward_with_postactivation(x, index, output_shape)
 
     def forward_with_postactivation(self, x, index=0, output_shape=None):
-        
         if self.local_no_skips is not None:
             x_skip_local_no = self.local_no_skips[index](x)
             x_skip_local_no = self.convs[index].transform(x_skip_local_no, output_shape=output_shape)
@@ -444,7 +458,11 @@ class LocalNOBlocks(nn.Module):
         if self.norm is not None:
             x_local_no_diff_disco = self.norm[self.n_norms * index](x_local_no_diff_disco)
 
-        x = x_local_no_diff_disco + x_skip_local_no if self.local_no_skips is not None else x_local_no_diff_disco
+        x = (
+            x_local_no_diff_disco + x_skip_local_no
+            if self.local_no_skips is not None
+            else x_local_no_diff_disco
+        )
 
         if (self.mlp is not None) or (index < (self.n_layers - 1)):
             x = self.non_linearity(x)
@@ -498,7 +516,11 @@ class LocalNOBlocks(nn.Module):
 
         x_local_no = self.convs[index](x, output_shape=output_shape)
 
-        x = x_local_no + x_skip_local_local_no if self.local_no_skips is not None else x_local_no
+        x = (
+            x_local_no + x_skip_local_local_no
+            if self.local_no_skips is not None
+            else x_local_no
+        )
 
         if self.mlp is not None:
             if index < (self.n_layers - 1):

@@ -5,15 +5,15 @@ import torch.nn as nn
 class AdaIN(nn.Module):
     """
     Adaptive Instance Normalization (AdaIN) layer for style transfer in neural operators.
-    
+
     AdaIN performs instance normalization followed by adaptive scaling and shifting
     based on an external embedding vector. This allows for style transfer by
     modulating the output characteristics based on a conditioning signal.
-    
+
     The layer first normalizes the input using instance normalization, then applies
     learned scaling (weight) and shifting (bias) parameters derived from an embedding
     vector through a multi-layer perceptron.
-    
+
     Parameters
     ----------
     embed_dim : int
@@ -28,6 +28,7 @@ class AdaIN(nn.Module):
         Small value added to the denominator for numerical stability in normalization.
         Default is 1e-5.
     """
+
     def __init__(self, embed_dim, in_channels, mlp=None, eps=1e-5):
         super().__init__()
         self.in_channels = in_channels
@@ -43,7 +44,7 @@ class AdaIN(nn.Module):
         self.mlp = mlp
 
         self.embedding = None
-    
+
     def set_embedding(self, x):
         """Set the embedding vector for style conditioning."""
         self.embedding = x.reshape(self.embed_dim,)
@@ -56,15 +57,16 @@ class AdaIN(nn.Module):
 
         return nn.functional.group_norm(x, self.in_channels, weight, bias, eps=self.eps)
 
+
 class InstanceNorm(nn.Module):
     """
     Dimension-agnostic instance normalization layer for neural operators.
-    
+
     InstanceNorm normalizes each sample in the batch independently, computing
     mean and variance across spatial dimensions for each sample and channel
     separately. This is useful when the statistical properties of each sample
     are distinct and should be treated separately.
-    
+
     Parameters
     ----------
     **kwargs : dict, optional
@@ -83,10 +85,11 @@ class InstanceNorm(nn.Module):
         - bias : torch.Tensor, optional
             Bias tensor for affine transformation. If None, no bias applied.
     """
+
     def __init__(self, **kwargs):
         super().__init__()
         self.kwargs = kwargs
-    
+
     def forward(self, x):
         """Apply instance normalization to the input tensor."""
         size = x.shape
@@ -94,18 +97,19 @@ class InstanceNorm(nn.Module):
         assert x.shape == size
         return x
 
+
 class BatchNorm(nn.Module):
     """
     Dimension-agnostic batch normalization layer for neural operators.
-    
+
     BatchNorm normalizes data across the entire batch, computing a single mean
     and standard deviation for all samples combined. This is the most common
     form of normalization and is effective when batch statistics are a good
     approximation of the overall data distribution.
-    
+
     For dimensions > 3, the layer automatically flattens spatial dimensions
     and uses BatchNorm1d, as PyTorch doesn't implement batch norm for 4D+ tensors.
-    
+
     Parameters
     ----------
     n_dim : int
@@ -128,6 +132,7 @@ class BatchNorm(nn.Module):
         - track_running_stats : bool, optional
             If True, track running statistics. Default is True.
     """
+
     def __init__(self, n_dim: int, num_features: int, **kwargs):
         super().__init__()
         self.n_dim = n_dim
@@ -135,12 +140,16 @@ class BatchNorm(nn.Module):
         self.kwargs = kwargs
 
         if self.n_dim <= 3:
-            self.norm = getattr(torch.nn, f"BatchNorm{n_dim}d")(num_features=num_features, **kwargs)
+            self.norm = getattr(torch.nn, f"BatchNorm{n_dim}d")(
+                num_features=num_features, **kwargs
+            )
         else:
-            print("Warning: torch does not implement batch norm for dimensions higher than 3.\
-                  We manually flatten the spatial dimension of 4+D tensors to apply batch norm. ")
+            print(
+                "Warning: torch does not implement batch norm for dimensions higher than 3.\
+                  We manually flatten the spatial dimension of 4+D tensors to apply batch norm. "
+            )
             self.norm = torch.nn.BatchNorm1d(num_features=num_features, **kwargs)
-    
+
     def forward(self, x):
         """Apply batch normalization to the input tensor."""
         size = x.shape
@@ -154,6 +163,6 @@ class BatchNorm(nn.Module):
         # if flattening occurred, unflatten
         if self.n_dim >= 4:
             x = x.reshape(size)
-        
+
         assert x.shape == size
         return x

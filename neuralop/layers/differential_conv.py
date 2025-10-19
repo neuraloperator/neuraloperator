@@ -2,45 +2,48 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class FiniteDifferenceConvolution(nn.Module):
     """Finite Difference Convolution Layer introduced in [1]_.
-        "Neural Operators with Localized Integral and Differential Kernels" (ICML 2024)
-            https://arxiv.org/abs/2402.16845 
+    "Neural Operators with Localized Integral and Differential Kernels" (ICML 2024)
+        https://arxiv.org/abs/2402.16845
 
-        Computes a finite difference convolution on a regular grid, 
-        which converges to a directional derivative as the grid is refined.
+    Computes a finite difference convolution on a regular grid,
+    which converges to a directional derivative as the grid is refined.
 
-        Parameters
-        ----------
-        in_channels : int
-            Number of in_channels
-        out_channels : int
-            Number of out_channels
-        n_dim : int
-            Number of dimensions in the input domain
-        kernel_size : int, optional
-            Odd kernel size used for convolutional finite difference stencil, by default 3
-        groups : int, optional
-            Splitting number of channels, by default 1
-        padding : literal {'periodic', 'replicate', 'reflect', 'zeros'}, optional
-            Mode of padding to use on input. Options: 'periodic', 'replicate', 'reflect', 'zeros', by default 'periodic'
-            See `torch.nn.functional.padding`. 
+    Parameters
+    ----------
+    in_channels : int
+        Number of in_channels
+    out_channels : int
+        Number of out_channels
+    n_dim : int
+        Number of dimensions in the input domain
+    kernel_size : int, optional
+        Odd kernel size used for convolutional finite difference stencil, by default 3
+    groups : int, optional
+        Splitting number of channels, by default 1
+    padding : literal {'periodic', 'replicate', 'reflect', 'zeros'}, optional
+        Mode of padding to use on input. Options: 'periodic', 'replicate', 'reflect', 'zeros', by default 'periodic'
+        See `torch.nn.functional.padding`.
 
-        References
-        ----------
-        .. [1] : Liu-Schiaffini, M., et al. (2024). "Neural Operators with 
-            Localized Integral and Differential Kernels". 
-            ICML 2024, https://arxiv.org/abs/2402.16845. 
+    References
+    ----------
+    .. [1] : Liu-Schiaffini, M., et al. (2024). "Neural Operators with
+        Localized Integral and Differential Kernels".
+        ICML 2024, https://arxiv.org/abs/2402.16845.
 
-        """
+    """
+
     def __init__(
-            self, 
-            in_channels, 
-            out_channels, 
-            n_dim, 
-            kernel_size=3, 
-            groups=1, 
-            padding='periodic'):
+        self,
+        in_channels,
+        out_channels,
+        n_dim,
+        kernel_size=3,
+        groups=1,
+        padding="periodic",
+    ):
         super().__init__()
         conv_module = getattr(nn, f"Conv{n_dim}d")
         self.F_conv_module = getattr(F, f"conv{n_dim}d")
@@ -53,21 +56,27 @@ class FiniteDifferenceConvolution(nn.Module):
         self.groups = groups
         self.n_dim = n_dim
 
-        if padding == 'periodic':
-            self.padding_mode = 'circular'
-        elif padding == 'replicate':
-            self.padding_mode = 'replicate'
-        elif padding == 'reflect':
-            self.padding_mode = 'reflect'
-        elif padding == 'zeros':
-            self.padding_mode = 'zeros'
+        if padding == "periodic":
+            self.padding_mode = "circular"
+        elif padding == "replicate":
+            self.padding_mode = "replicate"
+        elif padding == "reflect":
+            self.padding_mode = "reflect"
+        elif padding == "zeros":
+            self.padding_mode = "zeros"
         else:
             raise NotImplementedError("Desired padding mode is not currently supported")
         self.pad_size = kernel_size // 2
 
-        self.conv = conv_module(in_channels, out_channels, kernel_size=kernel_size, 
-                                padding='same', padding_mode=self.padding_mode,
-                                bias=False, groups=groups)
+        self.conv = conv_module(
+            in_channels,
+            out_channels,
+            kernel_size=kernel_size,
+            padding="same",
+            padding_mode=self.padding_mode,
+            bias=False,
+            groups=groups,
+        )
         self.weight = self.conv.weight
 
     def forward(self, x, grid_width):
@@ -83,6 +92,10 @@ class FiniteDifferenceConvolution(nn.Module):
             discretization size of input grid
         """
         conv = self.conv(x)
-        conv_sum = torch.sum(self.conv.weight, dim=tuple([i for i in range(2, 2 + self.n_dim)]), keepdim=True)
+        conv_sum = torch.sum(
+            self.conv.weight,
+            dim=tuple([i for i in range(2, 2 + self.n_dim)]),
+            keepdim=True,
+        )
         conv_sum = self.conv_function(x, conv_sum, groups=self.groups)
         return (conv - conv_sum) / grid_width

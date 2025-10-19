@@ -5,6 +5,7 @@ from torch.nn import functional as F
 
 from neuralop.utils import validate_scaling_factor
 
+
 class DomainPadding(nn.Module):
     """Applies domain padding scaled automatically to the input's resolution
 
@@ -25,7 +26,7 @@ class DomainPadding(nn.Module):
     def __init__(
         self,
         domain_padding: Union[float, list],
-        resolution_scaling_factor: Union[int, List[int]]=1,
+        resolution_scaling_factor: Union[int, List[int]] = 1,
     ):
         super().__init__()
         self.domain_padding = domain_padding
