@@ -19,105 +19,121 @@ Number = Union[int, float]
 
 
 class LocalNOBlocks(nn.Module):
-    """LocalNOBlocks implements a sequence of Fourier layers, the operations of which 
-    are first described in [1]_. The exact implementation details of the Fourier 
-    layer architecture are discussed in [2]_. The Fourier layers are placed in parallel 
-    with differential kernel layers and local integral layers, as described in [3]_.
-
+    """
+    Local Neural Operator blocks with localized integral and differential kernels [3]_.
+    
+    This class implements neural operator blocks that combine Fourier neural operators
+    with localized integral and differential kernels to capture both global and local
+    features in PDE solutions [3]_. The architecture addresses the over-smoothing limitations
+    of purely global FNOs while maintaining resolution-independence through principled
+    local operations.
+    
+    The key innovation is the integration of two types of local operations:
+    1. Differential kernels: Learn finite difference stencils that converge to 
+       differential operators under appropriate scaling.
+    2. Local integral kernels: Use discrete-continuous convolutions with locally
+       supported kernels to capture local interactions.
+    
     Parameters
     ----------
     in_channels : int
-        input channels to Fourier layers
+        Number of input channels to Fourier layers
     out_channels : int
-        output channels after Fourier layers
+        Number of output channels after Fourier layers
     n_modes : int, List[int]
-        number of modes to keep along each dimension 
-        in frequency space. Can either be specified as
-        an int (for all dimensions) or an iterable with one
-        number per dimension
+        Number of modes to keep along each dimension in frequency space. 
+        Can either be specified as an int (for all dimensions) 
+        or an iterable with one number per dimension
     default_in_shape : Tuple[int]
-        Default input shape on spatiotemporal dimensions.
+        Default input shape for spatiotemporal dimensions
     resolution_scaling_factor : Optional[Union[Number, List[Number]]], optional
-        factor by which to scale outputs for super-resolution, by default None
+        Factor by which to scale outputs for super-resolution, by default None
     n_layers : int, optional
-        number of Fourier layers to apply in sequence, by default 1
-    disco_layers : bool or bool list, optional
-        Must be same length as n_layers, dictates whether to include a
-        local integral kernel parallel connection at each layer. If a single
-        bool, shared for all layers.
-    disco_kernel_shape: Union[int, List[int]]
-        kernel shape for local integral. Expects either a single integer for isotropic kernels or two integers for anisotropic kernels
-    domain_length: torch.Tensor, optional
-        extent/length of the physical domain. Assumes square domain [-1, 1]^2 by default
-    disco_groups: int, optional
-        number of groups in the local integral convolution, by default 1
-    disco_bias: bool, optional
-        whether to use a bias for the integral kernel, by default True
-    radius_cutoff: float, optional
-        cutoff radius (with respect to domain_length) for the local integral kernel, by default None
-    diff_layers : bool or bool list, optional
-        Must be same length as n_layers, dictates whether to include a
-        differential kernel parallel connection at each layer. If a single
-        bool, shared for all layers.
-    conv_padding_mode : str in ['periodic', 'circular', 'replicate', 'reflect', 'zeros'], optional
-        Padding mode for spatial convolution kernels.
-    fin_diff_kernel_size : odd int, optional
-        Conv kernel size for finite difference convolution.
+        Number of neural operator layers to apply in sequence, by default 1
+    disco_layers : bool or List[bool], optional
+        Whether to include local integral kernel connections at each layer.
+        If a single bool, applies to all layers. If a list, must match n_layers.
+    disco_kernel_shape : Union[int, List[int]], optional
+        Kernel shape for local integral operations. Single int for isotropic kernels,
+        two ints for anisotropic kernels, by default [2,4]
+    domain_length : torch.Tensor, optional
+        Physical domain extent/length. Assumes square domain [-1, 1]^2 by default
+    disco_groups : int, optional
+        Number of groups in local integral convolution, by default 1
+    disco_bias : bool, optional
+        Whether to use bias for integral kernel, by default True
+    radius_cutoff : float, optional
+        Cutoff radius (relative to domain_length) for local integral kernel, by default None
+    diff_layers : bool or List[bool], optional
+        Whether to include differential kernel connections at each layer.
+        If a single bool, applies to all layers. If a list, must match n_layers.
+    conv_padding_mode : str, optional
+        Padding mode for spatial convolution kernels. 
+        Options: 'periodic', 'circular', 'replicate', 'reflect', 'zeros'. By default 'periodic'
+    fin_diff_kernel_size : int, optional
+        Kernel size for finite difference convolution (must be odd), by default 3
     mix_derivatives : bool, optional
-        Whether to mix derivatives across channels.
-    max_n_modes : int, List[int], optional
-        maximum number of modes to keep along each dimension, by default None
+        Whether to mix derivatives across channels, by default True
+    max_n_modes : int or List[int], optional
+        Maximum number of modes to keep along each dimension, by default None
     local_no_block_precision : str, optional
-        floating point precision to use for computations, by default "full"
+        Floating point precision for computations, by default "full"
     use_channel_mlp : bool, optional
-        Whether to use an MLP layer after each block, by default True
+        Whether to use MLP layer after each block, by default False
     channel_mlp_dropout : int, optional
-        dropout parameter for self.channel_mlp, by default 0
+        Dropout parameter for channel MLP, by default 0
     channel_mlp_expansion : float, optional
-        expansion parameter for self.channel_mlp, by default 0.5
+        Expansion factor for channel MLP, by default 0.5
     non_linearity : torch.nn.F module, optional
-        nonlinear activation function to use between layers, by default F.gelu
+        Nonlinear activation function between layers, by default F.gelu
     stabilizer : Literal["tanh"], optional
-        stabilizing module to use between certain layers, by default None
-        if "tanh", use tanh
+        Stabilizing module between layers. Options: "tanh". By default None
     norm : Literal["ada_in", "group_norm", "instance_norm"], optional
         Normalization layer to use, by default None
     ada_in_features : int, optional
-        number of features for adaptive instance norm above, by default None
+        Number of features for adaptive instance normalization, by default None
     preactivation : bool, optional
-        whether to call forward pass with pre-activation, by default False
+        Whether to call forward pass with pre-activation, by default False
         if True, call nonlinear activation and norm before Fourier convolution
         if False, call activation and norms after Fourier convolutions
     local_no_skip : str, optional
-        module to use for Local NO skip connections, by default "linear"
-        see layers.skip_connections for more details
+        Module to use for Local NO skip connections, by default "linear"
+        Options: "linear", "identity", "soft-gating".
+        See layers.skip_connections for more details
     channel_mlp_skip : str, optional
-        module to use for ChannelMLP skip connections, by default "soft-gating"
-        see layers.skip_connections for more details
-
+        Module to use for ChannelMLP skip connections, by default "soft-gating"
+        Options: "linear", "identity", "soft-gating".
+        See layers.skip_connections for more details
+    
     Other Parameters
-    -------------------
+    ---------------
     complex_data : bool, optional
-        whether the Local NO's data takes on complex values in space, by default False
+        Whether the data takes complex values in space, by default False
     separable : bool, optional
-        separable parameter for SpectralConv, by default False
+        Separable parameter for SpectralConv, by default False
     factorization : str, optional
-        factorization parameter for SpectralConv, by default None
+        Factorization method for SpectralConv, by default None
+        Options: "factorized", "reconstructed".
     rank : float, optional
-        rank parameter for SpectralConv, by default 1.0
+        Rank parameter for SpectralConv, by default 1.0
     conv_module : BaseConv, optional
-        module to use for convolutions in Local NO block, by default SpectralConv
+        Convolution module for Local NO block, by default SpectralConv
     joint_factorization : bool, optional
-        whether to factorize all spectralConv weights as one tensor, by default False
+        Whether to factorize all SpectralConv weights as one tensor, by default False
     fixed_rank_modes : bool, optional
-        fixed_rank_modes parameter for SpectralConv, by default False
+        Fixed rank modes parameter for SpectralConv, by default False
     implementation : str, optional
-        implementation parameter for SpectralConv, by default "factorized"
-    decomposition_kwargs : _type_, optional
-        kwargs for tensor decomposition in SpectralConv, by default dict()
+        Implementation method for SpectralConv, by default "factorized"
+    decomposition_kwargs : dict, optional
+        Keyword arguments for tensor decomposition in SpectralConv, by default dict()
+    
+    Notes
+    -----
+    - Differential kernels are only implemented for dimensions ≤ 3
+    - Local integral kernels are only implemented for 2D domains
     
     References
-    -----------
+    ----------
     .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
            Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
     .. [2] Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
