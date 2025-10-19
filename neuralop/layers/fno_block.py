@@ -265,6 +265,11 @@ class FNOBlocks(nn.Module):
                 f"Got norm={norm} but expected None or one of "
                 "[instance_norm, group_norm, batch_norm, ada_in]"
             )
+        
+        if self.complex_data and self.norm is not None:
+            self.norm = nn.ModuleList(
+                [ComplexValued(x) for x in self.norm]
+            )
 
     def set_ada_in_embeddings(self, *embeddings):
         """Sets the embeddings of each Ada-IN norm layers
