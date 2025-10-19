@@ -1,6 +1,7 @@
 from typing import Optional
 from zencfg import ConfigBase
 
+
 class WandbConfig(ConfigBase):
     """WandbConfig provides config options for setting up
     an interface with [Weights and Biases](https://wandb.ai).
@@ -26,6 +27,7 @@ class WandbConfig(ConfigBase):
         to W&B, if logging to W&B (``log = True``)
 
     """
+
     log: bool = False
     entity: Optional[str] = None
     project: Optional[str] = None
