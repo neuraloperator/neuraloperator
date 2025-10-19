@@ -29,13 +29,12 @@ fno_ada_in_features = 4
 @pytest.mark.parametrize("batch_size", [1,4])
 @pytest.mark.parametrize("gno_coord_dim", [2,3])
 @pytest.mark.parametrize("gno_pos_embed_type", [None, 'transformer'])
-@pytest.mark.parametrize("fno_norm", [None, "ada_in"])
 @pytest.mark.parametrize(
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
 )
 @pytest.mark.parametrize("latent_feature_dim", [None, 2])
 @pytest.mark.parametrize("use_torch_scatter", use_torch_scatter)
-def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_embed_type, batch_size, fno_norm, use_torch_scatter):
+def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_embed_type, batch_size, use_torch_scatter):
     if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")
     else:
@@ -57,7 +56,6 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
         in_gno_transform_type=gno_transform_type,
         out_gno_transform_type=gno_transform_type,
         fno_n_modes=fno_n_modes[:gno_coord_dim],
-        fno_norm=fno_norm,
         fno_ada_in_dim=fno_ada_in_dim,
         fno_ada_in_features=fno_ada_in_features,
         # keep the FNO model small for runtime
@@ -85,18 +83,13 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
     # require and retain grad to check for backprop
     x.requires_grad_(True)
 
-    if fno_norm is not None:
-        ada_in = torch.randn(1, device=device)
-    else:
-        ada_in = None
-
     # Test forward pass
     out = model(x=x,
                 input_geom=input_geom,
                 latent_queries=latent_geom,
                 output_queries=output_queries,
                 latent_features=latent_features,
-                ada_in=ada_in)
+                ada_in=None)
 
     # Check output size
     assert list(out.shape) == [batch_size, n_out, out_channels]

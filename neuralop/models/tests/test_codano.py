@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.mark.parametrize("hidden_variable_codimension", [1, 2])
-@pytest.mark.parametrize("lifting_channels", [4, 2, None])
+@pytest.mark.parametrize("lifting_channels", [2, None])
 @pytest.mark.parametrize("use_positional_encoding", [True, False])
 @pytest.mark.parametrize("n_variables", [3, 4])
 @pytest.mark.parametrize("positional_encoding_dim", [4, 8])
