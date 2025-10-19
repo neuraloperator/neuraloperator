@@ -5,6 +5,7 @@ A demo of the Incremental FNO meta-learning algorithm on our small Darcy-Flow da
 
 This tutorial demonstrates incremental meta-learning for neural operators, which allows
 the model to gradually increase its complexity during training. This approach can lead to:
+
 - Better convergence properties
 - More stable training dynamics
 - Improved generalization
@@ -110,8 +111,8 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 # When passed to the trainer, the trainer will automatically update the resolution.
 # 
 # Key parameters for incremental resolution:
-# - incremental_resolution: bool, default is False
-#   if True, increase the resolution of the input incrementally
+#
+# - incremental_resolution: bool, default is False. If True, increase the resolution of the input incrementally
 # - incremental_res_gap: parameter for resolution updates
 # - subsampling_rates: a list of resolutions to use
 # - dataset_indices: a list of indices of the dataset to slice to regularize the input resolution
@@ -177,15 +178,14 @@ sys.stdout.flush()
 # initially set should be strictly less than the resolution.
 #
 # Key parameters for incremental training:
-# - incremental_grad: bool, default is False
-#   if True, use the base incremental algorithm based on gradient variance
-#   - incremental_grad_eps: threshold for gradient variance
-#   - incremental_buffer: number of buffer modes to calculate gradient variance
-#   - incremental_max_iter: initial number of iterations
-#   - incremental_grad_max_iter: maximum iterations to accumulate gradients
-# - incremental_loss_gap: bool, default is False
-#   if True, use the incremental algorithm based on loss gap
-#   - incremental_loss_eps: threshold for loss gap
+#
+# - incremental_grad: bool, default is False. If True, use the base incremental algorithm based on gradient variance
+# - incremental_grad_eps: threshold for gradient variance
+# - incremental_buffer: number of buffer modes to calculate gradient variance
+# - incremental_max_iter: initial number of iterations
+# - incremental_grad_max_iter: maximum iterations to accumulate gradients
+# - incremental_loss_gap: bool, default is False. If True, use the incremental algorithm based on loss gap
+# - incremental_loss_eps: threshold for loss gap
 
 # Create the IncrementalFNOTrainer with our configuration
 trainer = IncrementalFNOTrainer(

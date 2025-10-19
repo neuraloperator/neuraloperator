@@ -86,7 +86,7 @@ plt.show()
 # We select a query point and find all input coordinates within a specified radius.
 # This demonstrates how the neighbor search algorithm identifies spatial relationships.
 
-query_index = 12
+query_index = 6
 query_point = output_queries[query_index]
 
 # Perform neighbor search with radius 0.25
@@ -106,9 +106,9 @@ nbr_data = native_neighbor_search(data=input_coords, queries=query_point.unsquee
 
 fig, ax = plt.subplots()
 neighbors = input_coords[nbr_data['neighbors_index']]
-ax.scatter(input_coords[:, 0], input_coords[:, 1])
-ax.scatter(query_point[0], query_point[1])
-ax.scatter(neighbors[:, 0], neighbors[:, 1], label="neighbors of x")
+ax.scatter(input_coords[:, 0], input_coords[:, 1], color='blue', label="Input coordinates")
+ax.scatter(query_point[0], query_point[1], color='red', marker='*', s=200, label="Query point")
+ax.scatter(neighbors[:, 0], neighbors[:, 1], color='green', label="Neighbors of query")
 c = plt.Circle(query_point, radius=0.25, fill=False)
 ax.add_patch(c)
 
