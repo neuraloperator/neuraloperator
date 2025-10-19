@@ -80,7 +80,7 @@ def test_TransformerEmbedding():
             for i in range(2):
                 idx = channel * (num_freqs * 2) + wavenumber * 2 + i
                 freqs = (
-                    (1 / max_pos) ** (wavenumber / (sin_embed.num_frequencies * 2))
+                    (1 / max_pos) ** (wavenumber / sin_embed.num_frequencies * 2)
                 ) * unbatched_inputs[:, channel]
                 if i == 0:
                     true_outputs[:, idx] = freqs.sin()
@@ -101,7 +101,7 @@ def test_TransformerEmbedding():
             for i in range(2):
                 idx = channel * (num_freqs * 2) + wavenumber * 2 + i
                 freqs = (
-                    (1 / max_pos) ** (wavenumber / (sin_embed.num_frequencies * 2))
+                    (1 / max_pos) ** (wavenumber / sin_embed.num_frequencies * 2)
                 ) * batched_inputs[:, :, channel]
                 if i == 0:
                     true_outputs[:, :, idx] = freqs.sin()
