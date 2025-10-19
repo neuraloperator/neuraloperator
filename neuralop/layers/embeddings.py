@@ -165,47 +165,59 @@ class GridEmbeddingND(nn.Module):
 
 class SinusoidalEmbedding(Embedding):
     """
-    SinusoidalEmbedding provides a unified sinusoidal positional embedding
-    in the styles of Transformers [1]_ and Neural Radiance Fields (NERFs) [2]_.
-
-    Expects inputs of shape ``(batch, n_in, in_channels)`` or ``(n_in, in_channels)``
+    Sinusoidal positional embedding for enriching coordinate inputs with spectral information [1]_, [2]_.
+    
+    This class provides sinusoidal positional embeddings in two styles: Transformer-style
+    and NeRF-style. It lifts low-dimensional coordinates into a richer spectral representation
+    by encoding them as periodic functions (sines and cosines) at multiple frequencies.
+    
+    The embedding enhances a model's ability to capture fine-scale variations and high-frequency
+    dynamics by providing a hierarchy of frequency components alongside the original coordinates.
+    
     Parameters
     ----------
-    in_channels : ``int``
-        Number of input channels to embed
-    num_freqs : ``int``, optional
-        Number of frequencies in positional embedding.
-        By default, set to the number of input channels
-    embedding : ``{'transformer', 'nerf'}``
-        Type of embedding to apply. For a function with N input channels, 
-        each channel value p is embedded via a function g with 2L channels 
-        such that g(p) is a 2L-dim vector. For 0 <= k < L:
-
-        * ``'transformer'`` for transformer-style encoding.
-
-            g(p)_k = sin((p / max_positions) ^ {k / N})
-
-            g(p)_{k+1} = cos((p / max_positions) ^ {k / N})
-
-        * ``'nerf'`` : NERF-style encoding.  
-
-            g(p)_k = sin(2^(k) * Pi * p)
-
-            g(p)_{k+1} = cos(2^(k) * Pi * p)
-
-    max_positions : ``int``, optional
-        Maximum number of positions for the encoding, default 10000
-        Only used if `embedding == transformer`.
-
+    in_channels : int
+        Number of input channels to embed (dimensionality of input coordinates)
+    num_freqs : int, optional
+        Number of frequency levels L in the embedding. Each level contributes
+        a sine and cosine pair, resulting in 2L output channels per input channel.
+        By default, set to the number of input channels.
+    embedding_type : {'transformer', 'nerf'}, optional
+        Type of embedding to apply, by default 'transformer'
+        
+        Transformer-style [1]_:
+        For each input coordinate p and frequency level k (0 ≤ k < L):
+        - g(p)_{2k} = sin(p / max_positions^{k/L})
+        - g(p)_{2k+1} = cos(p / max_positions^{k/L})
+        
+        NeRF-style [2]_:
+        For each input coordinate p and frequency level k (0 ≤ k < L):
+        - g(p)_{2k} = sin(2^k * π * p)
+        - g(p)_{2k+1} = cos(2^k * π * p)
+    
+    max_positions : int, optional
+        Maximum number of positions for transformer-style encoding, by default 10000.
+        Only used when embedding_type='transformer'.
+    
+    Notes
+    -----
+    - Input shape: (batch, n_in, in_channels) or (n_in, in_channels)
+    - Output shape: (batch, n_in, 2*num_freqs*in_channels) or (n_in, 2*num_freqs*in_channels)
+    - Ensure the highest frequency satisfies the Nyquist criterion:
+      - Transformer: f_max < N/2 where N is the number of sampling points
+      - NeRF: 2^{L-1} < N/2, i.e., L < 1 + log₂(N/2)
+    
+    Examples
+    --------
+    See `examples/layers/plot_sinusoidal_embeddings.py` for comprehensive visualizations
+    
     References
-    -----------
-    .. [1] : Vaswani, A. et al (2017)
-        "Attention Is All You Need". 
-        NeurIPS 2017, https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf. 
-
-    .. [2] : Mildenhall, B. et al (2020)
-        "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis".
-        ArXiv, https://arxiv.org/pdf/2003.08934. 
+    ----------
+    .. [1] Vaswani, A. et al. "Attention Is All You Need". 
+           NeurIPS 2017, https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf
+           
+    .. [2] Mildenhall, B. et al. "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis".
+           ArXiv 2020, https://arxiv.org/pdf/2003.08934
     """
     def __init__(self, 
                  in_channels: int,

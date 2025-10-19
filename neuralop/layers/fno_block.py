@@ -1,11 +1,11 @@
-from typing import List, Optional, Union
+from typing import List, Union
 
 import torch
 from torch import nn
 import torch.nn.functional as F
 
 from .channel_mlp import ChannelMLP
-from .complex import CGELU, apply_complex, ctanh, ComplexValued
+from .complex import CGELU, ctanh, ComplexValued
 from .normalization_layers import AdaIN, InstanceNorm, BatchNorm
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
@@ -309,7 +309,6 @@ class FNOBlocks(nn.Module):
                 x = torch.tanh(x)
 
         x_fno = self.convs[index](x, output_shape=output_shape)
-        #self.convs(x, index, output_shape=output_shape)
 
         if self.norm is not None:
             x_fno = self.norm[self.n_norms * index](x_fno)
