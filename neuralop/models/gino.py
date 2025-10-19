@@ -138,6 +138,7 @@ class GINO(BaseModel):
         'linear': conv layer
         'soft-gating': weights the channels of the input
         'identity': nn.Identity
+        None: no skip connection
     fno_separable : bool, defaults to False
         if True, use a depthwise separable spectral convolution.
     fno_factorization : str {'tucker', 'tt', 'cp'} |  None, defaults to None

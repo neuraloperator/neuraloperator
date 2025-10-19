@@ -64,7 +64,7 @@ class UNO(nn.Module):
         Normalization layer to use, by default None
     preactivation : bool, default is False
         if True, use resnet-style preactivation
-    skip : {'linear', 'identity', 'soft-gating'}, optional
+    skip : {'linear', 'identity', 'soft-gating', None}, optional
         Type of skip connection to use, by default 'soft-gating'
     separable : bool, default is False
         if True, use a depthwise separable spectral convolution

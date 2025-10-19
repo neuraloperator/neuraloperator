@@ -79,3 +79,43 @@ def test_LocalNOBlock_norm(norm, n_dim):
     x = torch.randn(2, 3, *size[:n_dim])
     res = block(x)
     assert(list(res.shape[2:]) == size[:n_dim])
+
+
+@pytest.mark.parametrize('local_no_skip', ['linear', None])
+@pytest.mark.parametrize('channel_mlp_skip', ['linear', None])
+def test_LocalNOBlock_skip_connections(local_no_skip, channel_mlp_skip):
+    """Test LocalNOBlocks with different skip connection options including None
+    """
+    modes = (8, 8, 8)
+    size = [10, 10, 10]
+    
+    # Test with channel MLP enabled
+    block = LocalNOBlocks(
+        3, 4, modes, default_in_shape=tuple(size), n_layers=2, 
+        local_no_skip=local_no_skip, 
+        channel_mlp_skip=channel_mlp_skip,
+        use_channel_mlp=True,
+        channel_mlp_expansion=0.5,
+        channel_mlp_dropout=0.0,
+        diff_layers=[True, True],
+        disco_layers=[False, False]
+    )
+    
+    x = torch.randn(2, 3, *size)
+    res = block(x)
+    
+    # Check output shape
+    assert res.shape == (2, 4, *size)
+    
+    # Test with channel MLP disabled
+    block_no_mlp = LocalNOBlocks(
+        3, 4, modes, default_in_shape=tuple(size), n_layers=2, 
+        local_no_skip=local_no_skip, 
+        channel_mlp_skip=channel_mlp_skip,
+        use_channel_mlp=False,
+        diff_layers=[True, True],
+        disco_layers=[False, False]
+    )
+    
+    res_no_mlp = block_no_mlp(x)
+    assert res_no_mlp.shape == (2, 4, *size)

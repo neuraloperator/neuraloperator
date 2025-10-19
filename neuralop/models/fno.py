@@ -84,9 +84,9 @@ class FNO(BaseModel, name="FNO"):
         dropout parameter for ChannelMLP in FNO Block, by default 0
     channel_mlp_expansion : float, optional
         expansion parameter for ChannelMLP in FNO Block, by default 0.5
-    channel_mlp_skip : Literal['linear', 'identity', 'soft-gating'], optional
+    channel_mlp_skip : Literal['linear', 'identity', 'soft-gating', None], optional
         Type of skip connection to use in channel-mixing mlp, by default 'soft-gating'
-    fno_skip : Literal['linear', 'identity', 'soft-gating'], optional
+    fno_skip : Literal['linear', 'identity', 'soft-gating', None], optional
         Type of skip connection to use in FNO layers, by default 'linear'
     resolution_scaling_factor : Union[Number, List[Number]], optional
         layer-wise factor by which to scale the domain resolution of function, by default None
@@ -182,8 +182,8 @@ class FNO(BaseModel, name="FNO"):
         use_channel_mlp: bool = True,
         channel_mlp_dropout: float = 0,
         channel_mlp_expansion: float = 0.5,
-        channel_mlp_skip: Literal["linear", "identity", "soft-gating"] = "soft-gating",
-        fno_skip: Literal["linear", "identity", "soft-gating"] = "linear",
+        channel_mlp_skip: Literal["linear", "identity", "soft-gating", None] = "soft-gating",
+        fno_skip: Literal["linear", "identity", "soft-gating", None] = "linear",
         resolution_scaling_factor: Union[Number, List[Number]] = None,
         domain_padding: Union[Number, List[Number]] = None,
         fno_block_precision: str = "full",

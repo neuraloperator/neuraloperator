@@ -95,3 +95,70 @@ def test_FNOBlock_complex_data(n_dim):
     res = block(x)
 
     assert(list(res.shape[2:]) == size[:n_dim])
+
+
+@pytest.mark.parametrize('fno_skip', ['linear', None])
+@pytest.mark.parametrize('channel_mlp_skip', ['linear', None])
+def test_FNOBlock_skip_connections(fno_skip, channel_mlp_skip):
+    """Test FNOBlocks with different skip connection options including None
+    """
+    modes = (8, 8, 8)
+    size = [10, 10, 10]
+    
+    # Skip test cases that are incompatible
+    # Soft-gating requires same input/output channels
+    if fno_skip == 'soft-gating' or channel_mlp_skip == 'soft-gating':
+        pytest.skip("Soft-gating requires same input/output channels")
+    
+    # Test with channel MLP enabled
+    block = FNOBlocks(
+        3, 4, modes, n_layers=2, 
+        fno_skip=fno_skip, 
+        channel_mlp_skip=channel_mlp_skip,
+        use_channel_mlp=True,
+        channel_mlp_expansion=0.5,
+        channel_mlp_dropout=0.0
+    )
+    
+    x = torch.randn(2, 3, *size)
+    res = block(x)
+    
+    # Check output shape
+    assert res.shape == (2, 4, *size)
+    
+    # Test with channel MLP disabled
+    block_no_mlp = FNOBlocks(
+        3, 4, modes, n_layers=2, 
+        fno_skip=fno_skip, 
+        channel_mlp_skip=channel_mlp_skip,
+        use_channel_mlp=False
+    )
+    
+    res_no_mlp = block_no_mlp(x)
+    assert res_no_mlp.shape == (2, 4, *size)
+
+
+@pytest.mark.parametrize('fno_skip', ['linear', None])
+@pytest.mark.parametrize('channel_mlp_skip', ['linear', None])
+def test_FNOBlock_skip_connections_preactivation(fno_skip, channel_mlp_skip):
+    """Test FNOBlocks with preactivation and different skip connection options
+    """
+    modes = (8, 8, 8)
+    size = [10, 10, 10]
+    
+    # Test with preactivation enabled
+    block = FNOBlocks(
+        3, 4, modes, n_layers=2, 
+        fno_skip=fno_skip, 
+        channel_mlp_skip=channel_mlp_skip,
+        use_channel_mlp=True,
+        channel_mlp_expansion=0.5,
+        channel_mlp_dropout=0.0,
+        preactivation=True
+    )
+    
+    x = torch.randn(2, 3, *size)
+    res = block(x)
+    
+    # Check output shape
+    assert res.shape == (2, 4, *size)

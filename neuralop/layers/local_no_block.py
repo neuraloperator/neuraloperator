@@ -98,12 +98,12 @@ class LocalNOBlocks(nn.Module):
         if False, call activation and norms after Fourier convolutions
     local_no_skip : str, optional
         Module to use for Local NO skip connections, by default "linear"
-        Options: "linear", "identity", "soft-gating".
-        See layers.skip_connections for more details
+        Options: "linear", "identity", "soft-gating", None.
+        If None, no skip connection is added. See layers.skip_connections for more details
     channel_mlp_skip : str, optional
         Module to use for ChannelMLP skip connections, by default "soft-gating"
-        Options: "linear", "identity", "soft-gating".
-        See layers.skip_connections for more details
+        Options: "linear", "identity", "soft-gating", None.
+        If None, no skip connection is added. See layers.skip_connections for more details
     
     Other Parameters
     ---------------
@@ -271,17 +271,20 @@ class LocalNOBlocks(nn.Module):
             ]
         )
 
-        self.local_no_skips = nn.ModuleList(
-            [
-                skip_connection(
-                    self.in_channels,
-                    self.out_channels,
-                    skip_type=local_no_skip,
-                    n_dim=self.n_dim,
-                )
-                for _ in range(n_layers)
-            ]
-        )
+        if local_no_skip is not None:
+            self.local_no_skips = nn.ModuleList(
+                [
+                    skip_connection(
+                        self.in_channels,
+                        self.out_channels,
+                        skip_type=local_no_skip,
+                        n_dim=self.n_dim,
+                    )
+                    for _ in range(n_layers)
+                ]
+            )
+        else:
+            self.local_no_skips = None
 
         self.diff_groups = 1 if mix_derivatives else in_channels
         self.differential = nn.ModuleList(
@@ -338,17 +341,20 @@ class LocalNOBlocks(nn.Module):
                     for _ in range(n_layers)
                 ]
             )
-            self.channel_mlp_skips = nn.ModuleList(
-                [
-                    skip_connection(
-                        self.in_channels,
-                        self.out_channels,
-                        skip_type=channel_mlp_skip,
-                        n_dim=self.n_dim,
-                    )
-                    for _ in range(n_layers)
-                ]
-            )
+            if channel_mlp_skip is not None:
+                self.channel_mlp_skips = nn.ModuleList(
+                    [
+                        skip_connection(
+                            self.in_channels,
+                            self.out_channels,
+                            skip_type=channel_mlp_skip,
+                            n_dim=self.n_dim,
+                        )
+                        for _ in range(n_layers)
+                    ]
+                )
+            else:
+                self.channel_mlp_skips = None
         else:
             self.mlp = None
 
@@ -406,10 +412,12 @@ class LocalNOBlocks(nn.Module):
             return self.forward_with_postactivation(x, index, output_shape)
 
     def forward_with_postactivation(self, x, index=0, output_shape=None):
-        x_skip_local_no = self.local_no_skips[index](x)
-        x_skip_local_no = self.convs[index].transform(x_skip_local_no, output_shape=output_shape)
+        
+        if self.local_no_skips is not None:
+            x_skip_local_no = self.local_no_skips[index](x)
+            x_skip_local_no = self.convs[index].transform(x_skip_local_no, output_shape=output_shape)
 
-        if self.mlp is not None:
+        if self.mlp is not None and self.channel_mlp_skips is not None:
             x_skip_mlp = self.channel_mlp_skips[index](x)
             x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
 
@@ -436,13 +444,16 @@ class LocalNOBlocks(nn.Module):
         if self.norm is not None:
             x_local_no_diff_disco = self.norm[self.n_norms * index](x_local_no_diff_disco)
 
-        x = x_local_no_diff_disco + x_skip_local_no
+        x = x_local_no_diff_disco + x_skip_local_no if self.local_no_skips is not None else x_local_no_diff_disco
 
         if (self.mlp is not None) or (index < (self.n_layers - 1)):
             x = self.non_linearity(x)
 
         if self.mlp is not None:
-            x = self.mlp[index](x) + x_skip_mlp
+            if self.channel_mlp_skips is not None:
+                x = self.mlp[index](x) + x_skip_mlp
+            else:
+                x = self.mlp[index](x)
 
             if self.norm is not None:
                 x = self.norm[self.n_norms * index + 1](x)
@@ -471,19 +482,23 @@ class LocalNOBlocks(nn.Module):
         else:
             x_localconv = 0
 
-        x_skip_local_no = self.local_no_skips[index](x)
-        x_skip_local_local_no = self.convs[index].transform(x_skip_local_no + x_differential + x_localconv, output_shape=output_shape)
+        if self.local_no_skips is not None:
+            x_skip_local_no = self.local_no_skips[index](x)
+            x_skip_local_local_no = self.convs[index].transform(x_skip_local_no + x_differential + x_localconv, output_shape=output_shape)
+        else:
+            x_skip_local_local_no = self.convs[index].transform(x_differential + x_localconv, output_shape=output_shape)
 
         if self.mlp is not None:
-            x_skip_mlp = self.channel_mlp_skips[index](x)
-            x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
+            if self.channel_mlp_skips is not None:
+                x_skip_mlp = self.channel_mlp_skips[index](x)
+                x_skip_mlp = self.convs[index].transform(x_skip_mlp, output_shape=output_shape)
 
         if self.stabilizer == "tanh":
             x = torch.tanh(x)
 
         x_local_no = self.convs[index](x, output_shape=output_shape)
 
-        x = x_local_no + x_skip_local_local_no
+        x = x_local_no + x_skip_local_local_no if self.local_no_skips is not None else x_local_no
 
         if self.mlp is not None:
             if index < (self.n_layers - 1):
@@ -492,7 +507,10 @@ class LocalNOBlocks(nn.Module):
             if self.norm is not None:
                 x = self.norm[self.n_norms * index + 1](x)
 
-            x = self.mlp[index](x) + x_skip_mlp
+            if self.channel_mlp_skips is not None:
+                x = self.mlp[index](x) + x_skip_mlp
+            else:
+                x = self.mlp[index](x)
 
         return x
 

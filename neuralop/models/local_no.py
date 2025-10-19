@@ -102,9 +102,9 @@ class LocalNO(BaseModel, name='LocalNO'):
         dropout parameter for ChannelMLP in LocalNO Block, by default 0
     channel_mlp_expansion : float, optional
         expansion parameter for ChannelMLP in LocalNO Block, by default 0.5
-    channel_mlp_skip : str {'linear', 'identity', 'soft-gating'}, optional
+    channel_mlp_skip : str {'linear', 'identity', 'soft-gating', None}, optional
         Type of skip connection to use in channel-mixing mlp, by default 'soft-gating'
-    local_no_skip : str {'linear', 'identity', 'soft-gating'}, optional
+    local_no_skip : str {'linear', 'identity', 'soft-gating', None}, optional
         Type of skip connection to use in LocalNO layers, by default 'linear'
     resolution_scaling_factor : Union[Number, List[Number]], optional
         layer-wise factor by which to scale the domain resolution of function, by default None
