@@ -7,12 +7,13 @@ logger = logging.getLogger(__name__)
 
 # Set warning filter to show each warning only once
 import warnings
+
 warnings.filterwarnings("once", category=UserWarning)
 
 
 class FieldwiseAggregatorLoss(object):
     """
-    AggregatorLoss takes a dict of losses, keyed to correspond 
+    AggregatorLoss takes a dict of losses, keyed to correspond
         to different properties or fields of a model's output.
         It then returns an aggregate of all losses weighted by
         an optional weight dict.
@@ -22,13 +23,14 @@ class FieldwiseAggregatorLoss(object):
             a dictionary of loss functions, each of which
             takes in some truth_field and pred_field
         mappings: dict[tuple(Slice)]
-            a dictionary of mapping indices corresponding to 
-            the output fields above. keyed 'field': indices, 
+            a dictionary of mapping indices corresponding to
+            the output fields above. keyed 'field': indices,
             so that pred[indices] contains output for specified field
         logging: bool
-            whether to track error for each output field of the model separately 
+            whether to track error for each output field of the model separately
 
-    """ 
+    """
+
     def __init__(self, losses: dict, mappings: dict, logging=False):
         # AggregatorLoss should only be instantiated with more than one loss.
         assert mappings.keys() == losses.keys(), 'Mappings and losses must use the same keying'
@@ -46,7 +48,7 @@ class FieldwiseAggregatorLoss(object):
         pred: tensor
             contains predictions output by a model, indexed for various output fields
         y: tensor
-            contains ground truth. Indexed the same way as pred.     
+            contains ground truth. Indexed the same way as pred.
         **kwargs: dict
             bonus args to pass to each fieldwise loss
         """
@@ -55,21 +57,21 @@ class FieldwiseAggregatorLoss(object):
                 f"FieldwiseLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
                 "These arguments will be ignored.",
                 UserWarning,
-                stacklevel=2
+                stacklevel=2,
             )
 
-        loss = 0.
-        if self.logging: 
+        loss = 0.0
+        if self.logging:
             loss_record = {}
         # sum losses over output fields
         for field, indices in self.mappings.items():
-            pred_field = pred[indices].view(-1,1)
+            pred_field = pred[indices].view(-1, 1)
             truth_field = truth[indices]
             field_loss = self.losses[field](pred_field, truth_field, **kwargs)
             loss += field_loss
-            if self.logging: 
-                loss_record['field'] = field_loss
-        loss = (1.0/len(self.mappings))*loss
+            if self.logging:
+                loss_record["field"] = field_loss
+        loss = (1.0 / len(self.mappings)) * loss
 
         if self.logging:
             return loss, field_loss
@@ -112,10 +114,10 @@ class WeightedSumLoss(object):
 class Aggregator(nn.Module):
     """
     Base class for loss aggregators that dynamically balance multiple loss components.
-    
+
     This class provides the foundation for adaptive loss weighting schemes that can
     automatically adjust the importance of different loss terms during training.
-    
+
     Parameters
     ----------
     params : List[torch.Tensor]
@@ -135,7 +137,7 @@ class Aggregator(nn.Module):
     This is an abstract base class that should be inherited by specific loss
     aggregation algorithms like SoftAdapt or ReLoBRaLo. The forward method
     should be implemented by subclasses to define the specific aggregation strategy.
-    
+
     The device is automatically determined from the first parameter in the params list.
     All parameters should be on the same device to avoid device mismatch errors.
     """
@@ -178,21 +180,20 @@ class Aggregator(nn.Module):
         self.weigh_losses = weigh_losses_initialize(self.weights)
 
 
-
 class SoftAdapt(Aggregator):
     """
     SoftAdapt algorithm for adaptive loss weighting and aggregation.
-    
+
     SoftAdapt automatically adjusts the weights of multiple loss components based on
     their relative magnitudes and rates of change. The algorithm uses exponential
-    weighting to give higher importance to losses that are not decreasing or are 
-    relatively larger, based on their ratio to previous losses, helping to balance 
+    weighting to give higher importance to losses that are not decreasing or are
+    relatively larger, based on their ratio to previous losses, helping to balance
     the training of different objectives.
-    
+
     Reference: "Heydari, A.A., Thompson, C.A. and Mehmood, A., 2019.
     Softadapt: Techniques for adaptive loss weighting of neural networks with multi-part loss functions.
     arXiv preprint arXiv: 1912.12355."
-    
+
     Parameters
     ----------
     params : List[torch.Tensor]
@@ -204,14 +205,14 @@ class SoftAdapt(Aggregator):
         Should be positive and small (e.g., 1e-8), by default 1e-8
     weights : Optional[Dict[str, float]], optional
         Optional static weights for each loss component, by default None
-        
+
     Notes
     -----
     At step 0, all losses are simply summed with equal weights. For subsequent steps,
     the algorithm computes adaptive weights based on the ratio of current to previous
     loss values, with higher weights given to losses that are increasing or have
     higher relative magnitudes.
-    
+
     Warnings
     --------
     The algorithm assumes that all loss components should be minimized. If some
@@ -232,7 +233,7 @@ class SoftAdapt(Aggregator):
         Parameters
         ----------
         losses : Dict[str, torch.Tensor]
-            Dictionary of loss components to be aggregated. 
+            Dictionary of loss components to be aggregated.
             For instance, the keys could be 'data_loss' and 'physics_loss'.
         step : int
             Current optimization step. Used to determine whether to initialize
@@ -244,7 +245,7 @@ class SoftAdapt(Aggregator):
             The aggregated loss value.
         lmbda : torch.Tensor
             The computed adaptive weights for each loss component.
-            
+
         Notes
         -----
         At step 0, all losses are summed with equal weights.
@@ -280,25 +281,25 @@ class SoftAdapt(Aggregator):
                 loss += lmbda[i].clone() * losses[key]
                 self.prev_losses[i] = losses[key].clone().detach()
             loss *= self.num_losses / (lmbda_sum + self.eps)
-            
+
         return loss, lmbda
 
 
 class Relobralo(Aggregator):
     """
     Relative Loss Balancing with Random Lookback (ReLoBRaLo) algorithm for adaptive loss weighting.
-    
+
     ReLoBRaLo combines relative loss balancing with random lookback to provide more
     stable and effective multi-objective optimization. The algorithm uses both
     initial loss values and previous loss values to compute adaptive weights,
-    with a random lookback mechanism. This random lookback mechanism introduces 
-    stochasticity in the weighting by sometimes reverting to initial loss values, 
+    with a random lookback mechanism. This random lookback mechanism introduces
+    stochasticity in the weighting by sometimes reverting to initial loss values,
     encouraging robustness across loss scales over time.
-    
+
     Reference: "Bischof, R. and Kraus, M., 2021.
     Multi-Objective Loss Balancing for Physics-Informed Deep Learning.
     arXiv preprint arXiv:2110.09813."
-    
+
     Parameters
     ----------
     params : List[torch.Tensor]
@@ -311,7 +312,7 @@ class Relobralo(Aggregator):
         Low alpha allows faster adaptation.
         By default 0.95
     beta : float, optional
-        Probability for the random lookback mechanism, i.e. probability of sampling from 
+        Probability for the random lookback mechanism, i.e. probability of sampling from
         initial loss values instead of previous loss values during adaptive weight computation.
         By default 0.99
     tau : float, optional
@@ -327,22 +328,22 @@ class Relobralo(Aggregator):
     -----
     At step 0, all losses are simply summed with equal weights, and both initial
     and previous loss buffers are initialized with the current loss values.
-    
+
     The random lookback mechanism (controlled by beta) helps the algorithm escape
     local minima by occasionally using initial loss values instead of recent ones.
     This is particularly useful in physics-informed neural networks where different
     loss components may have different convergence characteristics.
-    
+
     The temperature parameter tau controls how aggressive the weighting is. Lower
     values make the algorithm more selective in which losses to prioritize,
     while higher values make the weights more uniform.
-    
+
     Warnings
     --------
     The algorithm assumes that all loss components should be minimized. If some
     losses should be maximized, they should be negated before passing to ReLoBRaLo.
-    
-    The random component means that results may vary between runs, 
+
+    The random component means that results may vary between runs,
     due to the Bernoulli sampling in the weight computation.
     """
 
@@ -371,7 +372,7 @@ class Relobralo(Aggregator):
         Parameters
         ----------
         losses : Dict[str, torch.Tensor]
-            Dictionary of loss components to be aggregated. 
+            Dictionary of loss components to be aggregated.
             For instance, the keys could be 'data_loss' and 'physics_loss'.
         step : int
             Current optimization step. Used to determine whether to initialize
@@ -383,12 +384,12 @@ class Relobralo(Aggregator):
             The aggregated loss value.
         lmbda_ema : torch.Tensor
             The exponential moving average of adaptive weights for each loss component.
-            
+
         Notes
         -----
         At step 0, all losses are summed with equal weights, and both initial
         and previous loss buffers are initialized with the current loss values.
-        
+
         For subsequent steps, the algorithm computes weights using both initial
         and previous loss values, with a random component that helps escape
         local minima. The final weights are computed as an exponential moving average.
@@ -416,11 +417,11 @@ class Relobralo(Aggregator):
             normalizer_init: torch.Tensor = (
                 losses_stacked / (self.tau * self.init_losses)
             ).max()
-            
-            # define a Bernoulli-sampled variable that determines whether to use initial 
+
+            # define a Bernoulli-sampled variable that determines whether to use initial
             # or previous loss values in computing the adaptive weights
             rho: torch.Tensor = torch.bernoulli(torch.tensor(self.beta))
-            
+
             with torch.no_grad():
                 lmbda_prev: torch.Tensor = torch.exp(
                     losses_stacked / (self.tau * self.prev_losses + self.eps)
@@ -442,5 +443,5 @@ class Relobralo(Aggregator):
                     self.lmbda_ema[i] += (1.0 - self.alpha) * lmbda_prev[i]
                 loss += self.lmbda_ema[i].clone() * losses[key]
                 self.prev_losses[i] = losses[key].clone().detach()
-                
+
         return loss, self.lmbda_ema

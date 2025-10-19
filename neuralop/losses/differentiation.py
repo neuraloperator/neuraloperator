@@ -91,12 +91,8 @@ class FiniteDiff:
     """
 
     def __init__(
-            self,
-            dim,
-            h=1.0,
-            periodic_in_x=True,
-            periodic_in_y=True,
-            periodic_in_z=True):
+        self, dim, h=1.0, periodic_in_x=True, periodic_in_y=True, periodic_in_z=True
+    ):
         """
         Initialize the FiniteDiff class for computing finite differences.
 
@@ -148,18 +144,18 @@ class FiniteDiff:
             self.periodic_in_y = periodic_in_y
         if dim >= 3:
             self.periodic_in_z = periodic_in_z
-    
+
     def dx(self, u, order=1):
         """
         Compute derivative with respect to x.
-        
+
         Parameters
         ----------
         u : torch.Tensor
             Input tensor
         order : int, optional
             Order of the derivative, by default 1
-            
+
         Returns
         -------
         torch.Tensor
@@ -278,7 +274,7 @@ class FiniteDiff:
         """
         # Check input dimensions match vector field components
         n_components_expected = self.dim
-        n_components_actual = u.shape[-self.dim-1]
+        n_components_actual = u.shape[-self.dim - 1]
         if n_components_actual != n_components_expected:
             raise ValueError(f"Input must be a {self.dim}D vector field with {n_components_expected} components")
 
@@ -314,7 +310,7 @@ class FiniteDiff:
             return self._dx_2d(u2, 1) - self._dy_2d(u1, 1)
         else:  # dim == 3
             if u.shape[-4] != 3:
-                raise ValueError("Input must be a 3D vector field with 3 components") 
+                raise ValueError("Input must be a 3D vector field with 3 components")
             u1, u2, u3 = u[..., 0, :, :, :], u[..., 1, :, :, :], u[..., 2, :, :, :]
             curl_x = self._dy_3d(u3, 1) - self._dz_3d(u2, 1)
             curl_y = self._dz_3d(u1, 1) - self._dx_3d(u3, 1)
@@ -328,12 +324,11 @@ class FiniteDiff:
         elif order == 2:
             return self._dx_2nd_1d(u)
         else:
-            raise ValueError(
-                "Only 1st and 2nd order derivatives currently supported")
-    
+            raise ValueError("Only 1st and 2nd order derivatives currently supported")
+
     def _dx_1st_1d(self, u):
         """First order derivative with respect to x (1D)."""
-        
+
         if self.periodic_in_x:
             # Periodic case: use torch.roll for boundary wrapping
             # Central difference: (f_{i+1} - f_{i-1})/(2h)
@@ -342,10 +337,10 @@ class FiniteDiff:
         else:
             # Non-periodic case: handle boundaries separately
             dx = torch.zeros_like(u)
-            
+
             # Interior points: Second-order central differences  (f_{i+1} - f_{i-1})/(2h)
             dx[..., 1:-1] = (u[..., 2:] - u[..., :-2]) / (2.0 * self.h[0])
-            
+
             # Left boundary: 3rd-order forward differences (-11f_{0} + 18f_{1} - 9f_{2} + 2f_{3})/(6h)
             dx[..., 0] = (-11 * u[..., 0] + 18 * u[..., 1] - 9 * u[..., 2] + 2 * u[..., 3]) / (6.0 * self.h[0])
             
@@ -353,10 +348,10 @@ class FiniteDiff:
             dx[..., -1] = (-2 * u[..., -4] + 9 * u[..., -3] - 18 * u[..., -2] + 11 * u[..., -1]) / (6.0 * self.h[0])
         
         return dx
-    
+
     def _dx_2nd_1d(self, u):
         """Second order derivative with respect to x (1D)."""
-        
+
         if self.periodic_in_x:
             # Periodic case: use torch.roll for boundary wrapping
             # Central difference: (f_{i+1} - 2f_{i} + f_{i-1})/(h²)
@@ -365,7 +360,7 @@ class FiniteDiff:
         else:
             # Non-periodic case: handle boundaries separately
             dxx = torch.zeros_like(u)
-            
+
             # Interior points: Second-order central differences
             # (f_{i+1} - 2f_{i} + f_{i-1})/(h²)
             dxx[..., 1:-1] = (u[..., 2:] - 2 * u[..., 1:-1] + u[..., :-2]) / (self.h[0]**2)
@@ -385,8 +380,7 @@ class FiniteDiff:
         elif order == 2:
             return self._dx_2nd_2d(u)
         else:
-            raise ValueError(
-                "Only 1st and 2nd order derivatives currently supported")
+            raise ValueError("Only 1st and 2nd order derivatives currently supported")
 
     def _dy_2d(self, u, order):
         """2D derivative with respect to y."""
@@ -396,10 +390,10 @@ class FiniteDiff:
             return self._dy_2nd_2d(u)
         else:
             raise ValueError("Only 1st and 2nd order derivatives currently supported")
-    
+
     def _dx_1st_2d(self, u):
         """First order derivative with respect to x (2D)."""
-        
+
         if self.periodic_in_x:
             # Periodic case: use torch.roll for boundary wrapping
             # Central difference: (f_{i+1,j} - f_{i-1,j})/(2h_{x})
@@ -408,11 +402,11 @@ class FiniteDiff:
         else:
             # Non-periodic case: handle boundaries separately
             dx = torch.zeros_like(u)
-            
+
             # Interior points: Second-order central differences
             # (f_{i+1,j} - f_{i-1,j})/(2h_{x})
             dx[..., 1:-1, :] = (u[..., 2:, :] - u[..., :-2, :]) / (2.0 * self.h[0])
-            
+
             # Left boundary: 3rd-order forward differences (-11f_{0} + 18f_{1} - 9f_{2} + 2f_{3})/(6h_{x})
             dx[..., 0, :] = (-11 * u[..., 0, :] + 18 * u[..., 1, :] - 9 * u[..., 2, :] + 2 * u[..., 3, :]) / (6.0 * self.h[0])
             
@@ -420,10 +414,10 @@ class FiniteDiff:
             dx[..., -1, :] = (-2 * u[..., -4, :] + 9 * u[..., -3, :] - 18 * u[..., -2, :] + 11 * u[..., -1, :]) / (6.0 * self.h[0])
         
         return dx
-    
+
     def _dy_1st_2d(self, u):
         """First order derivative with respect to y (2D)."""
-        
+
         if self.periodic_in_y:
             # Periodic case: use torch.roll for boundary wrapping
             # Central difference: (f_{i,j+1} - f_{i,j-1})/(2h_{y})
@@ -432,7 +426,7 @@ class FiniteDiff:
         else:
             # Non-periodic case: handle boundaries separately
             dy = torch.zeros_like(u)
-            
+
             # Interior points: Second-order central differences
             # (f_{i,j+1} - f_{i,j-1})/(2h_{y})
             dy[..., :, 1:-1] = (u[..., :, 2:] - u[..., :, :-2]) / (2.0 * self.h[1])
@@ -444,10 +438,10 @@ class FiniteDiff:
             dy[..., :, -1] = (-2 * u[..., :, -4] + 9 * u[..., :, -3] - 18 * u[..., :, -2] + 11 * u[..., :, -1]) / (6.0 * self.h[1])
         
         return dy
-    
+
     def _dx_2nd_2d(self, u):
         """Second order derivative with respect to x (2D)."""
-        
+
         if self.periodic_in_x:
             # Periodic case: use torch.roll for boundary wrapping
             # Central difference: (f_{i+1,j} - 2f_{i,j} + f_{i-1,j})/(h_{x}²)
@@ -456,7 +450,7 @@ class FiniteDiff:
         else:
             # Non-periodic case: handle boundaries separately
             dxx = torch.zeros_like(u)
-            
+
             # Interior points: Second-order central differences
             # (f_{i+1,j} - 2f_{i,j} + f_{i-1,j})/(h_{x}²)
             dxx[..., 1:-1, :] = (u[..., 2:, :] - 2 * u[..., 1:-1, :] + u[..., :-2, :]) / (self.h[0] ** 2)
@@ -468,10 +462,10 @@ class FiniteDiff:
             dxx[..., -1, :] = (-u[..., -4, :] + 4 * u[..., -3, :] - 5 * u[..., -2, :] + 2 * u[..., -1, :]) / (self.h[0] ** 2)
         
         return dxx
-    
+
     def _dy_2nd_2d(self, u):
         """Second order derivative with respect to y (2D)."""
-        
+
         if self.periodic_in_y:
             # Periodic case: use torch.roll for boundary wrapping
             # Central difference: (f_{i,j+1} - 2f_{i,j} + f_{i,j-1})/(h_{y}²)
@@ -480,7 +474,7 @@ class FiniteDiff:
         else:
             # Non-periodic case: handle boundaries separately
             dyy = torch.zeros_like(u)
-            
+
             # Interior points: Second-order central differences
             # (f_{i,j+1} - 2f_{i,j} + f_{i,j-1})/(h_{y}²)
             dyy[..., :, 1:-1] = (u[..., :, 2:] - 2 * u[..., :, 1:-1] + u[..., :, :-2]) / (self.h[1] ** 2)
@@ -492,7 +486,7 @@ class FiniteDiff:
             dyy[..., :, -1] = (-u[..., :, -4] + 4 * u[..., :, -3] - 5 * u[..., :, -2] + 2 * u[..., :, -1]) / (self.h[1] ** 2)
         
         return dyy
-    
+
     def _dx_3d(self, u, order):
         """3D derivative with respect to x."""
         if order == 1:
@@ -518,12 +512,11 @@ class FiniteDiff:
         elif order == 2:
             return self._dz_2nd_3d(u)
         else:
-            raise ValueError(
-                "Only 1st and 2nd order derivatives currently supported")
-    
+            raise ValueError("Only 1st and 2nd order derivatives currently supported")
+
     def _dx_1st_3d(self, u):
         """First order derivative with respect to x (3D)."""
-        
+
         if self.periodic_in_x:
             # Periodic case: use torch.roll for boundary wrapping
             # Central difference: (f_{i+1,j,k} - f_{i-1,j,k})/(2h_{x})
@@ -532,7 +525,7 @@ class FiniteDiff:
         else:
             # Non-periodic case: handle boundaries separately
             dx = torch.zeros_like(u)
-            
+
             # Interior points: Second-order central differences
             # (f_{i+1,j,k} - f_{i-1,j,k})/(2h_{x})
             dx[..., 1:-1, :, :] = (u[..., 2:, :, :] - u[..., :-2, :, :]) / (2.0 * self.h[0])
@@ -544,10 +537,10 @@ class FiniteDiff:
             dx[..., -1, :, :] = (-2 * u[..., -4, :, :] + 9 * u[..., -3, :, :] - 18 * u[..., -2, :, :] + 11 * u[..., -1, :, :]) / (6.0 * self.h[0])
         
         return dx
-    
+
     def _dy_1st_3d(self, u):
         """First order derivative with respect to y (3D)."""
-        
+
         if self.periodic_in_y:
             # Periodic case: use torch.roll for boundary wrapping
             # Central difference: (f_{i,j+1,k} - f_{i,j-1,k})/(2h_{y})
@@ -556,7 +549,7 @@ class FiniteDiff:
         else:
             # Non-periodic case: handle boundaries separately
             dy = torch.zeros_like(u)
-            
+
             # Interior points: Second-order central differences
             # (f_{i,j+1,k} - f_{i,j-1,k})/(2h_{y})
             dy[..., :, 1:-1, :] = (u[..., :, 2:, :] - u[..., :, :-2, :]) / (2.0 * self.h[1])
@@ -568,10 +561,10 @@ class FiniteDiff:
             dy[..., :, -1, :] = (-2 * u[..., :, -4, :] + 9 * u[..., :, -3, :] - 18 * u[..., :, -2, :] + 11 * u[..., :, -1, :]) / (6.0 * self.h[1])
         
         return dy
-    
+
     def _dz_1st_3d(self, u):
         """First order derivative with respect to z (3D)."""
-        
+
         if self.periodic_in_z:
             # Periodic case: use torch.roll for boundary wrapping
             # Central difference: (f_{i,j,k+1} - f_{i,j,k-1})/(2h_{z})
@@ -580,7 +573,7 @@ class FiniteDiff:
         else:
             # Non-periodic case: handle boundaries separately
             dz = torch.zeros_like(u)
-            
+
             # Interior points: Second-order central differences
             # (f_{i,j,k+1} - f_{i,j,k-1})/(2h_{z})
             dz[..., :, :, 1:-1] = (u[..., :, :, 2:] - u[..., :, :, :-2]) / (2.0 * self.h[2])
@@ -592,10 +585,10 @@ class FiniteDiff:
             dz[..., :, :, -1] = (-2 * u[..., :, :, -4] + 9 * u[..., :, :, -3] - 18 * u[..., :, :, -2] + 11 * u[..., :, :, -1]) / (6.0 * self.h[2])
         
         return dz
-    
+
     def _dx_2nd_3d(self, u):
         """Second order derivative with respect to x (3D)."""
-        
+
         if self.periodic_in_x:
             # Periodic case: use torch.roll for boundary wrapping
             # Central difference: (f_{i+1,j,k} - 2f_{i,j,k} + f_{i-1,j,k})/(h_{x}²)
@@ -604,7 +597,7 @@ class FiniteDiff:
         else:
             # Non-periodic case: handle boundaries separately
             dxx = torch.zeros_like(u)
-            
+
             # Interior points: Second-order central differences
             # (f_{i+1,j,k} - 2f_{i,j,k} + f_{i-1,j,k})/(h_{x}²)
             dxx[..., 1:-1, :, :] = (u[..., 2:, :, :] - 2 * u[..., 1:-1, :, :] + u[..., :-2, :, :]) / (self.h[0] ** 2)
@@ -616,10 +609,10 @@ class FiniteDiff:
             dxx[..., -1, :, :] = (-u[..., -4, :, :] + 4 * u[..., -3, :, :] - 5 * u[..., -2, :, :] + 2 * u[..., -1, :, :]) / (self.h[0] ** 2)
         
         return dxx
-    
+
     def _dy_2nd_3d(self, u):
         """Second order derivative with respect to y (3D)."""
-        
+
         if self.periodic_in_y:
             # Periodic case: use torch.roll for boundary wrapping
             # Central difference: (f_{i,j+1,k} - 2f_{i,j,k} + f_{i,j-1,k})/(h_{y}²)
@@ -628,7 +621,7 @@ class FiniteDiff:
         else:
             # Non-periodic case: handle boundaries separately
             dyy = torch.zeros_like(u)
-            
+
             # Interior points: Second-order central differences
             # (f_{i,j+1,k} - 2f_{i,j,k} + f_{i,j-1,k})/(h_{y}²)
             dyy[..., :, 1:-1, :] = (u[..., :, 2:, :] - 2 * u[..., :, 1:-1, :] + u[..., :, :-2, :]) / (self.h[1] ** 2)
@@ -640,10 +633,10 @@ class FiniteDiff:
             dyy[..., :, -1, :] = (-u[..., :, -4, :] + 4 * u[..., :, -3, :] - 5 * u[..., :, -2, :] + 2 * u[..., :, -1, :]) / (self.h[1] ** 2)
         
         return dyy
-    
+
     def _dz_2nd_3d(self, u):
         """Second order derivative with respect to z (3D)."""
-        
+
         if self.periodic_in_z:
             # Periodic case: use torch.roll for boundary wrapping
             # Central difference: (f_{i,j,k+1} - 2f_{i,j,k} + f_{i,j,k-1})/(h_{z}²)
@@ -653,7 +646,7 @@ class FiniteDiff:
         else:
             # Non-periodic case: handle boundaries separately
             dzz = torch.zeros_like(u)
-            
+
             # Interior points: Second-order central differences
             # (f_{i,j,k+1} - 2f_{i,j,k} + f_{i,j,k-1})/(h_{z}²)
             dzz[..., :, :, 1:-1] = (u[..., :, :, 2:] - 2 * u[..., :, :, 1:-1] + u[..., :, :, :-2]) / (self.h[2] ** 2)
@@ -665,15 +658,15 @@ class FiniteDiff:
             dzz[..., :, :, -1] = (-u[..., :, :, -4] + 4 * u[..., :, :, -3] - 5 * u[..., :, :, -2] + 2 * u[..., :, :, -1]) / (self.h[2] ** 2)
         
         return dzz
-    
+
 
 # Backward compatibility functions
 def central_diff_1d(x, h, periodic_in_x=True):
     """
     Backward compatibility function for central_diff_1d.
     Creates a FiniteDiff instance with dim=1 and returns dx.
-    
-    .. deprecated:: 
+
+    .. deprecated::
         This function is deprecated and may not be maintained in future versions.
         Please use the FiniteDiff class instead for better performance and features.
     """
@@ -681,7 +674,7 @@ def central_diff_1d(x, h, periodic_in_x=True):
         "central_diff_1d is deprecated and may not be maintained. "
         "Please use FiniteDiff class instead for better performance and features.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
     fd1d = FiniteDiff(dim=1, h=h, periodic_in_x=periodic_in_x)
     return fd1d.dx(x)
@@ -691,8 +684,8 @@ def central_diff_2d(x, h, periodic_in_x=True, periodic_in_y=True):
     """
     Backward compatibility function for central_diff_2d.
     Creates a FiniteDiff instance with dim=2 and returns dx, dy.
-    
-    .. deprecated:: 
+
+    .. deprecated::
         This function is deprecated and may not be maintained in future versions.
         Please use the FiniteDiff class instead for better performance and features.
     """
@@ -700,7 +693,7 @@ def central_diff_2d(x, h, periodic_in_x=True, periodic_in_y=True):
         "central_diff_2d is deprecated and may not be maintained. "
         "Please use FiniteDiff class instead for better performance and features.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
     fd2d = FiniteDiff(
         dim=2, h=h, periodic_in_x=periodic_in_x, periodic_in_y=periodic_in_y
@@ -708,17 +701,12 @@ def central_diff_2d(x, h, periodic_in_x=True, periodic_in_y=True):
     return fd2d.dx(x), fd2d.dy(x)
 
 
-def central_diff_3d(
-        x,
-        h,
-        periodic_in_x=True,
-        periodic_in_y=True,
-        periodic_in_z=True):
+def central_diff_3d(x, h, periodic_in_x=True, periodic_in_y=True, periodic_in_z=True):
     """
     Backward compatibility function for central_diff_3d.
     Creates a FiniteDiff instance with dim=3 and returns dx, dy, dz.
-    
-    .. deprecated:: 
+
+    .. deprecated::
         This function is deprecated and may not be maintained in future versions.
         Please use the FiniteDiff class instead for better performance and features.
     """
@@ -726,7 +714,7 @@ def central_diff_3d(
         "central_diff_3d is deprecated and may not be maintained. "
         "Please use FiniteDiff class instead for better performance and features.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
     fd3d = FiniteDiff(
         dim=3,
@@ -739,11 +727,8 @@ def central_diff_3d(
 
 
 def get_non_uniform_fd_weights(
-        points,
-        num_neighbors=5,
-        derivative_indices=[0],
-        radius=None,
-        regularize_lstsq=False):
+    points, num_neighbors=5, derivative_indices=[0], radius=None, regularize_lstsq=False
+):
     """
     Compute finite difference weights for approximating the first order derivative
     on an unstructured grid of points
@@ -759,24 +744,23 @@ def get_non_uniform_fd_weights(
     regularize_lstsq : bool, whether to regularize the least squares system
                         Sometimes torch.linalg.lstsq(A, b).solution creates artifacts so can add regularizer
                         But regularizer can deteriorate performance when system is well-conditioned
-    
+
     Returns:
     --------
     indices : torch tensor of shape (N, k) for the indices of k nearest neighbors (including the point itself)
     fd_weights : torch tensor of weights of shape (N, len(derivative_indices), k)
-                fd_weights[i,j,m] contains the weights for the m-th nearest neighbor 
+                fd_weights[i,j,m] contains the weights for the m-th nearest neighbor
                                         in the j-th 1st order derivative for the i-th point
     """
 
     N = points.shape[0]
     d = points.shape[1]
-    k = min(max(num_neighbors, 3), N)  
+    k = min(max(num_neighbors, 3), N)
 
     # Get the indices of the k nearest neighbors (including the point itself)
     pairwise_distances = torch.cdist(points, points, p=2)
-    distances, indices = torch.topk(
-        pairwise_distances, k=k, dim=1, largest=False)
-    
+    distances, indices = torch.topk(pairwise_distances, k=k, dim=1, largest=False)
+
     # Get mask for neighbors within cutoff radius (and always keep at least 3)
     if radius is None:
         radius_mask = torch.ones_like(distances, dtype=torch.bool)
@@ -795,26 +779,24 @@ def get_non_uniform_fd_weights(
 
     # Zero out columns for neighbors that are not within the radius
     A = A * radius_mask.unsqueeze(1).unsqueeze(2)
-    
+
     # Compute right hand side
-    b = torch.zeros((len(derivative_indices), d + 1, 1),
-                    dtype=points.dtype, device=points.device)
+    b = torch.zeros(
+        (len(derivative_indices), d + 1, 1), dtype=points.dtype, device=points.device
+    )
     for i in range(len(derivative_indices)):
         b[i, derivative_indices[i] + 1] = 1
     # Repeat so it becomes (N, len(derivative_indices), d+1, 1)
     b = b.unsqueeze(0).expand(N, -1, -1, -1)
 
-    # Solve least squares system Aw = b  
+    # Solve least squares system Aw = b
     #    sometimes torch.linalg.lstsq(A, b).solution creates artifacts so can add regularizer
     # but regularizer can deteriorate performance when system is
     # well-conditioned
 
     if regularize_lstsq:
         lambda_reg = 1e-6
-        I_k = torch.eye(
-            k,
-            dtype=A.dtype,
-            device=A.device).unsqueeze(0).unsqueeze(0)
+        I_k = torch.eye(k, dtype=A.dtype, device=A.device).unsqueeze(0).unsqueeze(0)
 
         AT = A.transpose(-2, -1)
         AT_b = torch.matmul(AT, b)
@@ -822,11 +804,10 @@ def get_non_uniform_fd_weights(
 
         # Use Cholesky decomposition to accelerate torch.linalg.solve(AT_A,
         # AT_b).squeeze(-1)
-        fd_weights = torch.cholesky_solve(
-            AT_b, torch.linalg.cholesky(AT_A)).squeeze(-1)
+        fd_weights = torch.cholesky_solve(AT_b, torch.linalg.cholesky(AT_A)).squeeze(-1)
 
     else:
-        fd_weights = torch.linalg.lstsq(A, b).solution 
+        fd_weights = torch.linalg.lstsq(A, b).solution
 
     return indices, fd_weights.squeeze(-1)
 
@@ -853,19 +834,19 @@ def non_uniform_fd(
     regularize_lstsq : bool, whether to regularize the least squares system
                         Sometimes torch.linalg.lstsq(A, b).solution creates artifacts so can add regularizer
                         But regularizer can deteriorate performance when system is well-conditioned
-    
+
     Returns:
     --------
     derivatives: tensor of shape (len(derivative_indices), N) of derivatives
             e.g. in 2D with derivative_indices=[0, 1], derivatives[0] is df(x,y)/dx and derivatives[1] is df(x,y)/dy
-    
+
     """
 
     indices, fd_weights = get_non_uniform_fd_weights(
         points=points,
-                                                    num_neighbors=num_neighbors, 
-                                                    derivative_indices=derivative_indices,
-                                                    radius=radius,
+        num_neighbors=num_neighbors,
+        derivative_indices=derivative_indices,
+        radius=radius,
         regularize_lstsq=regularize_lstsq,
     )
 
@@ -884,9 +865,9 @@ class FourierDiff:
     Fourier Spectral Methods
     ------------------------
     The class implements spectral differentiation for
-    - Periodic functions: Direct Fourier differentiation using FFT 
-    - Non-periodic functions: Fourier continuation (FC) is used to extend functions 
-          to larger domain on which the functions are periodic before applying 
+    - Periodic functions: Direct Fourier differentiation using FFT
+    - Non-periodic functions: Fourier continuation (FC) is used to extend functions
+          to larger domain on which the functions are periodic before applying
           Fourier differentiation with FFT.
 
     Also provides gradient, divergence, curl, and Laplacian operations
@@ -898,10 +879,10 @@ class FourierDiff:
     - Derivative in Fourier space: (∂u/∂x)^_k = ik * û_k
     - Inverse transform: ∂u/∂x = IFFT(ik * û_k)
 
-    For non-periodic functions, Fourier continuation extends the function to 
+    For non-periodic functions, Fourier continuation extends the function to
     an extended domain (e.g. [0, 2π] → [0, 2π + 2π*additional_pts/n]) on which
     the function is periodic.
-    
+
 
     Available Methods
     ----------------
@@ -946,15 +927,15 @@ class FourierDiff:
     >>> du_dx = fd3d.dx(u)
     >>> du_dy = fd3d.dy(u)
     >>> du_dz = fd3d.dz(u)
-    >>> laplacian = fd3d.laplacian(u)  
+    >>> laplacian = fd3d.laplacian(u)
     >>>
     >>> # Vector field operations
     >>> vx = torch.sin(X) * torch.cos(Y) * torch.sin(Z)
     >>> vy = torch.cos(X) * torch.sin(Y) * torch.cos(Z)
     >>> vz = torch.sin(X) * torch.sin(Y) * torch.cos(Z)
-    >>> v = torch.stack([vx, vy, vz], dim=-4) 
-    >>> div_v = fd3d.divergence(v) 
-    >>> curl_v = fd3d.curl(v) 
+    >>> v = torch.stack([vx, vy, vz], dim=-4)
+    >>> div_v = fd3d.divergence(v)
+    >>> curl_v = fd3d.curl(v)
 
     """
 
@@ -969,7 +950,7 @@ class FourierDiff:
     ):
         """
         Initialize the FourierDiff class for computing Fourier derivatives.
-        
+
         Parameters
         ----------
         dim : int
@@ -997,7 +978,7 @@ class FourierDiff:
             raise ValueError("dim must be 1, 2, or 3")
 
         self.dim = dim
-        
+
         # Set default L based on dimension
         if L is None:
             L = 2 * torch.pi
@@ -1014,14 +995,14 @@ class FourierDiff:
 
         # Initialize FC class if needed
         self.FC = None
-        if self.use_fc in ['Legendre', 'Gram']:
-            FC_class = FCLegendre if self.use_fc == 'Legendre' else FCGram
+        if self.use_fc in ["Legendre", "Gram"]:
+            FC_class = FCLegendre if self.use_fc == "Legendre" else FCGram
             self.FC = FC_class(d=self.fc_degree, n_additional_pts=self.fc_n_additional_pts)
-    
+
     def compute_multiple_derivatives(self, u, derivatives):
         """
         Compute multiple derivatives in a single FFT/IFFT call for better performance.
-        
+
         Parameters
         ----------
         u : torch.Tensor
@@ -1031,7 +1012,7 @@ class FourierDiff:
             - 1D: list of int (orders)
             - 2D: list of tuples (order_x, order_y)
             - 3D: list of tuples (order_x, order_y, order_z)
-            
+
         Returns
         -------
         list of torch.Tensor
@@ -1047,7 +1028,7 @@ class FourierDiff:
     def derivative(self, u, order):
         """
         Compute Fourier derivative of a given tensor.
-        
+
         Parameters
         ----------
         u : torch.Tensor
@@ -1057,7 +1038,7 @@ class FourierDiff:
             - 1D: (order_x,)
             - 2D: (order_x, order_y)
             - 3D: (order_x, order_y, order_z)
-            
+
         Returns
         -------
         torch.Tensor
@@ -1072,13 +1053,13 @@ class FourierDiff:
             derivatives = self._compute_multiple_derivatives_2d(u, [order])
         elif self.dim == 3:
             derivatives = self._compute_multiple_derivatives_3d(u, [order])
-        
+
         return derivatives[0]
 
     def partial(self, u, direction="x", order=1):
         """
         Compute partial Fourier derivative along a specific direction.
-        
+
         Parameters
         ----------
         u : torch.Tensor
@@ -1088,7 +1069,7 @@ class FourierDiff:
             Options: 'x', 'y' (2D/3D only), 'z' (3D only)
         order : int, optional
             Order of the derivative, by default 1
-            
+
         Returns
         -------
         torch.Tensor
@@ -1101,8 +1082,10 @@ class FourierDiff:
         elif direction == "z" and self.dim >= 3:
             return self.dz(u, order=order)
         else:
-            raise ValueError(f"Invalid direction '{direction}' for dimension {self.dim}")
-    
+            raise ValueError(
+                f"Invalid direction '{direction}' for dimension {self.dim}"
+            )
+
     def dx(self, u, order=1):
         """Compute derivative with respect to x."""
         if self.dim == 1:
@@ -1111,7 +1094,7 @@ class FourierDiff:
             return self._dx_2d(u, order)
         elif self.dim == 3:
             return self._dx_3d(u, order)
-    
+
     def dy(self, u, order=1):
         """Compute derivative with respect to y (2D/3D only)."""
         if self.dim < 2:
@@ -1126,7 +1109,7 @@ class FourierDiff:
         if self.dim < 3:
             raise ValueError("dz method only available for 3D")
         return self._dz_3d(u, order)
-    
+
     def laplacian(self, u):
         """Compute the Laplacian ∇²f."""
         if self.dim == 1:
@@ -1144,11 +1127,11 @@ class FourierDiff:
             return torch.stack([self.dx(u), self.dy(u)], dim=-3)
         elif self.dim == 3:
             return torch.stack([self.dx(u), self.dy(u), self.dz(u)], dim=-4)
-    
+
     def divergence(self, u):
         """Compute the divergence ∇·u (for vector fields)."""
         expected_dims = {1: 1, 2: 2, 3: 3}
-        if u.shape[-self.dim-1] != expected_dims[self.dim]:
+        if u.shape[-self.dim - 1] != expected_dims[self.dim]:
             raise ValueError(
                 f"For {self.dim}D, input must have {expected_dims[self.dim]} components in the vector dimension"
             )
@@ -1226,12 +1209,12 @@ class FourierDiff:
             derivatives_real = FC.restrict(derivatives_real, dim=1)
 
         return [derivatives_real[i] for i in range(len(orders))]
-    
+
     def _dx_1d(self, u, order):
         """1D derivative with respect to x."""
         derivatives = self._compute_multiple_derivatives_1d(u, [order])
         return derivatives[0]
-    
+
     def _compute_multiple_derivatives_2d(self, u, derivatives):
         """2D multiple derivatives computation."""
         if u is None:
@@ -1259,8 +1242,8 @@ class FourierDiff:
         k_x = torch.fft.fftfreq(nx, d=dx, device=u_h.device) * (2 * torch.pi)
         k_y = torch.fft.fftfreq(ny, d=dy, device=u_h.device) * (2 * torch.pi)
 
-        # Create frequency meshgrid 
-        KX, KY = torch.meshgrid(k_x, k_y, indexing="ij")  
+        # Create frequency meshgrid
+        KX, KY = torch.meshgrid(k_x, k_y, indexing="ij")
 
         # Apply low-pass filter if specified
         if self.low_pass_filter_ratio is not None:
@@ -1288,17 +1271,17 @@ class FourierDiff:
             derivatives_real = FC.restrict(derivatives_real, dim=2)
 
         return [derivatives_real[i] for i in range(len(derivatives))]
-    
+
     def _dx_2d(self, u, order):
         """2D derivative with respect to x."""
         derivatives = self._compute_multiple_derivatives_2d(u, [(order, 0)])
         return derivatives[0]
-    
+
     def _dy_2d(self, u, order):
         """2D derivative with respect to y."""
         derivatives = self._compute_multiple_derivatives_2d(u, [(0, order)])
         return derivatives[0]
-    
+
     def _compute_multiple_derivatives_3d(self, u, derivatives):
         """3D multiple derivatives computation."""
         if u is None:
@@ -1323,15 +1306,14 @@ class FourierDiff:
         # 3D FFT
         u_h = torch.fft.fftn(u_clone, dim=(-3, -2, -1))
 
-
         # Frequency arrays
         k_x = torch.fft.fftfreq(nx, d=dx, device=u_h.device) * (2 * torch.pi)
         k_y = torch.fft.fftfreq(ny, d=dy, device=u_h.device) * (2 * torch.pi)
         k_z = torch.fft.fftfreq(nz, d=dz, device=u_h.device) * (2 * torch.pi)
 
-        # Create frequency meshgrid 
+        # Create frequency meshgrid
         KX, KY, KZ = torch.meshgrid(k_x, k_y, k_z, indexing="ij")
-   
+
         # Apply low-pass filter if specified
         if self.low_pass_filter_ratio is not None:
             cutoff_x = int(nx * self.low_pass_filter_ratio)
@@ -1361,7 +1343,7 @@ class FourierDiff:
             derivatives_real = FC.restrict(derivatives_real, dim=3)
 
         return [derivatives_real[i] for i in range(len(derivatives))]
-       
+
     def _dx_3d(self, u, order):
         """3D derivative with respect to x."""
         derivatives = self._compute_multiple_derivatives_3d(u, [(order, 0, 0)])
@@ -1371,7 +1353,7 @@ class FourierDiff:
         """3D derivative with respect to y."""
         derivatives = self._compute_multiple_derivatives_3d(u, [(0, order, 0)])
         return derivatives[0]
-    
+
     def _dz_3d(self, u, order):
         """3D derivative with respect to z."""
         derivatives = self._compute_multiple_derivatives_3d(u, [(0, 0, order)])
