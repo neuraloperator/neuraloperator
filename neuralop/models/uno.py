@@ -20,75 +20,83 @@ class UNO(nn.Module):
 
     Parameters
     ----------
-    in_channels : int, optional
-        Number of input channels, by default 3
-    out_channels : int, optional
-        Number of output channels, by default 1
+    in_channels : int
+        Number of input channels. Determined by the problem.
+    out_channels : int
+        Number of output channels. Determined by the problem.
     hidden_channels : int
-        initial width of the UNO (i.e. number of channels)
-    lifting_channels : int, optional
-        number of hidden channels of the lifting block of the FNO, by default 256
-    projection_channels : int, optional
-        number of hidden channels of the projection block of the FNO, by default 256
-    positional_embedding : str literal | GridEmbedding2D | GridEmbeddingND | None
-        if "grid", appends a grid positional embedding with default settings to 
-        the last channels of raw input. Assumes the inputs are discretized
-        over a grid with entry [0,0,...] at the origin and side lengths of 1.
-        If an initialized GridEmbedding, uses this module directly
-        See `neuralop.embeddings.GridEmbeddingND` for details
-        if None, does nothing
-    n_layers : int, optional
-        Number of Fourier Layers, by default 4
-    uno_out_channels: list
-        Number of output channel of each Fourier Layers.
-        Eaxmple: For a Five layer UNO uno_out_channels can be [32,64,64,64,32]
-    uno_n_modes: list
-        Number of Fourier Modes to use in integral operation of each Fourier Layers (along each dimension).
+        Initial width of the UNO. This significantly affects the number of parameters of the UNO.
+        Good starting point can be 64, and then increased if more expressivity is needed.
+        Update lifting_channels and projection_channels accordingly since they are proportional to hidden_channels.
+    uno_out_channels : list
+        Number of output channels of each Fourier layer.
+        Example: For a five layer UNO uno_out_channels can be [32,64,64,64,32]
+    uno_n_modes : list
+        Number of Fourier modes to use in integral operation of each Fourier layer (along each dimension).
         Example: For a five layer UNO with 2D input the uno_n_modes can be: [[5,5],[5,5],[5,5],[5,5],[5,5]]
-    uno_scalings: list
-        Scaling Factors for each Fourier Layers
-        Example: For a five layer UNO with 2D input, the uno_scalings can be : [[1.0,1.0],[0.5,0.5],[1,1],[1,1],[2,2]]
-    horizontal_skips_map: Dict, optional
-                    a map {...., b: a, ....} denoting horizontal skip connection from a-th layer to
-                    b-th layer. If None default skip connection is applied.
-                    Example: For a 5 layer UNO architecture, the skip connections can be
-                    horizontal_skips_map ={4:0,3:1}
-
-    channel_mlp_dropout: float, optional
-        dropout parameter for channelMLP after each FNO Block
-    channel_mlp_expansions: float, optional
-        expansion parameter for channelMLP after each FNO block
+    uno_scalings : list
+        Scaling factors for each Fourier layer.
+        Example: For a five layer UNO with 2D input, the uno_scalings can be: [[1.0,1.0],[0.5,0.5],[1,1],[1,1],[2,2]]
+    n_layers : int, optional
+        Number of Fourier layers. Default: 4
+    lifting_channels : int, optional
+        Number of hidden channels of the lifting block of the FNO. Default: 256
+    projection_channels : int, optional
+        Number of hidden channels of the projection block of the FNO. Default: 256
+    positional_embedding : Union[str, GridEmbedding2D, GridEmbeddingND, None], optional
+        Positional embedding to apply to last channels of raw input before being passed through the UNO.
+        Options:
+        - "grid": Appends a grid positional embedding with default settings to the last channels of raw input. 
+          Assumes the inputs are discretized over a grid with entry [0,0,...] at the origin and side lengths of 1.
+        - GridEmbedding2D: Uses this module directly for 2D cases.
+        - GridEmbeddingND: Uses this module directly (see `neuralop.embeddings.GridEmbeddingND` for details).
+        - None: Does nothing.
+        Default: "grid"
+    horizontal_skips_map : Dict, optional
+        A dictionary {b: a, ...} denoting horizontal skip connection from a-th layer to b-th layer. 
+        If None, default skip connection is applied.
+        Example: For a 5 layer UNO architecture, the skip connections can be horizontal_skips_map = {4:0,3:1}
+        Default: None
+    channel_mlp_dropout : float, optional
+        Dropout parameter for ChannelMLP after each FNO block. Default: 0
+    channel_mlp_expansion : float, optional
+        Expansion parameter for ChannelMLP after each FNO block. Default: 0.5
     non_linearity : nn.Module, optional
-        Non-Linearity module to use, by default F.gelu
-    norm : F.module, optional
-        Normalization layer to use, by default None
-    preactivation : bool, default is False
-        if True, use resnet-style preactivation
-    skip : {'linear', 'identity', 'soft-gating', None}, optional
-        Type of skip connection to use, by default 'soft-gating'
-    separable : bool, default is False
-        if True, use a depthwise separable spectral convolution
-    factorization : str or None, {'tucker', 'cp', 'tt'}
-        Tensor factorization of the parameters weight to use, by default None.
-        * If None, a dense tensor parametrizes the Spectral convolutions
-        * Otherwise, the specified tensor factorization is used.
-    joint_factorization : bool, optional
-        Whether all the Fourier Layers should be parametrized by a single tensor (vs one per layer), by default False
-    rank : float or rank, optional
-        Rank of the tensor factorization of the Fourier weights, by default 1.0
+        Non-linearity module to use. Default: F.gelu
+    norm : str, optional
+        Normalization layer to use. Options: "ada_in", "group_norm", "instance_norm", None. Default: None
+    preactivation : bool, optional
+        Whether to use ResNet-style preactivation. Default: False
+    fno_skip : str, optional
+        Type of skip connection to use in FNO layers. Options: "linear", "identity", "soft-gating", None. 
+        Default: "linear"
+    horizontal_skip : str, optional
+        Type of skip connection to use in horizontal connections. Options: "linear", "identity", "soft-gating", None. 
+        Default: "linear"
+    channel_mlp_skip : str, optional
+        Type of skip connection to use in channel-mixing MLP. Options: "linear", "identity", "soft-gating", None. 
+        Default: "soft-gating"
+    separable : bool, optional
+        Whether to use a separable spectral convolution. Default: False
+    factorization : str, optional
+        Tensor factorization of the parameters weight to use.
+        Options: "None", "Tucker", "CP", "TT"
+        Other factorization methods supported by tltorch. Default: None
+    rank : float, optional
+        Rank of the tensor factorization of the Fourier weights. Default: 1.0.
+        Set to float <1.0 when using TFNO (i.e. when factorization is not None).
+        A TFNO with rank 0.1 has roughly 10% of the parameters of a dense FNO.
     fixed_rank_modes : bool, optional
-        Modes to not factorize, by default False
-    implementation : {'factorized', 'reconstructed'}, optional, default is 'factorized'
-        If factorization is not None, forward mode to use::
-        * `reconstructed` : the full weight tensor is reconstructed from the factorization and used for the forward pass
-        * `factorized` : the input is directly contracted with the factors of the decomposition
-    decomposition_kwargs : dict, optional, default is {}
-        Optionaly additional parameters to pass to the tensor decomposition
-    domain_padding : None or float, optional
-        If not None, percentage of padding to use, by default None
-
+        Whether to not factorize certain modes. Default: False
+    implementation : str, optional
+        If factorization is not None, forward mode to use.
+        Options: "reconstructed", "factorized". Default: "factorized"
+    decomposition_kwargs : dict, optional
+        Additional parameters to pass to the tensor decomposition. Default: {}
+    domain_padding : Union[float, List[float], None], optional
+        Percentage of padding to use. If not None, percentage of padding to use. Default: None
     fft_norm : str, optional
-        by default 'forward'
+        FFT normalization mode. Default: "forward"
 
     References
     -----------

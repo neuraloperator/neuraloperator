@@ -19,10 +19,10 @@ class UQNO(BaseModel, name="UQNO"):
     Parameters
     ----------
     base_model : nn.Module
-        pre-trained solution operator
+        Pre-trained solution operator. Determined by the problem.
     residual_model : nn.Module, optional
-        architecture to train as the UQNO's 
-        quantile model
+        Architecture to train as the UQNO's quantile model. 
+        If None, a deep copy of base_model is used. Default: None
     
     References
     -----------
