@@ -20,6 +20,7 @@ import torch
 import torch.distributed as dist
 import datetime as dt
 
+
 class disable_logging(object):
     def __init__(self, level=logging.ERROR):
         logging.disable(level=level)
@@ -34,6 +35,7 @@ class disable_logging(object):
 # dummy placeholders
 _DATA_PARALLEL_GROUP = None
 _MODEL_PARALLEL_GROUP = None
+
 
 # world comm
 def get_world_size():
@@ -54,8 +56,10 @@ def get_global_rank():
     if not dist.is_initialized():
         return 0
     else:
-        return dist.get_global_rank(group=_DATA_PARALLEL_GROUP,
-                                   group_rank=get_local_rank())
+        return dist.get_global_rank(
+            group=_DATA_PARALLEL_GROUP, group_rank=get_local_rank()
+        )
+
 
 # data parallel
 def get_data_parallel_size():
@@ -71,9 +75,10 @@ def get_data_parallel_rank():
     else:
         return dist.get_rank(group=_DATA_PARALLEL_GROUP)
 
+
 def get_data_parallel_group():
     assert dist.is_initialized(), "Error, initialize torch.distributed first"
-    return _DATA_PARALLEL_GROUP 
+    return _DATA_PARALLEL_GROUP
 
 
 # model parallel
@@ -93,10 +98,10 @@ def get_model_parallel_rank():
 
 def get_model_parallel_group():
     assert dist.is_initialized(), "Error, initialize torch.distributed first"
-    return _MODEL_PARALLEL_GROUP  
+    return _MODEL_PARALLEL_GROUP
 
 
-def init(model_parallel_size: int=1, verbose: bool=False):
+def init(model_parallel_size: int = 1, verbose: bool = False):
     """
     Set up global and local communicator.
     `torchrun` initializes rank env vars by default and uses its own wireup logic
@@ -105,12 +110,12 @@ def init(model_parallel_size: int=1, verbose: bool=False):
     local_rank = int(os.getenv("LOCAL_RANK", 0))
     global_rank = int(os.getenv("RANK", 0))
     world_size = torch.cuda.device_count()
-    
+
     if world_size > 1:
         with disable_logging():
             # initialize process groups
-            dist.init_process_group(backend='nccl', rank=local_rank)
-        
+            dist.init_process_group(backend="nccl", rank=local_rank)
+
             # once initialized, get true values for rank and size using torch.distributed
             world_size = get_world_size()
             local_rank = get_local_rank()
@@ -118,13 +123,13 @@ def init(model_parallel_size: int=1, verbose: bool=False):
             # set a barrier until all processes reach this point
             dist.barrier(device_ids=[local_rank])
 
-    # process 0 is logger 
-    is_logger = (get_local_rank() == 0)
+    # process 0 is logger
+    is_logger = get_local_rank() == 0
 
     # get model groups
     model_group_size = model_parallel_size
-    
-    # compute data parallel size 
+
+    # compute data parallel size
     data_group_size = world_size // model_group_size
 
     if is_logger:
@@ -146,17 +151,17 @@ def init(model_parallel_size: int=1, verbose: bool=False):
         if model_group_size > 1:
             model_groups = []
             for i in range(num_model_groups):
-                start = i*model_group_size
+                start = i * model_group_size
                 end = start + model_group_size
                 model_groups.append(list(range(start, end)))
-                    
-            data_groups = [sorted(list(i)) for i in zip(*model_groups)]                     
+
+            data_groups = [sorted(list(i)) for i in zip(*model_groups)]
 
             if verbose and is_logger:
                 print("Model Parallel Groups w/ respect to world rank:")
                 for grp in model_groups:
                     print(grp)
-            
+
             if verbose and is_logger:
                 print("Data Parallel Groups w/ respect to world rank:")
                 for grp in data_groups:
@@ -166,22 +171,22 @@ def init(model_parallel_size: int=1, verbose: bool=False):
             with disable_logging():
                 # data groups
                 for grp in data_groups:
-                    tmp_group = dist.new_group(ranks = grp)
+                    tmp_group = dist.new_group(ranks=grp)
                     if global_rank in grp:
                         _DATA_PARALLEL_GROUP = tmp_group
                 # model groups
                 for grp in model_groups:
-                    tmp_group = dist.new_group(ranks = grp)
+                    tmp_group = dist.new_group(ranks=grp)
                     if global_rank in grp:
                         _MODEL_PARALLEL_GROUP = tmp_group
-                                
+
         else:
             # technically unnecessary but we do it to be clean
             with disable_logging():
-                _MODEL_PARALLEL_GROUP = dist.new_group(ranks = [global_rank])
+                _MODEL_PARALLEL_GROUP = dist.new_group(ranks=[global_rank])
                 _SPATIAL_PARALLEL_GROUP = _MODEL_PARALLEL_GROUP
                 _MATMUL_PARALLEL_GROUP = _MODEL_PARALLEL_GROUP
-                _DATA_PARALLEL_GROUP = dist.new_group(ranks = list(range(world_size)))
+                _DATA_PARALLEL_GROUP = dist.new_group(ranks=list(range(world_size)))
 
     # barrier
     if dist.is_initialized():
@@ -189,5 +194,5 @@ def init(model_parallel_size: int=1, verbose: bool=False):
 
     if is_logger:
         print("Finished Wireup")
-    
+
     return
