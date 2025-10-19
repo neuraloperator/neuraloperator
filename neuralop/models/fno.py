@@ -9,6 +9,7 @@ import torch.nn.functional as F
 
 # Set warning filter to show each warning only once
 import warnings
+
 warnings.filterwarnings("once", category=UserWarning)
 
 
@@ -43,7 +44,7 @@ class FNO(BaseModel, name="FNO"):
     out_channels : int
         Number of channels in output function. Determined by the problem.
     hidden_channels : int
-        Width of the FNO (i.e. number of channels). 
+        Width of the FNO (i.e. number of channels).
         This significantly affects the number of parameters of the FNO.
         Good starting point can be 64, and then increased if more expressivity is needed.
         Update lifting_channel_ratio and projection_channel_ratio accordingly since they are proportional to hidden_channels.
@@ -64,7 +65,7 @@ class FNO(BaseModel, name="FNO"):
         Positional embedding to apply to last channels of raw input
         before being passed through the FNO.
         Options:
-        - "grid": Appends a grid positional embedding with default settings to the last channels of raw input. 
+        - "grid": Appends a grid positional embedding with default settings to the last channels of raw input.
           Assumes the inputs are discretized over a grid with entry [0,0,...] at the origin and side lengths of 1.
         - GridEmbeddingND: Uses this module directly (see :mod:`neuralop.embeddings.GridEmbeddingND` for details).
         - GridEmbedding2D: Uses this module directly for 2D cases.
@@ -83,10 +84,10 @@ class FNO(BaseModel, name="FNO"):
     channel_mlp_expansion : float, optional
         Expansion parameter for ChannelMLP in FNO Block. Default: 0.5
     channel_mlp_skip : Literal["linear", "identity", "soft-gating", None], optional
-        Type of skip connection to use in channel-mixing mlp. Options: "linear", "identity", "soft-gating", None. 
+        Type of skip connection to use in channel-mixing mlp. Options: "linear", "identity", "soft-gating", None.
         Default: "soft-gating"
     fno_skip : Literal["linear", "identity", "soft-gating", None], optional
-        Type of skip connection to use in FNO layers. Options: "linear", "identity", "soft-gating", None. 
+        Type of skip connection to use in FNO layers. Options: "linear", "identity", "soft-gating", None.
         Default: "linear"
     resolution_scaling_factor : Union[Number, List[Number]], optional
         Layer-wise factor by which to scale the domain resolution of function.
@@ -106,7 +107,7 @@ class FNO(BaseModel, name="FNO"):
         Precision mode in which to perform spectral convolution.
         Options: "full", "half", "mixed". Default: "full". Default: "full"
     stabilizer : str, optional
-        Whether to use a stabilizer in FNO block. Options: "tanh", None. Default: None. 
+        Whether to use a stabilizer in FNO block. Options: "tanh", None. Default: None.
         stabilizer greatly improves performance in the case `fno_block_precision='mixed'`.
     max_n_modes : Tuple[int, ...], optional
         Maximum number of modes to use in Fourier domain during training.
@@ -226,7 +227,6 @@ class FNO(BaseModel, name="FNO"):
         self.complex_data = complex_data
         self.fno_block_precision = fno_block_precision
 
-
         ## Positional embedding
         if positional_embedding == "grid":
             spatial_grid_boundaries = [[0.0, 1.0]] * self.n_dim
@@ -252,7 +252,6 @@ class FNO(BaseModel, name="FNO"):
                               expected one of 'grid', GridEmbeddingND"
             )
 
-
         ## Domain padding
         if domain_padding is not None and (
             (isinstance(domain_padding, list) and sum(domain_padding) > 0)
@@ -264,13 +263,12 @@ class FNO(BaseModel, name="FNO"):
             )
         else:
             self.domain_padding = None
-    
+
         ## Resolution scaling factor
         if resolution_scaling_factor is not None:
             if isinstance(resolution_scaling_factor, (float, int)):
                 resolution_scaling_factor = [resolution_scaling_factor] * self.n_layers
         self.resolution_scaling_factor = resolution_scaling_factor
-
 
         ## FNO blocks
         self.fno_blocks = FNOBlocks(
@@ -299,7 +297,6 @@ class FNO(BaseModel, name="FNO"):
             conv_module=conv_module,
             n_layers=n_layers,
         )
-
 
         ## Lifting layer
         # if adding a positional embedding, add those channels to lifting
@@ -343,7 +340,6 @@ class FNO(BaseModel, name="FNO"):
         if self.complex_data:
             self.projection = ComplexValued(self.projection)
 
-
     def forward(self, x, output_shape=None, **kwargs):
         """FNO's forward pass
 
@@ -378,7 +374,7 @@ class FNO(BaseModel, name="FNO"):
                 f"FNO.forward() received unexpected keyword arguments: {list(kwargs.keys())}. "
                 "These arguments will be ignored.",
                 UserWarning,
-                stacklevel=2
+                stacklevel=2,
             )
 
         if output_shape is None:
@@ -417,7 +413,7 @@ class FNO(BaseModel, name="FNO"):
 
 def partialclass(new_name, cls, *args, **kwargs):
     """Create a new class with different default values
-    
+
     See the Spherical FNO class in neuralop/models/sfno.py for an example.
 
     Notes

@@ -3,6 +3,7 @@ import torch.nn.functional as F
 
 # Set warning filter to show each warning only once
 import warnings
+
 warnings.filterwarnings("once", category=UserWarning)
 
 
@@ -15,6 +16,7 @@ from ..layers.spectral_convolution import SpectralConv
 from ..layers.gno_block import GNOBlock
 from ..layers.gno_weighting_functions import dispatch_weighting_fn
 
+
 class FNOGNO(BaseModel, name="FNOGNO"):
     """FNOGNO: Fourier/Geometry Neural Operator. The FNOGNO
     maps from a regular N-d grid to an arbitrary query point cloud.
@@ -26,7 +28,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
     out_channels : int
         Number of output channels. Determined by the problem.
     fno_n_modes : tuple, optional
-        Number of modes to keep along each spectral dimension of FNO block. 
+        Number of modes to keep along each spectral dimension of FNO block.
         Must be larger enough but smaller than max_resolution//2 (Nyquist frequency). Default: (16, 16, 16)
     fno_hidden_channels : int, optional
         Number of hidden channels of FNO block. Default: 64
@@ -34,8 +36,8 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         Number of FNO layers in the block. Default: 4
 
     projection_channel_ratio : int, optional
-        Ratio of pointwise projection channels in the final ChannelMLP to fno_hidden_channels. 
-        The number of projection channels in the final ChannelMLP is computed by 
+        Ratio of pointwise projection channels in the final ChannelMLP to fno_hidden_channels.
+        The number of projection channels in the final ChannelMLP is computed by
         projection_channel_ratio * fno_hidden_channels (i.e. default 256). Default: 4
     gno_coord_dim : int, optional
         Dimension of coordinate space where GNO is computed. Determined by the problem. Default: 3
@@ -70,14 +72,14 @@ class FNOGNO(BaseModel, name="FNOGNO"):
     gno_use_open3d : bool, optional
         Whether to use Open3D functionality. If False, uses simple fallback neighbor search. Default: True
     gno_use_torch_scatter : bool, optional
-        Whether to use torch-scatter to perform grouped reductions in the IntegralTransform. 
+        Whether to use torch-scatter to perform grouped reductions in the IntegralTransform.
         If False, uses native Python reduction in neuralop.layers.segment_csr.
 
-        .. warning:: 
+        .. warning::
             torch-scatter is an optional dependency that conflicts with the newest versions of PyTorch,
-            so you must handle the conflict explicitly in your environment. See :ref:`torch_scatter_dependency` 
-            for more information. 
-        
+            so you must handle the conflict explicitly in your environment. See :ref:`torch_scatter_dependency`
+            for more information.
+
         Default: True
     gno_batched : bool, optional
         Whether to use IntegralTransform/GNO layer in "batched" mode. If False, sets batched=False. Default: False
@@ -109,13 +111,13 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         Type of skip connection to use. Options: "linear", "identity", "soft-gating", None. Default: "linear"
     fno_channel_mlp_skip : str, optional
         Type of skip connection to use in the FNO.
-        
+
         Options:
         - "linear": Conv layer
         - "soft-gating": Weights the channels of the input
         - "identity": nn.Identity
         - None: No skip connection
-        
+
         Default: "soft-gating"
     fno_separable : bool, optional
         Whether to use a depthwise separable spectral convolution. Default: False
@@ -127,11 +129,11 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         Whether to not factorize certain modes. Default: False
     fno_implementation : str, optional
         If factorization is not None, forward mode to use.
-        
+
         Options:
         - "reconstructed": The full weight tensor is reconstructed from the factorization and used for the forward pass
         - "factorized": The input is directly contracted with the factors of the decomposition
-        
+
         Default: "factorized"
     fno_decomposition_kwargs : dict, optional
         Additional parameters to pass to the tensor decomposition. Default: {}
@@ -145,7 +147,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         out_channels,
         projection_channel_ratio=4,
         gno_coord_dim=3,
-        gno_pos_embed_type='transformer',
+        gno_pos_embed_type="transformer",
         gno_transform_type="linear",
         fno_n_modes=(16, 16, 16),
         fno_hidden_channels=64,
@@ -156,7 +158,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         gno_embed_max_positions=10000,
         gno_radius=0.033,
         gno_weighting_function=None,
-        gno_weight_function_scale=1.,
+        gno_weight_function_scale=1.0,
         gno_channel_mlp_hidden_layers=[512, 256],
         gno_channel_mlp_non_linearity=F.gelu,
         gno_use_open3d=True,
@@ -219,10 +221,11 @@ class FNOGNO(BaseModel, name="FNOGNO"):
 
         if fno_norm == "ada_in":
             if fno_ada_in_features is not None:
-                self.adain_pos_embed = SinusoidalEmbedding(in_channels=fno_ada_in_dim,
-                                                           num_frequencies=fno_ada_in_features,
-                                                           embedding_type='transformer',
-                                                           )
+                self.adain_pos_embed = SinusoidalEmbedding(
+                    in_channels=fno_ada_in_dim,
+                    num_frequencies=fno_ada_in_features,
+                    embedding_type="transformer",
+                )
                 # if ada_in positional embedding is provided, set the input dimension
                 # of the ada_in norm to the output channels of positional embedding
                 self.ada_in_dim = self.adain_pos_embed.out_channels
@@ -234,42 +237,48 @@ class FNOGNO(BaseModel, name="FNOGNO"):
 
         # Create lifting for FNOBlock separately
         fno_lifting_channels = fno_lifting_channel_ratio * fno_hidden_channels
-        self.lifting = ChannelMLP(in_channels=in_channels + self.in_coord_dim,
-                                  hidden_channels=fno_lifting_channels,
-                                  out_channels=fno_hidden_channels,
-                                  n_layers=3)
-        
+        self.lifting = ChannelMLP(
+            in_channels=in_channels + self.in_coord_dim,
+            hidden_channels=fno_lifting_channels,
+            out_channels=fno_hidden_channels,
+            n_layers=3,
+        )
+
         self.fno_hidden_channels = fno_hidden_channels
         self.fno_blocks = FNOBlocks(
-                n_modes=fno_n_modes,
-                in_channels=fno_hidden_channels,
-                out_channels=fno_hidden_channels,
-                n_layers=fno_n_layers,
-                resolution_scaling_factor=fno_resolution_scaling_factor,
-                fno_block_precision=fno_block_precision,
-                use_channel_mlp=fno_use_channel_mlp,
-                channel_mlp_expansion=fno_channel_mlp_expansion,
-                channel_mlp_dropout=fno_channel_mlp_dropout,
-                non_linearity=fno_non_linearity,
-                stabilizer=fno_stabilizer, 
-                norm=fno_norm,
-                ada_in_features=self.ada_in_dim,
-                preactivation=fno_preactivation,
-                fno_skip=fno_skip,
-                channel_mlp_skip=fno_channel_mlp_skip,
-                separable=fno_separable,
-                factorization=fno_factorization,
-                rank=fno_rank,
-                fixed_rank_modes=fno_fixed_rank_modes,
-                implementation=fno_implementation,
-                decomposition_kwargs=fno_decomposition_kwargs,
-                conv_module=fno_conv_module,
-            )
+            n_modes=fno_n_modes,
+            in_channels=fno_hidden_channels,
+            out_channels=fno_hidden_channels,
+            n_layers=fno_n_layers,
+            resolution_scaling_factor=fno_resolution_scaling_factor,
+            fno_block_precision=fno_block_precision,
+            use_channel_mlp=fno_use_channel_mlp,
+            channel_mlp_expansion=fno_channel_mlp_expansion,
+            channel_mlp_dropout=fno_channel_mlp_dropout,
+            non_linearity=fno_non_linearity,
+            stabilizer=fno_stabilizer,
+            norm=fno_norm,
+            ada_in_features=self.ada_in_dim,
+            preactivation=fno_preactivation,
+            fno_skip=fno_skip,
+            channel_mlp_skip=fno_channel_mlp_skip,
+            separable=fno_separable,
+            factorization=fno_factorization,
+            rank=fno_rank,
+            fixed_rank_modes=fno_fixed_rank_modes,
+            implementation=fno_implementation,
+            decomposition_kwargs=fno_decomposition_kwargs,
+            conv_module=fno_conv_module,
+        )
 
         self.gno_radius = gno_radius
 
-        if gno_weighting_function is not None: #sq radius**2?
-            weight_fn = dispatch_weighting_fn(gno_weighting_function, sq_radius=gno_radius**2, scale=gno_weight_function_scale)
+        if gno_weighting_function is not None:
+            weight_fn = dispatch_weighting_fn(
+                gno_weighting_function,
+                sq_radius=gno_radius**2,
+                scale=gno_weight_function_scale,
+            )
         else:
             weight_fn = None
 
@@ -286,7 +295,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             channel_mlp_non_linearity=gno_channel_mlp_non_linearity,
             transform_type=gno_transform_type,
             use_open3d_neighbor_search=gno_use_open3d,
-            use_torch_scatter_reduce=gno_use_torch_scatter
+            use_torch_scatter_reduce=gno_use_torch_scatter,
         )
 
         projection_channels = projection_channel_ratio * fno_hidden_channels
@@ -360,13 +369,13 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             ).reshape((-1, self.fno_hidden_channels))
 
         # (n_out, fno_hidden_channels)
-        
+
         out = self.gno(
             y=in_p.reshape(-1, in_p.shape[-1]),
             x=out_p,
             f_y=latent_embed,
         )
-        
+
         # if self.gno is variable and not batched
         if out.ndim == 2:
             out = out.unsqueeze(0)
@@ -388,9 +397,9 @@ class FNOGNO(BaseModel, name="FNOGNO"):
                 f"FNOGNO.forward() received unexpected keyword arguments: {list(kwargs.keys())}. "
                 "These arguments will be ignored.",
                 UserWarning,
-                stacklevel=2
+                stacklevel=2,
             )
-        
+
         # Compute latent space embedding
         latent_embed = self.latent_embedding(in_p=in_p, f=f, ada_in=ada_in)
         # Integrate latent space

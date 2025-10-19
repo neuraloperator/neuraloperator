@@ -3,14 +3,16 @@ from math import prod
 import pytest
 import torch
 from tensorly import tenalg
+
 try:
-    import torch_harmonics 
+    import torch_harmonics
 except ModuleNotFoundError:
     pytest.skip("Skipping because torch_harmonics is not installed", allow_module_level=True)
 
 from neuralop.models import LocalNO
 
 tenalg.set_backend("einsum")
+
 
 @pytest.mark.parametrize("n_dim", [1, 2, 3])
 @pytest.mark.parametrize("mix_derivatives", [True, False])
@@ -37,7 +39,7 @@ def test_local_no_without_disco(
     rank = 0.2
     size = (s,) * n_dim
     n_modes = (modes,) * n_dim
-    conv_padding_mode = 'zeros'
+    conv_padding_mode = "zeros"
     model = LocalNO(
         in_channels=3,
         out_channels=1,
@@ -106,7 +108,7 @@ def test_local_no_with_disco(
     rank = 0.2
     size = (s,) * n_dim
     n_modes = (modes,) * n_dim
-    
+
     model = LocalNO(
         in_channels=3,
         out_channels=1,

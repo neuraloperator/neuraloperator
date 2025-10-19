@@ -4,6 +4,7 @@ import torch
 
 # Set warning filter to show each warning only once
 import warnings
+
 warnings.filterwarnings("once", category=UserWarning)
 
 from ..layers.channel_mlp import ChannelMLP
@@ -46,14 +47,14 @@ class UNO(nn.Module):
     positional_embedding : Union[str, GridEmbedding2D, GridEmbeddingND, None], optional
         Positional embedding to apply to last channels of raw input before being passed through the UNO.
         Options:
-        - "grid": Appends a grid positional embedding with default settings to the last channels of raw input. 
+        - "grid": Appends a grid positional embedding with default settings to the last channels of raw input.
           Assumes the inputs are discretized over a grid with entry [0,0,...] at the origin and side lengths of 1.
         - GridEmbedding2D: Uses this module directly for 2D cases.
         - GridEmbeddingND: Uses this module directly (see `neuralop.embeddings.GridEmbeddingND` for details).
         - None: Does nothing.
         Default: "grid"
     horizontal_skips_map : Dict, optional
-        A dictionary {b: a, ...} denoting horizontal skip connection from a-th layer to b-th layer. 
+        A dictionary {b: a, ...} denoting horizontal skip connection from a-th layer to b-th layer.
         If None, default skip connection is applied.
         Example: For a 5 layer UNO architecture, the skip connections can be horizontal_skips_map = {4:0,3:1}
         Default: None
@@ -68,13 +69,13 @@ class UNO(nn.Module):
     preactivation : bool, optional
         Whether to use ResNet-style preactivation. Default: False
     fno_skip : str, optional
-        Type of skip connection to use in FNO layers. Options: "linear", "identity", "soft-gating", None. 
+        Type of skip connection to use in FNO layers. Options: "linear", "identity", "soft-gating", None.
         Default: "linear"
     horizontal_skip : str, optional
-        Type of skip connection to use in horizontal connections. Options: "linear", "identity", "soft-gating", None. 
+        Type of skip connection to use in horizontal connections. Options: "linear", "identity", "soft-gating", None.
         Default: "linear"
     channel_mlp_skip : str, optional
-        Type of skip connection to use in channel-mixing MLP. Options: "linear", "identity", "soft-gating", None. 
+        Type of skip connection to use in channel-mixing MLP. Options: "linear", "identity", "soft-gating", None.
         Default: "soft-gating"
     separable : bool, optional
         Whether to use a separable spectral convolution. Default: False
@@ -102,7 +103,7 @@ class UNO(nn.Module):
     -----------
     .. [1] :
 
-    Rahman, M.A., Ross, Z., Azizzadenesheli, K. "U-NO: U-shaped 
+    Rahman, M.A., Ross, Z., Azizzadenesheli, K. "U-NO: U-shaped
         Neural Operators" (2022). TMLR 2022, https://arxiv.org/pdf/2204.11127.
     """
 
@@ -179,10 +180,12 @@ class UNO(nn.Module):
 
         # create positional embedding at the beginning of the model
         if positional_embedding == "grid":
-            spatial_grid_boundaries = [[0., 1.]] * self.n_dim
-            self.positional_embedding = GridEmbeddingND(in_channels=self.in_channels,
-                                                        dim=self.n_dim,
-                                                        grid_boundaries=spatial_grid_boundaries)
+            spatial_grid_boundaries = [[0.0, 1.0]] * self.n_dim
+            self.positional_embedding = GridEmbeddingND(
+                in_channels=self.in_channels,
+                dim=self.n_dim,
+                grid_boundaries=spatial_grid_boundaries,
+            )
         elif isinstance(positional_embedding, GridEmbedding2D):
             if self.n_dim == 2:
                 self.positional_embedding = positional_embedding
@@ -193,9 +196,11 @@ class UNO(nn.Module):
         elif positional_embedding == None:
             self.positional_embedding = None
         else:
-            raise ValueError(f"Error: tried to instantiate FNO positional embedding with {positional_embedding},\
-                              expected one of \'grid\', GridEmbeddingND")
-        
+            raise ValueError(
+                f"Error: tried to instantiate FNO positional embedding with {positional_embedding},\
+                              expected one of 'grid', GridEmbeddingND"
+            )
+
         if self.positional_embedding is not None:
             in_channels += self.n_dim
 
@@ -205,7 +210,7 @@ class UNO(nn.Module):
             for i in range(
                 0,
                 n_layers // 2,
-            ):  
+            ):
                 # example, if n_layers = 5, then 4:0, 3:1
                 self.horizontal_skips_map[n_layers - i - 1] = i
         # self.uno_scalings may be a 1d list specifying uniform scaling factor at each layer
@@ -242,7 +247,6 @@ class UNO(nn.Module):
             )
         else:
             self.domain_padding = None
-
 
         self.lifting = ChannelMLP(
             in_channels=in_channels,
@@ -310,12 +314,12 @@ class UNO(nn.Module):
                 f"UNO.forward() received unexpected keyword arguments: {list(kwargs.keys())}. "
                 "These arguments will be ignored.",
                 UserWarning,
-                stacklevel=2
+                stacklevel=2,
             )
-        
+
         if self.positional_embedding is not None:
             x = self.positional_embedding(x)
-        
+
         x = self.lifting(x)
 
         if self.domain_padding is not None:
@@ -328,7 +332,6 @@ class UNO(nn.Module):
         skip_outputs = {}
         cur_output = None
         for layer_idx in range(self.n_layers):
-            
             if layer_idx in self.horizontal_skips_map.keys():
                 skip_val = skip_outputs[self.horizontal_skips_map[layer_idx]]
                 resolution_scaling_factors = [
@@ -347,10 +350,8 @@ class UNO(nn.Module):
             if layer_idx in self.horizontal_skips_map.values():
                 skip_outputs[layer_idx] = self.horizontal_skips[str(layer_idx)](x)
 
-
         if self.domain_padding is not None:
             x = self.domain_padding.unpad(x)
-        
 
         x = self.projection(x)
         return x

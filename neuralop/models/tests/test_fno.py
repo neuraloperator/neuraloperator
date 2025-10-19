@@ -30,7 +30,7 @@ def test_tfno(
     stabilizer,
     lifting_channel_ratio,
     preactivation,
-    complex_data
+    complex_data,
 ):
     if torch.has_cuda:
         device = "cuda"
@@ -66,7 +66,7 @@ def test_tfno(
         lifting_channel_ratio=lifting_channel_ratio,
         preactivation=preactivation,
         complex_data=complex_data,
-        fno_block_precision=fno_block_precision
+        fno_block_precision=fno_block_precision,
     ).to(device)
 
     in_data = torch.randn(batch_size, 3, *size, dtype=dtype).to(device)
@@ -81,7 +81,7 @@ def test_tfno(
     loss = out.sum()
     # take the modulus if data is complex-valued to create grad
     if dtype == torch.cfloat:
-        loss = (loss.real ** 2 + loss.imag ** 2) ** 0.5
+        loss = (loss.real**2 + loss.imag**2) ** 0.5
     loss.backward()
 
     n_unused_params = 0
@@ -156,7 +156,7 @@ def test_fno_advanced_params(norm, use_channel_mlp, channel_mlp_skip, fno_skip, 
     n_modes = (modes,) * n_dim
 
     dtype = torch.cfloat if complex_data else torch.float32
-    
+
     model = FNO(
         in_channels=3,
         out_channels=1,
@@ -172,18 +172,18 @@ def test_fno_advanced_params(norm, use_channel_mlp, channel_mlp_skip, fno_skip, 
     ).to(device)
 
     in_data = torch.randn(batch_size, 3, *size, dtype=dtype).to(device)
-    
+
     # Test forward pass
     out = model(in_data)
-    
+
     # Check output size
     assert list(out.shape) == [batch_size, 1, *size]
-    
+
     # Test backward pass
     loss = out.sum()
     # take the modulus if data is complex-valued to create grad
     if dtype == torch.cfloat:
-        loss = (loss.real ** 2 + loss.imag ** 2) ** 0.5
+        loss = (loss.real**2 + loss.imag**2) ** 0.5
     loss.backward()
 
 
@@ -220,10 +220,10 @@ def test_fno_embedding_and_padding(positional_embedding, domain_padding, stabili
     ).to(device)
 
     in_data = torch.randn(batch_size, 3, *size).to(device)
-    
+
     # Test forward pass
     out = model(in_data)
-    
+
     # Check output size
     assert list(out.shape) == [batch_size, 1, *size]
 
@@ -255,9 +255,9 @@ def test_fno_channel_mlp_params(channel_mlp_dropout, channel_mlp_expansion, non_
     ).to(device)
 
     in_data = torch.randn(batch_size, 3, *size).to(device)
-    
+
     # Test forward pass
     out = model(in_data)
-    
+
     # Check output size
     assert list(out.shape) == [batch_size, 1, *size]

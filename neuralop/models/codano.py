@@ -32,26 +32,26 @@ class CODANO(nn.Module):
         The number of output channels (or output codomain dimension) corresponding to each input variable (or input channel).
         Example: For an input with 3 variables (channels) and output_variable_codimension=2, the output will have 6 channels (3 variables × 2 codimension). Default: 1
     lifting_channels : int, optional
-        Number of intermediate channels in the lifting block. 
+        Number of intermediate channels in the lifting block.
         The lifting module projects each input variable (i.e., each input channel) into a
-        higher-dimensional space determined by hidden_variable_codimension. 
-        If lifting_channels is None, lifting is not performed and the input channels are 
+        higher-dimensional space determined by hidden_variable_codimension.
+        If lifting_channels is None, lifting is not performed and the input channels are
         directly used as tokens for codomain attention. Default: 64
     hidden_variable_codimension : int, optional
         The number of hidden channels corresponding to each input variable (or channel). Each input channel is independently lifted
         to hidden_variable_codimension channels by the lifting block. Default: 32
     projection_channels : int, optional
-        The number of intermediate channels in the projection block of the CODANO. 
-        If projection_channels=None, projection is not performed and the output of 
+        The number of intermediate channels in the projection block of the CODANO.
+        If projection_channels=None, projection is not performed and the output of
         the last CoDA block is returned directly. Default: 64
     use_positional_encoding : bool, optional
         Indicates whether to use variable-specific positional encoding. If True, a learnable positional encoding is concatenated
-        to each variable (each input channel) before the lifting operation. 
-        The positional encoding used here is a function space generalization of the learnable positional encoding 
-        used in BERT [2]. In CODANO, the positional encoding is a function on domain which is learned directly 
+        to each variable (each input channel) before the lifting operation.
+        The positional encoding used here is a function space generalization of the learnable positional encoding
+        used in BERT [2]. In CODANO, the positional encoding is a function on domain which is learned directly
         in the Fourier Space. Default: False
     positional_encoding_dim : int, optional
-        The dimension (number of channels) of the positional encoding learned of each input variable 
+        The dimension (number of channels) of the positional encoding learned of each input variable
         (i.e., input channel). Default: 8
     positional_encoding_modes : list, optional
         Number of Fourier modes used in positional encoding along each dimension. The positional embeddings are functions and are directly learned
@@ -59,33 +59,33 @@ class CODANO(nn.Module):
         Example: For a 2D input, positional_encoding_modes could be [16, 16]. Default: None
     static_channel_dim : int, optional
         The number of channels for static information, such as boundary conditions in PDEs. These channels are concatenated with
-        each variable before the lifting operation and used to provide additional information 
+        each variable before the lifting operation and used to provide additional information
         regarding the physical setup of the system.
         When static_channel_dim > 0, additional information must be provided during the forward pass.
-        For example, static_channel_dim=1 can be used to provide mask of the domain pointing 
+        For example, static_channel_dim=1 can be used to provide mask of the domain pointing
         a hole or obstacle in the domain. Default: 0
     variable_ids : list[str], optional
-        The names of the variables in the dataset. 
-        This parameter is only required when use_positional_encoding=True to initialize learnable 
+        The names of the variables in the dataset.
+        This parameter is only required when use_positional_encoding=True to initialize learnable
         positional embeddings for each unique physical variable in the dataset.
-        
+
         For example:
         If the dataset consists of only Navier Stokes equations, the variable_ids=['u_x', 'u_y', 'p'], representing the velocity
         components in x and y directions and pressure, respectively. Please note that we consider each input channel as a physical
         variable of the PDE.
-        
+
         Please note that the 'velocity' variable is composed of two channels (codimension=2) and we have split the velocity field
         into two components, i.e., u_x and u_y. And this is to be done for all variable with codimension > 1.
-        
+
         If the dataset consists of multiple PDEs, such as Navier Stokes and Heat equation, the variable_ids=['u_x', 'u_y', 'p', 'T'],
         where 'T' represents the temperature variable for the Heat equation and 'u_x', 'u_y', 'p' are the velocity components and pressure
         for the Navier Stokes equations. This is required when we aim to learn a single solver for multiple different PDEs.
-        
+
         This parameter is not required when use_positional_encoding=False. Default: None
     per_layer_scaling_factors : list, optional
         The output scaling factor for each CoDANO_block along each dimension. The output of each of the CoDANO_block
         is resampled according to the scaling factor and then passed to the following CoDANO_blocks.
-        Example: For a 2D input and n_layers=5, per_layer_scaling_factors=[[1, 1], [0.5, 0.5], [1, 1], [2, 2], [1, 1]], 
+        Example: For a 2D input and n_layers=5, per_layer_scaling_factors=[[1, 1], [0.5, 0.5], [1, 1], [2, 2], [1, 1]],
         which downsamples the output of the second layer by a factor of 2 and upsamples the output of the fourth layer by a factor of 2.
         The resolution of the output of the CODANO model is determined by the product of the scaling factors of all the layers. Default: None
     n_heads : list, optional
@@ -158,7 +158,6 @@ class CODANO(nn.Module):
         per_channel_attention=False,
         layer_kwargs={},
         domain_padding=0.25,
-
         enable_cls_token=False,
     ):
         super().__init__()
@@ -260,7 +259,6 @@ class CODANO(nn.Module):
             )
         else:
             self.domain_padding = None
-
 
         self.extended_variable_codimemsion = extended_variable_codimemsion
         if self.lifting:
@@ -504,7 +502,6 @@ class CODANO(nn.Module):
         # forward pass through the Codomain Attention layers
         skip_outputs = {}
         for layer_idx in range(self.n_layers):
-
             if (
                 self.horizontal_skips_map is not None
                 and layer_idx in self.horizontal_skips_map.keys()

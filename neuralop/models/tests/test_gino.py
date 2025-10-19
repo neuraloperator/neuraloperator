@@ -1,11 +1,13 @@
 import torch
 import pytest
 from tensorly import tenalg
+
 tenalg.set_backend("einsum")
 
 # Parameterize use of torch_scatter if it is built
-try: 
+try:
     from torch_scatter import segment_csr
+
     use_torch_scatter = [True, False]
 except:
     use_torch_scatter = [False]
@@ -17,7 +19,7 @@ in_channels = 3
 out_channels = 2
 projection_channels = 16
 lifting_channels = 16
-fno_n_modes = (8,8,8)
+fno_n_modes = (8, 8, 8)
 
 # data parameters
 n_in = 100
@@ -26,9 +28,10 @@ latent_density = 8
 fno_ada_in_dim = 1
 fno_ada_in_features = 4
 
-@pytest.mark.parametrize("batch_size", [1,4])
-@pytest.mark.parametrize("gno_coord_dim", [2,3])
-@pytest.mark.parametrize("gno_pos_embed_type", [None, 'transformer'])
+
+@pytest.mark.parametrize("batch_size", [1, 4])
+@pytest.mark.parametrize("gno_coord_dim", [2, 3])
+@pytest.mark.parametrize("gno_pos_embed_type", [None, "transformer"])
 @pytest.mark.parametrize(
     "gno_transform_type", ["linear", "nonlinear_kernelonly", "nonlinear"]
 )
@@ -44,15 +47,15 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
         in_channels=in_channels,
         out_channels=out_channels,
         latent_feature_channels=latent_feature_dim,
-        in_gno_radius=0.3,# make this large to ensure neighborhoods overlap with queries on the domain
+        in_gno_radius=0.3,  # make this large to ensure neighborhoods overlap with queries on the domain
         out_gno_radius=0.3,
         gno_use_torch_scatter=use_torch_scatter,
         projection_channel_ratio=projection_channels,
         gno_coord_dim=gno_coord_dim,
         in_gno_pos_embed_type=gno_pos_embed_type,
         out_gno_pos_embed_type=gno_pos_embed_type,
-        in_gno_channel_mlp_hidden_layers=[16,16],
-        out_gno_channel_mlp_hidden_layers=[16,16],
+        in_gno_channel_mlp_hidden_layers=[16, 16],
+        out_gno_channel_mlp_hidden_layers=[16, 16],
         in_gno_transform_type=gno_transform_type,
         out_gno_transform_type=gno_transform_type,
         fno_n_modes=fno_n_modes[:gno_coord_dim],
@@ -63,9 +66,13 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
     ).to(device)
 
     # create grid of latent queries on the unit cube
-    latent_geom = torch.stack(torch.meshgrid([torch.linspace(0,1,latent_density)] * gno_coord_dim, indexing='xy'))
-    latent_geom = latent_geom.permute(*list(range(1,gno_coord_dim+1)),0).to(device)
-    
+    latent_geom = torch.stack(
+        torch.meshgrid(
+            [torch.linspace(0, 1, latent_density)] * gno_coord_dim, indexing="xy"
+        )
+    )
+    latent_geom = latent_geom.permute(*list(range(1, gno_coord_dim + 1)), 0).to(device)
+
     if latent_feature_dim is not None:
         latent_features_shape = [batch_size, *latent_geom.shape[:-1], latent_feature_dim]
         latent_features = torch.randn(*latent_features_shape, device=device)
@@ -84,12 +91,14 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
     x.requires_grad_(True)
 
     # Test forward pass
-    out = model(x=x,
-                input_geom=input_geom,
-                latent_queries=latent_geom,
-                output_queries=output_queries,
-                latent_features=latent_features,
-                ada_in=None)
+    out = model(
+        x=x,
+        input_geom=input_geom,
+        latent_queries=latent_geom,
+        output_queries=output_queries,
+        latent_features=latent_features,
+        ada_in=None,
+    )
 
     # Check output size
     assert list(out.shape) == [batch_size, n_out, out_channels]
