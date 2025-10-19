@@ -47,12 +47,13 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
         latent_feature_channels=latent_feature_dim,
         in_gno_radius=0.3,# make this large to ensure neighborhoods overlap with queries on the domain
         out_gno_radius=0.3,
-        use_torch_scatter=use_torch_scatter,
-        projection_channels=projection_channels,
+        gno_use_torch_scatter=use_torch_scatter,
+        projection_channel_ratio=projection_channels,
         gno_coord_dim=gno_coord_dim,
-        gno_pos_embed_type=gno_pos_embed_type,
-        in_gno_mlp_hidden_layers=[16,16],
-        out_gno_mlp_hidden_layers=[16,16],
+        in_gno_pos_embed_type=gno_pos_embed_type,
+        out_gno_pos_embed_type=gno_pos_embed_type,
+        in_gno_channel_mlp_hidden_layers=[16,16],
+        out_gno_channel_mlp_hidden_layers=[16,16],
         in_gno_transform_type=gno_transform_type,
         out_gno_transform_type=gno_transform_type,
         fno_n_modes=fno_n_modes[:gno_coord_dim],
@@ -60,7 +61,7 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
         fno_ada_in_dim=fno_ada_in_dim,
         fno_ada_in_features=fno_ada_in_features,
         # keep the FNO model small for runtime
-        fno_lifting_channels=lifting_channels,
+        fno_lifting_channel_ratio=lifting_channels,
     ).to(device)
 
     # create grid of latent queries on the unit cube

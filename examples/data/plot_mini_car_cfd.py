@@ -1,10 +1,23 @@
 """
 Visualizing computational fluid dynamics on a car
 ===================================================
-In this example we visualize a mesh drawn from the :ref:`CarCFDDataset <car_cfd_dataset_api>`. 
+In this example we visualize a mesh drawn from the :ref:`CarCFDDataset <car_cfd_dataset_api>`.
+
+This tutorial demonstrates how to work with unstructured mesh data from computational fluid dynamics (CFD)
+simulations. We will explore the 3D geometry of a car and understand how pressure fields are distributed
+over the surface, which is crucial for aerodynamic analysis and neural operator applications.
+
+The CarCFD dataset contains:
+- 3D triangular mesh data representing the car surface
+- Pressure fields computed from CFD simulations
+- Query points for neural operator training
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import dependencies
 # --------------------
 # We first import our `neuralop` library and required dependencies.
@@ -21,14 +34,18 @@ torch.manual_seed(0)
 np.random.seed(0)
 
 # %%
-# Understanding the data 
-# ----------------------
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Understanding the data structure
+# ---------------------------------
 # The data in a ``MeshDataModule`` is structured as a dictionary of tensors and important scalar values encoding 
-# a 3-d triangle mesh over the surface of a car. 
+# a 3D triangle mesh over the surface of a car. 
 # Each sample includes the coordinates of all triangle vertices and the centroids of each triangle face.
 # 
 # In this case, the creators used OpenFOAM to simulate the surface air pressure on car geometries in a wind tunnel. 
-# The 3-d Navier-Stokes equations were simulated for a variety of inlet velocities over each surface using the 
+# The 3D Navier-Stokes equations were simulated for a variety of inlet velocities over each surface using the 
 # **OpenFOAM** computational solver to predict pressure at every vertex on the mesh. 
 # Each sample here also has an inlet velocity scalar and a pressure field that maps 1-to-1 with the vertices on the mesh.
 # The :ref:`full CarCFDDataset <car_cfd_dataset_api>` is stored in triangle mesh files for downstream processing. 
@@ -36,31 +53,41 @@ np.random.seed(0)
 
 data_list = load_mini_car()
 sample = data_list[0]
-print(f'{sample.keys()=}')
+print(f'Available data keys: {sample.keys()}')
 
 # %%
-# Visualizing the car 
-# -------------------
-# Let's take a look at the vertices and pressure values.
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Visualizing the car surface with pressure distribution
+# ------------------------------------------------------
+# Let's take a look at the vertices and pressure values to understand the 3D structure
+# and how pressure varies across the car surface.
 
-fig = plt.figure()
+fig = plt.figure(figsize=(10, 8))
 ax = fig.add_subplot(projection='3d')
+
 # By default the data is normalized into the unit cube. To get a 
 # better look at it, we scale the z-direction up.
 scatter = ax.scatter(sample['vertices'][:,0],sample['vertices'][:,1],
-                     sample['vertices'][:,2]*2, s=2, c=sample['press']) 
+                     sample['vertices'][:,2]*2, s=2, c=sample['press'].numpy(), cmap='viridis') 
 ax.set_xlim(0,2)
 ax.set_ylim(0,2)
 ax.set_xlabel("x")
 ax.set_ylabel("y")
 ax.set_zlabel("z")
 ax.view_init(elev=20, azim=150, roll=0, vertical_axis='y')
-ax.set_title("Pressure over car mesh vertices")
+ax.set_title("Pressure distribution over car mesh vertices")
 fig.colorbar(scatter, pad=0.2, label="normalized pressure", ax=ax)
 plt.draw()
 # %%
-# Query points  
-# -------------
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Understanding query points for neural operator training
+# --------------------------------------------------------
 # Each sample in the ``CarCFDDataset`` also includes a set of latent query points on which we learn a function
 # to enable learning with an FNO in the middle of our geometry-informed models. Let's visualize the queries
 # on top of the car from before:
@@ -78,17 +105,20 @@ ax.set_ylabel("y")
 ax.set_zlabel("z")
 ax.legend()
 ax.view_init(elev=20, azim=150, roll=0, vertical_axis='y')
-ax.set_title("Query points and vertices")
+ax.set_title("Query points and car surface vertices")
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Neighbor search between 3D point clouds
+# ----------------------------------------
 # In :doc:`../layers/plot_neighbor_search` we demonstrate our neighbor search
-# on a simple 2-d point cloud. Let's try that again with our points here:
+# on a simple 2D point cloud. Let's try that again with our 3D car surface points here.
 
 from neuralop.layers.neighbor_search import native_neighbor_search
 verts = sample['vertices']
-#query_point = queries[1000]
-query_point = queries[3300] # 1550 and 0.4 is really good
-#nbr_data = native_neighbor_search(data=verts, queries=query_point.unsqueeze(0), radius=0.15)
+query_point = queries[3300] 
 nbr_data = native_neighbor_search(data=verts, queries=query_point.unsqueeze(0), radius=0.5)
 
 # %% Visualizing neighborhoods
@@ -134,8 +164,12 @@ plt.draw()
 
 
 # %%
-# **Connecting neighbors to query**
-#
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Connecting neighbors to query
+# ----------------------------
 # First, let's make a simple utiltiy to add arrows to our 3D plot:
 
 import numpy as np
