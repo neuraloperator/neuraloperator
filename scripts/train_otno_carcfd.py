@@ -107,13 +107,13 @@ class CFDDataProcessor(DataProcessor):
         # Turn a data dictionary returned by MeshDataModule's DictDataset
         # into the form expected by the FNOGNO
         
-        trans = sample['trans'].squeeze(0).to(self.device)
+        x = sample['trans'].squeeze(0).to(self.device)
         ind_dec = sample['ind_dec'].squeeze(0).to(self.device)
 
         #Output data
         truth = sample['press'].squeeze(0).unsqueeze(-1).to(self.device)
 
-        batch_dict = dict(trans=trans,
+        batch_dict = dict(x=x,
                         ind_dec=ind_dec,
                         y=truth)
 
@@ -162,6 +162,5 @@ trainer.train(
               optimizer=optimizer,
               scheduler=scheduler,
               training_loss=train_loss_fn,
-              #eval_losses={config.opt.testing_loss: test_loss_fn, 'drag': DragLoss},
               eval_losses={config.opt.testing_loss: test_loss_fn},
               regularizer=None,)

@@ -48,8 +48,12 @@ class OTDataModule:
             of total examples available, nothing is changed
         expand_factor : float, optional
             Scale factor to map physical mesh size to latent mesh size (e.g., torus/sphere).
+            Affects OT plan surjectivity: smaller values may lead to incomplete mappings, while larger values increase computational cost but improve surjectivity. 
+            Choose a value balancing accuracy and efficiency, by default 3.
         reg : float, optional
             Regularization coefficient for the Sinkhorn algorithm.
+            Affects OT plan surjectivity: smaller values increase precision (where fewer non-surjective plans indicate higher precision) but incur higher computational cost.
+            Choose a value balancing accuracy and efficiency, by default 1e-06.
         device : Union[str, torch.device], optional
             Device for OT computation.
         """
@@ -93,8 +97,7 @@ class OTDataModule:
             normal = torch.from_numpy(np.asarray(mesh.vertex_normals).astype(np.float32()))
             pressure = np.load(
                 str(data_dir / ('press_' + ind.zfill(3) + '.npy'))
-            ) # (3682,)
-            #pressure = np.concatenate((pressure[0:16], pressure[112:]), axis=0) #(3586,) this step moved to car_ot_dataset
+            ) 
             pressure = torch.from_numpy(pressure.astype(np.float32()))
 
             # OT
@@ -155,7 +158,7 @@ class OTDataModule:
         x = (R + r * torch.cos(points[:, 0])) * torch.cos(points[:, 1])
         y = (R + r * torch.cos(points[:, 0])) * torch.sin(points[:, 1])
         z = r * torch.sin(points[:, 0])
-        grid = torch.stack((x, y, z), axis=1)
+        grid = torch.stack((x, y, z), dim=1)
         
         return grid
 
@@ -181,7 +184,7 @@ class OTDataModule:
         nz = dx_dtheta * dy_dphi - dy_dtheta * dx_dphi
 
         # Stack and normalize
-        normals = torch.stack((nx, ny, nz), axis=-1)
+        normals = torch.stack((nx, ny, nz), dim=-1)
         norm = torch.linalg.norm(normals, dim=2, keepdim=True)
         normals = normals / norm
 

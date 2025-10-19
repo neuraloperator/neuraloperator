@@ -2,7 +2,7 @@ from typing import Any, List, Optional
 
 from zencfg import ConfigBase
 from .distributed import DistributedConfig
-from .models import ModelConfig, OTNO_Small3d
+from .models import ModelConfig, OTNO_Small2d
 from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
 
@@ -27,7 +27,7 @@ class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None
     verbose: bool = True
     distributed: DistributedConfig = DistributedConfig()
-    model: ModelConfig = OTNO_Small3d()
+    model: ModelConfig = OTNO_Small2d()
     opt: OptimizationConfig = CarCFDOptConfig()
     data: CarCFDDatasetConfig = CarCFDDatasetConfig()
     patching: PatchingConfig = PatchingConfig()

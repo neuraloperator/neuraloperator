@@ -19,13 +19,17 @@ class CarOTDataset(OTDataModule):
     root_dir : Union[str, Path]
         root directory at which data is stored.
     n_train : int, optional
-        Number of training instances to load, by default 1
+        Number of training instances to load, by default 1.
     n_test : int, optional
-        Number of testing instances to load, by default 1
+        Number of testing instances to load, by default 1.
     expand_factor : float, optional
         Scale factor to map physical mesh size to latent mesh size (e.g., torus/sphere).
+        Affects OT plan surjectivity: smaller values may lead to incomplete mappings, while larger values increase computational cost but improve surjectivity. 
+        Choose a value balancing accuracy and efficiency, by default 3.
     reg : float, optional
         Regularization coefficient for the Sinkhorn algorithm.
+        Affects OT plan surjectivity: smaller values increase precision (where fewer non-surjective plans indicate higher precision) but incur higher computational cost.
+        Choose a value balancing accuracy and efficiency, by default 1e-06.
     device : Union[str, torch.device], optional
         Device for OT computation.
 
@@ -61,14 +65,9 @@ class CarOTDataset(OTDataModule):
             reg=reg,
             device=device,
         )
-        
-        # process data list to remove specific vertices from pressure to match number of vertices
-        for i, item_data in enumerate(self.data):
-            press = item_data['press']
-            self.data[i]['press'] = torch.cat((press[0:16], press[112:]), axis=0)
-        
+      
         # encode transport and pressure
-        normalizer_keys = ['trans','press']
+        normalizer_keys = ['trans', 'press']
         self.normalizers = UnitGaussianNormalizer.from_dataset(
                 self.data[0:n_train], dim=[1], keys=normalizer_keys
             )
@@ -114,13 +113,9 @@ class load_saved_ot:
         """
         n_total = n_train + n_test
         data = torch.load(get_project_root() / "neuralop/data/datasets/data" / f"ot_expand{expand_factor}_reg{reg}_num{n_total}.pt")
-        # process data list to remove specific vertices from pressure to match number of vertices
-        for i, item_data in enumerate(data):
-            press = item_data['press']
-            data[i]['press'] = torch.cat((press[0:16], press[112:]), axis=0)
-        
+
         # encode transport and pressure
-        normalizer_keys = ['trans','press']
+        normalizer_keys = ['trans', 'press']
         self.normalizers = UnitGaussianNormalizer.from_dataset(
                 data[0:n_train], dim=[1], keys=normalizer_keys
             )

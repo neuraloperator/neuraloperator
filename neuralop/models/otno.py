@@ -2,9 +2,6 @@ import torch
 import torch.nn as nn
 
 from neuralop.models import FNO
-from neuralop.layers.channel_mlp import ChannelMLP as NeuralopMLP
-from neuralop.layers.spectral_convolution import SpectralConv
-
 
 class OTNO(FNO):
     def __init__(
@@ -20,20 +17,10 @@ class OTNO(FNO):
             use_mlp=False,
             mlp_expansion=None,
             mlp_dropout=0,
-            non_linearity=torch.nn.functional.gelu,
-            norm=None,
-            preactivation=False,
-            fno_skip="linear",
-            mlp_skip="soft-gating",
-            separable=False,
+            norm='group_norm',
             factorization=None,
             rank=1,
-            joint_factorization=False,
-            fixed_rank_modes=False,
-            implementation="factorized",
-            decomposition_kwargs=dict(),
             domain_padding=None,
-            SpectralConv=SpectralConv,
             **kwargs
     ):        
         super().__init__(
@@ -48,29 +35,11 @@ class OTNO(FNO):
             use_channel_mlp = use_mlp,
             channel_mlp_expansion = mlp_expansion,
             channel_mlp_dropout = mlp_dropout,
-            channel_mlp_skip = mlp_skip,
-            non_linearity = non_linearity,
             norm = norm,
-            preactivation = preactivation,
-            fno_skip = fno_skip,
-            separable = separable,
             factorization = factorization,
             rank = rank,
-            joint_factorization = joint_factorization,
-            fixed_rank_modes = fixed_rank_modes,
-            implementation = implementation,
-            decomposition_kwargs = decomposition_kwargs,
             domain_padding = domain_padding,
-            SpectralConv = SpectralConv,
             **kwargs
-        )
-
-        self.projection = NeuralopMLP(
-            in_channels=self.hidden_channels,
-            out_channels=out_channels,
-            hidden_channels=self.hidden_channels*projection_channel_ratio,
-            non_linearity=non_linearity,
-            n_dim=1,
         )
 
     @property
@@ -78,24 +47,37 @@ class OTNO(FNO):
         """Returns the device that the model is on."""
         return self.device_indicator_param.device
 
-    # trans: (1, in_channels, n_s_sqrt, n_s_sqrt)
-    def forward(self, trans, ind_dec, **kwargs):
-        """TFNO's forward pass"""
-        trans = self.lifting(trans)
+    # x: (1, in_channels, n_s_sqrt, n_s_sqrt)
+    #    Transport features containing concatenated data:
+    #    - Source mesh coordinates X_s
+    #    - Transported mesh coordinates T(X_s) 
+    #    - Additional features (e.g., normals)
+    #    where n_s_sqrt * n_s_sqrt = n_s (total number of source vertices)
+    # 
+    # ind_dec: (n_t,) 
+    #    Index decoder for mapping from latent grid to target mesh vertices
+    #    where n_t is the number of target vertices
+    def forward(self, x, ind_dec, **kwargs):
+        """OTNO's forward pass"""
+        x = self.lifting(x) # (1, hidden_channels, n_s_sqrt, n_s_sqrt)
 
+        # Apply domain padding if specified
         if self.domain_padding is not None:
-            trans = self.domain_padding.pad(trans)
+            x = self.domain_padding.pad(x) 
 
+        # Apply FNO layers
         for layer_idx in range(self.n_layers):
-            trans = self.fno_blocks(trans, layer_idx)
+            x = self.fno_blocks(x, layer_idx)
 
+        # Remove domain padding if applied
         if self.domain_padding is not None:
-            trans = self.domain_padding.unpad(trans) # (1, hidden_channels, n_s_sqrt, n_s_sqrt)
+            x = self.domain_padding.unpad(x) # (1, hidden_channels, n_s_sqrt, n_s_sqrt)
 
-        trans = trans.reshape(self.hidden_channels, -1).permute(1, 0) # (n_s, hidden_channels)
-
-        out = trans[ind_dec].permute(1,0)
+        # Use ind_dec to transport back to target mesh
+        x = x.reshape(self.hidden_channels, -1).permute(1, 0) # (n_s, hidden_channels)
+        out = x[ind_dec].permute(1,0) # (hidden_channels, n_t)
 
         out = out.unsqueeze(0)
-        out = self.projection(out).squeeze(1)
+        out = self.projection(out)  # (1, out_channels, n_t)
+        out = out.squeeze(0)  # (out_channels, n_t)
         return out
