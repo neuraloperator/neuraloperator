@@ -1,12 +1,27 @@
 """
-Visualizing discrete-continuous convolutions
-===================================================
-Visualizing the behavior of DISCO convolutions, the building block of the localized neural operator framework.
 
-These modules can be used on both equidistant and unstructured grids.
+DISCO Convolutions
+==================
+
+This tutorial demonstrates Discrete-Continuous (DISCO) convolutions, which are
+the building blocks of localized neural operator frameworks. DISCO convolutions
+are crucial for:
+
+- Learning localized patterns in data
+- Handling both equidistant and unstructured grids
+- Enabling efficient computation on irregular domains
+- Bridging discrete and continuous representations
+
+The tutorial covers various DISCO convolution types and their applications
+in neural operator architectures.
+    
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Preparation
 
 
@@ -29,6 +44,10 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 from neuralop.layers.discrete_continuous_convolution import DiscreteContinuousConv2d, DiscreteContinuousConvTranspose2d, EquidistantDiscreteContinuousConv2d, EquidistantDiscreteContinuousConvTranspose2d
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Let's start by loading an example image
 os.system("curl https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Albert_Einstein_Head.jpg/360px-Albert_Einstein_Head.jpg -o ./einstein.jpg")
 
@@ -41,6 +60,10 @@ plt.imshow(data, cmap=cmap)
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Let's create a grid on which the data lives
 
 x_in = torch.linspace(0, 2, nx)
@@ -56,6 +79,10 @@ w_y = 3*torch.ones_like(y_in) / ny
 q_in = (w_x * w_y).reshape(-1)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Visualize the grid
 
 plt.figure(figsize=(4,6), )
@@ -66,6 +93,10 @@ plt.show()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Format data into the same format and plot it on the grid
 
 data = data.permute(1,0).flip(1).reshape(-1)
@@ -78,6 +109,10 @@ plt.ylim(0,3)
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # For the convolution output we require an output mesh
 nxo = 90
 nyo = 120
@@ -94,6 +129,10 @@ w_y = 3*torch.ones_like(y_out) / nyo
 q_out = (w_x * w_y).reshape(-1)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Initialize the convolution and set the weights to something resembling an edge filter/finit differences
 conv = DiscreteContinuousConv2d(1, 1, grid_in=grid_in, grid_out=grid_out, quadrature_weights=q_in, kernel_shape=[2,4], radius_cutoff=5/nyo, periodic=False).float()
 
@@ -104,7 +143,12 @@ w[0,0,3] = -1.0
 conv.weight = nn.Parameter(w)
 psi = conv.get_local_filter_matrix()
 
-# %% apply the DISCO convolution to the data and plot it
+# %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Apply the DISCO convolution to the data and plot it
 # in order to compute the convolved image, we need to first bring it into the right shape with `batch_size x n_channels x n_grid_points`
 out = conv(data.reshape(1, 1, -1))
 
@@ -117,7 +161,12 @@ plt.show()
 
 out1 = torch.flip(out.squeeze().detach().reshape(nxo, nyo).transpose(0,1), dims=(-2, ))
 
-# %% do the same but on an equidistant grid:
+# %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Do the same but on an equidistant grid
 conv_equi = EquidistantDiscreteContinuousConv2d(1, 1, (nx, ny), (nxo, nyo), kernel_shape=[2,4], radius_cutoff=5/nyo, domain_length=[2,3])
 
 # initialize a kernel resembling an edge filter
@@ -142,6 +191,11 @@ out2 = out_equi.squeeze().detach()
 print(out2.shape)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Visualize the local filter matrix
 
 plt.figure(figsize=(4,6), )
 plt.imshow(conv_equi.get_local_filter_matrix()[0].detach(), cmap=cmap)
@@ -155,7 +209,12 @@ plt.colorbar()
 # plt.colorbar()
 # plt.show()
 
-# %% test the transpose convolution
+# %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Test the transpose convolution
 convt = DiscreteContinuousConvTranspose2d(1, 1, grid_in=grid_out, grid_out=grid_in, quadrature_weights=q_out, kernel_shape=[2,4], radius_cutoff=3/nyo, periodic=False).float()
 
 # initialize a flat
@@ -178,7 +237,12 @@ plt.show()
 
 
 
-# %% test the equidistant transpose convolution
+# %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Test the equidistant transpose convolution
 convt_equi = EquidistantDiscreteContinuousConvTranspose2d(1, 1, (nxo, nyo), (nx, ny), kernel_shape=[2,4], radius_cutoff=3/nyo, domain_length=[2,3])
 
 # initialize a flat

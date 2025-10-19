@@ -7,10 +7,15 @@ with complex geometries and boundary conditions using graph-based representation
 """
 
 import sys
+
 import torch
 import wandb
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.nn.functional as F
+
+# Set warning filter to show each warning only once
+import warnings
+warnings.filterwarnings("once", category=UserWarning)
 
 from neuralop.losses.data_losses import LpLoss, MSELoss
 from neuralop.training import Trainer, setup
@@ -170,6 +175,13 @@ class GINOLoss(object):
         torch.Tensor
             Computed loss value
         """
+        if kwargs:
+            warnings.warn(
+                f"GINOLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
         if isinstance(out, dict) and isinstance(y, dict):
             y = torch.cat([y[field] for field in out.keys()], dim=1)
             out = torch.cat([out[field] for field in out.keys()], dim=1)

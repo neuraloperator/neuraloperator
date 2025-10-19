@@ -1,7 +1,12 @@
 import itertools
+
 from typing import List, Optional, Tuple, Union
 
 from ..utils import validate_scaling_factor
+
+# Set warning filter to show each warning only once
+import warnings
+warnings.filterwarnings("once", category=UserWarning)
 
 try:
     from typing import Literal
@@ -541,9 +546,23 @@ class SubConv(nn.Module):
         self.indices = indices
 
     def forward(self, x, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"SpectralConvWrapper.forward() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
         return self.main_conv.forward(x, self.indices, **kwargs)
 
     def transform(self, x, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"SpectralConvWrapper.transform() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
         return self.main_conv.transform(x, self.indices, **kwargs)
 
     @property

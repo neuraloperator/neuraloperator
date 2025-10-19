@@ -7,6 +7,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# Set warning filter to show each warning only once
+import warnings
+warnings.filterwarnings("once", category=UserWarning)
+
+
 from ..layers.embeddings import GridEmbeddingND, GridEmbedding2D
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.padding import DomainPadding
@@ -15,7 +20,8 @@ from ..layers.channel_mlp import ChannelMLP
 from ..layers.complex import ComplexValued
 from .base_model import BaseModel
 
-class FNO(BaseModel, name='FNO'):
+
+class FNO(BaseModel, name="FNO"):
     """N-Dimensional Fourier Neural Operator. The FNO learns a mapping between
     spaces of functions discretized over regular grids using Fourier convolutions,
     as described in [1]_.
@@ -166,34 +172,32 @@ class FNO(BaseModel, name='FNO'):
         in_channels: int,
         out_channels: int,
         hidden_channels: int,
-        n_layers: int=4,
-        lifting_channel_ratio: Number=2,
-        projection_channel_ratio: Number=2,
-        positional_embedding: Union[str, nn.Module]="grid",
-        non_linearity: nn.Module=F.gelu,
-        norm: Literal ["ada_in", "group_norm", "instance_norm", "batch_norm"]=None,
-        complex_data: bool=False,
-        use_channel_mlp: bool=True,
-        channel_mlp_dropout: float=0,
-        channel_mlp_expansion: float=0.5,
-        channel_mlp_skip: Literal['linear', 'identity', 'soft-gating']="soft-gating",
-        fno_skip: Literal['linear', 'identity', 'soft-gating']="linear",
-        resolution_scaling_factor: Union[Number, List[Number]]=None,
-        domain_padding: Union[Number, List[Number]]=None,
-        fno_block_precision: str="full",
-        stabilizer: str=None,
-        max_n_modes: Tuple[int, ...]=None,
-        factorization: str=None,
-        rank: float=1.0,
-        fixed_rank_modes: bool=False,
-        implementation: str="factorized",
-        decomposition_kwargs: dict=None,
-        separable: bool=False,
-        preactivation: bool=False,
-        conv_module: nn.Module=SpectralConv,
-        **kwargs,
+        n_layers: int = 4,
+        lifting_channel_ratio: Number = 2,
+        projection_channel_ratio: Number = 2,
+        positional_embedding: Union[str, nn.Module] = "grid",
+        non_linearity: nn.Module = F.gelu,
+        norm: Literal["ada_in", "group_norm", "instance_norm"] = None,
+        complex_data: bool = False,
+        use_channel_mlp: bool = True,
+        channel_mlp_dropout: float = 0,
+        channel_mlp_expansion: float = 0.5,
+        channel_mlp_skip: Literal["linear", "identity", "soft-gating"] = "soft-gating",
+        fno_skip: Literal["linear", "identity", "soft-gating"] = "linear",
+        resolution_scaling_factor: Union[Number, List[Number]] = None,
+        domain_padding: Union[Number, List[Number]] = None,
+        fno_block_precision: str = "full",
+        stabilizer: str = None,
+        max_n_modes: Tuple[int, ...] = None,
+        factorization: str = None,
+        rank: float = 1.0,
+        fixed_rank_modes: bool = False,
+        implementation: str = "factorized",
+        decomposition_kwargs: dict = None,
+        separable: bool = False,
+        preactivation: bool = False,
+        conv_module: nn.Module = SpectralConv,
     ):
-
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
         super().__init__()
@@ -229,22 +233,28 @@ class FNO(BaseModel, name='FNO'):
         self.fno_block_precision = fno_block_precision
 
         if positional_embedding == "grid":
-            spatial_grid_boundaries = [[0., 1.]] * self.n_dim
-            self.positional_embedding = GridEmbeddingND(in_channels=self.in_channels,
-                                                        dim=self.n_dim,
-                                                        grid_boundaries=spatial_grid_boundaries)
+            spatial_grid_boundaries = [[0.0, 1.0]] * self.n_dim
+            self.positional_embedding = GridEmbeddingND(
+                in_channels=self.in_channels,
+                dim=self.n_dim,
+                grid_boundaries=spatial_grid_boundaries,
+            )
         elif isinstance(positional_embedding, GridEmbedding2D):
             if self.n_dim == 2:
                 self.positional_embedding = positional_embedding
             else:
-                raise ValueError(f'Error: expected {self.n_dim}-d positional embeddings, got {positional_embedding}')
+                raise ValueError(
+                    f"Error: expected {self.n_dim}-d positional embeddings, got {positional_embedding}"
+                )
         elif isinstance(positional_embedding, GridEmbeddingND):
             self.positional_embedding = positional_embedding
         elif positional_embedding is None:
             self.positional_embedding = None
         else:
-            raise ValueError(f"Error: tried to instantiate FNO positional embedding with {positional_embedding},\
-                              expected one of \'grid\', GridEmbeddingND")
+            raise ValueError(
+                f"Error: tried to instantiate FNO positional embedding with {positional_embedding},\
+                              expected one of 'grid', GridEmbeddingND"
+            )
 
         if domain_padding is not None and (
             (isinstance(domain_padding, list) and sum(domain_padding) > 0)
@@ -256,7 +266,6 @@ class FNO(BaseModel, name='FNO'):
             )
         else:
             self.domain_padding = None
-
 
         self.complex_data = self.complex_data
 
@@ -290,7 +299,6 @@ class FNO(BaseModel, name='FNO'):
             decomposition_kwargs=decomposition_kwargs,
             conv_module=conv_module,
             n_layers=n_layers,
-            **kwargs
         )
 
         # if adding a positional embedding, add those channels to lifting
@@ -306,7 +314,7 @@ class FNO(BaseModel, name='FNO'):
                 hidden_channels=self.lifting_channels,
                 n_layers=2,
                 n_dim=self.n_dim,
-                non_linearity=non_linearity
+                non_linearity=non_linearity,
             )
         # otherwise, make it a linear layer
         else:
@@ -316,7 +324,7 @@ class FNO(BaseModel, name='FNO'):
                 out_channels=self.hidden_channels,
                 n_layers=1,
                 n_dim=self.n_dim,
-                non_linearity=non_linearity
+                non_linearity=non_linearity,
             )
         # Convert lifting to a complex ChannelMLP if self.complex_data==True
         if self.complex_data:
@@ -362,11 +370,18 @@ class FNO(BaseModel, name='FNO'):
 
             * If tuple list, specifies the exact output-shape of each FNO Block
         """
+        if kwargs:
+            warnings.warn(
+                f"FNO.forward() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2
+            )
 
         if output_shape is None:
-            output_shape = [None]*self.n_layers
+            output_shape = [None] * self.n_layers
         elif isinstance(output_shape, tuple):
-            output_shape = [None]*(self.n_layers - 1) + [output_shape]
+            output_shape = [None] * (self.n_layers - 1) + [output_shape]
 
         # append spatial pos embedding if set
         if self.positional_embedding is not None:
@@ -397,231 +412,10 @@ class FNO(BaseModel, name='FNO'):
         self._n_modes = n_modes
 
 
-class FNO1d(FNO):
-    """1D Fourier Neural Operator
-
-    For the full list of parameters, see :class:`neuralop.models.FNO`.
-
-    Parameters
-    ----------
-    modes_height : int
-        number of Fourier modes to keep along the height
-    """
-
-    def __init__(
-        self,
-        n_modes_height,
-        hidden_channels,
-        in_channels=3,
-        out_channels=1,
-        lifting_channels=256,
-        projection_channels=256,
-        max_n_modes=None,
-        n_layers=4,
-        resolution_scaling_factor=None,
-        non_linearity=F.gelu,
-        stabilizer=None,
-        complex_data=False,
-        fno_block_precision="full",
-        channel_mlp_dropout=0,
-        channel_mlp_expansion=0.5,
-        norm=None,
-        skip="soft-gating",
-        separable=False,
-        preactivation=False,
-        factorization=None,
-        rank=1.0,
-        fixed_rank_modes=False,
-        implementation="factorized",
-        decomposition_kwargs=None,
-        domain_padding=None,
-        **kwargs
-    ):
-        super().__init__(
-            n_modes=(n_modes_height,),
-            hidden_channels=hidden_channels,
-            in_channels=in_channels,
-            out_channels=out_channels,
-            lifting_channels=lifting_channels,
-            projection_channels=projection_channels,
-            n_layers=n_layers,
-            resolution_scaling_factor=resolution_scaling_factor,
-            non_linearity=non_linearity,
-            stabilizer=stabilizer,
-            complex_data=complex_data,
-            fno_block_precision=fno_block_precision,
-            channel_mlp_dropout=channel_mlp_dropout,
-            channel_mlp_expansion=channel_mlp_expansion,
-            max_n_modes=max_n_modes,
-            norm=norm,
-            skip=skip,
-            separable=separable,
-            preactivation=preactivation,
-            factorization=factorization,
-            rank=rank,
-            fixed_rank_modes=fixed_rank_modes,
-            implementation=implementation,
-            decomposition_kwargs=decomposition_kwargs,
-            domain_padding=domain_padding,
-        )
-        self.n_modes_height = n_modes_height
-
-
-class FNO2d(FNO):
-    """2D Fourier Neural Operator
-
-    For the full list of parameters, see :class:`neuralop.models.FNO`.
-
-    Parameters
-    ----------
-    n_modes_width : int
-        number of modes to keep in Fourier Layer, along the width
-    n_modes_height : int
-        number of Fourier modes to keep along the height
-    """
-
-    def __init__(
-        self,
-        n_modes_height,
-        n_modes_width,
-        hidden_channels,
-        in_channels=3,
-        out_channels=1,
-        lifting_channels=256,
-        projection_channels=256,
-        n_layers=4,
-        resolution_scaling_factor=None,
-        max_n_modes=None,
-        non_linearity=F.gelu,
-        stabilizer=None,
-        complex_data=False,
-        fno_block_precision="full",
-        channel_mlp_dropout=0,
-        channel_mlp_expansion=0.5,
-        norm=None,
-        skip="soft-gating",
-        separable=False,
-        preactivation=False,
-        factorization=None,
-        rank=1.0,
-        fixed_rank_modes=False,
-        implementation="factorized",
-        decomposition_kwargs=None,
-        domain_padding=None,
-        **kwargs,
-    ):
-
-        super().__init__(
-            n_modes=(n_modes_height, n_modes_width),
-            hidden_channels=hidden_channels,
-            in_channels=in_channels,
-            out_channels=out_channels,
-            lifting_channels=lifting_channels,
-            projection_channels=projection_channels,
-            n_layers=n_layers,
-            resolution_scaling_factor=resolution_scaling_factor,
-            non_linearity=non_linearity,
-            stabilizer=stabilizer,
-            complex_data=complex_data,
-            fno_block_precision=fno_block_precision,
-            channel_mlp_dropout=channel_mlp_dropout,
-            channel_mlp_expansion=channel_mlp_expansion,
-            max_n_modes=max_n_modes,
-            norm=norm,
-            skip=skip,
-            separable=separable,
-            preactivation=preactivation,
-            factorization=factorization,
-            rank=rank,
-            fixed_rank_modes=fixed_rank_modes,
-            implementation=implementation,
-            decomposition_kwargs=decomposition_kwargs,
-            domain_padding=domain_padding,
-        )
-        self.n_modes_height = n_modes_height
-        self.n_modes_width = n_modes_width
-
-
-class FNO3d(FNO):
-    """3D Fourier Neural Operator
-
-    For the full list of parameters, see :class:`neuralop.models.FNO`.
-
-    Parameters
-    ----------
-    modes_width : int
-        number of modes to keep in Fourier Layer, along the width
-    modes_height : int
-        number of Fourier modes to keep along the height
-    modes_depth : int
-        number of Fourier modes to keep along the depth
-    """
-
-    def __init__(
-        self,
-        n_modes_height,
-        n_modes_width,
-        n_modes_depth,
-        hidden_channels,
-        in_channels=3,
-        out_channels=1,
-        lifting_channels=256,
-        projection_channels=256,
-        n_layers=4,
-        resolution_scaling_factor=None,
-        max_n_modes=None,
-        non_linearity=F.gelu,
-        stabilizer=None,
-        complex_data=False,
-        fno_block_precision="full",
-        channel_mlp_dropout=0,
-        channel_mlp_expansion=0.5,
-        norm=None,
-        skip="soft-gating",
-        separable=False,
-        preactivation=False,
-        factorization=None,
-        rank=1.0,
-        fixed_rank_modes=False,
-        implementation="factorized",
-        decomposition_kwargs=None,
-        domain_padding=None,
-        **kwargs
-    ):
-        super().__init__(
-            n_modes=(n_modes_height, n_modes_width, n_modes_depth),
-            hidden_channels=hidden_channels,
-            in_channels=in_channels,
-            out_channels=out_channels,
-            lifting_channels=lifting_channels,
-            projection_channels=projection_channels,
-            n_layers=n_layers,
-            resolution_scaling_factor=resolution_scaling_factor,
-            non_linearity=non_linearity,
-            stabilizer=stabilizer,
-            complex_data=complex_data,
-            fno_block_precision=fno_block_precision,
-            max_n_modes=max_n_modes,
-            channel_mlp_dropout=channel_mlp_dropout,
-            channel_mlp_expansion=channel_mlp_expansion,
-            norm=norm,
-            skip=skip,
-            separable=separable,
-            preactivation=preactivation,
-            factorization=factorization,
-            rank=rank,
-            fixed_rank_modes=fixed_rank_modes,
-            implementation=implementation,
-            decomposition_kwargs=decomposition_kwargs,
-            domain_padding=domain_padding,
-        )
-        self.n_modes_height = n_modes_height
-        self.n_modes_width = n_modes_width
-        self.n_modes_depth = n_modes_depth
-
-
 def partialclass(new_name, cls, *args, **kwargs):
     """Create a new class with different default values
+    
+    See the Spherical FNO class in neuralop/models/sfno.py for an example.
 
     Notes
     -----
@@ -648,7 +442,38 @@ def partialclass(new_name, cls, *args, **kwargs):
     )
 
 
-TFNO = partialclass("TFNO", FNO, factorization="Tucker")
-TFNO1d = partialclass("TFNO1d", FNO1d, factorization="Tucker")
-TFNO2d = partialclass("TFNO2d", FNO2d, factorization="Tucker")
-TFNO3d = partialclass("TFNO3d", FNO3d, factorization="Tucker")
+class TFNO(FNO):
+    """Tucker Tensorized Fourier Neural Operator (TFNO).
+
+    TFNO is an FNO with Tucker factorization enabled by default.
+
+    It uses Tucker factorization of the weights, making the forward pass efficient by contracting
+    directly with the factors of the decomposition.
+
+    This results in a fraction of the parameters of an equivalent dense FNO.
+
+    Parameters
+    ----------
+    factorization : str, optional
+        Tensor factorization method, by default "Tucker"
+    rank : float, optional
+        Tensor rank for factorization, by default 0.1
+
+    All other parameters are inherited from FNO with identical defaults.
+    See FNO class docstring for the complete parameter list.
+
+    Examples
+    --------
+    >>> from neuralop.models import TFNO
+    >>> # Create a TFNO model with default Tucker factorization
+    >>> model = TFNO(n_modes=(12, 12), in_channels=1, out_channels=1, hidden_channels=64)
+    >>>
+    >>> # Equivalent FNO model with explicit factorization:
+    >>> model = FNO(n_modes=(12, 12), in_channels=1, out_channels=1, hidden_channels=64,
+    ...             factorization="Tucker", rank=0.1)
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("factorization", "Tucker")
+        kwargs.setdefault("rank", 0.1)
+        super().__init__(*args, **kwargs)
