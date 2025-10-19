@@ -3,10 +3,25 @@ Training an FNO with incremental meta-learning
 ===============================================
 A demo of the Incremental FNO meta-learning algorithm on our small Darcy-Flow dataset.
 
+This tutorial demonstrates incremental meta-learning for neural operators, which allows
+the model to gradually increase its complexity during training. This approach can lead to:
+- Better convergence properties
+- More stable training dynamics
+- Improved generalization
+- Reduced computational requirements during early training
+
+The incremental approach starts with a small number of Fourier modes and gradually
+increases the model capacity as training progresses.
 """
 
 # %%
-#
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Import dependencies
+# -------------------
+# We import the necessary modules for incremental FNO training
 
 import torch
 import matplotlib.pyplot as plt
@@ -19,9 +34,15 @@ from neuralop.training.incremental import IncrementalFNOTrainer
 from neuralop.data.transforms.data_processors import IncrementalDataProcessor
 from neuralop import LpLoss, H1Loss
 
-
 # %%
-# Loading the Darcy flow dataset
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Loading the Darcy-Flow dataset
+# ------------------------------
+# We load the Darcy-Flow dataset with multiple resolutions for incremental training.
+
 train_loader, test_loaders, output_encoder = load_darcy_flow_small(
     n_train=100,
     batch_size=16,
@@ -30,25 +51,36 @@ train_loader, test_loaders, output_encoder = load_darcy_flow_small(
     test_batch_sizes=[32, 32],
 )
 
-# %%
-# Choose device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # %%
-# Set up the incremental FNO model
-# We start with 2 modes in each dimension
-# We choose to update the modes by the incremental gradient explained algorithm
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Configuring incremental training
+# --------------------------------
+# We set up the incremental FNO model with a small starting number of modes.
+# The model will gradually increase its capacity during training.
+# We choose to update the modes using the incremental gradient explained algorithm
 incremental = True
 if incremental:
-    starting_modes = (2, 2)
+    starting_modes = (2, 2)  # Start with very few modes
 else:
-    starting_modes = (16, 16)
+    starting_modes = (16, 16)  # Standard number of modes
 
 # %%
-# set up model
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Creating the incremental FNO model
+# ----------------------------------
+# We create an FNO model with a maximum number of modes that can be reached
+# during incremental training. The model starts with fewer modes and grows.
 model = FNO(
-    max_n_modes=(16, 16),
-    n_modes=starting_modes,
+    max_n_modes=(16, 16),    # Maximum modes the model can reach
+    n_modes=starting_modes,  # Starting number of modes
     hidden_channels=32,
     in_channels=1,
     out_channels=1,
@@ -57,38 +89,70 @@ model = model.to(device)
 n_params = count_model_params(model)
 
 # %%
-# Set up the optimizer and scheduler
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Setting up the optimizer and scheduler
+# -------------------------------------
+# We use AdamW optimizer with weight decay for regularization
 optimizer = AdamW(model.parameters(), lr=8e-3, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
+# %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Configuring incremental data processing
+# ---------------------------------------
+# If one wants to use Incremental Resolution, one should use the IncrementalDataProcessor.
+# When passed to the trainer, the trainer will automatically update the resolution.
+# 
+# Key parameters for incremental resolution:
+# - incremental_resolution: bool, default is False
+#   if True, increase the resolution of the input incrementally
+# - incremental_res_gap: parameter for resolution updates
+# - subsampling_rates: a list of resolutions to use
+# - dataset_indices: a list of indices of the dataset to slice to regularize the input resolution
+# - dataset_resolution: the resolution of the input
+# - epoch_gap: the number of epochs to wait before increasing the resolution
+# - verbose: if True, print the resolution and the number of modes
 
-# If one wants to use Incremental Resolution, one should use the IncrementalDataProcessor - When passed to the trainer, the trainer will automatically update the resolution
-# Incremental_resolution : bool, default is False
-#    if True, increase the resolution of the input incrementally
-#    uses the incremental_res_gap parameter
-#    uses the subsampling_rates parameter - a list of resolutions to use
-#    uses the dataset_indices parameter - a list of indices of the dataset to slice to regularize the input resolution
-#    uses the dataset_resolution parameter - the resolution of the input
-#    uses the epoch_gap parameter - the number of epochs to wait before increasing the resolution
-#    uses the verbose parameter - if True, print the resolution and the number of modes
 data_transform = IncrementalDataProcessor(
     in_normalizer=None,
     out_normalizer=None,
     device=device,
-    subsampling_rates=[2, 1],
-    dataset_resolution=16,
-    dataset_indices=[2, 3],
-    epoch_gap=10,
-    verbose=True,
+    subsampling_rates=[2, 1],      # Resolution scaling factors
+    dataset_resolution=16,          # Base resolution
+    dataset_indices=[2, 3],        # Dataset indices for regularization
+    epoch_gap=10,                  # Epochs between resolution updates
+    verbose=True,                  # Print progress information
 )
 
 data_transform = data_transform.to(device)
 # %%
-# Set up the losses
-l2loss = LpLoss(d=2, p=2)
-h1loss = H1Loss(d=2)
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Setting up loss functions
+# -------------------------
+# We use H1 loss for training and L2 loss for evaluation
+l2loss = LpLoss(d=2, p=2)  
+h1loss = H1Loss(d=2)       
 train_loss = h1loss
 eval_losses = {"h1": h1loss, "l2": l2loss}
+
+# %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Displaying training configuration
+# ---------------------------------
+# We display the model parameters, optimizer, scheduler, and loss functions
+# to verify our incremental training setup
 print("\n### N PARAMS ###\n", n_params)
 print("\n### OPTIMIZER ###\n", optimizer)
 print("\n### SCHEDULER ###\n", scheduler)
@@ -99,41 +163,59 @@ print(f"\n * Test: {eval_losses}")
 sys.stdout.flush()
 
 # %%
-# Set up the IncrementalTrainer
-# other options include setting incremental_loss_gap = True
-# If one wants to use incremental resolution set it to True
-# In this example we only update the modes and not the resolution
-# When using the incremental resolution one should keep in mind that the numnber of modes initially set should be strictly less than the resolution
-# Again these are the various paramaters for the various incremental settings
-# incremental_grad : bool, default is False
-#    if True, use the base incremental algorithm which is based on gradient variance
-#    uses the incremental_grad_eps parameter - set the threshold for gradient variance
-#    uses the incremental_buffer paramater - sets the number of buffer modes to calculate the gradient variance
-#    uses the incremental_max_iter parameter - sets the initial number of iterations
-#    uses the incremental_grad_max_iter parameter - sets the maximum number of iterations to accumulate the gradients
-# incremental_loss_gap : bool, default is False
-#    if True, use the incremental algorithm based on loss gap
-#    uses the incremental_loss_eps parameter
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Configuring the IncrementalFNOTrainer
+# --------------------------------------
+# We set up the IncrementalFNOTrainer with various incremental learning options.
+# Other options include setting incremental_loss_gap = True.
+# If one wants to use incremental resolution, set it to True.
+# In this example we only update the modes and not the resolution.
+# When using incremental resolution, keep in mind that the number of modes 
+# initially set should be strictly less than the resolution.
+#
+# Key parameters for incremental training:
+# - incremental_grad: bool, default is False
+#   if True, use the base incremental algorithm based on gradient variance
+#   - incremental_grad_eps: threshold for gradient variance
+#   - incremental_buffer: number of buffer modes to calculate gradient variance
+#   - incremental_max_iter: initial number of iterations
+#   - incremental_grad_max_iter: maximum iterations to accumulate gradients
+# - incremental_loss_gap: bool, default is False
+#   if True, use the incremental algorithm based on loss gap
+#   - incremental_loss_eps: threshold for loss gap
 
-
-# Finally pass all of these to the Trainer
+# Create the IncrementalFNOTrainer with our configuration
 trainer = IncrementalFNOTrainer(
     model=model,
     n_epochs=20,
     data_processor=data_transform,
     device=device,
     verbose=True,
-    incremental_loss_gap=False,
-    incremental_grad=True,
-    incremental_grad_eps=0.9999,
-    incremental_loss_eps = 0.001,
-    incremental_buffer=5,
-    incremental_max_iter=1,
-    incremental_grad_max_iter=2,
+    incremental_loss_gap=False,     # Use gradient-based incremental learning
+    incremental_grad=True,          # Enable gradient-based mode updates
+    incremental_grad_eps=0.9999,    # Gradient variance threshold
+    incremental_loss_eps=0.001,     # Loss gap threshold
+    incremental_buffer=5,           # Buffer modes for gradient calculation
+    incremental_max_iter=1,         # Initial iterations
+    incremental_grad_max_iter=2,    # Maximum gradient accumulation iterations
 )
 
 # %%
-# Train the model
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Training the incremental FNO model
+# ----------------------------------
+# We train the model using incremental meta-learning. The trainer will:
+# 1. Start with a small number of Fourier modes
+# 2. Gradually increase the model capacity based on gradient variance
+# 3. Monitor the incremental learning progress
+# 4. Evaluate on test data throughout training
+
 trainer.train(
     train_loader,
     test_loaders,
@@ -145,13 +227,18 @@ trainer.train(
 )
 
 # %%
-# Plot the prediction, and compare with the ground-truth
-# Note that we trained on a very small resolution for
-# a very small number of epochs
-# In practice, we would train at larger resolution, on many more samples.
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
+# Visualizing incremental FNO predictions
+# ----------------------------------------
+# We visualize the model's predictions after incremental training.
+# Note that we trained on a very small resolution for a very small number of epochs.
+# In practice, we would train at larger resolution on many more samples.
 #
-# However, for practicity, we created a minimal example that
-# i) fits in just a few Mb of memory
+# However, for practicality, we created a minimal example that:
+# i) fits in just a few MB of memory
 # ii) can be trained quickly on CPU
 #
 # In practice we would train a Neural Operator on one or multiple GPUs
@@ -165,8 +252,10 @@ for index in range(3):
     x = data["x"].to(device)
     # Ground-truth
     y = data["y"].to(device)
-    # Model prediction
+    # Model prediction: incremental FNO output
     out = model(x.unsqueeze(0))
+    
+    # Plot input x
     ax = fig.add_subplot(3, 3, index * 3 + 1)
     x = x.cpu().squeeze().detach().numpy()
     y = y.cpu().squeeze().detach().numpy()
@@ -176,6 +265,7 @@ for index in range(3):
     plt.xticks([], [])
     plt.yticks([], [])
 
+    # Plot ground-truth y
     ax = fig.add_subplot(3, 3, index * 3 + 2)
     ax.imshow(y.squeeze())
     if index == 0:
@@ -183,13 +273,14 @@ for index in range(3):
     plt.xticks([], [])
     plt.yticks([], [])
 
+    # Plot model prediction
     ax = fig.add_subplot(3, 3, index * 3 + 3)
     ax.imshow(out.cpu().squeeze().detach().numpy())
     if index == 0:
-        ax.set_title("Model prediction")
+        ax.set_title("Incremental FNO prediction")
     plt.xticks([], [])
     plt.yticks([], [])
 
-fig.suptitle("Inputs, ground-truth output and prediction.", y=0.98)
+fig.suptitle("Incremental FNO predictions on Darcy-Flow data", y=0.98)
 plt.tight_layout()
 fig.show()
