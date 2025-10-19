@@ -32,35 +32,35 @@ class IntegralTransform(nn.Module):
 
     Parameters
     ----------
-    channel_mlp : torch.nn.Module, default None
+    channel_mlp : torch.nn.Module, optional
         MLP parametrizing the kernel k. Input dimension
         should be dim x + dim y or dim x + dim y + dim f.
         MLP should not be pointwise and should only operate across
         channels to preserve the discretization-invariance of the 
-        kernel integral.
-    channel_mlp_layers : list, default None
+        kernel integral, by default None
+    channel_mlp_layers : list, optional
         List of layers sizes speficing a MLP which
         parametrizes the kernel k. The MLP will be
-        instansiated by the LinearChannelMLP class
-    channel_mlp_non_linearity : callable, default torch.nn.functional.gelu
+        instansiated by the LinearChannelMLP class, by default None
+    channel_mlp_non_linearity : callable, optional
         Non-linear function used to be used by the
         LinearChannelMLP class. Only used if channel_mlp_layers is
-        given and channel_mlp is None
-    transform_type : str, default 'linear'
+        given and channel_mlp is None, by default torch.nn.functional.gelu
+    transform_type : str, optional
         Which integral transform to compute. The mapping is:
         'linear_kernelonly' -> (a)
         'linear' -> (b)
         'nonlinear_kernelonly' -> (c)
         'nonlinear' -> (d)
         If the input f is not given then (a) is computed
-        by default independently of this parameter.
-    use_torch_scatter : bool, default 'True'
-        whether to use ``torch-scatter`` to perform grouped reductions in the ``IntegralTransform``. 
-        If False, uses native Python reduction in ``neuralop.layers.segment_csr``, by default True
+        by default independently of this parameter, by default 'linear'
+    use_torch_scatter : bool, optional
+        Whether to use torch-scatter to perform grouped reductions in the IntegralTransform. 
+        If False, uses native Python reduction in neuralop.layers.segment_csr, by default True
 
         .. warning:: 
 
-            ``torch-scatter`` is an optional dependency that conflicts with the newest versions of PyTorch,
+            torch-scatter is an optional dependency that conflicts with the newest versions of PyTorch,
             so you must handle the conflict explicitly in your environment. See :ref:`torch_scatter_dependency` 
             for more information. 
     """

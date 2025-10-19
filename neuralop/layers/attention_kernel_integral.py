@@ -42,8 +42,9 @@ class AttentionKernelIntegral(torch.nn.Module):
     head_n_channels : int, dimension of each attention head, determines how many function bases to use for the kernel
                       k(x, y) = \\sum_{c=1}^d \\q_c(x) * \\k_c(y), head_n_channels controls the d
     pos_dim : int, dimension of the domain, determines the dimension of coordinates
-    project_query : bool, whether to project the query function with pointwise linear layer
-                   (this is sometimes not needed when using cross-attention)
+    project_query : bool, optional
+        Whether to project the query function with pointwise linear layer
+        (this is sometimes not needed when using cross-attention), by default True
     """
 
     def __init__(self,

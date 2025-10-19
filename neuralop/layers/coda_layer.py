@@ -20,59 +20,58 @@ class CODALayer(nn.Module):
     ----------
     n_modes : list
         Number of modes for each dimension used in K, Q, V operator.
-    n_heads : int
-        Number of heads for the attention mechanism.
-    token_codimension : int
+    n_heads : int, optional
+        Number of heads for the attention mechanism, by default 1
+    token_codimension : int, optional
         Co-dimension of each variable, i.e. number of
-        output channels associated with each variable.
-    head_codimension : int
-        Co-dimension of each output token for each head.
-    codimension_size : int
-        Size of the codimension for the whole function. Only used for permutation_eq = False.
+        output channels associated with each variable, by default 1
+    head_codimension : int, optional
+        Co-dimension of each output token for each head, by default None
+    codimension_size : int, optional
+        Size of the codimension for the whole function. Only used for permutation_eq = False, by default None
     per_channel_attention : bool, optional
         Whether to use per-channel attention. Default is True (overwrites token_codimension to 1).
     permutation_eq : bool, optional
-        Whether to use permutation equivariant mixer layer after the attention mechanism.
-    norm : literal `{'instance_norm'}` or None
+        Whether to use permutation equivariant mixer layer after the attention mechanism, by default True
+    norm : literal `{'instance_norm'}` or None, optional
         Normalization module to be used. If 'instance_norm', instance normalization
-        is applied to the token outputs of the attention module.
-        Defaults to `'instance_norm'`
-    temperature : float
-        Temperature parameter for the attention mechanism.
+        is applied to the token outputs of the attention module, by default "instance_norm"
+    temperature : float, optional
+        Temperature parameter for the attention mechanism, by default 1.0
     nonlinear_attention : bool, optional
-        Whether to use non-linear activation for K, Q, V operator.
-    scale : int
+        Whether to use non-linear activation for K, Q, V operator, by default False
+    scale : int, optional
         Scale for downsampling Q, K functions before calculating the attention matrix.
-        Higher scale will downsample more.
-    resolution_scaling_factor : float
-        Scaling factor for the output.
+        Higher scale will downsample more, by default None
+    resolution_scaling_factor : float, optional
+        Scaling factor for the output, by default None
     
     Other Parameters
     ----------------
-    incremental_n_modes : list
-        Incremental number of modes for each dimension (for incremental training).
+    incremental_n_modes : list, optional
+        Incremental number of modes for each dimension (for incremental training), by default None
     use_channel_mlp : bool, optional
-        Whether to use MLP layers to parameterize skip connections. Default is True.
+        Whether to use MLP layers to parameterize skip connections, by default True
     channel_mlp_expansion : float, optional
-        Expansion parameter for self.channel_mlp. Default is 0.5.
-    non_linearity : callable
-        Non-linearity function to be used.
+        Expansion parameter for self.channel_mlp, by default 1.0
+    non_linearity : callable, optional
+        Non-linearity function to be used, by default F.gelu
     preactivation : bool, optional
-        Whether to use preactivation. Default is False.
+        Whether to use preactivation, by default False
     fno_skip : str, optional
-        Type of skip connection to be used. Default is 'linear'.
+        Type of skip connection to be used, by default 'linear'
     channel_mlp_skip : str, optional
-        Module to use for ChannelMLP skip connections. Default is "linear".
+        Module to use for ChannelMLP skip connections, by default 'linear'
     separable : bool, optional
-        Whether to use separable convolutions. Default is False.
+        Whether to use separable convolutions, by default False
     factorization : str, optional
-        Type of factorization to be used. Default is 'tucker'.
+        Type of factorization to be used, by default 'tucker'
     rank : float, optional
-        Rank of the factorization. Default is 1.0.
-    conv_module : callable
-        Spectral convolution module to be used.
+        Rank of the factorization, by default 1.0
+    conv_module : callable, optional
+        Spectral convolution module to be used, by default SpectralConv
     joint_factorization : bool, optional
-        Whether to factorize all spectralConv weights as one tensor. Default is False.
+        Whether to factorize all spectralConv weights as one tensor, by default False
     
     References
     ----------

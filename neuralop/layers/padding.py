@@ -10,15 +10,16 @@ class DomainPadding(nn.Module):
 
     Parameters
     ----------
-    domain_padding : ``float`` or ``list``
-        typically, between zero and one, percentage of padding to use
+    domain_padding : float or list
+        Typically, between zero and one, percentage of padding to use
         if a list, make sure if matches the dim of (d1, ..., dN)
-    resolution_scaling_factor : ``int`` ; default is 1
+    resolution_scaling_factor : int, optional
+        Resolution scaling factor, by default 1
 
     Notes
     -----
     This class works for any input resolution. Expects inputs of shape
-   ` `(batch-size, channels, d1, ...., dN)``
+    (batch-size, channels, d1, ...., dN)
     """
 
     def __init__(

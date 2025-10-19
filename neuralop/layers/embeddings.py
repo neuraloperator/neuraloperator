@@ -16,15 +16,15 @@ class Embedding(nn.Module, ABC):
 
 class GridEmbedding2D(Embedding):
     """
-    ``GridEmbedding2D`` applies a simple positional 
+    GridEmbedding2D applies a simple positional 
     embedding as a regular 2D grid. Expects inputs of shape
-    ``(batch, channels, d_1, d_2)``
+    (batch, channels, d_1, d_2)
 
     Parameters
     ----------
-    in_channels : ``int``
+    in_channels : int
         number of channels in input. Fixed for output channel interface
-    grid_boundaries : ``list``, optional
+    grid_boundaries : list, optional
         coordinate boundaries of input grid, by default [[0, 1], [0, 1]]
     """
     def __init__(self, in_channels: int, grid_boundaries=[[0, 1], [0, 1]]):
@@ -87,7 +87,7 @@ class GridEmbeddingND(nn.Module):
     """
     GridEmbeddingND applies a simple positional 
     embedding as a regular ND grid. Expects inputs of shape 
-    ``(batch, channels, d_1, ..., d_n)``.
+    (batch, channels, d_1, ..., d_n).
 
     Parameters
     ----------
@@ -146,7 +146,7 @@ class GridEmbeddingND(nn.Module):
         Params
         --------
         data: torch.Tensor
-            assumes shape ``(batch (optional), channels, x_1, x_2, ...x_n)``
+            assumes shape (batch (optional), channels, x_1, x_2, ...x_n)
         batched: bool
             whether data has a batch dim
         """
@@ -250,8 +250,8 @@ class SinusoidalEmbedding(Embedding):
         """
         Parameters 
         -----------
-        x: ``torch.Tensor``
-            shape ``(n_in, self.in_channels)`` or ``(batch, n_in, self.in_channels)``
+        x: torch.Tensor
+            shape (n_in, self.in_channels) or (batch, n_in, self.in_channels)
         """
         assert x.ndim in [2,3], f"Error: expected inputs of shape (batch, n_in, {self.in_channels})\
             or (n_in, channels), got inputs with ndim={x.ndim}, shape={x.shape}"

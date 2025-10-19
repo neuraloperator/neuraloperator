@@ -41,7 +41,7 @@ class FNOBlocks(nn.Module):
         floating point precision to use for computations, by default "full"
     use_channel_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default True
-    channel_mlp_dropout : int, optional
+    channel_mlp_dropout : float, optional
         dropout parameter for self.channel_mlp, by default 0
     channel_mlp_expansion : float, optional
         expansion parameter for self.channel_mlp, by default 0.5

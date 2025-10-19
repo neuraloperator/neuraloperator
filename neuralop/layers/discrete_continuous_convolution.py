@@ -117,17 +117,17 @@ def _precompute_convolution_filter_matrix(grid_in,
         will be 'isotropic': both directions are equally scaled in feature space
         If two ints (k1,k2), the kernel will be a rectangle of shape (k1,k2), meaning the convolution
         will  be 'anisotropic': one direction will be compressed or stretched in feature space.
-    quadrature_weights : ``torch.Tensor``
+    quadrature_weights : torch.Tensor
         tensor of weights for each grid point in the input
-    normalize : ``bool``, optional
+    normalize : bool, optional
         whether to normalize the precomputed filter tensor, by default True
-    basis_type: str literal ``{'piecewise_linear', 'morlet', 'zernike'}``
+    basis_type: str literal {'piecewise_linear', 'morlet', 'zernike'}
         choice of basis functions to use for convolution filter tensor. 
-    radius_cutoff : ``float``, optional
+    radius_cutoff : float, optional
         radius cutoff parameter for computing basis functions, by default 0.01
-    periodic : ``bool``, optional
+    periodic : bool, optional
         whether the domain is assumed to be periodic, by default False
-    transpose_normalization : ``bool``, optional
+    transpose_normalization : bool, optional
         whether to transpose the normalized filter tensor, by default False
 
     """

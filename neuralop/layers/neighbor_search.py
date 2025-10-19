@@ -18,9 +18,11 @@ class NeighborSearch(nn.Module):
 
     Parameters
     ----------
-    use_open3d : bool
-        Whether to use open3d or native PyTorch implementation
+    use_open3d : bool, optional
+        Whether to use open3d or native PyTorch implementation, by default True
         NOTE: open3d implementation requires 3d data
+    return_norm : bool, optional
+        Whether to return normalized distances, by default False
     """
     def __init__(self, use_open3d=True, return_norm=False):
         super().__init__()

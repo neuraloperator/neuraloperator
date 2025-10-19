@@ -26,12 +26,10 @@ class FourierContinuation(nn.Module):
         
         Parameters
         ----------
-        d : int
-            Number of matching points on the left and right boundaries
-            By default 5
-        n_additional_pts : int
-            Number of additional points to add for continuation
-            By default 50
+        d : int, optional
+            Number of matching points on the left and right boundaries, by default 5
+        n_additional_pts : int, optional
+            Number of additional points to add for continuation, by default 50
         """
         super().__init__()
         
