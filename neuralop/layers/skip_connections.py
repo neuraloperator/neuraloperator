@@ -11,16 +11,16 @@ def skip_connection(
     Parameters
     ----------
     in_features : int
-        number of input features
+        Number of input features
     out_features : int
-        number of output features
+        Number of output features
     n_dim : int, optional
         Dimensionality of the input (excluding batch-size and channels).
-        ``n_dim=2`` corresponds to having Module2D, by default 2
+        n_dim=2 corresponds to having Module2D, by default 2
     bias : bool, optional
-        whether to use a bias, by default False
-    skip_type : {'identity', 'linear', soft-gating'}, optional
-        kind of skip connection to use, by default "soft-gating"
+        Whether to use a bias, by default False
+    skip_type : {'identity', 'linear', 'soft-gating'}, optional
+        Kind of skip connection to use. Options: 'identity', 'linear', 'soft-gating', by default "soft-gating"
 
     Returns
     -------
@@ -58,13 +58,14 @@ class SoftGating(nn.Module):
     Parameters
     ----------
     in_features : int
+        Number of input features
     out_features : None
-        this is provided for API compatibility with nn.Linear only
+        This is provided for API compatibility with nn.Linear only
     n_dim : int, optional
         Dimensionality of the input (excluding batch-size and channels).
-        ``n_dim=2`` corresponds to having Module2D, by default 2
+        n_dim=2 corresponds to having Module2D, by default 2
     bias : bool, optional
-        whether to use a bias, by default False
+        Whether to use a bias, by default False
     """
 
     def __init__(self, in_features, out_features=None, n_dim=2, bias=False):

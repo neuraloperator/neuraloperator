@@ -31,44 +31,45 @@ class GNOBlock(nn.Module):
     Parameters
     ----------
     in_channels : int
-        number of channels in input function. Only used if transform_type
+        Number of channels in input function. Only used if transform_type
         is (c) "nonlinear" or (d) "nonlinear_kernelonly"
     out_channels : int
-        number of channels in output function
+        Number of channels in output function
     coord_dim : int
-        dimension of domain on which x and y are defined
+        Dimension of domain on which x and y are defined
     radius : float
-        radius in which to search for neighbors
+        Radius in which to search for neighbors
     weighting_fn : Callable, optional
-        optional squared-norm weighting function to use for Mollified GNO layer
+        Optional squared-norm weighting function to use for Mollified GNO layer
         by default None. See neuralop.layers.gno_weighting_functions for more details. 
     reduction : Literal['sum', 'mean']
-        whether to aggregate information from each neighborhood in the
+        Whether to aggregate information from each neighborhood in the
         integral transform by summing ('sum') or averaging ('mean'), by default 'sum'
 
     Other Parameters
     -----------------
     transform_type : str, optional
-        Which integral transform to compute. The mapping is:
+        Which integral transform to compute. Options: 'linear_kernelonly', 'linear', 'nonlinear_kernelonly', 'nonlinear'.
+        The mapping is:
         'linear_kernelonly' -> (a)
         'linear' -> (b) [DEFAULT]
         'nonlinear_kernelonly' -> (c)
         'nonlinear' -> (d)
         If the input f is not given then (a) is computed
-        by default independently of this parameter.
+        by default independently of this parameter, by default 'linear'
     pos_embedding_type: literal {'transformer', 'nerf'} | None, optional
-        type of positional embedding to use during the kernel integral transform.
-        see `neuralop.layers.embeddings.SinusoidalEmbedding` for more details, by default 'transformer'
+        Type of positional embedding to use during the kernel integral transform.
+        Options: 'transformer', 'nerf', None. See `neuralop.layers.embeddings.SinusoidalEmbedding` for more details, by default 'transformer'
     pos_embedding_channels : int, optional
-        per-channel dimension of optional positional embedding to use, by default 32
+        Per-channel dimension of optional positional embedding to use, by default 32
     pos_embedding_max_positions: int, optional
         `max_positions` parameter for SinusoidalEmbedding of type `'transformer'`. If
         `pos_embedding_type != 'transformer'`, this value is not used, by default 10000
     channel_mlp_layers : List[int], optional
-        list of layer widths to dynamically construct
+        List of layer widths to dynamically construct
         LinearChannelMLP network to parameterize kernel k, by default None
     channel_mlp_non_linearity : torch.nn function, optional
-        activation function for ChannelMLPLinear above, by default F.gelu
+        Activation function for ChannelMLPLinear above, by default F.gelu
     channel_mlp : nn.Module, optional
         ChannelMLP parametrizing the kernel k. Input dimension
         should be dim x + dim y or dim x + dim y + dim f.
@@ -76,9 +77,9 @@ class GNOBlock(nn.Module):
         channels to preserve the discretization-invariance of the 
         kernel integral. If you have more specific needs than the LinearChannelMLP,
         this argument allows you to pass your own Module to parameterize the kernel k. 
-        Default None.
+        Default None, by default None
     use_torch_scatter_reduce : bool, optional
-        whether to use torch-scatter to perform grouped reductions in the IntegralTransform. 
+        Whether to use torch-scatter to perform grouped reductions in the IntegralTransform. 
         If False, uses native Python reduction in neuralop.layers.segment_csr, by default True
 
         .. warning:: 
@@ -87,7 +88,7 @@ class GNOBlock(nn.Module):
             so you must handle the conflict explicitly in your environment. See :ref:`torch_scatter_dependency` 
             for more information. 
     use_open3d_neighbor_search : bool, optional
-        whether to use open3d for fast 3d neighbor search, by default True. 
+        Whether to use open3d for fast 3d neighbor search, by default True. 
         
         .. note ::
             If the coordinates provided are not 3D, the GNOBlock automatically

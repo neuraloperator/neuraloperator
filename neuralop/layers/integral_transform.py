@@ -44,10 +44,11 @@ class IntegralTransform(nn.Module):
         instansiated by the LinearChannelMLP class, by default None
     channel_mlp_non_linearity : callable, optional
         Non-linear function used to be used by the
-        LinearChannelMLP class. Only used if channel_mlp_layers is
+        LinearChannelMLP class, by default F.gelu. Only used if channel_mlp_layers is
         given and channel_mlp is None, by default torch.nn.functional.gelu
     transform_type : str, optional
-        Which integral transform to compute. The mapping is:
+        Which integral transform to compute. Options: 'linear_kernelonly', 'linear', 'nonlinear_kernelonly', 'nonlinear'.
+        The mapping is:
         'linear_kernelonly' -> (a)
         'linear' -> (b)
         'nonlinear_kernelonly' -> (c)

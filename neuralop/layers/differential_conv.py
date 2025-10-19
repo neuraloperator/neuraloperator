@@ -13,17 +13,17 @@ class FiniteDifferenceConvolution(nn.Module):
         Parameters
         ----------
         in_channels : int
-            number of in_channels
+            Number of in_channels
         out_channels : int
-            number of out_channels
+            Number of out_channels
         n_dim : int
-            number of dimensions in the input domain
+            Number of dimensions in the input domain
         kernel_size : int, optional
             Odd kernel size used for convolutional finite difference stencil, by default 3
         groups : int, optional
             Splitting number of channels, by default 1
         padding : literal {'periodic', 'replicate', 'reflect', 'zeros'}, optional
-            Mode of padding to use on input, by default 'periodic'
+            Mode of padding to use on input. Options: 'periodic', 'replicate', 'reflect', 'zeros', by default 'periodic'
             See `torch.nn.functional.padding`. 
 
         References

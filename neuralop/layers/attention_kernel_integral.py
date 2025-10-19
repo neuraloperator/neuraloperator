@@ -36,12 +36,17 @@ class AttentionKernelIntegral(torch.nn.Module):
 
     Parameters
     ----------
-    in_channels : int, input channels
-    out_channels : int, output channels
-    n_heads : int, number of attention heads in multi-head attention
-    head_n_channels : int, dimension of each attention head, determines how many function bases to use for the kernel
-                      k(x, y) = \\sum_{c=1}^d \\q_c(x) * \\k_c(y), head_n_channels controls the d
-    pos_dim : int, dimension of the domain, determines the dimension of coordinates
+    in_channels : int
+        Number of input channels
+    out_channels : int
+        Number of output channels
+    n_heads : int
+        Number of attention heads in multi-head attention
+    head_n_channels : int
+        Dimension of each attention head, determines how many function bases to use for the kernel
+        k(x, y) = \\sum_{c=1}^d \\q_c(x) * \\k_c(y), head_n_channels controls the d
+    pos_dim : int
+        Dimension of the domain, determines the dimension of coordinates
     project_query : bool, optional
         Whether to project the query function with pointwise linear layer
         (this is sometimes not needed when using cross-attention), by default True

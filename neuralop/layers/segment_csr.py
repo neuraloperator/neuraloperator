@@ -31,9 +31,8 @@ def segment_csr(
         splits representing start and end indices
         of each neighborhood in src
     reduction : Literal['mean', 'sum']
-        How to reduce a neighborhood. If mean,
-        reduce by taking the average of all neighbors.
-        Otherwise take the sum.
+        How to reduce a neighborhood. Options: 'mean', 'sum'. If mean,
+        reduce by taking the average of all neighbors. Otherwise take the sum.
     use_scatter : bool, optional
         Whether to use torch-scatter.segment_csr. If False, uses native Python reduction, by default True
 

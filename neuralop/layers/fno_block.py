@@ -23,68 +23,66 @@ class FNOBlocks(nn.Module):
     Parameters
     ----------
     in_channels : int
-        input channels to Fourier layers
+        Number of input channels to Fourier layers
     out_channels : int
-        output channels after Fourier layers
-    n_modes : int, List[int]
-        number of modes to keep along each dimension 
-        in frequency space. Can either be specified as
-        an int (for all dimensions) or an iterable with one
-        number per dimension
+        Number of output channels after Fourier layers
+    n_modes : int or List[int]
+        Number of modes to keep along each dimension in frequency space. 
+        Can either be specified as an int (for all dimensions) or an iterable 
+        with one number per dimension
     resolution_scaling_factor : Optional[Union[Number, List[Number]]], optional
-        factor by which to scale outputs for super-resolution, by default None
+        Factor by which to scale outputs for super-resolution, by default None
     n_layers : int, optional
-        number of Fourier layers to apply in sequence, by default 1
-    max_n_modes : int, List[int], optional
-        maximum number of modes to keep along each dimension, by default None
+        Number of Fourier layers to apply in sequence, by default 1
+    max_n_modes : int or List[int], optional
+        Maximum number of modes to keep along each dimension, by default None
     fno_block_precision : str, optional
-        floating point precision to use for computations, by default "full"
+        Floating point precision to use for computations. Options: "full", "half", "mixed", by default "full"
     use_channel_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default True
     channel_mlp_dropout : float, optional
-        dropout parameter for self.channel_mlp, by default 0
+        Dropout parameter for self.channel_mlp, by default 0
     channel_mlp_expansion : float, optional
-        expansion parameter for self.channel_mlp, by default 0.5
+        Expansion parameter for self.channel_mlp, by default 0.5
     non_linearity : torch.nn.F module, optional
-        nonlinear activation function to use between layers, by default F.gelu
+        Nonlinear activation function to use between layers, by default F.gelu
     stabilizer : Literal["tanh"], optional
-        stabilizing module to use between certain layers, by default None
-        if "tanh", use tanh
+        Stabilizing module to use between certain layers. Options: "tanh", None, by default None
     norm : Literal["ada_in", "group_norm", "instance_norm", "batch_norm"], optional
-        Normalization layer to use, by default None
+        Normalization layer to use. Options: "ada_in", "group_norm", "instance_norm", "batch_norm", None, by default None
     ada_in_features : int, optional
-        number of features for adaptive instance norm above, by default None
+        Number of features for adaptive instance norm above, by default None
     preactivation : bool, optional
-        whether to call forward pass with pre-activation, by default False
-        if True, call nonlinear activation and norm before Fourier convolution
-        if False, call activation and norms after Fourier convolutions
+        Whether to call forward pass with pre-activation, by default False
+        If True, call nonlinear activation and norm before Fourier convolution
+        If False, call activation and norms after Fourier convolutions
     fno_skip : str, optional
-        module to use for FNO skip connections, by default "linear"
-        see layers.skip_connections for more details
+        Module to use for FNO skip connections. Options: "linear", "soft-gating", "identity", by default "linear"
+        See layers.skip_connections for more details
     channel_mlp_skip : str, optional
-        module to use for ChannelMLP skip connections, by default "soft-gating"
-        see layers.skip_connections for more details
+        Module to use for ChannelMLP skip connections. Options: "linear", "soft-gating", "identity", by default "soft-gating"
+        See layers.skip_connections for more details
 
     Other Parameters
     -------------------
     complex_data : bool, optional
-        whether the FNO's data takes on complex values in space, by default False
+        Whether the FNO's data takes on complex values in space, by default False
     separable : bool, optional
-        separable parameter for SpectralConv, by default False
+        Separable parameter for SpectralConv, by default False
     factorization : str, optional
-        factorization parameter for SpectralConv, by default None
+        Factorization parameter for SpectralConv. Options: "tucker", "cp", "tt", None, by default None
     rank : float, optional
-        rank parameter for SpectralConv, by default 1.0
+        Rank parameter for SpectralConv, by default 1.0
     conv_module : BaseConv, optional
-        module to use for convolutions in FNO block, by default SpectralConv
+        Module to use for convolutions in FNO block, by default SpectralConv
     joint_factorization : bool, optional
-        whether to factorize all spectralConv weights as one tensor, by default False
+        Whether to factorize all spectralConv weights as one tensor, by default False
     fixed_rank_modes : bool, optional
-        fixed_rank_modes parameter for SpectralConv, by default False
+        Fixed_rank_modes parameter for SpectralConv, by default False
     implementation : str, optional
-        implementation parameter for SpectralConv, by default "factorized"
-    decomposition_kwargs : _type_, optional
-        kwargs for tensor decomposition in SpectralConv, by default dict()
+        Implementation parameter for SpectralConv. Options: "factorized", "reconstructed", by default "factorized"
+    decomposition_kwargs : dict, optional
+        Kwargs for tensor decomposition in SpectralConv, by default dict()
     
     References
     -----------

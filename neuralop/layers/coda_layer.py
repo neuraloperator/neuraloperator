@@ -30,11 +30,11 @@ class CODALayer(nn.Module):
     codimension_size : int, optional
         Size of the codimension for the whole function. Only used for permutation_eq = False, by default None
     per_channel_attention : bool, optional
-        Whether to use per-channel attention. Default is True (overwrites token_codimension to 1).
+        Whether to use per-channel attention. Default is True (overwrites token_codimension to 1), by default True
     permutation_eq : bool, optional
         Whether to use permutation equivariant mixer layer after the attention mechanism, by default True
-    norm : literal `{'instance_norm'}` or None, optional
-        Normalization module to be used. If 'instance_norm', instance normalization
+    norm : literal {'instance_norm'} or None, optional
+        Normalization module to be used. Options: "instance_norm", None. If 'instance_norm', instance normalization
         is applied to the token outputs of the attention module, by default "instance_norm"
     temperature : float, optional
         Temperature parameter for the attention mechanism, by default 1.0
@@ -55,17 +55,17 @@ class CODALayer(nn.Module):
     channel_mlp_expansion : float, optional
         Expansion parameter for self.channel_mlp, by default 1.0
     non_linearity : callable, optional
-        Non-linearity function to be used, by default F.gelu
+        Non-linearity function to be used. Options: F.gelu, F.relu, F.leaky_relu, F.silu, F.tanh, by default F.gelu
     preactivation : bool, optional
         Whether to use preactivation, by default False
     fno_skip : str, optional
-        Type of skip connection to be used, by default 'linear'
+        Type of skip connection to be used. Options: "linear", "soft-gating", "identity", by default 'linear'
     channel_mlp_skip : str, optional
-        Module to use for ChannelMLP skip connections, by default 'linear'
+        Module to use for ChannelMLP skip connections. Options: "linear", "soft-gating", "identity", by default 'linear'
     separable : bool, optional
         Whether to use separable convolutions, by default False
     factorization : str, optional
-        Type of factorization to be used, by default 'tucker'
+        Type of factorization to be used. Options: "tucker", "cp", "tt", None, by default 'tucker'
     rank : float, optional
         Rank of the factorization, by default 1.0
     conv_module : callable, optional
