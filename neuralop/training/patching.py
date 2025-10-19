@@ -9,17 +9,19 @@ from neuralop.mpu.mappings import (
     scatter_to_model_parallel_region,
 )
 
+
 class MultigridPatching2D(nn.Module):
     """
     MultigridPatching2D wraps a model in multi-grid domain decomposition and patching.
     """
+
     def __init__(
         self,
         model: nn.Module,
-        levels: int=0,
-        padding_fraction: float=0,
-        use_distributed: bool=False,
-        stitching: bool=True,
+        levels: int = 0,
+        padding_fraction: float = 0,
+        use_distributed: bool = False,
+        stitching: bool = True,
     ):
         """Wrap a model in MGPatching. If computation is split into distributed
         data or model parallel, adds parameter hooks to account for scattering patches across
@@ -28,7 +30,7 @@ class MultigridPatching2D(nn.Module):
         Parameters
         ----------
         model : nn.Module
-            model to wrap 
+            model to wrap
         levels : int, optional
             number of levels of patching to use, by default 0
         padding_fraction : float, optional
@@ -103,7 +105,7 @@ class MultigridPatching2D(nn.Module):
 
     def unpatch(self, x, y, evaluation=False):
         """unpatch tensors created by `self.patch`. Stitch patches together if in
-        evaluation mode, or if stitching is applied. 
+        evaluation mode, or if stitching is applied.
 
         Parameters
         ----------
@@ -112,12 +114,12 @@ class MultigridPatching2D(nn.Module):
             either inputs `x` or raw model outputs (same shape/patching structure)
             Shape (b * n^2, c, h / n + 2 * pad_h, w / n + 2 * pad_w)
         y : torch.tensor
-            tensor of patched ground-truth `y`. 
+            tensor of patched ground-truth `y`.
             Shape (b * n^2, c, h / n, w / n) or (b, c, h, w) when not stitched
         evaluation : bool, optional
             whether in evaluation mode, by default False.
-            If True, `x` and `y` are both evaluated after stitching, 
-            regardless of other settings. 
+            If True, `x` and `y` are both evaluated after stitching,
+            regardless of other settings.
         """
         # Remove padding in the output
         if self.padding_height > 0 or self.padding_width > 0:
@@ -130,7 +132,7 @@ class MultigridPatching2D(nn.Module):
         # Stich patches or patch the truth if output left unstitched
         if self.stitching or evaluation:
             x = self._stitch(x)
-        
+
         # if x is not stitched during training, y is patched
         # re-stitch y during evaluation only
         if evaluation and not self.stitching:
@@ -143,7 +145,7 @@ class MultigridPatching2D(nn.Module):
 
         Small patches are collated along the batch dimension as different inputs. Unroll
         the batch dimension and stick all patches from the same input back together in their
-        proper locations. 
+        proper locations.
 
         For an input shape (n * n * n, c, h / n, w / n),
         produces an output tensor of shape (b, c, h, w)
@@ -154,7 +156,7 @@ class MultigridPatching2D(nn.Module):
         x : torch.tensor
             input tensor, split into patches and collated along batch dim
             shape (batch * n^2, c, h / n, w / n)
-            
+
         """
 
         # Only 1D and 2D supported
@@ -310,7 +312,7 @@ def make_patches(x, n, p=0):
     with padding fraction `p`. Stacks patches along the batch dimension.
 
     Starting with an input tensor of shape (batch, C, s) or (batch, C, h, w),
-    returns a corresponding patched output tensor of shape (n * batch, C, s / n + 2p) 
+    returns a corresponding patched output tensor of shape (n * batch, C, s / n + 2p)
     or (n1 * n2 * batch, C, h / n1 + 2 * p1, w / n2 + 2 * p2)
 
 
