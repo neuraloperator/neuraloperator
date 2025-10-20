@@ -13,6 +13,21 @@ from neuralop.mpu.mappings import (
 class MultigridPatching2D(nn.Module):
     """
     MultigridPatching2D wraps a model in multi-grid domain decomposition and patching.
+
+    Parameters
+    ----------
+    model : nn.Module
+        model to wrap
+    levels : int, optional
+        number of levels of patching to use, by default 0
+    padding_fraction : float, optional
+        fraction of input size to add as padding around patches, by default 0
+    use_distributed : bool, optional
+        whether patching is performed in distributed mode, by default False
+    stitching : bool, optional
+        whether patches are to be stitched back together
+        in spatial dimensions during training, by default True.
+        Stitching is always performed during evaluation.
     """
 
     def __init__(
@@ -23,24 +38,10 @@ class MultigridPatching2D(nn.Module):
         use_distributed: bool = False,
         stitching: bool = True,
     ):
-        """Wrap a model in MGPatching. If computation is split into distributed
-        data or model parallel, adds parameter hooks to account for scattering patches across
-        multiple processes.
+        """Initialize MultigridPatching2D.
 
-        Parameters
-        ----------
-        model : nn.Module
-            model to wrap
-        levels : int, optional
-            number of levels of patching to use, by default 0
-        padding_fraction : float, optional
-            fraction of input size to add as padding around patches, by default 0
-        use_distributed : bool, optional
-            whether patching is performed in distributed mode, by default False
-        stitching : bool, optional
-            whether patches are to be stitched back together
-            in spatial dimensions during training, by default True.
-            Stitching is always performed during evaluation.
+        If computation is split into distributed data or model parallel, adds parameter 
+        hooks to account for scattering patches across multiple processes.
         """
 
         super().__init__()
