@@ -65,16 +65,19 @@ class DataProcessor(torch.nn.Module, metaclass=ABCMeta):
 class DefaultDataProcessor(DataProcessor):
     """DefaultDataProcessor is a simple processor
     to pre/post process data before training/inferencing a model.
+
+    Parameters
+    ----------
+    in_normalizer : Transform, optional, default is None
+        normalizer (e.g. StandardScaler) for the input samples
+    out_normalizer : Transform, optional, default is None
+        normalizer (e.g. StandardScaler) for the target and predicted samples
     """
 
     def __init__(self, in_normalizer=None, out_normalizer=None):
-        """
-        Parameters
-        ----------
-        in_normalizer : Transform, optional, default is None
-            normalizer (e.g. StandardScaler) for the input samples
-        out_normalizer : Transform, optional, default is None
-            normalizer (e.g. StandardScaler) for the target and predicted samples
+        """Initialize the DefaultDataProcessor.
+        
+        See class docstring for detailed parameter descriptions.
         """
         super().__init__()
         self.in_normalizer = in_normalizer

@@ -8,6 +8,21 @@ from ...training.patching import MultigridPatching2D
 
 
 class MGPatchingTransform(Transform):
+    """Wraps MultigridPatching2D to expose canonical
+    transform .transform() and .inverse_transform() API
+
+    Parameters
+    ----------
+    model: nn.Module
+        model to wrap in MultigridPatching2D
+    levels : int
+        mg_patching level parameter for MultigridPatching2D
+    padding_fraction : float
+        mg_padding_fraction parameter for MultigridPatching2D
+    stitching : float
+        mg_patching_stitching parameter for MultigridPatching2D
+    """
+
     def __init__(
         self,
         model: torch.nn.Module,
@@ -15,19 +30,9 @@ class MGPatchingTransform(Transform):
         padding_fraction: float,
         stitching: float,
     ):
-        """Wraps MultigridPatching2D to expose canonical
-        transform .transform() and .inverse_transform() API
+        """Initialize the MGPatchingTransform.
 
-        Parameters
-        ----------
-        model: nn.Module
-            model to wrap in MultigridPatching2D
-        levels : int
-            mg_patching level parameter for MultigridPatching2D
-        padding_fraction : float
-            mg_padding_fraction parameter for MultigridPatching2D
-        stitching : float
-            mg_patching_stitching parameter for MultigridPatching2D
+        See class docstring for detailed parameter descriptions.
         """
         super.__init__()
 

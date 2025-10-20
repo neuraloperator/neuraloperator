@@ -35,17 +35,22 @@ class Transform(torch.nn.Module):
 
 
 class CompositeTransform(Transform):
+    """Composite transform composes a list of
+    Transforms into one Transform object.
+
+    Transformations are not assumed to be commutative
+
+    Parameters
+    ----------
+    transforms : List[Transform]
+        list of transforms to be applied to data
+        in order
+    """
+
     def __init__(self, transforms: List[Transform]):
-        """Composite transform composes a list of
-        Transforms into one Transform object.
+        """Initialize the CompositeTransform.
 
-        Transformations are not assumed to be commutative
-
-        Parameters
-        ----------
-        transforms : List[Transform]
-            list of transforms to be applied to data
-            in order
+        See class docstring for detailed parameter descriptions.
         """
         super.__init__()
         self.transforms = transforms
