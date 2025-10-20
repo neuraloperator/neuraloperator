@@ -15,25 +15,35 @@ class FiniteDiff:
     This class provides comprehensive methods for computing derivatives using finite differences
     with support for both periodic and non-periodic boundary conditions.
 
-    Finite Difference Methods
-    -------------------------
-    The class implements high-order finite difference schemes:
-
+    It implements the following high-order finite difference schemes:
     - Interior points: Second-order central differences for optimal accuracy
     - Periodic boundaries: Uses torch.roll for seamless periodic wrapping.
     - Non-periodic boundaries: Uses third-order one-sided differences at boundary points.
+    
+    Parameters
+    ----------
+    dim : int
+        Dimension of the input field. Must be 1, 2, or 3.
+    h : float or tuple, optional
+        Grid spacing(s) for finite difference calculations, by default 1.0.
+        - For 1D: single float or tuple with one element
+        - For 2D: tuple (h_x, h_y) or single float for uniform spacing
+        - For 3D: tuple (h_x, h_y, h_z) or single float for uniform spacing
+    periodic_in_x : bool, optional
+        Whether to use periodic boundary conditions in x-direction, by default True.
+        When True, uses torch.roll for efficient periodic wrapping.
+        When False, uses high-order one-sided differences at boundaries.
+    periodic_in_y : bool, optional
+        Whether to use periodic boundary conditions in y-direction, by default True.
+        When True, uses torch.roll for efficient periodic wrapping.
+        When False, uses high-order one-sided differences at boundaries.
+        Only used for 2D and 3D fields.
+    periodic_in_z : bool, optional
+        Whether to use periodic boundary conditions in z-direction, by default True.
+        When True, uses torch.roll for efficient periodic wrapping.
+        When False, uses high-order one-sided differences at boundaries.
+        Only used for 3D fields.
 
-    Mathematical Formulas
-    ---------------------
-    For first-order derivatives:
-    - Interior: (f_{i+1} - f_{i-1})/(2h)  [2nd order central]
-    - Left boundary: (-11f_0 + 18f_1 - 9f_2 + 2f_3)/(6h)  [3rd order forward]
-    - Right boundary: (-2f_{n-4} + 9f_{n-3} - 18f_{n-2} + 11f_{n-1})/(6h)  [3rd order backward]
-
-    For second-order derivatives:
-    - Interior: (f_{i+1} - 2f_i + f_{i-1})/(h²)  [2nd order central]
-    - Left boundary: (2f_0 - 5f_1 + 4f_2 - f_3)/(h²)  [3rd order forward]
-    - Right boundary: (-f_{n-4} + 4f_{n-3} - 5f_{n-2} + 2f_{n-1})/(h²)  [3rd order backward]
 
     Available Methods
     ----------------
@@ -48,6 +58,19 @@ class FiniteDiff:
     - divergence(u): Compute the divergence ∇·u (for vector fields)
     - curl(u): Compute the curl ∇×u (for vector fields, 2D/3D only)
 
+
+    Mathematical Formulas
+    ---------------------
+    For first-order derivatives:
+    - Interior: (f_{i+1} - f_{i-1})/(2h)  [2nd order central]
+    - Left boundary: (-11f_0 + 18f_1 - 9f_2 + 2f_3)/(6h)  [3rd order forward]
+    - Right boundary: (-2f_{n-4} + 9f_{n-3} - 18f_{n-2} + 11f_{n-1})/(6h)  [3rd order backward]
+
+    For second-order derivatives:
+    - Interior: (f_{i+1} - 2f_i + f_{i-1})/(h²)  [2nd order central]
+    - Left boundary: (2f_0 - 5f_1 + 4f_2 - f_3)/(h²)  [3rd order forward]
+    - Right boundary: (-f_{n-4} + 4f_{n-3} - 5f_{n-2} + 2f_{n-1})/(h²)  [3rd order backward]
+    
 
     Examples
     --------
@@ -96,30 +119,7 @@ class FiniteDiff:
         """
         Initialize the FiniteDiff class for computing finite differences.
 
-        Parameters
-        ----------
-        dim : int
-            Dimension of the input field. Must be 1, 2, or 3.
-        h : float or tuple, optional
-            Grid spacing(s) for finite difference calculations, by default 1.0.
-            - For 1D: single float or tuple with one element
-            - For 2D: tuple (h_x, h_y) or single float for uniform spacing
-            - For 3D: tuple (h_x, h_y, h_z) or single float for uniform spacing
-        periodic_in_x : bool, optional
-            Whether to use periodic boundary conditions in x-direction, by default True.
-            When True, uses torch.roll for efficient periodic wrapping.
-            When False, uses high-order one-sided differences at boundaries.
-        periodic_in_y : bool, optional
-            Whether to use periodic boundary conditions in y-direction, by default True.
-            When True, uses torch.roll for efficient periodic wrapping.
-            When False, uses high-order one-sided differences at boundaries.
-            Only used for 2D and 3D fields.
-        periodic_in_z : bool, optional
-            Whether to use periodic boundary conditions in z-direction, by default True.
-            When True, uses torch.roll for efficient periodic wrapping.
-            When False, uses high-order one-sided differences at boundaries.
-            Only used for 3D fields.
-
+        See class docstring for detailed parameter descriptions.
         """
 
         # Check if dim is valid
@@ -860,28 +860,32 @@ class FourierDiff:
     A unified class for computing Fourier/spectral derivatives in 1D, 2D, 3D.
 
     This class provides comprehensive methods for computing derivatives using Fourier/spectral
-    methods with support for both periodic and non-periodic functions through Fourier continuation.
-
-    Fourier Spectral Methods
-    ------------------------
-    The class implements spectral differentiation for
+    methods with support for both periodic and non-periodic functions through Fourier continuation:
     - Periodic functions: Direct Fourier differentiation using FFT
-    - Non-periodic functions: Fourier continuation (FC) is used to extend functions
-          to larger domain on which the functions are periodic before applying
-          Fourier differentiation with FFT.
+    - Non-periodic functions: Fourier continuation (FC) is used to extend functions to larger domain 
+            on which the functions are periodic before applying Fourier differentiation with FFT.
 
-    Also provides gradient, divergence, curl, and Laplacian operations
+    The class also provides gradient, divergence, curl, and Laplacian operations.
 
-    Mathematical Background
-    -----------------------
-    For periodic functions on [0, 2π], the derivative is computed as:
-    - Forward transform: û_k = FFT(u)
-    - Derivative in Fourier space: (∂u/∂x)^_k = ik * û_k
-    - Inverse transform: ∂u/∂x = IFFT(ik * û_k)
-
-    For non-periodic functions, Fourier continuation extends the function to
-    an extended domain (e.g. [0, 2π] → [0, 2π + 2π*additional_pts/n]) on which
-    the function is periodic.
+    Parameters
+    ----------
+    dim : int
+        Dimension of the input field. Must be 1, 2, or 3.
+    L : float or tuple, optional
+        Length of the domain for Fourier differentiation. By default 2*pi for each dimension.
+    use_fc : str, optional
+        Whether to use Fourier continuation for non-periodic functions.
+        Options: False (no FC), 'Legendre', 'Gram'. By default False.
+    fc_degree : int, optional
+        Degree of the Fourier continuation polynomial matching. This is the number
+        of matching points on the left and right boundaries used for the Fourier
+        continuation procedure. By default 4.
+    fc_n_additional_pts : int, optional
+        Number of additional points to add with the Fourier continuation layer.
+        This extends the domain to handle non-periodic functions. By default 50.
+    low_pass_filter_ratio : float, optional
+        If not None, apply a low-pass filter to the Fourier coefficients to reduce
+        high-frequency noise. Should be between 0 and 1. By default None.
 
 
     Available Methods
@@ -898,6 +902,19 @@ class FourierDiff:
     - divergence(u): Compute the divergence ∇·u (for vector fields)
     - curl(u): Compute the curl ∇×u (for vector fields, 2D/3D only)
 
+
+    Mathematical Background
+    -----------------------
+    For periodic functions on [0, 2π], the derivative is computed as:
+    - Forward transform: û_k = FFT(u)
+    - Derivative in Fourier space: (∂u/∂x)^_k = ik * û_k
+    - Inverse transform: ∂u/∂x = IFFT(ik * û_k)
+
+    For non-periodic functions, Fourier continuation extends the function to
+    an extended domain (e.g. [0, 2π] → [0, 2π + 2π*additional_pts/n]) on which
+    the function is periodic.
+    
+    
     Examples
     --------
     >>> # 1D Fourier derivatives
@@ -951,26 +968,7 @@ class FourierDiff:
         """
         Initialize the FourierDiff class for computing Fourier derivatives.
 
-        Parameters
-        ----------
-        dim : int
-            Dimension of the input field. Must be 1, 2, or 3.
-        L : float or tuple, optional
-            Length of the domain for Fourier differentiation. By default 2*pi for each dimension.
-        use_fc : str, optional
-            Whether to use Fourier continuation for non-periodic functions.
-            Options: False (no FC), 'Legendre', 'Gram'. By default False.
-        fc_degree : int, optional
-            Degree of the Fourier continuation polynomial matching. This is the number
-            of matching points on the left and right boundaries used for the Fourier
-            continuation procedure. By default 4.
-        fc_n_additional_pts : int, optional
-            Number of additional points to add with the Fourier continuation layer.
-            This extends the domain to handle non-periodic functions. By default 50.
-        low_pass_filter_ratio : float, optional
-            If not None, apply a low-pass filter to the Fourier coefficients to reduce
-            high-frequency noise. Should be between 0 and 1. By default None.
-
+        See class docstring for detailed parameter descriptions.
         """
 
         # Check if dim is valid
