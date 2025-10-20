@@ -19,6 +19,46 @@ class PTDataset:
         access to a number of premade datasets for sample problems provided
         in our Zenodo archive.
 
+    Parameters
+    ----------
+    root_dir : Union[Path, str]
+        root at which to download data files
+    dataset_name : str
+        prefix of pt data files to store/access
+    n_train : int
+        number of train instances
+    n_tests : List[int]
+        number of test instances per test dataset
+    batch_size : int
+        batch size of training set
+    test_batch_sizes : List[int]
+        batch size of test sets
+    train_resolution : int
+        resolution of data for training set
+    test_resolutions : List[int]
+        resolution of data for testing sets
+    encode_input : bool, optional
+        whether to normalize inputs in provided DataProcessor,
+        by default False
+    encode_output : bool, optional
+        whether to normalize outputs in provided DataProcessor,
+        by default True
+    encoding : str, optional
+        parameter for input/output normalization. Whether
+        to normalize by channel ("channel-wise") or
+        by pixel ("pixel-wise"), default "channel-wise"
+    input_subsampling_rate : int or List[int], optional
+        rate at which to subsample each input dimension, by default None
+    output_subsampling_rate : int or List[int], optional
+        rate at which to subsample each output dimension, by default None
+    channel_dim : int, optional
+        dimension of saved tensors to index data channels, by default 1
+    channels_squeezed : bool, optional
+        If the channels dim is 1, whether that is explicitly kept in the saved tensor.
+        If not, we need to unsqueeze it to explicitly have a channel dim.
+        Only applies when there is only one data channel, as in our example problems
+        Defaults to True
+
     All datasets are required to expose the following attributes after init:
 
     train_db: torch.utils.data.Dataset of training examples
@@ -45,47 +85,9 @@ class PTDataset:
         channel_dim=1,
         channels_squeezed=True,
     ):
-        """PTDataset
+        """Initialize the PTDataset.
 
-        Parameters
-        ----------
-        root_dir : Union[Path, str]
-            root at which to download data files
-        dataset_name : str
-            prefix of pt data files to store/access
-        n_train : int
-            number of train instances
-        n_tests : List[int]
-            number of test instances per test dataset
-        batch_size : int
-            batch size of training set
-        test_batch_sizes : List[int]
-            batch size of test sets
-        train_resolution : int
-            resolution of data for training set
-        test_resolutions : List[int], optional
-            resolution of data for testing sets, by default [16,32]
-        encode_input : bool, optional
-            whether to normalize inputs in provided DataProcessor,
-            by default False
-        encode_output : bool, optional
-            whether to normalize outputs in provided DataProcessor,
-            by default True
-        encoding : str, optional
-            parameter for input/output normalization. Whether
-            to normalize by channel ("channel-wise") or
-            by pixel ("pixel-wise"), default "channel-wise"
-        input_subsampling_rate : int or List[int], optional
-            rate at which to subsample each input dimension, by default None
-        output_subsampling_rate : int or List[int], optional
-            rate at which to subsample each output dimension, by default None
-        channel_dim : int, optional
-            dimension of saved tensors to index data channels, by default 1
-        channels_squeezed : bool, optional
-            If the channels dim is 1, whether that is explicitly kept in the saved tensor.
-            If not, we need to unsqueeze it to explicitly have a channel dim.
-            Only applies when there is only one data channel, as in our example problems
-            Defaults to True
+        See class docstring for detailed parameter descriptions.
         """
 
         if isinstance(root_dir, str):

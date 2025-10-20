@@ -20,6 +20,39 @@ class DarcyDataset(PTDataset):
 
     Data source: https://zenodo.org/records/12784353
 
+    Parameters
+    ----------
+    root_dir : Union[Path, str]
+        root at which to download data files
+    n_train : int
+        number of train instances
+    n_tests : List[int]
+        number of test instances per test dataset
+    batch_size : int
+        batch size of training set
+    test_batch_sizes : List[int]
+        batch size of test sets
+    train_resolution : int
+        resolution of data for training set
+    test_resolutions : List[int], optional
+        resolution of data for testing sets, by default [16,32]
+    encode_input : bool, optional
+        whether to normalize inputs in provided DataProcessor,
+        by default False
+    encode_output : bool, optional
+        whether to normalize outputs in provided DataProcessor,
+        by default True
+    encoding : str, optional
+        parameter for input/output normalization. Whether
+        to normalize by channel ("channel-wise") or
+        by pixel ("pixel-wise"), default "channel-wise"
+    channel_dim : int, optional
+        dimension of saved tensors to index data channels, by default 1
+    subsampling_rate : int or List[int], optional
+        rate at which to subsample each input dimension, by default None
+    download : bool, optional
+        whether to download data if not present, by default True
+
     Attributes
     ----------
     train_db: torch.utils.data.Dataset of training examples
@@ -44,42 +77,9 @@ class DarcyDataset(PTDataset):
         subsampling_rate=None,
         download: bool = True,
     ):
-        """DarcyDataset
+        """Initialize the DarcyDataset.
 
-        Parameters
-        ----------
-        root_dir : Union[Path, str]
-            root at which to download data files
-        dataset_name : str
-            prefix of pt data files to store/access
-        n_train : int
-            number of train instances
-        n_tests : List[int]
-            number of test instances per test dataset
-        batch_size : int
-            batch size of training set
-        test_batch_sizes : List[int]
-            batch size of test sets
-        train_resolution : int
-            resolution of data for training set
-        test_resolutions : List[int], optional
-            resolution of data for testing sets, by default [16,32]
-        encode_input : bool, optional
-            whether to normalize inputs in provided DataProcessor,
-            by default False
-        encode_output : bool, optional
-            whether to normalize outputs in provided DataProcessor,
-            by default True
-        encoding : str, optional
-            parameter for input/output normalization. Whether
-            to normalize by channel ("channel-wise") or
-            by pixel ("pixel-wise"), default "channel-wise"
-        input_subsampling_rate : int or List[int], optional
-            rate at which to subsample each input dimension, by default None
-        output_subsampling_rate : int or List[int], optional
-            rate at which to subsample each output dimension, by default None
-        channel_dim : int, optional
-            dimension of saved tensors to index data channels, by default 1
+        See class docstring for detailed parameter descriptions.
         """
 
         # convert root dir to Path
