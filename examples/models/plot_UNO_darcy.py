@@ -40,11 +40,13 @@ device = 'cpu'
 # 
 # Loading the Darcy-Flow dataset
 # ------------------------------
-# We load the Darcy-Flow dataset with multiple resolutions for training and testing.
+# We load the Darcy-Flow dataset for training and testing.
 
 train_loader, test_loaders, data_processor = load_darcy_flow_small(
-        n_train=1000, batch_size=32, 
-        test_resolutions=[16, 32], n_tests=[100, 50],
+        n_train=1000, 
+        batch_size=32, 
+        n_tests=[100, 50],
+        test_resolutions=[16, 32], 
         test_batch_sizes=[32, 32],
 )
 
@@ -56,25 +58,24 @@ train_loader, test_loaders, data_processor = load_darcy_flow_small(
 # Creating the U-NO model
 # ------------------------
 # We create a U-shaped Neural Operator with the following architecture:
+#
 # - in_channels: Number of input channels 
 # - out_channels: Number of output channels 
 # - hidden_channels: Width of the hidden layers
 # - uno_out_channels: Channel dimensions for each layer in the U-Net structure
 # - uno_n_modes: Fourier modes for each layer (decreasing then increasing)
 # - uno_scalings: Scaling factors for each layer
-# - domain_padding: Padding to handle boundary effects
 
 model = UNO(in_channels=1, 
             out_channels=1, 
             hidden_channels=64, 
             projection_channels=64,
             uno_out_channels=[32,64,64,64,32],
-            uno_n_modes=[[16,16],[8,8],[8,8],[8,8],[16,16]],
+            uno_n_modes=[[8,8],[8,8],[4,4],[8,8],[8,8]],
             uno_scalings=[[1.0,1.0],[0.5,0.5],[1,1],[2,2],[1,1]],
             horizontal_skips_map=None,
             channel_mlp_skip="linear",
-            n_layers = 5,
-            domain_padding=0.2)
+            n_layers = 5)
 
 model = model.to(device)
 
@@ -92,9 +93,7 @@ sys.stdout.flush()
 # Creating the optimizer and scheduler
 # ------------------------------------
 # We use AdamW optimizer with weight decay for regularization
-optimizer = AdamW(model.parameters(), 
-                                lr=8e-3, 
-                                weight_decay=1e-4)
+optimizer = AdamW(model.parameters(), lr=8e-3, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 # %%
@@ -139,13 +138,13 @@ sys.stdout.flush()
 # ---------------------
 # We create a Trainer object that handles the training loop for the U-NO
 trainer = Trainer(model=model,
-                   n_epochs=20,
+                  n_epochs=30,
                   device=device,
                   data_processor=data_processor,
                   wandb_log=False,        # Disable Weights & Biases logging
-                  eval_interval=3,       # Evaluate every 3 epochs
+                  eval_interval=5,        # Evaluate every 5 epochs
                   use_distributed=False,  # Single GPU/CPU training
-                  verbose=True)          # Print training progress
+                  verbose=True)           # Print training progress
 
 # %%
 # .. raw:: html
@@ -155,10 +154,12 @@ trainer = Trainer(model=model,
 # Training the U-NO model
 # ------------------------
 # We train the model on our Darcy-Flow dataset. The trainer will:
+#
 # 1. Run the forward pass through the U-NO
 # 2. Compute the H1 loss
 # 3. Backpropagate and update weights
-# 4. Evaluate on test data every 3 epochs
+# 4. Evaluate on test data every 5 epochs
+
 
 trainer.train(train_loader=train_loader,
               test_loaders=test_loaders,

@@ -1,10 +1,12 @@
 from typing import List, Literal, Optional, Any
 from zencfg import ConfigBase
 
+
 class ModelConfig(ConfigBase):
     arch: str
     data_channels: int
     out_channels: int
+
 
 class FNOConfig(ModelConfig):
     model_arch: str = "fno"
@@ -28,46 +30,55 @@ class FNOConfig(ModelConfig):
     fixed_rank_modes: bool = False
     stabilizer: str = "None"
 
+
 class SimpleFNOConfig(FNOConfig):
     """
     SimpleFNOConfig: a basic FNO config that provides access to only
     the most important FNO parameters.
     """
+
     data_channels: int
     out_channels: int
     n_modes: List[int]
     hidden_channels: int
     projection_channel_ratio: int
 
+
 class FNO_Small2d(SimpleFNOConfig):
     """
     FNO_Small2d: a basic, small FNO for 2d problems.
     """
+
     data_channels: int = 1
     out_channels: int = 1
-    n_modes: List[int] = [16,16]
+    n_modes: List[int] = [16, 16]
     hidden_channels: int = 24
     projection_channel_ratio: int = 2
+
 
 class FNO_Medium2d(SimpleFNOConfig):
     """
     FNO_Medium2d: a basic, medium-sized FNO for 2d problems.
     """
+
     data_channels: int = 1
     out_channels: int = 1
-    n_modes: List[int] = [64,64]
+    n_modes: List[int] = [64, 64]
     hidden_channels: int = 64
     projection_channel_ratio: int = 4
+
 
 class FNO_Large2d(SimpleFNOConfig):
     """
     FNO_Large2d: a large FNO for 2d problems.
     """
+
     data_channels: int = 1
     out_channels: int = 1
-    n_modes: List[int] = [64,64]
+    n_modes: List[int] = [64, 64]
     hidden_channels: int = 128
     projection_channel_ratio: int = 2
+
 
 class FNO_Huge2d(SimpleFNOConfig):
     """
@@ -75,23 +86,27 @@ class FNO_Huge2d(SimpleFNOConfig):
 
     Note that this will likely be too large for most single-GPU local settings,
     and should be paired with tensor factorization, low-rank/sparse optimization
-    via TensorGRaD, or some other means of reducing memory overhead. 
+    via TensorGRaD, or some other means of reducing memory overhead.
     """
+
     data_channels: int = 1
     out_channels: int = 1
-    n_modes: List[int] = [128,128]
+    n_modes: List[int] = [128, 128]
     hidden_channels: int = 128
     projection_channel_ratio: int = 2
+
 
 class FNO_Medium3d(SimpleFNOConfig):
     """
     FNO_Medium3d: a medium FNO for 3d problems.
     """
+
     data_channels: int = 1
     out_channels: int = 1
-    n_modes: List[int] = [32,32,32]
+    n_modes: List[int] = [32, 32, 32]
     hidden_channels: int = 64
     projection_channel_ratio: int = 4
+
 
 class FNOGNOConfig(ModelConfig):
     model_arch: str = "fnogno"
@@ -113,6 +128,7 @@ class FNOGNOConfig(ModelConfig):
     fno_channel_mlp_expansion: float = 1.0
     fno_resolution_scaling_factor: int = 1
 
+
 class FNOGNO_Small3d(FNOGNOConfig):
     data_channels: int = 1
     out_channels: int = 1
@@ -126,8 +142,9 @@ class FNOGNO_Small3d(FNOGNOConfig):
     fno_rank: float = 0.4
     fno_domain_padding: float = 0.125
 
+
 class GINOConfig(ModelConfig):
-    model_arch: str = "gino" # all GINO configs must use this
+    model_arch: str = "gino"  # all GINO configs must use this
     data_channels: int
     out_channels: int
     latent_feature_channels: Optional[int] = None
@@ -150,6 +167,7 @@ class GINOConfig(ModelConfig):
     fno_channel_mlp_expansion: float = 1.0
     fno_resolution_scaling_factor: int = 1
 
+
 class GINO_Small3d(GINOConfig):
     data_channels: int = 0
     out_channels: int = 1
@@ -157,6 +175,7 @@ class GINO_Small3d(GINOConfig):
     gno_coord_dim: int = 3
     gno_coord_embed_dim: int = 16
     gno_radius: float = 0.033
+
 
 class GINO_Poisson2d(GINOConfig):
     data_channels: int = 3

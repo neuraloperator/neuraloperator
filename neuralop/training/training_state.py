@@ -11,14 +11,15 @@ import torch.distributed as dist
 from neuralop.mpu.comm import get_local_rank
 
 
-def load_training_state(save_dir: Union[str, Path], 
-                        save_name: str,
-                        model: nn.Module,
-                        optimizer: nn.Module=None,
-                        scheduler: nn.Module=None,
-                        regularizer: nn.Module=None,
-                        map_location: dict=None) -> dict:
-    
+def load_training_state(
+    save_dir: Union[str, Path],
+    save_name: str,
+    model: nn.Module,
+    optimizer: nn.Module = None,
+    scheduler: nn.Module = None,
+    regularizer: nn.Module = None,
+    map_location: dict = None,
+) -> dict:
     """load_training_state returns model and optional other training modules
     saved from prior training for downstream use
 
@@ -45,29 +46,31 @@ def load_training_state(save_dir: Union[str, Path],
     -------
     tuple of training state
         ``model, optimizer, scheduler, regularizer, epoch``
-        
+
     """
     if not map_location:
         if dist.is_initialized():
-            map_location = {"cuda:0" : f"cuda:{get_local_rank()}"}
+            map_location = {"cuda:0": f"cuda:{get_local_rank()}"}
 
     if isinstance(save_dir, str):
         save_dir = Path(save_dir)
 
-    # optionally load epoch 
+    # optionally load epoch
     epoch = None
     manifest_pth = save_dir / "manifest.pt"
     if manifest_pth.exists():
         manifest = torch.load(manifest_pth)
-        epoch = manifest.get('epoch')
-    
+        epoch = manifest.get("epoch")
+
     if dist.is_initialized():
         # To minimize CUDA memory overhead during checkpoint loading,
         # load the model to CPU first, then load to GPU instead of mapping from
         # CUDA:0 to CUDA:DEVICE_ID
         device_id = get_local_rank()
         save_pth = save_dir / f"{save_name}_state_dict.pt"
-        model.load_state_dict(torch.load(save_pth.absolute().as_posix(), map_location="cpu"))
+        model.load_state_dict(
+            torch.load(save_pth.absolute().as_posix(), map_location="cpu")
+        )
         model = model.to(device=f"cuda:{device_id}")
         torch.cuda.empty_cache()
     else:
@@ -99,12 +102,15 @@ def load_training_state(save_dir: Union[str, Path],
     return model, optimizer, scheduler, regularizer, epoch
 
 
-def save_training_state(save_dir: Union[str, Path], save_name: str,
-                        model: nn.Module,
-                        optimizer: nn.Module=None,
-                        scheduler: nn.Module=None,
-                        regularizer: nn.Module=None,
-                        epoch: int=None) -> None:
+def save_training_state(
+    save_dir: Union[str, Path],
+    save_name: str,
+    model: nn.Module,
+    optimizer: nn.Module = None,
+    scheduler: nn.Module = None,
+    regularizer: nn.Module = None,
+    epoch: int = None,
+) -> None:
     """save_training_state returns model and optional other training modules
     saved from prior training for downstream use
 
@@ -117,7 +123,7 @@ def save_training_state(save_dir: Union[str, Path], save_name: str,
     """
     if isinstance(save_dir, str):
         save_dir = Path(save_dir)
-    
+
     manifest = {}
 
     # Just save the model.module if model is in DDP mode
@@ -128,26 +134,25 @@ def save_training_state(save_dir: Union[str, Path], save_name: str,
     else:
         # otherwise save the model checkpoint
         model.save_checkpoint(save_dir, save_name)
-    manifest['model'] = f"{save_name}_state_dict.pt"
+    manifest["model"] = f"{save_name}_state_dict.pt"
 
     # save optimizer if state exists
     if optimizer is not None:
         optimizer_pth = save_dir / "optimizer.pt"
         torch.save(optimizer.state_dict(), optimizer_pth)
-        manifest['optimizer'] = "optimizer.pt"
-    
+        manifest["optimizer"] = "optimizer.pt"
+
     if scheduler is not None:
         scheduler_pth = save_dir / "scheduler.pt"
         torch.save(scheduler.state_dict(), scheduler_pth)
-        manifest['scheduler'] = "scheduler.pt"
-    
+        manifest["scheduler"] = "scheduler.pt"
+
     if regularizer is not None:
         regularizer_pth = save_dir / "regularizer.pt"
         torch.save(regularizer.state_dict(), regularizer_pth)
-        manifest['regularizer'] = "regularizer.pt"
+        manifest["regularizer"] = "regularizer.pt"
 
     if epoch is not None:
         manifest["epoch"] = epoch
-    
+
     torch.save(manifest, save_dir / "manifest.pt")
-    

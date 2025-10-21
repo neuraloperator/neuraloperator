@@ -180,7 +180,7 @@ Each activation tensor typically has a shape of:
 
 .. math::
 
-   \text{batch\_size} \times \text{hidden\_dim} \times N_x \times N_y \times \dots
+   \text{batch_size} \times \text{hidden_dim} \times N_x \times N_y \times \dots
 
 where :math:`N_x, N_y, \dots` are the spatial or temporal resolutions of the input.
 As the computation graph grows deeper during forward and backward passes, 
@@ -328,21 +328,37 @@ Performance Considerations
     CPU offloading reduces GPU memory usage at the cost of increased 
     training time due to data transfer overhead between CPU and GPU memory.
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 **When to Use**
     - Training fails with CUDA out-of-memory errors
     - You want to increase batch size or model resolution
     - GPU memory is the primary bottleneck
+
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
 
 **When Not to Use**  
     - GPU memory is sufficient for your current setup
     - Training speed is more critical than memory usage
     - CPU memory is also limited
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+
 **Optimization Tips**
     - Use ``pin_memory=True`` for faster CPU-GPU transfers
     - Consider gradient checkpointing as an alternative memory-saving technique
     - Monitor both GPU and CPU memory usage during training
 
+.. raw:: html
+
+   <div style="margin-top: 2em;"></div>
+   
 .. warning::
    CPU offloading requires PyTorch version 1.12.0 or higher. Ensure your environment meets this requirement before using this feature.
 
