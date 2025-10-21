@@ -14,10 +14,7 @@ If your work provides one of the above, we would be thrilled to integrate it int
 - [Publishing Code Built on the Library](#publishing-code-built-on-the-library)
 - [License](#license)
 
-
-.. raw:: html
-
-   <br>
+&nbsp;
 
 ## Development Setup
 
@@ -57,9 +54,7 @@ If your work provides one of the above, we would be thrilled to integrate it int
    ```
 
 
-.. raw:: html
-
-   <br>
+&nbsp;
 
 ## Development Workflow
 
@@ -132,10 +127,7 @@ Go to your fork on GitHub and click "Compare & pull request".
 
 Ensure your PR description clearly communicates what you have changed or added.
 
-
-.. raw:: html
-
-   <br>
+&nbsp;
 
 ## Development Guidelines
 
@@ -192,10 +184,7 @@ python -m http.server 8000
 - **Rebase your branch** on main before submitting PRs
 - **Use conventional commit format** when possible (feat:, fix:, docs:, etc.)
 
-
-.. raw:: html
-
-   <br>
+&nbsp;
 
 ## Adding a New Model or Layer
 
@@ -243,10 +232,7 @@ To add a new layer:
 
 > **💡 Pro Tip**: For bonus points, add an interactive example featuring your new method to `./examples`. This helps both us and you: the simpler it is for new users to understand and adapt your method, the more visibility it will get!
 
-
-.. raw:: html
-
-   <br>
+&nbsp;
 
 ## Getting Help
 
@@ -262,10 +248,7 @@ To add a new layer:
 - **GitHub Discussions**: Use for questions and ideas
 - **Documentation**: Check the [official documentation](https://neuraloperator.github.io/)
 
-
-.. raw:: html
-
-   <br>
+&nbsp;
 
 ## Publishing Code Built on the Library
 
@@ -316,10 +299,8 @@ class MyCustomFNO(FNO):
         return x
 ```
 
-.. raw:: html
+&nbsp;
 
-   <br>
-   
 ---
 
 ## License
