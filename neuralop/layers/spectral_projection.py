@@ -4,9 +4,7 @@ import torch.nn.functional as F
 
 
 def spectral_projection_divergence_free(u, domain_size, constraint_modes):
-    """
-    Apply spectral projection layer to make a velocity field divergence-free.
-    
+    """Apply spectral projection layer to make a velocity field divergence-free.
     
     Parameters
     ----------

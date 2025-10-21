@@ -594,6 +594,23 @@ Numerical differentiation utilities:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Spectral Projection
+-------------------
+
+Spectral projection utilities for enforcing physical constraints:
+
+.. automodule:: neuralop.layers.spectral_projection
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: function.rst
+
+    spectral_projection_divergence_free
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. raw:: html
 
    <hr style="margin: 4em 0; border: none; border-top: 2px solid #e0e0e0;">
