@@ -6,9 +6,9 @@
    :target: https://github.com/NeuralOperator/neuraloperator/actions/workflows/test.yml
 
 
-===============================================
+#######################################################################
 NeuralOperator: Learning in Infinite Dimensions
-===============================================
+#######################################################################
 
 ``neuraloperator`` is a comprehensive library for 
 learning neural operators in PyTorch.
@@ -24,7 +24,7 @@ so your trained operator can be applied on data of any resolution.
 
 .. raw:: html
 
-   <br><br>
+   <br>
 
 ============
 Installation
@@ -90,9 +90,6 @@ of an equivalent, dense Fourier Neural Operator!
 
 Checkout the `documentation <https://neuraloperator.github.io/dev/index.html>`_ for more!
 
-.. raw:: html
-
-   <br>
 
 Using with Weights and Biases
 -----------------------------
@@ -103,7 +100,7 @@ You can configure the project you want to use and your username in the main yaml
 
 .. raw:: html
 
-   <br><br>
+   <br>
 
 ============
 Contributing
@@ -131,7 +128,7 @@ For detailed development setup, testing, and contribution guidelines, please ref
 
 .. raw:: html
 
-   <br><br>
+   <br>
 
 ===============
 Code of Conduct
@@ -141,7 +138,7 @@ All participants are expected to uphold the `Code of Conduct <https://github.com
 
 .. raw:: html
 
-   <br><br>
+   <br>
 
 =====================
 Citing NeuralOperator
