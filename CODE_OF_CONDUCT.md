@@ -2,6 +2,8 @@
 
 All participants are expected to uphold this Code of Conduct to ensure a friendly and welcoming environment for everyone.
 
+Thank you for helping us maintain a welcoming and professional community!
+
 
 ## Introduction
 
@@ -73,6 +75,4 @@ Include relevant details (including links, screenshots, etc.). Every effort will
 
 This project follows the [Linux Foundation Code of Conduct](https://lfprojects.org/policies/code-of-conduct/) (version of September 14, 2017), which is itself based on the [W3C Code of Ethics and Professional Conduct](https://www.w3.org/Consortium/cepc/), with additional elements from the Cloud Foundry Code of Conduct, and the Hyperledger Project Code of Conduct.
 
----
 
-Thank you for helping us maintain a welcoming and professional community!
