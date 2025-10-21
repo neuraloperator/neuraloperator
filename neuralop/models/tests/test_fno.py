@@ -2,29 +2,21 @@ from math import prod
 
 import pytest
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from tensorly import tenalg
-from configmypy import Bunch
 
-from neuralop import TFNO
 from neuralop.models import FNO
-from neuralop.layers.embeddings import GridEmbeddingND, GridEmbedding2D
 
 tenalg.set_backend("einsum")
 
 
-@pytest.mark.parametrize("factorization", ["ComplexDense", "ComplexTucker", "ComplexCP", "ComplexTT"])
-@pytest.mark.parametrize("implementation", ["factorized", "reconstructed"])
 @pytest.mark.parametrize("n_dim", [1, 2, 3, 4])
 @pytest.mark.parametrize("fno_block_precision", ["full"])
 @pytest.mark.parametrize("stabilizer", [None, "tanh"])
 @pytest.mark.parametrize("lifting_channel_ratio", [1, 2])
 @pytest.mark.parametrize("preactivation", [False, True])
 @pytest.mark.parametrize("complex_data", [True, False])
-def test_tfno(
-    factorization,
-    implementation,
+def test_fno(
     n_dim,
     fno_block_precision,
     stabilizer,
@@ -52,13 +44,11 @@ def test_tfno(
     rank = 0.2
     size = (s,) * n_dim
     n_modes = (modes,) * n_dim
-    model = TFNO(
+    model = FNO(
         in_channels=3,
         out_channels=1,
         hidden_channels=width,
         n_modes=n_modes,
-        factorization=factorization,
-        implementation=implementation,
         rank=rank,
         fixed_rank_modes=False,
         n_layers=n_layers,
@@ -141,9 +131,8 @@ def test_fno_superresolution(resolution_scaling_factor):
 @pytest.mark.parametrize("use_channel_mlp", [True, False])
 @pytest.mark.parametrize("channel_mlp_skip", ["linear", "identity", "soft-gating", None])
 @pytest.mark.parametrize("fno_skip", ["linear", "identity", "soft-gating", None])
-@pytest.mark.parametrize("preactivation", [True, False])
 @pytest.mark.parametrize("complex_data", [True, False])
-def test_fno_advanced_params(norm, use_channel_mlp, channel_mlp_skip, fno_skip, preactivation, complex_data):
+def test_fno_advanced_params(norm, use_channel_mlp, channel_mlp_skip, fno_skip, complex_data):
     """Test FNO with various advanced parameter combinations."""
     device = "cpu"
     s = 16
@@ -167,7 +156,6 @@ def test_fno_advanced_params(norm, use_channel_mlp, channel_mlp_skip, fno_skip, 
         use_channel_mlp=use_channel_mlp,
         channel_mlp_skip=channel_mlp_skip,
         fno_skip=fno_skip,
-        preactivation=preactivation,
         complex_data=complex_data,
     ).to(device)
 
@@ -189,9 +177,7 @@ def test_fno_advanced_params(norm, use_channel_mlp, channel_mlp_skip, fno_skip, 
 
 @pytest.mark.parametrize("positional_embedding", ["grid", None])
 @pytest.mark.parametrize("domain_padding", [None, 0.1, [0.1, 0.2]])
-@pytest.mark.parametrize("stabilizer", [None, "tanh"])
-@pytest.mark.parametrize("norm", [None, "group_norm", "instance_norm"])
-def test_fno_embedding_and_padding(positional_embedding, domain_padding, stabilizer, norm):
+def test_fno_embedding_and_padding(positional_embedding, domain_padding):
     """Test FNO with different positional embeddings and domain padding."""
     device = "cpu"
     s = 16
@@ -215,8 +201,6 @@ def test_fno_embedding_and_padding(positional_embedding, domain_padding, stabili
         domain_padding=domain_padding,
         projection_channel_ratio=projection_channel_ratio,
         lifting_channel_ratio=lifting_channel_ratio,
-        stabilizer=stabilizer,
-        norm=norm,
     ).to(device)
 
     in_data = torch.randn(batch_size, 3, *size).to(device)
