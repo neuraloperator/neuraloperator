@@ -22,6 +22,9 @@ provides all of the tools to do so on your own data.
 Neural operators are also resolution invariant, 
 so your trained operator can be applied on data of any resolution.
 
+Checkout the `documentation <https://neuraloperator.github.io/dev/index.html>`_ for more!
+
+
 .. raw:: html
 
    <br>
