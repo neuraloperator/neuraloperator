@@ -109,7 +109,7 @@ publishing your code separately using a procedure outlined in our
 
 If you spot a bug or a typo in the documentation, or have an idea for a feature you'd like to see,
 please report it on our `issue tracker <https://github.com/neuraloperator/neuraloperator/issues>`_, 
-or even better, open a Pull-Request on `GitHub <https://github.com/neuraloperator/neuraloperator>`_. 
+or even better, open a Pull-Request on `GitHub <https://github.com/neuraloperator/neuraloperator/pulls>`_. 
 
 For detailed development setup, testing, and contribution guidelines, please refer to our `Contributing Guide <CONTRIBUTING.md>`_.
 
@@ -125,18 +125,21 @@ Citing
 
 If you use NeuralOperator in an academic paper, please cite [1]_ ::
 
-   @misc{kossaifi2025librarylearningneuraloperators,
-      title={A Library for Learning Neural Operators}, 
-      author={Jean Kossaifi and Nikola Kovachki and 
-      Zongyi Li and David Pitt and 
-      Miguel Liu-Schiaffini and Valentin Duruisseaux and 
-      Robert Joseph George and Boris Bonev and 
-      Kamyar Azizzadenesheli and Julius Berner and 
-      Anima Anandkumar},
-      year={2025},
-      eprint={2412.10354},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
+   @article{kossaifi2025librarylearningneuraloperators,
+      author    = {Jean Kossaifi and
+                     Nikola Kovachki and
+                     Zongyi Li and
+                     David Pitt and
+                     Miguel Liu-Schiaffini and
+                     Valentin Duruisseaux and
+                     Robert Joseph George and
+                     Boris Bonev and
+                     Kamyar Azizzadenesheli and
+                     Julius Berner and
+                     Anima Anandkumar},
+      title     = {A Library for Learning Neural Operators},
+      journal   = {arXiv preprint arXiv:2412.10354},
+      year      = {2025},
    }
 
 and consider citing [2]_, [3]_::
