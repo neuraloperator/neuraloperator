@@ -4,6 +4,9 @@ We welcome new contributions to the library! Our mission for NeuralOperator is t
 
 If your work provides one of the above, we would be thrilled to integrate it into the library. Otherwise, if your work simply relies on a version of the NeuralOperator codebase, we recommend publishing your code separately using a procedure outlined below.
 
+Thank you for contributing to NeuralOperator! Your contributions help make this library better for the entire scientific machine learning community.
+
+
 ## Table of Contents
 
 - [Development Setup](#development-setup)
@@ -13,6 +16,8 @@ If your work provides one of the above, we would be thrilled to integrate it int
 - [Getting Help](#getting-help)
 - [Publishing Code Built on the Library](#publishing-code-built-on-the-library)
 - [License](#license)
+
+&nbsp;
 
 ## Development Setup
 
@@ -52,6 +57,7 @@ If your work provides one of the above, we would be thrilled to integrate it int
    ```
 
 
+&nbsp;
 
 ## Development Workflow
 
@@ -124,6 +130,8 @@ Go to your fork on GitHub and click "Compare & pull request".
 
 Ensure your PR description clearly communicates what you have changed or added.
 
+&nbsp;
+
 ## Development Guidelines
 
 ### Code Style
@@ -179,6 +187,8 @@ python -m http.server 8000
 - **Rebase your branch** on main before submitting PRs
 - **Use conventional commit format** when possible (feat:, fix:, docs:, etc.)
 
+&nbsp;
+
 ## Adding a New Model or Layer
 
 We welcome various types of contributions:
@@ -225,6 +235,8 @@ To add a new layer:
 
 > **💡 Pro Tip**: For bonus points, add an interactive example featuring your new method to `./examples`. This helps both us and you: the simpler it is for new users to understand and adapt your method, the more visibility it will get!
 
+&nbsp;
+
 ## Getting Help
 
 ### Before Asking for Help
@@ -238,6 +250,8 @@ To add a new layer:
 - **GitHub Issues**: Create an issue for bugs or feature requests
 - **GitHub Discussions**: Use for questions and ideas
 - **Documentation**: Check the [official documentation](https://neuraloperator.github.io/)
+
+&nbsp;
 
 ## Publishing Code Built on the Library
 
@@ -288,14 +302,10 @@ class MyCustomFNO(FNO):
         return x
 ```
 
+&nbsp;
+
 ---
 
 ## License
 
 By contributing to NeuralOperator, you agree that your contributions will be licensed as described in the `LICENSE` file in the root directory of this source tree.
-
----
-
-## Acknowledgments
-
-Thank you for contributing to NeuralOperator! Your contributions help make this library better for the entire scientific machine learning community.
