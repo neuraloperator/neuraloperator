@@ -26,8 +26,9 @@ so your trained operator can be applied on data of any resolution.
 
    <br><br>
 
+============
 Installation
-------------
+============
 
 Just clone the repository and install locally (in editable mode so changes in the code are 
 immediately reflected without having to reinstall):
@@ -51,8 +52,9 @@ on `PyPI <https://pypi.org/project/neuraloperator/>`_:
 
    <br><br>
 
+==========
 Quickstart
-----------
+==========
 
 After you've installed the library, you can start training operators seamlessly:
 
@@ -90,7 +92,7 @@ Checkout the `documentation <https://neuraloperator.github.io/dev/index.html>`_ 
 
 .. raw:: html
 
-   <br><br>
+   <br>
 
 Using with Weights and Biases
 -----------------------------
@@ -103,9 +105,9 @@ You can configure the project you want to use and your username in the main yaml
 
    <br><br>
 
-===============
+============
 Contributing
-===============
+============
 
 NeuralOperator is 100% open-source, and we welcome contributions from the community! 
 
@@ -141,8 +143,9 @@ All participants are expected to uphold the `Code of Conduct <https://github.com
 
    <br><br>
 
-Citing
-------
+=====================
+Citing NeuralOperator
+=====================
 
 If you use NeuralOperator in an academic paper, please cite [1]_ ::
 
