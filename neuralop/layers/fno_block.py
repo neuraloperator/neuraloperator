@@ -1,11 +1,11 @@
-from typing import List, Optional, Union
+from typing import List, Union
 
 import torch
 from torch import nn
 import torch.nn.functional as F
 
 from .channel_mlp import ChannelMLP
-from .complex import CGELU, apply_complex, ctanh, ComplexValued
+from .complex import CGELU, ctanh, ComplexValued
 from .normalization_layers import AdaIN, InstanceNorm, BatchNorm
 from .skip_connections import skip_connection
 from .spectral_convolution import SpectralConv
@@ -16,84 +16,84 @@ Number = Union[int, float]
 
 
 class FNOBlocks(nn.Module):
-    """FNOBlocks implements a sequence of Fourier layers, the operations of which 
-    are first described in [1]_. The exact implementation details of the Fourier 
-    layer architecture are discussed in [2]_.
+    """FNOBlocks implements a sequence of Fourier layers.
+    
+    The Fourier layers are first described in [1]_, and the exact implementation details 
+    of the Fourier layer architecture are discussed in [2]_.
 
     Parameters
     ----------
     in_channels : int
-        input channels to Fourier layers
+        Number of input channels to Fourier layers
     out_channels : int
-        output channels after Fourier layers
-    n_modes : int, List[int]
-        number of modes to keep along each dimension 
-        in frequency space. Can either be specified as
-        an int (for all dimensions) or an iterable with one
-        number per dimension
+        Number of output channels after Fourier layers
+    n_modes : int or List[int]
+        Number of modes to keep along each dimension in frequency space.
+        Can either be specified as an int (for all dimensions) or an iterable
+        with one number per dimension
     resolution_scaling_factor : Optional[Union[Number, List[Number]]], optional
-        factor by which to scale outputs for super-resolution, by default None
+        Factor by which to scale outputs for super-resolution, by default None
     n_layers : int, optional
-        number of Fourier layers to apply in sequence, by default 1
-    max_n_modes : int, List[int], optional
-        maximum number of modes to keep along each dimension, by default None
+        Number of Fourier layers to apply in sequence, by default 1
+    max_n_modes : int or List[int], optional
+        Maximum number of modes to keep along each dimension, by default None
     fno_block_precision : str, optional
-        floating point precision to use for computations, by default "full"
+        Floating point precision to use for computations. Options: "full", "half", "mixed", by default "full"
     use_channel_mlp : bool, optional
         Whether to use an MLP layer after each FNO block, by default True
-    channel_mlp_dropout : int, optional
-        dropout parameter for self.channel_mlp, by default 0
+    channel_mlp_dropout : float, optional
+        Dropout parameter for self.channel_mlp, by default 0
     channel_mlp_expansion : float, optional
-        expansion parameter for self.channel_mlp, by default 0.5
+        Expansion parameter for self.channel_mlp, by default 0.5
     non_linearity : torch.nn.F module, optional
-        nonlinear activation function to use between layers, by default F.gelu
+        Nonlinear activation function to use between layers, by default F.gelu
     stabilizer : Literal["tanh"], optional
-        stabilizing module to use between certain layers, by default None
-        if "tanh", use tanh
+        Stabilizing module to use between certain layers. Options: "tanh", None, by default None
     norm : Literal["ada_in", "group_norm", "instance_norm", "batch_norm"], optional
-        Normalization layer to use, by default None
+        Normalization layer to use. Options: "ada_in", "group_norm", "instance_norm", "batch_norm", None, by default None
     ada_in_features : int, optional
-        number of features for adaptive instance norm above, by default None
+        Number of features for adaptive instance norm above, by default None
     preactivation : bool, optional
-        whether to call forward pass with pre-activation, by default False
-        if True, call nonlinear activation and norm before Fourier convolution
-        if False, call activation and norms after Fourier convolutions
+        Whether to call forward pass with pre-activation, by default False
+        If True, call nonlinear activation and norm before Fourier convolution
+        If False, call activation and norms after Fourier convolutions
     fno_skip : str, optional
-        module to use for FNO skip connections, by default "linear"
-        see layers.skip_connections for more details
+        Module to use for FNO skip connections. Options: "linear", "soft-gating", "identity", None, by default "linear"
+        If None, no skip connection is added. See layers.skip_connections for more details
     channel_mlp_skip : str, optional
-        module to use for ChannelMLP skip connections, by default "soft-gating"
-        see layers.skip_connections for more details
+        Module to use for ChannelMLP skip connections. Options: "linear", "soft-gating", "identity", None, by default "soft-gating"
+        If None, no skip connection is added. See layers.skip_connections for more details
 
     Other Parameters
     -------------------
     complex_data : bool, optional
-        whether the FNO's data takes on complex values in space, by default False
+        Whether the FNO's data takes on complex values in space, by default False
     separable : bool, optional
-        separable parameter for SpectralConv, by default False
+        Separable parameter for SpectralConv, by default False
     factorization : str, optional
-        factorization parameter for SpectralConv, by default None
+        Factorization parameter for SpectralConv. Options: "tucker", "cp", "tt", None, by default None
     rank : float, optional
-        rank parameter for SpectralConv, by default 1.0
+        Rank parameter for SpectralConv, by default 1.0
     conv_module : BaseConv, optional
-        module to use for convolutions in FNO block, by default SpectralConv
+        Module to use for convolutions in FNO block, by default SpectralConv
     joint_factorization : bool, optional
-        whether to factorize all spectralConv weights as one tensor, by default False
+        Whether to factorize all spectralConv weights as one tensor, by default False
     fixed_rank_modes : bool, optional
-        fixed_rank_modes parameter for SpectralConv, by default False
+        Fixed_rank_modes parameter for SpectralConv, by default False
     implementation : str, optional
-        implementation parameter for SpectralConv, by default "factorized"
-    decomposition_kwargs : _type_, optional
-        kwargs for tensor decomposition in SpectralConv, by default dict()
-    
+        Implementation parameter for SpectralConv. Options: "factorized", "reconstructed", by default "factorized"
+    decomposition_kwargs : dict, optional
+        Kwargs for tensor decomposition in SpectralConv, by default dict()
+
     References
     -----------
-    .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
+    .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
            Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
     .. [2] Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
-           Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024). 
+           Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024).
            TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
     """
+
     def __init__(
         self,
         in_channels,
@@ -118,10 +118,9 @@ class FNOBlocks(nn.Module):
         factorization=None,
         rank=1.0,
         conv_module=SpectralConv,
-        fixed_rank_modes=False, #undoc
-        implementation="factorized", #undoc
+        fixed_rank_modes=False,
+        implementation="factorized",
         decomposition_kwargs=dict(),
-        **kwargs,
     ):
         super().__init__()
         if isinstance(n_modes, int):
@@ -160,40 +159,46 @@ class FNOBlocks(nn.Module):
             self.non_linearity = CGELU
         else:
             self.non_linearity = non_linearity
-        
-        self.convs = nn.ModuleList([
-                conv_module(
-                self.in_channels,
-                self.out_channels,
-                self.n_modes,
-                resolution_scaling_factor=None if resolution_scaling_factor is None else self.resolution_scaling_factor[i],
-                max_n_modes=max_n_modes,
-                rank=rank,
-                fixed_rank_modes=fixed_rank_modes,
-                implementation=implementation,
-                separable=separable,
-                factorization=factorization,
-                fno_block_precision=fno_block_precision,
-                decomposition_kwargs=decomposition_kwargs,
-                complex_data=complex_data
-            ) 
-            for i in range(n_layers)])
 
-        self.fno_skips = nn.ModuleList(
+        self.convs = nn.ModuleList(
             [
-                skip_connection(
+                conv_module(
                     self.in_channels,
                     self.out_channels,
-                    skip_type=fno_skip,
-                    n_dim=self.n_dim,
+                    self.n_modes,
+                    resolution_scaling_factor=None
+                    if resolution_scaling_factor is None
+                    else self.resolution_scaling_factor[i],
+                    max_n_modes=max_n_modes,
+                    rank=rank,
+                    fixed_rank_modes=fixed_rank_modes,
+                    implementation=implementation,
+                    separable=separable,
+                    factorization=factorization,
+                    fno_block_precision=fno_block_precision,
+                    decomposition_kwargs=decomposition_kwargs,
+                    complex_data=complex_data,
                 )
-                for _ in range(n_layers)
+                for i in range(n_layers)
             ]
         )
-        if self.complex_data:
+
+        if fno_skip is not None:
             self.fno_skips = nn.ModuleList(
-                [ComplexValued(x) for x in self.fno_skips]
-                )
+                [
+                    skip_connection(
+                        self.in_channels,
+                        self.out_channels,
+                        skip_type=fno_skip,
+                        n_dim=self.n_dim,
+                    )
+                    for _ in range(n_layers)
+                ]
+            )
+        else:
+            self.fno_skips = None
+        if self.complex_data and self.fno_skips is not None:
+            self.fno_skips = nn.ModuleList([ComplexValued(x) for x in self.fno_skips])
 
         if self.use_channel_mlp:
             self.channel_mlp = nn.ModuleList(
@@ -211,18 +216,21 @@ class FNOBlocks(nn.Module):
                 self.channel_mlp = nn.ModuleList(
                     [ComplexValued(x) for x in self.channel_mlp]
                 )
-            self.channel_mlp_skips = nn.ModuleList(
-                [
-                    skip_connection(
-                        self.in_channels,
-                        self.out_channels,
-                        skip_type=channel_mlp_skip,
-                        n_dim=self.n_dim,
-                    )
-                    for _ in range(n_layers)
-                ]
-            )
-            if self.complex_data:
+            if channel_mlp_skip is not None:
+                self.channel_mlp_skips = nn.ModuleList(
+                    [
+                        skip_connection(
+                            self.in_channels,
+                            self.out_channels,
+                            skip_type=channel_mlp_skip,
+                            n_dim=self.n_dim,
+                        )
+                        for _ in range(n_layers)
+                    ]
+                )
+            else:
+                self.channel_mlp_skips = None
+            if self.complex_data and self.channel_mlp_skips is not None:
                 self.channel_mlp_skips = nn.ModuleList(
                     [ComplexValued(x) for x in self.channel_mlp_skips]
                 )
@@ -233,11 +241,8 @@ class FNOBlocks(nn.Module):
             self.norm = None
         elif norm == "instance_norm":
             self.norm = nn.ModuleList(
-                    [
-                        InstanceNorm()
-                        for _ in range(n_layers * self.n_norms)
-                    ]
-                )
+                [InstanceNorm() for _ in range(n_layers * self.n_norms)]
+            )
         elif norm == "group_norm":
             self.norm = nn.ModuleList(
                 [
@@ -245,7 +250,7 @@ class FNOBlocks(nn.Module):
                     for _ in range(n_layers * self.n_norms)
                 ]
             )
-        
+
         elif norm == "batch_norm":
             self.norm = nn.ModuleList(
                 [
@@ -253,7 +258,7 @@ class FNOBlocks(nn.Module):
                     for _ in range(n_layers * self.n_norms)
                 ]
             )
-        
+
         elif norm == "ada_in":
             self.norm = nn.ModuleList(
                 [
@@ -266,6 +271,9 @@ class FNOBlocks(nn.Module):
                 f"Got norm={norm} but expected None or one of "
                 "[instance_norm, group_norm, batch_norm, ada_in]"
             )
+
+        if self.complex_data and self.norm is not None:
+            self.norm = nn.ModuleList([ComplexValued(x) for x in self.norm])
 
     def set_ada_in_embeddings(self, *embeddings):
         """Sets the embeddings of each Ada-IN norm layers
@@ -291,10 +299,11 @@ class FNOBlocks(nn.Module):
             return self.forward_with_postactivation(x, index, output_shape)
 
     def forward_with_postactivation(self, x, index=0, output_shape=None):
-        x_skip_fno = self.fno_skips[index](x)
-        x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
+        if self.fno_skips is not None:
+            x_skip_fno = self.fno_skips[index](x)
+            x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
 
-        if self.use_channel_mlp:  
+        if self.use_channel_mlp and self.channel_mlp_skips is not None:
             x_skip_channel_mlp = self.channel_mlp_skips[index](x)
             x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
 
@@ -305,18 +314,20 @@ class FNOBlocks(nn.Module):
                 x = torch.tanh(x)
 
         x_fno = self.convs[index](x, output_shape=output_shape)
-        #self.convs(x, index, output_shape=output_shape)
 
         if self.norm is not None:
             x_fno = self.norm[self.n_norms * index](x_fno)
 
-        x = x_fno + x_skip_fno
+        x = x_fno + x_skip_fno if self.fno_skips is not None else x_fno
 
-        if (index < (self.n_layers - 1)):
+        if index < (self.n_layers - 1):
             x = self.non_linearity(x)
 
-        if self.use_channel_mlp:  
-            x = self.channel_mlp[index](x) + x_skip_channel_mlp
+        if self.use_channel_mlp:
+            if self.channel_mlp_skips is not None:
+                x = self.channel_mlp[index](x) + x_skip_channel_mlp
+            else:
+                x = self.channel_mlp[index](x)
 
         if self.norm is not None:
             x = self.norm[self.n_norms * index + 1](x)
@@ -334,10 +345,11 @@ class FNOBlocks(nn.Module):
         if self.norm is not None:
             x = self.norm[self.n_norms * index](x)
 
-        x_skip_fno = self.fno_skips[index](x)
-        x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
+        if self.fno_skips is not None:
+            x_skip_fno = self.fno_skips[index](x)
+            x_skip_fno = self.convs[index].transform(x_skip_fno, output_shape=output_shape)
 
-        if self.use_channel_mlp:  
+        if self.use_channel_mlp and self.channel_mlp_skips is not None:
             x_skip_channel_mlp = self.channel_mlp_skips[index](x)
             x_skip_channel_mlp = self.convs[index].transform(x_skip_channel_mlp, output_shape=output_shape)
 
@@ -349,7 +361,7 @@ class FNOBlocks(nn.Module):
 
         x_fno = self.convs[index](x, output_shape=output_shape)
 
-        x = x_fno + x_skip_fno
+        x = x_fno + x_skip_fno if self.fno_skips is not None else x_fno
 
         if index < (self.n_layers - 1):
             x = self.non_linearity(x)
@@ -357,8 +369,11 @@ class FNOBlocks(nn.Module):
         if self.norm is not None:
             x = self.norm[self.n_norms * index + 1](x)
 
-        if self.use_channel_mlp:  
-            x = self.channel_mlp[index](x) + x_skip_channel_mlp
+        if self.use_channel_mlp:
+            if self.channel_mlp_skips is not None:
+                x = self.channel_mlp[index](x) + x_skip_channel_mlp
+            else:
+                x = self.channel_mlp[index](x)
 
         return x
 

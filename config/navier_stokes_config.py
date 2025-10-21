@@ -6,6 +6,7 @@ from .models import ModelConfig, FNO_Medium2d
 from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
 
+
 class NavierStokesOptConfig(OptimizationConfig):
     n_epochs: int = 600
     learning_rate: float = 3e-4
@@ -14,6 +15,7 @@ class NavierStokesOptConfig(OptimizationConfig):
     scheduler: str = "StepLR"
     step_size: int = 100
     gamma: float = 0.5
+
 
 class NavierStokesDatasetConfig(ConfigBase):
     folder: str = "~/data/navier_stokes/"
@@ -25,6 +27,7 @@ class NavierStokesDatasetConfig(ConfigBase):
     test_batch_sizes: List[int] = [8]
     encode_input: bool = True
     encode_output: bool = True
+
 
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None

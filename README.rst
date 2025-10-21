@@ -6,9 +6,9 @@
    :target: https://github.com/NeuralOperator/neuraloperator/actions/workflows/test.yml
 
 
-===============================================
+#######################################################################
 NeuralOperator: Learning in Infinite Dimensions
-===============================================
+#######################################################################
 
 ``neuraloperator`` is a comprehensive library for 
 learning neural operators in PyTorch.
@@ -22,9 +22,16 @@ provides all of the tools to do so on your own data.
 Neural operators are also resolution invariant, 
 so your trained operator can be applied on data of any resolution.
 
+Checkout the `documentation <https://neuraloperator.github.io/dev/index.html>`_ for more!
 
+
+.. raw:: html
+
+   <br>
+
+============
 Installation
-------------
+============
 
 Just clone the repository and install locally (in editable mode so changes in the code are 
 immediately reflected without having to reinstall):
@@ -44,9 +51,13 @@ on `PyPI <https://pypi.org/project/neuraloperator/>`_:
 
   pip install neuraloperator
 
+.. raw:: html
 
+   <br><br>
+
+==========
 Quickstart
-----------
+==========
 
 After you've installed the library, you can start training operators seamlessly:
 
@@ -55,8 +66,10 @@ After you've installed the library, you can start training operators seamlessly:
 
    from neuralop.models import FNO
 
-   operator = FNO(n_modes=(16, 16), hidden_channels=64,
-                   in_channels=3, out_channels=1)
+   operator = FNO(n_modes=(32, 32), 
+                  hidden_channels=64,
+                  in_channels=2, 
+                  out_channels=1)
 
 Tensorization is also provided out of the box: you can improve the previous models
 by simply using a Tucker Tensorized FNO with just a few parameters:
@@ -65,8 +78,9 @@ by simply using a Tucker Tensorized FNO with just a few parameters:
 
    from neuralop.models import TFNO
 
-   operator = TFNO(n_modes=(16, 16), hidden_channels=64,
-                   in_channels=3, 
+   operator = TFNO(n_modes=(32, 32), 
+                   hidden_channels=64,
+                   in_channels=2, 
                    out_channels=1,
                    factorization='tucker',
                    implementation='factorized',
@@ -79,6 +93,7 @@ of an equivalent, dense Fourier Neural Operator!
 
 Checkout the `documentation <https://neuraloperator.github.io/dev/index.html>`_ for more!
 
+
 Using with Weights and Biases
 -----------------------------
 
@@ -86,9 +101,13 @@ Our ``Trainer`` natively supports logging to W&B. To use these features, create 
 ``neuraloperator/config`` called ``wandb_api_key.txt`` and paste your W&B API key there.
 You can configure the project you want to use and your username in the main yaml configuration files.
 
-===============
+.. raw:: html
+
+   <br>
+
+============
 Contributing
-===============
+============
 
 NeuralOperator is 100% open-source, and we welcome contributions from the community! 
 
@@ -96,7 +115,7 @@ Our mission for NeuralOperator is to provide access to well-documented, robust i
 neural operator methods from foundations to the cutting edge. The library is primarily intended for 
 methods that directly relate to operator learning: new architectures, meta-algorithms, training methods 
 and benchmark datasets. We are also interested in integrating interactive examples that showcase operator 
-learning in action on small sample problems. 
+learning in action on small sample problems.
 
 If your work provides one of the above, we would be thrilled to integrate it into the library. 
 Otherwise, if your work simply relies on a version of the NeuralOperator codebase, we recommend 
@@ -106,87 +125,48 @@ publishing your code separately using a procedure outlined in our
 
 If you spot a bug or a typo in the documentation, or have an idea for a feature you'd like to see,
 please report it on our `issue tracker <https://github.com/neuraloperator/neuraloperator/issues>`_, 
-or even better, open a Pull-Request on `GitHub <https://github.com/neuraloperator/neuraloperator>`_. 
+or even better, open a `Pull Request <https://github.com/neuraloperator/neuraloperator/pulls>`_. 
 
-NeuralOperator has additional dependencies for development, which are packaged as ``neuraloperator[dev]``
+For detailed development setup, testing, and contribution guidelines, please refer to our `Contributing Guide <CONTRIBUTING.md>`_.
 
-.. code::
-   
-   pip install neuraloperator[dev]
+.. raw:: html
 
-OR 
+   <br>
 
-.. code ::
-   
-   pip install -e .[dev]
+===============
+Code of Conduct
+===============
 
+All participants are expected to uphold the `Code of Conduct <https://github.com/neuraloperator/neuraloperator/blob/main/CODE_OF_CONDUCT.md>`_ to ensure a friendly and welcoming environment for everyone.
 
-Code formatting
-----------------
+.. raw:: html
 
-Before you submit your changes, you should make sure your code adheres to our style-guide. The
-easiest way to do this is with ``black``:
+   <br>
 
-.. code::
+=====================
+Citing NeuralOperator
+=====================
 
-   black .
+If you use NeuralOperator in an academic paper, please cite [1]_ ::
 
-
-Running the tests
-------------------
-
-Testing and documentation are an essential part of this package and all
-functions come with unit-tests and documentation. The tests are run using the
-pytest package. 
-    
-To run the tests, simply run, in the terminal:
-
-.. code::
-
-    pytest -v neuralop
-
-
-Building documentation
------------------------
-The HTML for our documentation website is built using ``sphinx``. The documentation
-is built from inside the ``doc`` folder. 
-
-.. code::
-
-   cd doc
-   make html
-
-This will build the docs in ``./doc/build/html``.
-
-Note that the documentation requires other dependencies installable from ``./doc/requirements_doc.txt``. 
-
-To view the documentation locally, run:
-
-.. code::
-
-   cd doc/build/html
-   python -m http.server [PORT_NUM]
-
-The docs will then be viewable at ``localhost:PORT_NUM``.
-
-    
-Citing
-------
-
-If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
-
-   @misc{kossaifi2024neural,
-      title={A Library for Learning Neural Operators}, 
-      author={Jean Kossaifi and Nikola Kovachki and 
-      Zongyi Li and David Pitt and 
-      Miguel Liu-Schiaffini and Robert Joseph George and 
-      Boris Bonev and Kamyar Azizzadenesheli and 
-      Julius Berner and Anima Anandkumar},
-      year={2024},
-      eprint={2412.10354},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
+   @article{kossaifi2025librarylearningneuraloperators,
+      author    = {Jean Kossaifi and
+                     Nikola Kovachki and
+                     Zongyi Li and
+                     David Pitt and
+                     Miguel Liu-Schiaffini and
+                     Valentin Duruisseaux and
+                     Robert Joseph George and
+                     Boris Bonev and
+                     Kamyar Azizzadenesheli and
+                     Julius Berner and
+                     Anima Anandkumar},
+      title     = {A Library for Learning Neural Operators},
+      journal   = {arXiv preprint arXiv:2412.10354},
+      year      = {2025},
    }
+
+and consider citing [2]_, [3]_::
 
    @article{kovachki2021neural,
       author    = {Nikola B. Kovachki and
@@ -202,8 +182,22 @@ If you use NeuralOperator in an academic paper, please cite [1]_, [2]_::
       year      = {2021},
    }
 
+   @article{berner2025principled,
+      author    = {Julius Berner and
+                     Miguel Liu-Schiaffini and
+                     Jean Kossaifi and
+                     Valentin Duruisseaux and
+                     Boris Bonev and
+                     Kamyar Azizzadenesheli and
+                     Anima Anandkumar},
+      title     = {Principled Approaches for Extending Neural Architectures to Function Spaces for Operator Learning},
+      journal   = {arXiv preprint arXiv:2506.10973},
+      year      = {2025},
+   }
 
-.. [1] Kossaifi, J., Kovachki, N., Li, Z., Pitt, D., Liu-Schiaffini, M., George, R., Bonev, B., Azizzadenesheli, K., Berner, J., and Anandkumar, A., "A Library for Learning Neural Operators", ArXiV, 2024. doi:10.48550/arXiv.2412.10354.
 
+.. [1] Kossaifi, J., Kovachki, N., Li, Z., Pitt, D., Liu-Schiaffini, M., Duruisseaux, V., George, R., Bonev, B., Azizzadenesheli, K., Berner, J., and Anandkumar, A., "A Library for Learning Neural Operators", ArXiV, 2025. doi:10.48550/arXiv.2412.10354.
 
-.. [2] Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar A., “Neural Operator: Learning Maps Between Function Spaces”, JMLR, 2021. doi:10.48550/arXiv.2108.08481.
+.. [2] Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar A., "Neural Operator: Learning Maps Between Function Spaces", JMLR, 2021. doi:10.48550/arXiv.2108.08481.
+
+.. [3] Berner, J., Liu-Schiaffini, M., Kossaifi, J., Duruisseaux, V., Bonev, B., Azizzadenesheli, K., and Anandkumar, A., "Principled Approaches for Extending Neural Architectures to Function Spaces for Operator Learning", arXiv preprint arXiv:2506.10973, 2025. https://arxiv.org/abs/2506.10973.

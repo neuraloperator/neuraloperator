@@ -2,6 +2,7 @@ import torch
 from ..padding import DomainPadding
 import pytest
 
+
 def test_DomainPadding():
     data = torch.randn((2, 3, 10, 10))
     padder = DomainPadding(0.2)
@@ -14,4 +15,3 @@ def test_DomainPadding():
 
     unpadded = padder.unpad(padded)
     assert unpadded.shape == data.shape
-
