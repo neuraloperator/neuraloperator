@@ -195,7 +195,9 @@ Number = Union[int, float]
 
 
 class SpectralConv(BaseSpectralConv):
-    """Generic N-Dimensional Fourier Neural Operator
+    """Old implementation of the Spectral Convolution layer.
+    
+    This implementation is deprecated and might be removed in future versions.
 
     Parameters
     ----------

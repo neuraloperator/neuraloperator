@@ -51,7 +51,7 @@ def skip_connection(
 
 
 class SoftGating(nn.Module):
-    """Applies soft-gating by weighting the channels of the given input
+    """Applies soft-gating by weighting the channels of the given input.
 
     Given an input x of size `(batch-size, channels, height, width)`,
     this returns `x * w `

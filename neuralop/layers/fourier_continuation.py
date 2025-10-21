@@ -8,8 +8,7 @@ import tensorly as tl
 
 
 class FourierContinuation(nn.Module):
-    """
-    Base class for Fourier Continuation implementations.
+    """Base class for Fourier Continuation implementations.
 
     Fourier Continuation is a technique for extending non-periodic functions to periodic
     ones on larger domains, enabling the use of spectral methods for differentiation
@@ -216,8 +215,7 @@ class FourierContinuation(nn.Module):
 
 
 class FCLegendre(FourierContinuation):
-    """
-    Fourier Continuation using Legendre polynomials.
+    """Fourier Continuation using Legendre polynomials.
 
     This class implements Fourier Continuation using Legendre polynomial basis functions
     to extend non-periodic functions to periodic ones on larger domains. The method works
@@ -307,8 +305,7 @@ class FCLegendre(FourierContinuation):
 
 
 class FCGram(FourierContinuation):
-    """
-    Fourier Continuation using pre-computed Gram matrices (FC-Gram algorithm).
+    """Fourier Continuation using Gram matrices.
 
     This class implements the FC-Gram algorithm described in Section 3.1 of:
     Amlani, F., & Bruno, O. P. (2016). An FC-based spectral solver for

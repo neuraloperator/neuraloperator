@@ -16,9 +16,10 @@ Number = Union[int, float]
 
 
 class FNOBlocks(nn.Module):
-    """FNOBlocks implements a sequence of Fourier layers, the operations of which
-    are first described in [1]_. The exact implementation details of the Fourier
-    layer architecture are discussed in [2]_.
+    """FNOBlocks implements a sequence of Fourier layers.
+    
+    The Fourier layers are first described in [1]_, and the exact implementation details 
+    of the Fourier layer architecture are discussed in [2]_.
 
     Parameters
     ----------

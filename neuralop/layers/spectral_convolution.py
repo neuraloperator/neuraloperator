@@ -182,7 +182,9 @@ Number = Union[int, float]
 
 class SpectralConv(BaseSpectralConv):
     """SpectralConv implements the Spectral Convolution component of a Fourier layer
-    described in [1]_ and [2]_.
+    described. 
+    
+    It is implemented as described in [1]_ and [2]_.
 
     Parameters
     ----------

@@ -19,10 +19,9 @@ warnings.filterwarnings("once", category=UserWarning)
 
 #loss function with rel/abs Lp loss
 class LpLoss(object):
-    """
-    LpLoss provides the L-p norm between two
-    discretized d-dimensional functions. Note that
-    LpLoss always averages over the spatial dimensions.
+    """LpLoss provides the Lp norm between two discretized d-dimensional functions.
+    
+    Note that LpLoss always averages over the spatial dimensions.
 
     .. note ::
         In function space, the Lp norm is an integral over the
@@ -217,9 +216,7 @@ class LpLoss(object):
         return self.rel(y_pred, y)
 
 class H1Loss(object):
-    """
-    H1Loss provides the H1 Sobolev norm between
-    two d-dimensional discretized functions.
+    """H1 Sobolev norm between two d-dimensional discretized functions.
 
     .. note ::
         In function space, the Sobolev norm is an integral over the
@@ -499,9 +496,7 @@ class H1Loss(object):
         return self.rel(y_pred, y, quadrature=quadrature)
 
 class HdivLoss(object):
-    """
-    HdivLoss provides the Hdiv Sobolev norm between
-    two d-dimensional discretized functions.
+    """Hdiv Sobolev norm between two d-dimensional discretized functions.
 
     .. note ::
         In function space, the Sobolev norm is an integral over the
@@ -777,7 +772,9 @@ class HdivLoss(object):
         return self.rel(y_pred, y, quadrature=quadrature)
 
 class PointwiseQuantileLoss(object):
-    """PointwiseQuantileLoss computes Quantile Loss described in [1]_
+    """PointwiseQuantileLoss computes Quantile Loss.
+    
+    It is used for uncertainty quantification of Neural Operators, as described in [1]_.
 
     Parameters
     ----------
@@ -859,8 +856,7 @@ class PointwiseQuantileLoss(object):
 
 
 class MSELoss(object):
-    """
-    MSELoss computes absolute mean-squared L2 error between two tensors.
+    """Mean-squared L2 error between two tensors.
     """
 
     def __init__(self):

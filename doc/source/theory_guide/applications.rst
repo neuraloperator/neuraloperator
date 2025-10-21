@@ -1,8 +1,8 @@
 .. _neural_op_applications:
 
-=======================================
-Examples of Neural Operator Applications
-=======================================
+============================
+Neural Operator Applications
+============================
 
 This guide presents examples of neural operator applications across scientific and 
 engineering domains, demonstrating their transformative impact on computational 

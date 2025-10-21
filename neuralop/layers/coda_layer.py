@@ -14,8 +14,9 @@ einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 class CODALayer(nn.Module):
-    """Co-domain Attention Blocks (CODALayer) implement the transformer
-    architecture in the operator learning framework, as described in [1]_.
+    """Co-domain Attention Blocks (CODALayer) 
+    
+    It implements the transformer architecture in the operator learning framework, as described in [1]_.
 
     Parameters
     ----------

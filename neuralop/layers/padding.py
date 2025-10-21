@@ -7,7 +7,7 @@ from neuralop.utils import validate_scaling_factor
 
 
 class DomainPadding(nn.Module):
-    """Applies domain padding scaled automatically to the input's resolution
+    """Applies domain padding scaled automatically to the input's resolution.
 
     Parameters
     ----------

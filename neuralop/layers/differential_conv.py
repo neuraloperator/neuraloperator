@@ -4,11 +4,11 @@ import torch.nn.functional as F
 
 
 class FiniteDifferenceConvolution(nn.Module):
-    """Finite Difference Convolution Layer introduced in [1]_.
-    "Neural Operators with Localized Integral and Differential Kernels" (ICML 2024)
-        https://arxiv.org/abs/2402.16845
-
-    Computes a finite difference convolution on a regular grid,
+    """Finite Difference Convolution Layer 
+    
+    This is the finite difference convolution layer introduced in [1]_.
+    
+    It computes a finite difference convolution on a regular grid,
     which converges to a directional derivative as the grid is refined.
 
     Parameters

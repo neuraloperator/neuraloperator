@@ -13,8 +13,8 @@ except:
 
 # Uses open3d by default which, as of October 2024, requires torch 2.0 and cuda11.*
 class NeighborSearch(nn.Module):
-    """
-    Neighborhood search between two arbitrary coordinate meshes.
+    """Neighborhood search between two arbitrary coordinate meshes.
+    
     For each point `x` in `queries`, returns a set of the indices of all points `y` in `data`
     within the ball of radius r `B_r(x)`
 

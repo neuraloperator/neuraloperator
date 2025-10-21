@@ -8,8 +8,9 @@ from .base_model import BaseModel
 
 
 class UQNO(BaseModel, name="UQNO"):
-    """General N-dim (alpha, delta) Risk-Controlling
-    Neural Operator, as described in [1]_.
+    """Uncertainty Quantification Neural Operator
+    
+    General N-dim (alpha, delta) Risk-Controlling Neural Operator, as described in [1]_.
 
     The UQNO is trained to map input functions to a residual function
     E(a, x) that describes the predicted error between the ground truth

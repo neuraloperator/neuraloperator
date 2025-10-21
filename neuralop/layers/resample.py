@@ -5,8 +5,7 @@ import torch.nn.functional as F
 
 
 def resample(x, res_scale, axis, output_shape=None):
-    """
-    A module for generic n-dimentional interpolation (Fourier resampling).
+    """A module for generic n-dimentional interpolation.
 
     For 1D and 2D inputs, the ``resample`` function uses PyTorch’s built-in spatial interpolators
     for efficiency, applying linear interpolation for 1D data and bicubic interpolation for 2D data

@@ -21,7 +21,7 @@ from ..layers.gno_weighting_functions import dispatch_weighting_fn
 
 class GINO(BaseModel):
     """
-    GINO: Geometry-informed Neural Operator. Learns a mapping between
+    GINO: Geometry-informed Neural Operator - learns a mapping between
     functions presented over arbitrary coordinate meshes. The model carries
     global integration through spectral convolution layers in an intermediate
     latent space, as described in [1]_. Optionally enables a weighted output
