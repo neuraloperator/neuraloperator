@@ -18,8 +18,7 @@ from ..layers.gno_weighting_functions import dispatch_weighting_fn
 
 
 class FNOGNO(BaseModel, name="FNOGNO"):
-    """FNOGNO: Fourier/Geometry Neural Operator. The FNOGNO
-    maps from a regular N-d grid to an arbitrary query point cloud.
+    """FNOGNO: Fourier/Geometry Neural Operator - maps from a regular N-d grid to an arbitrary query point cloud.
 
     Parameters
     ----------

@@ -205,7 +205,7 @@ Number = Union[int, float]
 
 
 class SHT(nn.Module):
-    """A wrapper for the Spherical Harmonics transform
+    """A wrapper for the Spherical Harmonics transform.
 
     Allows to call it with an interface similar to that of FFT
     """
@@ -283,7 +283,9 @@ class SHT(nn.Module):
 
 
 class SphericalConv(BaseSpectralConv):
-    """Spherical Convolution, base class for the SFNO [1]_
+    """Spherical Convolution for the SFNO. 
+    
+    It is implemented as described in [1]_.
 
     Parameters
     ----------

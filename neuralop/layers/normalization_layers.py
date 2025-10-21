@@ -3,8 +3,7 @@ import torch.nn as nn
 
 
 class AdaIN(nn.Module):
-    """
-    Adaptive Instance Normalization (AdaIN) layer for style transfer in neural operators.
+    """Adaptive Instance Normalization (AdaIN) layer for style transfer in neural operators.
 
     AdaIN performs instance normalization followed by adaptive scaling and shifting
     based on an external embedding vector. This allows for style transfer by
@@ -59,8 +58,7 @@ class AdaIN(nn.Module):
 
 
 class InstanceNorm(nn.Module):
-    """
-    Dimension-agnostic instance normalization layer for neural operators.
+    """Dimension-agnostic instance normalization layer for neural operators.
 
     InstanceNorm normalizes each sample in the batch independently, computing
     mean and variance across spatial dimensions for each sample and channel
@@ -99,8 +97,7 @@ class InstanceNorm(nn.Module):
 
 
 class BatchNorm(nn.Module):
-    """
-    Dimension-agnostic batch normalization layer for neural operators.
+    """Dimension-agnostic batch normalization layer for neural operators.
 
     BatchNorm normalizes data across the entire batch, computing a single mean
     and standard deviation for all samples combined. This is the most common

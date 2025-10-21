@@ -25,11 +25,14 @@ Module                             Description
 ================================= ================================
 
 The main :mod:`neuralop` module provides convenient imports for the most commonly used components:
+
 - **Models**: FNO, SFNO, UNO, UQNO, FNOGNO, GINO, LocalNO, CODANO, get_model, etc...
 - **Training**: Trainer
 - **Losses**: LpLoss, H1Loss, WeightedSumLoss, Relobralo, SoftAdapt, FourierDiff, non_uniform_fd, FiniteDiff
 - **Data**: datasets, transforms
 - **Utilities**: mpu
+
+
 
 .. raw:: html
 
@@ -50,12 +53,18 @@ The :mod:`neuralop.models` module includes several state-of-the-art neural opera
 - **LocalNO**: Local neural operator for efficient computation (requires torch_harmonics)
 - **CODANO**: Continuous-discrete neural operator
 
+
+.. raw:: html
+
+   <div style="margin-top: 4em;"></div>
+
 Data Loading and Preprocessing
 ------------------------------
 
 The :mod:`neuralop.data` module provides comprehensive data handling capabilities:
 
 **Datasets** (:mod:`neuralop.data.datasets`):
+
 - **Darcy Flow**: Standard benchmark for elliptic PDEs (load_darcy_flow_small, load_darcy_pt)
 - **Burgers Equation**: Nonlinear PDE benchmark (load_mini_burgers_1dtime)
 - **Navier-Stokes**: Fluid dynamics equations (load_navier_stokes_pt)
@@ -65,6 +74,7 @@ The :mod:`neuralop.data` module provides comprehensive data handling capabilitie
 - **The Well**: Active matter and MHD datasets (requires the_well package)
 
 **Transforms** (:mod:`neuralop.data.transforms`):
+
 - **Normalizers**: UnitGaussianNormalizer, DictUnitGaussianNormalizer
 - **Data Processors**: DefaultDataProcessor, IncrementalDataProcessor, MGPatchingDataProcessor
 - **Patching Transforms**: For handling large-scale problems
@@ -156,8 +166,8 @@ for more details.
 
    <div style="margin-top: 4em;"></div>
 
-CPU Offloading for High-Resolution Training
--------------------------------------------
+CPU Offloading
+--------------
 
 For training with high-resolution inputs that exceed GPU memory limits, 
 NeuralOperator supports CPU offloading of activations. 

@@ -12,7 +12,9 @@ from ..layers.embeddings import GridEmbedding2D, GridEmbeddingND
 
 
 class CODANO(nn.Module):
-    """Codomain Attention Neural Operators (CoDA-NO) uses a specialized attention mechanism in the codomain space for data in
+    """Codomain Attention Neural Operators (CoDA-NO) 
+    
+    It uses a specialized attention mechanism in the codomain space for data in
     infinite dimensional spaces as described in [1]_. The model treats each input channel as a variable of the physical system
     and uses attention mechanism to model the interactions between the variables. The model uses lifting and projection modules
     to map the input variables to a higher-dimensional space and then back to the output space. The model also supports positional

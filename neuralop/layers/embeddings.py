@@ -16,10 +16,9 @@ class Embedding(nn.Module, ABC):
 
 
 class GridEmbedding2D(Embedding):
-    """
-    GridEmbedding2D applies a simple positional
-    embedding as a regular 2D grid. Expects inputs of shape
-    (batch, channels, d_1, d_2)
+    """GridEmbedding2D applies a simple positional embedding as a regular 2D grid.
+    
+    It expects inputs of shape (batch, channels, d_1, d_2)
 
     Parameters
     ----------
@@ -89,10 +88,9 @@ class GridEmbedding2D(Embedding):
 
 
 class GridEmbeddingND(nn.Module):
-    """
-    GridEmbeddingND applies a simple positional
-    embedding as a regular ND grid. Expects inputs of shape
-    (batch, channels, d_1, ..., d_n).
+    """GridEmbeddingND applies a simple positional embedding as a regular ND grid.
+    
+    It expects inputs of shape (batch, channels, d_1, ..., d_n)
 
     Parameters
     ----------
@@ -168,7 +166,7 @@ class GridEmbeddingND(nn.Module):
 
 class SinusoidalEmbedding(Embedding):
     """
-    Sinusoidal positional embedding for enriching coordinate inputs with spectral information [1]_, [2]_.
+    Sinusoidal positional embedding for enriching coordinate inputs with spectral information.
 
     This class provides sinusoidal positional embeddings in two styles: Transformer-style
     and NeRF-style. It lifts low-dimensional coordinates into a richer spectral representation
@@ -202,6 +200,7 @@ class SinusoidalEmbedding(Embedding):
         Maximum number of positions for transformer-style encoding, by default 10000.
         Only used when embedding_type='transformer'.
 
+
     Notes
     -----
     - Input shape: (batch, n_in, in_channels) or (n_in, in_channels)
@@ -210,9 +209,11 @@ class SinusoidalEmbedding(Embedding):
       - Transformer: f_max < N/2 where N is the number of sampling points
       - NeRF: 2^{L-1} < N/2, i.e., L < 1 + log₂(N/2)
 
+
     Examples
     --------
     See `examples/layers/plot_sinusoidal_embeddings.py` for comprehensive visualizations
+
 
     References
     ----------

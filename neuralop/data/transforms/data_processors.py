@@ -9,8 +9,10 @@ from neuralop.training.patching import MultigridPatching2D
 
 
 class DataProcessor(torch.nn.Module, metaclass=ABCMeta):
+    
     def __init__(self):
-        """DataProcessor exposes functionality for pre-
+        """
+        DataProcessor exposes functionality for pre-
         and post-processing data during training or inference.
 
         To be a valid DataProcessor within the Trainer requires

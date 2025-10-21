@@ -9,8 +9,7 @@ and Fourier/spectral differentiation methods
 
 
 class FiniteDiff:
-    """
-    A unified class for computing finite differences in 1D, 2D, or 3D.
+    """A unified class for computing finite differences in 1D, 2D, or 3D.
 
     This class provides comprehensive methods for computing derivatives using finite differences
     with support for both periodic and non-periodic boundary conditions.
@@ -820,8 +819,8 @@ def non_uniform_fd(
     radius=None,
     regularize_lstsq=False,
 ):
-    """
-    Compute finite difference approximation of the first order derivative on an unstructured grid of points
+    """Finite difference approximation of first order derivatives on unstructured point clouds.
+    
     Parameters:
     -----------
     points : torch tensor of shape (N, d) containing the d coordinates of the N points
@@ -856,8 +855,7 @@ def non_uniform_fd(
 
 
 class FourierDiff:
-    """
-    A unified class for computing Fourier/spectral derivatives in 1D, 2D, 3D.
+    """A unified class for computing Fourier/spectral derivatives in 1D, 2D, 3D.
 
     This class provides comprehensive methods for computing derivatives using Fourier/spectral
     methods with support for both periodic and non-periodic functions through Fourier continuation:

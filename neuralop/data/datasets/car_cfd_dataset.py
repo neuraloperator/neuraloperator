@@ -9,7 +9,9 @@ from neuralop.utils import get_project_root
 
 
 class CarCFDDataset(MeshDataModule):
-    """CarCFDDataset is a processed version of the dataset introduced in
+    """Processed version of the Car-CFD dataset.
+    
+    CarCFDDataset is a processed version of the dataset introduced in
     [1]_, which encodes a triangular mesh over the surface of a 3D model car
     and provides the air pressure at each centroid and vertex of the mesh when
     the car is placed in a simulated wind tunnel with a recorded inlet velocity.

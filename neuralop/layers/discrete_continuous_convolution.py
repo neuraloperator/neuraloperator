@@ -185,10 +185,10 @@ def _precompute_convolution_filter_matrix(
 
 
 class DiscreteContinuousConv(nn.Module, metaclass=abc.ABCMeta):
-    """
-    Abstract base class for DISCO convolutions, reproduced with permission
-    from ``torch_harmonics.convolution``. If you use DISCO convs, please cite
-    [1]_ and [2]_.
+    """ Abstract base class for DISCO convolutions.
+    It is reproduced with permission from ``torch_harmonics.convolution``. 
+    
+    If you use DISCO convs, please cite [1]_ and [2]_.
 
     Parameters
     ----------
@@ -269,13 +269,12 @@ class DiscreteContinuousConv(nn.Module, metaclass=abc.ABCMeta):
 
 
 class DiscreteContinuousConv2d(DiscreteContinuousConv):
-    """
-    Discrete-continuous convolutions (DISCO) on arbitrary 2d grids
-    as implemented in [1]_. To evaluate continuous convolutions on a
+    """Discrete-continuous convolutions (DISCO) on arbitrary 2d grids.
+    It is implemented as described in [1]_. To evaluate continuous convolutions on a
     computer, they can be evaluated semi-discretely, where the translation
     operation is performed continuously, and the quadrature/projection is
     performed discretely on a grid [2]_. They are the main building blocks
-    for local Neural Operators [1]_. Forward call expects an input of shape
+    for local Neural Operators [1]_. The forward call expects an input of shape
     (batch_size, in_channels, n_in).
 
     Parameters
@@ -478,9 +477,8 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
 
 
 class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
-    """
-    Transpose variant of discrete-continuous convolutions on arbitrary
-    2d grids as implemented for [1]_. Forward call expects an input of shape
+    """Transpose variant of discrete-continuous convolutions on arbitrary 2d grids. 
+    It is implemented as described in [1]_. The forward call expects an input of shape
     (batch_size, in_channels, n_in).
 
     Parameters
@@ -682,13 +680,12 @@ class DiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
 
 
 class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
-    """
-    Discrete-continuous convolutions (DISCO) on equidistant 2d grids
-    as implemented for [1]_. This implementation maps to 2d convolution
+    """Discrete-continuous convolutions (DISCO) on equidistant 2d grids.
+    It is implemented as described in [1]_. This implementation maps to 2d convolution
     kernels which makes it more efficient than the unstructured implementation
     above. Due to the mapping to an equidistant grid, the domain lengths need
     to be specified in order to compute the effective resolution and the
-    corresponding cutoff radius. Forward call expects an input of shape
+    corresponding cutoff radius. The forward call expects an input of shape
     (batch_size, in_channels, in_shape[0], in_shape[1]).
 
     Parameters
@@ -859,13 +856,12 @@ class EquidistantDiscreteContinuousConv2d(DiscreteContinuousConv):
 
 
 class EquidistantDiscreteContinuousConvTranspose2d(DiscreteContinuousConv):
-    """
-    Transpose Discrete-continuous convolutions (DISCO) on equidistant 2d grids
-    as implemented for [1]_. This implementation maps to 2d convolution kernels
+    """Transpose Discrete-continuous convolutions (DISCO) on equidistant 2d grids.
+    It is implemented as described in [1]_. This implementation maps to 2d convolution kernels
     which makes it more efficient than the unstructured implementation above.
     Due to the mapping to an equidistant grid, the domain lengths need to be
     specified in order to compute the effective resolution and the corresponding
-    cutoff radius. Forward call expects an input of shape
+    cutoff radius. The forward call expects an input of shape
     (batch_size, in_channels, in_shape[0], in_shape[1]).
 
     Parameters

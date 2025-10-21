@@ -4,8 +4,7 @@ import torch.nn.functional as F
 
 
 class ChannelMLP(nn.Module):
-    """
-    Multi-layer perceptron applied channel-wise across spatial dimensions.
+    """Multi-layer perceptron applied channel-wise across spatial dimensions.
 
     ChannelMLP applies a series of 1D convolutions and nonlinearities to the channel
     dimension of input tensors, making it invariant to spatial resolution. This is

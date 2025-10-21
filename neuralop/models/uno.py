@@ -17,7 +17,9 @@ from ..layers.embeddings import GridEmbedding2D, GridEmbeddingND
 
 
 class UNO(nn.Module):
-    """U-Shaped Neural Operator, as described in  [1]_.
+    """U-Shaped Neural Operator
+    
+    The architecture is described in  [1]_.
 
     Parameters
     ----------

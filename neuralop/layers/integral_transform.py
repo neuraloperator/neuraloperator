@@ -7,8 +7,9 @@ from .segment_csr import segment_csr
 
 
 class IntegralTransform(nn.Module):
-    """Integral Kernel Transform (GNO)
-    Computes one of the following:
+    """Integral Kernel Transform (GNO).
+    
+    It computes one of the following:
         (a) \\int_{A(x)} k(x, y) dy
         (b) \\int_{A(x)} k(x, y) * f(y) dy
         (c) \\int_{A(x)} k(x, y, f(y)) dy

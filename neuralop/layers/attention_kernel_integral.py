@@ -5,8 +5,8 @@ from torch.nn.init import xavier_uniform_, zeros_
 
 
 class AttentionKernelIntegral(torch.nn.Module):
-    """
-    Kernel integral transform with attention
+    """Kernel integral transform with attention
+    
     Computes \\int_{Omega} k(x, y) * f(y) dy,
     where:
           K(x, y) = \\sum_{c=1}^d q_c(x) * k_c(y), q(x) = [q_1(x); ...; q_d(x)], k(y) = [k_1(y); ...; k_d(y)]

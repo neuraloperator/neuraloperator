@@ -19,8 +19,9 @@ Number = Union[int, float]
 
 
 class LocalNOBlocks(nn.Module):
-    """
-    Local Neural Operator blocks with localized integral and differential kernels [3]_.
+    """Local Neural Operator blocks with localized integral and differential kernels.
+    
+    It is implemented as described in [3]_.
 
     This class implements neural operator blocks that combine Fourier neural operators
     with localized integral and differential kernels to capture both global and local
