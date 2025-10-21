@@ -55,7 +55,7 @@ After you've installed the library, you can start training operators seamlessly:
 
    from neuralop.models import FNO
 
-   operator = FNO(n_modes=(16, 16), 
+   operator = FNO(n_modes=(32, 32), 
                   hidden_channels=64,
                   in_channels=2, 
                   out_channels=1)
@@ -67,7 +67,7 @@ by simply using a Tucker Tensorized FNO with just a few parameters:
 
    from neuralop.models import TFNO
 
-   operator = TFNO(n_modes=(16, 16), 
+   operator = TFNO(n_modes=(32, 32), 
                    hidden_channels=64,
                    in_channels=2, 
                    out_channels=1,
@@ -117,15 +117,13 @@ For detailed development setup, testing, and contribution guidelines, please ref
 Code of Conduct
 ===============
 
-This project follows the `Linux Foundation Code of Conduct <https://lfprojects.org/policies/code-of-conduct/>`_.
-
-All participants are expected to uphold this Code of Conduct to ensure a friendly and welcoming environment for everyone.
+All participants are expected to uphold the `Code of Conduct <https://github.com/neuraloperator/neuraloperator/blob/main/CODE_OF_CONDUCT.md>`_ to ensure a friendly and welcoming environment for everyone.
 
     
 Citing
 ------
 
-If you use NeuralOperator in an academic paper, please cite [1]_ and consider citing [2]_, [3]_::
+If you use NeuralOperator in an academic paper, please cite [1]_ ::
 
    @misc{kossaifi2025librarylearningneuraloperators,
       title={A Library for Learning Neural Operators}, 
@@ -140,6 +138,8 @@ If you use NeuralOperator in an academic paper, please cite [1]_ and consider ci
       archivePrefix={arXiv},
       primaryClass={cs.LG},
    }
+
+and consider citing [2]_, [3]_::
 
    @article{kovachki2021neural,
       author    = {Nikola B. Kovachki and
