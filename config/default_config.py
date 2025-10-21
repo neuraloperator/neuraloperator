@@ -1,10 +1,6 @@
 from typing import Any, List, Optional
 
-
 from zencfg import ConfigBase
-
-
-
 
 
 class Distributed(ConfigBase):
@@ -15,17 +11,14 @@ class Distributed(ConfigBase):
     seed: int = 666
 
 
-class Fno2d(ConfigBase):
-    modes_height: int = 64
-    modes_width: int = 64
+class FNO(ConfigBase):
+    n_modes: List[int] = [64, 64]  # Default to 2D: [height, width]
     width: int = 64
     hidden_channels: int = 256
     n_layers: int = 4
     domain_padding: float = 0.078125
-    domain_padding_mode: str = "one-sided"
-    fft_norm: str = "forward"
     norm: Optional[Any] = None
-    skip: str = "linear"
+    fno_skip: str = "linear"
     use_channel_mlp: int = 0
     channel_mlp: Optional[Any] = None
     channel_mlp_expansion: float = 0.5
@@ -33,6 +26,24 @@ class Fno2d(ConfigBase):
     separable: bool = False
     factorization: Optional[Any] = None
     rank: float = 1.0
+    fixed_rank_modes: Optional[Any] = None
+
+
+class TFNO(ConfigBase):
+    n_modes: List[int] = [64, 64]
+    width: int = 64
+    hidden_channels: int = 256
+    n_layers: int = 4
+    domain_padding: float = 0.078125
+    norm: Optional[Any] = None
+    fno_skip: str = "linear"
+    use_channel_mlp: int = 0
+    channel_mlp: Optional[Any] = None
+    channel_mlp_expansion: float = 0.5
+    channel_mlp_dropout: int = 0
+    separable: bool = False
+    factorization: str = "Tucker"
+    rank: float = 0.1
     fixed_rank_modes: Optional[Any] = None
 
 
@@ -76,18 +87,12 @@ class Wandb(ConfigBase):
     group: str = "wandb_group"
 
 
-class Tfno2d(ConfigBase):
-    factorization: str = "Tucker"
-    compression: float = 0.42
-    domain_padding: int = 9
-
-
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None
     verbose: bool = True
-    arch: str = "fno2d"
+    arch: str = "fno"
     distributed: Distributed = Distributed()
-    fno2d: Fno2d = Fno2d()
+    fno: FNO = FNO()
     opt: Opt = Opt()
     data: Data = Data()
     patching: Patching = Patching()
@@ -95,12 +100,12 @@ class Default(ConfigBase):
 
 
 class Original_Fno(ConfigBase):
-    arch: str = "tfno2d"
-    fno2d: Fno2d = Fno2d()
+    arch: str = "tfno"
+    tfno: TFNO = TFNO()
     wandb: Wandb = Wandb()
 
 
 class Distributed_Mg_Tucker(ConfigBase):
-    tfno2d: Tfno2d = Tfno2d()
+    tfno: TFNO = TFNO()
     distributed: Distributed = Distributed()
     patching: Patching = Patching()

@@ -1,13 +1,17 @@
 """
 .. _burgers_2d_fd_vis :
 
-A Numerical Solver for Burgers' Equation in 2 Dimensions 
-========================================================
+A finite difference solver for Burgers' equation in 2 dimensions 
+===============================================================
 An intro to our loss module's finite difference utility demonstrating
 its use to create a simple numerical solver for Burgers' equation in 2d.
 """
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import the library
 # ------------------
 # We first import our `neuralop` library and required dependencies.
@@ -15,18 +19,24 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from neuralop.losses.finite_diff import central_diff_2d  
+from neuralop.losses.differentiation import FiniteDiff  
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Defining our problem
 # --------------------
 # We aim to solve the 2D viscous Burger's equations:
 #
-# :math: `u_t + u \cdot u_x + v \cdot u_y = \nu (u_xx + u_yy)`
+# .. math::
+#    \frac{\partial u}{\partial t} + u \frac{\partial u}{\partial x} + v \frac{\partial u}{\partial y} = \nu \left(\frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2}\right)
 #
-# :math: `v_t + u \cdot v_x + v \cdot v_y = \nu (v_xx + v_yy)`
+# .. math::
+#    \frac{\partial v}{\partial t} + u \frac{\partial v}{\partial x} + v \frac{\partial v}{\partial y} = \nu \left(\frac{\partial^2 v}{\partial x^2} + \frac{\partial^2 v}{\partial y^2}\right)
 
 ## Simulation parameters
 Lx, Ly = 2.0, 2.0   # Domain lengths
@@ -42,12 +52,19 @@ dx = Lx / (nx-1)
 dy = Ly / (ny-1)
 nt = int(T / dt)
 
+## Initialize finite difference operator
+fd = FiniteDiff(dim=2, h=(dx, dy))
+
 ## Initial condition 
 u = -torch.sin(2 * np.pi * Y).to(device)
 v =  torch.cos(2 * np.pi * X).to(device)
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Simulate evolution using numerical solver
 # -----------------------------------------
 
@@ -57,14 +74,16 @@ v_evolution = [v.clone()]
 for _ in range(nt):
     
     # Compute first-order derivatives
-    u_x, u_y = central_diff_2d(u, [dx, dy])
-    v_x, v_y = central_diff_2d(v, [dx, dy])
+    u_x = fd.dx(u)
+    u_y = fd.dy(u)
+    v_x = fd.dx(v)
+    v_y = fd.dy(v)
 
     # Compute second-order derivatives
-    u_xx, _ = central_diff_2d(u_x, [dx, dy])
-    _, u_yy = central_diff_2d(u_y, [dx, dy])
-    v_xx, _ = central_diff_2d(v_x, [dx, dy])
-    _, v_yy = central_diff_2d(v_y, [dx, dy])
+    u_xx = fd.dx(u_x)
+    u_yy = fd.dy(u_y)
+    v_xx = fd.dx(v_x)
+    v_yy = fd.dy(v_y)
 
     # Evolve in time using Euler's method
     u_next = u + dt * (-u * u_x - v * u_y + nu * (u_xx + u_yy))
@@ -78,6 +97,10 @@ u_evolution = torch.stack(u_evolution).cpu().numpy()
 v_evolution = torch.stack(v_evolution).cpu().numpy()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Animating the solution
 # ----------------------
 

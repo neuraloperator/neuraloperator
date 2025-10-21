@@ -1,12 +1,16 @@
 """
 .. _diffusion_advection_fd_vis :
 
-A simple finite-difference solver
-=================================
+A simple finite-difference solver for the diffusion-advection equation
+======================================================================
 An intro to our loss module's finite difference utility demonstrating
 its use to create a simple numerical solver for the diffusion-advection equation.
 """
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Import the library
 # ------------------
 # We first import our `neuralop` library and required dependencies.
@@ -15,19 +19,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-from neuralop.losses.finite_diff import central_diff_2d  
+from neuralop.losses.differentiation import FiniteDiff  
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Defining our problem
 # --------------------
 # We aim to solve the 2D diffusion advection equation:
 # 
-# :math:`u_t + cx \cdot u_x + cy \cdot u_y = \nu (u_xx + u_yy) + f(x,y,t)`,
+# .. math::
+#    \frac{\partial u}{\partial t} + c_x \frac{\partial u}{\partial x} + c_y \frac{\partial u}{\partial y} = \nu \left(\frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2}\right) + f(x,y,t)
 # 
-# Where :math:`f(x,y,t)` is a source term and :math:`cx` and :math:`cy` are advection speeds in x and y.
+# Where :math:`f(x,y,t)` is a source term and :math:`c_x` and :math:`c_y` are advection speeds in x and y.
 # We set simulation parameters below:
 
 ## Simulation parameters
@@ -45,6 +54,9 @@ dx = Lx / (nx - 1)
 dy = Ly / (ny - 1)
 nt = int(T / dt)
 
+## Initialize finite difference operator
+fd = FiniteDiff(dim=2, h=(dx, dy))
+
 
 ## Initial condition and source term
 u = (-torch.sin(2 * np.pi * Y) * torch.cos(2 * np.pi * X)
@@ -55,6 +67,10 @@ def source_term(X, Y, t):
     return 0.2 * torch.sin(3 * np.pi * X) * torch.cos(3 * np.pi * Y) * torch.cos(4 * np.pi * t)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Simulate evolution using numerical solver
 # -----------------------------------------
 u_evolution = [u.clone()]
@@ -63,9 +79,10 @@ t = torch.tensor(0.0)
 for _ in range(nt):
     
     # Compute derivatives
-    u_x, u_y = central_diff_2d(u, [dx, dy])
-    u_xx, _ = central_diff_2d(u_x, [dx, dy])
-    _, u_yy = central_diff_2d(u_y, [dx, dy])
+    u_x = fd.dx(u)
+    u_y = fd.dy(u)
+    u_xx = fd.dx(u_x)
+    u_yy = fd.dy(u_y)
 
     # Evolve one step in time using Euler's method
     u = u + dt * (-cx * u_x - cy * u_y + nu * (u_xx + u_yy) + source_term(X, Y, t))
@@ -76,6 +93,10 @@ u_evolution = torch.stack(u_evolution).cpu().numpy()
 
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Animate our solution
 # --------------------
 

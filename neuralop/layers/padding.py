@@ -1,37 +1,35 @@
-from typing import List, Union, Literal
+from typing import List, Union
 
 from torch import nn
 from torch.nn import functional as F
 
 from neuralop.utils import validate_scaling_factor
 
+
 class DomainPadding(nn.Module):
     """Applies domain padding scaled automatically to the input's resolution
 
     Parameters
     ----------
-    domain_padding : ``float`` or ``list``
-        typically, between zero and one, percentage of padding to use
+    domain_padding : float or list
+        Typically, between zero and one, percentage of padding to use
         if a list, make sure if matches the dim of (d1, ..., dN)
-    padding_mode : ``Literal ['symmetric', 'one-sided']``, optional
-        whether to pad on both sides, by default ``'symmetric'``
-    resolution_scaling_factor : ``int`` ; default is 1
+    resolution_scaling_factor : int, optional
+        Resolution scaling factor, by default 1
 
     Notes
     -----
     This class works for any input resolution. Expects inputs of shape
-   ` `(batch-size, channels, d1, ...., dN)``
+    (batch-size, channels, d1, ...., dN)
     """
 
     def __init__(
         self,
         domain_padding: Union[float, list],
-        padding_mode: Literal['symmetric', 'one-sided']="symmetric",
-        resolution_scaling_factor: Union[int, List[int]]=1,
+        resolution_scaling_factor: Union[int, List[int]] = 1,
     ):
         super().__init__()
         self.domain_padding = domain_padding
-        self.padding_mode = padding_mode.lower()
         if resolution_scaling_factor is None:
             resolution_scaling_factor = 1
         self.resolution_scaling_factor: Union[int, List[int]] = resolution_scaling_factor
@@ -82,7 +80,7 @@ class DomainPadding(nn.Module):
             if verbose:
                 print(
                     f"Padding inputs of resolution={resolution} with "
-                    f"padding={padding}, {self.padding_mode}"
+                    f"padding={padding}, symmetric"
                 )
 
             output_pad = padding
@@ -95,42 +93,25 @@ class DomainPadding(nn.Module):
             # (so we must reverse the padding list)
             padding = padding[::-1]
 
-            
-
             # the F.pad(x, padding) funtion pads the tensor 'x' in reverse order
             # of the "padding" list i.e. the last axis of tensor 'x' will be
             # padded by the amount mention at the first position of the
             # 'padding' vector. The details about F.pad can be found here:
             # https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html
 
-            if self.padding_mode == "symmetric":
-                # Pad both sides
-                unpad_list = list()
-                for p in output_pad:
-                    if p == 0:
-                        padding_end = None
-                        padding_start = None
-                    else:
-                        padding_end = p
-                        padding_start = -p
-                    unpad_list.append(slice(padding_end, padding_start, None))
-                unpad_indices = (Ellipsis,) + tuple(unpad_list)
+            # Pad both sides (symmetric mode)
+            unpad_list = list()
+            for p in output_pad:
+                if p == 0:
+                    padding_end = None
+                    padding_start = None
+                else:
+                    padding_end = p
+                    padding_start = -p
+                unpad_list.append(slice(padding_end, padding_start, None))
+            unpad_indices = (Ellipsis,) + tuple(unpad_list)
 
-                padding = [i for p in padding for i in (p, p)]
-
-            elif self.padding_mode == "one-sided":
-                # One-side padding
-                unpad_list = list()
-                for p in output_pad:
-                    if p == 0:
-                        padding_start = None
-                    else:
-                        padding_start = -p
-                    unpad_list.append(slice(None, padding_start, None))
-                unpad_indices = (Ellipsis,) + tuple(unpad_list)
-                padding = [i for p in padding for i in (0, p)]
-            else:
-                raise ValueError(f"Got padding_mode={self.padding_mode}")
+            padding = [i for p in padding for i in (p, p)]
 
             self._padding[f"{resolution}"] = padding
 

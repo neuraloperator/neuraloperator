@@ -33,7 +33,7 @@ def _contract_dense(x, weight, separable=False):
         weight_syms.insert(1, einsum_symbols[order])  # outputs
         out_syms = list(weight_syms)
         out_syms[0] = x_syms[0]
-    
+
     eq = f'{"".join(x_syms)},{"".join(weight_syms)}->{"".join(out_syms)}'
 
     if not torch.is_tensor(weight):
@@ -45,10 +45,12 @@ def _contract_dense(x, weight, separable=False):
     else:
         return tl.einsum(eq, x, weight)
 
+
 def _contract_dense_separable(x, weight, separable):
     if not torch.is_tensor(weight):
         weight = weight.to_tensor()
     return x * weight
+
 
 def _contract_cp(x, cp_weight, separable=False):
     order = tl.ndim(x)
@@ -140,8 +142,8 @@ def get_contract_fun(weight, implementation="reconstructed", separable=False):
         whether to reconstruct the weight and do a forward pass (reconstructed)
         or contract directly the factors of the factorized weight with the input (factorized)
     separable: bool
-        if True, performs contraction with individual tensor factors. 
-        if False, 
+        if True, performs contraction with individual tensor factors.
+        if False,
     Returns
     -------
     function : (x, weight) -> x * weight in Fourier space
@@ -190,20 +192,20 @@ class SpectralConv(BaseSpectralConv):
         Number of output channels
     n_modes : int or int tuple
         Number of modes to use for contraction in Fourier domain during training.
- 
+
         .. warning::
-            
-            We take care of the redundancy in the Fourier modes, therefore, for an input 
+
+            We take care of the redundancy in the Fourier modes, therefore, for an input
             of size I_1, ..., I_N, please provide modes M_K that are I_1 < M_K <= I_N
-            We will automatically keep the right amount of modes: specifically, for the 
-            last mode only, if you specify M_N modes we will use M_N // 2 + 1 modes 
-            as the real FFT is redundant along that last dimension. For more information on 
+            We will automatically keep the right amount of modes: specifically, for the
+            last mode only, if you specify M_N modes we will use M_N // 2 + 1 modes
+            as the real FFT is redundant along that last dimension. For more information on
             mode truncation, refer to :ref:`fourier_layer_impl`
 
-            
+
         .. note::
 
-            Provided modes should be even integers. odd numbers will be rounded to the closest even number.  
+            Provided modes should be even integers. odd numbers will be rounded to the closest even number.
 
         This can be updated dynamically during training.
 
@@ -214,7 +216,7 @@ class SpectralConv(BaseSpectralConv):
 
     separable : bool, default is True
         whether to use separable implementation of contraction
-        if True, contracts factors of factorized 
+        if True, contracts factors of factorized
         tensor weight individually
     init_std : float or 'auto', default is 'auto'
         std to use for the init
@@ -244,18 +246,18 @@ class SpectralConv(BaseSpectralConv):
     complex_data: bool, optional
         whether data takes on complex values in the spatial domain, by default False
         if True, uses different logic for FFT contraction and uses full FFT instead of real-valued
-    
+
     References
     -----------
     .. [1] :
 
-    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential 
+    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
         Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
-    
+
     .. [2] :
 
     Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
-        Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024). 
+        Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024).
         TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
     """
 
@@ -306,7 +308,7 @@ class SpectralConv(BaseSpectralConv):
         ] = validate_scaling_factor(resolution_scaling_factor, self.order)
 
         if init_std == "auto":
-            init_std = (2 / (in_channels + out_channels))**0.5
+            init_std = (2 / (in_channels + out_channels)) ** 0.5
         else:
             init_std = init_std
 
@@ -340,11 +342,16 @@ class SpectralConv(BaseSpectralConv):
         if factorization is None:
             self.weight = torch.tensor(weight_shape, dtype=torch.cfloat)
         else:
-            self.weight = FactorizedTensor.new(weight_shape, rank=self.rank, 
-                                     factorization=factorization, fixed_rank_modes=fixed_rank_modes,
-                                     **tensor_kwargs, dtype=torch.cfloat) 
+            self.weight = FactorizedTensor.new(
+                weight_shape,
+                rank=self.rank,
+                factorization=factorization,
+                fixed_rank_modes=fixed_rank_modes,
+                **tensor_kwargs,
+                dtype=torch.cfloat,
+            )
         self.weight.normal_(0, init_std)
-        
+
         self._contract = get_contract_fun(
             self.weight, implementation=implementation, separable=separable
         )
@@ -372,27 +379,25 @@ class SpectralConv(BaseSpectralConv):
             return x
         else:
             return resample(x, 1.0, list(range(2, x.ndim)), output_shape=out_shape)
-    
+
     @property
     def n_modes(self):
         return self._n_modes
-    
+
     @n_modes.setter
     def n_modes(self, n_modes):
-        if isinstance(n_modes, int): # Should happen for 1D FNO only
+        if isinstance(n_modes, int):  # Should happen for 1D FNO only
             n_modes = [n_modes]
         else:
             n_modes = list(n_modes)
-        # the real FFT is skew-symmetric, so the last mode has a redundacy if our data is real in space 
+        # the real FFT is skew-symmetric, so the last mode has a redundacy if our data is real in space
         # As a design choice we do the operation here to avoid users dealing with the +1
         # if we use the full FFT we cannot cut off informtion from the last mode
         if not self.complex_data:
             n_modes[-1] = n_modes[-1] // 2 + 1
         self._n_modes = n_modes
 
-    def forward(
-        self, x: torch.Tensor, output_shape: Optional[Tuple[int]] = None
-    ):
+    def forward(self, x: torch.Tensor, output_shape: Optional[Tuple[int]] = None):
         """Generic forward pass for the Factorized Spectral Conv
 
         Parameters
@@ -417,12 +422,12 @@ class SpectralConv(BaseSpectralConv):
         if self.complex_data:
             x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
             dims_to_fft_shift = fft_dims
-        else: 
+        else:
             x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
             # When x is real in spatial domain, the last half of the last dim is redundant.
             # See :ref:`fft_shift_explanation` for discussion of the FFT shift.
-            dims_to_fft_shift = fft_dims[:-1] 
-        
+            dims_to_fft_shift = fft_dims[:-1]
+
         if self.order > 1:
             x = torch.fft.fftshift(x, dim=dims_to_fft_shift)
 
@@ -435,24 +440,35 @@ class SpectralConv(BaseSpectralConv):
             out_dtype = torch.chalf
         else:
             out_dtype = torch.cfloat
-        out_fft = torch.zeros([batchsize, self.out_channels, *fft_size],
-                              device=x.device, dtype=out_dtype)
-        
+        out_fft = torch.zeros(
+            [batchsize, self.out_channels, *fft_size], device=x.device, dtype=out_dtype
+        )
+
         # if current modes are less than max, start indexing modes closer to the center of the weight tensor
-        starts = [(max_modes - min(size, n_mode)) for (size, n_mode, max_modes) in zip(fft_size, self.n_modes, self.max_n_modes)]
+        starts = [
+            (max_modes - min(size, n_mode))
+            for (size, n_mode, max_modes) in zip(fft_size, self.n_modes, self.max_n_modes)
+        ]
         # if contraction is separable, weights have shape (channels, modes_x, ...)
         # otherwise they have shape (in_channels, out_channels, modes_x, ...)
-        if self.separable: 
-            slices_w = [slice(None)] # channels
+        if self.separable:
+            slices_w = [slice(None)]  # channels
         else:
-            slices_w =  [slice(None), slice(None)] # in_channels, out_channels
+            slices_w = [slice(None), slice(None)]  # in_channels, out_channels
         if self.complex_data:
-            slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts]
+            slices_w += [
+                slice(start // 2, -start // 2) if start else slice(start, None)
+                for start in starts
+            ]
         else:
             # The last mode already has redundant half removed in real FFT
-            slices_w += [slice(start//2, -start//2) if start else slice(start, None) for start in starts[:-1]]
+            slices_w += [
+                slice(start // 2, -start // 2) if start else slice(start, None)
+                for start in starts[:-1]
+            ]
             slices_w += [slice(None, -starts[-1]) if starts[-1] else slice(None)]
-        
+
+        slices_w = tuple(slices_w)
         weight = self.weight[slices_w]
 
         ### Pick the first n_modes modes of FFT signal along each dim
@@ -463,8 +479,8 @@ class SpectralConv(BaseSpectralConv):
         # otherwise drop first two dims (in_channels, out_channels)
         else:
             weight_start_idx = 2
-        
-        slices_x =  [slice(None), slice(None)] # Batch_size, channels
+
+        slices_x = [slice(None), slice(None)]  # Batch_size, channels
 
         for all_modes, kept_modes in zip(fft_size, list(weight.shape[weight_start_idx:])):
             # After fft-shift, the 0th frequency is located at n // 2 in each direction
@@ -473,17 +489,20 @@ class SpectralConv(BaseSpectralConv):
             # n//2 - n_modes//2  to  n//2 + n_modes//2 + 1   if n_modes is odd
             center = all_modes // 2
             negative_freqs = kept_modes // 2
-            positive_freqs = kept_modes // 2  + kept_modes % 2
+            positive_freqs = kept_modes // 2 + kept_modes % 2
 
             # this slice represents the desired indices along each dim
             slices_x += [slice(center - negative_freqs, center + positive_freqs)]
-        
+
         if weight.shape[-1] < fft_size[-1]:
             slices_x[-1] = slice(None, weight.shape[-1])
         else:
             slices_x[-1] = slice(None)
-        
-        out_fft[slices_x] = self._contract(x[slices_x], weight, separable=self.separable)
+
+        slices_x = tuple(slices_x)
+        out_fft[slices_x] = self._contract(
+            x[slices_x], weight, separable=self.separable
+        )
 
         if self.resolution_scaling_factor is not None and output_shape is None:
             mode_sizes = tuple([round(s * r) for (s, r) in zip(mode_sizes, self.resolution_scaling_factor)])
@@ -493,11 +512,13 @@ class SpectralConv(BaseSpectralConv):
 
         if self.order > 1:
             out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
-        
+
         if self.complex_data:
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
         else:
-            x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+            x = torch.fft.irfftn(
+                out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm
+            )
 
         if self.bias is not None:
             x = x + self.bias

@@ -6,12 +6,14 @@ from .models import ModelConfig, FNOGNO_Small3d
 from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
 
+
 class CarCFDDatasetConfig(ConfigBase):
     root: str = "~/data/car-pressure-data/processed-car-pressure-data"
     sdf_query_resolution: int = 32
     n_train: int = 500
     n_test: int = 111
     download: bool = True
+
 
 class CarCFDOptConfig(OptimizationConfig):
     n_epochs: int = 300
@@ -21,6 +23,7 @@ class CarCFDOptConfig(OptimizationConfig):
     scheduler: str = "StepLR"
     step_size: int = 60
     gamma: float = 0.5
+
 
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None
