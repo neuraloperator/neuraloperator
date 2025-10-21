@@ -22,6 +22,9 @@ provides all of the tools to do so on your own data.
 Neural operators are also resolution invariant, 
 so your trained operator can be applied on data of any resolution.
 
+.. raw:: html
+
+   <br><br>
 
 Installation
 ------------
@@ -44,6 +47,9 @@ on `PyPI <https://pypi.org/project/neuraloperator/>`_:
 
   pip install neuraloperator
 
+.. raw:: html
+
+   <br><br>
 
 Quickstart
 ----------
@@ -82,12 +88,20 @@ of an equivalent, dense Fourier Neural Operator!
 
 Checkout the `documentation <https://neuraloperator.github.io/dev/index.html>`_ for more!
 
+.. raw:: html
+
+   <br><br>
+
 Using with Weights and Biases
 -----------------------------
 
 Our ``Trainer`` natively supports logging to W&B. To use these features, create a file in
 ``neuraloperator/config`` called ``wandb_api_key.txt`` and paste your W&B API key there.
 You can configure the project you want to use and your username in the main yaml configuration files.
+
+.. raw:: html
+
+   <br><br>
 
 ===============
 Contributing
@@ -109,9 +123,13 @@ publishing your code separately using a procedure outlined in our
 
 If you spot a bug or a typo in the documentation, or have an idea for a feature you'd like to see,
 please report it on our `issue tracker <https://github.com/neuraloperator/neuraloperator/issues>`_, 
-or even better, open a Pull-Request on `GitHub <https://github.com/neuraloperator/neuraloperator/pulls>`_. 
+or even better, open a `Pull Request <https://github.com/neuraloperator/neuraloperator/pulls>`_. 
 
 For detailed development setup, testing, and contribution guidelines, please refer to our `Contributing Guide <CONTRIBUTING.md>`_.
+
+.. raw:: html
+
+   <br><br>
 
 ===============
 Code of Conduct
@@ -119,7 +137,10 @@ Code of Conduct
 
 All participants are expected to uphold the `Code of Conduct <https://github.com/neuraloperator/neuraloperator/blob/main/CODE_OF_CONDUCT.md>`_ to ensure a friendly and welcoming environment for everyone.
 
-    
+.. raw:: html
+
+   <br><br>
+
 Citing
 ------
 
