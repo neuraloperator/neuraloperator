@@ -61,7 +61,7 @@ Participants are expected to:
 
 ## Incident Procedure
 
-To report a violation or appeal a decision, please contact: [Jean Kossaifi](https://github.com/JeanKossaifi)
+To report a violation or appeal a decision, please contact: [neuraloperator@outlook.com](mailto:neuraloperator@outlook.com)
 
 Include relevant details (including links, screenshots, etc.). Every effort will be made to maintain a safe, collegial, and fair environment. The project reserves the right to take action, including removing individuals from participation, as necessary.
 
