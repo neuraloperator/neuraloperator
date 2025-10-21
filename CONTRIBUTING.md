@@ -4,6 +4,9 @@ We welcome new contributions to the library! Our mission for NeuralOperator is t
 
 If your work provides one of the above, we would be thrilled to integrate it into the library. Otherwise, if your work simply relies on a version of the NeuralOperator codebase, we recommend publishing your code separately using a procedure outlined below.
 
+Thank you for contributing to NeuralOperator! Your contributions help make this library better for the entire scientific machine learning community.
+
+
 ## Table of Contents
 
 - [Development Setup](#development-setup)
@@ -306,9 +309,3 @@ class MyCustomFNO(FNO):
 ## License
 
 By contributing to NeuralOperator, you agree that your contributions will be licensed as described in the `LICENSE` file in the root directory of this source tree.
-
----
-
-## Acknowledgments
-
-Thank you for contributing to NeuralOperator! Your contributions help make this library better for the entire scientific machine learning community.
