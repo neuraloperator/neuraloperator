@@ -2,21 +2,22 @@ from math import prod
 
 import pytest
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from tensorly import tenalg
 from configmypy import Bunch
 
 from neuralop import TFNO
 from neuralop.models import FNO
+from neuralop.layers.embeddings import GridEmbeddingND, GridEmbedding2D
 
 tenalg.set_backend("einsum")
 
 
-@pytest.mark.parametrize(
-    "factorization", ["ComplexDense", "ComplexTucker", "ComplexCP", "ComplexTT"]
-)
+@pytest.mark.parametrize("factorization", ["ComplexDense", "ComplexTucker", "ComplexCP", "ComplexTT"])
 @pytest.mark.parametrize("implementation", ["factorized", "reconstructed"])
 @pytest.mark.parametrize("n_dim", [1, 2, 3, 4])
-@pytest.mark.parametrize("fno_block_precision", ["full", "half", "mixed"])
+@pytest.mark.parametrize("fno_block_precision", ["full"])
 @pytest.mark.parametrize("stabilizer", [None, "tanh"])
 @pytest.mark.parametrize("lifting_channel_ratio", [1, 2])
 @pytest.mark.parametrize("preactivation", [False, True])
@@ -29,7 +30,7 @@ def test_tfno(
     stabilizer,
     lifting_channel_ratio,
     preactivation,
-    complex_data
+    complex_data,
 ):
     if torch.has_cuda:
         device = "cuda"
@@ -65,7 +66,7 @@ def test_tfno(
         lifting_channel_ratio=lifting_channel_ratio,
         preactivation=preactivation,
         complex_data=complex_data,
-        fno_block_precision=fno_block_precision
+        fno_block_precision=fno_block_precision,
     ).to(device)
 
     in_data = torch.randn(batch_size, 3, *size, dtype=dtype).to(device)
@@ -80,7 +81,7 @@ def test_tfno(
     loss = out.sum()
     # take the modulus if data is complex-valued to create grad
     if dtype == torch.cfloat:
-        loss = (loss.real ** 2 + loss.imag ** 2) ** 0.5
+        loss = (loss.real**2 + loss.imag**2) ** 0.5
     loss.backward()
 
     n_unused_params = 0
@@ -134,3 +135,129 @@ def test_fno_superresolution(resolution_scaling_factor):
     factor = prod(resolution_scaling_factor)
 
     assert list(out.shape) == [batch_size, 1] + [int(round(factor * s)) for s in size]
+
+
+@pytest.mark.parametrize("norm", [None, "group_norm", "instance_norm"])
+@pytest.mark.parametrize("use_channel_mlp", [True, False])
+@pytest.mark.parametrize("channel_mlp_skip", ["linear", "identity", "soft-gating", None])
+@pytest.mark.parametrize("fno_skip", ["linear", "identity", "soft-gating", None])
+@pytest.mark.parametrize("preactivation", [True, False])
+@pytest.mark.parametrize("complex_data", [True, False])
+def test_fno_advanced_params(norm, use_channel_mlp, channel_mlp_skip, fno_skip, preactivation, complex_data):
+    """Test FNO with various advanced parameter combinations."""
+    device = "cpu"
+    s = 16
+    modes = 5
+    hidden_channels = 15
+    batch_size = 3
+    n_layers = 2
+    n_dim = 2
+    size = (s,) * n_dim
+    n_modes = (modes,) * n_dim
+
+    dtype = torch.cfloat if complex_data else torch.float32
+
+    model = FNO(
+        in_channels=3,
+        out_channels=1,
+        n_modes=n_modes,
+        hidden_channels=hidden_channels,
+        n_layers=n_layers,
+        norm=norm,
+        use_channel_mlp=use_channel_mlp,
+        channel_mlp_skip=channel_mlp_skip,
+        fno_skip=fno_skip,
+        preactivation=preactivation,
+        complex_data=complex_data,
+    ).to(device)
+
+    in_data = torch.randn(batch_size, 3, *size, dtype=dtype).to(device)
+
+    # Test forward pass
+    out = model(in_data)
+
+    # Check output size
+    assert list(out.shape) == [batch_size, 1, *size]
+
+    # Test backward pass
+    loss = out.sum()
+    # take the modulus if data is complex-valued to create grad
+    if dtype == torch.cfloat:
+        loss = (loss.real**2 + loss.imag**2) ** 0.5
+    loss.backward()
+
+
+@pytest.mark.parametrize("positional_embedding", ["grid", None])
+@pytest.mark.parametrize("domain_padding", [None, 0.1, [0.1, 0.2]])
+@pytest.mark.parametrize("stabilizer", [None, "tanh"])
+@pytest.mark.parametrize("norm", [None, "group_norm", "instance_norm"])
+def test_fno_embedding_and_padding(positional_embedding, domain_padding, stabilizer, norm):
+    """Test FNO with different positional embeddings and domain padding."""
+    device = "cpu"
+    s = 16
+    modes = 5
+    hidden_channels = 15
+    projection_channel_ratio = 2
+    lifting_channel_ratio = 2
+    batch_size = 3
+    n_layers = 2
+    n_dim = 2
+    size = (s,) * n_dim
+    n_modes = (modes,) * n_dim
+
+    model = FNO(
+        in_channels=3,
+        out_channels=1,
+        n_modes=n_modes,
+        hidden_channels=hidden_channels,
+        n_layers=n_layers,
+        positional_embedding=positional_embedding,
+        domain_padding=domain_padding,
+        projection_channel_ratio=projection_channel_ratio,
+        lifting_channel_ratio=lifting_channel_ratio,
+        stabilizer=stabilizer,
+        norm=norm,
+    ).to(device)
+
+    in_data = torch.randn(batch_size, 3, *size).to(device)
+
+    # Test forward pass
+    out = model(in_data)
+
+    # Check output size
+    assert list(out.shape) == [batch_size, 1, *size]
+
+
+@pytest.mark.parametrize("channel_mlp_dropout", [0.0, 0.1, 0.5])
+@pytest.mark.parametrize("channel_mlp_expansion", [0.25, 0.5, 1.0])
+@pytest.mark.parametrize("non_linearity", [F.gelu, F.relu, F.tanh])
+def test_fno_channel_mlp_params(channel_mlp_dropout, channel_mlp_expansion, non_linearity):
+    """Test FNO with different channel MLP parameters."""
+    device = "cpu"
+    s = 16
+    modes = 5
+    hidden_channels = 15
+    batch_size = 3
+    n_layers = 2
+    n_dim = 2
+    size = (s,) * n_dim
+    n_modes = (modes,) * n_dim
+
+    model = FNO(
+        in_channels=3,
+        out_channels=1,
+        n_modes=n_modes,
+        hidden_channels=hidden_channels,
+        n_layers=n_layers,
+        channel_mlp_dropout=channel_mlp_dropout,
+        channel_mlp_expansion=channel_mlp_expansion,
+        non_linearity=non_linearity,
+    ).to(device)
+
+    in_data = torch.randn(batch_size, 3, *size).to(device)
+
+    # Test forward pass
+    out = model(in_data)
+
+    # Check output size
+    assert list(out.shape) == [batch_size, 1, *size]

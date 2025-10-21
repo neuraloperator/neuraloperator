@@ -6,6 +6,7 @@ from ..utils import validate_scaling_factor
 
 # Set warning filter to show each warning only once
 import warnings
+
 warnings.filterwarnings("once", category=UserWarning)
 
 try:
@@ -303,7 +304,7 @@ class SpectralConv(BaseSpectralConv):
         ] = validate_scaling_factor(resolution_scaling_factor, self.order, n_layers)
 
         if init_std == "auto":
-            init_std = (2 / (in_channels + out_channels))**0.5
+            init_std = (2 / (in_channels + out_channels)) ** 0.5
         else:
             init_std = init_std
 
@@ -551,7 +552,7 @@ class SubConv(nn.Module):
                 f"SpectralConvWrapper.forward() received unexpected keyword arguments: {list(kwargs.keys())}. "
                 "These arguments will be ignored.",
                 UserWarning,
-                stacklevel=2
+                stacklevel=2,
             )
         return self.main_conv.forward(x, self.indices, **kwargs)
 
@@ -561,13 +562,14 @@ class SubConv(nn.Module):
                 f"SpectralConvWrapper.transform() received unexpected keyword arguments: {list(kwargs.keys())}. "
                 "These arguments will be ignored.",
                 UserWarning,
-                stacklevel=2
+                stacklevel=2,
             )
         return self.main_conv.transform(x, self.indices, **kwargs)
 
     @property
     def weight(self):
         return self.main_conv.get_weight(indices=self.indices)
+
 
 class SpectralConv1d(SpectralConv):
     """1D Spectral Conv
