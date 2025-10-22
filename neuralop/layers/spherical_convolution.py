@@ -205,10 +205,11 @@ Number = Union[int, float]
 
 
 class SHT(nn.Module):
-    """A wrapper for the Spherical Harmonics transform 
+    """A wrapper for the Spherical Harmonics transform.
 
     Allows to call it with an interface similar to that of FFT
     """
+
     def __init__(self, dtype=torch.float32, device=None):
         super().__init__()
         self.device = device
@@ -217,7 +218,7 @@ class SHT(nn.Module):
         self._iSHT_cache = nn.ModuleDict()
 
     def sht(self, x, s=None, norm="ortho", grid="equiangular"):
-        *_, height, width = x.shape # height = latitude, width = longitude
+        *_, height, width = x.shape  # height = latitude, width = longitude
         if s is None:
             if grid == "equiangular":
                 modes_width = height // 2
@@ -239,21 +240,20 @@ class SHT(nn.Module):
                     lmax=modes_height,
                     mmax=modes_width,
                     grid=grid,
-                    norm=norm
+                    norm=norm,
                 )
                 .to(device=x.device)
                 .to(dtype=self.dtype)
             )
             self._SHT_cache[cache_key] = sht
-        
+
         return sht(x)
 
-
     def isht(self, x, s=None, norm="ortho", grid="equiangular"):
-        *_, modes_height, modes_width = x.shape # height = latitude, width = longitude
+        *_, modes_height, modes_width = x.shape  # height = latitude, width = longitude
         if s is None:
             if grid == "equiangular":
-                width = modes_width*2
+                width = modes_width * 2
             else:
                 width = modes_width
             height = modes_height
@@ -272,19 +272,21 @@ class SHT(nn.Module):
                     lmax=modes_height,
                     mmax=modes_width,
                     grid=grid,
-                    norm=norm
+                    norm=norm,
                 )
                 .to(device=x.device)
                 .to(dtype=self.dtype)
             )
             self._iSHT_cache[cache_key] = isht
-        
+
         return isht(x)
 
 
 class SphericalConv(BaseSpectralConv):
-    """Spherical Convolution, base class for the SFNO [1]_
+    """Spherical Convolution for the SFNO. 
     
+    It is implemented as described in [1]_.
+
     Parameters
     ----------
     sht_norm : str, {'ortho'}
@@ -301,6 +303,7 @@ class SphericalConv(BaseSpectralConv):
            Boris Bonev, Thorsten Kurth, Christian Hundt, Jaideep Pathak, Maximilian Baust, Karthik Kashinath, Anima Anandkumar,
            ICML 2023.
     """
+
     def __init__(
         self,
         in_channels,
@@ -322,7 +325,7 @@ class SphericalConv(BaseSpectralConv):
         sht_grids="equiangular",
         device=None,
         dtype=torch.float32,
-        complex_data=False # dummy param until we unify dtype interface
+        complex_data=False,  # dummy param until we unify dtype interface
     ):
         super().__init__(dtype=dtype, device=device)
 
@@ -350,7 +353,7 @@ class SphericalConv(BaseSpectralConv):
         ] = validate_scaling_factor(resolution_scaling_factor, self.order)
 
         if init_std == "auto":
-            init_std = (2 / (in_channels + out_channels))**0.5
+            init_std = (2 / (in_channels + out_channels)) ** 0.5
         else:
             init_std = init_std
 
@@ -379,12 +382,12 @@ class SphericalConv(BaseSpectralConv):
             weight_shape = (in_channels, out_channels, *self.n_modes[:-1])
         self.separable = separable
         self.weight = FactorizedTensor.new(
-                    weight_shape,
-                    rank=self.rank,
-                    factorization=factorization,
-                    fixed_rank_modes=fixed_rank_modes,
-                    **decomposition_kwargs,
-                )
+            weight_shape,
+            rank=self.rank,
+            factorization=factorization,
+            fixed_rank_modes=fixed_rank_modes,
+            **decomposition_kwargs,
+        )
         self.weight.normal_(0, init_std)
 
         self._contract = get_contract_fun(
@@ -401,10 +404,10 @@ class SphericalConv(BaseSpectralConv):
 
         self.sht_norm = sht_norm
         if isinstance(sht_grids, str):
-            sht_grids = [sht_grids]*2
+            sht_grids = [sht_grids] * 2
         self.sht_grids = sht_grids
         self.sht_handle = SHT(dtype=self.dtype, device=self.device)
-    
+
     def transform(self, x, output_shape=None):
         *_, in_height, in_width = x.shape
 
@@ -420,8 +423,12 @@ class SphericalConv(BaseSpectralConv):
         if ((in_height, in_width) == (height, width)) and (self.sht_grids[0] == self.sht_grids[1]):
             return x
         else:
-            coefs = self.sht_handle.sht(x, s=self.n_modes, norm=self.sht_norm, grid=self.sht_grids[0])
-            return self.sht_handle.isht(coefs, s=(height, width), norm=self.sht_norm, grid=self.sht_grids[1])
+            coefs = self.sht_handle.sht(
+                x, s=self.n_modes, norm=self.sht_norm, grid=self.sht_grids[0]
+            )
+            return self.sht_handle.isht(
+                coefs, s=(height, width), norm=self.sht_norm, grid=self.sht_grids[1]
+            )
 
     def forward(self, x, output_shape=None):
         """Generic forward pass for the Factorized Spectral Conv
@@ -444,18 +451,23 @@ class SphericalConv(BaseSpectralConv):
         elif output_shape is not None:
             height, width = output_shape[0], output_shape[1]
 
-        out_fft = self.sht_handle.sht(x, s=(self.n_modes[0], self.n_modes[1]//2),
-                                      norm=self.sht_norm, grid=self.sht_grids[0])
+        out_fft = self.sht_handle.sht(
+            x,
+            s=(self.n_modes[0], self.n_modes[1] // 2),
+            norm=self.sht_norm,
+            grid=self.sht_grids[0],
+        )
 
         out_fft = self._contract(
-            out_fft[:, :, :self.n_modes[0], :self.n_modes[1]//2],
-            self.weight[:, :, :self.n_modes[0]],
+            out_fft[:, :, : self.n_modes[0], : self.n_modes[1] // 2],
+            self.weight[:, :, : self.n_modes[0]],
             separable=self.separable,
             dhconv=True,
         )
 
-        x = self.sht_handle.isht(out_fft, s=(height, width), norm=self.sht_norm,
-                                 grid=self.sht_grids[1])
+        x = self.sht_handle.isht(
+            out_fft, s=(height, width), norm=self.sht_norm, grid=self.sht_grids[1]
+        )
 
         if self.bias is not None:
             x = x + self.bias
@@ -465,10 +477,10 @@ class SphericalConv(BaseSpectralConv):
     @property
     def n_modes(self):
         return self._n_modes
-    
+
     @n_modes.setter
     def n_modes(self, n_modes):
-        if isinstance(n_modes, int): # Should happen for 1D FNO only
+        if isinstance(n_modes, int):  # Should happen for 1D FNO only
             n_modes = [n_modes]
         else:
             n_modes = list(n_modes)

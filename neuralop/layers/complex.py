@@ -12,7 +12,7 @@ import torch.nn.functional as F
 def CGELU(x: torch.Tensor):
     """Complex GELU activation function
     Follows the formulation of CReLU from [1]_.
-    Applies GELU to real and imaginary parts of the input 
+    Applies GELU to real and imaginary parts of the input
     separately, then combine as complex number
 
 
@@ -20,18 +20,16 @@ def CGELU(x: torch.Tensor):
     -----------
     x : torch.tensor (dtype=complex)
         pre-activation inputs
-    
+
     References
     ----------
-    .. [1] : 
+    .. [1] :
 
-    Trabelsi, C., et al. (2018). "Deep Complex Networks". 
-        ICLR 2018, https://openreview.net/pdf?id=H1T2hmZAb. 
+    Trabelsi, C., et al. (2018). "Deep Complex Networks".
+        ICLR 2018, https://openreview.net/pdf?id=H1T2hmZAb.
     """
 
-    return F.gelu(x.real).type(torch.cfloat) + 1j * F.gelu(x.imag).type(
-        torch.cfloat
-    )
+    return F.gelu(x.real).type(torch.cfloat) + 1j * F.gelu(x.imag).type(torch.cfloat)
 
 
 def ctanh(x: torch.Tensor):
@@ -51,10 +49,8 @@ def apply_complex(real_func, imag_func, x, dtype=torch.cfloat):
     fi: a function (e.g., conv) to be applied on imag part of x
     x: complex input.
     """
-    return (real_func(x.real) - imag_func(x.imag)).type(dtype) + 1j *\
-          (real_func(x.imag) + imag_func(x.real)).type(
-        dtype
-    )
+    return (real_func(x.real) - imag_func(x.imag)).type(dtype) + 1j * (real_func(x.imag) + imag_func(x.real)).type(dtype)
+
 
 class ComplexValued(nn.Module):
     """
@@ -68,4 +64,4 @@ class ComplexValued(nn.Module):
         self.fi = deepcopy(module)
 
     def forward(self, x):
-        return apply_complex(self.fr, self.fi, x) 
+        return apply_complex(self.fr, self.fi, x)

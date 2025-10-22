@@ -1,8 +1,8 @@
-
 import torch
 import time
 from tensorly import tenalg
-tenalg.set_backend('einsum')
+
+tenalg.set_backend("einsum")
 from pathlib import Path
 import sys
 
@@ -10,7 +10,7 @@ from neuralop import get_model
 
 # Read the configuration
 from zencfg.from_commandline import make_config
-import sys 
+import sys
 from .test_config import TestConfig
 
 
@@ -27,9 +27,9 @@ def test_from_config():
     size = config.data.train_resolution
 
     if torch.has_cuda:
-        device = 'cuda'
+        device = "cuda"
     else:
-        device = 'cpu'
+        device = "cpu"
 
     model = get_model(config)
     model = model.to(device)
@@ -41,7 +41,7 @@ def test_from_config():
     t1 = time.time()
     out = model(in_data)
     t = time.time() - t1
-    print(f'Output of size {out.shape} in {t}.')
+    print(f"Output of size {out.shape} in {t}.")
 
     loss = out.sum()
     loss.backward()

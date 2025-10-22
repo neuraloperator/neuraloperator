@@ -3,14 +3,16 @@ from typing import List
 
 import torch
 
+
 class Transform(torch.nn.Module):
     """
-    Applies transforms or inverse transforms to 
+    Applies transforms or inverse transforms to
     model inputs or outputs, respectively
     """
+
     def __init__(self):
         super().__init__()
-    
+
     @abstractmethod
     def transform(self):
         pass
@@ -31,27 +33,33 @@ class Transform(torch.nn.Module):
     def to(self, device):
         pass
 
+
 class CompositeTransform(Transform):
+    """Composite transform composes a list of
+    Transforms into one Transform object.
+
+    Transformations are not assumed to be commutative
+
+    Parameters
+    ----------
+    transforms : List[Transform]
+        list of transforms to be applied to data
+        in order
+    """
+
     def __init__(self, transforms: List[Transform]):
-        """Composite transform composes a list of
-        Transforms into one Transform object.
+        """Initialize the CompositeTransform.
 
-        Transformations are not assumed to be commutative
-
-        Parameters
-        ----------
-        transforms : List[Transform]
-            list of transforms to be applied to data
-            in order
+        See class docstring for detailed parameter descriptions.
         """
         super.__init__()
         self.transforms = transforms
-    
+
     def transform(self, data_dict):
         for tform in self.transforms:
             data_dict = tform.transform(self.data_dict)
         return data_dict
-    
+
     def inverse_transform(self, data_dict):
         for tform in self.transforms[::-1]:
             data_dict = tform.transform(self.data_dict)
@@ -59,8 +67,9 @@ class CompositeTransform(Transform):
 
     def to(self, device):
         # all Transforms are required to implement .to()
-        self.transforms = [t.to(device) for t in self.transforms if hasattr(t, 'to')]
+        self.transforms = [t.to(device) for t in self.transforms if hasattr(t, "to")]
         return self
+
 
 class DictTransform(Transform):
     """When a model has multiple input and output fields,
@@ -87,12 +96,14 @@ class DictTransform(Transform):
         self.input_mappings = input_mappings
         self.return_mappings = return_mappings
 
-        assert transform_dict.keys() == input_mappings.keys(), \
-        f"Error: expected keys in transform_dict and input_mappings to match,\
+        assert (
+            transform_dict.keys() == input_mappings.keys()
+        ), f"Error: expected keys in transform_dict and input_mappings to match,\
              received {transform_dict.keys()=}\n{input_mappings.keys()=}"
         if self.return_mappings:
-            assert transform_dict.keys() == return_mappings.keys(), \
-        f"Error: expected keys in transform_dict and return_mappings to match,\
+            assert (
+                transform_dict.keys() == return_mappings.keys()
+            ), f"Error: expected keys in transform_dict and return_mappings to match,\
              received {transform_dict.keys()=}\n{return_mappings.keys()=}"
 
     def transform(self, tensor_dict):

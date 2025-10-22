@@ -8,6 +8,7 @@ import numpy as np
 # the class will build, but no files will be loaded.
 try:
     import open3d as o3d
+
     o3d_warn = False
 except ModuleNotFoundError:
     o3d_warn = True

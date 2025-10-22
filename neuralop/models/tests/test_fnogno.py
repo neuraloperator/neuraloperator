@@ -8,8 +8,9 @@ tenalg.set_backend("einsum")
 from ..fnogno import FNOGNO
 
 # Parameterize use of torch_scatter if it is built
-try: 
+try:
     from torch_scatter import segment_csr
+
     use_torch_scatter = [True, False]
 except:
     use_torch_scatter = [False]
@@ -20,8 +21,8 @@ except:
 )
 @pytest.mark.parametrize("fno_n_modes", [(8,), (8, 8), (8, 8, 8)])
 @pytest.mark.parametrize("gno_batched", [False, True])
-@pytest.mark.parametrize("gno_pos_embed_type", [None, 'transformer'])
-@pytest.mark.parametrize("fno_norm", [None, 'ada_in'])
+@pytest.mark.parametrize("gno_pos_embed_type", [None, "transformer"])
+@pytest.mark.parametrize("fno_norm", [None, "ada_in"])
 @pytest.mark.parametrize("use_torch_scatter", use_torch_scatter)
 def test_fnogno(gno_transform_type, fno_n_modes, gno_batched, gno_pos_embed_type, fno_norm, use_torch_scatter):
     if torch.has_cuda:
@@ -33,7 +34,7 @@ def test_fnogno(gno_transform_type, fno_n_modes, gno_batched, gno_pos_embed_type
     out_channels = 2
     batch_size = 4
     n_dim = len(fno_n_modes)
-    
+
     model = FNOGNO(
         in_channels=in_channels,
         out_channels=out_channels,
@@ -46,7 +47,7 @@ def test_fnogno(gno_transform_type, fno_n_modes, gno_batched, gno_pos_embed_type
         fno_norm=fno_norm,
         fno_ada_in_features=4,
         gno_use_open3d=False,
-        gno_use_torch_scatter=use_torch_scatter
+        gno_use_torch_scatter=use_torch_scatter,
     ).to(device)
 
     in_p_shape = [

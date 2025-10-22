@@ -2,11 +2,12 @@ from typing import List, Any, Optional
 
 from zencfg import ConfigBase
 
+
 class DistributedConfig(ConfigBase):
     """
-    DistributedConfig provides config options for multi-GPU 
+    DistributedConfig provides config options for multi-GPU
     and multi-node settings. Our current setup depends on ``torchrun``-based
-    Elastic Launch and the ``nccl`` distributed backend for communication. 
+    Elastic Launch and the ``nccl`` distributed backend for communication.
 
     Parameters
     ----------
@@ -18,6 +19,7 @@ class DistributedConfig(ConfigBase):
     seed: Optional[int] = None
         special distributed random torch seed for reproducibility.
     """
+
     use_distributed: bool = False
     model_parallel_size: Optional[int] = 1
     seed: Optional[int] = None

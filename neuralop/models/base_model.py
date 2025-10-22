@@ -5,11 +5,12 @@ from pathlib import Path
 
 # Author: Jean Kossaifi
 
+
 class BaseModel(torch.nn.Module):
     """Based class for all Models
 
     This class has two main functionalities:
-    * It monitors the creation of subclass, that are automatically registered 
+    * It monitors the creation of subclass, that are automatically registered
       for users to use by name using the library's config system
     * When a new instance of this class is created, the init call is intercepted
       so we can store the parameters used to create the instance.
@@ -18,16 +19,17 @@ class BaseModel(torch.nn.Module):
 
     Notes
     -----
-    Model can be versioned using the _version class attribute. 
-    This can be used for sanity check when loading models from checkpoints to verify the 
+    Model can be versioned using the _version class attribute.
+    This can be used for sanity check when loading models from checkpoints to verify the
     model hasn't been updated since.
     """
+
     _models = dict()
-    _version = '0.1.0'
+    _version = "0.1.0"
 
     def __init_subclass__(cls, name=None, **kwargs):
         """When a subclass is created, register it in _models
-        We look for an existing name attribute. 
+        We look for an existing name attribute.
         If not give, then we use the class' name.
         """
         super().__init_subclass__(**kwargs)
@@ -42,21 +44,23 @@ class BaseModel(torch.nn.Module):
     def __new__(cls, *args, **kwargs):
         """Verify arguments and save init kwargs for loading/saving
 
-        We inspect the class' signature and check for unused parameters, or 
-        parameters not passed. 
+        We inspect the class' signature and check for unused parameters, or
+        parameters not passed.
 
         We store all the args and kwargs given so we can duplicate the instance transparently.
         """
         sig = inspect.signature(cls)
         model_name = cls.__name__
 
-        verbose = kwargs.get('verbose', False)
+        verbose = kwargs.get("verbose", False)
         # Verify that given parameters are actually arguments of the model
         for key in kwargs:
             if key not in sig.parameters:
                 if verbose:
-                    print(f"Given argument key={key} "
-                        f"that is not in {model_name}'s signature.")
+                    print(
+                        f"Given argument key={key} "
+                        f"that is not in {model_name}'s signature."
+                    )
 
         # Check for model arguments not specified in the configuration
         for key, value in sig.parameters.items():
@@ -68,10 +72,10 @@ class BaseModel(torch.nn.Module):
                     )
                 kwargs[key] = value.default
 
-        if hasattr(cls, '_version'):
-            kwargs['_version'] = cls._version
-        kwargs['args'] = args
-        kwargs['_name'] = cls._name
+        if hasattr(cls, "_version"):
+            kwargs["_version"] = cls._version
+        kwargs["args"] = args
+        kwargs["_name"] = cls._name
         instance = super().__new__(cls)
         instance._init_kwargs = kwargs
 
@@ -92,7 +96,7 @@ class BaseModel(torch.nn.Module):
             a prefix added to parameter and buffer
             names to compose the keys in state_dict, by default ``''``
         keep_vars (bool, optional): by default the torch.Tensors
-            returned in the state dict are detached from autograd. 
+            returned in the state dict are detached from autograd.
             If True, detaching will not be performed, by default False
 
         """
@@ -126,32 +130,31 @@ class BaseModel(torch.nn.Module):
         _type_
             _description_
         """
-        metadata = state_dict.pop('_metadata', None)
+        metadata = state_dict.pop("_metadata", None)
 
         if metadata is not None:
-            saved_version = metadata.get('_version', None)
+            saved_version = metadata.get("_version", None)
             if saved_version is None:
                 warnings.warn(f"Saved instance of {self.__class__} has no stored version attribute.")
             if saved_version != self._version:
-                warnings.warn(f"Attempting to load a {self.__class__} of version {saved_version},"
-                              f"But current version of {self.__class__} is {saved_version}")
+                warnings.warn(
+                    f"Attempting to load a {self.__class__} of version {saved_version},"
+                    f"But current version of {self.__class__} is {saved_version}"
+                )
             # remove state dict metadata at the end to ensure proper loading with PyTorch module
         return super().load_state_dict(state_dict, strict=strict, assign=assign)
 
     def save_checkpoint(self, save_folder, save_name):
-        """Saves the model state and init param in the given folder under the given name
-        """
+        """Saves the model state and init param in the given folder under the given name"""
         save_folder = Path(save_folder)
         if not save_folder.exists():
             save_folder.mkdir(parents=True)
 
-        state_dict_filepath = save_folder.joinpath(f'{save_name}_state_dict.pt').as_posix()
+        state_dict_filepath = save_folder.joinpath(f"{save_name}_state_dict.pt").as_posix()
         torch.save(self.state_dict(), state_dict_filepath)
-        metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.pkl').as_posix()
+        metadata_filepath = save_folder.joinpath(f"{save_name}_metadata.pkl").as_posix()
         # Objects (e.g. GeLU) are not serializable by json - find a better solution in the future
         torch.save(self._init_kwargs, metadata_filepath)
-        # with open(metadata_filepath, 'w') as f:
-        #     json.dump(self._init_kwargs, f)
 
     def load_checkpoint(self, save_folder, save_name, map_location=None):
         save_folder = Path(save_folder)
@@ -162,16 +165,19 @@ class BaseModel(torch.nn.Module):
     def from_checkpoint(cls, save_folder, save_name, map_location=None):
         save_folder = Path(save_folder)
 
-        metadata_filepath = save_folder.joinpath(f'{save_name}_metadata.pkl').as_posix()
+        metadata_filepath = save_folder.joinpath(f"{save_name}_metadata.pkl").as_posix()
         init_kwargs = torch.load(metadata_filepath, weights_only=False)
-        
-        version = init_kwargs.pop('_version')
-        if hasattr(cls, '_version') and version != cls._version:
+
+        version = init_kwargs.pop("_version", None)
+        if hasattr(cls, "_version") and version != cls._version:
             print(version)
             warnings.warn(f'Checkpoint saved for version {version} of model {cls._name} but current code is version {cls._version}')
         
-        if 'args' in init_kwargs:
-            init_args = init_kwargs.pop('args')
+        # Remove metadata fields that shouldn't be passed to __init__
+        init_kwargs.pop("_name", None)
+
+        if "args" in init_kwargs:
+            init_args = init_kwargs.pop("args")
         else:
             init_args = []
         instance = cls(*init_args, **init_kwargs)
@@ -207,8 +213,11 @@ def get_model(config):
     model : nn.Module
         the instanciated module
     """
-    arch = config.model['model_arch'].lower()
-    model_config = config.model
+    arch = config.model["model_arch"].lower()
+    model_config = config.model.copy()
+
+    # Remove model_arch from config as it's not a model parameter
+    model_config.pop("model_arch", None)
 
     # Set the number of input channels depending on channels in data + mg patching
     data_channels = model_config.pop("data_channels")

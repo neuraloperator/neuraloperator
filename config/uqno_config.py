@@ -6,6 +6,7 @@ from .models import ModelConfig, FNO_Medium2d
 from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
 
+
 class SolutionModelOptConfig(OptimizationConfig):
     n_epochs: int = 300
     resume: bool = False
@@ -20,6 +21,7 @@ class SolutionModelOptConfig(OptimizationConfig):
     gamma: float = 0.5
     eval_interval: int = 1
 
+
 class ResidualModelOptConfig(OptimizationConfig):
     n_epochs: int = 300
     learning_rate: float = 5e-3
@@ -32,6 +34,7 @@ class ResidualModelOptConfig(OptimizationConfig):
     step_size: int = 60
     gamma: float = 0.5
     eval_interval: int = 1
+
 
 class UQNODarcyDatasetConfig(ConfigBase):
     root: str = "~/data/darcy"
@@ -47,11 +50,13 @@ class UQNODarcyDatasetConfig(ConfigBase):
     encode_input: bool = True
     encode_output: bool = True
 
+
 class UQNO_OptConfig(ConfigBase):
     alpha: float = 0.9
     delta: float = 0.95
     solution: SolutionModelOptConfig = SolutionModelOptConfig()
     residual: ResidualModelOptConfig = ResidualModelOptConfig()
+
 
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None

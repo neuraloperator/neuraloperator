@@ -10,7 +10,7 @@ from .wandb import WandbConfig
 class MGNOPoissonOptConfig(OptimizationConfig):
     n_epochs: int = 1000
     training_loss: List[str] = ["equation", "boundary"]
-    loss_weights: Dict[str, Any] = {'mse': 1.0, 'interior': 1e-2, 'boundary': 1.0}
+    loss_weights: Dict[str, Any] = {"mse": 1.0, "interior": 1e-2, "boundary": 1.0}
     pino_method: str = "autograd"
     weight_decay: float = 1e-6
     mixed_precision: bool = False
@@ -21,6 +21,7 @@ class MGNOPoissonOptConfig(OptimizationConfig):
     scheduler_patience: int = 2
     gamma: float = 0.9
     eval_interval: int = 1
+
 
 class NonlinearPoissonDatasetConfig(ConfigBase):
     file: str = "~/data/nonlin_poisson/nonlinear_poisson.obj"
@@ -41,6 +42,7 @@ class NonlinearPoissonDatasetConfig(ConfigBase):
     sample_random_in: Optional[Any] = None
     sample_random_out: Optional[Any] = None
     return_queries_dict: bool = True
+
 
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None

@@ -7,8 +7,9 @@ from .segment_csr import segment_csr
 
 
 class IntegralTransform(nn.Module):
-    """Integral Kernel Transform (GNO)
-    Computes one of the following:
+    """Integral Kernel Transform (GNO).
+    
+    It computes one of the following:
         (a) \\int_{A(x)} k(x, y) dy
         (b) \\int_{A(x)} k(x, y) * f(y) dy
         (c) \\int_{A(x)} k(x, y, f(y)) dy
@@ -32,35 +33,36 @@ class IntegralTransform(nn.Module):
 
     Parameters
     ----------
-    channel_mlp : torch.nn.Module, default None
+    channel_mlp : torch.nn.Module, optional
         MLP parametrizing the kernel k. Input dimension
         should be dim x + dim y or dim x + dim y + dim f.
         MLP should not be pointwise and should only operate across
         channels to preserve the discretization-invariance of the 
-        kernel integral.
-    channel_mlp_layers : list, default None
+        kernel integral, by default None
+    channel_mlp_layers : list, optional
         List of layers sizes speficing a MLP which
         parametrizes the kernel k. The MLP will be
-        instansiated by the LinearChannelMLP class
-    channel_mlp_non_linearity : callable, default torch.nn.functional.gelu
+        instansiated by the LinearChannelMLP class, by default None
+    channel_mlp_non_linearity : callable, optional
         Non-linear function used to be used by the
-        LinearChannelMLP class. Only used if channel_mlp_layers is
-        given and channel_mlp is None
-    transform_type : str, default 'linear'
-        Which integral transform to compute. The mapping is:
+        LinearChannelMLP class, by default F.gelu. Only used if channel_mlp_layers is
+        given and channel_mlp is None, by default torch.nn.functional.gelu
+    transform_type : str, optional
+        Which integral transform to compute. Options: 'linear_kernelonly', 'linear', 'nonlinear_kernelonly', 'nonlinear'.
+        The mapping is:
         'linear_kernelonly' -> (a)
         'linear' -> (b)
         'nonlinear_kernelonly' -> (c)
         'nonlinear' -> (d)
         If the input f is not given then (a) is computed
-        by default independently of this parameter.
-    use_torch_scatter : bool, default 'True'
-        whether to use ``torch-scatter`` to perform grouped reductions in the ``IntegralTransform``. 
-        If False, uses native Python reduction in ``neuralop.layers.segment_csr``, by default True
+        by default independently of this parameter, by default 'linear'
+    use_torch_scatter : bool, optional
+        Whether to use torch-scatter to perform grouped reductions in the IntegralTransform. 
+        If False, uses native Python reduction in neuralop.layers.segment_csr, by default True
 
         .. warning:: 
 
-            ``torch-scatter`` is an optional dependency that conflicts with the newest versions of PyTorch,
+            torch-scatter is an optional dependency that conflicts with the newest versions of PyTorch,
             so you must handle the conflict explicitly in your environment. See :ref:`torch_scatter_dependency` 
             for more information. 
     """
@@ -72,7 +74,7 @@ class IntegralTransform(nn.Module):
         channel_mlp_non_linearity=F.gelu,
         transform_type="linear",
         weighting_fn=None,
-        reduction='sum',
+        reduction="sum",
         use_torch_scatter=True,
     ):
         super().__init__()
@@ -94,15 +96,17 @@ class IntegralTransform(nn.Module):
             )
 
         if channel_mlp is None:
-            self.channel_mlp = LinearChannelMLP(layers=channel_mlp_layers, non_linearity=channel_mlp_non_linearity)
+            self.channel_mlp = LinearChannelMLP(
+                layers=channel_mlp_layers, non_linearity=channel_mlp_non_linearity
+            )
         else:
             self.channel_mlp = channel_mlp
-        
+
         self.weighting_fn = weighting_fn
 
     def forward(self, y, neighbors, x=None, f_y=None, weights=None):
-        """Compute a kernel integral transform. Assumes x=y if not specified. 
-        
+        """Compute a kernel integral transform. Assumes x=y if not specified.
+
         Integral is taken w.r.t. the neighbors.
 
         If no weights are given, a Monte-Carlo approximation is made.
@@ -192,7 +196,7 @@ class IntegralTransform(nn.Module):
             if rep_features.ndim == 2 and batched:
                 rep_features = rep_features.unsqueeze(0).repeat([batch_size] + [1] * rep_features.ndim)
             rep_features.mul_(in_features)
-        
+
         # Weight neighbors in each neighborhood, first according to the neighbor search (mollified GNO)
         # and second according to individually-provided weights.
         nbr_weights = neighbors.get("weights")
@@ -205,14 +209,19 @@ class IntegralTransform(nn.Module):
             if self.weighting_fn is not None:
                 nbr_weights = self.weighting_fn(nbr_weights)
             rep_features.mul_(nbr_weights)
-            reduction = "sum" # Force sum reduction for weighted GNO layers
+            reduction = "sum"  # Force sum reduction for weighted GNO layers
 
         else:
             reduction = self.reduction
-        
+
         splits = neighbors["neighbors_row_splits"]
         if batched:
             splits = splits.unsqueeze(0).repeat([batch_size] + [1] * (splits.ndim))
 
-        out_features = segment_csr(rep_features, splits, reduction=reduction, use_scatter=self.use_torch_scatter)
+        out_features = segment_csr(
+            rep_features,
+            splits,
+            reduction=reduction,
+            use_scatter=self.use_torch_scatter,
+        )
         return out_features

@@ -7,13 +7,15 @@ import torch
 wandb_available = False
 try:
     import wandb
+
     wandb_available = True
 except ModuleNotFoundError:
     wandb_available = False
 
+
 def count_model_params(model):
     """Returns the total number of parameters of a PyTorch model
-    
+
     Notes
     -----
     One complex number is counted as two parameters (we count real and imaginary parts)'
@@ -21,6 +23,7 @@ def count_model_params(model):
     return sum(
         [p.numel() * 2 if p.is_complex() else p.numel() for p in model.parameters()]
     )
+
 
 def count_tensor_params(tensor, dims=None):
     """Returns the number of parameters (elements) in a single tensor, optionally, along certain dimensions only
@@ -30,7 +33,7 @@ def count_tensor_params(tensor, dims=None):
     tensor : torch.tensor
     dims : int list or None, default is None
         if not None, the dimensions to consider when counting the number of parameters (elements)
-    
+
     Notes
     -----
     One complex number is counted as two parameters (we count real and imaginary parts)'
@@ -41,7 +44,7 @@ def count_tensor_params(tensor, dims=None):
         dims = [tensor.shape[d] for d in dims]
     n_params = prod(dims)
     if tensor.is_complex():
-        return 2*n_params
+        return 2 * n_params
     return n_params
 
 
@@ -90,17 +93,17 @@ def spectrum_2d(signal, n_observations, normalize=True):
     n_observations: an integer
         Number of discretized points. Basically the resolution of the signal.
     normalize: bool
-        whether to apply normalization to the output of the 2D FFT. 
+        whether to apply normalization to the output of the 2D FFT.
         If True, normalizes the outputs by ``1/n_observations``
-        (actually ``1/sqrt(n_observations * n_observations)``). 
+        (actually ``1/sqrt(n_observations * n_observations)``).
     Returns
     --------
     spectrum: a tensor
         A 1D tensor of shape (s,) representing the computed spectrum.
         The spectrum is computed using a square approximation to radial
-        binning, meaning that the wavenumber 'bin' into which a particular 
-        coefficient is the coefficient's location along the diagonal, indexed 
-        from the top-left corner of the 2d FFT output. 
+        binning, meaning that the wavenumber 'bin' into which a particular
+        coefficient is the coefficient's location along the diagonal, indexed
+        from the top-left corner of the 2d FFT output.
     """
     T = signal.shape[0]
     signal = signal.view(T, n_observations, n_observations)
@@ -125,7 +128,7 @@ def spectrum_2d(signal, n_observations, normalize=True):
     k_y = wavenumers
 
     # Sum wavenumbers
-    sum_k = torch.abs(k_x) + torch.abs(k_y)
+    sum_k = torch.sqrt(k_x**2 + k_y**2)
     sum_k = sum_k
 
     # Remove symmetric components from wavenumbers
@@ -136,7 +139,7 @@ def spectrum_2d(signal, n_observations, normalize=True):
     spectrum = torch.zeros((T, n_observations))
     for j in range(1, n_observations + 1):
         ind = torch.where(index == j)
-        spectrum[:, j - 1] = (signal[:, ind[0], ind[1]].sum(dim=1)).abs() ** 2
+        spectrum[:, j - 1] = (signal[:, ind[0], ind[1]].abs() ** 2).sum(dim=1)
 
     spectrum = spectrum.mean(dim=0)
     return spectrum
@@ -166,7 +169,7 @@ def validate_scaling_factor(
             return [float(scaling_factor)] * n_dim
 
         return [[float(scaling_factor)] * n_dim] * n_layers
-    
+
     if (
         isinstance(scaling_factor, list)
         and len(scaling_factor) > 0
@@ -193,19 +196,22 @@ def validate_scaling_factor(
 
     return None
 
+
 def compute_rank(tensor):
     # Compute the matrix rank of a tensor
     rank = torch.matrix_rank(tensor)
     return rank
 
+
 def compute_stable_rank(tensor):
     # Compute the stable rank of a tensor
     tensor = tensor.detach()
-    fro_norm = torch.linalg.norm(tensor, ord='fro')**2
-    l2_norm = torch.linalg.norm(tensor, ord=2)**2
+    fro_norm = torch.linalg.norm(tensor, ord="fro") ** 2
+    l2_norm = torch.linalg.norm(tensor, ord=2) ** 2
     rank = fro_norm / l2_norm
     rank = rank
     return rank
+
 
 def compute_explained_variance(frequency_max, s):
     # Compute the explained variance based on frequency_max and singular
@@ -213,6 +219,7 @@ def compute_explained_variance(frequency_max, s):
     s_current = s.clone()
     s_current[frequency_max:] = 0
     return 1 - torch.var(s - s_current) / torch.var(s)
+
 
 def get_project_root():
     root = Path(__file__).parent.parent

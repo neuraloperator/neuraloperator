@@ -2,8 +2,18 @@
 .. _finite_diff :
 
 Finite Differences
-========================================================
-An example of usage of Finite Differences 
+==================
+
+This tutorial demonstrates the use of finite difference methods for computing
+derivatives of functions in neural operators. Finite differences are crucial for:
+
+- Computing gradients and higher-order derivatives
+- Implementing physics-informed loss functions
+- Enforcing differential equation constraints
+- Computing divergence, curl, and Laplacian operators
+
+The `FiniteDiff` class provides efficient implementations of finite difference
+schemes for computing derivatives in 1D, 2D, and 3D domains.
 """
 
 import torch
@@ -12,11 +22,19 @@ import numpy as np
 from neuralop.losses.differentiation import FiniteDiff
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # 1D Finite Difference Examples
 # =============================
 # Here we demonstrate the FiniteDiff class for 1D functions
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating an example of 1D function
 # -----------------------------------------------
 # Here we consider f(x) = exp(-x) * sin(x) on [0, 2π]
@@ -27,6 +45,10 @@ x = torch.linspace(0, L_x, nx, dtype=torch.float64)
 f_1d = torch.exp(-x) * torch.sin(x)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Differentiate the 1D signal 
 # ----------------------------------------------------------------
 # We use the FiniteDiff class with dim=1
@@ -42,6 +64,10 @@ df_dx_expected = torch.exp(-x) * (torch.cos(x) - torch.sin(x))  # ∂f/∂x
 d2f_dx2_expected = torch.exp(-x) * (-2*torch.cos(x))  # ∂²f/∂x²
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Plot the 1D results
 # ---------------------------------
 fig, axes = plt.subplots(3, 1, figsize=(10, 18))
@@ -73,11 +99,19 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # 2D Finite Difference Examples
 # =============================
 # Here we demonstrate the FiniteDiff class for 2D functions
 
-# %% fix 
+# %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating an example of 2D function
 # -----------------------------------------------
 # Here we consider f(x,y) = exp(-x) * sin(y), which is non-periodic on [0, 2π] × [0, 2π]
@@ -91,6 +125,10 @@ X, Y = torch.meshgrid(x, y, indexing='ij')
 f_2d = torch.exp(-X) * torch.sin(Y)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Differentiate the 2D signal 
 # ----------------------------------------------------------------
 # We use the FiniteDiff class with dim=2 to compute derivatives
@@ -111,6 +149,10 @@ d2f_dy2_expected = -torch.exp(-X) * torch.sin(Y)  # ∂²f/∂y²
 laplacian_expected = torch.zeros_like(X)  # ∇²f
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Plot the 2D results
 # ---------------------------------
 fig, axes = plt.subplots(2, 4, figsize=(20, 10))
@@ -177,6 +219,10 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Test gradient computation
 # -------------------------
 # Compute gradient of the scalar field
@@ -209,6 +255,10 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Test vector field operations
 # -----------------------------
 # Create a vector field: u = [exp(-x), sin(y)]
@@ -227,6 +277,10 @@ divergence_expected = -torch.exp(-X) + torch.cos(Y)
 curl_expected = torch.zeros_like(X)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Plot vector field operations
 # -----------------------------
 fig, axes = plt.subplots(2, 3, figsize=(18, 12))
@@ -279,6 +333,10 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Additional verification plots
 # -----------------------------
 # Show second derivatives with consistent colorbars
@@ -309,11 +367,19 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # 3D Finite Difference Examples
 # =============================
 # Here we demonstrate the FiniteDiff class for 3D functions
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Creating an example of 3D function
 # -----------------------------------------------
 # Here we consider f(x,y,z) = exp(-x) * sin(y) * cos(z), which is on [0, 2π]³
@@ -328,6 +394,10 @@ X, Y, Z = torch.meshgrid(x, y, z, indexing='ij')
 f_3d = torch.exp(-X) * torch.sin(Y) * torch.cos(Z)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Differentiate the 3D signal 
 # ----------------------------------------------------------------
 # We use the FiniteDiff class with dim=3 to compute derivatives
@@ -355,6 +425,10 @@ d2f_dz2_expected = -torch.exp(-X) * torch.sin(Y) * torch.cos(Z)  # ∂²f/∂z²
 laplacian_3d_expected = -torch.exp(-X) * torch.sin(Y) * torch.cos(Z)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Plot 3D results at a specific z-slice
 # -------------------------------------
 z_slice_idx = nz // 2  # Middle z-slice
@@ -412,6 +486,10 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Test 3D gradient computation
 # -----------------------------
 # Compute gradient of the 3D scalar field
@@ -453,6 +531,10 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Test 3D vector field operations
 # --------------------------------
 # Create a 3D vector field: u = [exp(-x), sin(y), cos(z)]
@@ -469,6 +551,10 @@ divergence_3d = fd3d.divergence(u_vector_3d)
 divergence_3d_expected = -torch.exp(-X) + torch.cos(Y) - torch.sin(Z)
 
 # %%
+# .. raw:: html
+# 
+#    <div style="margin-top: 3em;"></div>
+# 
 # Plot 3D vector field operations at z-slice
 # -------------------------------------------
 fig, axes = plt.subplots(2, 3, figsize=(18, 12))

@@ -33,7 +33,7 @@ class AdamW(Optimizer):
         Rank of low-rank subspace in which to optimize `galore_params`.
         Either a float corresponding to a percentage of params
         to preserve, or an list of int ranks corresponding to
-        each mode of the tensor. If a single int is given, it is used 
+        each mode of the tensor. If a single int is given, it is used
         for all modes (see `neuralop/training/tensor_galore_projector.py`)
     galore_update_proj_gap : `int`, defaults to 50
         Number of optimizer steps before projection tensors are recomputed,
@@ -49,12 +49,12 @@ class AdamW(Optimizer):
     .. _[1] : Loschchilov, I. and Hutter, F. (2019). Decoupled Decay Regularization.
          ICLR 2019, https://arxiv.org/pdf/1711.05101.
 
-    .. _[2] : Zhao, J, Zhang, Z., Chen, B., Wang, Z., Anandkumar, A., Tian Y. (2024). 
+    .. _[2] : Zhao, J, Zhang, Z., Chen, B., Wang, Z., Anandkumar, A., Tian Y. (2024).
         GaLore: Memory-Efficient LLM Training by Gradient Low-Rank Projection. ICML 2024,
         https://arxiv.org/abs/2403.03507.
-    
-    .. _[3] : George, R., Pitt, D., Zhao, J., Kossaifi, J., Luo, C., Tian, Y., Anandkumar, A (2024). 
-        Tensor-GaLore: Memory-Efficient Training via Gradient Tensor Decomposition. arXiv preprint, 
+
+    .. _[3] : George, R., Pitt, D., Zhao, J., Kossaifi, J., Luo, C., Tian, Y., Anandkumar, A (2024).
+        Tensor-GaLore: Memory-Efficient Training via Gradient Tensor Decomposition. arXiv preprint,
         https://arxiv.org/pdf/2501.02379.
     """
 
@@ -66,14 +66,13 @@ class AdamW(Optimizer):
         eps: float = 1e-6,
         weight_decay: float = 0.0,
         correct_bias: bool = True,
-        galore_params: Iterable[nn.parameter.Parameter]=None,
-        galore_rank: Union[float, int, Tuple[int]]=1.0, 
-        galore_update_proj_gap: int=50,
-        galore_scale: float=1.0,
+        galore_params: Iterable[nn.parameter.Parameter] = None,
+        galore_rank: Union[float, int, Tuple[int]] = 1.0,
+        galore_update_proj_gap: int = 50,
+        galore_scale: float = 1.0,
         activation_checkpoint: bool = False,
-        warm_restart: bool=True,
+        warm_restart: bool = True,
     ):
-        
         if lr < 0.0:
             raise ValueError(f"Invalid learning rate: {lr} - should be >= 0.0")
         if not 0.0 <= betas[0] < 1.0:
@@ -82,21 +81,29 @@ class AdamW(Optimizer):
             raise ValueError(f"Invalid beta parameter: {betas[1]} - should be in [0.0, 1.0)")
         if not 0.0 <= eps:
             raise ValueError(f"Invalid epsilon value: {eps} - should be >= 0.0")
-        defaults = {"lr": lr, "betas": betas, "eps": eps, "weight_decay": weight_decay, "correct_bias": correct_bias}
+        defaults = {
+            "lr": lr,
+            "betas": betas,
+            "eps": eps,
+            "weight_decay": weight_decay,
+            "correct_bias": correct_bias,
+        }
         super().__init__(params, defaults)
-        
+
         # Keep optional GaLore parameters separate for projection
         if galore_params is not None:
-        
-            self.add_param_group({'params': galore_params,
-                                'rank': galore_rank,
-                                'lr': lr,
-                                'betas': betas,
-                                'eps': eps,
-                                'weight_decay': weight_decay,
-                                'correct_bias': correct_bias,
-                                'galore': True
-                                })
+            self.add_param_group(
+                {
+                    "params": galore_params,
+                    "rank": galore_rank,
+                    "lr": lr,
+                    "betas": betas,
+                    "eps": eps,
+                    "weight_decay": weight_decay,
+                    "correct_bias": correct_bias,
+                    "galore": True,
+                }
+            )
         self.galore_rank = galore_rank
         self.activation_checkpoint = activation_checkpoint
         self.warm_restart = warm_restart
@@ -124,20 +131,21 @@ class AdamW(Optimizer):
                     raise RuntimeError("Adam does not support sparse gradients, please consider SparseAdam instead")
 
                 state = self.state[p]
-                
+
                 if "step" not in state:
                     state["step"] = 0
-                
+
                 # GaLore Projection
-                if group.get('galore', False):
+                if group.get("galore", False):
                     if "projector" not in state:
                         state["projector"] = TensorGaLoreProjector(
-                            rank=self.galore_rank, 
+                            rank=self.galore_rank,
                             update_proj_gap=self.galore_update_proj_gap,
-                            scale=self.galore_scale, 
+                            scale=self.galore_scale,
                             activation_checkpoint=self.activation_checkpoint,
-                            warm_restart=self.warm_restart)
-                    
+                            warm_restart=self.warm_restart,
+                        )
+
                     # track tensor shape for projection back
                     proj_input = grad
                     grad = state["projector"].project(proj_input, state["step"])
@@ -171,11 +179,11 @@ class AdamW(Optimizer):
 
                 # compute norm gradient
                 norm_grad = exp_avg / denom
-                
+
                 # GaLore Projection Back
-                if group.get('galore', False):
+                if group.get("galore", False):
                     norm_grad = state["projector"].project_back(norm_grad)
-                    
+
                 p.add_(norm_grad, alpha=-step_size)
 
                 # Just adding the square of the weights to the loss function is *not*

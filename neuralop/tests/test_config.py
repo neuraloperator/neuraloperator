@@ -6,9 +6,11 @@ from config.models import ModelConfig, FNO_Small2d
 from config.opt import OptimizationConfig, PatchingConfig
 from config.wandb import WandbConfig
 
+
 class Data(ConfigBase):
     train_resolution: int = 128
     batch_size: int = 2
+
 
 class TestConfig(ConfigBase):
     n_params_baseline: Optional[Any] = None
@@ -16,9 +18,6 @@ class TestConfig(ConfigBase):
     distributed: DistributedConfig = DistributedConfig()
     model: ModelConfig = FNO_Small2d()
     data: Data = Data()
-    opt: OptimizationConfig = OptimizationConfig(
-        n_epochs=10
-    )
+    opt: OptimizationConfig = OptimizationConfig(n_epochs=10)
     patching: PatchingConfig = PatchingConfig()
     wandb: WandbConfig = WandbConfig()
-

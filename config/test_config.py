@@ -7,6 +7,7 @@ from .models import ModelConfig, SimpleFNOConfig
 from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
 
+
 class TestConfig(ConfigBase):
     n_params_baseline: Optional[Any] = None
     verbose: bool = True
@@ -14,7 +15,7 @@ class TestConfig(ConfigBase):
     model: ModelConfig = SimpleFNOConfig(
         data_channels=1,
         out_channels=1,
-        n_modes=[64,64],
+        n_modes=[64, 64],
         hidden_channels=64,
         n_layers=4,
         projection_channel_ratio=4,
@@ -40,8 +41,7 @@ class TestConfig(ConfigBase):
     )
     patching: PatchingConfig = PatchingConfig()
     wandb: WandbConfig = WandbConfig(
-        log=False, # turn this to True to log to wandb
+        log=False,  # turn this to True to log to wandb
         entity="my_entity",
-        project="my_project"
+        project="my_project",
     )
-

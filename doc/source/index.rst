@@ -41,6 +41,12 @@ provides all of the tools to do so on your own data.
 NeuralOperators are also resolution invariant, 
 so your trained operator can be applied on data of any resolution.
 
+
+.. raw:: html
+
+   <br/>
+
+
 Quickstart
 ==========
 
@@ -56,8 +62,12 @@ To create a Fourier Neural Operator model:
 
    from neuralop.models import FNO
 
-   operator = FNO(n_modes=(16, 16), hidden_channels=64,
-                   in_channels=3, out_channels=1)
+   operator = FNO(
+      n_modes=(32, 32), 
+      hidden_channels=64,
+      in_channels=2, 
+      out_channels=1
+   )
 
 To save the weights of the trained model:
 
@@ -82,8 +92,10 @@ To import the data:
    from neuralop.data.datasets import load_darcy_flow_small
 
    train_loader, test_loaders, data_processor = load_darcy_flow_small(
-        n_train=1000, batch_size=32, 
-        test_resolutions=[32], n_tests=[100],
+        n_train=1000, 
+        batch_size=32, 
+        n_tests=[100],
+        test_resolutions=[32], 
         test_batch_sizes=[32],
    )
 
@@ -97,18 +109,22 @@ We provide a ``Trainer`` object that automates the logic of a basic neural opera
    from neuralop.training import Trainer
 
    # Create the trainer
-   trainer = Trainer(model=model, n_epochs=20,
-                     data_processor=data_processor,
-                     verbose=True)
+   trainer = Trainer(
+      model=model, 
+      n_epochs=20,
+      data_processor=data_processor,
+      verbose=True)
 
    # train the model
-   trainer.train(train_loader=train_loader,
-              test_loaders=test_loaders,
-              optimizer=optimizer,
-              scheduler=scheduler, 
-              regularizer=False, 
-              training_loss=train_loss,
-              eval_losses=eval_losses)
+   trainer.train(
+      train_loader=train_loader,
+      test_loaders=test_loaders,
+      optimizer=optimizer,
+      scheduler=scheduler, 
+      regularizer=False, 
+      training_loss=train_loss,
+      eval_losses=eval_losses
+   )
 
 Weight tensorization is also provided out of the box: you can improve the previous models
 by simply using a Tucker Tensorized FNO with just a few parameters:
@@ -117,12 +133,15 @@ by simply using a Tucker Tensorized FNO with just a few parameters:
 
    from neuralop.models import TFNO
 
-   operator = TFNO(n_modes=(16, 16), hidden_channels=64,
-                   in_channels=3, 
-                   out_channels=1,
-                   factorization='tucker',
-                   implementation='factorized'
-                   rank=0.05)
+   operator = TFNO(
+      n_modes=(32, 32), 
+      hidden_channels=64,
+      in_channels=2, 
+      out_channels=1,
+      factorization='tucker',
+      implementation='factorized',
+      rank=0.05
+   )
 
 This will use a Tucker factorization of the weights. The forward pass
 will be efficient by contracting directly the inputs with the factors
