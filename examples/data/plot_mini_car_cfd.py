@@ -72,7 +72,6 @@ ax = fig.add_subplot(projection="3d")
 # better look at it, we scale the z-direction up.
 scatter = ax.scatter(sample["vertices"][:, 0], sample["vertices"][:, 1],
                      sample["vertices"][:, 2] * 2, s=2, c=sample["press"].numpy(), cmap="viridis") 
-                     sample['vertices'][:,2]*2, s=2, c=sample['press'].numpy(), cmap='viridis') 
 ax.set_xlim(0,2)
 ax.set_ylim(0,2)
 ax.set_xlabel("x")
@@ -94,10 +93,9 @@ plt.draw()
 # on top of the car from before:
 fig = plt.figure(figsize=(8,10))
 ax = fig.add_subplot(projection="3d")
-scatter = ax.scatter(sample['vertices'][:,0],sample['vertices'][:,1],
-                     sample['vertices'][:,2]*2, s=4, label="Car surface")
-queries = sample['query_points'].view(-1, 3) # unroll our cube tensor into a point cloud
-ax.scatter(queries[:,0],queries[:,1],queries[:,2]*2,s=1, alpha=0.5, label="Latent queries")
+scatter = ax.scatter(sample["vertices"][:, 0], sample["vertices"][:, 1], sample["vertices"][:, 2] * 2, s=4, label="Car surface")
+queries = sample["query_points"].view(-1, 3) # unroll our cube tensor into a point cloud
+ax.scatter(queries[:, 0], queries[:, 1], queries[:, 2] * 2, s=1, alpha=0.5, label="Latent queries")
 
 ax.set_xlim(0, 2)
 ax.set_ylim(0, 2)
