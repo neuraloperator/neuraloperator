@@ -48,11 +48,11 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 train_loader, test_loaders = load_spherical_swe(
     n_train=200,
-    batch_size=8,
+    batch_size=32,
     train_resolution=(32, 64),
     test_resolutions=[(32, 64), (64, 128)],
-    n_tests=[50, 50],
-    test_batch_sizes=[10, 10],
+    n_tests=[40, 40],
+    test_batch_sizes=[40, 40],
 )
 
 
@@ -71,6 +71,7 @@ model = SFNO(
     out_channels=3,
     hidden_channels=64,
     domain_padding=[0.05, 0.05],
+    n_layers=2,
 )
 model = model.to(device)
 
@@ -175,7 +176,7 @@ trainer.train(
 #
 # In practice we would train a Neural Operator on one or multiple GPUs
 
-fig = plt.figure(figsize=(7, 7))
+fig = plt.figure(figsize=(14, 7))
 for index, resolution in enumerate([(32, 64), (64, 128)]):
     test_samples = test_loaders[resolution].dataset
     data = test_samples[0]
@@ -195,20 +196,24 @@ for index, resolution in enumerate([(32, 64), (64, 128)]):
     plt.xticks([], [])
     plt.yticks([], [])
 
+    # Compute the min and max to use consistent color mapping
+    vmin = y.min()
+    vmax = y.max()
+
     # Plot ground-truth fields
     ax = fig.add_subplot(2, 3, index * 3 + 2)
-    ax.imshow(y)
+    im_gt = ax.imshow(y, vmin=vmin, vmax=vmax)
     ax.set_title("Ground-truth y")
     plt.xticks([], [])
     plt.yticks([], [])
 
     # Plot model prediction
     ax = fig.add_subplot(2, 3, index * 3 + 3)
-    ax.imshow(out)
+    im_pred = ax.imshow(out, vmin=vmin, vmax=vmax)
     ax.set_title("SFNO prediction")
     plt.xticks([], [])
     plt.yticks([], [])
 
-fig.suptitle("SFNO predictions on spherical shallow water equations", y=0.98)
+fig.suptitle("SFNO predictions on spherical shallow water equations", y=0.98, fontsize=24)
 plt.tight_layout()
 fig.show()
