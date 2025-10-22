@@ -13,9 +13,9 @@ dataset structure and visualize how the data is processed for neural operator tr
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Import the library
 # ------------------
 # We first import our `neuralop` library and required dependencies.
@@ -26,26 +26,29 @@ from neuralop.layers.embeddings import GridEmbedding2D
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Load the dataset
 # ----------------
-# Training samples are 16x16 and we load testing samples at both 
+# Training samples are 16x16 and we load testing samples at both
 # 16x16 and 32x32 (to test resolution invariance).
 
 train_loader, test_loaders, data_processor = load_darcy_flow_small(
-        n_train=100, batch_size=4, 
-        test_resolutions=[16, 32], n_tests=[50, 50], test_batch_sizes=[4, 2],
-        )
+    n_train=20,
+    batch_size=4,
+    test_resolutions=[16, 32],
+    n_tests=[10, 10],
+    test_batch_sizes=[4, 2],
+)
 
 train_dataset = train_loader.dataset
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Visualizing the data
 # --------------------
 # Let's examine the shape and structure of our dataset at different resolutions.
@@ -54,17 +57,17 @@ for res, test_loader in test_loaders.items():
     print(f"Resolution: {res}")
     # Get first batch
     batch = next(iter(test_loader))
-    x = batch['x']  # Input
-    y = batch['y']  # Output
+    x = batch["x"]  # Input
+    y = batch["y"]  # Output
 
-    print(f'Testing samples for resolution {res} have shape {x.shape[1:]}')
+    print(f"Testing samples for resolution {res} have shape {x.shape[1:]}")
 
 
 data = train_dataset[0]
-x = data['x']
-y = data['y']
+x = data["x"]
+y = data["y"]
 
-print(f'Training samples have shape {x.shape[1:]}')
+print(f"Training samples have shape {x.shape[1:]}")
 
 # Which sample to view
 index = 0
@@ -78,14 +81,14 @@ data = data_processor.preprocess(data, batched=False)
 positional_embedding = GridEmbedding2D(in_channels=1)
 # At train time, data will be collated with a batch dimension.
 # We create a batch dimension to pass into the embedding, then re-squeeze
-x = positional_embedding(data['x'].unsqueeze(0)).squeeze(0)
-y = data['y']
+x = positional_embedding(data["x"].unsqueeze(0)).squeeze(0)
+y = data["y"]
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Visualizing the processed data
 # ------------------------------
 # We can see how the positional embedding adds coordinate information to our input data.
@@ -93,17 +96,17 @@ y = data['y']
 
 fig = plt.figure(figsize=(7, 7))
 ax = fig.add_subplot(2, 2, 1)
-ax.imshow(x[0], cmap='gray')
-ax.set_title('Input x')
+ax.imshow(x[0], cmap="gray")
+ax.set_title("Input x")
 ax = fig.add_subplot(2, 2, 2)
 ax.imshow(y.squeeze())
-ax.set_title('Output y')
+ax.set_title("Output y")
 ax = fig.add_subplot(2, 2, 3)
 ax.imshow(x[1])
-ax.set_title('Positional embedding: x-coordinates')
+ax.set_title("Positional embedding: x-coordinates")
 ax = fig.add_subplot(2, 2, 4)
 ax.imshow(x[2])
-ax.set_title('Positional embedding: y-coordinates')
-fig.suptitle('Visualizing one input sample with positional embeddings', y=0.98)
+ax.set_title("Positional embedding: y-coordinates")
+fig.suptitle("Visualizing one input sample with positional embeddings", y=0.98)
 plt.tight_layout()
 fig.show()
