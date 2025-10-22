@@ -1,4 +1,4 @@
-__version__ = "1.0.2"
+__version__ = "2.0.0"
 
 from .models import TFNO, FNO, get_model
 from .data import datasets, transforms
