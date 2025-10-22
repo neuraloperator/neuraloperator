@@ -5,10 +5,11 @@ import torch.nn.functional as F
 from torch import Tensor
 from typing import List, Tuple, Union, Literal
 import math
-
 from functools import partial
 from scipy.special import eval_legendre
-from sympy import Poly, legendre, Symbol, chebyshevt
+from numpy.polynomial.legendre import Legendre
+from numpy.polynomial.chebyshev import Chebyshev
+
 
 
 class WaveletUtils:
@@ -33,8 +34,8 @@ class WaveletUtils:
             
         Returns
         -------
-        out : array_like
-            Derivative values at the given points
+        ndarray
+            Derivative values with shape x.shape
         """
 
         def _legendre(k, x):
@@ -45,657 +46,1506 @@ class WaveletUtils:
         return out
 
     @staticmethod
-    def phi_(phi_c, x, lb=0, ub=1):
+    def phi_(phi_coeffs, x, lower_bound=0, upper_bound=1):
         """
         Evaluate a polynomial basis function with compact support.
         
         This function evaluates a polynomial defined by coefficients phi_c,
-        but sets the value to zero outside the interval [lb, ub].
+        but sets the value to zero outside the interval [lower_bound, upper_bound].
         
         Parameters
         ----------
-        phi_c : array_like
-            Polynomial coefficients
+        phi_coeffs : array_like
+            Polynomial coefficients, ordered from lowest to highest degree.
+            Shape depends on the wavelet construction:
+            - 1D wavelets: shape (k,)
+            - 2D wavelets: shape (k,) or (k, k) for tensor products
+            - 3D wavelets: shape (k,) or (k, k, k) for tensor products
         x : array_like
-            Points at which to evaluate the polynomial
-        lb : float, optional
+            Points at which to evaluate the polynomial.
+            - Can be 1D array of shape (n,) for evaluating at n points
+            - Can be 2D array of shape (m, n) for broadcasting
+            - Can be 3D array of shape (m, n, p) for 3D evaluation
+            - Generally any shape supported by numpy polynomial evaluation
+        lower_bound : float, optional
             Lower bound of the support interval, default 0
-        ub : float, optional
+        upper_bound : float, optional
             Upper bound of the support interval, default 1
             
         Returns
         -------
-        array_like
-            Polynomial values, zero outside [lb, ub]
+        ndarray
+        Polynomial values at x, with shape x.shape. Values outside
+        [lower_bound, upper_bound] are set to zero.
         """
-        mask = np.logical_or(x<lb, x>ub) * 1.0
-        return np.polynomial.polynomial.Polynomial(phi_c)(x) * (1-mask)
+        mask = np.logical_or(x<lower_bound, x>upper_bound) * 1.0
+        return np.polynomial.polynomial.Polynomial(phi_coeffs)(x) * (1-mask)
 
     @classmethod
     def get_phi_psi(cls, k, base):
         """
-        Generate scaling functions (phi) and wavelet functions (psi) for the given basis.
-        
-        This method constructs orthogonal scaling and wavelet functions using either
-        Legendre or Chebyshev polynomials as the base. The construction follows a
-        Gram-Schmidt-like orthogonalization procedure.
-        
+        Generate scaling and wavelet basis functions for multi-resolution analysis.
+
+        This creates a hierarchical basis for function approximation using wavelets.
+        Think of it like building a family of functions that can represent any signal
+        at multiple levels of detail - coarse features (scaling functions) and fine
+        details (wavelet functions).
+
+        How it works:
+        1. Start with orthogonal polynomials (Legendre or Chebyshev) on [0,1]
+        2. These become our "scaling functions" (phi) - they capture smooth, low-frequency content
+        3. Create "wavelet functions" (psi) through orthogonalization - they capture details/edges
+        4. Wavelets are split into two halves: psi1 for [0, 0.5] and psi2 for [0.5, 1]
+
+        The result is a complete basis where:
+        - phi functions = "blur" or "smooth approximation" at a given scale
+        - psi functions = "details" or "differences" between scales
+
         Parameters
         ----------
         k : int
-            Number of basis functions (determines the approximation order)
+            Number of basis functions (polynomial order + 1).
+            - k=2: Linear approximation (simplest)
+            - k=3-4: Good balance for most applications
+            - k>4: Smoother wavelets, more computational cost
+            Higher k means you can represent smoother functions more accurately.
+
         base : str
-            Type of polynomial basis ('legendre' or 'chebyshev')
-            
+            Polynomial family to use as foundation:
+            - 'legendre': Uniform weight, good general-purpose choice
+            - 'chebyshev': Clustered near boundaries, good for edge phenomena
+
         Returns
         -------
-        phi : list of functions
-            List of k scaling functions
-        psi1 : list of functions
-            List of k wavelet functions for the first half of the interval
-        psi2 : list of functions
-            List of k wavelet functions for the second half of the interval
-            
+        phi : list of k callable functions
+            Scaling functions φ_0, φ_1, ..., φ_{k-1}
+            Each phi[i] takes array input on [0,1] and returns same-shaped array.
+            These represent smooth approximations at different polynomial orders.
+
+        psi1 : list of k callable functions
+            Wavelet functions for left half-interval [0, 0.5]
+            Each psi1[i] captures detail/difference information in the left half.
+
+        psi2 : list of k callable functions
+            Wavelet functions for right half-interval [0.5, 1]
+            Each psi2[i] captures detail/difference information in the right half.
+
         Notes
         -----
-        For Legendre basis:
-        - Scaling functions are normalized Legendre polynomials on [0,1]
-        - Wavelets are constructed via orthogonalization against scaling functions
-        
-        For Chebyshev basis:
-        - Scaling functions are normalized Chebyshev polynomials
-        - Wavelets have compact support on [0,0.5] and [0.5,1] respectively
+        For multidimensional problems, use tensor products:
+        - 2D: phi[i](x) * phi[j](y) gives a 2D basis function
+        - 3D: phi[i](x) * phi[j](y) * phi[k](z) gives a 3D basis function
+
+        The wavelets are constructed to be orthogonal to:
+        1. All scaling functions (so they represent "new" information)
+        2. All previous wavelets (so each adds independent detail)
         """
-        x = Symbol('x')
-        phi_coeff = np.zeros((k,k))
-        phi_2x_coeff = np.zeros((k,k))
-        
+        # Coefficient matrices: rows = basis function index, cols = polynomial coefficients
+        scaling_coeffs = np.zeros((k, k))  # phi(x) coefficients
+        scaling_2x_coeffs = np.zeros((k, k))  # phi(2x) coefficients (for orthogonalization)
+
         if base == 'legendre':
-            for ki in range(k):
-                coeff_ = Poly(legendre(ki, 2*x-1), x).all_coeffs()
-                phi_coeff[ki,:ki+1] = np.flip(np.sqrt(2*ki+1) * np.array(coeff_).astype(np.float64))
-                coeff_ = Poly(legendre(ki, 4*x-1), x).all_coeffs()
-                phi_2x_coeff[ki,:ki+1] = np.flip(np.sqrt(2) * np.sqrt(2*ki+1) * np.array(coeff_).astype(np.float64))
-            
-            psi1_coeff = np.zeros((k, k))
-            psi2_coeff = np.zeros((k, k))
-            for ki in range(k):
-                psi1_coeff[ki,:] = phi_2x_coeff[ki,:]
-                for i in range(k):
-                    a = phi_2x_coeff[ki,:ki+1]
-                    b = phi_coeff[i, :i+1]
-                    prod_ = np.convolve(a, b)
-                    prod_[np.abs(prod_)<1e-8] = 0
-                    proj_ = (prod_ * 1/(np.arange(len(prod_))+1) * np.power(0.5, 1+np.arange(len(prod_)))).sum()
-                    psi1_coeff[ki,:] -= proj_ * phi_coeff[i,:]
-                    psi2_coeff[ki,:] -= proj_ * phi_coeff[i,:]
-                    
-                for j in range(ki):
-                    a = phi_2x_coeff[ki,:ki+1]
-                    b = psi1_coeff[j, :]
-                    prod_ = np.convolve(a, b)
-                    prod_[np.abs(prod_)<1e-8] = 0
-                    proj_ = (prod_ * 1/(np.arange(len(prod_))+1) * np.power(0.5, 1+np.arange(len(prod_)))).sum()
-                    psi1_coeff[ki,:] -= proj_ * psi1_coeff[j,:]
-                    psi2_coeff[ki,:] -= proj_ * psi2_coeff[j,:]
+            # Build normalized Legendre polynomials transformed to [0,1]
+            for basis_idx in range(k):
+                # Create Legendre polynomial P_n(x) and map from [-1,1] to [0,1] via x -> 2x-1
+                legendre_poly = Legendre.basis(basis_idx)
 
-                a = psi1_coeff[ki,:]
-                prod_ = np.convolve(a, a)
-                prod_[np.abs(prod_)<1e-8] = 0
-                norm1 = (prod_ * 1/(np.arange(len(prod_))+1) * np.power(0.5, 1+np.arange(len(prod_)))).sum()
+                # Transform domain: [0,1] -> [-1,1] via 2x - 1
+                # Normalization: sqrt(2n+1) ensures orthonormality on [0,1]
+                poly_on_unit_interval = legendre_poly(Legendre([-1, 2]))  # Compose: P_n(2x - 1)
+                coeffs = poly_on_unit_interval.coef * np.sqrt(2 * basis_idx + 1)
+                scaling_coeffs[basis_idx, :len(coeffs)] = coeffs
 
-                a = psi2_coeff[ki,:]
-                prod_ = np.convolve(a, a)
-                prod_[np.abs(prod_)<1e-8] = 0
-                norm2 = (prod_ * 1/(np.arange(len(prod_))+1) * (1-np.power(0.5, 1+np.arange(len(prod_))))).sum()
-                norm_ = np.sqrt(norm1 + norm2)
-                psi1_coeff[ki,:] /= norm_
-                psi2_coeff[ki,:] /= norm_
-                psi1_coeff[np.abs(psi1_coeff)<1e-8] = 0
-                psi2_coeff[np.abs(psi2_coeff)<1e-8] = 0
+                # Also need phi(2x) for wavelet construction
+                # Transform: [0,1] -> [-1,1] via 4x - 1
+                poly_stretched = legendre_poly(Legendre([-1, 4]))  # P_n(4x - 1)
+                coeffs_2x = poly_stretched.coef * np.sqrt(2) * np.sqrt(2 * basis_idx + 1)
+                scaling_2x_coeffs[basis_idx, :len(coeffs_2x)] = coeffs_2x
 
-            phi = [np.poly1d(np.flip(phi_coeff[i,:])) for i in range(k)]
-            psi1 = [np.poly1d(np.flip(psi1_coeff[i,:])) for i in range(k)]
-            psi2 = [np.poly1d(np.flip(psi2_coeff[i,:])) for i in range(k)]
-            
+            # Initialize wavelet coefficients
+            wavelet_left_coeffs = np.zeros((k, k))  # psi1: wavelets on [0, 0.5]
+            wavelet_right_coeffs = np.zeros((k, k))  # psi2: wavelets on [0.5, 1]
+
+            # Gram-Schmidt orthogonalization to construct wavelets
+            for basis_idx in range(k):
+                # Start with scaled basis function
+                wavelet_left_coeffs[basis_idx, :] = scaling_2x_coeffs[basis_idx, :]
+
+                # Step 1: Orthogonalize against all scaling functions
+                # This ensures wavelets capture "detail" not in the smooth approximation
+                for scaling_idx in range(k):
+                    # Compute inner product via polynomial convolution + integration
+                    a = scaling_2x_coeffs[basis_idx, :basis_idx + 1]
+                    b = scaling_coeffs[scaling_idx, :scaling_idx + 1]
+                    product_poly = np.convolve(a, b)
+                    product_poly[np.abs(product_poly) < 1e-8] = 0
+
+                    # Integrate over [0, 0.5] using monomial integral formula
+                    projection = (product_poly * 1 / (np.arange(len(product_poly)) + 1) *
+                                  np.power(0.5, 1 + np.arange(len(product_poly)))).sum()
+
+                    # Subtract projection
+                    wavelet_left_coeffs[basis_idx, :] -= projection * scaling_coeffs[scaling_idx, :]
+                    wavelet_right_coeffs[basis_idx, :] -= projection * scaling_coeffs[scaling_idx, :]
+
+                # Step 2: Orthogonalize against all previous wavelets
+                # This ensures each wavelet is independent
+                for prev_wavelet_idx in range(basis_idx):
+                    a = scaling_2x_coeffs[basis_idx, :basis_idx + 1]
+                    b = wavelet_left_coeffs[prev_wavelet_idx, :]
+                    product_poly = np.convolve(a, b)
+                    product_poly[np.abs(product_poly) < 1e-8] = 0
+
+                    projection = (product_poly * 1 / (np.arange(len(product_poly)) + 1) *
+                                  np.power(0.5, 1 + np.arange(len(product_poly)))).sum()
+
+                    wavelet_left_coeffs[basis_idx, :] -= projection * wavelet_left_coeffs[prev_wavelet_idx, :]
+                    wavelet_right_coeffs[basis_idx, :] -= projection * wavelet_left_coeffs[prev_wavelet_idx, :]
+
+                # Step 3: Normalize to unit L2 norm
+                # Compute ||psi||^2 = integral over [0, 0.5] + integral over [0.5, 1]
+                a = wavelet_left_coeffs[basis_idx, :]
+                product_poly = np.convolve(a, a)
+                product_poly[np.abs(product_poly) < 1e-8] = 0
+                norm_squared_left = (product_poly * 1 / (np.arange(len(product_poly)) + 1) *
+                                     np.power(0.5, 1 + np.arange(len(product_poly)))).sum()
+
+                a = wavelet_right_coeffs[basis_idx, :]
+                product_poly = np.convolve(a, a)
+                product_poly[np.abs(product_poly) < 1e-8] = 0
+                norm_squared_right = (product_poly * 1 / (np.arange(len(product_poly)) + 1) *
+                                      (1 - np.power(0.5, 1 + np.arange(len(product_poly))))).sum()
+
+                norm = np.sqrt(norm_squared_left + norm_squared_right)
+                wavelet_left_coeffs[basis_idx, :] /= norm
+                wavelet_right_coeffs[basis_idx, :] /= norm
+
+                # Clean up numerical noise
+                wavelet_left_coeffs[np.abs(wavelet_left_coeffs) < 1e-8] = 0
+                wavelet_right_coeffs[np.abs(wavelet_right_coeffs) < 1e-8] = 0
+
+            # Create callable functions using numpy's polynomial evaluation
+            # Note: np.polyval expects coefficients in descending order
+            phi = [lambda x, c=scaling_coeffs[i, :]: np.polyval(c[::-1], x)
+                   for i in range(k)]
+            psi1 = [lambda x, c=wavelet_left_coeffs[i, :]: np.polyval(c[::-1], x)
+                    for i in range(k)]
+            psi2 = [lambda x, c=wavelet_right_coeffs[i, :]: np.polyval(c[::-1], x)
+                    for i in range(k)]
+
         elif base == 'chebyshev':
-            for ki in range(k):
-                if ki == 0:
-                    phi_coeff[ki,:ki+1] = np.sqrt(2/np.pi)
-                    phi_2x_coeff[ki,:ki+1] = np.sqrt(2/np.pi) * np.sqrt(2)
+            # Build normalized Chebyshev polynomials
+            for basis_idx in range(k):
+                if basis_idx == 0:
+                    # T_0 = 1, special normalization
+                    scaling_coeffs[basis_idx, 0] = np.sqrt(2 / np.pi)
+                    scaling_2x_coeffs[basis_idx, 0] = np.sqrt(2 / np.pi) * np.sqrt(2)
                 else:
-                    coeff_ = Poly(chebyshevt(ki, 2*x-1), x).all_coeffs()
-                    phi_coeff[ki,:ki+1] = np.flip(2/np.sqrt(np.pi) * np.array(coeff_).astype(np.float64))
-                    coeff_ = Poly(chebyshevt(ki, 4*x-1), x).all_coeffs()
-                    phi_2x_coeff[ki,:ki+1] = np.flip(np.sqrt(2) * 2 / np.sqrt(np.pi) * np.array(coeff_).astype(np.float64))
-            
-            phi = [partial(cls.phi_, phi_coeff[i,:]) for i in range(k)]
+                    # Create Chebyshev polynomial T_n(x)
+                    cheb_poly = Chebyshev.basis(basis_idx)
+
+                    # Transform to [0,1] domain
+                    poly_on_unit_interval = cheb_poly(Chebyshev([-1, 2]))
+                    coeffs = poly_on_unit_interval.coef * 2 / np.sqrt(np.pi)
+                    scaling_coeffs[basis_idx, :len(coeffs)] = coeffs
+
+                    # Stretched version
+                    poly_stretched = cheb_poly(Chebyshev([-1, 4]))
+                    coeffs_2x = poly_stretched.coef * np.sqrt(2) * 2 / np.sqrt(np.pi)
+                    scaling_2x_coeffs[basis_idx, :len(coeffs_2x)] = coeffs_2x
+
+            # For Chebyshev, wavelets are handled differently (compact support)
+            phi = [partial(cls.phi_, scaling_coeffs[i, :]) for i in range(k)]
             psi1 = [partial(cls.phi_, np.zeros(k), lb=0, ub=0.5) for i in range(k)]
             psi2 = [partial(cls.phi_, np.zeros(k), lb=0.5, ub=1) for i in range(k)]
-        
+
         return phi, psi1, psi2
 
     @classmethod
     def get_filter(cls, base, k):
         """
-        Generate filter bank coefficients for wavelet decomposition and reconstruction.
-        
-        This method computes the two-scale relation coefficients that relate scaling
-        and wavelet functions at different scales. These filters are essential for
-        the fast wavelet transform algorithm.
-        
+        Compute filter bank coefficients for fast wavelet transform.
+
+        This generates the matrices needed for the Fast Wavelet Transform (FWT), which
+        efficiently decomposes a function into coarse (low-frequency) and detail
+        (high-frequency) components at multiple scales.
+
         Parameters
         ----------
         base : str
-            Type of polynomial basis ('legendre' or 'chebyshev')
+            Polynomial basis type:
+            - 'legendre': Standard choice for uniform problems
+            - 'chebyshev': Better for boundary layers or oscillatory behavior
+
         k : int
-            Number of basis functions
-            
+            Number of basis functions (polynomial order + 1)
+            Must match the k used in get_phi_psi()
+
         Returns
         -------
-        H0 : ndarray of shape (k, k)
-            Low-pass filter for even samples (scaling coefficients)
-        H1 : ndarray of shape (k, k)
-            Low-pass filter for odd samples (scaling coefficients)
-        G0 : ndarray of shape (k, k)
-            High-pass filter for even samples (wavelet coefficients)
-        G1 : ndarray of shape (k, k)
-            High-pass filter for odd samples (wavelet coefficients)
-        PHI0 : ndarray of shape (k, k)
-            Reconstruction matrix for even samples
-        PHI1 : ndarray of shape (k, k)
-            Reconstruction matrix for odd samples
-            
+        h_0 : ndarray of shape (k, k)
+            Low-pass decomposition filter for even-indexed coefficients
+            Maps fine-scale coefficients → coarse-scale approximation (even part)
+
+        h_1 : ndarray of shape (k, k)
+            Low-pass decomposition filter for odd-indexed coefficients
+            Maps fine-scale coefficients → coarse-scale approximation (odd part)
+
+        g_0 : ndarray of shape (k, k)
+            High-pass decomposition filter for even-indexed coefficients
+            Maps fine-scale coefficients → detail coefficients (even part)
+
+        g_1 : ndarray of shape (k, k)
+            High-pass decomposition filter for odd-indexed coefficients
+            Maps fine-scale coefficients → detail coefficients (odd part)
+
+        phi_0 : ndarray of shape (k, k)
+            Reconstruction operator for even samples
+            Used to rebuild fine-scale function from coarse + detail (even part)
+
+        phi_1 : ndarray of shape (k, k)
+            Reconstruction operator for odd samples
+            Used to rebuild fine-scale function from coarse + detail (odd part)
+
         Notes
         -----
-        The filters satisfy the two-scale relations:
-        - φ(x) = √2 * Σ H[n] * φ(2x - n)
-        - ψ(x) = √2 * Σ G[n] * φ(2x - n)
-        
-        Where H are low-pass (scaling) filters and G are high-pass (wavelet) filters.
+        The filters form a perfect reconstruction filter bank:
+        - Decomposition (analysis): Split signal into coarse + detail
+        - Reconstruction (synthesis): Perfectly recover original from coarse + detail
+
+        For 2D/3D problems, apply these filters dimension-by-dimension (separable transform).
         """
-        def psi(psi1, psi2, i, inp):
-            mask = (inp<=0.5) * 1.0
-            return psi1[i](inp) * mask + psi2[i](inp) * (1-mask)
-        
+
+        def construct_full_wavelet(psi_left, psi_right, basis_idx, x_values):
+            """
+            Combine left and right wavelets into single function.
+
+            Wavelets have compact support split at x=0.5:
+            - Use psi_left for x <= 0.5
+            - Use psi_right for x > 0.5
+            """
+            left_mask = (x_values <= 0.5).astype(float)
+            return (psi_left[basis_idx](x_values) * left_mask +
+                    psi_right[basis_idx](x_values) * (1 - left_mask))
+
         if base not in ['legendre', 'chebyshev']:
-            raise Exception('Base not supported')
-        
-        x = Symbol('x')
-        H0 = np.zeros((k,k))
-        H1 = np.zeros((k,k))
-        G0 = np.zeros((k,k))
-        G1 = np.zeros((k,k))
-        PHI0 = np.zeros((k,k))
-        PHI1 = np.zeros((k,k))
-        
-        phi, psi1, psi2 = cls.get_phi_psi(k, base)
-        
+            raise ValueError(f"Base '{base}' not supported. Use 'legendre' or 'chebyshev'.")
+
+        # Initialize filter matrices
+        h_0 = np.zeros((k, k))  # Low-pass filter, even samples
+        h_1 = np.zeros((k, k))  # Low-pass filter, odd samples
+        g_0 = np.zeros((k, k))  # High-pass filter, even samples
+        g_1 = np.zeros((k, k))  # High-pass filter, odd samples
+        phi_0 = np.zeros((k, k))  # Reconstruction, even samples
+        phi_1 = np.zeros((k, k))  # Reconstruction, odd samples
+
+        # Get basis functions
+        scaling_funcs, wavelet_left_funcs, wavelet_right_funcs = cls.get_phi_psi(k, base)
+
         if base == 'legendre':
-            roots = Poly(legendre(k, 2*x-1)).all_roots()
-            x_m = np.array([rt.evalf(20) for rt in roots]).astype(np.float64)
-            wm = 1/k/cls.legendreDer(k,2*x_m-1)/eval_legendre(k-1,2*x_m-1)
-            
-            for ki in range(k):
-                for kpi in range(k):
-                    H0[ki, kpi] = 1/np.sqrt(2) * (wm * phi[ki](x_m/2) * phi[kpi](x_m)).sum()
-                    G0[ki, kpi] = 1/np.sqrt(2) * (wm * psi(psi1, psi2, ki, x_m/2) * phi[kpi](x_m)).sum()
-                    H1[ki, kpi] = 1/np.sqrt(2) * (wm * phi[ki]((x_m+1)/2) * phi[kpi](x_m)).sum()
-                    G1[ki, kpi] = 1/np.sqrt(2) * (wm * psi(psi1, psi2, ki, (x_m+1)/2) * phi[kpi](x_m)).sum()
-                    
-            PHI0 = np.eye(k)
-            PHI1 = np.eye(k)
-            
+            # Use Gauss-Legendre quadrature for accurate integration
+            # Get quadrature points (roots of Legendre polynomial)
+            legendre_poly = Legendre.basis(k)
+            quadrature_roots_std = legendre_poly.roots()  # Roots on [-1, 1]
+            quadrature_points = (quadrature_roots_std + 1) / 2  # Map to [0, 1]
+
+            # Compute quadrature weights
+            # For Gauss-Legendre: w_i = 2 / [(1-x_i^2) * (P'_k(x_i))^2]
+            quadrature_weights = (1 / k / cls.legendreDer(k, 2 * quadrature_points - 1) /
+                                  eval_legendre(k - 1, 2 * quadrature_points - 1))
+
+            # Compute filter coefficients via weighted inner products
+            for row_idx in range(k):
+                for col_idx in range(k):
+                    # Two-scale relation at even positions: x/2
+                    h_0[row_idx, col_idx] = (1 / np.sqrt(2) *
+                                             (quadrature_weights *
+                                              scaling_funcs[row_idx](quadrature_points / 2) *
+                                              scaling_funcs[col_idx](quadrature_points)).sum())
+
+                    g_0[row_idx, col_idx] = (1 / np.sqrt(2) *
+                                             (quadrature_weights *
+                                              construct_full_wavelet(wavelet_left_funcs, wavelet_right_funcs,
+                                                                     row_idx, quadrature_points / 2) *
+                                              scaling_funcs[col_idx](quadrature_points)).sum())
+
+                    # Two-scale relation at odd positions: (x+1)/2
+                    h_1[row_idx, col_idx] = (1 / np.sqrt(2) *
+                                             (quadrature_weights *
+                                              scaling_funcs[row_idx]((quadrature_points + 1) / 2) *
+                                              scaling_funcs[col_idx](quadrature_points)).sum())
+
+                    g_1[row_idx, col_idx] = (1 / np.sqrt(2) *
+                                             (quadrature_weights *
+                                              construct_full_wavelet(wavelet_left_funcs, wavelet_right_funcs,
+                                                                     row_idx, (quadrature_points + 1) / 2) *
+                                              scaling_funcs[col_idx](quadrature_points)).sum())
+
+            # For Legendre, reconstruction is simple (orthonormal basis)
+            phi_0 = np.eye(k)
+            phi_1 = np.eye(k)
+
         elif base == 'chebyshev':
-            kUse = 2*k
-            roots = Poly(chebyshevt(kUse, 2*x-1)).all_roots()
-            x_m = np.array([rt.evalf(20) for rt in roots]).astype(np.float64)
-            wm = np.pi / kUse / 2
+            # Use Chebyshev nodes for quadrature
+            num_quad_points = 2 * k  # Oversample for accuracy
+            cheb_poly = Chebyshev.basis(num_quad_points)
+            quadrature_roots_std = cheb_poly.roots()  # Roots on [-1, 1]
+            quadrature_points = (quadrature_roots_std + 1) / 2  # Map to [0, 1]
 
-            for ki in range(k):
-                for kpi in range(k):
-                    H0[ki, kpi] = 1/np.sqrt(2) * (wm * phi[ki](x_m/2) * phi[kpi](x_m)).sum()
-                    G0[ki, kpi] = 1/np.sqrt(2) * (wm * psi(psi1, psi2, ki, x_m/2) * phi[kpi](x_m)).sum()
-                    H1[ki, kpi] = 1/np.sqrt(2) * (wm * phi[ki]((x_m+1)/2) * phi[kpi](x_m)).sum()
-                    G1[ki, kpi] = 1/np.sqrt(2) * (wm * psi(psi1, psi2, ki, (x_m+1)/2) * phi[kpi](x_m)).sum()
+            # Chebyshev quadrature weights (equal weights)
+            quadrature_weight = np.pi / num_quad_points / 2
 
-                    PHI0[ki, kpi] = (wm * phi[ki](2*x_m) * phi[kpi](2*x_m)).sum() * 2
-                    PHI1[ki, kpi] = (wm * phi[ki](2*x_m-1) * phi[kpi](2*x_m-1)).sum() * 2
-                    
-            PHI0[np.abs(PHI0)<1e-8] = 0
-            PHI1[np.abs(PHI1)<1e-8] = 0
+            # Compute filters
+            for row_idx in range(k):
+                for col_idx in range(k):
+                    # Decomposition filters
+                    h_0[row_idx, col_idx] = (1 / np.sqrt(2) *
+                                             (quadrature_weight *
+                                              scaling_funcs[row_idx](quadrature_points / 2) *
+                                              scaling_funcs[col_idx](quadrature_points)).sum())
 
-        for matrix in [H0, H1, G0, G1]:
-            matrix[np.abs(matrix)<1e-8] = 0
-            
-        return H0, H1, G0, G1, PHI0, PHI1
+                    g_0[row_idx, col_idx] = (1 / np.sqrt(2) *
+                                             (quadrature_weight *
+                                              construct_full_wavelet(wavelet_left_funcs, wavelet_right_funcs,
+                                                                     row_idx, quadrature_points / 2) *
+                                              scaling_funcs[col_idx](quadrature_points)).sum())
 
+                    h_1[row_idx, col_idx] = (1 / np.sqrt(2) *
+                                             (quadrature_weight *
+                                              scaling_funcs[row_idx]((quadrature_points + 1) / 2) *
+                                              scaling_funcs[col_idx](quadrature_points)).sum())
 
+                    g_1[row_idx, col_idx] = (1 / np.sqrt(2) *
+                                             (quadrature_weight *
+                                              construct_full_wavelet(wavelet_left_funcs, wavelet_right_funcs,
+                                                                     row_idx, (quadrature_points + 1) / 2) *
+                                              scaling_funcs[col_idx](quadrature_points)).sum())
+
+                    # Reconstruction matrices (Chebyshev basis not orthonormal)
+                    phi_0[row_idx, col_idx] = (quadrature_weight *
+                                               scaling_funcs[row_idx](2 * quadrature_points) *
+                                               scaling_funcs[col_idx](2 * quadrature_points)).sum() * 2
+
+                    phi_1[row_idx, col_idx] = (quadrature_weight *
+                                               scaling_funcs[row_idx](2 * quadrature_points - 1) *
+                                               scaling_funcs[col_idx](2 * quadrature_points - 1)).sum() * 2
+
+            # Clean up numerical noise
+            phi_0[np.abs(phi_0) < 1e-8] = 0
+            phi_1[np.abs(phi_1) < 1e-8] = 0
+
+        # Clean up numerical noise in all filters
+        for filter_matrix in [h_0, h_1, g_0, g_1]:
+            filter_matrix[np.abs(filter_matrix) < 1e-8] = 0
+
+        return h_0, h_1, g_0, g_1, phi_0, phi_1
 
 
 class SparseKernel(nn.Module):
     """
-    Dimension-agnostic sparse kernel layer
+    Sparse Spatial Convolution Kernel for Multiwavelet Networks.
+
+    This layer applies learned spatial convolutions to wavelet coefficients.
+    It's "sparse" in the sense that it uses small convolutional kernels (3x3)
+    rather than dense connections, making it computationally efficient.
+
+    Use case: Apply spatial mixing to wavelet detail coefficients, capturing
+    local patterns and textures in the spatial domain.
+
+    The layer automatically handles 1D, 2D, and 3D inputs by:
+    1. Reshaping input to (batch, channels, *spatial_dims)
+    2. Applying appropriate Conv{1,2,3}d layer
+    3. Projecting back to original channel structure
+    4. Reshaping to original format
+
+    Parameters
+    ----------
+    k : int
+        Wavelet basis size (number of basis functions per dimension)
+
+    alpha : int
+        Hidden dimension size for the intermediate convolution.
+        Controls the expressiveness of the spatial mixing.
+        Typical value: 128
+
+    c : int, default=1
+        Number of wavelet channels.
+        Total input channels = c * k^n_dim
+
+    n_dim : int, default=1
+        Spatial dimensionality (1, 2, or 3)
+
+    Attributes
+    ----------
+    conv : nn.Sequential
+        Convolutional block: Conv → ReLU
+        Uses Conv1d/Conv2d/Conv3d depending on n_dim
+
+    output_proj : nn.Linear
+        Projects from hidden dimension back to input channels
+
+    Input/Output Shapes
+    -------------------
+    1D: (batch, n_points, channels, k)
+    2D: (batch, height, width, channels, k²)
+    3D: (batch, height, width, time, channels, k²)
+
+    Examples
+    --------
+    >>> # 2D spatial convolution for wavelets
+    >>> layer = SparseKernel(k=3, alpha=128, c=1, n_dim=2)
+    >>> x = torch.randn(16, 32, 32, 1, 9)  # (B, H, W, c, k²)
+    >>> output = layer(x)
+    >>> assert output.shape == x.shape
     """
 
     def __init__(self, k, alpha, c=1, n_dim=1, **kwargs):
         super().__init__()
         self.k = k
-        self.alpha = alpha
+        self.alpha = alpha  # Hidden dimension
         self.c = c
         self.n_dim = n_dim
-        
+
+        # Calculate total input channels
         if n_dim == 1:
             in_channels = c * k
         elif n_dim in [2, 3]:
-            in_channels = c * k**2
+            in_channels = c * k ** 2
         else:
-            raise ValueError(f"Unsupported dimension: {n_dim}")
-        
-        self.conv = self._build_conv_block(in_channels, 128)
-        self.output_proj = nn.Linear(128, in_channels)
-    
-    def _build_conv_block(self, in_channels, out_channels):
-        # Build appropriate convolution block based on dimension
+            raise ValueError(f"Unsupported dimension: {n_dim}. Must be 1, 2, or 3.")
+
+        self.in_channels = in_channels
+
+        # Build dimension-appropriate convolution
+        self.conv = self._build_conv_block(in_channels, alpha)
+        self.output_proj = nn.Linear(alpha, in_channels)
+
+    def _build_conv_block(self, in_channels, hidden_dim):
+        """
+        Build convolutional block matching the input dimensionality.
+
+        Uses 3x3(x3) kernels with padding to preserve spatial dimensions.
+        ReLU activation for nonlinearity.
+        """
         if self.n_dim == 1:
             return nn.Sequential(
-                nn.Conv1d(in_channels, out_channels, 3, 1, 1),
+                nn.Conv1d(in_channels, hidden_dim, kernel_size=3, stride=1, padding=1),
                 nn.ReLU(inplace=True)
             )
         elif self.n_dim == 2:
             return nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, 3, 1, 1),
+                nn.Conv2d(in_channels, hidden_dim, kernel_size=3, stride=1, padding=1),
                 nn.ReLU(inplace=True)
             )
         elif self.n_dim == 3:
             return nn.Sequential(
-                nn.Conv3d(in_channels, out_channels, 3, 1, 1),
+                nn.Conv3d(in_channels, hidden_dim, kernel_size=3, stride=1, padding=1),
                 nn.ReLU(inplace=True)
             )
-    
-    def forward(self, x):
+
+    def _reshape_for_conv(self, x):
+        """
+        Reshape from wavelet format to standard convolution format.
+
+        Wavelet format: (*spatial, channels, k^n_dim)
+        Conv format: (batch, channels, *spatial)
+
+        Returns
+        -------
+        x_reshaped : torch.Tensor
+            Reshaped for convolution
+        original_shape : tuple
+            Original shape for restoring later
+        """
         original_shape = x.shape
-        
+
         if self.n_dim == 1:
-            B, N, c, k = x.shape
-            x = x.view(B, N, -1).permute(0, 2, 1)
+            # (B, N, c, k) → (B, c*k, N)
+            batch_size, n_points, num_channels, k = x.shape
+            x = x.view(batch_size, n_points, -1)  # (B, N, c*k)
+            x = x.permute(0, 2, 1)  # (B, c*k, N)
+
         elif self.n_dim == 2:
-            B, Nx, Ny, c, k_sq = x.shape
-            x = x.view(B, Nx, Ny, -1).permute(0, 3, 1, 2)
+            # (B, Nx, Ny, c, k²) → (B, c*k², Nx, Ny)
+            batch_size, nx, ny, num_channels, k_sq = x.shape
+            x = x.view(batch_size, nx, ny, -1)  # (B, Nx, Ny, c*k²)
+            x = x.permute(0, 3, 1, 2)  # (B, c*k², Nx, Ny)
+
         elif self.n_dim == 3:
-            B, Nx, Ny, T, c, k_sq = x.shape
-            x = x.view(B, Nx, Ny, T, -1).permute(0, 4, 1, 2, 3)
-        
+            # (B, Nx, Ny, T, c, k²) → (B, c*k², Nx, Ny, T)
+            batch_size, nx, ny, time_steps, num_channels, k_sq = x.shape
+            x = x.view(batch_size, nx, ny, time_steps, -1)  # (B, Nx, Ny, T, c*k²)
+            x = x.permute(0, 4, 1, 2, 3)  # (B, c*k², Nx, Ny, T)
+
+        return x, original_shape
+
+    def _reshape_from_conv(self, x, original_shape):
+        """
+        Reshape from convolution format back to wavelet format.
+
+        Conv format: (batch, channels, *spatial)
+        Wavelet format: (*spatial, channels, k^n_dim)
+        """
+        if self.n_dim == 1:
+            # (B, hidden, N) → (B, N, hidden)
+            x = x.permute(0, 2, 1)
+        elif self.n_dim == 2:
+            # (B, hidden, Nx, Ny) → (B, Nx, Ny, hidden)
+            x = x.permute(0, 2, 3, 1)
+        elif self.n_dim == 3:
+            # (B, hidden, Nx, Ny, T) → (B, Nx, Ny, T, hidden)
+            x = x.permute(0, 2, 3, 4, 1)
+
+        return x
+
+    def forward(self, x):
+        """
+        Apply spatial convolution to wavelet coefficients.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Wavelet coefficients
+
+        Returns
+        -------
+        torch.Tensor
+            Spatially mixed coefficients, same shape as input
+        """
+        # Reshape for convolution
+        x, original_shape = self._reshape_for_conv(x)
+
+        # Apply convolution
         x = self.conv(x)
-        
+
+        # Reshape back
+        x = self._reshape_from_conv(x, original_shape)
+
+        # Project to original channels
+        x = self.output_proj(x)
+
+        # Restore exact original shape
+        x = x.view(original_shape)
+
+        return x
+
+
+class SparseKernelFT(nn.Module):
+    """
+    Sparse Fourier Transform Kernel for Multiwavelet Networks.
+
+    This layer operates in the frequency domain, applying learned transformations
+    to a sparse subset of Fourier modes. This is computationally efficient and
+    particularly effective for capturing global patterns.
+
+    Parameters
+    ----------
+    k : int
+        Wavelet basis size
+
+    alpha : int
+        Number of Fourier modes to retain per dimension.
+        Controls frequency domain sparsity:
+        - Small alpha: Very sparse, fast, may miss details
+        - Large alpha: Less sparse, slower, more expressive
+
+    c : int, default=1
+        Number of wavelet channels
+
+    n_dim : int, default=1
+        Spatial dimensionality (1, 2, or 3)
+
+    Attributes
+    ----------
+    weights : nn.Parameter (1D case)
+        Complex-valued weights of shape (in_channels, out_channels, alpha)
+
+    weights1, weights2, ... : nn.Parameter (2D/3D cases)
+        Complex-valued weights for different frequency quadrants
+        Handles both positive and negative frequencies
+
+    output_proj : nn.Linear (2D/3D only)
+        Final projection with nonlinearity
+
+    Input/Output Shapes
+    -------------------
+    1D: (batch, n_points, channels, k)
+    2D: (batch, height, width, channels, k²)
+    3D: (batch, height, width, time, channels, k²)
+
+    Examples
+    --------
+    >>> # 2D Fourier kernel
+    >>> layer = SparseKernelFT(k=3, alpha=12, c=1, n_dim=2)
+    >>> x = torch.randn(16, 64, 64, 1, 9)
+    >>> output = layer(x)
+    >>> assert output.shape == x.shape
+
+    Notes
+    -----
+    - Uses rfft (real FFT) for efficiency since inputs are real-valued
+    - For 2D/3D, we separately handle different frequency quadrants to account
+      for the asymmetry in rfft output
+    - Frequency indexing is carefully handled to avoid rfftshift issues
+    """
+
+    def __init__(self, k, alpha, c=1, n_dim=1, **kwargs):
+        super().__init__()
+        self.k = k
+        self.alpha = alpha  # Number of modes to keep
+        self.c = c
+        self.n_dim = n_dim
+
+        # Calculate input channels
+        if n_dim == 1:
+            in_channels = c * k
+        elif n_dim in [2, 3]:
+            in_channels = c * k ** 2
+        else:
+            raise ValueError(f"Unsupported dimension: {n_dim}. Must be 1, 2, or 3.")
+
+        self.in_channels = in_channels
+
+        # Initialize frequency domain weights
+        self._init_frequency_weights(in_channels)
+
+        # Output projection for 2D/3D
+        if n_dim in [2, 3]:
+            self.output_proj = nn.Linear(in_channels, in_channels)
+
+    def _init_frequency_weights(self, in_channels):
+        """
+        Initialize learnable frequency domain weights.
+
+        For 1D: Single weight matrix for positive frequencies
+        For 2D: Two weight matrices for positive/negative frequencies in first dimension
+        For 3D: Four weight matrices for all quadrants of first two dimensions
+
+        The asymmetry comes from rfft only outputting positive frequencies in
+        the last dimension, but full frequencies in other dimensions.
+        """
+        if self.n_dim == 1:
+            # Simple case: only positive frequencies
+            self.weights = nn.Parameter(
+                torch.rand(in_channels, in_channels, self.alpha, dtype=torch.cfloat) /
+                (in_channels * in_channels)
+            )
+
+        elif self.n_dim == 2:
+            # 2D rfft2: First dim has both +/- frequencies, second dim only +
+            # Need 2 weight matrices: one for positive first dim, one for negative
+            self.weights1 = nn.Parameter(
+                torch.zeros(in_channels, in_channels, self.alpha, self.alpha, dtype=torch.cfloat)
+            )
+            self.weights2 = nn.Parameter(
+                torch.zeros(in_channels, in_channels, self.alpha, self.alpha, dtype=torch.cfloat)
+            )
+            nn.init.xavier_normal_(self.weights1)
+            nn.init.xavier_normal_(self.weights2)
+
+        elif self.n_dim == 3:
+            # 3D rfftn: First two dims have +/- frequencies, third dim only +
+            # Need 4 weight matrices for all combinations: (++, +-, -+, --)
+            self.weights1 = nn.Parameter(
+                torch.zeros(in_channels, in_channels, self.alpha, self.alpha, self.alpha,
+                            dtype=torch.cfloat)
+            )
+            self.weights2 = nn.Parameter(
+                torch.zeros(in_channels, in_channels, self.alpha, self.alpha, self.alpha,
+                            dtype=torch.cfloat)
+            )
+            self.weights3 = nn.Parameter(
+                torch.zeros(in_channels, in_channels, self.alpha, self.alpha, self.alpha,
+                            dtype=torch.cfloat)
+            )
+            self.weights4 = nn.Parameter(
+                torch.zeros(in_channels, in_channels, self.alpha, self.alpha, self.alpha,
+                            dtype=torch.cfloat)
+            )
+            for weight in [self.weights1, self.weights2, self.weights3, self.weights4]:
+                nn.init.xavier_normal_(weight)
+
+    def _reshape_for_fft(self, x):
+        """
+        Reshape from wavelet format to FFT format.
+
+        Wavelet format: (*spatial, channels, k^n_dim)
+        FFT format: (batch, channels, *spatial)
+        """
+        original_shape = x.shape
+
+        if self.n_dim == 1:
+            # (B, N, c, k) → (B, c*k, N)
+            batch_size, n_points, num_channels, k = x.shape
+            x = x.view(batch_size, n_points, -1).permute(0, 2, 1)
+
+        elif self.n_dim == 2:
+            # (B, Nx, Ny, c, k²) → (B, c*k², Nx, Ny)
+            batch_size, nx, ny, num_channels, k_sq = x.shape
+            x = x.view(batch_size, nx, ny, -1).permute(0, 3, 1, 2)
+
+        elif self.n_dim == 3:
+            # (B, Nx, Ny, T, c, k²) → (B, c*k², Nx, Ny, T)
+            batch_size, nx, ny, time_steps, num_channels, k_sq = x.shape
+            x = x.view(batch_size, nx, ny, time_steps, -1).permute(0, 4, 1, 2, 3)
+
+        return x, original_shape
+
+    def _reshape_from_fft(self, x, original_shape):
+        """Reshape from FFT format back to wavelet format."""
         if self.n_dim == 1:
             x = x.permute(0, 2, 1)
         elif self.n_dim == 2:
             x = x.permute(0, 2, 3, 1)
         elif self.n_dim == 3:
             x = x.permute(0, 2, 3, 4, 1)
-        
+        return x
+
+    def forward(self, x):
+        """
+        Apply sparse Fourier transformation.
+
+        Process:
+        1. Reshape to (batch, channels, *spatial)
+        2. Apply real FFT
+        3. Multiply selected frequencies by learned weights
+        4. Apply inverse FFT
+        5. Reshape back to original format
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input wavelet coefficients
+
+        Returns
+        -------
+        torch.Tensor
+            Transformed coefficients in frequency domain, same shape as input
+        """
+        # Reshape for FFT
+        x, original_shape = self._reshape_for_fft(x)
+
+        # Apply dimension-specific Fourier transform
+        if self.n_dim == 1:
+            x = self._forward_1d(x, original_shape)
+        elif self.n_dim == 2:
+            x = self._forward_2d(x, original_shape)
+        elif self.n_dim == 3:
+            x = self._forward_3d(x, original_shape)
+
+        return x
+
+    def _forward_1d(self, x, original_shape):
+        """
+        1D Fourier sparse kernel.
+
+        For 1D real FFT, output is [0, 1, 2, ..., N//2] (only positive frequencies).
+        We only use the lowest `alpha` modes.
+        """
+        batch_size, channels, n_points = x.shape
+
+        # Real FFT: (B, C, N) → (B, C, N//2+1)
+        x_fft = torch.fft.rfft(x, dim=-1)
+
+        # Determine how many modes to actually use
+        num_modes = min(self.alpha, n_points // 2 + 1)
+
+        # Initialize output in frequency domain
+        output_fft = torch.zeros(batch_size, channels, n_points // 2 + 1,
+                                 device=x.device, dtype=torch.cfloat)
+
+        # Apply learned weights to lowest modes only
+        # Einstein summation: batch, input_channel, freq → batch, output_channel, freq
+        output_fft[:, :, :num_modes] = torch.einsum(
+            "bix,iox->box",
+            x_fft[:, :, :num_modes],
+            self.weights[:, :, :num_modes]
+        )
+
+        # Inverse FFT back to spatial domain
+        x = torch.fft.irfft(output_fft, n=n_points, dim=-1)
+
+        # Reshape back to original format
+        x = self._reshape_from_fft(x, original_shape)
+        x = x.view(original_shape)
+
+        return x
+
+    def _forward_2d(self, x, original_shape):
+        """
+        2D Fourier sparse kernel with correct frequency indexing.
+
+        For 2D real FFT:
+        - First dimension: Full FFT with positive and negative frequencies
+          Layout: [0, 1, ..., N//2-1, -N//2, ..., -1]
+        - Second dimension: Real FFT with only positive frequencies
+          Layout: [0, 1, 2, ..., M//2]
+
+        We need to handle both positive and negative frequencies in the first
+        dimension carefully to avoid indexing errors.
+        """
+        batch_size, channels, nx, ny = x.shape
+
+        # 2D Real FFT: (B, C, Nx, Ny) → (B, C, Nx, Ny//2+1)
+        x_fft = torch.fft.rfft2(x, dim=(-2, -1))
+
+        # Determine how many modes to use in each dimension
+        num_modes_x = min(self.alpha, nx // 2 + 1)
+        num_modes_y = min(self.alpha, ny // 2 + 1)
+
+        # Initialize output in frequency domain
+        output_fft = torch.zeros(batch_size, channels, nx, ny // 2 + 1,
+                                 device=x.device, dtype=torch.cfloat)
+
+        # CORRECT frequency indexing:
+        # Positive frequencies in x: [0, 1, ..., num_modes_x-1]
+        output_fft[:, :, :num_modes_x, :num_modes_y] = torch.einsum(
+            "bixy,ioxy->boxy",
+            x_fft[:, :, :num_modes_x, :num_modes_y],
+            self.weights1[:, :, :num_modes_x, :num_modes_y]
+        )
+
+        # Negative frequencies in x: [-num_modes_x, ..., -1]
+        # In FFT layout, these are at indices [nx-num_modes_x:nx]
+        output_fft[:, :, -num_modes_x:, :num_modes_y] = torch.einsum(
+            "bixy,ioxy->boxy",
+            x_fft[:, :, -num_modes_x:, :num_modes_y],
+            self.weights2[:, :, :num_modes_x, :num_modes_y]
+        )
+
+        # Inverse FFT back to spatial domain
+        x = torch.fft.irfft2(output_fft, s=(nx, ny), dim=(-2, -1))
+
+        # Reshape and apply nonlinearity + projection
+        x = self._reshape_from_fft(x, original_shape)
+        x = F.relu(x)
         x = self.output_proj(x)
         x = x.view(original_shape)
+
         return x
 
+    def _forward_3d(self, x, original_shape):
+        """
+        3D Fourier sparse kernel with correct frequency indexing.
 
-class SparseKernelFT(nn.Module):
-    """
-    Dimension-agnostic Fourier sparse kernel layer
-    """
+        For 3D real FFT:
+        - First two dimensions: Full FFT with +/- frequencies
+        - Third dimension: Real FFT with only + frequencies
 
-    def __init__(self, k, alpha, c=1, n_dim=1, **kwargs):
-        super().__init__()
-        self.k = k
-        self.alpha = alpha
-        self.c = c
-        self.n_dim = n_dim
-        
-        if n_dim == 1:
-            in_channels = c * k
-            self.weights = nn.Parameter(
-                torch.rand(in_channels, in_channels, alpha, dtype=torch.cfloat) / (in_channels * in_channels)
-            )
-        elif n_dim == 2:
-            in_channels = c * k**2
-            self.weights1 = nn.Parameter(torch.zeros(in_channels, in_channels, alpha, alpha, dtype=torch.cfloat))
-            self.weights2 = nn.Parameter(torch.zeros(in_channels, in_channels, alpha, alpha, dtype=torch.cfloat))
-            nn.init.xavier_normal_(self.weights1)
-            nn.init.xavier_normal_(self.weights2)
-        elif n_dim == 3:
-            in_channels = c * k**2
-            self.weights1 = nn.Parameter(torch.zeros(in_channels, in_channels, alpha, alpha, alpha, dtype=torch.cfloat))
-            self.weights2 = nn.Parameter(torch.zeros(in_channels, in_channels, alpha, alpha, alpha, dtype=torch.cfloat))
-            self.weights3 = nn.Parameter(torch.zeros(in_channels, in_channels, alpha, alpha, alpha, dtype=torch.cfloat))
-            self.weights4 = nn.Parameter(torch.zeros(in_channels, in_channels, alpha, alpha, alpha, dtype=torch.cfloat))
-            for w in [self.weights1, self.weights2, self.weights3, self.weights4]:
-                nn.init.xavier_normal_(w)
-        
-        if n_dim in [2, 3]:
-            self.output_proj = nn.Linear(in_channels, in_channels)
-    
-    def forward(self, x):
-        original_shape = x.shape
-        
-        if self.n_dim == 1:
-            B, N, c, k = x.shape
-            x = x.view(B, N, -1).permute(0, 2, 1)
-            x_fft = torch.fft.rfft(x)
-            
-            l = min(self.alpha, N//2+1)
-            out_ft = torch.zeros(B, c*k, N//2 + 1, device=x.device, dtype=torch.cfloat)
-            out_ft[:, :, :l] = torch.einsum("bix,iox->box", x_fft[:, :, :l], self.weights[:, :, :l])
-            
-            x = torch.fft.irfft(out_ft, n=N)
-            x = x.permute(0, 2, 1).view(original_shape)
-            
-        elif self.n_dim == 2:
-            B, Nx, Ny, c, k_sq = x.shape
-            x = x.view(B, Nx, Ny, -1).permute(0, 3, 1, 2)
-            x_fft = torch.fft.rfft2(x)
-            
-            l1 = min(self.alpha, Nx//2+1)
-            l2 = min(self.alpha, Ny//2+1)
-            out_ft = torch.zeros(B, c*k_sq, Nx, Ny//2 + 1, device=x.device, dtype=torch.cfloat)
-            
-            out_ft[:, :, :l1, :l2] = torch.einsum("bixy,ioxy->boxy", 
-                                                  x_fft[:, :, :l1, :l2], self.weights1[:, :, :l1, :l2])
-            out_ft[:, :, -l1:, :l2] = torch.einsum("bixy,ioxy->boxy", 
-                                                   x_fft[:, :, -l1:, :l2], self.weights2[:, :, :l1, :l2])
-            
-            x = torch.fft.irfft2(out_ft, s=(Nx, Ny))
-            x = x.permute(0, 2, 3, 1)
-            x = F.relu(x)
-            x = self.output_proj(x)
-            x = x.view(original_shape)
-            
-        elif self.n_dim == 3:
-            B, Nx, Ny, T, c, k_sq = x.shape
-            x = x.view(B, Nx, Ny, T, -1).permute(0, 4, 1, 2, 3)
-            x_fft = torch.fft.rfftn(x, dim=[-3, -2, -1])
-            
-            l1 = min(self.alpha, Nx//2+1)
-            l2 = min(self.alpha, Ny//2+1)
-            l3 = min(self.alpha, T//2+1)
-            out_ft = torch.zeros(B, c*k_sq, Nx, Ny, T//2 + 1, device=x.device, dtype=torch.cfloat)
+        We need 4 weight matrices for all quadrants:
+        - weights1: (+x, +y, +z)
+        - weights2: (-x, +y, +z)
+        - weights3: (+x, -y, +z)
+        - weights4: (-x, -y, +z)
+        """
+        batch_size, channels, nx, ny, nz = x.shape
 
-            out_ft[:, :, :l1, :l2, :l3] = torch.einsum("bixyz,ioxyz->boxyz",
-                x_fft[:, :, :l1, :l2, :l3], self.weights1[:, :, :l1, :l2, :l3])
-            out_ft[:, :, -l1:, :l2, :l3] = torch.einsum("bixyz,ioxyz->boxyz",
-                x_fft[:, :, -l1:, :l2, :l3], self.weights2[:, :, :l1, :l2, :l3])
-            out_ft[:, :, :l1, -l2:, :l3] = torch.einsum("bixyz,ioxyz->boxyz",
-                x_fft[:, :, :l1, -l2:, :l3], self.weights3[:, :, :l1, :l2, :l3])
-            out_ft[:, :, -l1:, -l2:, :l3] = torch.einsum("bixyz,ioxyz->boxyz",
-                x_fft[:, :, -l1:, -l2:, :l3], self.weights4[:, :, :l1, :l2, :l3])
-            
-            x = torch.fft.irfftn(out_ft, s=(Nx, Ny, T))
-            x = x.permute(0, 2, 3, 4, 1)
-            x = F.relu(x)
-            x = self.output_proj(x)
-            x = x.view(original_shape)
-        
+        # 3D Real FFT: (B, C, Nx, Ny, Nz) → (B, C, Nx, Ny, Nz//2+1)
+        x_fft = torch.fft.rfftn(x, dim=(-3, -2, -1))
+
+        # Determine how many modes to use
+        num_modes_x = min(self.alpha, nx // 2 + 1)
+        num_modes_y = min(self.alpha, ny // 2 + 1)
+        num_modes_z = min(self.alpha, nz // 2 + 1)
+
+        # Initialize output
+        output_fft = torch.zeros(batch_size, channels, nx, ny, nz // 2 + 1,
+                                 device=x.device, dtype=torch.cfloat)
+
+        # Apply weights to all 4 quadrants
+        # Quadrant 1: (+x, +y, +z)
+        output_fft[:, :, :num_modes_x, :num_modes_y, :num_modes_z] = torch.einsum(
+            "bixyz,ioxyz->boxyz",
+            x_fft[:, :, :num_modes_x, :num_modes_y, :num_modes_z],
+            self.weights1[:, :, :num_modes_x, :num_modes_y, :num_modes_z]
+        )
+
+        # Quadrant 2: (-x, +y, +z)
+        output_fft[:, :, -num_modes_x:, :num_modes_y, :num_modes_z] = torch.einsum(
+            "bixyz,ioxyz->boxyz",
+            x_fft[:, :, -num_modes_x:, :num_modes_y, :num_modes_z],
+            self.weights2[:, :, :num_modes_x, :num_modes_y, :num_modes_z]
+        )
+
+        # Quadrant 3: (+x, -y, +z)
+        output_fft[:, :, :num_modes_x, -num_modes_y:, :num_modes_z] = torch.einsum(
+            "bixyz,ioxyz->boxyz",
+            x_fft[:, :, :num_modes_x, -num_modes_y:, :num_modes_z],
+            self.weights3[:, :, :num_modes_x, :num_modes_y, :num_modes_z]
+        )
+
+        # Quadrant 4: (-x, -y, +z)
+        output_fft[:, :, -num_modes_x:, -num_modes_y:, :num_modes_z] = torch.einsum(
+            "bixyz,ioxyz->boxyz",
+            x_fft[:, :, -num_modes_x:, -num_modes_y:, :num_modes_z],
+            self.weights4[:, :, :num_modes_x, :num_modes_y, :num_modes_z]
+        )
+
+        # Inverse FFT
+        x = torch.fft.irfftn(output_fft, s=(nx, ny, nz), dim=(-3, -2, -1))
+
+        # Reshape and apply nonlinearity + projection
+        x = self._reshape_from_fft(x, original_shape)
+        x = F.relu(x)
+        x = self.output_proj(x)
+        x = x.view(original_shape)
+
         return x
-
 
 
 class MWNO_CZ(nn.Module):
     """
     Multiwavelet Neural Operator Core Z-transform Layer.
 
-    This layer implements the core multiwavelet decomposition and reconstruction
-    mechanism for the MWNO architecture. It performs multi-level wavelet transforms
-    with learnable sparse kernels operating in both spatial and Fourier domains.
+    This layer is the heart of the Multiwavelet Neural Operator (MWNO) architecture.
+    It works like a hierarchical image pyramid, but with learnable transformations
+    at each level.
 
-    The layer supports 1D, 2D, and 3D inputs:
-    - 1D: Applies wavelet transform along single spatial dimension
-    - 2D: Applies wavelet transform along both spatial dimensions
-    - 3D: Applies wavelet transform only to first two dimensions (Nx, Ny),
-          preserving the third dimension (T) as temporal/feature dimension
+    Architecture:
+    ------------
+    Input (fine scale)
+        ↓ wavelet_transform
+    [Detail₀, Approximation₀]
+        ↓ A(Detail₀) + B(Approx₀) → processed Detail₀
+        ↓ C(Detail₀) → skip connection
+        ↓ wavelet_transform on Approximation₀
+    [Detail₁, Approximation₁]
+        ↓ A(Detail₁) + B(Approx₁) → processed Detail₁
+        ↓ C(Detail₁) → skip connection
+        ↓ ... (repeat for multiple scales)
+    [Detail_n, Approximation_n (coarsest)]
+        ↓ T0(Approximation_n) → process coarsest scale
+        ↓ reconstruction (combine all scales)
+    Output (fine scale)
+
+    Dimensionality Support:
+    ----------------------
+    - 1D: Time series, signals → wavelet along time axis
+    - 2D: Images, spatial fields → wavelets along both x, y
+    - 3D: Spatio-temporal data → wavelets along x, y only (preserves time/feature axis)
 
     Parameters
     ----------
     k : int, default=3
-        Wavelet kernel size. Determines the support of the wavelet basis functions.
-        Common values are 3 or 4.
+        Wavelet basis size (polynomial order + 1).
+        - k=3: Cubic approximation (good balance)
+        - k=4: Quartic approximation (smoother, more computation)
+        Determines how many coefficients represent each wavelet basis function.
 
     alpha : int, default=5
-        Number of Fourier modes retained in the sparse Fourier kernels.
-        Controls the expressiveness of frequency domain operations.
+        Number of Fourier modes to retain in frequency domain kernels.
+        Controls how much frequency information to keep:
+        - Low alpha: Faster but less expressive
+        - High alpha: More expressive but computationally expensive
+        Think of it as "bandwidth" of the learnable frequency filter.
 
     L : int, default=0
         Number of coarsest decomposition levels to skip.
-        When L>0, the decomposition stops L levels before reaching the
-        coarsest possible scale, reducing computational cost.
+        Stops decomposition early to save computation:
+        - L=0: Full decomposition (finest to coarsest)
+        - L=1: Stop 1 level before coarsest
+        - L=2: Stop 2 levels before coarsest
+        Useful when very coarse scales aren't needed.
 
     c : int, default=1
-        Number of channels in the wavelet transform.
-        Increases the capacity of the wavelet representation.
+        Number of channels in wavelet coefficients.
+        Like feature channels in CNNs:
+        - c=1: Minimal capacity
+        - c>1: More expressive power (parallel wavelet representations)
 
     base : str, default='legendre'
-        Type of polynomial basis for wavelet construction.
-        Options: 'legendre', 'chebyshev'
+        Polynomial basis for wavelet construction:
+        - 'legendre': Uniform weight, general purpose
+        - 'chebyshev': Better for boundary-heavy problems
 
     n_dim : int, default=1
-        Dimensionality of the input (1, 2, or 3).
-        Determines which wavelet transform variant to use.
+        Spatial dimensionality of input data:
+        - 1: Temporal signals (batch, time, channels, k)
+        - 2: Spatial fields (batch, height, width, channels, k²)
+        - 3: Spatio-temporal (batch, height, width, time, channels, k²)
 
     initializer : callable or None, default=None
-        Custom weight initialization function for the T0 linear layer.
-        If None, uses PyTorch default initialization.
+        Custom weight initialization for the coarsest scale transform T0.
+        If None, uses PyTorch's default Kaiming initialization.
 
     Attributes
     ----------
     A : SparseKernelFT
-        Learnable sparse Fourier kernel applied to detail coefficients
+        Learnable Fourier-space kernel for detail coefficients.
+        Captures high-frequency patterns (edges, oscillations).
 
     B : SparseKernelFT or SparseKernel
-        Learnable kernel applied to approximation coefficients
-        (Fourier kernel for 1D, spatial kernel for 2D/3D)
+        Learnable kernel for approximation coefficients.
+        - 1D: Fourier space (frequency domain)
+        - 2D/3D: Spatial domain (more efficient for smooth features)
 
     C : SparseKernel
-        Learnable sparse spatial kernel applied to detail coefficients
-        for skip connections
+        Learnable spatial kernel for detail coefficient skip connections.
+        Provides direct path for high-frequency information.
 
     T0 : nn.Linear
-        Linear transformation applied at the coarsest scale
+        Linear transformation at the coarsest scale.
+        Processes the most compressed representation.
+
+    ec_s, ec_d : torch.Tensor (buffers)
+        Decomposition filters:
+        - ec_s: Extract approximation (smooth, low-frequency)
+        - ec_d: Extract details (edges, high-frequency)
+
+    rc_* : torch.Tensor (buffers)
+        Reconstruction filters for even/odd grid positions:
+        - 1D: rc_e (even), rc_o (odd)
+        - 2D/3D: rc_ee, rc_eo, rc_oe, rc_oo (all combinations)
 
     Methods
     -------
     forward(x)
-        Apply multiwavelet decomposition, transformation, and reconstruction
+        Main processing pipeline: decompose → transform → reconstruct
 
     wavelet_transform(x)
-        Perform one level of wavelet decomposition
+        Single-level decomposition: x → (detail, approximation)
+        Splits signal into two half-resolution components
 
     even_odd_reconstruction(x)
-        Perform one level of wavelet reconstruction using even-odd splitting
+        Single-level reconstruction: (detail, approximation) → x
+        Interleaves even/odd samples to restore full resolution
 
-    Input Shape
-    -----------
-    - 1D: (B, N, c, k) where N must be power of 2
-    - 2D: (B, Nx, Ny, c, k**2) where Nx, Ny must be powers of 2
-    - 3D: (B, Nx, Ny, T, c, k**2) where Nx, Ny must be powers of 2
+    Input Shapes
+    ------------
+    1D: (batch, n_points, channels, k)
+        where n_points must be a power of 2
+        Example: (32, 256, 1, 3) for 32 signals of 256 time steps
+
+    2D: (batch, height, width, channels, k²)
+        where height, width must be powers of 2
+        Example: (16, 64, 64, 1, 9) for 16 images of 64×64 with k=3
+
+    3D: (batch, height, width, time, channels, k²)
+        where height, width must be powers of 2 (time can be arbitrary)
+        Example: (8, 32, 32, 20, 1, 9) for spatio-temporal field
 
     Output Shape
     ------------
-    Same as input shape
+    Same as input shape - the transformation is resolution-preserving.
 
     Examples
     --------
-    >>> # 2D example
-    >>> layer = MWNO_CZ(k=3, alpha=5, L=0, c=1, base='legendre', n_dim=2)
-    >>> x = torch.randn(4, 16, 16, 1, 9)  # (batch, height, width, channels, k^2)
-    >>> output = layer(x)
-    >>> assert output.shape == x.shape
+    >>> # 1D signal processing
+    >>> layer_1d = MWNO_CZ(k=3, alpha=5, L=0, c=1, n_dim=1)
+    >>> signal = torch.randn(32, 128, 1, 3)
+    >>> output = layer_1d(signal)
+    >>> assert output.shape == signal.shape
+
+    >>> # 2D image processing
+    >>> layer_2d = MWNO_CZ(k=4, alpha=8, L=1, c=2, n_dim=2)
+    >>> image = torch.randn(16, 64, 64, 2, 16)
+    >>> output = layer_2d(image)
+    >>> assert output.shape == image.shape
+
+    >>> # 3D spatio-temporal processing
+    >>> layer_3d = MWNO_CZ(k=3, alpha=5, L=0, c=1, n_dim=3)
+    >>> field = torch.randn(8, 32, 32, 20, 1, 9)
+    >>> output = layer_3d(field)
+    >>> assert output.shape == field.shape
 
     Notes
     -----
-    The wavelet filters are precomputed based on the chosen polynomial basis
-    and stored as buffers for efficient computation during forward passes.
+    - Input spatial dimensions must be powers of 2 for wavelet decomposition
+    - The number of decomposition levels is automatically determined: log₂(spatial_size) - L
+    - Wavelet filters are precomputed and frozen (not learned)
+    - Only the kernels A, B, C and transform T0 are learned during training
+    - For 3D inputs, only the first two dimensions (Nx, Ny) are decomposed;
+      the third dimension (T) is preserved as-is
+
+    References
+    ----------
+    Based on "Multiwavelet-based Operator Learning for Differential Equations"
+    by Gupta et al. (2021)
     """
 
     def __init__(self, k=3, alpha=5, L=0, c=1, base='legendre', n_dim=1, initializer=None, **kwargs):
         super().__init__()
-        
-        self.k = k
-        self.L = L
-        self.n_dim = n_dim
-        
-        H0, H1, G0, G1, PHI0, PHI1 = WaveletUtils.get_filter(base, k)
-        H0r = H0@PHI0
-        G0r = G0@PHI0
-        H1r = H1@PHI1
-        G1r = G1@PHI1
-        
-        for matrix in [H0r, H1r, G0r, G1r]:
-            matrix[np.abs(matrix)<1e-8] = 0
-        
+
+        self.k = k  # Wavelet basis size
+        self.L = L  # Levels to skip at coarsest scale
+        self.n_dim = n_dim  # Spatial dimensionality
+
+        # Get wavelet filter banks from utility
+        h_0, h_1, g_0, g_1, phi_0, phi_1 = WaveletUtils.get_filter(base, k)
+
+        # Compose decomposition and reconstruction filters
+        # These transform between scales in the wavelet pyramid
+        h_0_reconstructed = h_0 @ phi_0  # Low-pass decomposition → reconstruction
+        g_0_reconstructed = g_0 @ phi_0  # High-pass decomposition → reconstruction
+        h_1_reconstructed = h_1 @ phi_1  # Low-pass odd samples
+        g_1_reconstructed = g_1 @ phi_1  # High-pass odd samples
+
+        # Clean up numerical noise
+        for matrix in [h_0_reconstructed, h_1_reconstructed, g_0_reconstructed, g_1_reconstructed]:
+            matrix[np.abs(matrix) < 1e-8] = 0
+
+        # Initialize learnable kernels
+        # A: Fourier kernel for detail (high-frequency) coefficients
         self.A = SparseKernelFT(k, alpha, c, n_dim)
+
+        # B: Kernel for approximation (low-frequency) coefficients
+        # Use Fourier for 1D (efficient), spatial for 2D/3D (smooth features)
         self.B = SparseKernelFT(k, alpha, c, n_dim) if n_dim == 1 else SparseKernel(k, alpha, c, n_dim)
+
+        # C: Spatial kernel for detail skip connections
         self.C = SparseKernel(k, alpha, c, n_dim)
-        
+
+        # T0: Linear transform at coarsest scale
         if n_dim == 1:
             self.T0 = nn.Linear(k, k)
         else:
-            self.T0 = nn.Linear(c*k**2, c*k**2)
-        
+            # For 2D/3D, need to handle all channels and basis functions
+            self.T0 = nn.Linear(c * k ** 2, c * k ** 2)
+
+        # Apply custom initialization if provided
         if initializer is not None:
             initializer(self.T0.weight)
-        
-        self._register_wavelet_filters(H0, H1, G0, G1, H0r, H1r, G0r, G1r)
-    
-    def _register_wavelet_filters(self, H0, H1, G0, G1, H0r, H1r, G0r, G1r):
-        # Register wavelet filters
+
+        # Register wavelet filters as non-trainable buffers
+        self._register_wavelet_filters(h_0, h_1, g_0, g_1,
+                                       h_0_reconstructed, h_1_reconstructed,
+                                       g_0_reconstructed, g_1_reconstructed)
+
+    def _register_wavelet_filters(self, h_0, h_1, g_0, g_1, h_0r, h_1r, g_0r, g_1r):
+        """
+        Register wavelet decomposition and reconstruction filters as buffers.
+
+        Buffers are stored with the model but not trained. They're used for:
+        - ec_s, ec_d: Decomposition (analysis) filters
+        - rc_*: Reconstruction (synthesis) filters
+
+        The filters are constructed using Kronecker products for 2D/3D to handle
+        separable transforms (apply filter to each dimension independently).
+
+        Parameters
+        ----------
+        h_0, h_1 : ndarray
+            Low-pass decomposition filters (even/odd)
+        g_0, g_1 : ndarray
+            High-pass decomposition filters (even/odd)
+        h_0r, h_1r : ndarray
+            Low-pass reconstruction filters (even/odd)
+        g_0r, g_1r : ndarray
+            High-pass reconstruction filters (even/odd)
+        """
         if self.n_dim == 1:
-            self.register_buffer('ec_s', torch.Tensor(np.concatenate((H0.T, H1.T), axis=0)))
-            self.register_buffer('ec_d', torch.Tensor(np.concatenate((G0.T, G1.T), axis=0)))
-            self.register_buffer('rc_e', torch.Tensor(np.concatenate((H0r, G0r), axis=0)))
-            self.register_buffer('rc_o', torch.Tensor(np.concatenate((H1r, G1r), axis=0)))
-            
+            # 1D: Simple concatenation of even and odd filters
+            # ec_s: [H0^T; H1^T] extracts approximation (smooth)
+            # ec_d: [G0^T; G1^T] extracts detail (edges)
+            self.register_buffer('ec_s', torch.Tensor(np.concatenate((h_0.T, h_1.T), axis=0)))
+            self.register_buffer('ec_d', torch.Tensor(np.concatenate((g_0.T, g_1.T), axis=0)))
+
+            # Reconstruction: recombine even and odd to restore full resolution
+            self.register_buffer('rc_e', torch.Tensor(np.concatenate((h_0r, g_0r), axis=0)))
+            self.register_buffer('rc_o', torch.Tensor(np.concatenate((h_1r, g_1r), axis=0)))
+
         elif self.n_dim >= 2:
+            # 2D/3D: Use Kronecker products for separable 2D transforms
+            # Kronecker product creates 2D filter from 1D filters:
+            # kron(A, B) applies A to rows and B to columns
+
+            # Decomposition filters for all 4 combinations: (even,even), (even,odd), (odd,even), (odd,odd)
             self.register_buffer('ec_s', torch.Tensor(
-                np.concatenate((np.kron(H0, H0).T, np.kron(H0, H1).T,
-                               np.kron(H1, H0).T, np.kron(H1, H1).T), axis=0)))
+                np.concatenate((np.kron(h_0, h_0).T,  # both dimensions even
+                                np.kron(h_0, h_1).T,  # x even, y odd
+                                np.kron(h_1, h_0).T,  # x odd, y even
+                                np.kron(h_1, h_1).T), axis=0)))  # both dimensions odd
+
             self.register_buffer('ec_d', torch.Tensor(
-                np.concatenate((np.kron(G0, G0).T, np.kron(G0, G1).T,
-                               np.kron(G1, G0).T, np.kron(G1, G1).T), axis=0)))
-            
-            self.register_buffer('rc_ee', torch.Tensor(np.concatenate((np.kron(H0r, H0r), np.kron(G0r, G0r)), axis=0)))
-            self.register_buffer('rc_eo', torch.Tensor(np.concatenate((np.kron(H0r, H1r), np.kron(G0r, G1r)), axis=0)))
-            self.register_buffer('rc_oe', torch.Tensor(np.concatenate((np.kron(H1r, H0r), np.kron(G1r, G0r)), axis=0)))
-            self.register_buffer('rc_oo', torch.Tensor(np.concatenate((np.kron(H1r, H1r), np.kron(G1r, G1r)), axis=0)))
-    
+                np.concatenate((np.kron(g_0, g_0).T,
+                                np.kron(g_0, g_1).T,
+                                np.kron(g_1, g_0).T,
+                                np.kron(g_1, g_1).T), axis=0)))
+
+            # Reconstruction filters for all 4 parity combinations
+            self.register_buffer('rc_ee',
+                                 torch.Tensor(np.concatenate((np.kron(h_0r, h_0r), np.kron(g_0r, g_0r)), axis=0)))
+            self.register_buffer('rc_eo',
+                                 torch.Tensor(np.concatenate((np.kron(h_0r, h_1r), np.kron(g_0r, g_1r)), axis=0)))
+            self.register_buffer('rc_oe',
+                                 torch.Tensor(np.concatenate((np.kron(h_1r, h_0r), np.kron(g_1r, g_0r)), axis=0)))
+            self.register_buffer('rc_oo',
+                                 torch.Tensor(np.concatenate((np.kron(h_1r, h_1r), np.kron(g_1r, g_1r)), axis=0)))
+
     def wavelet_transform(self, x):
-        # Dimension-agnostic wavelet transform
+        """
+        Perform one level of wavelet decomposition.
+
+        This is the "analysis" step that splits the input into two components:
+        1. Approximation (smooth, low-frequency): downsampled by 2
+        2. Detail (edges, high-frequency): also downsampled by 2
+
+        The decomposition works by:
+        - Separating even and odd samples (downsampling)
+        - Applying wavelet filters to extract smooth vs. detail information
+
+        Think of it like creating a Gaussian pyramid (blur) and a Laplacian
+        pyramid (edges) simultaneously, but with learnable/adaptive filters.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input at current scale
+            - 1D: (batch, n_points, channels, k)
+            - 2D: (batch, height, width, channels, k²)
+            - 3D: (batch, height, width, time, channels, k²)
+
+        Returns
+        -------
+        detail : torch.Tensor
+            High-frequency detail coefficients (same size as approx)
+            Contains edges, textures, rapid variations
+
+        approximation : torch.Tensor
+            Low-frequency approximation coefficients
+            Contains smooth, slowly-varying features
+
+        Notes
+        -----
+        Both outputs have half the spatial resolution of input (due to downsampling).
+        For 3D, only Nx and Ny are downsampled; time dimension is preserved.
+        """
         if self.n_dim == 1:
-            # 1D: downsample along the single spatial dimension
-            xa = torch.cat([x[:, ::2, :, :], x[:, 1::2, :, :]], -1)
+            # 1D: Separate even [0::2] and odd [1::2] samples
+            # Concatenate along last dimension for filter application
+            downsampled = torch.cat([x[:, ::2, :, :],  # even samples
+                                     x[:, 1::2, :, :]], -1)  # odd samples
+
         elif self.n_dim == 2:
-            # 2D: downsample along both spatial dimensions
-            xa = torch.cat([x[:, ::2, ::2, :, :], x[:, ::2, 1::2, :, :], 
-                        x[:, 1::2, ::2, :, :], x[:, 1::2, 1::2, :, :]], -1)
+            # 2D: Separate all 4 combinations of even/odd in x and y
+            downsampled = torch.cat([x[:, ::2, ::2, :, :],  # even-even
+                                     x[:, ::2, 1::2, :, :],  # even-odd (x even, y odd)
+                                     x[:, 1::2, ::2, :, :],  # odd-even (x odd, y even)
+                                     x[:, 1::2, 1::2, :, :]], -1)  # odd-odd
+
         elif self.n_dim == 3:
-            # 3D: x shape is (B, Nx, Ny, T, c, k**2)
-            # Only downsample Nx and Ny, keep T unchanged
-            xa = torch.cat([x[:, ::2, ::2, :, :, :],    # even-even
-                        x[:, ::2, 1::2, :, :, :],    # even-odd
-                        x[:, 1::2, ::2, :, :, :],    # odd-even
-                        x[:, 1::2, 1::2, :, :, :]], -1)  # odd-odd
-        
-        d = torch.matmul(xa, self.ec_d)
-        s = torch.matmul(xa, self.ec_s)
-        return d, s
-    
+            # 3D: Only downsample spatial dims (Nx, Ny), preserve temporal dim (T)
+            # x shape: (batch, Nx, Ny, T, channels, k²)
+            downsampled = torch.cat([x[:, ::2, ::2, :, :, :],  # even-even
+                                     x[:, ::2, 1::2, :, :, :],  # even-odd
+                                     x[:, 1::2, ::2, :, :, :],  # odd-even
+                                     x[:, 1::2, 1::2, :, :, :]], -1)  # odd-odd
+
+        # Apply wavelet filters to extract detail and approximation
+        detail = torch.matmul(downsampled, self.ec_d)  # High-pass filter
+        approximation = torch.matmul(downsampled, self.ec_s)  # Low-pass filter
+
+        return detail, approximation
+
     def even_odd_reconstruction(self, x):
-        # Dimension-agnostic even-odd reconstruction
+        """
+        Perform one level of wavelet reconstruction.
+
+        This is the "synthesis" step that combines detail and approximation
+        coefficients back into the full-resolution signal. It's the inverse
+        of wavelet_transform().
+
+        The reconstruction:
+        1. Applies reconstruction filters to detail and approximation
+        2. Upsamples by interleaving even and odd positions
+        3. Produces output at double the input resolution
+
+        Think of it like "unzipping" the compressed representation back to
+        full resolution, intelligently placing values at even and odd positions.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Combined coefficients [approximation; detail] at current scale
+            Last dimension has size 2*k (1D) or 2*k² (2D/3D)
+            - 1D: (batch, n_points//2, channels, 2*k)
+            - 2D: (batch, height//2, width//2, channels, 2*k²)
+            - 3D: (batch, height//2, width//2, time, channels, 2*k²)
+
+        Returns
+        -------
+        torch.Tensor
+            Reconstructed signal at double the spatial resolution
+            - 1D: (batch, n_points, channels, k)
+            - 2D: (batch, height, width, channels, k²)
+            - 3D: (batch, height, width, time, channels, k²)
+
+        Notes
+        -----
+        The even/odd interleaving ensures smooth reconstruction without
+        checkerboard artifacts. For 3D, time dimension remains unchanged.
+        """
         if self.n_dim == 1:
-            B, N, c, ich = x.shape
-            assert ich == 2*self.k
-            x_e = torch.matmul(x, self.rc_e)
-            x_o = torch.matmul(x, self.rc_o)
-            
-            result = torch.zeros(B, N*2, c, self.k, device=x.device)
-            result[..., ::2, :, :] = x_e
-            result[..., 1::2, :, :] = x_o
+            batch_size, n_coarse, num_channels, input_channels = x.shape
+            assert input_channels == 2 * self.k, \
+                f"Expected {2 * self.k} input channels, got {input_channels}"
+
+            # Apply reconstruction filters
+            x_even = torch.matmul(x, self.rc_e)  # Reconstruct even positions
+            x_odd = torch.matmul(x, self.rc_o)  # Reconstruct odd positions
+
+            # Interleave even and odd to restore full resolution
+            result = torch.zeros(batch_size, n_coarse * 2, num_channels, self.k, device=x.device)
+            result[:, ::2, :, :] = x_even  # Place at even indices
+            result[:, 1::2, :, :] = x_odd  # Place at odd indices
             return result
-            
+
         elif self.n_dim == 2:
-            B, Nx, Ny, c, ich = x.shape
-            assert ich == 2*self.k**2
-            x_ee = torch.matmul(x, self.rc_ee)
-            x_eo = torch.matmul(x, self.rc_eo)
-            x_oe = torch.matmul(x, self.rc_oe)
-            x_oo = torch.matmul(x, self.rc_oo)
-            
-            result = torch.zeros(B, Nx*2, Ny*2, c, self.k**2, device=x.device)
-            result[:, ::2, ::2, :, :] = x_ee
-            result[:, ::2, 1::2, :, :] = x_eo
-            result[:, 1::2, ::2, :, :] = x_oe
-            result[:, 1::2, 1::2, :, :] = x_oo
+            batch_size, nx_coarse, ny_coarse, num_channels, input_channels = x.shape
+            assert input_channels == 2 * self.k ** 2, \
+                f"Expected {2 * self.k ** 2} input channels, got {input_channels}"
+
+            # Apply reconstruction filters for all 4 parity combinations
+            x_even_even = torch.matmul(x, self.rc_ee)  # Even in both x and y
+            x_even_odd = torch.matmul(x, self.rc_eo)  # Even in x, odd in y
+            x_odd_even = torch.matmul(x, self.rc_oe)  # Odd in x, even in y
+            x_odd_odd = torch.matmul(x, self.rc_oo)  # Odd in both x and y
+
+            # Interleave in 2D checkerboard pattern
+            result = torch.zeros(batch_size, nx_coarse * 2, ny_coarse * 2,
+                                 num_channels, self.k ** 2, device=x.device)
+            result[:, ::2, ::2, :, :] = x_even_even
+            result[:, ::2, 1::2, :, :] = x_even_odd
+            result[:, 1::2, ::2, :, :] = x_odd_even
+            result[:, 1::2, 1::2, :, :] = x_odd_odd
             return result
-            
+
         elif self.n_dim == 3:
-            B, Nx, Ny, T, c, ich = x.shape
-            assert ich == 2*self.k**2
-            x_ee = torch.matmul(x, self.rc_ee)
-            x_eo = torch.matmul(x, self.rc_eo)
-            x_oe = torch.matmul(x, self.rc_oe)
-            x_oo = torch.matmul(x, self.rc_oo)
-            
-            result = torch.zeros(B, Nx*2, Ny*2, T, c, self.k**2, device=x.device)
-            result[:, ::2, ::2, :, :, :] = x_ee
-            result[:, ::2, 1::2, :, :, :] = x_eo
-            result[:, 1::2, ::2, :, :, :] = x_oe
-            result[:, 1::2, 1::2, :, :, :] = x_oo
+            batch_size, nx_coarse, ny_coarse, time_steps, num_channels, input_channels = x.shape
+            assert input_channels == 2 * self.k ** 2, \
+                f"Expected {2 * self.k ** 2} input channels, got {input_channels}"
+
+            # Apply reconstruction filters (same as 2D)
+            x_even_even = torch.matmul(x, self.rc_ee)
+            x_even_odd = torch.matmul(x, self.rc_eo)
+            x_odd_even = torch.matmul(x, self.rc_oe)
+            x_odd_odd = torch.matmul(x, self.rc_oo)
+
+            # Interleave in spatial dimensions, preserve time dimension
+            result = torch.zeros(batch_size, nx_coarse * 2, ny_coarse * 2, time_steps,
+                                 num_channels, self.k ** 2, device=x.device)
+            result[:, ::2, ::2, :, :, :] = x_even_even
+            result[:, ::2, 1::2, :, :, :] = x_even_odd
+            result[:, 1::2, ::2, :, :, :] = x_odd_even
+            result[:, 1::2, 1::2, :, :, :] = x_odd_odd
             return result
-    
+
     def forward(self, x):
+        """
+        Apply multiwavelet transform: decompose → transform → reconstruct.
+
+        This is the main processing pipeline that:
+        1. Decomposes input into multiple scales (wavelet pyramid)
+        2. Applies learnable transformations at each scale
+        3. Reconstructs output from all scales
+
+        Processing flow:
+        ---------------
+        Decomposition phase (coarse-to-fine):
+            for each scale level:
+                Split into (detail, approximation)
+                Transform detail: A(detail) + B(approximation)
+                Skip connection: C(detail)
+                Continue with approximation at next coarser level
+
+            Process coarsest scale with T0
+
+        Reconstruction phase (fine-to-coarse):
+            for each scale level:
+                Add skip connection
+                Combine with detail from decomposition
+                Reconstruct to finer scale
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor with spatial dimensions as powers of 2
+            - 1D: (batch, n_points, channels, k)
+            - 2D: (batch, height, width, channels, k²)
+            - 3D: (batch, height, width, time, channels, k²)
+
+        Returns
+        -------
+        torch.Tensor
+            Transformed output with same shape as input
+
+        Notes
+        -----
+        - Spatial dimensions must be powers of 2 for clean decomposition
+        - Number of scales = log₂(spatial_size) - L
+        - Skip connections preserve high-frequency information
+        - Uses TorchScript type annotations for compilation optimization
+        """
+        # Parse input shape and determine number of decomposition scales
         if self.n_dim == 1:
-            B, N, c, ich = x.shape
-            ns = math.floor(np.log2(N))
+            batch_size, n_points, num_channels, input_channels = x.shape
+            num_scales = math.floor(np.log2(n_points))
         elif self.n_dim == 2:
-            B, Nx, Ny, c, ich = x.shape
-            ns = math.floor(np.log2(Nx))
+            batch_size, nx, ny, num_channels, input_channels = x.shape
+            num_scales = math.floor(np.log2(nx))
         elif self.n_dim == 3:
-            B, Nx, Ny, T, c, ich = x.shape
-            ns = math.floor(np.log2(Nx))
+            batch_size, nx, ny, time_steps, num_channels, input_channels = x.shape
+            num_scales = math.floor(np.log2(nx))
 
-        
-        Ud = torch.jit.annotate(List[Tensor], [])
-        Us = torch.jit.annotate(List[Tensor], [])
-        
-        for i in range(ns - self.L):
-            d, x = self.wavelet_transform(x)
-            Ud_i = self.A(d) + self.B(x)
-            Us_i = self.C(d)
-            Ud.append(Ud_i)
-            Us.append(Us_i)
+        # Storage for detail coefficients and skip connections at each scale
+        # Use TorchScript type annotations for JIT compilation
+        detail_coeffs = torch.jit.annotate(List[Tensor], [])  # Transformed details: A(d) + B(s)
+        skip_connections = torch.jit.annotate(List[Tensor], [])  # Skip paths: C(d)
 
-        
+        # ========== Decomposition Phase ==========
+        # Progressively decompose into coarser scales
+        for scale_idx in range(num_scales - self.L):
+            # Split current scale into detail (high-freq) and approximation (low-freq)
+            detail, approximation = self.wavelet_transform(x)
+
+            # Apply learnable transformations
+            # detail pathway: Fourier kernel on high-frequency + coupling with low-frequency
+            detail_transformed = self.A(detail) + self.B(approximation)
+
+            # Skip connection: spatial kernel on high-frequency (preserves edges)
+            skip = self.C(detail)
+
+            # Store for reconstruction phase
+            detail_coeffs.append(detail_transformed)
+            skip_connections.append(skip)
+
+            # Continue decomposing the approximation (smoother component)
+            x = approximation
+
+        # ========== Coarsest Scale Processing ==========
+        # At the coarsest scale, apply learned linear transformation
         if self.n_dim == 1:
+            # 1D: Direct linear transform
             x = self.T0(x)
         elif self.n_dim == 2:
-            # x shape: (B, 2^L, 2^L, c, k^2)
-            B, Nx_coarse, Ny_coarse, c, ich = x.shape
-            x_reshaped = x.reshape(B * Nx_coarse * Ny_coarse, c * ich)
-            x_reshaped = self.T0(x_reshaped)
-            x = x_reshaped.reshape(B, Nx_coarse, Ny_coarse, c, ich)
+            # 2D: Flatten spatial dimensions, apply transform, reshape
+            # x shape: (batch, 2^L, 2^L, channels, k²)
+            batch_size, nx_coarse, ny_coarse, num_channels, input_channels = x.shape
+            x_flattened = x.reshape(batch_size * nx_coarse * ny_coarse, num_channels * input_channels)
+            x_flattened = self.T0(x_flattened)
+            x = x_flattened.reshape(batch_size, nx_coarse, ny_coarse, num_channels, input_channels)
         elif self.n_dim == 3:
-            # x shape: (B, 2^L, 2^L, T, c, k^2)
-            B, Nx_coarse, Ny_coarse, T, c, ich = x.shape
-            # Flatten spatial dimensions but keep T separate
-            x_reshaped = x.reshape(B * Nx_coarse * Ny_coarse * T, c * ich)
-            x_reshaped = self.T0(x_reshaped)
-            x = x_reshaped.reshape(B, Nx_coarse, Ny_coarse, T, c, ich)
-        
-            # Reconstruct
-        for i in range(ns - 1 - self.L, -1, -1):
-            
-            x = x + Us[i]
-            
-            x = torch.cat((x, Ud[i]), -1)
-            
+            # 3D: Flatten spatial AND temporal, apply transform, reshape
+            # x shape: (batch, 2^L, 2^L, time, channels, k²)
+            batch_size, nx_coarse, ny_coarse, time_steps, num_channels, input_channels = x.shape
+            x_flattened = x.reshape(batch_size * nx_coarse * ny_coarse * time_steps,
+                                    num_channels * input_channels)
+            x_flattened = self.T0(x_flattened)
+            x = x_flattened.reshape(batch_size, nx_coarse, ny_coarse, time_steps,
+                                    num_channels, input_channels)
+
+        # ========== Reconstruction Phase ==========
+        # Progressively reconstruct from coarse to fine
+        # Iterate in reverse order through the scales
+        for scale_idx in range(num_scales - 1 - self.L, -1, -1):
+            # Add skip connection (preserves high-frequency from decomposition)
+            x = x + skip_connections[scale_idx]
+
+            # Concatenate with transformed detail coefficients
+            # This combines: approximation + detail = full signal at this scale
+            x = torch.cat((x, detail_coeffs[scale_idx]), dim=-1)
+
+            # Upsample to next finer scale using wavelet reconstruction
             x = self.even_odd_reconstruction(x)
-        
+
         return x
