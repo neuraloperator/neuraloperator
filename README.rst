@@ -24,11 +24,6 @@ so your trained operator can be applied on data of any resolution.
 
 Checkout the `documentation <https://neuraloperator.github.io/dev/index.html>`_ for more!
 
-
-.. raw:: html
-
-   <br>
-
 ============
 Installation
 ============
@@ -51,9 +46,6 @@ on `PyPI <https://pypi.org/project/neuraloperator/>`_:
 
   pip install neuraloperator
 
-.. raw:: html
-
-   <br><br>
 
 ==========
 Quickstart
@@ -101,9 +93,6 @@ Our ``Trainer`` natively supports logging to W&B. To use these features, create 
 ``neuraloperator/config`` called ``wandb_api_key.txt`` and paste your W&B API key there.
 You can configure the project you want to use and your username in the main yaml configuration files.
 
-.. raw:: html
-
-   <br>
 
 ============
 Contributing
@@ -129,9 +118,6 @@ or even better, open a `Pull Request <https://github.com/neuraloperator/neuralop
 
 For detailed development setup, testing, and contribution guidelines, please refer to our `Contributing Guide <CONTRIBUTING.md>`_.
 
-.. raw:: html
-
-   <br>
 
 ===============
 Code of Conduct
@@ -139,9 +125,6 @@ Code of Conduct
 
 All participants are expected to uphold the `Code of Conduct <https://github.com/neuraloperator/neuraloperator/blob/main/CODE_OF_CONDUCT.md>`_ to ensure a friendly and welcoming environment for everyone.
 
-.. raw:: html
-
-   <br>
 
 =====================
 Citing NeuralOperator
