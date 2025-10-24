@@ -57,13 +57,13 @@ class ICLoss(object):
         super().__init__()
         self.loss = loss
 
-    def initial_condition_loss(self, y_pred, x):
-        boundary_true = x[:, 0, 0, :]
+    def initial_condition_loss(self, y_pred, y):
+        boundary_true = y[:, 0, 0, :]
         boundary_pred = y_pred[:, 0, 0, :]
         return self.loss(boundary_pred, boundary_true)
 
-    def __call__(self, y_pred, x, **kwargs):
-        return self.initial_condition_loss(y_pred, x)
+    def __call__(self, y_pred, y, **kwargs):
+        return self.initial_condition_loss(y_pred, y)
 
 
 class PoissonInteriorLoss(object):
