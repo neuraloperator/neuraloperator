@@ -12,60 +12,64 @@ from ..layers.embeddings import GridEmbedding2D, GridEmbeddingND
 
 
 class CODANO(nn.Module):
-    """Codomain Attention Neural Operators (CoDA-NO) uses a specialized attention mechanism in the codomain space for data in
-    infinite dimensional spaces as described in [1]_. The model treates each input channel as a variable of the physical system
+    """Codomain Attention Neural Operators (CoDA-NO) 
+    
+    It uses a specialized attention mechanism in the codomain space for data in
+    infinite dimensional spaces as described in [1]_. The model treats each input channel as a variable of the physical system
     and uses attention mechanism to model the interactions between the variables. The model uses lifting and projection modules
     to map the input variables to a higher-dimensional space and then back to the output space. The model also supports positional
     encoding and static channel information for additional context of the physical system such as external force or inlet condition.
 
-
     Parameters
     ----------
-    output_variable_codimension : int
-        The number of output channels (or output codomain dimension) corresponding to each input variable (or input channel). Default is 1.
-        Example: For a input with 3 variables (channels) and output_variable_codimension=2, the output will have 6 channels (3 variables × 2 codimension).
+    n_layers : int
+        The number of codomain attention layers. Default: 4
+    n_modes : list
+        The number of Fourier modes to use in integral operators in the CoDA-NO block along each dimension.
+        Example: For a 5-layer 2D CoDA-NO, n_modes=[[16, 16], [16, 16], [16, 16], [16, 16], [16, 16]]
 
-    lifting_channels : int
-        Number of intermidiate channels in the lifting block. The lifting module projects each input variable (i.e., each input channel) into a
-        higher-dimensional space determied by `hidden_variable_codimension`. Default is 64 (two times the hidden_variable_codimension).
-        If lifting_channels is None, lifting is not performed and the input channels are directly used as tokens for codoamin attention.
-
-    hidden_variable_codimension : int
+    Other parameters
+    ---------------
+    output_variable_codimension : int, optional
+        The number of output channels (or output codomain dimension) corresponding to each input variable (or input channel).
+        Example: For an input with 3 variables (channels) and output_variable_codimension=2, the output will have 6 channels (3 variables × 2 codimension). Default: 1
+    lifting_channels : int, optional
+        Number of intermediate channels in the lifting block.
+        The lifting module projects each input variable (i.e., each input channel) into a
+        higher-dimensional space determined by hidden_variable_codimension.
+        If lifting_channels is None, lifting is not performed and the input channels are
+        directly used as tokens for codomain attention. Default: 64
+    hidden_variable_codimension : int, optional
         The number of hidden channels corresponding to each input variable (or channel). Each input channel is independently lifted
-        to `hidden_variable_codimension` channels by the lifting block. Default is 32.
-
-
-    projection_channels : int. The number of intermidiate channels in the projection block of the codano is, default is 64. if `projection_channels=None`,
-        projection is not performed and the output of the last CoDA block is returned directly.
-
-
-    use_positional_encoding : bool
+        to hidden_variable_codimension channels by the lifting block. Default: 32
+    projection_channels : int, optional
+        The number of intermediate channels in the projection block of the CODANO.
+        If projection_channels=None, projection is not performed and the output of
+        the last CoDA block is returned directly. Default: 64
+    use_positional_encoding : bool, optional
         Indicates whether to use variable-specific positional encoding. If True, a learnable positional encoding is concatenated
-        to each variable (each input channel) before the lifting operation. The positinal encoding used here is a function space
-        generalization of the learable positional encoding used in BERT [2]. In codano, the positional encoding is a function on
-        domain which is learned directly in the Fourier Space. Default is False.
-
-    positional_encoding_dim : int
-        The dimension (number of channels) of the positional encoding learned of each input variable (i.e., input channel). Default is 8.
-
-    positional_encoding_modes : list
+        to each variable (each input channel) before the lifting operation.
+        The positional encoding used here is a function space generalization of the learnable positional encoding
+        used in BERT [2]. In CODANO, the positional encoding is a function on domain which is learned directly
+        in the Fourier Space. Default: False
+    positional_encoding_dim : int, optional
+        The dimension (number of channels) of the positional encoding learned of each input variable
+        (i.e., input channel). Default: 8
+    positional_encoding_modes : list, optional
         Number of Fourier modes used in positional encoding along each dimension. The positional embeddings are functions and are directly learned
-        in Fourier space. This parameter must be specified when `use_positional_encoding=True`. Default is None.
-        Example: For a 2D input, positional_encoding_modes could be [16, 16].
-
-    static_channel_dim : int
+        in Fourier space. This parameter must be specified when use_positional_encoding=True.
+        Example: For a 2D input, positional_encoding_modes could be [16, 16]. Default: None
+    static_channel_dim : int, optional
         The number of channels for static information, such as boundary conditions in PDEs. These channels are concatenated with
-        each variable before the lifting operation and use to provide additional information regarding the physical setup of the system.
-        When `static_channel_dim > 0`, additional information must be provided during
-        the forward pass. Default is 0.
-
-        For example, static_channel_dim=1 can be used to provid mask of the domain pointing a hole or obstacle in the domain.
-
-    variable_ids : list[str]
-        The names of the variables in the dataset. Default is None.
-
-        This parameter is **only** required when `use_positional_encoding=True` to initialize learnable positional embeddings for
-        each unique physical varibles in the dataset.
+        each variable before the lifting operation and used to provide additional information
+        regarding the physical setup of the system.
+        When static_channel_dim > 0, additional information must be provided during the forward pass.
+        For example, static_channel_dim=1 can be used to provide mask of the domain pointing
+        a hole or obstacle in the domain. Default: 0
+    variable_ids : list[str], optional
+        The names of the variables in the dataset.
+        This parameter is only required when use_positional_encoding=True to initialize learnable
+        positional embeddings for each unique physical variable in the dataset.
 
         For example:
         If the dataset consists of only Navier Stokes equations, the variable_ids=['u_x', 'u_y', 'p'], representing the velocity
@@ -76,80 +80,51 @@ class CODANO(nn.Module):
         into two components, i.e., u_x and u_y. And this is to be done for all variable with codimension > 1.
 
         If the dataset consists of multiple PDEs, such as Navier Stokes and Heat equation, the variable_ids=['u_x', 'u_y', 'p', 'T'],
-        where 'T' represents the temperature variable for thee Heat equation and 'u_x', 'u_y', 'p' are the velocity components and pressure
+        where 'T' represents the temperature variable for the Heat equation and 'u_x', 'u_y', 'p' are the velocity components and pressure
         for the Navier Stokes equations. This is required when we aim to learn a single solver for multiple different PDEs.
 
-        This parameter is not required when `use_positional_encoding=False`.
-
-    n_layers : int
-        The number of codomain attention layers. Default is 4.
-
-    n_modes : list
-        The number of Fourier modes to use in integral operators in the CoDA-NO block along each dimension. Default is None.
-        Example: For a 5-layer 2D CoDA-NO, n_modes=[[16, 16], [16, 16], [16, 16], [16, 16], [16, 16]].
-
-    per_layer_scaling_factor : list
+        This parameter is not required when use_positional_encoding=False. Default: None
+    per_layer_scaling_factors : list, optional
         The output scaling factor for each CoDANO_block along each dimension. The output of each of the CoDANO_block
-        is resampled accroding to the scaling factor and then passed to the following CoDANO_blocks. Default is None ,i.e., no scaling.
-
-        Example: For a 2D input and `n_layers=5`, per_layer_scaling_factor=[[1, 1], [0.5, 0.5], [1, 1], [2, 2], [1, 1]], which downsample the
-        output of the second layer by a factor of 2 and upsample the output of the fourth layer by a factor of 2.
-
-        The resolution of the output of the codano model is determined by the product of the scaling factors of all the layers.
-
-    n_heads : list
-        The number of attention heads for each layer. Default is None, i.e., single attention head for
-        each codomain attention block.
-        Example: For a 4-layer CoDA-NO, n_heads=[2, 2, 2, 2].
-
-    attention_scaling_factors : list
+        is resampled according to the scaling factor and then passed to the following CoDANO_blocks.
+        Example: For a 2D input and n_layers=5, per_layer_scaling_factors=[[1, 1], [0.5, 0.5], [1, 1], [2, 2], [1, 1]],
+        which downsamples the output of the second layer by a factor of 2 and upsamples the output of the fourth layer by a factor of 2.
+        The resolution of the output of the CODANO model is determined by the product of the scaling factors of all the layers. Default: None
+    n_heads : list, optional
+        The number of attention heads for each layer.
+        Example: For a 4-layer CoDA-NO, n_heads=[2, 2, 2, 2]. Default: None (single attention head for each codomain attention block)
+    attention_scaling_factors : list, optional
         Scaling factors in the codomain attention mechanism to scale the key and query functions. These scaling factors are used to resample
-        the key and query function before calculating the attention matrix. It does not have any effect on the value funnctions
-        in the codoamin attention mechanism, i.e., it does not change the output shape of the block.  Default is None, which means no scaling.
-
-        Example: For a 5-layer CoDA-NO, attention_scaling_factors=[0.5, 0.5, 0.5, 0.5, 0.5], which is downsample the key and query functions,
-        reducing the resolution by a factor of 2.
-
-    conv_module : nn.Module
-        The convolution module to use in the CoDANO_block. Default is SpectralConv.
-
-    nonlinear_attention : bool
-        Indicates whether to use a non-linear attention mechanism, employing non-linear key, query, and value operators. Default is False.
-
-    non_linearity : callable
-        The non-linearity to use in the codomain attention block. Default is `F.gelu`.
-
-    attention_token_dim : int
-        The number of channels in each token function. `attention_token_dim` must divide `hidden_variable_codimension`. Default is 1.
-
-    per_channel_attention : bool
-        Indicates whether to use a per-channel attention mechanism in Codomain attention layer. Default is False.
-
-    enable_cls_token : bool
+        the key and query function before calculating the attention matrix. It does not have any effect on the value functions
+        in the codomain attention mechanism, i.e., it does not change the output shape of the block.
+        Example: For a 5-layer CoDA-NO, attention_scaling_factors=[0.5, 0.5, 0.5, 0.5, 0.5], which downsample the key and query functions,
+        reducing the resolution by a factor of 2. Default: None (no scaling)
+    conv_module : nn.Module, optional
+        The convolution module to use in the CoDANO_block. Default: SpectralConv
+    nonlinear_attention : bool, optional
+        Indicates whether to use a non-linear attention mechanism, employing non-linear key, query, and value operators. Default: False
+    non_linearity : callable, optional
+        The non-linearity to use in the codomain attention block. Default: F.gelu
+    attention_token_dim : int, optional
+        The number of channels in each token function. attention_token_dim must divide hidden_variable_codimension. Default: 1
+    per_channel_attention : bool, optional
+        Indicates whether to use a per-channel attention mechanism in Codomain attention layer. Default: False
+    enable_cls_token : bool, optional
         Indicates whether to use a learnable CLASS token during the attention mechanism. We use a function-space generalization of the
-        learnable [class] token used in vision transformers such as ViT, which is learned directly in Fourier space. Default is False.
-
+        learnable [class] token used in vision transformers such as ViT, which is learned directly in Fourier space.
         The [class] function is realized on the input grid by performing an inverse Fourier transform of the learned Fourier coefficients.
         Then, the [class] token function is added to the set of input token functions before passing to the codomain attention layer. It aggregates
         information from all the other tokens through the attention mechanism. The output token corresponding to the [class] token is discarded in the
-        output of the last CoDA block.
-
-    Other parameters
-    ----------------
+        output of the last CoDA block. Default: False
     use_horizontal_skip_connection : bool, optional
-        Indicates whether to use horizontal skip connections, similar to U-shaped architectures. Default is False.
-
+        Indicates whether to use horizontal skip connections, similar to U-shaped architectures. Default: False
     horizontal_skips_map : dict, optional
-        A mapping that specifies horizontal skip connections between layers. Only required when `use_horizontal_skip_connection=True`. Default is None.
-        Example: For a 5-layer architecture, horizontal_skips_map={4: 0, 3: 1} creates skip connections from layer 0 to layer 4 and layer 1 to layer 3.
-
-    domain_padding : float
-        The padding factor for each input channel. It zero pads each of the channel. Default is 0.25.
-
-
-
-    layer_kwargs : dict
-        Additional arguments for the CoDA blocks. Default is an empty dictionary `{}`.
+        A mapping that specifies horizontal skip connections between layers. Only required when use_horizontal_skip_connection=True.
+        Example: For a 5-layer architecture, horizontal_skips_map={4: 0, 3: 1} creates skip connections from layer 0 to layer 4 and layer 1 to layer 3. Default: None
+    domain_padding : float, optional
+        The padding factor for each input channel. It zero pads each of the channel. Default: 0.25
+    layer_kwargs : dict, optional
+        Additional arguments for the CoDA blocks. Default: {}
 
     References
     -----------
@@ -185,7 +160,6 @@ class CODANO(nn.Module):
         per_channel_attention=False,
         layer_kwargs={},
         domain_padding=0.25,
-
         enable_cls_token=False,
     ):
         super().__init__()
@@ -287,7 +261,6 @@ class CODANO(nn.Module):
             )
         else:
             self.domain_padding = None
-
 
         self.extended_variable_codimemsion = extended_variable_codimemsion
         if self.lifting:
@@ -531,7 +504,6 @@ class CODANO(nn.Module):
         # forward pass through the Codomain Attention layers
         skip_outputs = {}
         for layer_idx in range(self.n_layers):
-
             if (
                 self.horizontal_skips_map is not None
                 and layer_idx in self.horizontal_skips_map.keys()

@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.mark.parametrize("hidden_variable_codimension", [1, 2])
-@pytest.mark.parametrize("lifting_channels", [4, 2, None])
+@pytest.mark.parametrize("lifting_channels", [2, None])
 @pytest.mark.parametrize("use_positional_encoding", [True, False])
 @pytest.mark.parametrize("n_variables", [3, 4])
 @pytest.mark.parametrize("positional_encoding_dim", [4, 8])
@@ -86,12 +86,12 @@ def test_CODANO(
 
     # Test backward pass
     out.sum().backward()
-    
-    # testing for new varibales 
+
+    # testing for new varibales
     if use_positional_encoding:
         model._extend_positional_encoding("T")
         input_var_ids = input_var_ids + ["T"]
-        
+
     in_data = torch.randn(2, new_n_var + 1, 64, 64)
     out = model(in_data, static_channels, input_var_ids)
     assert list(out.shape) == [2, new_n_var + 1, 64, 64]

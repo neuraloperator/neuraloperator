@@ -1,0 +1,105 @@
+/* Custom styles for neuraloperator documentation */
+
+/* Override sidebar background color - slightly gray */
+#sidebar {
+    background-color: #f5f5f5 !important; /* Slightly gray background */
+}
+
+/* Override top navigation bar - same as left panel */
+.navbar.top-navbar {
+    background-color: #f5f5f5 !important; /* Same slightly gray as left panel */
+    border-bottom: 2px solid #dee2e6 !important; /* Line separation under top bar */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important; /* Subtle shadow for depth */
+}
+
+/* Ensure navbar text remains readable on slightly gray background */
+.navbar.top-navbar .navbar-item,
+.navbar.top-navbar .navbar-link {
+    color: #333333 !important; /* Dark text on slightly gray */
+}
+
+.navbar.top-navbar .navbar-item:hover,
+.navbar.top-navbar .navbar-link:hover {
+    background-color: #e9ecef !important; /* Slightly lighter gray on hover */
+    color: #333333 !important;
+}
+
+.navbar.top-navbar .navbar-item.is-active {
+    background-color: #e9ecef !important;
+    color: #333333 !important;
+}
+
+/* Ensure main content area stays white */
+.main-content,
+.content {
+    background-color: #ffffff !important;
+}
+
+/* Custom sidebar menu styling */
+.sidebar-menu {
+    background-color: inherit;
+}
+
+.sidebar-menu-toc {
+    background-color: inherit;
+}
+
+/* Ensure sidebar text remains readable */
+#sidebar a {
+    color: #333 !important;
+}
+
+#sidebar a:hover {
+    color: #007bff !important;
+}
+
+/* Style for selected/current section in sidebar */
+#sidebar .toctree-l1.current > a,
+#sidebar .toctree-l1.current > a.reference.internal {
+    background-color: #495057 !important; /* Dark gray background for selected section */
+    color: #ffffff !important; /* White text on dark gray */
+    border-radius: 4px !important;
+    padding: 8px 12px !important;
+    margin: 2px 0 !important;
+}
+
+/* Style for active/current page in sidebar */
+#sidebar .toctree-l1.current > a.current,
+#sidebar .toctree-l1.current > a.current.reference.internal {
+    background-color: #343a40 !important; /* Even darker gray for current page */
+    color: #ffffff !important;
+    font-weight: bold !important;
+}
+
+/* Reduce width of left and right panels */
+#sidebar {
+    flex: 0 0 230px !important; /* Fixed width of 230px for sidebar */
+    max-width: 230px !important;
+    min-width: 230px !important;
+}
+
+/* Adjust main content area to take up more space */
+.main-column {
+    flex: 1 !important;
+    min-width: 0 !important; /* Allow content to shrink */
+}
+
+/* Override Bulma column classes for narrower panels */
+.column.is-3-desktop {
+    flex: 0 0 230px !important;
+    max-width: 230px !important;
+}
+
+.column.is-one-third-tablet {
+    flex: 0 0 230px !important;
+    max-width: 230px !important;
+}
+
+/* Ensure responsive behavior is maintained */
+@media screen and (max-width: 768px) {
+    #sidebar {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        min-width: 100% !important;
+    }
+}
