@@ -121,6 +121,7 @@ class FNOBlocks(nn.Module):
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
+        fft_norm='forward',
     ):
         super().__init__()
         if isinstance(n_modes, int):
@@ -178,6 +179,7 @@ class FNOBlocks(nn.Module):
                     fno_block_precision=fno_block_precision,
                     decomposition_kwargs=decomposition_kwargs,
                     complex_data=complex_data,
+                    fft_norm=fft_norm,
                 )
                 for i in range(n_layers)
             ]
