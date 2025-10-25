@@ -63,18 +63,19 @@ class BurgersEqnLoss(object):
 class ICLoss(object):
     """
     Computes loss for initial value problems.
+
+    Extracts the initial condition and computes the loss between predicted 
+    and true initial conditions for all channels.
+    
+    Expected input shape: (batch_size, channels, time_dim, *spatial_dims)
     """
 
     def __init__(self, loss=F.mse_loss):
         super().__init__()
         self.loss = loss
-
-    def initial_condition_loss(self, y_pred, y):
-        boundary_true = y[:, 0, 0, :]
-        boundary_pred = y_pred[:, 0, 0, :]
-        return self.loss(boundary_pred, boundary_true)
-
+        
     def __call__(self, y_pred, y, **kwargs):
+        """Expected input shape: (batch_size, channels, time_dim, *spatial_dims)"""
         if kwargs:
             warnings.warn(
                 f"ICLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
@@ -82,7 +83,7 @@ class ICLoss(object):
                 UserWarning,
                 stacklevel=2,
             )
-        return self.initial_condition_loss(y_pred, y)
+        return self.loss(y_pred[:, :, 0], y[:, :, 0])
 
 
 class PoissonInteriorLoss(object):
