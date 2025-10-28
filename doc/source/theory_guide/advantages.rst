@@ -43,25 +43,23 @@ where :math:`\mathcal{L}` is a differential operator, :math:`f` is the input fun
 and :math:`u` is the solution function. 
 
 Neural operators are designed to approximate these true operators directly, 
-rather than learning discretized approximations. 
-This alignment with the underlying mathematical structure ensures that:
+rather than learning discretized approximations. This alignment with the underlying mathematical structure 
+ensures that the learned mapping respects the continuous nature of the problem.
 
-- The learned mapping respects the continuous nature of the problem
+To be more precise, Fourier neural operators (and other neural operators) are universal approximators, 
+in the sense that any sufficiently smooth operator can be approximated to arbitrary accuracy using a 
+Fourier neural operator (see Theorem 5 in [4]).
 
-.. raw:: html
 
-   <div style="margin-top: 1em;"></div>
+Note however that, just like universal function approximation theorems for neural networks, 
+these are only theoretical guarantees, and there can be an important gap between theory and practice.
+Although a sufficiently smooth operator can, in theory, be approximated by a neural operator 
+to any desired level of accuracy, achieving that accuracy in practice may not be possible because of 
+errors incurred when discretizing the input and output functions, and because of challenging optimization 
+landscapes which can result in suboptimally trained neural operators.
 
-- The approximation error can be bounded theoretically
 
-.. raw:: html
 
-   <div style="margin-top: 1em;"></div>
-
-- The method converges to the true operator as the neural network capacity increases
-
-This well-posedness property is crucial for scientific applications where 
-mathematical rigor is essential.
 
 .. raw:: html
 
@@ -384,3 +382,10 @@ References
        Zongyi Li, Nikola Kovachki, Kamyar Azizzadenesheli, Burigede Liu, 
        Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar, 2020.
 
+.. raw:: html
+
+   <div style="margin-top: 1em;"></div>
+
+.. [4] Universal Approximation and Error Bounds for Fourier Neural Operators,
+       Nikola Kovachki, Samuel Lanthaler, and  Siddhartha Mishra.
+       J. Mach. Learn. Res., vol. 22, no. 1, 2021.
