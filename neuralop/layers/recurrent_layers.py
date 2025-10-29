@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.fno_block import FNOBlocks
+from ..layers.complex import cselu
 
 class RNO_cell(nn.Module):
     """N-Dimensional Recurrent Neural Operator cell. The RNO cell takes in an
@@ -137,14 +138,23 @@ class RNO_cell(nn.Module):
         self.f5 = FNOBlocks(width, width, n_modes, resolution_scaling_factor=scaling_factor, **fno_kwargs)
         self.f6 = FNOBlocks(width, width, n_modes, resolution_scaling_factor=None, **fno_kwargs)
 
-        self.b1 = nn.Parameter(torch.normal(torch.tensor(0.),torch.tensor(1.))) # constant bias terms
-        self.b2 = nn.Parameter(torch.normal(torch.tensor(0.),torch.tensor(1.)))
-        self.b3 = nn.Parameter(torch.normal(torch.tensor(0.),torch.tensor(1.)))
+        if complex_data:
+            self.b1 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)) + 1j * torch.normal(torch.tensor(0.), torch.tensor(1.))) # constant bias terms
+            self.b2 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)) + 1j * torch.normal(torch.tensor(0.), torch.tensor(1.)))
+            self.b3 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)) + 1j * torch.normal(torch.tensor(0.), torch.tensor(1.)))
+        else:
+            self.b1 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.))) # constant bias terms
+            self.b2 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)))
+            self.b3 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)))
     
     def forward(self, x, h):
         z = torch.sigmoid(self.f1(x) + self.f2(h) + self.b1)
         r = torch.sigmoid(self.f3(x) + self.f4(h) + self.b2)
-        h_hat = F.selu(self.f5(x) + self.f6(r * h) + self.b3) # selu for regression problem
+        h_combined = self.f5(x) + self.f6(r * h) + self.b3
+        if x.dtype == torch.cfloat:
+            h_hat = cselu(h_combined)  # complex SELU for complex data
+        else:
+            h_hat = F.selu(h_combined)  # regular SELU for real data
 
         h_next = (1. - z) * h + z * h_hat
 
@@ -279,7 +289,10 @@ class RNO_layer(nn.Module):
             implementation=implementation,
             decomposition_kwargs=decomposition_kwargs,
         )
-        self.bias_h = nn.Parameter(torch.normal(torch.tensor(0.),torch.tensor(1.)))
+        if complex_data:
+            self.bias_h = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)) + 1j * torch.normal(torch.tensor(0.), torch.tensor(1.)))
+        else:
+            self.bias_h = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)))
 
     def forward(self, x, h=None):
         batch_size, timesteps, dim = x.shape[:3]
@@ -287,7 +300,7 @@ class RNO_layer(nn.Module):
 
         if h is None:
             h_shape = (batch_size, self.width, *dom_sizes) if not self.resolution_scaling_factor else (batch_size, self.width,) + tuple([int(round(self.resolution_scaling_factor*s)) for s in dom_sizes])
-            h = torch.zeros(h_shape).to(x.device)
+            h = torch.zeros(h_shape, dtype=x.dtype).to(x.device)
             h += self.bias_h
 
         outputs = []
