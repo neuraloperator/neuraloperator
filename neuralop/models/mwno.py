@@ -10,132 +10,90 @@ from ..layers.mwno_block import MWNO_CZ
 
 
 class MWNO(nn.Module):
-    """
-    Multiwavelet Neural Operator for learning operators on function spaces.
+    """N-Dimensional Multiwavelet Neural Operator. The MWNO learns a mapping between
+    spaces of functions using multiwavelet bases to represent operators in localized,
+    multiscale domains, as described in [1].
 
-    MWNO employs multiwavelet bases to represent operators in localized,
-    multiscale domains. By leveraging orthogonality, compact support, and
-    multi-resolution properties of multiwavelets, it effectively captures
-    both global structures and local irregularities.
+    By leveraging orthogonality, compact support, and multi-resolution properties of
+    multiwavelets, it effectively captures both global structures and local irregularities.
+    This makes it particularly well-suited for learning operators from data with high
+    fluctuations and supports accurate modeling of complex dynamical systems governed
+    by partial differential equations.
 
-    This makes it particularly well-suited for learning operators from data
-    with high fluctuations and supports accurate modeling of complex dynamical
-    systems governed by partial differential equations.
-
-    Architecture:
-    ------------
-    Input → Lifting → [MWNO_CZ + ReLU] × n_layers → Projection → Output
-
-    Each MWNO_CZ layer performs:
-    1. Multiwavelet decomposition (multi-scale analysis)
-    2. Learnable transformations in both spatial and frequency domains
-    3. Wavelet reconstruction with skip connections
-
-    The lifting layer embeds inputs into a higher-dimensional wavelet space,
-    and the projection layer maps back to the desired output dimension.
-
-    Parameters
-    ----------
-    n_modes : Tuple[int] or int, optional
+    Main Parameters
+    ---------------
+    n_modes : Tuple[int, ...] or int
         Fourier modes to retain in each dimension.
-        - If int: Creates (alpha,) for 1D, (alpha, alpha) for 2D, etc.
-        - If Tuple: Uses specified modes directly, length determines n_dim
-        Example: n_modes=(12, 12) for 2D with 12 modes per dimension
+        The dimensionality of the MWNO is inferred from len(n_modes).
+        If int: Creates (alpha,) for 1D, (alpha, alpha) for 2D, etc.
+        Must provide either n_modes or alpha (not both).
+    in_channels : int
+        Number of input function channels. Determined by the problem.
+        For scalar fields: in_channels=1. For vector fields: in_channels=n_components.
+    out_channels : int
+        Number of output function channels. Determined by the problem.
+        Set to 1 for scalar outputs (will auto-squeeze).
+    k : int, optional
+        Wavelet basis size (number of polynomial basis functions). Default: 3
+        k=2: Piecewise linear wavelets, k=3: Cubic wavelets, k=4: Quartic wavelets.
+    c : int, optional
+        Number of parallel wavelet channels. Default: 1
+        Increases model capacity: total wavelet features = c * k^n_dim.
+    n_layers : int, optional
+        Number of MWNO_CZ transformation layers. Default: 3
+        More layers = deeper hierarchical processing.
 
+    Other parameters
+    ----------------
     alpha : int, optional
         Alternative way to specify modes (all dimensions use same value).
-        Must provide either n_modes or alpha (not both).
-        Example: alpha=12 with n_dim=2 → modes=(12, 12)
-
+        Only used if n_modes is not provided.
+        Example: alpha=12 with n_dim=2 → modes=(12, 12).
     n_dim : int, optional
         Spatial dimensionality (1, 2, or 3).
         Only needed if using alpha parameter.
         Inferred from n_modes if n_modes is a tuple.
-
-    in_channels : int, default=1
-        Number of input function channels.
-        For scalar fields: in_channels=1
-        For vector fields: in_channels=n_components
-
-    out_channels : int, default=1
-        Number of output function channels.
-        Set to 1 for scalar outputs (will auto-squeeze).
-
-    k : int, default=3
-        Wavelet basis size (number of polynomial basis functions).
-        - k=2: Piecewise linear wavelets
-        - k=3: Cubic wavelets (good default)
-        - k=4: Quartic wavelets (smoother, more computation)
-
-    c : int, default=1
-        Number of parallel wavelet channels.
-        Increases model capacity: total wavelet features = c * k^n_dim
-
-    n_layers : int, default=3
-        Number of MWNO_CZ transformation layers.
-        More layers = deeper hierarchical processing
-
-    L : int, default=0
-        Number of coarsest decomposition levels to skip.
+    L : int, optional
+        Number of coarsest decomposition levels to skip. Default: 0
         Reduces computation by stopping wavelet decomposition early.
-        - L=0: Full decomposition to coarsest scale
-        - L=1: Stop 1 level before coarsest
-
-    lifting_channels : int, default=0
-        Hidden dimension for lifting layer.
-        - If 0: Direct linear lifting (fast)
-        - If > 0: Two-layer MLP (in → lifting_channels → wavelet_space)
-
-    projection_channels : int, default=128
-        Hidden dimension for projection layer.
-        - If 0: Uses default two-layer MLP with hidden_dim=128
-        - If > 0: Two-layer MLP (wavelet_space → proj_channels → out)
-
-    base : str, default='legendre'
-        Polynomial basis for wavelet construction:
-        - 'legendre': Uniform weighting, general purpose
-        - 'chebyshev': Better for boundary-dominated problems
-
+        L=0: Full decomposition to coarsest scale. L=1: Stop 1 level before coarsest.
+    lifting_channels : int, optional
+        Hidden dimension for lifting layer. Default: 0
+        If 0: Direct linear lifting (fast).
+        If > 0: Two-layer MLP (in → lifting_channels → wavelet_space).
+    projection_channels : int, optional
+        Hidden dimension for projection layer. Default: 128
+        If 0: Uses default two-layer MLP with hidden_dim=128.
+        If > 0: Two-layer MLP (wavelet_space → proj_channels → out).
+    base : str, optional
+        Polynomial basis for wavelet construction. Default: "legendre"
+        Options: "legendre" (uniform weighting, general purpose),
+        "chebyshev" (better for boundary-dominated problems).
     initializer : callable, optional
         Custom weight initialization function.
         Applied to all Linear layers if provided.
-        Signature: initializer(weight_tensor) -> None
+        Signature: initializer(weight_tensor) -> None. Default: None
 
-    Attributes
-    ----------
-    n_modes : Tuple[int]
-        Fourier modes per dimension
+    Notes
+    -----
+    - Spatial dimensions must be powers of 2 for wavelet decomposition
+    - For 3D, only first two dimensions are decomposed (time preserved)
+    - ReLU activation applied between MWNO layers (except after last layer)
+    - Output channel dimension auto-squeezed if out_channels=1
 
-    n_dim : int
-        Spatial dimensionality (1, 2, or 3)
+    Input Shapes:
+        - 1D: (batch, n_points, in_channels) where n_points must be a power of 2
+        - 2D: (batch, height, width, in_channels) where height, width must be powers of 2
+        - 3D: (batch, height, width, time, in_channels) where height, width must be powers of 2
 
-    lifting : nn.Module
-        Embedding layer: input_space → wavelet_space
-
-    mwno_layers : nn.ModuleList
-        Stack of MWNO_CZ transformation layers
-
-    projection : nn.Module
-        Output layer: wavelet_space → output_space
-
-    Input Shapes
-    ------------
-    1D: (batch, n_points, in_channels)
-        where n_points must be a power of 2
-
-    2D: (batch, height, width, in_channels)
-        where height, width must be powers of 2
-
-    3D: (batch, height, width, time, in_channels)
-        where height, width must be powers of 2 (time can be arbitrary)
-
-    Output Shapes
-    -------------
-    Same spatial dimensions as input, with out_channels feature dimension.
-    If out_channels=1, the channel dimension is squeezed.
+    Output Shapes:
+        Same spatial dimensions as input, with out_channels feature dimension.
+        If out_channels=1, the channel dimension is squeezed.
 
     Examples
     --------
+
+    >>> from neuralop.models import MWNO
     >>> # 1D time series operator
     >>> model_1d = MWNO(alpha=12, n_dim=1, in_channels=1, out_channels=1)
     >>> x = torch.randn(32, 256, 1)  # (batch, time, channels)
@@ -146,23 +104,13 @@ class MWNO(nn.Module):
     >>> x = torch.randn(16, 64, 64, 3)  # (batch, H, W, channels)
     >>> y = model_2d(x)  # (16, 64, 64) - channel squeezed
 
-    >>> # 3D spatio-temporal operator
-    >>> model_3d = MWNO(alpha=8, n_dim=3, in_channels=1, out_channels=1)
-    >>> x = torch.randn(8, 32, 32, 20, 1)  # (batch, H, W, T, channels)
-    >>> y = model_3d(x)  # (8, 32, 32, 20) - channel squeezed
-
-    Notes
-    -----
-    - Spatial dimensions must be powers of 2 for wavelet decomposition
-    - For 3D, only first two dimensions are decomposed (time preserved)
-    - ReLU activation applied between MWNO layers (except after last layer)
-    - Output channel dimension auto-squeezed if out_channels=1
-
     References
     ----------
+    .. [1] :
+
     Gupta, G., Xiao, X. and Bogdan, P., 2021.
-    Multiwavelet-based operator learning for differential equations.
-    Advances in Neural Information Processing Systems, 34, pp.24048-24062.
+        Multiwavelet-based operator learning for differential equations.
+        Advances in Neural Information Processing Systems, 34, pp.24048-24062.
 
     @article{gupta2021multiwavelet,
         title={Multiwavelet-based operator learning for differential equations},
@@ -173,6 +121,17 @@ class MWNO(nn.Module):
         year={2021}
     }
 
+    .. [2] :
+
+    Xiao, Xiongye, et al. "Coupled multiwavelet operator learning for coupled differential equations."
+        The Eleventh International Conference on Learning Representations. 2022.
+
+    @inproceedings{xiao2023coupled,
+    title={Coupled Multiwavelet Operator Learning for Coupled Differential Equations},
+    author={Xiongye Xiao and Defu Cao and Ruochen Yang and Gaurav Gupta and Gengshuo Liu and Chenzhong Yin and Radu Balan and Paul Bogdan},
+    booktitle={The Eleventh International Conference on Learning Representations },
+    year={2023},
+    url={https://openreview.net/forum?id=kIo_C6QmMOM}
 
     """
 

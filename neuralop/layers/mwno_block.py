@@ -84,23 +84,6 @@ class WaveletUtils:
     @classmethod
     def get_phi_psi(cls, k, base):
         """
-        Generate scaling and wavelet basis functions for multi-resolution analysis.
-
-        This creates a hierarchical basis for function approximation using wavelets.
-        Think of it like building a family of functions that can represent any signal
-        at multiple levels of detail - coarse features (scaling functions) and fine
-        details (wavelet functions).
-
-        How it works:
-        1. Start with orthogonal polynomials (Legendre or Chebyshev) on [0,1]
-        2. These become our "scaling functions" (phi) - they capture smooth, low-frequency content
-        3. Create "wavelet functions" (psi) through orthogonalization - they capture details/edges
-        4. Wavelets are split into two halves: psi1 for [0, 0.5] and psi2 for [0.5, 1]
-
-        The result is a complete basis where:
-        - phi functions = "blur" or "smooth approximation" at a given scale
-        - psi functions = "details" or "differences" between scales
-
         Parameters
         ----------
         k : int
@@ -129,6 +112,23 @@ class WaveletUtils:
         psi2 : list of k callable functions
             Wavelet functions for right half-interval [0.5, 1]
             Each psi2[i] captures detail/difference information in the right half.
+
+        Generate scaling and wavelet basis functions for multi-resolution analysis.
+
+        This creates a hierarchical basis for function approximation using wavelets.
+        Think of it like building a family of functions that can represent any signal
+        at multiple levels of detail - coarse features (scaling functions) and fine
+        details (wavelet functions).
+
+        How it works:
+        1. Start with orthogonal polynomials (Legendre or Chebyshev) on [0,1]
+        2. These become our "scaling functions" (phi) - they capture smooth, low-frequency content
+        3. Create "wavelet functions" (psi) through orthogonalization - they capture details/edges
+        4. Wavelets are split into two halves: psi1 for [0, 0.5] and psi2 for [0.5, 1]
+
+        The result is a complete basis where:
+        - phi functions = "blur" or "smooth approximation" at a given scale
+        - psi functions = "details" or "differences" between scales
 
         Notes
         -----
@@ -443,21 +443,6 @@ class WaveletUtils:
 
 class SparseKernel(nn.Module):
     """
-    Sparse Spatial Convolution Kernel for Multiwavelet Networks.
-
-    This layer applies learned spatial convolutions to wavelet coefficients.
-    It's "sparse" in the sense that it uses small convolutional kernels (3x3)
-    rather than dense connections, making it computationally efficient.
-
-    Use case: Apply spatial mixing to wavelet detail coefficients, capturing
-    local patterns and textures in the spatial domain.
-
-    The layer automatically handles 1D, 2D, and 3D inputs by:
-    1. Reshaping input to (batch, channels, *spatial_dims)
-    2. Applying appropriate Conv{1,2,3}d layer
-    3. Projecting back to original channel structure
-    4. Reshaping to original format
-
     Parameters
     ----------
     k : int
@@ -497,6 +482,22 @@ class SparseKernel(nn.Module):
     >>> x = torch.randn(16, 32, 32, 1, 9)  # (B, H, W, c, k²)
     >>> output = layer(x)
     >>> assert output.shape == x.shape
+
+    Sparse Spatial Convolution Kernel for Multiwavelet Networks.
+
+    This layer applies learned spatial convolutions to wavelet coefficients.
+    It's "sparse" in the sense that it uses small convolutional kernels (3x3)
+    rather than dense connections, making it computationally efficient.
+
+    Use case: Apply spatial mixing to wavelet detail coefficients, capturing
+    local patterns and textures in the spatial domain.
+
+    The layer automatically handles 1D, 2D, and 3D inputs by:
+    1. Reshaping input to (batch, channels, *spatial_dims)
+    2. Applying appropriate Conv{1,2,3}d layer
+    3. Projecting back to original channel structure
+    4. Reshaping to original format
+
     """
 
     def __init__(self, k, alpha, c=1, n_dim=1, **kwargs):
@@ -995,35 +996,6 @@ class SparseKernelFT(nn.Module):
 
 class MWNO_CZ(nn.Module):
     """
-    Multiwavelet Neural Operator Core Z-transform Layer.
-
-    This layer is the heart of the Multiwavelet Neural Operator (MWNO) architecture.
-    It works like a hierarchical image pyramid, but with learnable transformations
-    at each level.
-
-    Architecture:
-    ------------
-    Input (fine scale)
-        ↓ wavelet_transform
-    [Detail₀, Approximation₀]
-        ↓ A(Detail₀) + B(Approx₀) → processed Detail₀
-        ↓ C(Detail₀) → skip connection
-        ↓ wavelet_transform on Approximation₀
-    [Detail₁, Approximation₁]
-        ↓ A(Detail₁) + B(Approx₁) → processed Detail₁
-        ↓ C(Detail₁) → skip connection
-        ↓ ... (repeat for multiple scales)
-    [Detail_n, Approximation_n (coarsest)]
-        ↓ T0(Approximation_n) → process coarsest scale
-        ↓ reconstruction (combine all scales)
-    Output (fine scale)
-
-    Dimensionality Support:
-    ----------------------
-    - 1D: Time series, signals → wavelet along time axis
-    - 2D: Images, spatial fields → wavelets along both x, y
-    - 3D: Spatio-temporal data → wavelets along x, y only (preserves time/feature axis)
-
     Parameters
     ----------
     k : int, default=3
@@ -1148,6 +1120,35 @@ class MWNO_CZ(nn.Module):
     >>> output = layer_3d(field)
     >>> assert output.shape == field.shape
 
+    Multiwavelet Neural Operator Core Z-transform Layer.
+
+    This layer is the heart of the Multiwavelet Neural Operator (MWNO) architecture.
+    It works like a hierarchical image pyramid, but with learnable transformations
+    at each level.
+
+    Architecture:
+    ------------
+    Input (fine scale)
+        ↓ wavelet_transform
+    [Detail₀, Approximation₀]
+        ↓ A(Detail₀) + B(Approx₀) → processed Detail₀
+        ↓ C(Detail₀) → skip connection
+        ↓ wavelet_transform on Approximation₀
+    [Detail₁, Approximation₁]
+        ↓ A(Detail₁) + B(Approx₁) → processed Detail₁
+        ↓ C(Detail₁) → skip connection
+        ↓ ... (repeat for multiple scales)
+    [Detail_n, Approximation_n (coarsest)]
+        ↓ T0(Approximation_n) → process coarsest scale
+        ↓ reconstruction (combine all scales)
+    Output (fine scale)
+
+    Dimensionality Support:
+    ----------------------
+    - 1D: Time series, signals → wavelet along time axis
+    - 2D: Images, spatial fields → wavelets along both x, y
+    - 3D: Spatio-temporal data → wavelets along x, y only (preserves time/feature axis)
+
     Notes
     -----
     - Input spatial dimensions must be powers of 2 for wavelet decomposition
@@ -1213,15 +1214,6 @@ class MWNO_CZ(nn.Module):
 
     def _register_wavelet_filters(self, h_0, h_1, g_0, g_1, h_0r, h_1r, g_0r, g_1r):
         """
-        Register wavelet decomposition and reconstruction filters as buffers.
-
-        Buffers are stored with the model but not trained. They're used for:
-        - ec_s, ec_d: Decomposition (analysis) filters
-        - rc_*: Reconstruction (synthesis) filters
-
-        The filters are constructed using Kronecker products for 2D/3D to handle
-        separable transforms (apply filter to each dimension independently).
-
         Parameters
         ----------
         h_0, h_1 : ndarray
@@ -1232,6 +1224,16 @@ class MWNO_CZ(nn.Module):
             Low-pass reconstruction filters (even/odd)
         g_0r, g_1r : ndarray
             High-pass reconstruction filters (even/odd)
+
+        Register wavelet decomposition and reconstruction filters as buffers.
+
+        Buffers are stored with the model but not trained. They're used for:
+        - ec_s, ec_d: Decomposition (analysis) filters
+        - rc_*: Reconstruction (synthesis) filters
+
+        The filters are constructed using Kronecker products for 2D/3D to handle
+        separable transforms (apply filter to each dimension independently).
+
         """
         if self.n_dim == 1:
             # 1D: Simple concatenation of even and odd filters
@@ -1274,19 +1276,6 @@ class MWNO_CZ(nn.Module):
 
     def wavelet_transform(self, x):
         """
-        Perform one level of wavelet decomposition.
-
-        This is the "analysis" step that splits the input into two components:
-        1. Approximation (smooth, low-frequency): downsampled by 2
-        2. Detail (edges, high-frequency): also downsampled by 2
-
-        The decomposition works by:
-        - Separating even and odd samples (downsampling)
-        - Applying wavelet filters to extract smooth vs. detail information
-
-        Think of it like creating a Gaussian pyramid (blur) and a Laplacian
-        pyramid (edges) simultaneously, but with learnable/adaptive filters.
-
         Parameters
         ----------
         x : torch.Tensor
@@ -1304,6 +1293,19 @@ class MWNO_CZ(nn.Module):
         approximation : torch.Tensor
             Low-frequency approximation coefficients
             Contains smooth, slowly-varying features
+
+        Perform one level of wavelet decomposition.
+
+        This is the "analysis" step that splits the input into two components:
+        1. Approximation (smooth, low-frequency): downsampled by 2
+        2. Detail (edges, high-frequency): also downsampled by 2
+
+        The decomposition works by:
+        - Separating even and odd samples (downsampling)
+        - Applying wavelet filters to extract smooth vs. detail information
+
+        Think of it like creating a Gaussian pyramid (blur) and a Laplacian
+        pyramid (edges) simultaneously, but with learnable/adaptive filters.
 
         Notes
         -----
@@ -1339,20 +1341,6 @@ class MWNO_CZ(nn.Module):
 
     def even_odd_reconstruction(self, x):
         """
-        Perform one level of wavelet reconstruction.
-
-        This is the "synthesis" step that combines detail and approximation
-        coefficients back into the full-resolution signal. It's the inverse
-        of wavelet_transform().
-
-        The reconstruction:
-        1. Applies reconstruction filters to detail and approximation
-        2. Upsamples by interleaving even and odd positions
-        3. Produces output at double the input resolution
-
-        Think of it like "unzipping" the compressed representation back to
-        full resolution, intelligently placing values at even and odd positions.
-
         Parameters
         ----------
         x : torch.Tensor
@@ -1369,6 +1357,20 @@ class MWNO_CZ(nn.Module):
             - 1D: (batch, n_points, channels, k)
             - 2D: (batch, height, width, channels, k²)
             - 3D: (batch, height, width, time, channels, k²)
+
+        Perform one level of wavelet reconstruction.
+
+        This is the "synthesis" step that combines detail and approximation
+        coefficients back into the full-resolution signal. It's the inverse
+        of wavelet_transform().
+
+        The reconstruction:
+        1. Applies reconstruction filters to detail and approximation
+        2. Upsamples by interleaving even and odd positions
+        3. Produces output at double the input resolution
+
+        Think of it like "unzipping" the compressed representation back to
+        full resolution, intelligently placing values at even and odd positions.
 
         Notes
         -----
@@ -1432,7 +1434,20 @@ class MWNO_CZ(nn.Module):
 
     def forward(self, x):
         """
-        Apply multiwavelet transform: decompose → transform → reconstruct.
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor with spatial dimensions as powers of 2
+            - 1D: (batch, n_points, channels, k)
+            - 2D: (batch, height, width, channels, k²)
+            - 3D: (batch, height, width, time, channels, k²)
+
+        Returns
+        -------
+        torch.Tensor
+            Transformed output with same shape as input
+
+                Apply multiwavelet transform: decompose → transform → reconstruct.
 
         This is the main processing pipeline that:
         1. Decomposes input into multiple scales (wavelet pyramid)
@@ -1455,19 +1470,6 @@ class MWNO_CZ(nn.Module):
                 Add skip connection
                 Combine with detail from decomposition
                 Reconstruct to finer scale
-
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor with spatial dimensions as powers of 2
-            - 1D: (batch, n_points, channels, k)
-            - 2D: (batch, height, width, channels, k²)
-            - 3D: (batch, height, width, time, channels, k²)
-
-        Returns
-        -------
-        torch.Tensor
-            Transformed output with same shape as input
 
         Notes
         -----
