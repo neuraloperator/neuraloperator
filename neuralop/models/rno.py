@@ -358,6 +358,52 @@ class RNO(BaseModel, name='RNO'):
             self.projection = ComplexValued(self.projection)
 
     def forward(self, x, init_hidden_states=None): # h must be padded if using padding
+        """
+        Forward pass for the Recurrent Neural Operator.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor with shape (batch, timesteps, in_channels, *spatial_dims),
+            where len(spatial_dims) == self.n_dim. The channel dimension MUST be at
+            index 2 and the time dimension MUST be at index 1.
+        init_hidden_states : list[torch.Tensor] | None
+            Optional list of per-layer initial hidden states. Each tensor should have
+            shape (batch, hidden_channels, *spatial_dims). If None, all hidden states
+            are initialized internally.
+
+        Returns
+        -------
+        pred : torch.Tensor
+            Output tensor with shape (batch, out_channels, *spatial_dims_out). If
+            resolution scaling is used across layers, spatial_dims_out are scaled by
+            the product of the per-layer factors; otherwise they match the input
+            spatial dimensions.
+        final_hidden_states : list[torch.Tensor]
+            List of final hidden states for each layer. For layers 0..n_layers-2 these
+            are the last-time-step states with shape (batch, hidden_channels, *spatial_dims_out_i).
+            The last entry corresponds to the final hidden representation before the
+            projection layer.
+
+        Notes
+        -----
+        Due to resolution invariance of spectral convolutions, tensors with incorrectly
+        ordered dimensions may "work" without raising low-level errors yet produce
+        nonsensical outputs. To guard against this, this method performs strict checks
+        on the input rank and the channel dimension position.
+        """
+        # Strict input validation to avoid silent errors from resolution invariance
+        expected_rank = 3 + self.n_dim
+        if x.ndim != expected_rank:
+            raise ValueError(
+                f"RNO.forward expected input of rank {expected_rank} = "
+                f"(batch, timesteps, channels, {self.n_dim} spatial dims), got rank {x.ndim} with shape {tuple(x.shape)}"
+            )
+        if x.shape[2] != self.in_channels:
+            raise ValueError(
+                f"RNO.forward expected x.shape[2] == in_channels ({self.in_channels}); "
+                f"got {x.shape[2]}. Input must be shaped as (batch, timesteps, in_channels, *spatial_dims)."
+            )
         # x shape (batch, timesteps, dim, dom_size1, dom_size2, ..., dom_sizen)
         batch_size, timesteps = x.shape[:2]
         dim = x.shape[2]
