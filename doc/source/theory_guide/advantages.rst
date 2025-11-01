@@ -97,6 +97,8 @@ Fourier neural operators (and other neural operators) are universal operator app
 in the sense that any sufficiently smooth operator can be approximated to arbitrary accuracy using a 
 Fourier neural operator (see Theorem 5 in [4]).
 
+This also emphasizes the broad applicability of neural operators, as the same architecture 
+can be applied to diverse scientific problems, from fluid dynamics to materials science.
 
 Note however that, just like universal function approximation theorems for neural networks, 
 these are only theoretical guarantees, and there can be an important gap between theory and practice.
@@ -104,7 +106,6 @@ Although a sufficiently smooth operator can, in theory, be approximated by a neu
 to any desired level of accuracy, achieving that accuracy in practice may not be possible because of 
 errors incurred when discretizing the input and output functions, and because of challenging optimization 
 landscapes which can result in suboptimally trained neural operators.
-
 
 .. raw:: html
 
