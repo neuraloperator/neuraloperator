@@ -159,13 +159,16 @@ def test_rno_advanced_params(norm, complex_data, use_channel_mlp, channel_mlp_sk
     loss.backward()
 
 
-@pytest.mark.parametrize("domain_padding", [None])
-def test_rno_domain_padding(domain_padding):
-    """Test RNO with domain padding configurations."""
+@pytest.mark.parametrize("positional_embedding", ["grid", None])
+@pytest.mark.parametrize("domain_padding", [None, 0.1, [0.1, 0.2]])
+def test_rno_embedding_and_padding(positional_embedding, domain_padding):
+    """Test RNO with different positional embeddings and domain padding."""
     device = "cpu"
     s = 12
     modes = 5
     hidden_channels = 15
+    projection_channel_ratio = 2
+    lifting_channel_ratio = 2
     batch_size = 2
     n_layers = 2
     n_dim = 2
@@ -179,7 +182,10 @@ def test_rno_domain_padding(domain_padding):
         n_modes=n_modes,
         hidden_channels=hidden_channels,
         n_layers=n_layers,
+        positional_embedding=positional_embedding,
         domain_padding=domain_padding,
+        projection_channel_ratio=projection_channel_ratio,
+        lifting_channel_ratio=lifting_channel_ratio,
     ).to(device)
 
     in_data = torch.randn(batch_size, num_time_steps, 3, *size).to(device)

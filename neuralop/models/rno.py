@@ -17,6 +17,7 @@ from ..layers.fno_block import FNOBlocks
 from ..layers.channel_mlp import ChannelMLP
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.complex import ComplexValued
+from ..layers.embeddings import GridEmbeddingND, GridEmbedding2D
 from .base_model import BaseModel
 
 class RNO(BaseModel, name='RNO'):
@@ -73,6 +74,13 @@ class RNO(BaseModel, name='RNO'):
         Ratio of projection channels to hidden_channels.
         The number of projection channels in the projection block of the RNO is
         projection_channel_ratio * hidden_channels (e.g. default 2 * hidden_channels).
+    positional_embedding : Union[str, nn.Module], optional
+        Type of positional embedding to use. Options:
+        - "grid": Use default grid-based positional embedding
+        - GridEmbeddingND: Custom N-dimensional grid embedding
+        - GridEmbedding2D: Custom 2D grid embedding (only for 2D problems)
+        - None: No positional embedding
+        Default: None
     non_linearity : nn.Module, optional
         Non-Linear activation function module to use. Default: F.gelu
     norm : Literal["ada_in", "group_norm", "instance_norm"], optional
@@ -148,6 +156,7 @@ class RNO(BaseModel, name='RNO'):
         residual: bool = False,
         lifting_channel_ratio: Number = 2,
         projection_channel_ratio: Number = 2,
+        positional_embedding: Union[str, nn.Module] = "grid",
         non_linearity: nn.Module = F.gelu,
         norm: Literal["ada_in", "group_norm", "instance_norm"] = None,
         complex_data: bool = False,
@@ -217,6 +226,31 @@ class RNO(BaseModel, name='RNO'):
         else:
             self.domain_padding = None
         
+        ## Positional embedding
+        if positional_embedding == "grid":
+            spatial_grid_boundaries = [[0.0, 1.0]] * self.n_dim
+            self.positional_embedding = GridEmbeddingND(
+                in_channels=self.in_channels,
+                dim=self.n_dim,
+                grid_boundaries=spatial_grid_boundaries,
+            )
+        elif isinstance(positional_embedding, GridEmbedding2D):
+            if self.n_dim == 2:
+                self.positional_embedding = positional_embedding
+            else:
+                raise ValueError(
+                    f"Error: expected {self.n_dim}-d positional embeddings, got {positional_embedding}"
+                )
+        elif isinstance(positional_embedding, GridEmbeddingND):
+            self.positional_embedding = positional_embedding
+        elif positional_embedding is None:
+            self.positional_embedding = None
+        else:
+            raise ValueError(
+                f"Error: tried to instantiate RNO positional embedding with {positional_embedding}, "
+                f"expected one of 'grid', GridEmbeddingND, GridEmbedding2D, or None"
+            )
+        
         ## Resolution scaling factor
         if resolution_scaling_factor:
             if isinstance(resolution_scaling_factor, (float, int)):
@@ -282,11 +316,15 @@ class RNO(BaseModel, name='RNO'):
         self.layers = nn.ModuleList(module_list)
 
         ## Lifting layer
+        # if adding a positional embedding, add those channels to lifting
+        lifting_in_channels = self.in_channels
+        if self.positional_embedding is not None:
+            lifting_in_channels += self.n_dim
         # if lifting_channels is set, make lifting a Channel-Mixing MLP
         # with a hidden layer of size lifting_channels
         if self.lifting_channels:
             self.lifting = ChannelMLP(
-                in_channels=self.in_channels,
+                in_channels=lifting_in_channels,
                 out_channels=self.hidden_channels,
                 hidden_channels=self.lifting_channels,
                 n_layers=2,
@@ -296,7 +334,7 @@ class RNO(BaseModel, name='RNO'):
         # otherwise, make it a linear layer
         else:
             self.lifting = ChannelMLP(
-                in_channels=self.in_channels,
+                in_channels=lifting_in_channels,
                 hidden_channels=self.hidden_channels,
                 out_channels=self.hidden_channels,
                 n_layers=1,
@@ -329,11 +367,21 @@ class RNO(BaseModel, name='RNO'):
         if init_hidden_states is None:
             init_hidden_states = [None] * self.n_layers
         
-        x = self.lifting(x.reshape(batch_size * timesteps, *x.shape[2:]))
+        # Reshape for processing: (batch*timesteps, channels, *spatial_dims)
+        x = x.reshape(batch_size * timesteps, *x.shape[2:])
+        
+        # append spatial pos embedding if set
+        if self.positional_embedding is not None:
+            x = self.positional_embedding(x)
+        
+        x = self.lifting(x)
         x = x.reshape(batch_size, timesteps, *x.shape[1:])
 
         if self.domain_padding:
+            # DomainPadding expects (batch, channels, *spatial_dims), so reshape to remove timestep dim
+            x = x.reshape(batch_size * timesteps, *x.shape[2:])
             x = self.domain_padding.pad(x)
+            x = x.reshape(batch_size, timesteps, *x.shape[1:])
 
         final_hidden_states = []
         for i in range(self.n_layers):
@@ -350,9 +398,9 @@ class RNO(BaseModel, name='RNO'):
         h = final_hidden_states[-1]
 
         if self.domain_padding:
-            h = h.unsqueeze(1) # add dim for padding compatibility
+            # DomainPadding.unpad expects (batch, channels, *spatial_dims)
+            # h should already be in this format from the last layer
             h = self.domain_padding.unpad(h)
-            h = h.squeeze(1) # remove extraneous dim
 
         pred = self.projection(h)
 
