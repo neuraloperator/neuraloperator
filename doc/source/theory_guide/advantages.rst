@@ -46,19 +46,6 @@ Neural operators are designed to approximate these true operators directly,
 rather than learning discretized approximations. This alignment with the underlying mathematical structure 
 ensures that the learned mapping respects the continuous nature of the problem.
 
-To be more precise, Fourier neural operators (and other neural operators) are universal approximators, 
-in the sense that any sufficiently smooth operator can be approximated to arbitrary accuracy using a 
-Fourier neural operator (see Theorem 5 in [4]).
-
-
-Note however that, just like universal function approximation theorems for neural networks, 
-these are only theoretical guarantees, and there can be an important gap between theory and practice.
-Although a sufficiently smooth operator can, in theory, be approximated by a neural operator 
-to any desired level of accuracy, achieving that accuracy in practice may not be possible because of 
-errors incurred when discretizing the input and output functions, and because of challenging optimization 
-landscapes which can result in suboptimally trained neural operators.
-
-
 
 
 .. raw:: html
@@ -106,33 +93,19 @@ This capability enables:
 Universal Approximation Capability
 ===================================
 
-Neural operators possess universal approximation properties, meaning they can 
-approximate any continuous operator between function spaces to arbitrary accuracy, 
-given sufficient network capacity. This theoretical guarantee ensures that:
+Fourier neural operators (and other neural operators) are universal operator approximators, 
+in the sense that any sufficiently smooth operator can be approximated to arbitrary accuracy using a 
+Fourier neural operator (see Theorem 5 in [4]).
 
-**No fundamental limitations**
-    Neural operators are not restricted to specific 
-    types of operators or function spaces
+This also emphasizes the broad applicability of neural operators, as the same architecture 
+can be applied to diverse scientific problems, from fluid dynamics to materials science.
 
-.. raw:: html
-
-   <div style="margin-top: 2em;"></div>
-
-**Convergence guarantees**
-    The approximation error can be made arbitrarily 
-    small with sufficient network capacity
-
-.. raw:: html
-
-   <div style="margin-top: 2em;"></div>
-
-**Broad applicability**
-    The same architecture can be applied to diverse scientific problems,
-    from fluid dynamics to materials science.
-
-The universal approximation property is particularly important for complex, 
-nonlinear operators that arise in real-world applications, such as turbulent 
-fluid flows or multi-physics simulations.
+Note however that, just like universal function approximation theorems for neural networks, 
+these are only theoretical guarantees, and there can be an important gap between theory and practice.
+Although a sufficiently smooth operator can, in theory, be approximated by a neural operator 
+to any desired level of accuracy, achieving that accuracy in practice may not be possible because of 
+errors incurred when discretizing the input and output functions, and because of challenging optimization 
+landscapes which can result in suboptimally trained neural operators.
 
 .. raw:: html
 
