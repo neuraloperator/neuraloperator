@@ -43,25 +43,7 @@ class RNO_Small1d(ModelConfig):
     n_modes: List[int] = [8]
     hidden_channels: int = 32
     n_layers: int = 2
-    lifting_channel_ratio: int = 2
-    projection_channel_ratio: int = 2
-    residual: bool = False
-    use_channel_mlp: bool = True
-    channel_mlp_dropout: float = 0.0
-    channel_mlp_expansion: float = 0.5
-    fno_skip: str = "linear"
-    norm: Optional[str] = None
-    resolution_scaling_factor: Optional[Any] = None
-    domain_padding: Optional[Any] = None
-    fno_block_precision: str = "full"
-    stabilizer: Optional[str] = None
-    max_n_modes: Optional[Any] = None
-    factorization: Optional[str] = None
-    rank: float = 1.0
-    fixed_rank_modes: bool = False
-    implementation: str = "factorized"
-    separable: bool = False
-    preactivation: bool = False
+    rno_skip: bool = False
 
 
 class Default(ConfigBase):

@@ -14,7 +14,7 @@ import torch.nn as nn
 
 from zencfg import make_config_from_cli
 
-# Ensure the repository root is on sys.path regardless of current working directory
+# Add project root to sys.path for imports
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -29,10 +29,32 @@ from neuralop.data.datasets import load_mini_burgers_1dtime
 
 
 class RNOTimeAdapter(nn.Module):
-    """Wraps an RNO to accept Burgers 1D-time batches from datasets.
+    """Adapter to reconcile dataset batch format with RNO's expected input format.
 
-    Expects inputs with shape (B, C, T, X). Permutes to (B, T, C, X) for RNO.
-    Returns prediction of the last time step with shape (B, C, X).
+    The mini_burgers_1dtime dataset returns batches with shape (B, C, T, X),
+    where the time dimension is at index 2. However, RNO expects the time
+    dimension at index 1 with shape (B, T, C, X). This adapter performs the
+    necessary permutation and extracts the final time step prediction.
+
+    This wrapper is necessary because the Trainer expects a standard forward(x, y)
+    signature that returns predictions matching the target format, whereas the raw
+    RNO model returns both predictions and hidden states with a different input format.
+
+    Parameters
+    ----------
+    core : nn.Module
+        The RNO model to wrap. This is the trained RNO that performs the
+        actual sequence modeling.
+
+    Input
+    -----
+    x : torch.Tensor
+        Input with shape (B, C, T, X) from the dataset.
+
+    Returns
+    -------
+    torch.Tensor
+        Prediction of the last time step with shape (B, C, X).
     """
 
     def __init__(self, core: nn.Module):
@@ -47,9 +69,19 @@ class RNOTimeAdapter(nn.Module):
 
 
 class LastFrameDataProcessor(nn.Module):
-    """Thin wrapper to adapt y -> last frame for L2 supervision.
+    """Processor that extracts the last time frame from targets for single-step supervision.
 
-    Delegates to an underlying data_processor; slices y to y[:, :, -1, :].
+    The Burgers dataset provides full temporal sequences as targets with shape
+    (B, C, T, X), but we train the RNO to predict only the final time step.
+    This processor wraps an existing data_processor and extracts y[:, :, -1, :]
+    during preprocessing, converting the target to shape (B, C, X) for L2 loss computation.
+
+    Parameters
+    ----------
+    base : nn.Module or object
+        The underlying data processor to wrap (e.g., DefaultDataProcessor).
+        This processor's preprocess/postprocess methods are called before/after
+        extracting the last frame.
     """
 
     def __init__(self, base):
@@ -117,7 +149,7 @@ def main():
         print(config)
         sys.stdout.flush()
 
-    # Data loading: resolve dataset path relative to the repository root
+    # Data loading
     data_path = PROJECT_ROOT / config.data.folder
     train_loader, test_loaders, data_processor = load_mini_burgers_1dtime(
         data_path=data_path,

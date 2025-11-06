@@ -11,7 +11,7 @@ import warnings
 
 warnings.filterwarnings("once", category=UserWarning)
 
-from ..layers.recurrent_layers import RNO_layer
+from ..layers.rno_block import RNOBlock
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
 from ..layers.channel_mlp import ChannelMLP
@@ -57,12 +57,18 @@ class RNO(BaseModel, name='RNO'):
     hidden_channels : int
         Width of the RNO (i.e. number of channels).
         This significantly affects the number of parameters of the RNO.
-        Good starting point can be 64, and then increased if more expressivity is needed.
+        For 1D problems, 32-64 channels are typically sufficient. For 2D/3D problems
+        without Tucker/CP/TT factorization, start with 16-32 channels to avoid
+        excessive parameters. Increase if more expressivity is needed.
         Update lifting_channel_ratio and projection_channel_ratio accordingly since they are proportional to hidden_channels.
     n_layers : int, optional
         Number of RNO layers to use. Default: 4
-    residual : bool
-        Whether to use residual connections between RNO layers.
+    rno_skip : bool, optional
+        Whether to use skip connections between RNO layers. When True, adds
+        the input to each layer's output: x_{l+1} = x_l + RNOBlock(x_l).
+        Default: False. Unlike FNO where skip connections improve gradient flow,
+        RNO's recurrent structure already provides temporal gradient pathways,
+        so skip connections are optional and may not always improve performance.
 
     Other parameters
     ---------------
@@ -99,6 +105,9 @@ class RNO(BaseModel, name='RNO'):
     fno_skip : Literal["linear", "identity", "soft-gating", None], optional
         Type of skip connection to use in FNO layers. Options: "linear", "identity", "soft-gating", None.
         Default: "linear"
+    return_sequences : bool, optional
+        Whether the final RNO layer returns the full sequence of hidden states or just the final state.
+        Intermediate layers always return sequences. Default: False
     resolution_scaling_factor : Union[Number, List[Number]], optional
         Layer-wise factor by which to scale the domain resolution of function.
         Options:
@@ -153,7 +162,7 @@ class RNO(BaseModel, name='RNO'):
         out_channels: int,
         hidden_channels: int,
         n_layers: int = 4,
-        residual: bool = False,
+        rno_skip: bool = False,
         lifting_channel_ratio: Number = 2,
         projection_channel_ratio: Number = 2,
         positional_embedding: Union[str, nn.Module] = "grid",
@@ -165,6 +174,7 @@ class RNO(BaseModel, name='RNO'):
         channel_mlp_expansion: float = 0.5,
         channel_mlp_skip: Literal["linear", "identity", "soft-gating", None] = "soft-gating",
         fno_skip: Literal["linear", "identity", "soft-gating", None] = "linear",
+        return_sequences: bool = False,
         resolution_scaling_factor: Union[Number, List[Number]] = None,
         domain_padding: Union[Number, List[Number]] = None,
         fno_block_precision: str = "full",
@@ -192,7 +202,7 @@ class RNO(BaseModel, name='RNO'):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.n_layers = n_layers
-        self.residual = residual
+        self.rno_skip = rno_skip
 
         # init lifting and projection channels using ratios w.r.t hidden channels
         self.lifting_channel_ratio = lifting_channel_ratio
@@ -259,11 +269,16 @@ class RNO(BaseModel, name='RNO'):
             resolution_scaling_factor = [None] * self.n_layers
         self.resolution_scaling_factor = resolution_scaling_factor
 
+        ## Return sequences configuration
+        # Intermediate layers always return sequences, only last layer is configurable
+        return_sequences_list = [True] * (self.n_layers - 1) + [return_sequences]
+        self.return_sequences = return_sequences_list
+
         module_list = [
-            RNO_layer(
+            RNOBlock(
                 n_modes=self.n_modes,
-                width=hidden_channels, 
-                return_sequences=True, 
+                hidden_channels=hidden_channels,
+                return_sequences=return_sequences_list[i],
                 resolution_scaling_factor=self.resolution_scaling_factor[i],
                 use_channel_mlp=use_channel_mlp,
                 channel_mlp_dropout=channel_mlp_dropout,
@@ -285,34 +300,7 @@ class RNO(BaseModel, name='RNO'):
                 decomposition_kwargs=decomposition_kwargs,
                 conv_module=conv_module,
             )
-        for i in range(n_layers - 1)]
-        module_list.append(
-            RNO_layer(
-                n_modes=self.n_modes,
-                width=hidden_channels,
-                return_sequences=False,
-                resolution_scaling_factor=self.resolution_scaling_factor[-1],
-                use_channel_mlp=use_channel_mlp,
-                channel_mlp_dropout=channel_mlp_dropout,
-                channel_mlp_expansion=channel_mlp_expansion,
-                non_linearity=non_linearity,
-                stabilizer=stabilizer,
-                norm=norm,
-                preactivation=preactivation,
-                fno_skip=fno_skip,
-                channel_mlp_skip=channel_mlp_skip,
-                complex_data=complex_data,
-                max_n_modes=max_n_modes,
-                fno_block_precision=fno_block_precision,
-                rank=rank,
-                fixed_rank_modes=fixed_rank_modes,
-                implementation=implementation,
-                separable=separable,
-                factorization=factorization,
-                decomposition_kwargs=decomposition_kwargs,
-                conv_module=conv_module,
-            )
-        )
+        for i in range(n_layers)]
         self.layers = nn.ModuleList(module_list)
 
         ## Lifting layer
@@ -357,7 +345,7 @@ class RNO(BaseModel, name='RNO'):
         if self.complex_data:
             self.projection = ComplexValued(self.projection)
 
-    def forward(self, x, init_hidden_states=None): # h must be padded if using padding
+    def forward(self, x, init_hidden_states=None):
         """
         Forward pass for the Recurrent Neural Operator.
 
@@ -369,8 +357,11 @@ class RNO(BaseModel, name='RNO'):
             index 2 and the time dimension MUST be at index 1.
         init_hidden_states : list[torch.Tensor] | None
             Optional list of per-layer initial hidden states. Each tensor should have
-            shape (batch, hidden_channels, *spatial_dims). If None, all hidden states
-            are initialized internally.
+            shape (batch, hidden_channels, *spatial_dims_h), where spatial_dims_h are
+            the potentially scaled spatial dimensions. If domain_padding is enabled,
+            hidden states should already be padded to the padded resolution. Automatic
+            padding of init_hidden_states is not currently supported. If None, all
+            hidden states are initialized internally with proper padding.
 
         Returns
         -------
@@ -404,11 +395,9 @@ class RNO(BaseModel, name='RNO'):
                 f"RNO.forward expected x.shape[2] == in_channels ({self.in_channels}); "
                 f"got {x.shape[2]}. Input must be shaped as (batch, timesteps, in_channels, *spatial_dims)."
             )
-        # x shape (batch, timesteps, dim, dom_size1, dom_size2, ..., dom_sizen)
+        # x shape (batch, timesteps, in_channels, *spatial_dims)
         batch_size, timesteps = x.shape[:2]
-        dim = x.shape[2]
         dom_sizes = x.shape[3 : 3 + self.n_dim]
-        x_size = len(x.shape)
 
         if init_hidden_states is None:
             init_hidden_states = [None] * self.n_layers
@@ -433,7 +422,7 @@ class RNO(BaseModel, name='RNO'):
         for i in range(self.n_layers):
             pred_x = self.layers[i](x, init_hidden_states[i])
             if i < self.n_layers - 1:
-                if self.residual:
+                if self.rno_skip:
                     x = x + pred_x
                 else:
                     x = pred_x
@@ -452,8 +441,38 @@ class RNO(BaseModel, name='RNO'):
 
         return pred, final_hidden_states
 
-    def predict(self, x, num_steps, grid_function=None): # num_steps is the number of steps ahead to predict
-        # grid_function is assumed to take in a shape and a device and return the grid
+    def predict(self, x, num_steps, grid_function=None):
+        """Autoregressively predict future time steps.
+
+        Performs autoregressive rollout by iteratively feeding predictions back as input.
+        At each step, the model predicts the next time step from the current input,
+        then uses that prediction as input for the subsequent prediction.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Initial input sequence with shape (batch, timesteps, in_channels, *spatial_dims).
+            The last time step of this sequence serves as the starting point for predictions.
+        num_steps : int
+            Number of future time steps to predict autoregressively.
+        grid_function : callable, optional
+            Function that generates positional embeddings (e.g., spatial coordinates) to
+            concatenate with predictions before feeding them back as input. Should have
+            signature grid_function(shape, device) -> torch.Tensor, where the returned
+            tensor has shape matching the input requirements. Use this when your model
+            was trained with concatenated positional information. Default: None
+
+        Returns
+        -------
+        torch.Tensor
+            Predicted sequence with shape (batch, num_steps, out_channels, *spatial_dims),
+            containing the autoregressively generated future states.
+
+        Notes
+        -----
+        This method maintains hidden states across prediction steps, enabling the RNO
+        to leverage its recurrent structure during autoregressive generation.
+        """
         output = []
         states = [None] * self.n_layers
         

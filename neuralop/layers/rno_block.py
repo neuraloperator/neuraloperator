@@ -10,16 +10,25 @@ from ..layers.complex import cselu
 class RNO_cell(nn.Module):
     """N-Dimensional Recurrent Neural Operator cell. The RNO cell takes in an
     input and history function, and it outputs the next step of the hidden function.
-    
-    Paper: https://arxiv.org/abs/2308.08794 
+
+    The RNO cell implements the GRU-like recurrence relation with Fourier layers:
+        z_t = σ(f1(x_t) + f2(h_{t-1}) + b1)            [update gate]
+        r_t = σ(f3(x_t) + f4(h_{t-1}) + b2)            [reset gate]
+        h̃_t = selu(f5(x_t) + f6(r_t ⊙ h_{t-1}) + b3)  [candidate state]
+        h_t = (1 - z_t) ⊙ h_{t-1} + z_t ⊙ h̃_t         [next state]
+
+    where σ is the sigmoid function, ⊙ is element-wise multiplication,
+    and f1-f6 are FNO blocks (Fourier neural operators).
+
+    Paper: https://arxiv.org/abs/2308.08794
 
     Parameters
     ------------------
     n_modes : int tuple
         number of modes to keep in Fourier Layer, along each dimension
         The dimensionality of the RNO is inferred from ``len(n_modes)``
-    width : int
-        width of the RNO (i.e. number of channels)
+    hidden_channels : int
+        number of hidden channels in the RNO
 
     Other Parameters
     -------------------
@@ -76,9 +85,9 @@ class RNO_cell(nn.Module):
         Kwargs for tensor decomposition in SpectralConv, by default dict()
     """
     def __init__(
-        self, 
-        n_modes, 
-        width, 
+        self,
+        n_modes,
+        hidden_channels,
         resolution_scaling_factor=None, 
         max_n_modes=None,
         fno_block_precision="full",
@@ -103,7 +112,7 @@ class RNO_cell(nn.Module):
     ):
         # resolution_scaling_factor is provided here as an integer or float
         super().__init__()
-        self.width = width
+        self.hidden_channels = hidden_channels
         scaling_factor = None if not resolution_scaling_factor else [resolution_scaling_factor]
         fno_kwargs = {
             "n_layers": 1,
@@ -128,15 +137,52 @@ class RNO_cell(nn.Module):
             "decomposition_kwargs": decomposition_kwargs,
         }
 
-        # Some resolution_scaling_factors are None to super-resolution purposes. We use the hidden representation in the scaled size always (it's initialized that way),
-        # so we only need to scale the dimensions of f1, f3, and f5, which act on x (original dimensionality).
-        self.f1 = FNOBlocks(width, width, n_modes, resolution_scaling_factor=scaling_factor, 
-                            **fno_kwargs)
-        self.f2 = FNOBlocks(width, width, n_modes, resolution_scaling_factor=None, **fno_kwargs)
-        self.f3 = FNOBlocks(width, width, n_modes, resolution_scaling_factor=scaling_factor, **fno_kwargs)
-        self.f4 = FNOBlocks(width, width, n_modes, resolution_scaling_factor=None, **fno_kwargs)
-        self.f5 = FNOBlocks(width, width, n_modes, resolution_scaling_factor=scaling_factor, **fno_kwargs)
-        self.f6 = FNOBlocks(width, width, n_modes, resolution_scaling_factor=None, **fno_kwargs)
+        # For super-resolution: the hidden state h is always stored at the scaled resolution,
+        # while input x remains at the original resolution. Therefore, only f1, f3, and f5
+        # (which process x) need resolution scaling, while f2, f4, and f6 (which process h)
+        # operate at the already-scaled resolution.
+        self.f1 = FNOBlocks(
+            in_channels=hidden_channels,
+            out_channels=hidden_channels,
+            n_modes=n_modes,
+            resolution_scaling_factor=scaling_factor,
+            **fno_kwargs
+        )
+        self.f2 = FNOBlocks(
+            in_channels=hidden_channels,
+            out_channels=hidden_channels,
+            n_modes=n_modes,
+            resolution_scaling_factor=None,
+            **fno_kwargs
+        )
+        self.f3 = FNOBlocks(
+            in_channels=hidden_channels,
+            out_channels=hidden_channels,
+            n_modes=n_modes,
+            resolution_scaling_factor=scaling_factor,
+            **fno_kwargs
+        )
+        self.f4 = FNOBlocks(
+            in_channels=hidden_channels,
+            out_channels=hidden_channels,
+            n_modes=n_modes,
+            resolution_scaling_factor=None,
+            **fno_kwargs
+        )
+        self.f5 = FNOBlocks(
+            in_channels=hidden_channels,
+            out_channels=hidden_channels,
+            n_modes=n_modes,
+            resolution_scaling_factor=scaling_factor,
+            **fno_kwargs
+        )
+        self.f6 = FNOBlocks(
+            in_channels=hidden_channels,
+            out_channels=hidden_channels,
+            n_modes=n_modes,
+            resolution_scaling_factor=None,
+            **fno_kwargs
+        )
 
         if complex_data:
             self.b1 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)) + 1j * torch.normal(torch.tensor(0.), torch.tensor(1.))) # constant bias terms
@@ -148,6 +194,21 @@ class RNO_cell(nn.Module):
             self.b3 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)))
     
     def forward(self, x, h):
+        """Forward pass for RNO cell.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input function at current timestep with shape (batch, hidden_channels, *spatial_dims)
+        h : torch.Tensor
+            Hidden state from previous timestep with shape (batch, hidden_channels, *spatial_dims_h)
+            where spatial_dims_h may differ from spatial_dims if resolution_scaling_factor is set
+
+        Returns
+        -------
+        torch.Tensor
+            Updated hidden state with shape (batch, hidden_channels, *spatial_dims_h)
+        """
         z = torch.sigmoid(self.f1(x) + self.f2(h) + self.b1)
         r = torch.sigmoid(self.f3(x) + self.f4(h) + self.b2)
         h_combined = self.f5(x) + self.f6(r * h) + self.b3
@@ -160,23 +221,33 @@ class RNO_cell(nn.Module):
 
         return h_next
 
-class RNO_layer(nn.Module):
+class RNOBlock(nn.Module):
     """N-Dimensional Recurrent Neural Operator layer. The RNO layer extends the
     action of the RNO cell to take in some sequence of time-steps as input
-    and output the next output function. 
+    and output the next output function.
 
-    Paper: https://arxiv.org/abs/2308.08794 
+    The layer applies the RNO cell recurrently over a sequence of inputs:
+        For t = 1 to T:
+            h_t = RNO_cell(x_t, h_{t-1})
+
+    where the cell implements:
+        z_t = σ(f1(x_t) + f2(h_{t-1}) + b1)            [update gate]
+        r_t = σ(f3(x_t) + f4(h_{t-1}) + b2)            [reset gate]
+        h̃_t = selu(f5(x_t) + f6(r_t ⊙ h_{t-1}) + b3)  [candidate state]
+        h_t = (1 - z_t) ⊙ h_{t-1} + z_t ⊙ h̃_t         [next state]
+
+    Paper: https://arxiv.org/abs/2308.08794
 
     Parameters
     ------------------
     n_modes : int tuple
         number of modes to keep in Fourier Layer, along each dimension
         The dimensionality of the RNO is inferred from ``len(n_modes)``
-    width : int
-        width of the RNO (i.e. number of channels)
+    hidden_channels : int
+        number of hidden channels in the RNO
     return_sequences : boolean, optional
         Whether to return the sequence of hidden states associated with processing
-        the inputs sequence of functions.
+        the inputs sequence of functions. Default: False
 
     Other Parameters
     -------------------
@@ -233,9 +304,9 @@ class RNO_layer(nn.Module):
         Kwargs for tensor decomposition in SpectralConv, by default dict()
     """
     def __init__(
-        self, 
-        n_modes, 
-        width, 
+        self,
+        n_modes,
+        hidden_channels,
         return_sequences=False, 
         resolution_scaling_factor=None, 
         max_n_modes=None,
@@ -261,13 +332,13 @@ class RNO_layer(nn.Module):
     ):
         super().__init__()
 
-        self.width = width
+        self.hidden_channels = hidden_channels
         self.return_sequences = return_sequences
         self.resolution_scaling_factor = resolution_scaling_factor
 
         self.cell = RNO_cell(
-            n_modes, 
-            width, 
+            n_modes,
+            hidden_channels, 
             resolution_scaling_factor=resolution_scaling_factor,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
@@ -295,17 +366,42 @@ class RNO_layer(nn.Module):
             self.bias_h = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)))
 
     def forward(self, x, h=None):
+        """Forward pass for RNO layer.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input sequence with shape (batch, timesteps, hidden_channels, *spatial_dims)
+        h : torch.Tensor, optional
+            Initial hidden state with shape (batch, hidden_channels, *spatial_dims_h).
+            If None, initialized to zeros with added bias. Default: None
+
+        Returns
+        -------
+        torch.Tensor
+            If return_sequences=True: hidden states for all timesteps with shape
+                (batch, timesteps, hidden_channels, *spatial_dims_h)
+            If return_sequences=False: final hidden state with shape
+                (batch, hidden_channels, *spatial_dims_h)
+        """
         batch_size, timesteps, dim = x.shape[:3]
         dom_sizes = x.shape[3:]
 
+        # Initialize hidden state if not provided
         if h is None:
-            h_shape = (batch_size, self.width, *dom_sizes) if not self.resolution_scaling_factor else (batch_size, self.width,) + tuple([int(round(self.resolution_scaling_factor*s)) for s in dom_sizes])
+            # Compute the spatial dimensions for h (scaled if resolution_scaling_factor is set)
+            if not self.resolution_scaling_factor:
+                h_shape = (batch_size, self.hidden_channels, *dom_sizes)
+            else:
+                scaled_sizes = tuple([int(round(self.resolution_scaling_factor*s)) for s in dom_sizes])
+                h_shape = (batch_size, self.hidden_channels, *scaled_sizes)
             h = torch.zeros(h_shape, dtype=x.dtype).to(x.device)
             h += self.bias_h
 
         outputs = []
+        # Process each timestep sequentially through the RNO cell
         for i in range(timesteps):
-            h = self.cell(x[:, i], h)
+            h = self.cell(x[:, i], h)  # Update hidden state with current input
             if self.return_sequences:
                 outputs.append(h)
 

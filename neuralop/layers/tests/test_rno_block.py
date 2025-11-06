@@ -1,19 +1,19 @@
 import pytest
 import torch
-from ..recurrent_layers import RNO_layer
+from ..rno_block import RNOBlock
 
 
 @pytest.mark.parametrize("n_dim", [1, 2, 3])
 @pytest.mark.parametrize("complex_data", [False, True])
-def test_RNO_layer_basic(n_dim, complex_data):
-    """Test RNO_layer with basic functionality"""
+def test_RNOBlock_basic(n_dim, complex_data):
+    """Test RNOBlock with basic functionality"""
     modes = (8, 8, 8)
     width = 16
     size = [12] * n_dim
     batch_size = 2
     num_timesteps = 3
 
-    layer = RNO_layer(
+    layer = RNOBlock(
         n_modes=modes[:n_dim],
         width=width,
         complex_data=complex_data,
@@ -36,15 +36,15 @@ def test_RNO_layer_basic(n_dim, complex_data):
 
 @pytest.mark.parametrize("return_sequences", [False, True])
 @pytest.mark.parametrize("complex_data", [False, True])
-def test_RNO_layer_return_sequences(return_sequences, complex_data):
-    """Test RNO_layer with return_sequences option"""
+def test_RNOBlock_return_sequences(return_sequences, complex_data):
+    """Test RNOBlock with return_sequences option"""
     modes = (8, 8)
     width = 16
     size = [12, 12]
     batch_size = 2
     num_timesteps = 3
 
-    layer = RNO_layer(
+    layer = RNOBlock(
         n_modes=modes,
         width=width,
         return_sequences=return_sequences,
@@ -66,8 +66,8 @@ def test_RNO_layer_return_sequences(return_sequences, complex_data):
 
 @pytest.mark.parametrize("n_dim", [1, 2, 3])
 @pytest.mark.parametrize("complex_data", [False])  # Skip complex for resolution scaling (interpolation not supported)
-def test_RNO_layer_resolution_scaling(n_dim, complex_data):
-    """Test RNO_layer with resolution scaling"""
+def test_RNOBlock_resolution_scaling(n_dim, complex_data):
+    """Test RNOBlock with resolution scaling"""
     modes = (8, 8, 8)
     width = 16
     size = [12] * n_dim
@@ -75,7 +75,7 @@ def test_RNO_layer_resolution_scaling(n_dim, complex_data):
     num_timesteps = 3
 
     # Test upsampling
-    layer_up = RNO_layer(
+    layer_up = RNOBlock(
         n_modes=modes[:n_dim],
         width=width,
         resolution_scaling_factor=2.0,
@@ -91,7 +91,7 @@ def test_RNO_layer_resolution_scaling(n_dim, complex_data):
     assert out_up.dtype == dtype
 
     # Test downsampling
-    layer_down = RNO_layer(
+    layer_down = RNOBlock(
         n_modes=modes[:n_dim],
         width=width,
         resolution_scaling_factor=0.5,
@@ -106,15 +106,15 @@ def test_RNO_layer_resolution_scaling(n_dim, complex_data):
 
 @pytest.mark.parametrize("norm", [None, "group_norm", "instance_norm"])
 @pytest.mark.parametrize("complex_data", [False, True])
-def test_RNO_layer_norm(norm, complex_data):
-    """Test RNO_layer with different normalization options"""
+def test_RNOBlock_norm(norm, complex_data):
+    """Test RNOBlock with different normalization options"""
     modes = (8, 8)
     width = 16
     size = [12, 12]
     batch_size = 2
     num_timesteps = 3
 
-    layer = RNO_layer(
+    layer = RNOBlock(
         n_modes=modes,
         width=width,
         norm=norm,
@@ -131,15 +131,15 @@ def test_RNO_layer_norm(norm, complex_data):
 
 @pytest.mark.parametrize("stabilizer", [None, "tanh"])
 @pytest.mark.parametrize("complex_data", [False, True])
-def test_RNO_layer_stabilizer(stabilizer, complex_data):
-    """Test RNO_layer with stabilizer options"""
+def test_RNOBlock_stabilizer(stabilizer, complex_data):
+    """Test RNOBlock with stabilizer options"""
     modes = (8, 8)
     width = 16
     size = [12, 12]
     batch_size = 2
     num_timesteps = 3
 
-    layer = RNO_layer(
+    layer = RNOBlock(
         n_modes=modes,
         width=width,
         stabilizer=stabilizer,
@@ -156,15 +156,15 @@ def test_RNO_layer_stabilizer(stabilizer, complex_data):
 
 @pytest.mark.parametrize("separable", [False, True])
 @pytest.mark.parametrize("complex_data", [False, True])
-def test_RNO_layer_separable(separable, complex_data):
-    """Test RNO_layer with separable convolutions"""
+def test_RNOBlock_separable(separable, complex_data):
+    """Test RNOBlock with separable convolutions"""
     modes = (8, 8)
     width = 16
     size = [12, 12]
     batch_size = 2
     num_timesteps = 3
 
-    layer = RNO_layer(
+    layer = RNOBlock(
         n_modes=modes,
         width=width,
         separable=separable,
@@ -181,15 +181,15 @@ def test_RNO_layer_separable(separable, complex_data):
 
 @pytest.mark.parametrize("preactivation", [False, True])
 @pytest.mark.parametrize("complex_data", [False, True])
-def test_RNO_layer_preactivation(preactivation, complex_data):
-    """Test RNO_layer with preactivation"""
+def test_RNOBlock_preactivation(preactivation, complex_data):
+    """Test RNOBlock with preactivation"""
     modes = (8, 8)
     width = 16
     size = [12, 12]
     batch_size = 2
     num_timesteps = 3
 
-    layer = RNO_layer(
+    layer = RNOBlock(
         n_modes=modes,
         width=width,
         preactivation=preactivation,
@@ -206,15 +206,15 @@ def test_RNO_layer_preactivation(preactivation, complex_data):
 
 @pytest.mark.parametrize("factorization", [None, "Tucker"])
 @pytest.mark.parametrize("complex_data", [False, True])
-def test_RNO_layer_factorization(factorization, complex_data):
-    """Test RNO_layer with factorization"""
+def test_RNOBlock_factorization(factorization, complex_data):
+    """Test RNOBlock with factorization"""
     modes = (8, 8)
     width = 16
     size = [12, 12]
     batch_size = 2
     num_timesteps = 3
 
-    layer = RNO_layer(
+    layer = RNOBlock(
         n_modes=modes,
         width=width,
         factorization=factorization,

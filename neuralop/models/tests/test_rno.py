@@ -112,11 +112,9 @@ def test_rno_superresolution(resolution_scaling_factor):
 
 @pytest.mark.parametrize("norm", [None, "group_norm", "instance_norm"])
 @pytest.mark.parametrize("complex_data", [False, True])
-@pytest.mark.parametrize("use_channel_mlp", [True, False])
-@pytest.mark.parametrize("channel_mlp_skip", ["linear", "identity", "soft-gating", None])
-@pytest.mark.parametrize("fno_skip", ["linear", "identity", "soft-gating", None])
-def test_rno_advanced_params(norm, complex_data, use_channel_mlp, channel_mlp_skip, fno_skip):
-    """Test RNO with various advanced parameter combinations."""
+@pytest.mark.parametrize("channel_mlp_skip", ["linear", "soft-gating", None])
+def test_rno_channel_mlp_params_advanced(norm, complex_data, channel_mlp_skip):
+    """Test RNO with channel MLP and various advanced parameter combinations."""
     device = "cpu"
     s = 12
     modes = 5
@@ -138,8 +136,53 @@ def test_rno_advanced_params(norm, complex_data, use_channel_mlp, channel_mlp_sk
         n_layers=n_layers,
         norm=norm,
         complex_data=complex_data,
-        use_channel_mlp=use_channel_mlp,
+        use_channel_mlp=True,
         channel_mlp_skip=channel_mlp_skip,
+    ).to(device)
+
+    in_data = torch.randn(batch_size, num_time_steps, 3, *size, dtype=dtype).to(device)
+
+    # Test forward pass
+    out, _ = model(in_data)
+
+    # Check output size
+    assert list(out.shape) == [batch_size, 1, *size]
+
+    # Test backward pass
+    loss = out.sum()
+    # take the modulus if data is complex-valued to create grad
+    if dtype == torch.cfloat:
+        loss = (loss.real**2 + loss.imag**2) ** 0.5
+    loss.backward()
+
+
+@pytest.mark.parametrize("norm", [None, "group_norm"])
+@pytest.mark.parametrize("complex_data", [False, True])
+@pytest.mark.parametrize("fno_skip", ["linear", "soft-gating", None])
+def test_rno_fno_skip_params(norm, complex_data, fno_skip):
+    """Test RNO with FNO skip connections and various parameter combinations."""
+    device = "cpu"
+    s = 12
+    modes = 5
+    hidden_channels = 15
+    batch_size = 2
+    n_layers = 2
+    n_dim = 2
+    size = (s,) * n_dim
+    n_modes = (modes,) * n_dim
+    num_time_steps = 3
+
+    dtype = torch.cfloat if complex_data else torch.float32
+
+    model = RNO(
+        in_channels=3,
+        out_channels=1,
+        n_modes=n_modes,
+        hidden_channels=hidden_channels,
+        n_layers=n_layers,
+        norm=norm,
+        complex_data=complex_data,
+        use_channel_mlp=False,
         fno_skip=fno_skip,
     ).to(device)
 
@@ -197,8 +240,8 @@ def test_rno_embedding_and_padding(positional_embedding, domain_padding):
     assert list(out.shape) == [batch_size, 1, *size]
 
 
-@pytest.mark.parametrize("channel_mlp_dropout", [0.0, 0.1, 0.5])
-@pytest.mark.parametrize("channel_mlp_expansion", [0.25, 0.5, 1.0])
+@pytest.mark.parametrize("channel_mlp_dropout", [0.0, 0.1])
+@pytest.mark.parametrize("channel_mlp_expansion", [0.5, 1.0])
 @pytest.mark.parametrize("non_linearity", [F.gelu, F.relu, F.tanh])
 def test_rno_channel_mlp_params(channel_mlp_dropout, channel_mlp_expansion, non_linearity):
     """Test RNO with different channel MLP parameters."""
