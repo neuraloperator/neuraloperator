@@ -62,9 +62,6 @@ class RNO_cell(nn.Module):
     channel_mlp_skip : str, optional
         Module to use for ChannelMLP skip connections. Options: "linear", "soft-gating", "identity", None, by default "soft-gating"
         If None, no skip connection is added. See layers.skip_connections for more details
-
-    Other Parameters
-    -------------------
     complex_data : bool, optional
         Whether the FNO's data takes on complex values in space, by default False
     separable : bool, optional
@@ -110,7 +107,6 @@ class RNO_cell(nn.Module):
         implementation="factorized",
         decomposition_kwargs=dict(),
     ):
-        # resolution_scaling_factor is provided here as an integer or float
         super().__init__()
         self.hidden_channels = hidden_channels
         scaling_factor = None if not resolution_scaling_factor else [resolution_scaling_factor]
