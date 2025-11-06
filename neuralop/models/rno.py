@@ -57,7 +57,7 @@ class RNO(BaseModel, name='RNO'):
     hidden_channels : int
         Width of the RNO (i.e. number of channels).
         This significantly affects the number of parameters of the RNO.
-        For 1D problems, 32-64 channels are typically sufficient. For 2D/3D problems
+        For 1D problems, 24-48 channels are typically sufficient. For 2D/3D problems
         without Tucker/CP/TT factorization, start with 16-32 channels to avoid
         excessive parameters. Increase if more expressivity is needed.
         Update lifting_channel_ratio and projection_channel_ratio accordingly since they are proportional to hidden_channels.
@@ -345,7 +345,7 @@ class RNO(BaseModel, name='RNO'):
         if self.complex_data:
             self.projection = ComplexValued(self.projection)
 
-    def forward(self, x, init_hidden_states=None):
+    def forward(self, x, init_hidden_states=None, return_hidden_states=False):
         """
         Forward pass for the Recurrent Neural Operator.
 
@@ -362,6 +362,9 @@ class RNO(BaseModel, name='RNO'):
             hidden states should already be padded to the padded resolution. Automatic
             padding of init_hidden_states is not currently supported. If None, all
             hidden states are initialized internally with proper padding.
+        return_hidden_states : bool, optional
+            Whether to return the final hidden states for each layer in addition to
+            the prediction. Default: False
 
         Returns
         -------
@@ -370,11 +373,11 @@ class RNO(BaseModel, name='RNO'):
             resolution scaling is used across layers, spatial_dims_out are scaled by
             the product of the per-layer factors; otherwise they match the input
             spatial dimensions.
-        final_hidden_states : list[torch.Tensor]
-            List of final hidden states for each layer. For layers 0..n_layers-2 these
-            are the last-time-step states with shape (batch, hidden_channels, *spatial_dims_out_i).
-            The last entry corresponds to the final hidden representation before the
-            projection layer.
+        final_hidden_states : list[torch.Tensor], optional
+            Returned only if return_hidden_states=True. List of final hidden states for
+            each layer. For layers 0..n_layers-2 these are the last-time-step states with
+            shape (batch, hidden_channels, *spatial_dims_out_i). The last entry corresponds
+            to the final hidden representation before the projection layer.
 
         Notes
         -----
@@ -439,7 +442,10 @@ class RNO(BaseModel, name='RNO'):
 
         pred = self.projection(h)
 
-        return pred, final_hidden_states
+        if return_hidden_states:
+            return pred, final_hidden_states
+        else:
+            return pred
 
     def predict(self, x, num_steps, grid_function=None):
         """Autoregressively predict future time steps.
@@ -475,9 +481,9 @@ class RNO(BaseModel, name='RNO'):
         """
         output = []
         states = [None] * self.n_layers
-        
+
         for _ in range(num_steps):
-            pred, states = self.forward(x, states)
+            pred, states = self.forward(x, states, return_hidden_states=True)
             output.append(pred)
             x = pred.reshape((pred.shape[0], 1, *pred.shape[1:]))
             if grid_function:

@@ -51,7 +51,7 @@ def test_rno(
     in_data = torch.randn(batch_size, num_time_steps, 3, *size).to(device)
 
     # Test forward pass
-    out, _ = model(in_data)
+    out = model(in_data)
 
     # Check output size
     assert list(out.shape) == [batch_size, 1, *size]
@@ -102,7 +102,7 @@ def test_rno_superresolution(resolution_scaling_factor):
 
     in_data = torch.randn(batch_size, num_time_steps, 3, *size).to(device)
     # Test forward pass
-    out, _ = model(in_data)
+    out = model(in_data)
 
     # Check output size
     factor = prod(resolution_scaling_factor)
@@ -143,7 +143,7 @@ def test_rno_channel_mlp_params_advanced(norm, complex_data, channel_mlp_skip):
     in_data = torch.randn(batch_size, num_time_steps, 3, *size, dtype=dtype).to(device)
 
     # Test forward pass
-    out, _ = model(in_data)
+    out = model(in_data)
 
     # Check output size
     assert list(out.shape) == [batch_size, 1, *size]
@@ -189,7 +189,7 @@ def test_rno_fno_skip_params(norm, complex_data, fno_skip):
     in_data = torch.randn(batch_size, num_time_steps, 3, *size, dtype=dtype).to(device)
 
     # Test forward pass
-    out, _ = model(in_data)
+    out = model(in_data)
 
     # Check output size
     assert list(out.shape) == [batch_size, 1, *size]
@@ -234,7 +234,7 @@ def test_rno_embedding_and_padding(positional_embedding, domain_padding):
     in_data = torch.randn(batch_size, num_time_steps, 3, *size).to(device)
 
     # Test forward pass
-    out, _ = model(in_data)
+    out = model(in_data)
 
     # Check output size
     assert list(out.shape) == [batch_size, 1, *size]
@@ -270,7 +270,7 @@ def test_rno_channel_mlp_params(channel_mlp_dropout, channel_mlp_expansion, non_
     in_data = torch.randn(batch_size, num_time_steps, 3, *size).to(device)
 
     # Test forward pass
-    out, _ = model(in_data)
+    out = model(in_data)
 
     # Check output size
     assert list(out.shape) == [batch_size, 1, *size]

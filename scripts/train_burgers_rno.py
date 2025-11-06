@@ -64,7 +64,7 @@ class RNOTimeAdapter(nn.Module):
     def forward(self, x, y=None):
         # (B, C, T, X) -> (B, T, C, X)
         x_rno = x.permute(0, 2, 1, 3).contiguous()
-        pred, _ = self.core(x_rno)
+        pred = self.core(x_rno)
         return pred
 
 
