@@ -15,7 +15,7 @@ def test_RNOBlock_basic(n_dim, complex_data):
 
     layer = RNOBlock(
         n_modes=modes[:n_dim],
-        width=width,
+        hidden_channels=width,
         complex_data=complex_data,
     )
 
@@ -46,7 +46,7 @@ def test_RNOBlock_return_sequences(return_sequences, complex_data):
 
     layer = RNOBlock(
         n_modes=modes,
-        width=width,
+        hidden_channels=width,
         return_sequences=return_sequences,
         complex_data=complex_data,
     )
@@ -77,7 +77,7 @@ def test_RNOBlock_resolution_scaling(n_dim, complex_data):
     # Test upsampling
     layer_up = RNOBlock(
         n_modes=modes[:n_dim],
-        width=width,
+        hidden_channels=width,
         resolution_scaling_factor=2.0,
         complex_data=complex_data,
     )
@@ -93,7 +93,7 @@ def test_RNOBlock_resolution_scaling(n_dim, complex_data):
     # Test downsampling
     layer_down = RNOBlock(
         n_modes=modes[:n_dim],
-        width=width,
+        hidden_channels=width,
         resolution_scaling_factor=0.5,
         complex_data=complex_data,
     )
@@ -116,7 +116,7 @@ def test_RNOBlock_norm(norm, complex_data):
 
     layer = RNOBlock(
         n_modes=modes,
-        width=width,
+        hidden_channels=width,
         norm=norm,
         complex_data=complex_data,
     )
@@ -141,7 +141,7 @@ def test_RNOBlock_stabilizer(stabilizer, complex_data):
 
     layer = RNOBlock(
         n_modes=modes,
-        width=width,
+        hidden_channels=width,
         stabilizer=stabilizer,
         complex_data=complex_data,
     )
@@ -166,7 +166,7 @@ def test_RNOBlock_separable(separable, complex_data):
 
     layer = RNOBlock(
         n_modes=modes,
-        width=width,
+        hidden_channels=width,
         separable=separable,
         complex_data=complex_data,
     )
@@ -191,7 +191,7 @@ def test_RNOBlock_preactivation(preactivation, complex_data):
 
     layer = RNOBlock(
         n_modes=modes,
-        width=width,
+        hidden_channels=width,
         preactivation=preactivation,
         complex_data=complex_data,
     )
@@ -216,7 +216,7 @@ def test_RNOBlock_factorization(factorization, complex_data):
 
     layer = RNOBlock(
         n_modes=modes,
-        width=width,
+        hidden_channels=width,
         factorization=factorization,
         rank=0.5 if factorization else 1.0,
         complex_data=complex_data,
