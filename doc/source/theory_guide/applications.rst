@@ -432,7 +432,7 @@ References
    <div style="margin-top: 1em"></div>
 
 .. [21] Tipping Point Forecasting in Non-Stationary Dynamics on Function Spaces,
-        Miguel Liu-Schiaffini, Clare E Singer, Nikola Kovachki, Tapio Schneider, 
+        Miguel Liu-Schiaffini, Clare E Singer, Nikola Kovachki, Sze Chai Leung, Tapio Schneider, Hyunji Jane Bae, 
         Kamyar Azizzadenesheli, Anima Anandkumar, 2023.
         arXiv:2308.08794.
 
