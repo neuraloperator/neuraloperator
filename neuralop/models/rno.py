@@ -358,10 +358,9 @@ class RNO(BaseModel, name='RNO'):
         init_hidden_states : list[torch.Tensor] | None
             Optional list of per-layer initial hidden states. Each tensor should have
             shape (batch, hidden_channels, *spatial_dims_h), where spatial_dims_h are
-            the potentially scaled spatial dimensions. If domain_padding is enabled,
-            hidden states should already be padded to the padded resolution. Automatic
-            padding of init_hidden_states is not currently supported. If None, all
-            hidden states are initialized internally with proper padding.
+            the unpadded spatial dimensions at each layer (accounting for resolution
+            scaling). If domain_padding is enabled, hidden states will be automatically
+            padded like the input x. If None, all hidden states are initialized internally.
         return_hidden_states : bool, optional
             Whether to return the final hidden states for each layer in addition to
             the prediction. Default: False
@@ -375,9 +374,10 @@ class RNO(BaseModel, name='RNO'):
             spatial dimensions.
         final_hidden_states : list[torch.Tensor], optional
             Returned only if return_hidden_states=True. List of final hidden states for
-            each layer. For layers 0..n_layers-2 these are the last-time-step states with
-            shape (batch, hidden_channels, *spatial_dims_out_i). The last entry corresponds
-            to the final hidden representation before the projection layer.
+            each layer in unpadded format (matching the format of init_hidden_states input).
+            For layers 0..n_layers-2 these are the last-time-step states with shape
+            (batch, hidden_channels, *spatial_dims_out_i). The last entry corresponds to
+            the final hidden representation before the projection layer.
 
         Notes
         -----
@@ -404,14 +404,24 @@ class RNO(BaseModel, name='RNO'):
 
         if init_hidden_states is None:
             init_hidden_states = [None] * self.n_layers
-        
+        else:
+            # If domain padding is enabled, pad the provided hidden states
+            # This ensures consistency with how x is handled (user provides unpadded, we pad internally)
+            if self.domain_padding:
+                padded_hidden_states = []
+                for h in init_hidden_states:
+                    if h is not None:
+                        h = self.domain_padding.pad(h)
+                    padded_hidden_states.append(h)
+                init_hidden_states = padded_hidden_states
+
         # Reshape for processing: (batch*timesteps, channels, *spatial_dims)
         x = x.reshape(batch_size * timesteps, *x.shape[2:])
-        
+
         # append spatial pos embedding if set
         if self.positional_embedding is not None:
             x = self.positional_embedding(x)
-        
+
         x = self.lifting(x)
         x = x.reshape(batch_size, timesteps, *x.shape[1:])
 
@@ -439,6 +449,15 @@ class RNO(BaseModel, name='RNO'):
             # DomainPadding.unpad expects (batch, channels, *spatial_dims)
             # h should already be in this format from the last layer
             h = self.domain_padding.unpad(h)
+
+            # Also unpad all final_hidden_states to return them in unpadded format
+            # This maintains consistency: user provides unpadded, receives unpadded
+            # This prevents double-padding when states are passed back (e.g., in predict())
+            if return_hidden_states:
+                unpadded_states = []
+                for state in final_hidden_states:
+                    unpadded_states.append(self.domain_padding.unpad(state))
+                final_hidden_states = unpadded_states
 
         pred = self.projection(h)
 
