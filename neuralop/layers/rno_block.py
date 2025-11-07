@@ -277,9 +277,6 @@ class RNOBlock(nn.Module):
     channel_mlp_skip : str, optional
         Module to use for ChannelMLP skip connections. Options: "linear", "soft-gating", "identity", None, by default "soft-gating"
         If None, no skip connection is added. See layers.skip_connections for more details
-
-    Other Parameters
-    -------------------
     complex_data : bool, optional
         Whether the FNO's data takes on complex values in space, by default False
     separable : bool, optional
