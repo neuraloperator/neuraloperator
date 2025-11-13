@@ -991,9 +991,12 @@ class FourierDiff:
 
         # Initialize FC class if needed
         self.FC = None
-        if self.use_fc in ["Legendre", "Gram"]:
-            FC_class = FCLegendre if self.use_fc == "Legendre" else FCGram
-            self.FC = FC_class(d=self.fc_degree, n_additional_pts=self.fc_n_additional_pts)
+        if self.use_fc:
+            if self.use_fc.lower() in ['legendre', 'gram']:
+                FC_class = FCLegendre if self.use_fc.lower() == 'legendre' else FCGram
+                self.FC = FC_class(d=self.fc_degree, n_additional_pts=self.fc_n_additional_pts)
+            else:
+                raise ValueError(f"Given FC input {self.use_fc} is not valid. Must be 'legendre' or 'gram'.")
 
     def compute_multiple_derivatives(self, u, derivatives):
         """
