@@ -523,7 +523,7 @@ class SpectralConv(BaseSpectralConv):
             mode_sizes = output_shape
 
         if self.order > 1:
-            out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
+            out_fft = torch.fft.ifftshift(out_fft, dim=fft_dims[:-1])
 
         if self.complex_data:
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
