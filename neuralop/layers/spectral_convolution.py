@@ -211,43 +211,59 @@ class SpectralConv(BaseSpectralConv):
 
         This can be updated dynamically during training.
 
-    max_n_modes : int tuple or None, default is None
+    complex_data : bool, optional
+        Whether data takes on complex values in the spatial domain, by default False.
+        If True, uses different logic for FFT contraction and uses full FFT instead of real-valued.
+    max_n_modes : int tuple or None, optional
         * If not None, **maximum** number of modes to keep in Fourier Layer, along each dim
             The number of modes (`n_modes`) cannot be increased beyond that.
         * If None, all the n_modes are used.
-
-    separable : bool, default is True
-        whether to use separable implementation of contraction
-        if True, contracts factors of factorized
-        tensor weight individually
-    init_std : float or 'auto', default is 'auto'
-        std to use for the init
-    factorization : str or None, {'tucker', 'cp', 'tt'}, default is None
+        By default None.
+    bias : bool, optional
+        Whether to add a learnable bias to the output, by default True.
+    separable : bool, optional
+        Whether to use separable implementation of contraction.
+        If True, contracts factors of factorized tensor weight individually.
+        By default False.
+    resolution_scaling_factor : float, list of float, or None, optional
+        Scaling factor(s) for resolution scaling. If provided, the output resolution
+        will be scaled by this factor along each spatial dimension.
+        By default None.
+    fno_block_precision : str, optional
+        Precision mode for FNO block operations. Options: 'full', 'half', 'mixed'.
+        By default 'full'.
+    rank : float, optional
+        Rank of the tensor factorization of the Fourier weights, by default 1.0.
+        Ignored if ``factorization is None``.
+    factorization : str or None, optional
+        Tensor factorization type. Options: {'tucker', 'cp', 'tt'}.
         If None, a single dense weight is learned for the FNO.
         Otherwise, that weight, used for the contraction in the Fourier domain
         is learned in factorized form. In that case, `factorization` is the
         tensor factorization of the parameters weight used.
-    rank : float or rank, optional
-        Rank of the tensor factorization of the Fourier weights, by default 1.0
-        Ignored if ``factorization is None``
-    fixed_rank_modes : bool, optional
-        Modes to not factorize, by default False
-        Ignored if ``factorization is None``
-    fft_norm : str, optional
-        fft normalization parameter, by default 'forward'
-    implementation : {'factorized', 'reconstructed'}, optional, default is 'factorized'
-        If factorization is not None, forward mode to use::
+        By default None.
+    implementation : {'factorized', 'reconstructed'}, optional
+        If factorization is not None, forward mode to use:
         * `reconstructed` : the full weight tensor is reconstructed from the
           factorization and used for the forward pass
         * `factorized` : the input is directly contracted with the factors of
           the decomposition
-        Ignored if ``factorization is None``
-    decomposition_kwargs : dict, optional, default is {}
-        Optionaly additional parameters to pass to the tensor decomposition
-        Ignored if ``factorization is None``
-    complex_data: bool, optional
-        whether data takes on complex values in the spatial domain, by default False
-        if True, uses different logic for FFT contraction and uses full FFT instead of real-valued
+        Ignored if ``factorization is None``.
+        By default 'reconstructed'.
+    fixed_rank_modes : bool, optional
+        Modes to not factorize, by default False.
+        Ignored if ``factorization is None``.
+    decomposition_kwargs : dict or None, optional
+        Optional additional parameters to pass to the tensor decomposition.
+        Ignored if ``factorization is None``.
+        By default None.
+    init_std : float or 'auto', optional
+        Standard deviation to use for weight initialization, by default 'auto'.
+        If 'auto', uses (2 / (in_channels + out_channels)) ** 0.5.
+    fft_norm : str, optional
+        FFT normalization parameter, by default 'forward'.
+    device : torch.device or None, optional
+        Device to place the layer on, by default None.
 
     References
     -----------
@@ -274,7 +290,7 @@ class SpectralConv(BaseSpectralConv):
         separable=False,
         resolution_scaling_factor: Optional[Union[Number, List[Number]]] = None,
         fno_block_precision="full",
-        rank=0.5,
+        rank=1.0,
         factorization=None,
         implementation="reconstructed",
         fixed_rank_modes=False,
@@ -311,8 +327,6 @@ class SpectralConv(BaseSpectralConv):
 
         if init_std == "auto":
             init_std = (2 / (in_channels + out_channels)) ** 0.5
-        else:
-            init_std = init_std
 
         if isinstance(fixed_rank_modes, bool):
             if fixed_rank_modes:
@@ -340,18 +354,14 @@ class SpectralConv(BaseSpectralConv):
         tensor_kwargs = decomposition_kwargs if decomposition_kwargs is not None else {}
 
         # Create/init spectral weight tensor
-
-        if factorization is None:
-            self.weight = torch.tensor(weight_shape, dtype=torch.cfloat)
-        else:
-            self.weight = FactorizedTensor.new(
-                weight_shape,
-                rank=self.rank,
-                factorization=factorization,
-                fixed_rank_modes=fixed_rank_modes,
-                **tensor_kwargs,
-                dtype=torch.cfloat,
-            )
+        self.weight = FactorizedTensor.new(
+            weight_shape,
+            rank=self.rank,
+            factorization=factorization,
+            fixed_rank_modes=fixed_rank_modes,
+            **tensor_kwargs,
+            dtype=torch.cfloat,
+        )
         self.weight.normal_(0, init_std)
 
         self._contract = get_contract_fun(
