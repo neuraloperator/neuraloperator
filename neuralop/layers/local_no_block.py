@@ -198,10 +198,10 @@ class LocalNOBlocks(nn.Module):
             diff_layers = [diff_layers] * n_layers
 
         if len(n_modes) > 3 and True in diff_layers:
-            NotImplementedError("Differential convs not implemented for dimensions higher than 3.")
+            raise NotImplementedError("Differential convs not implemented for dimensions higher than 3.")
 
         if len(n_modes) != 2 and True in disco_layers:
-            NotImplementedError("Local conv layers only implemented for dimension 2.")
+            raise NotImplementedError("Local conv layers only implemented for dimension 2.")
             
         if conv_padding_mode not in ['circular', 'periodic', 'zeros'] and True in disco_layers:
             warnings.warn("Local conv layers only support periodic or zero padding, defaulting to zero padding for local convs.")

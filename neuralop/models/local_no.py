@@ -288,8 +288,6 @@ class LocalNO(BaseModel, name="LocalNO"):
         else:
             self.domain_padding = None
 
-        self.complex_data = self.complex_data
-
         if resolution_scaling_factor is not None:
             if isinstance(resolution_scaling_factor, (float, int)):
                 resolution_scaling_factor = [resolution_scaling_factor] * self.n_layers

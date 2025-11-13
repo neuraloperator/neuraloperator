@@ -236,13 +236,21 @@ class GINO(BaseModel):
             self.fno_in_channels += latent_feature_channels
 
         if self.gno_coord_dim != 3 and gno_use_open3d:
-            print(f'Warning: GNO expects {self.gno_coord_dim}-d data but Open3d expects 3-d data')
+            warnings.warn(
+                f'GNO expects {self.gno_coord_dim}-d data but Open3d expects 3-d data',
+                UserWarning,
+                stacklevel=2,
+            )
             gno_use_open3d = False
 
         self.in_coord_dim = len(fno_n_modes)
         self.gno_out_coord_dim = len(fno_n_modes) # gno output and fno will use same dimensions
         if self.in_coord_dim != self.gno_coord_dim:
-            print(f'Warning: FNO expects {self.in_coord_dim}-d data while input GNO expects {self.gno_coord_dim}-d data')
+            warnings.warn(
+                f'FNO expects {self.in_coord_dim}-d data while input GNO expects {self.gno_coord_dim}-d data',
+                UserWarning,
+                stacklevel=2,
+            )
 
         self.in_coord_dim_forward_order = list(range(self.in_coord_dim))
 
