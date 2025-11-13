@@ -189,14 +189,18 @@ class FNOGNO(BaseModel, name="FNOGNO"):
 
         self.gno_coord_dim = gno_coord_dim
         if self.gno_coord_dim != 3 and gno_use_open3d:
-            print(
-                f"Warning: GNO expects {self.gno_coord_dim}-d data but Open3d expects 3-d data"
+            warnings.warn(
+                f"GNO expects {self.gno_coord_dim}-d data but Open3d expects 3-d data",
+                UserWarning,
+                stacklevel=2,
             )
 
         self.in_coord_dim = len(fno_n_modes)
         if self.in_coord_dim != self.gno_coord_dim:
-            print(
-                f"Warning: FNO expects {self.in_coord_dim}-d data while GNO expects {self.gno_coord_dim}-d data"
+            warnings.warn(
+                f"FNO expects {self.in_coord_dim}-d data while GNO expects {self.gno_coord_dim}-d data",
+                UserWarning,
+                stacklevel=2,
             )
 
         # these lists contain the interior dimensions of the input

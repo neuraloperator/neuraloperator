@@ -267,8 +267,6 @@ class UNO(nn.Module):
                     prev_out + self.uno_out_channels[self.horizontal_skips_map[i]]
                 )
 
-            print(f"{fno_skip=}")
-            print(f"{channel_mlp_skip=}")
             self.fno_blocks.append(
                 self.operator_block(
                     in_channels=prev_out,
