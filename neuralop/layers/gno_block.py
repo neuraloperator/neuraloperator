@@ -235,7 +235,7 @@ class GNOBlock(nn.Module):
             d4 is the output size of the kernel k.
         """
         if f_y is not None:
-            if f_y.ndim == 3 and f_y.shape[0] == 1:
+            if f_y.ndim == 3 and f_y.shape[0] == -1:
                 f_y = f_y.squeeze(0)
 
         neighbors_dict = self.neighbor_search(data=y, queries=x, radius=self.radius)
