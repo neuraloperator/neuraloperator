@@ -303,28 +303,14 @@ class FNO(BaseModel, name="FNO"):
         lifting_in_channels = self.in_channels
         if self.positional_embedding is not None:
             lifting_in_channels += self.n_dim
-        # if lifting_channels is passed, make lifting a Channel-Mixing MLP
-        # with a hidden layer of size lifting_channels
-        if self.lifting_channels:
-            self.lifting = ChannelMLP(
-                in_channels=lifting_in_channels,
-                out_channels=self.hidden_channels,
-                hidden_channels=self.lifting_channels,
-                n_layers=2,
-                n_dim=self.n_dim,
-                non_linearity=non_linearity,
-            )
-        # otherwise, make it a linear layer
-        else:
-            self.lifting = ChannelMLP(
-                in_channels=lifting_in_channels,
-                hidden_channels=self.hidden_channels,
-                out_channels=self.hidden_channels,
-                n_layers=1,
-                n_dim=self.n_dim,
-                non_linearity=non_linearity,
-            )
-        # Convert lifting to a complex ChannelMLP if self.complex_data==True
+        self.lifting = ChannelMLP(
+            in_channels=lifting_in_channels,
+            out_channels=self.hidden_channels,
+            hidden_channels=self.lifting_channels,
+            n_layers=2,
+            n_dim=self.n_dim,
+            non_linearity=non_linearity,
+        )
         if self.complex_data:
             self.lifting = ComplexValued(self.lifting)
 
