@@ -6,8 +6,7 @@ from neuralop import get_model
 from neuralop.utils import get_wandb_api_key
 from neuralop.losses.data_losses import LpLoss
 from neuralop.training.trainer import Trainer
-from neuralop.data.datasets import CarOTDataset, load_saved_ot
-from neuralop.data.transforms.data_processors import DataProcessor
+from neuralop.data.datasets import CarOTDataset, load_saved_ot, CFDDataProcessor
 from copy import deepcopy
 
 # query points is [sdf_query_resolution] * 3 (taken from config ahmed)
@@ -88,59 +87,6 @@ if config.opt.testing_loss == 'l2':
     test_loss_fn = l2loss
 else:
     raise ValueError(f'Got {config.opt.testing_loss=}')
-
-# Handle data preprocessing to FNOGNO 
-
-class CFDDataProcessor(DataProcessor):
-    """
-    Implements logic to preprocess data/handle model outputs
-    to train an OTNO on the CFD car-pressure dataset
-    """
-
-    def __init__(self, normalizer, device='cuda'):
-        super().__init__()
-        self.normalizer = normalizer
-        self.device = device
-        self.model = None
-
-    def preprocess(self, sample):
-        # Turn a data dictionary returned by MeshDataModule's DictDataset
-        # into the form expected by the FNOGNO
-        
-        x = sample['trans'].squeeze(0).to(self.device)
-        ind_dec = sample['ind_dec'].squeeze(0).to(self.device)
-
-        #Output data
-        truth = sample['press'].squeeze(0).unsqueeze(-1).to(self.device)
-
-        batch_dict = dict(x=x,
-                        ind_dec=ind_dec,
-                        y=truth)
-
-        sample.update(batch_dict)
-        return sample
-    
-    def postprocess(self, out, sample):
-        if not self.training:
-            out = self.normalizer.inverse_transform(out)
-            y = self.normalizer.inverse_transform(sample['y'].squeeze(0))
-            sample['y'] = y
-
-        return out, sample
-    
-    def to(self, device):
-        self.device = device
-        self.normalizer = self.normalizer.to(device)
-        return self
-    
-    def wrap(self, model):
-        self.model = model
-
-    def forward(self, sample):
-        sample = self.preprocess(sample)
-        out = self.model(sample)
-        out, sample = self.postprocess(out, sample)
-        return out, sample
 
 output_encoder = deepcopy(data_module.normalizers['press']).to(device)
 data_processor = CFDDataProcessor(normalizer=output_encoder, device=device)

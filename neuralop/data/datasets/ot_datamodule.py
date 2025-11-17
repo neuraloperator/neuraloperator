@@ -29,12 +29,15 @@ class OTDataModule:
         self,
         root_dir: Union[str, Path],
         item_dir_name: Union[str, Path],
-        n_total: int = None,
+        n_train: int = None,
+        n_test: int = None,
+        attributes: List[str] = None,
         expand_factor: float = 3.0, 
         reg: float = 1e-06,
         device: Union[str, torch.device] = 'cuda',
     ):
-        """OTDataModule generate OT data from physical mesh
+        """MeshDataModule provides a general dataset for irregular coordinate meshes
+            for use in a GNO-based architecture
 
         Parameters
         ----------
@@ -42,10 +45,17 @@ class OTDataModule:
             str or Path to root directory of CFD dataset
         item_dir_name : Union[str, Path]
             directory in which individual item subdirs are stored
-        n_total : int, optional
-            hard limit on number of total examples
-            if n_total is greater than the actual number
-            of total examples available, nothing is changed
+        n_train : int, optional
+            hard limit on number of training examples
+            if n_train is greater than the actual number
+            of training examples available, nothing is changed
+        n_test : int, optional
+            hard limit on number of test examples
+            if n_test is greater than the actual number
+            of testing examples available, nothing is changed
+        attributes : List[str], optional
+            list of string keys for attributes in the dataset to return
+            as keys for each batch dict
         expand_factor : float, optional
             Scale factor to map physical mesh size to latent mesh size (e.g., torus/sphere).
             Affects OT plan surjectivity: smaller values may lead to incomplete mappings, while larger values increase computational cost but improve surjectivity. 
@@ -59,7 +69,7 @@ class OTDataModule:
         """
         self.device = device
 
-        if o3d_warn or ot_warn:
+        if o3d_warn:
             print("Warning: you are attempting to run MeshDataModule without the required dependency open3d.")
             raise ModuleNotFoundError()
         if isinstance(root_dir, str):
@@ -70,19 +80,33 @@ class OTDataModule:
         assert root_dir.exists(), "Path does not exist"
         assert root_dir.is_dir(), "Path is not a directory"
 
-        # Read all indicies
-        mesh_ind = self.read_indices(root_dir / 'watertight_meshes.txt')
+        # Read train and test indicies
+        with open(root_dir / "train.txt") as file:
+            train_ind = file.readline().split(",")
 
-        if n_total is not None:
-            if n_total <= len(mesh_ind):
-                mesh_ind = mesh_ind[0:n_total]
-            else:
-                print(f"Warning: requested n_total ({n_total}) is greater than the number of available meshes ({len(mesh_ind)}). All available meshes will be used.")
-        n_total = len(mesh_ind)
+        with open(root_dir / "test.txt") as file:
+            test_ind = file.readline().split(",")
+
+        if n_train is not None:
+            if n_train < len(train_ind):
+                train_ind = train_ind[0:n_train]
+
+        if n_test is not None:
+            if n_test < len(test_ind):
+                test_ind = test_ind[0:n_test]
+
+        # set train and test sizes
+        train_ind = train_ind[0:n_train]
+        test_ind = test_ind[0:n_test]
+        n_train = len(train_ind)
+        n_test = len(test_ind)
+        print("n_train n_test are", n_train, n_test)
+
+        mesh_ind = train_ind + test_ind
         # remove trailing newlines from train and test indices
         mesh_ind = [x.rstrip() for x in mesh_ind]
 
-        data_dir = root_dir / item_dir_name
+        data_dir = root_dir / "data"
 
         # Load all meshes and compute OT
         data = []
@@ -90,15 +114,11 @@ class OTDataModule:
         n_missed_points = 0
         for ind in mesh_ind:
             mesh = o3d.io.read_triangle_mesh(
-                str(data_dir / ("mesh_" + ind.zfill(3) + ".ply"))
+                str(data_dir / (item_dir_name + ind + "/tri_mesh.ply"))
             )
             target = torch.from_numpy(np.asarray(mesh.vertices).squeeze().astype(np.float32())).to(self.device) #(3586,3) car vertices
             mesh.compute_vertex_normals()
             normal = torch.from_numpy(np.asarray(mesh.vertex_normals).astype(np.float32()))
-            pressure = np.load(
-                str(data_dir / ('press_' + ind.zfill(3) + '.npy'))
-            ) 
-            pressure = torch.from_numpy(pressure.astype(np.float32()))
 
             # OT
             n_t = len(target) # number of target samples
@@ -133,15 +153,21 @@ class OTDataModule:
                 "source": source.cpu(),
                 "ind_enc": indices_encoder.cpu(),
                 "ind_dec": indices_decoder.cpu(),
-                "press": pressure,
                 "nor_t": normal,
                 "nor_s": self.torus_normals(n_s_sqrt),
                 "trans": transport.cpu()
             }
+            for attr in attributes:
+                if attr not in item_dict:
+                    attr_data = np.load(
+                        str(data_dir / (item_dir_name + ind + "/" + attr + ".npy"))
+                    ) 
+                    item_dict[attr] = torch.from_numpy(attr_data.astype(np.float32()))
             data.append(item_dict)
+
         self.data = data
-        torch.save(data, script_dir / "data" / f"ot_expand{expand_factor}_reg{reg}_num{n_total}.pt")
-        print(f"Number of none surjective OT plan is {n_non_surjective:d}; average missed points is {n_missed_points/n_total:.2f}")
+        torch.save(data, script_dir / "data" / f"ot_expand{expand_factor}_reg{reg}_train{n_train}_test{n_test}.pt")
+        print(f"Number of none surjective OT plan is {n_non_surjective:d}; average missed points is {n_missed_points/(n_train+n_test):.2f}")
 
     def read_indices(self, file_path):
         with open(file_path, 'r') as file:

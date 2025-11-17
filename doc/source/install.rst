@@ -12,7 +12,6 @@ Once installed, you can import it as ``neuralop``::
 Basic Install
 --------------
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~
 Pre-requisites
 ++++++++++++++
 
@@ -54,6 +53,11 @@ Then, install the requirements ::
 Then install the package (here in editable mode with `-e`, or equivalently `--editable`)::
 
    pip install -e .
+
+
+.. raw:: html
+
+   <br/>
 
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -100,79 +104,3 @@ To force-downgrade PyTorch, run
 .. code ::
 
    pip install -U torch==2.5.1
-
-~~~~~~~~~~~~~~~~~~~~~~
-
-Developer Setup
----------------
-
-Install the library for development:
-++++++++++++++++++++++++++++++++++++
-
-To get started with development, fork the repository on GitHub, then download your fork. After cloning, 
-move to the top level of the repo in your terminal. 
-
-.. code-block:: bash
-
-    git clone https://github.com/YOURNAME/neuraloperator.git
-    cd neuraloperator
-
-.. note:: 
-
-    To manage the library's dependencies and minimize the risk of conflicts with other packages installed in your
-    default local Python environment, we recommend developing and building ``neuraloperator`` in a fresh Python
-    virtual environment. 
-
-.. warning::
-
-    Previous versions of our installation and build guides recommended starting with the Anaconda distribution. Our library
-    depends on `PyTorch <https://pytorch.org>`_. As of spring 2025, PyTorch has stopped releasing updates to the Anaconda
-    distribution. For the latest PyTorch we recommend you use ``pip``. 
-
-Create your virtual environment and store it in the top level:
-
-.. code-block:: bash
-
-    python -m venv .venv
-    source .venv/bin/activate
-
-Install PyTorch. These are generic instructions; if you require a specific build, or a specific CUDA version, your installation
-command will vary. Check PyTorch's `getting started page <https://pytorch.org/get-started/locally/>`_ for more detailed instructions
-
-
-To test your installation, run python in interactive mode and import the library as ``neuralop`` to ensure it is properly built:
-
-.. code-block:: bash
-
-    $ python
-    Python 3.10.14 (main, Month Day Year, Time of Day) [GCC VERSION] on linux
-    Type "help", "copyright", "credits" or "license" for more information.
-    >>> import neuralop
-    >>> 
-
-You have now successfully built ``neuralop``. For instructions on contributing code, see below. 
-
-
-Running the tests
-+++++++++++++++++
-
-Unit-testing is an important part of this package.
-You can run all the tests using `pytest`::
-
-   pip install -r requirements_dev.txt
-   pytest neuralop
-
-Building the documentation
-++++++++++++++++++++++++++
-
-You will need to install the dependencies::
-
-   cd doc
-   pip install -r requirements_doc.txt
-
-
-You are now ready to build the doc (here in html)::
-
-   make html
-
-The results will be in ``build/html`` (the main page will be ``build/html/index.html``)

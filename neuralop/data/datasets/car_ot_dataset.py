@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
+from neuralop.data.transforms.data_processors import DataProcessor
 
 from .dict_dataset import DictDataset
 from ..transforms.normalizers import UnitGaussianNormalizer
@@ -59,8 +60,10 @@ class CarOTDataset(OTDataModule):
 
         super().__init__(
             root_dir=root_dir,
-            item_dir_name='data',
-            n_total=n_train+n_test,
+            item_dir_name='data/',
+            n_train=n_train,
+            n_test=n_test,
+            attributes=['press'],
             expand_factor=expand_factor, 
             reg=reg,
             device=device,
@@ -77,9 +80,9 @@ class CarOTDataset(OTDataModule):
                 data_elem = self.data[j][attr]
                 self.data[j][attr] = self.normalizers[attr].transform(data_elem)
 
-        # prepare the complete features presenting transport map/plan on latent mesh
         for j in range(len(self.data)):
             batch_data = self.data[j]
+            # prepare the complete features presenting transport map/plan on latent mesh
             n_s = batch_data['trans'].shape[1]
             n_s_sqrt = int(np.sqrt(n_s))
             normal = batch_data['nor_t']
@@ -88,6 +91,11 @@ class CarOTDataset(OTDataModule):
             normal_features = torch.cross(normal , batch_data['nor_s'].reshape(-1,3), dim=1)
             trans = torch.cat((batch_data['trans'][0], batch_data['source'], normal_features), dim=1).T.reshape(9, n_s_sqrt, n_s_sqrt).unsqueeze(0)
             self.data[j]['trans']=trans
+            # process data list to remove specific vertices from pressure to match number of vertices
+            press = batch_data['press']
+            self.data[j]['press'] = torch.cat(
+                (press[:, 0:16], press[:, 112:]), axis=1
+            )
 
         # Datasets
         self.train_data = DictDataset(self.data[0:n_train])
@@ -101,7 +109,7 @@ class CarOTDataset(OTDataModule):
 
 class load_saved_ot:
     def __init__(self,
-        n_train: int = 1,
+        n_train: int = 2,
         n_test: int = 1,
         expand_factor: float = 3.0, 
         reg: float = 1e-06,
@@ -111,8 +119,7 @@ class load_saved_ot:
 
         See `neuralop.data.datasets.ot_datamodule` for more detailed references
         """
-        n_total = n_train + n_test
-        data = torch.load(get_project_root() / "neuralop/data/datasets/data" / f"ot_expand{expand_factor}_reg{reg}_num{n_total}.pt")
+        data = torch.load(get_project_root() / "neuralop/data/datasets/data" / f"ot_expand{expand_factor}_reg{reg}_train{n_train}_test{n_test}.pt")
 
         # encode transport and pressure
         normalizer_keys = ['trans', 'press']
@@ -125,9 +132,9 @@ class load_saved_ot:
                 data_elem = data[j][attr]
                 data[j][attr] = self.normalizers[attr].transform(data_elem)
 
-        # prepare the complete features presenting transport map/plan on latent mesh
         for j in range(len(data)):
             batch_data = data[j]
+            # prepare the complete features presenting transport map/plan on latent mesh
             n_s = batch_data['trans'].shape[1]
             n_s_sqrt = int(np.sqrt(n_s))
             normal = batch_data['nor_t']
@@ -136,6 +143,11 @@ class load_saved_ot:
             normal_features = torch.cross(normal , batch_data['nor_s'].reshape(-1,3), dim=1)
             trans = torch.cat((batch_data['trans'][0], batch_data['source'], normal_features), dim=1).T.reshape(9, n_s_sqrt, n_s_sqrt).unsqueeze(0)
             data[j]['trans']=trans
+            # process data list to remove specific vertices from pressure to match number of vertices
+            press = batch_data['press']
+            data[j]['press'] = torch.cat(
+                (press[:, 0:16], press[:, 112:]), axis=1
+            )
 
         # Datasets
         self.train_data = DictDataset(data[0:n_train])
@@ -146,3 +158,55 @@ class load_saved_ot:
 
     def test_loader(self, **kwargs):
         return DataLoader(self.test_data, **kwargs)
+
+# Handle data preprocessing to OTNO
+class CFDDataProcessor(DataProcessor):
+    """
+    Implements logic to preprocess data/handle model outputs
+    to train an OTNO on the CFD car-pressure dataset
+    """
+
+    def __init__(self, normalizer, device='cuda'):
+        super().__init__()
+        self.normalizer = normalizer
+        self.device = device
+        self.model = None
+
+    def preprocess(self, sample):
+        # Turn a data dictionary returned OTDataModule's DictDataset
+        # into the form expected by the OTNO
+
+        x = sample['trans'].squeeze(0).to(self.device)
+        ind_dec = sample['ind_dec'].squeeze(0).to(self.device)
+
+        #Output data
+        truth = sample['press'].squeeze(0).unsqueeze(-1).to(self.device)
+
+        batch_dict = dict(x=x,
+                        ind_dec=ind_dec,
+                        y=truth)
+
+        sample.update(batch_dict)
+        return sample
+    
+    def postprocess(self, out, sample):
+        if not self.training:
+            out = self.normalizer.inverse_transform(out)
+            y = self.normalizer.inverse_transform(sample['y'].squeeze(0))
+            sample['y'] = y
+        sample = {'y': sample['y']}
+        return out, sample
+    
+    def to(self, device):
+        self.device = device
+        self.normalizer = self.normalizer.to(device)
+        return self
+    
+    def wrap(self, model):
+        self.model = model
+
+    def forward(self, sample):
+        sample = self.preprocess(sample)
+        out = self.model(sample)
+        out, sample = self.postprocess(out, sample)
+        return out, sample

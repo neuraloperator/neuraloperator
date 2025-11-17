@@ -7,7 +7,7 @@ from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
 
 class CarCFDDatasetConfig(ConfigBase):
-    root: str = "~/data/car-pressure-data"
+    root: str = "~/processed-car-pressure-data"
     n_train: int = 500
     n_test: int = 111
     reg: float = 1e-06

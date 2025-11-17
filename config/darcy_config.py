@@ -16,6 +16,7 @@ class DarcyOptConfig(OptimizationConfig):
     step_size: int = 60
     gamma: float = 0.5
 
+
 class DarcyDatasetConfig(ConfigBase):
     folder: str = "~/data/darcy/"
     batch_size: int = 8
@@ -27,6 +28,7 @@ class DarcyDatasetConfig(ConfigBase):
     encode_input: bool = True
     encode_output: bool = True
     download: bool = True
+
 
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None

@@ -3,7 +3,12 @@ import torch.nn.functional as F
 
 from torch.autograd import grad
 
-from .finite_diff import central_diff_2d
+from .differentiation import FiniteDiff
+
+# Set warning filter to show each warning only once
+import warnings
+
+warnings.filterwarnings("once", category=UserWarning)
 
 
 class BurgersEqnLoss(object):
@@ -31,16 +36,10 @@ class BurgersEqnLoss(object):
         dt = self.domain_length[0] / (nt - 1)
         dx = self.domain_length[1] / nx
 
-        # du/dt and du/dx
-        dudt, dudx = central_diff_2d(u, [dt, dx], periodic_in_x=False, periodic_in_y=False)
-
-        # d^2u/dxx
-        dudxx = (
-            torch.roll(u, -1, dims=-1) - 2 * u + torch.roll(u, 1, dims=-1)
-        ) / dx**2
-        # fix boundary
-        dudxx[..., 0] = (u[..., 2] - 2 * u[..., 1] + u[..., 0]) / dx**2
-        dudxx[..., -1] = (u[..., -1] - 2 * u[..., -2] + u[..., -3]) / dx**2
+        # Get derivatives, du/dt and du/dx and d^2u/dxx
+        fd2d = FiniteDiff(dim=2, h=(dt, dx), periodic_in_x=False, periodic_in_y=False)
+        dudt, dudx = fd2d.dx(u), fd2d.dy(u)
+        dudxx = fd2d.dy(u, order=2)
 
         # right hand side
         right_hand_side = -dudx * u + self.visc * dudxx
@@ -49,6 +48,13 @@ class BurgersEqnLoss(object):
         return self.loss(dudt, right_hand_side)
 
     def __call__(self, y_pred, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"BurgersLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         if self.method == "fdm":
             return self.fdm(u=y_pred)
         raise NotImplementedError()
@@ -57,39 +63,47 @@ class BurgersEqnLoss(object):
 class ICLoss(object):
     """
     Computes loss for initial value problems.
+
+    Extracts the initial condition and computes the loss between predicted 
+    and true initial conditions for all channels.
+    
+    Expected input shape: (batch_size, channels, time_dim, *spatial_dims)
     """
 
     def __init__(self, loss=F.mse_loss):
         super().__init__()
         self.loss = loss
-
-    def initial_condition_loss(self, y_pred, x):
-        boundary_true = x[:, 0, 0, :]
-        boundary_pred = y_pred[:, 0, 0, :]
-        return self.loss(boundary_pred, boundary_true)
-
-    def __call__(self, y_pred, x, **kwargs):
-        return self.initial_condition_loss(y_pred, x)
+        
+    def __call__(self, y_pred, y, **kwargs):
+        """Expected input shape: (batch_size, channels, time_dim, *spatial_dims)"""
+        if kwargs:
+            warnings.warn(
+                f"ICLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
+        return self.loss(y_pred[:, :, 0], y[:, :, 0])
 
 
 class PoissonInteriorLoss(object):
     """
-    PoissonInteriorLoss computes the loss on the interior points of model outputs 
+    PoissonInteriorLoss computes the loss on the interior points of model outputs
     according to Poisson's equation in 2d: ∇·((1 + 0.1u^2)∇u(x)) = f(x)
 
     Parameters
     ----------
     method : Literal['autograd'] only (for now)
-        How to compute derivatives for equation loss. 
-        
+        How to compute derivatives for equation loss.
+
         * If 'autograd', differentiates using torch.autograd.grad. This can be used with outputs with any irregular
         point cloud structure.
     loss: Callable, optional
-        Base loss class to compute distances between expected and true values, 
+        Base loss class to compute distances between expected and true values,
         by default torch.nn.functional.mse_loss
     """
 
-    def __init__(self, method='autograd', loss=F.mse_loss):
+    def __init__(self, method="autograd", loss=F.mse_loss):
         super().__init__()
         self.method = method
         self.loss = loss
@@ -100,50 +114,74 @@ class PoissonInteriorLoss(object):
         nonlinear Poisson's equation: ∇·((1 + 0.1u^2)∇u(x)) = f(x)
 
         u: torch.Tensor | dict
-            output of the model. 
+            output of the model.
 
-            * If output_queries is passed to the model as a dict, this will be a 
-            dict of outputs provided over the points at each value in output_queries. 
+            * If output_queries is passed to the model as a dict, this will be a
+            dict of outputs provided over the points at each value in output_queries.
             Each tensor will be shape (batch, n_points, 2).
-            
+
             * If a tensor, u will be of shape (batch, num_boundary + num_interior, 2), where
             u[:, 0:num_boundary, :] are boundary points and u[:, num_boundary:, :] are interior points.
         output_queries: torch.Tensor | dict
             output queries provided to the model. If provided as a dict of tensors,
             u will also be returned as a dict keyed the same way. If provided as a tensor,
             u will be a tensor of the same shape except for number of channels. If a tensor,
-            output_queries[:, 0:num_boundary, :] are boundary points and output_queries[:, num_boundary:, :] 
+            output_queries[:, 0:num_boundary, :] are boundary points and output_queries[:, num_boundary:, :]
             are interior points.
         output_source_terms_domain: torch.Tensor
-            source terms f(x) defined for this specific instance of Poisson's equation. 
+            source terms f(x) defined for this specific instance of Poisson's equation.
 
-        """  
+        """
 
         if isinstance(output_queries, dict):
-            output_queries_domain = output_queries['domain']
-            u_prime = grad(outputs=u.sum(), inputs=output_queries_domain,
-                           create_graph=True, retain_graph=True)[0]
+            output_queries_domain = output_queries["domain"]
+            u_prime = grad(
+                outputs=u.sum(),
+                inputs=output_queries_domain,
+                create_graph=True,
+                retain_graph=True,
+            )[0]
         else:
-            #We only care about U defined over the interior. Grab it now if the entire U is passed.
+            # We only care about U defined over the interior. Grab it now if the entire U is passed.
             output_queries_domain = None
             u = u[:, num_boundary:, ...]
-            u_prime = grad(outputs=u.sum(), inputs=output_queries,
-                           create_graph=True, retain_graph=True)[0][:, num_boundary:, :]
-        
-        u_x = u_prime[:,:,0]
-        u_y = u_prime[:,:,1]
-        
+            u_prime = grad(
+                outputs=u.sum(),
+                inputs=output_queries,
+                create_graph=True,
+                retain_graph=True,
+            )[0][:, num_boundary:, :]
+
+        u_x = u_prime[:, :, 0]
+        u_y = u_prime[:, :, 1]
+
         # compute second derivatives
         if output_queries_domain is not None:
-            u_xx = grad(outputs=u_x.sum(), inputs=output_queries_domain, 
-                        create_graph=True, retain_graph=True)[0][:, :, 0]
-            u_yy = grad(outputs=u_y.sum(), inputs=output_queries_domain, 
-                        create_graph=True, retain_graph=True)[0][:, :, 1]
+            u_xx = grad(
+                outputs=u_x.sum(),
+                inputs=output_queries_domain,
+                create_graph=True,
+                retain_graph=True,
+            )[0][:, :, 0]
+            u_yy = grad(
+                outputs=u_y.sum(),
+                inputs=output_queries_domain,
+                create_graph=True,
+                retain_graph=True,
+            )[0][:, :, 1]
         else:
-            u_xx = grad(outputs=u_x.sum(), inputs=output_queries,
-                        create_graph=True, retain_graph=True)[0][:, num_boundary:, 0]
-            u_yy = grad(outputs=u_y.sum(), inputs=output_queries,
-                        create_graph=True, retain_graph=True)[0][:, num_boundary:, 1]
+            u_xx = grad(
+                outputs=u_x.sum(),
+                inputs=output_queries,
+                create_graph=True,
+                retain_graph=True,
+            )[0][:, num_boundary:, 0]
+            u_yy = grad(
+                outputs=u_y.sum(),
+                inputs=output_queries,
+                create_graph=True,
+                retain_graph=True,
+            )[0][:, num_boundary:, 1]
         u_xx = u_xx.squeeze(0)
         u_yy = u_yy.squeeze(0)
         u_prime = u_prime.squeeze(0)
@@ -151,7 +189,7 @@ class PoissonInteriorLoss(object):
 
         # compute LHS of the Poisson equation
         u_sq = torch.pow(u, 2)
-        laplacian = (u_xx + u_yy)
+        laplacian = u_xx + u_yy
         norm_grad_u = torch.pow(u_prime, 2).sum(dim=-1)
 
         assert u_sq.shape == u_xx.shape == u_yy.shape == norm_grad_u.shape
@@ -168,8 +206,15 @@ class PoissonInteriorLoss(object):
         del u_xx, u_yy, u_x, u_y, left_hand_side
 
         return loss
-    
+
     def __call__(self, y_pred, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"PoissonInteriorLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         if self.method == "autograd":
             return self.autograd(u=y_pred, **kwargs)
         elif self.method == "finite_difference":
@@ -177,23 +222,32 @@ class PoissonInteriorLoss(object):
         else:
             raise NotImplementedError()
 
-class PoissonBoundaryLoss(object): 
+
+class PoissonBoundaryLoss(object):
     def __init__(self, loss=F.mse_loss):
         super().__init__()
         self.loss = loss
         self.counter = 0
 
     def __call__(self, y_pred, num_boundary, out_sub_level, y, output_queries, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"PoissonBoundaryLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         num_boundary = int(num_boundary.item() * out_sub_level)
         boundary_pred = y_pred.squeeze(0).squeeze(-1)[:num_boundary]
         y_bound = y.squeeze(0).squeeze(-1)[:num_boundary]
-        
+
         assert boundary_pred.shape == y_bound.shape
         return self.loss(boundary_pred, y_bound)
-    
+
+
 class PoissonEqnLoss(object):
     """PoissonEqnLoss computes a weighted sum of equation loss computed on the interior points of a model's output
-    and a boundary loss computed on the boundary points. 
+    and a boundary loss computed on the boundary points.
 
     Parameters
     ----------
@@ -206,7 +260,7 @@ class PoissonEqnLoss(object):
     base_loss : Callable, optional
         base loss class to use inside equation and boundary loss, by default F.mse_loss
     """
-    def __init__(self, boundary_weight, interior_weight, diff_method: str='autograd', base_loss=F.mse_loss): 
+    def __init__(self, boundary_weight, interior_weight, diff_method: str="autograd", base_loss=F.mse_loss): 
         super().__init__()
         self.boundary_weight = boundary_weight
         self.boundary_loss = PoissonBoundaryLoss(loss=base_loss)
@@ -215,6 +269,13 @@ class PoissonEqnLoss(object):
         self.interior_loss = PoissonInteriorLoss(method=diff_method, loss=base_loss)
 
     def __call__(self, out, y, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"PoissonEqnLoss.__call__() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         if isinstance(out, dict):
             interior_loss = self.interior_weight * self.interior_loss(out['domain'], **kwargs)
             bc_loss = self.boundary_weight * self.boundary_loss(out['boundary'], y=y['boundary'],  **kwargs)

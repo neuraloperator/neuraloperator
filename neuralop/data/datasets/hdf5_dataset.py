@@ -56,10 +56,10 @@ class H5pyDataset(Dataset):
             ), f"Trying to access sample {idx} of dataset with {self.n_samples} samples"
         else:
             for i in idx:
-                assert (
-                    i < self.n_samples
-                ), f"Trying to access sample {i} " \
-                   f"of dataset with {self.n_samples} samples"
+                assert i < self.n_samples, (
+                    f"Trying to access sample {i} "
+                    f"of dataset with {self.n_samples} samples"
+                )
 
         x = self.data["x"][idx, :: self.subsample_step, :: self.subsample_step]
         y = self.data["y"][idx, :: self.subsample_step, :: self.subsample_step]

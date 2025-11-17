@@ -1,7 +1,13 @@
 import itertools
+
 from typing import List, Optional, Tuple, Union
 
 from ..utils import validate_scaling_factor
+
+# Set warning filter to show each warning only once
+import warnings
+
+warnings.filterwarnings("once", category=UserWarning)
 
 try:
     from typing import Literal
@@ -157,7 +163,6 @@ def get_contract_fun(weight, implementation="reconstructed", separable=False):
     """
     if implementation == "reconstructed":
         if separable:
-            print("SEPARABLE")
             return _contract_dense_separable
         else:
             return _contract_dense
@@ -189,7 +194,9 @@ Number = Union[int, float]
 
 
 class SpectralConv(BaseSpectralConv):
-    """Generic N-Dimensional Fourier Neural Operator
+    """Old implementation of the Spectral Convolution layer.
+    
+    This implementation is deprecated and might be removed in future versions.
 
     Parameters
     ----------
@@ -298,9 +305,7 @@ class SpectralConv(BaseSpectralConv):
         ] = validate_scaling_factor(resolution_scaling_factor, self.order, n_layers)
 
         if init_std == "auto":
-            init_std = (2 / (in_channels + out_channels))**0.5
-        else:
-            init_std = init_std
+            init_std = (2 / (in_channels + out_channels)) ** 0.5
 
         if isinstance(fixed_rank_modes, bool):
             if fixed_rank_modes:
@@ -541,14 +546,29 @@ class SubConv(nn.Module):
         self.indices = indices
 
     def forward(self, x, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"SpectralConvWrapper.forward() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         return self.main_conv.forward(x, self.indices, **kwargs)
 
     def transform(self, x, **kwargs):
+        if kwargs:
+            warnings.warn(
+                f"SpectralConvWrapper.transform() received unexpected keyword arguments: {list(kwargs.keys())}. "
+                "These arguments will be ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         return self.main_conv.transform(x, self.indices, **kwargs)
 
     @property
     def weight(self):
         return self.main_conv.get_weight(indices=self.indices)
+
 
 class SpectralConv1d(SpectralConv):
     """1D Spectral Conv

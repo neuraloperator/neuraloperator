@@ -59,6 +59,10 @@ class OTNO(FNO):
     #    where n_t is the number of target vertices
     def forward(self, x, ind_dec, **kwargs):
         """OTNO's forward pass"""
+        # Append spatial positional embedding if set (mirrors FNO.forward)
+        if self.positional_embedding is not None:
+            x = self.positional_embedding(x)
+
         x = self.lifting(x) # (1, hidden_channels, n_s_sqrt, n_s_sqrt)
 
         # Apply domain padding if specified
