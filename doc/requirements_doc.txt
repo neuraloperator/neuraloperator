@@ -6,3 +6,9 @@ sphinx-gallery
 sphinx-design
 tensorly_sphinx_theme
 torchtnt
+pyvista
+imageio
+imageio[ffmpeg]
+imageio[pyav]
+pillow
+torch-harmonics
