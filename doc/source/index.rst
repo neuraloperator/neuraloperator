@@ -29,18 +29,16 @@
    :width: 500
 
 
-``neuraloperator`` is a comprehensive library for 
-learning neural operators in PyTorch.
-It is the official implementation for Fourier Neural Operators 
-and Tensorized Neural Operators.
 
-Unlike regular neural networks, neural operators
-enable learning mapping between function spaces, and this library
-provides all of the tools to do so on your own data.
+NeuralOperator is a comprehensive PyTorch library for learning neural operators,
+containing the official implementation of Fourier Neural Operators and other neural operator architectures.
 
-NeuralOperators are also resolution invariant, 
-so your trained operator can be applied on data of any resolution.
+NeuralOperator is part of the PyTorch Ecosystem, check the PyTorch `announcement <https://pytorch.org/blog/neuraloperatorjoins-the-pytorch-ecosystem>`_! 
 
+
+Unlike regular neural networks, neural operators enable learning mapping between function spaces, 
+and this library provides all of the tools to do so on your own data. Neural operators are 
+resolution invariant, so your trained operator can be applied on data of any resolution.
 
 .. raw:: html
 
@@ -63,7 +61,7 @@ To create a Fourier Neural Operator model:
    from neuralop.models import FNO
 
    operator = FNO(
-      n_modes=(32, 32), 
+      n_modes=(16, 16), 
       hidden_channels=64,
       in_channels=2, 
       out_channels=1
@@ -127,25 +125,25 @@ We provide a ``Trainer`` object that automates the logic of a basic neural opera
    )
 
 Weight tensorization is also provided out of the box: you can improve the previous models
-by simply using a Tucker Tensorized FNO with just a few parameters:
+by simply using a Tucker Tensor FNO with fewer parameters:
 
 .. code-block:: python
 
    from neuralop.models import TFNO
 
    operator = TFNO(
-      n_modes=(32, 32), 
+      n_modes=(16, 16), 
       hidden_channels=64,
       in_channels=2, 
       out_channels=1,
       factorization='tucker',
       implementation='factorized',
-      rank=0.05
+      rank=0.1
    )
 
 This will use a Tucker factorization of the weights. The forward pass
 will be efficient by contracting directly the inputs with the factors
-of the decomposition. The Fourier layers will have 5% of the parameters
+of the decomposition. The Fourier layers will have 10% of the parameters
 of an equivalent, dense Fourier Neural Operator!
 
 
@@ -160,83 +158,3 @@ of an equivalent, dense Fourier Neural Operator!
    auto_examples/index
    dev_guide/index
 
-
-.. only:: html
-
-   .. raw:: html
-
-      <br/> <br/>
-      <br/>
-
-      <div class="container has-text-centered">
-      <a class="button is-medium is-dark is-primary" href="install.html">
-         Install
-      </a>
-      </div>
-
-
-      <!-- CITE -->
-      <div class="container mt-6 pt-6">
-         <div class="card">
-         <div class="card-content">
-         <p>
-            If you use NeuralOperator, please cite the following papers:
-         </p>
-         <p>
-            <it> Kossaifi, J., Kovachki, N., Li, Z., Pitt, D., Liu-Schiaffini, M., George, R., Bonev, B., Azizzadenesheli, K., Berner, J., and Anandkumar, A. </it>, 
-            <strong>"A Library for Learning Neural Operators"</strong>, 
-            ArXiV, 2024.
-            <br/> <a href="https://arxiv.org/abs/2412.10354">https://arxiv.org/abs/2412.10354</a>.
-         </p>
-         <p>
-            <it> Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar A. </it>,
-            <strong>  “Neural Operator: Learning Maps Between Function Spaces”, </strong>, 
-            JMLR, 2021. 
-            <br/> <a href="https://arxiv.org/abs/2108.08481">https://arxiv.org/abs/2108.08481</a>.
-         </p>
-
-         <blockquote id="bibtex" class="is-hidden">
-            @misc{kossaifi2024neural,<br/>
-            &emsp;  title         = {A Library for Learning Neural Operators}, 
-            &emsp;  author        = {Jean Kossaifi and Nikola Kovachki and Zongyi Li and Davit Pitt and Miguel Liu-Schiaffini and Robert Joseph George and Boris Bonev and Kamyar Azizzadenesheli and Julius Berner and Anima Anandkumar},<br/>
-            &emsp;  year          = {2024},<br/>
-            &emsp;  eprint        = {2412.10354},<br/>
-            &emsp;  archivePrefix = {arXiv},<br/>
-            &emsp;  primaryClass  = {cs.LG},<br/>
-            } <br/> 
-            <br/>
-            @article{kovachki2021neural,<br/>
-            &emsp;  author    = {Nikola B. Kovachki and Zongyi Li and Burigede Liu and Kamyar Azizzadenesheli and Kaushik Bhattacharya and Andrew M. Stuart and Anima Anandkumar},<br/>
-            &emsp;  title     = {Neural Operator: Learning Maps Between Function Spaces},<br/>
-            &emsp;  journal   = {CoRR},<br/>
-            &emsp;  volume    = {abs/2108.08481},<br/>
-            &emsp;  year      = {2021},<br/>
-            }<br/>
-            <br/>
-         </blockquote>
-         </div>
-   
-         <footer class="card-footer">
-         <p class="card-footer-item">
-         <a onclick="javascrip:toggle_bibtex();" >
-            <span class="button" id="bibtex-toggle">show bibtex</span>
-         </a>
-         </p>
-         </footer>
-   
-         </div>
-      </div>
-   
-      <script>
-         function toggle_bibtex() {
-            var bibtex = document.getElementById("bibtex");
-            var toggle = document.getElementById("bibtex-toggle");
-            bibtex.classList.toggle('is-hidden');
-            if (toggle.textContent == 'show bibtex') {
-               toggle.textContent = 'hide bibtex';
-            }
-            else {
-               toggle.textContent = 'show bibtex';
-            }
-         };
-      </script>
