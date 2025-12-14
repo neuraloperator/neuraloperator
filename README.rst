@@ -51,7 +51,6 @@ Quickstart
 
 After you have installed the library, you can start training operators seamlessly:
 
-
 .. code-block:: python
 
    from neuralop.models import FNO
@@ -81,8 +80,8 @@ will be efficient by contracting directly the inputs with the factors
 of the decomposition. The Fourier layers will have 10% of the parameters
 of an equivalent, dense Fourier Neural Operator!
 
-Our ``Trainer`` natively supports logging to W&B. To use these features, simply create a file in
-``neuraloperator/config`` called ``wandb_api_key.txt`` and paste your W&B API key there.
+To use W&B logging features, simply create a file in ``neuraloperator/config`` 
+called ``wandb_api_key.txt`` and paste your W&B API key there.
 
 
 ============
@@ -101,8 +100,8 @@ Otherwise, if your work simply relies on a version of the NeuralOperator codebas
 publishing your code in a separate repository. 
 
 If you spot a bug or would like to see a new feature,
-please report it on our `issue tracker <https://github.com/neuraloperator/neuraloperator/issues>`_, 
-or even better, open a `Pull Request <https://github.com/neuraloperator/neuraloperator/pulls>`_. 
+please report it on our `issue tracker <https://github.com/neuraloperator/neuraloperator/issues>`_
+or open a `Pull Request <https://github.com/neuraloperator/neuraloperator/pulls>`_. 
 
 For detailed development setup, testing, and contribution guidelines, please refer to our `Contributing Guide <CONTRIBUTING.md>`_.
 
