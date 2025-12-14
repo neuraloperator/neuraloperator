@@ -4,11 +4,12 @@ Fourier Neural Operators
 ========================
 
 
-This guide introduces the Fourier neural operator which can be used to solve a family of PDEs from scratch.
+This guide introduces the Fourier neural operator (FNO) which can be used to solve a family of PDEs from scratch.
 It is the first work that can learn resolution-invariant solution operators for the Navier-Stokes equation,
 achieving state-of-the-art accuracy among all existing deep learning methods and
 up to 1000x faster than traditional solvers.
-Also, check out the paper [1]_ and article [2]_.
+
+Check out the original FNO paper [1]_ and the comprehensive practical guide to FNOs [2]_ for more details.
 
 .. raw:: html
 
@@ -541,8 +542,9 @@ References
 
    <div style="margin-top: 1em"></div>
 
-.. [2] Hao, K. (2021, October 20). Ai has cracked a key mathematical puzzle for understanding our world.
-       MIT Technology Review. https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/
+.. [2] Fourier Neural Operators Explained: A Practical Perspective
+    Valentin Duruisseaux, Jean Kossaifi, Anima Anandkumar, 2025. 
+    https://arxiv.org/abs/2512.01421.
 
 .. raw:: html
 
