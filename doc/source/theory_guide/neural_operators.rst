@@ -7,8 +7,7 @@ Neural Operators: an Introduction
 
 This guide introduces neural operators, a class of models that learn
 mappings between function spaces and solve partial differential equations.
-You can also check out the papers [1]_ [2]_ [3]_ for more formal derivations,
-as well as the blog post [4]_.
+You can also check out the papers [1]_ [2]_ [3]_ [4]_ for more details.
 
 Introduction
 ============
@@ -47,8 +46,7 @@ As a result, while machine learning-based methods can significantly speed up eva
 the process of obtaining and preparing suitable training data can remain time-consuming and difficult.
 
 To address this challenge, we introduce operator learning. By encoding appropriate structures,
-we enable neural networks to learn mappings between functions and to generalize across 
-ifferent discretizations.
+we enable neural networks to learn mappings between functions and to generalize across different discretizations.
 This means we can use numerical methods to generate less-accurate, low-resolution data,
 yet the trained solver can still produce accurate, high-resolution predictions.
 As a result, both training and evaluation can become significantly more efficient and straightforward.
@@ -440,27 +438,35 @@ also have good performance compared to several benchmarks.
 References
 ==========
 
-.. [1] Neural operator: Graph kernel network for partial differential equations,
-    Zongyi Li, Nikola Kovachki, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar
+.. [1] Fourier Neural Operators Explained: A Practical Perspective
+    Valentin Duruisseaux, Jean Kossaifi, Anima Anandkumar, 2025. 
+    https://arxiv.org/abs/2512.01421.
 
 .. raw:: html
 
    <div style="margin-top: 1em"></div>
 
-.. [2] Neural operator: Learning maps between function spaces,
-    Nikola Kovachki, Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar
+.. [2] Neural operator: Graph kernel network for partial differential equations,
+    Zongyi Li, Nikola Kovachki, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar, 2020.
+    https://arxiv.org/abs/2003.03485
 
 .. raw:: html
 
    <div style="margin-top: 1em"></div>
 
 .. [3] Principled Approaches for Extending Neural Architectures to Function Spaces for Operator Learning,
-       Julius Berner, Miguel Liu-Schiaffini, Jean Kossaifi, Valentin Duruisseaux, 
-       Boris Bonev, Kamyar Azizzadenesheli, Anima Anandkumar, 2025.
-       arXiv:2506.10973. https://arxiv.org/abs/2506.10973
+       Julius Berner, Miguel Liu-Schiaffini, Jean Kossaifi, Valentin Duruisseaux, Boris Bonev, Kamyar Azizzadenesheli, Anima Anandkumar, 2025.
+       https://arxiv.org/abs/2506.10973
 
 .. raw:: html
 
    <div style="margin-top: 1em"></div>
 
-.. [4] Blog post by Zongyi Li, https://zongyi-li.github.io/blog/2020/graph-pde/
+.. [4] Neural operator: Learning maps between function spaces,
+    Nikola Kovachki, Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar, 2023.
+    https://arxiv.org/abs/2108.08481.
+
+
+
+
+
