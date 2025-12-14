@@ -158,3 +158,17 @@ of an equivalent, dense Fourier Neural Operator!
    auto_examples/index
    dev_guide/index
 
+.. only:: html
+
+   .. raw:: html
+
+      <br/> 
+      <br/>
+
+      <div class="container has-text-centered">
+      <a class="button is-medium is-dark is-primary" href="install.html">
+         Install
+      </a>
+      </div>
+
+
