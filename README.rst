@@ -10,10 +10,10 @@
 NeuralOperator: Learning in Infinite Dimensions
 #######################################################################
 
-``neuraloperator`` is a comprehensive PyTorch library for learning neural operators,
+NeuralOperator is a comprehensive PyTorch library for learning neural operators,
 containing the official implementation of Fourier Neural Operators and other neural operator architectures.
 
-``neuraloperator`` is part of the PyTorch Ecosystem, check the PyTorch `announcement <https://pytorch.org/blog/neuraloperatorjoins-the-pytorch-ecosystem>`_! 
+NeuralOperator is part of the PyTorch Ecosystem, check the PyTorch `announcement <https://pytorch.org/blog/neuraloperatorjoins-the-pytorch-ecosystem>`_! 
 
 
 Unlike regular neural networks, neural operators enable learning mapping between function spaces, 
@@ -81,13 +81,7 @@ will be efficient by contracting directly the inputs with the factors
 of the decomposition. The Fourier layers will have 10% of the parameters
 of an equivalent, dense Fourier Neural Operator!
 
-
-Using with Weights and Biases
------------------------------
-
-Our ``Trainer`` natively supports logging to W&B. 
-
-To use these features, simply create a file in
+Our ``Trainer`` natively supports logging to W&B. To use these features, simply create a file in
 ``neuraloperator/config`` called ``wandb_api_key.txt`` and paste your W&B API key there.
 
 
