@@ -7,7 +7,7 @@ from ..layers.spectral_convolution import SpectralConv
 from ..layers.fno_block import FNOBlocks
 from ..layers.complex import cselu
 
-class RNO_cell(nn.Module):
+class RNOCell(nn.Module):
     """N-Dimensional Recurrent Neural Operator cell. The RNO cell takes in an
     input and history function, and it outputs the next step of the hidden function.
 
@@ -20,10 +20,8 @@ class RNO_cell(nn.Module):
     where σ is the sigmoid function, ⊙ is element-wise multiplication,
     and f1-f6 are FNO blocks (Fourier neural operators).
 
-    Paper: https://arxiv.org/abs/2308.08794
-
     Parameters
-    ------------------
+    ----------
     n_modes : int tuple
         number of modes to keep in Fourier Layer, along each dimension
         The dimensionality of the RNO is inferred from ``len(n_modes)``
@@ -31,7 +29,7 @@ class RNO_cell(nn.Module):
         number of hidden channels in the RNO
 
     Other Parameters
-    -------------------
+    ----------------
     resolution_scaling_factor : Union[Number, List[Number]], optional
         Factor by which to scale outputs for super-resolution, by default None
     max_n_modes : int or List[int], optional
@@ -80,6 +78,10 @@ class RNO_cell(nn.Module):
         Implementation parameter for SpectralConv. Options: "factorized", "reconstructed", by default "factorized"
     decomposition_kwargs : dict, optional
         Kwargs for tensor decomposition in SpectralConv, by default dict()
+
+    References
+    ----------
+    .. [1] Paper: https://arxiv.org/abs/2308.08794
     """
     def __init__(
         self,
@@ -137,57 +139,37 @@ class RNO_cell(nn.Module):
         # while input x remains at the original resolution. Therefore, only f1, f3, and f5
         # (which process x) need resolution scaling, while f2, f4, and f6 (which process h)
         # operate at the already-scaled resolution.
-        self.f1 = FNOBlocks(
-            in_channels=hidden_channels,
-            out_channels=hidden_channels,
-            n_modes=n_modes,
-            resolution_scaling_factor=scaling_factor,
-            **fno_kwargs
-        )
-        self.f2 = FNOBlocks(
-            in_channels=hidden_channels,
-            out_channels=hidden_channels,
-            n_modes=n_modes,
-            resolution_scaling_factor=None,
-            **fno_kwargs
-        )
-        self.f3 = FNOBlocks(
-            in_channels=hidden_channels,
-            out_channels=hidden_channels,
-            n_modes=n_modes,
-            resolution_scaling_factor=scaling_factor,
-            **fno_kwargs
-        )
-        self.f4 = FNOBlocks(
-            in_channels=hidden_channels,
-            out_channels=hidden_channels,
-            n_modes=n_modes,
-            resolution_scaling_factor=None,
-            **fno_kwargs
-        )
-        self.f5 = FNOBlocks(
-            in_channels=hidden_channels,
-            out_channels=hidden_channels,
-            n_modes=n_modes,
-            resolution_scaling_factor=scaling_factor,
-            **fno_kwargs
-        )
-        self.f6 = FNOBlocks(
-            in_channels=hidden_channels,
-            out_channels=hidden_channels,
-            n_modes=n_modes,
-            resolution_scaling_factor=None,
-            **fno_kwargs
-        )
+        
+        self.input_gates = nn.ModuleList()
+        self.hidden_gates = nn.ModuleList()
+        self.biases = nn.ParameterList()
 
-        if complex_data:
-            self.b1 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)) + 1j * torch.normal(torch.tensor(0.), torch.tensor(1.))) # constant bias terms
-            self.b2 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)) + 1j * torch.normal(torch.tensor(0.), torch.tensor(1.)))
-            self.b3 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)) + 1j * torch.normal(torch.tensor(0.), torch.tensor(1.)))
-        else:
-            self.b1 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.))) # constant bias terms
-            self.b2 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)))
-            self.b3 = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)))
+        # 3 gates: Update (z), Reset (r), Candidate (h_tilde)
+        # Each gate involves one FNOBlock processing x (input_gate)
+        # and one FNOBlock processing h (hidden_gate)
+        for _ in range(3):
+            self.input_gates.append(
+                FNOBlocks(
+                    in_channels=hidden_channels,
+                    out_channels=hidden_channels,
+                    n_modes=n_modes,
+                    resolution_scaling_factor=scaling_factor,
+                    **fno_kwargs
+                )
+            )
+            self.hidden_gates.append(
+                FNOBlocks(
+                    in_channels=hidden_channels,
+                    out_channels=hidden_channels,
+                    n_modes=n_modes,
+                    resolution_scaling_factor=None,
+                    **fno_kwargs
+                )
+            )
+            if complex_data:
+                 self.biases.append(nn.Parameter(torch.randn(()) + 1j * torch.randn(())))
+            else:
+                 self.biases.append(nn.Parameter(torch.randn(())))
     
     def forward(self, x, h):
         """Forward pass for RNO cell.
@@ -205,15 +187,21 @@ class RNO_cell(nn.Module):
         torch.Tensor
             Updated hidden state with shape (batch, hidden_channels, *spatial_dims_h)
         """
-        z = torch.sigmoid(self.f1(x) + self.f2(h) + self.b1)
-        r = torch.sigmoid(self.f3(x) + self.f4(h) + self.b2)
-        h_combined = self.f5(x) + self.f6(r * h) + self.b3
+        # Update gate
+        update_gate = torch.sigmoid(self.input_gates[0](x) + self.hidden_gates[0](h) + self.biases[0])
+        
+        # Reset gate
+        reset_gate = torch.sigmoid(self.input_gates[1](x) + self.hidden_gates[1](h) + self.biases[1])
+        
+        # Candidate state
+        h_combined = self.input_gates[2](x) + self.hidden_gates[2](reset_gate * h) + self.biases[2]
+        
         if x.dtype == torch.cfloat:
-            h_hat = cselu(h_combined)  # complex SELU for complex data
+            candidate_state = cselu(h_combined)  # complex SELU for complex data
         else:
-            h_hat = F.selu(h_combined)  # regular SELU for real data
+            candidate_state = F.selu(h_combined)  # regular SELU for real data
 
-        h_next = (1. - z) * h + z * h_hat
+        h_next = (1. - update_gate) * h + update_gate * candidate_state
 
         return h_next
 
@@ -224,7 +212,7 @@ class RNOBlock(nn.Module):
 
     The layer applies the RNO cell recurrently over a sequence of inputs:
         For t = 1 to T:
-            h_t = RNO_cell(x_t, h_{t-1})
+            h_t = RNOCell(x_t, h_{t-1})
 
     where the cell implements:
         z_t = σ(f1(x_t) + f2(h_{t-1}) + b1)            [update gate]
@@ -232,10 +220,8 @@ class RNOBlock(nn.Module):
         h̃_t = selu(f5(x_t) + f6(r_t ⊙ h_{t-1}) + b3)  [candidate state]
         h_t = (1 - z_t) ⊙ h_{t-1} + z_t ⊙ h̃_t         [next state]
 
-    Paper: https://arxiv.org/abs/2308.08794
-
     Parameters
-    ------------------
+    ----------
     n_modes : int tuple
         number of modes to keep in Fourier Layer, along each dimension
         The dimensionality of the RNO is inferred from ``len(n_modes)``
@@ -246,7 +232,7 @@ class RNOBlock(nn.Module):
         the inputs sequence of functions. Default: False
 
     Other Parameters
-    -------------------
+    ----------------
     resolution_scaling_factor : Union[Number, List[Number]], optional
         Factor by which to scale outputs for super-resolution, by default None
     max_n_modes : int or List[int], optional
@@ -295,6 +281,10 @@ class RNOBlock(nn.Module):
         Implementation parameter for SpectralConv. Options: "factorized", "reconstructed", by default "factorized"
     decomposition_kwargs : dict, optional
         Kwargs for tensor decomposition in SpectralConv, by default dict()
+
+    References
+    ----------
+    .. [1] Paper: https://arxiv.org/abs/2308.08794
     """
     def __init__(
         self,
@@ -329,7 +319,7 @@ class RNOBlock(nn.Module):
         self.return_sequences = return_sequences
         self.resolution_scaling_factor = resolution_scaling_factor
 
-        self.cell = RNO_cell(
+        self.cell = RNOCell(
             n_modes,
             hidden_channels, 
             resolution_scaling_factor=resolution_scaling_factor,
@@ -354,9 +344,9 @@ class RNOBlock(nn.Module):
             decomposition_kwargs=decomposition_kwargs,
         )
         if complex_data:
-            self.bias_h = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)) + 1j * torch.normal(torch.tensor(0.), torch.tensor(1.)))
+            self.bias_h = nn.Parameter(torch.randn(()) + 1j * torch.randn(()))
         else:
-            self.bias_h = nn.Parameter(torch.normal(torch.tensor(0.), torch.tensor(1.)))
+            self.bias_h = nn.Parameter(torch.randn(()))
 
     def forward(self, x, h=None):
         """Forward pass for RNO layer.
