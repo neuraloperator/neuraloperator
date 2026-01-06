@@ -69,7 +69,7 @@ class DarcyDataset(PTDataset):
         batch_size: int,
         test_batch_sizes: List[int],
         train_resolution: int,
-        test_resolutions: int = [16, 32],
+        test_resolutions: List[int] = [16, 32],
         encode_input: bool = False,
         encode_output: bool = True,
         encoding="channel-wise",

@@ -343,7 +343,15 @@ References
 
    <div style="margin-top: 1em;"></div>
 
-.. [2] Neural operator: Graph kernel network for partial differential equations,
+.. [2] Fourier Neural Operators Explained: A Practical Perspective
+    Valentin Duruisseaux, Jean Kossaifi, Anima Anandkumar, 2025. 
+    https://arxiv.org/abs/2512.01421.
+
+.. raw:: html
+
+   <div style="margin-top: 1em;"></div>
+
+.. [3] Neural operator: Graph kernel network for partial differential equations,
        Zongyi Li, Nikola Kovachki, Kamyar Azizzadenesheli, Burigede Liu, 
        Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar, 2020.
 
@@ -351,7 +359,7 @@ References
 
    <div style="margin-top: 1em;"></div>
 
-.. [3] Fourier Neural Operator for Parametric Partial Differential Equations,
+.. [4] Fourier Neural Operator for Parametric Partial Differential Equations,
        Zongyi Li, Nikola Kovachki, Kamyar Azizzadenesheli, Burigede Liu, 
        Kaushik Bhattacharya, Andrew Stuart, Anima Anandkumar, 2020.
 
@@ -359,6 +367,6 @@ References
 
    <div style="margin-top: 1em;"></div>
 
-.. [4] Universal Approximation and Error Bounds for Fourier Neural Operators,
+.. [5] Universal Approximation and Error Bounds for Fourier Neural Operators,
        Nikola Kovachki, Samuel Lanthaler, and  Siddhartha Mishra.
        J. Mach. Learn. Res., vol. 22, no. 1, 2021.

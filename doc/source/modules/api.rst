@@ -96,8 +96,21 @@ U-shaped Neural Operators (U-NO)
 .. autosummary::
     :toctree: generated
     :template: class.rst
-    
+
     UNO
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _rno_api:
+
+Recurrent Neural Operators (RNO)
+---------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    RNO
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -174,6 +187,23 @@ FNO Blocks
     :template: class.rst
 
     FNOBlocks
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _rno_block_api:
+
+RNO Blocks
+----------
+
+.. automodule:: neuralop.layers.rno_block
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    RNOBlock
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -11,5 +11,6 @@ from .uqno import UQNO
 from .fnogno import FNOGNO
 from .gino import GINO
 from .codano import CODANO
+from .rno import RNO
 from .otno import OTNO
 from .base_model import get_model
