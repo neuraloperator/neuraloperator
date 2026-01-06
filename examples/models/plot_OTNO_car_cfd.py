@@ -17,14 +17,14 @@ from copy import deepcopy
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-import pyvista as pv
+import matplotlib.animation as animation
 import sys
 from neuralop.models import OTNO
 from neuralop import Trainer
 from neuralop.training import AdamW
 from neuralop.data.datasets import load_saved_ot, CFDDataProcessor
 from neuralop.utils import count_model_params
-from neuralop import LpLoss, H1Loss
+from neuralop import LpLoss
 
 device = 'cpu'
 
@@ -277,96 +277,66 @@ n_s_sqrt = int(np.sqrt(n_s))
 
 # OT encoding from the car surface to the latent torus grid
 T = 60
-movement = np.zeros((T,n_s,3))
+movement_enc = np.zeros((T,n_s,3))
 
 for j in range(n_s):
+    # Animate from CAR (trans) -> TORUS (source) for encoding
     tx = np.linspace(trans[j,0], source[j,0], T).reshape((T,1))
     ty = np.linspace(trans[j,1], source[j,1], T).reshape((T,1))
     tz = np.linspace(trans[j,2], source[j,2], T).reshape((T,1))
-    movement[:,j,:] = np.concatenate((tx,ty,tz), axis=1)
+    movement_enc[:,j,:] = np.concatenate((tx,ty,tz), axis=1)
 
-print("Creating car to torus animation...")
-plotter = pv.Plotter(off_screen=True)
-plotter.set_background('white')
-plotter.open_gif('car_to_torus.gif', fps=20)
+# Create a Matplotlib 3D animation for the encoding (trans -> source)
+print("Creating car to torus animation (matplotlib)...")
+fig_enc = plt.figure(figsize=(8, 6))
+ax_enc = fig_enc.add_subplot(111, projection='3d')
+sc_enc = ax_enc.scatter(movement_enc[0, :, 0], movement_enc[0, :, 1], movement_enc[0, :, 2],
+                        c='grey', s=5, alpha=0.8)
+ax_enc.set_xlim(mid_x - max_range, mid_x + max_range)
+ax_enc.set_ylim(mid_y - max_range, mid_y + max_range)
+ax_enc.set_zlim(mid_z - max_range, mid_z + max_range)
+ax_enc.set_title('OT Encoding: Car → Torus')
+ax_enc.view_init(elev=20, azim=150, roll=0, vertical_axis='y')
 
-plotter.add_points(trans, render_points_as_spheres=True, point_size=5, color='grey', name='points')
-plotter.camera_position = 'xy'
-plotter.camera.azimuth = 130
-plotter.camera.elevation = 20
-plotter.camera.zoom(1.0)
+def update_enc(frame):
+    xs = movement_enc[frame, :, 0]
+    ys = movement_enc[frame, :, 1]
+    zs = movement_enc[frame, :, 2]
+    sc_enc._offsets3d = (xs, ys, zs)
+    ax_enc.set_title(f'OT Encoding: frame {frame}')
+    return sc_enc,
 
-plotter.write_frame()
-for j in range(1,T):
-    plotter.add_points(movement[j,...], render_points_as_spheres=True, point_size=5, color='grey', name='points')
-    plotter.write_frame()
-
-plotter.close()
-print("Animation saved as car_to_torus.gif")
+ani_enc = animation.FuncAnimation(fig_enc, update_enc, frames=T, interval=50, blit=False)
 
 # OT decoding process from the latent torus grid to the car surface
 T = 60
-movement = np.zeros((T,n_s,3))
+movement_dec = np.zeros((T,n_s,3))
 
 for j in range(n_s):
+    # Animate from TORUS (source) -> CAR (trans) for decoding
     tx = np.linspace(source[j,0], trans[j,0], T).reshape((T,1))
     ty = np.linspace(source[j,1], trans[j,1], T).reshape((T,1))
     tz = np.linspace(source[j,2], trans[j,2], T).reshape((T,1))
-    movement[:,j,:] = np.concatenate((tx,ty,tz), axis=1)
+    movement_dec[:,j,:] = np.concatenate((tx,ty,tz), axis=1)
 
-print("Creating torus to car animation with pressure...")
-plotter = pv.Plotter(off_screen=True)
-plotter.set_background('white')
-plotter.open_gif('torus_to_car.gif', fps=20)
+print("Creating torus to car animation (matplotlib) with pressure...")
+fig_dec = plt.figure(figsize=(8, 6))
+ax_dec = fig_dec.add_subplot(111, projection='3d')
+# initial positions: movement[0] (source positions)
+sc_dec = ax_dec.scatter(movement_dec[0, :, 0], movement_dec[0, :, 1], movement_dec[0, :, 2],
+                        c=pressure_pullback, cmap='viridis', s=5, vmin=vmin, vmax=vmax)
+ax_dec.set_xlim(mid_x - max_range, mid_x + max_range)
+ax_dec.set_ylim(mid_y - max_range, mid_y + max_range)
+ax_dec.set_zlim(mid_z - max_range, mid_z + max_range)
+ax_dec.set_title('OT Decoding: Torus → Car (pressure)')
+ax_dec.view_init(elev=20, azim=150, roll=0, vertical_axis='y')
 
-# Create point cloud with pressure values
-point_cloud = pv.PolyData(trans)
-point_cloud['pressure'] = pressure_pullback
+def update_dec(frame):
+    xs = movement_dec[frame, :, 0]
+    ys = movement_dec[frame, :, 1]
+    zs = movement_dec[frame, :, 2]
+    sc_dec._offsets3d = (xs, ys, zs)
+    ax_dec.set_title(f'OT Decoding: frame {frame}')
+    return sc_dec,
 
-plotter.add_mesh(point_cloud, scalars='pressure', render_points_as_spheres=True, 
-                 point_size=5, cmap='viridis', show_scalar_bar=True)
-plotter.camera_position = 'xy'
-plotter.camera.azimuth = 130
-plotter.camera.elevation = 20
-plotter.camera.zoom(1.0)
-
-plotter.write_frame()
-
-# Animate the decoding with pressure coloring
-for j in range(1, T):
-    plotter.clear()
-    point_cloud = pv.PolyData(movement[j, ...])
-    point_cloud['pressure'] = pressure_pullback
-    plotter.add_mesh(point_cloud, scalars='pressure', render_points_as_spheres=True, 
-                     point_size=5, cmap='viridis', show_scalar_bar=True)
-    plotter.write_frame()
-
-plotter.close()
-print("Animation saved as torus_to_car.gif")
-
-# Display the animated GIFs in HTML
-import base64
-from IPython.display import HTML
-
-def create_gif_html(gif_path, title):
-    """Create HTML to display an animated GIF."""
-    with open(gif_path, 'rb') as f:
-        gif_data = base64.b64encode(f.read()).decode('utf-8')
-    
-    html = f'''
-    <div style="text-align: center; margin: 20px;">
-        <h3>{title}</h3>
-        <img src="data:image/gif;base64,{gif_data}" style="max-width: 90%;">
-    </div>
-    '''
-    return html
-
-html_car_to_torus = create_gif_html('car_to_torus.gif', 'OT Encoding: Car → Torus')
-html_torus_to_car = create_gif_html('torus_to_car.gif', 'OT Decoding: Torus → Car (with pressure)')
-
-HTML(f'''
-<div style="display: flex; flex-wrap: wrap; justify-content: center;">
-    {html_car_to_torus}
-    {html_torus_to_car}
-</div>
-''')
+ani_dec = animation.FuncAnimation(fig_dec, update_dec, frames=T, interval=50, blit=False)

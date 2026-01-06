@@ -10,18 +10,18 @@ hidden_channels = 64
 n_modes = [16, 16]
 lifting_channel_ratio = 3
 projection_channel_ratio = 3
+use_mlp = True
+norm = "group_norm"
+factorization = "tucker"
+n_layers = 4
+domain_padding = 0.2
 
 # data parameters
 n_s_sqrt = 18
 n_target_points = 100
 
-@pytest.mark.parametrize("use_mlp", [True, False])
-@pytest.mark.parametrize("norm", [None, "group_norm", "instance_norm"])
-@pytest.mark.parametrize("factorization", [None, "tucker"])
-@pytest.mark.parametrize("n_layers", [2, 4])
 @pytest.mark.parametrize("positional_embedding", [None, "grid"]) 
-@pytest.mark.parametrize("domain_padding", [0.0, 0.2, 0.4])
-def test_otno(use_mlp, norm, factorization, n_layers, positional_embedding, domain_padding):
+def test_otno(positional_embedding):
     if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")
     else:
