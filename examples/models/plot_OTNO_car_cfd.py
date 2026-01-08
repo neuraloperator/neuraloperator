@@ -12,7 +12,12 @@ This tutorial demonstrates how to:
 """
 
 # %%
+# .. raw:: html
+#
+#    <div style="margin-top: 3em;"></div>
+#
 # Imports and setup
+# ------------------------------
 from copy import deepcopy
 import numpy as np
 import torch
@@ -25,8 +30,6 @@ from neuralop.training import AdamW
 from neuralop.data.datasets import load_saved_ot, CFDDataProcessor
 from neuralop.utils import count_model_params
 from neuralop import LpLoss
-
-device = 'cpu'
 
 # %%
 # .. raw:: html
@@ -46,8 +49,8 @@ data_module = load_saved_ot( n_train=2,
 train_loader = data_module.train_loader(batch_size=1, shuffle=True)
 test_loader = data_module.test_loader(batch_size=1, shuffle=False)
 
-output_encoder = deepcopy(data_module.normalizers['press']).to(device)
-data_processor = CFDDataProcessor(normalizer=output_encoder, device=device)
+output_encoder = deepcopy(data_module.normalizers['press'])
+data_processor = CFDDataProcessor(normalizer=output_encoder)
 
 # %%
 # .. raw:: html
@@ -66,7 +69,7 @@ model = OTNO(
     norm='group_norm',
     use_mlp=True,
     mlp_expansion=1.0,
-).to(device)
+)
 
 # Count and display the number of parameters
 n_params = count_model_params(model)
@@ -124,7 +127,6 @@ sys.stdout.flush()
 trainer = Trainer(
     model=model,
     n_epochs=15,
-    device=device,
     data_processor=data_processor,
     wandb_log=False,  # Disable Weights & Biases logging for this tutorial
     use_distributed=False,  # Single GPU/CPU training
@@ -288,10 +290,10 @@ for j in range(n_s):
 
 # Create a Matplotlib 3D animation for the encoding (trans -> source)
 print("Creating car to torus animation (matplotlib)...")
-fig_enc = plt.figure(figsize=(8, 6))
+fig_enc = plt.figure(figsize=(5, 5))
 ax_enc = fig_enc.add_subplot(111, projection='3d')
 sc_enc = ax_enc.scatter(movement_enc[0, :, 0], movement_enc[0, :, 1], movement_enc[0, :, 2],
-                        c='grey', s=5, alpha=0.8)
+                        c='grey', s=2, alpha=0.95, edgecolors='#7fb0b6', linewidths=0.03, depthshade=True)
 ax_enc.set_xlim(mid_x - max_range, mid_x + max_range)
 ax_enc.set_ylim(mid_y - max_range, mid_y + max_range)
 ax_enc.set_zlim(mid_z - max_range, mid_z + max_range)
@@ -324,7 +326,7 @@ fig_dec = plt.figure(figsize=(8, 6))
 ax_dec = fig_dec.add_subplot(111, projection='3d')
 # initial positions: movement[0] (source positions)
 sc_dec = ax_dec.scatter(movement_dec[0, :, 0], movement_dec[0, :, 1], movement_dec[0, :, 2],
-                        c=pressure_pullback, cmap='viridis', s=5, vmin=vmin, vmax=vmax)
+                        c=pressure_pullback, cmap='viridis', s=2, vmin=vmin, vmax=vmax, alpha=0.95, edgecolors='none', linewidths=0.03, depthshade=True)
 ax_dec.set_xlim(mid_x - max_range, mid_x + max_range)
 ax_dec.set_ylim(mid_y - max_range, mid_y + max_range)
 ax_dec.set_zlim(mid_z - max_range, mid_z + max_range)
