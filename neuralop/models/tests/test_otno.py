@@ -20,7 +20,8 @@ domain_padding = 0.2
 n_s_sqrt = 18
 n_target_points = 100
 
-@pytest.mark.parametrize("positional_embedding", [None, "grid"]) 
+
+@pytest.mark.parametrize("positional_embedding", [None, "grid"])
 def test_otno(positional_embedding):
     if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")

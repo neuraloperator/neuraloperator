@@ -211,20 +211,22 @@ class GINO_Poisson2d(GINOConfig):
     fno_rank: float = 0.8
     fno_domain_padding: float = 0.0
 
+
 class OTNOConfig(ModelConfig):
     model_arch: str = "otno"
-    n_modes: List[int] 
-    hidden_channels: int 
+    n_modes: List[int]
+    hidden_channels: int
     data_channels: int = 9
     out_channels: int = 1
     lifting_channel_ratio: int = 3
     projection_channel_ratio: int = 3
-    norm: str = 'group_norm'
+    norm: str = "group_norm"
     use_channel_mlp: bool = True
     channel_mlp_expansion: float = 1.0
     domain_padding: float = 0.125
-    factorization: str = 'tucker'
+    factorization: str = "tucker"
     rank: float = 0.4
+
 
 class OTNO_Small2d(OTNOConfig):
     n_modes: List[int] = [16, 16]
