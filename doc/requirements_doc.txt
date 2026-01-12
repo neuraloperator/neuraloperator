@@ -5,4 +5,4 @@ sphinx
 sphinx-gallery
 sphinx-design
 tensorly_sphinx_theme
-torchtnt
+torch-harmonics
