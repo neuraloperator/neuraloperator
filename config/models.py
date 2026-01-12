@@ -220,8 +220,8 @@ class OTNOConfig(ModelConfig):
     lifting_channel_ratio: int = 3
     projection_channel_ratio: int = 3
     norm: str = 'group_norm'
-    use_mlp: bool = True
-    mlp_expansion: float = 1.0
+    use_channel_mlp: bool = True
+    channel_mlp_expansion: float = 1.0
     domain_padding: float = 0.125
     factorization: str = 'tucker'
     rank: float = 0.4

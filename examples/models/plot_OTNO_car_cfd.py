@@ -2,13 +2,15 @@
 Training OTNO on a Car CFD Dataset
 ==========================================
 
-We generate the optimal transport (OT) dataset from car CFD data using OTDataModule from neuralop.data.datasets, and save it. Here we train an OTNO on the saved OT dataset.
+We load a pre-generated optimal transport (OT) dataset from car CFD data and train an OTNO model on it.
 
 This tutorial demonstrates how to:
+
 1. Load and preprocess optimal transport data for car CFD simulations
 2. Create and configure an OTNO model for pressure field prediction
 3. Train the model using the Trainer with proper normalization
 4. Visualize the input OT maps, ground truth, and model predictions in 3D
+
 """
 
 # %%
@@ -39,8 +41,8 @@ from neuralop import LpLoss
 # Loading the Car OT dataset
 # ------------------------------
 # We load the small Car OT dataset.
-# The dataset contains OT maps(input) and pressure fields (output).
-data_module = load_saved_ot( n_train=2, 
+# The dataset contains OT maps (input) and pressure fields (output).
+data_module = load_saved_ot(n_train=2, 
                              n_test=1, 
                              expand_factor=3.0, 
                              reg=1e-06,
@@ -67,8 +69,8 @@ model = OTNO(
     lifting_channel_ratio=2,
     projection_channel_ratio=2,
     norm='group_norm',
-    use_mlp=True,
-    mlp_expansion=1.0,
+    use_channel_mlp=True,
+    channel_mlp_expansion=1.0,
 )
 
 # Count and display the number of parameters
@@ -141,6 +143,7 @@ trainer = Trainer(
 # Training the model
 # ------------------
 # We train the model on our car cfd dataset. The trainer will:
+
 # 1. Run the forward pass through the OTNO
 # 2. Compute the L2 loss
 # 3. Backpropagate and update weights
@@ -148,7 +151,7 @@ trainer = Trainer(
 
 trainer.train(
               train_loader=train_loader,
-              test_loaders={'':test_loader},
+              test_loaders={'': test_loader},
               optimizer=optimizer,
               scheduler=scheduler,
               training_loss=train_loss_fn,
@@ -165,10 +168,10 @@ trainer.train(
 # Visualizing predictions
 # ------------------------
 # Let's take a look at what our model's predicted outputs look like.
-# We wll compare the inputs, ground-truth outputs, and model predictions side by side.
+# We will compare the inputs, ground-truth outputs, and model predictions side by side.
 #
-# Note that in this example, we train on 2 cars and test on 1 car. In practice, we would train on a larger
-# number of cars.
+# Note that in this example, we train on 2 cars and test on 1 car. In practice, you would train on a larger
+# number of cars for better generalization.
 
 test_sample = test_loader.dataset[0]
 
@@ -211,7 +214,7 @@ color_z = (trans[:, 2] - trans[:, 2].min()) / (trans[:, 2].max() - trans[:, 2].m
 colors = np.stack([color_x, color_y, color_z], axis=1)
 
 # Create three-panel visualization
-fig = plt.figure(figsize=(18, 5))
+fig = plt.figure(figsize=(18, 6))
 
 # Panel 1: Input OT with RGB-colored transport
 ax1 = fig.add_subplot(1, 3, 1, projection='3d')
@@ -275,18 +278,17 @@ print(f"Relative L2 Error: {(torch.norm(prediction - ground_truth) / torch.norm(
 
 pressure_pullback = ground_truth[ind_enc].numpy()
 n_s = source.shape[0]
-n_s_sqrt = int(np.sqrt(n_s))
 
 # OT encoding from the car surface to the latent torus grid
 T = 60
-movement_enc = np.zeros((T,n_s,3))
+movement_enc = np.zeros((T, n_s, 3))
 
 for j in range(n_s):
     # Animate from CAR (trans) -> TORUS (source) for encoding
-    tx = np.linspace(trans[j,0], source[j,0], T).reshape((T,1))
-    ty = np.linspace(trans[j,1], source[j,1], T).reshape((T,1))
-    tz = np.linspace(trans[j,2], source[j,2], T).reshape((T,1))
-    movement_enc[:,j,:] = np.concatenate((tx,ty,tz), axis=1)
+    tx = np.linspace(trans[j, 0], source[j, 0], T).reshape((T, 1))
+    ty = np.linspace(trans[j, 1], source[j, 1], T).reshape((T, 1))
+    tz = np.linspace(trans[j, 2], source[j, 2], T).reshape((T, 1))
+    movement_enc[:, j, :] = np.concatenate((tx, ty, tz), axis=1)
 
 # Create a Matplotlib 3D animation for the encoding (trans -> source)
 print("Creating car to torus animation (matplotlib)...")
@@ -312,19 +314,19 @@ ani_enc = animation.FuncAnimation(fig_enc, update_enc, frames=T, interval=50, bl
 
 # OT decoding process from the latent torus grid to the car surface
 T = 60
-movement_dec = np.zeros((T,n_s,3))
+movement_dec = np.zeros((T, n_s, 3))
 
 for j in range(n_s):
     # Animate from TORUS (source) -> CAR (trans) for decoding
-    tx = np.linspace(source[j,0], trans[j,0], T).reshape((T,1))
-    ty = np.linspace(source[j,1], trans[j,1], T).reshape((T,1))
-    tz = np.linspace(source[j,2], trans[j,2], T).reshape((T,1))
-    movement_dec[:,j,:] = np.concatenate((tx,ty,tz), axis=1)
+    tx = np.linspace(source[j, 0], trans[j, 0], T).reshape((T, 1))
+    ty = np.linspace(source[j, 1], trans[j, 1], T).reshape((T, 1))
+    tz = np.linspace(source[j, 2], trans[j, 2], T).reshape((T, 1))
+    movement_dec[:, j, :] = np.concatenate((tx, ty, tz), axis=1)
 
 print("Creating torus to car animation (matplotlib) with pressure...")
 fig_dec = plt.figure(figsize=(8, 6))
 ax_dec = fig_dec.add_subplot(111, projection='3d')
-# initial positions: movement[0] (source positions)
+# Initial positions: movement_dec[0] (source positions)
 sc_dec = ax_dec.scatter(movement_dec[0, :, 0], movement_dec[0, :, 1], movement_dec[0, :, 2],
                         c=pressure_pullback, cmap='viridis', s=2, vmin=vmin, vmax=vmax, alpha=0.95, edgecolors='none', linewidths=0.03, depthshade=True)
 ax_dec.set_xlim(mid_x - max_range, mid_x + max_range)

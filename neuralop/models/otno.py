@@ -4,6 +4,26 @@ import torch.nn as nn
 from neuralop.models import FNO
 
 class OTNO(FNO):
+    """
+    Optimal Transport Neural Operator
+    
+    The architecture is described in [1]_.
+    
+    OTNO integrates optimal transport (OT) into operator learning for partial
+    differential equations (PDEs) on complex geometries. 
+
+    Parameters
+    ----------
+    All arguments are the same as :class:`neuralop.models.FNO`. 
+    
+    See the FNO documentation for detailed descriptions.
+
+    References
+    ----------
+    .. [1] Li, X., Li, Z., Kovachki, N., & Anandkumar, A. "Geometric Operator
+        Learning with Optimal Transport" (2025). arXiv preprint arXiv:2507.20065.
+        https://arxiv.org/pdf/2507.20065
+    """
     def __init__(
             self,
             n_modes,
@@ -14,9 +34,9 @@ class OTNO(FNO):
             projection_channel_ratio=2,
             n_layers=4,
             positional_embedding=None,
-            use_mlp=False,
-            mlp_expansion=None,
-            mlp_dropout=0,
+            use_channel_mlp=False,
+            channel_mlp_expansion=None,
+            channel_mlp_dropout=0,
             norm='group_norm',
             factorization=None,
             rank=1,
@@ -32,9 +52,9 @@ class OTNO(FNO):
             projection_channel_ratio = projection_channel_ratio,
             n_layers = n_layers,
             positional_embedding=positional_embedding,
-            use_channel_mlp = use_mlp,
-            channel_mlp_expansion = mlp_expansion,
-            channel_mlp_dropout = mlp_dropout,
+            use_channel_mlp = use_channel_mlp,
+            channel_mlp_expansion = channel_mlp_expansion,
+            channel_mlp_dropout = channel_mlp_dropout,
             norm = norm,
             factorization = factorization,
             rank = rank,

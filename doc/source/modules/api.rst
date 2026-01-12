@@ -114,6 +114,19 @@ Recurrent Neural Operators (RNO)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _otno_api:
+
+Optimal Transport Neural Operators (OTNO)
+------------------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :template: class.rst
+
+    OTNO
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. _uqno_api:
 
 Uncertainty Quantification Neural Operators (UQNO)
