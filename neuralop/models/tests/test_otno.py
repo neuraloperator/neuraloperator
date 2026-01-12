@@ -10,7 +10,7 @@ hidden_channels = 64
 n_modes = [16, 16]
 lifting_channel_ratio = 3
 projection_channel_ratio = 3
-use_mlp = True
+use_channel_mlp = True
 norm = "group_norm"
 factorization = "tucker"
 n_layers = 4
@@ -20,7 +20,8 @@ domain_padding = 0.2
 n_s_sqrt = 18
 n_target_points = 100
 
-@pytest.mark.parametrize("positional_embedding", [None, "grid"]) 
+
+@pytest.mark.parametrize("positional_embedding", [None, "grid"])
 def test_otno(positional_embedding):
     if torch.backends.cuda.is_built():
         device = torch.device("cuda:0")
@@ -38,9 +39,9 @@ def test_otno(positional_embedding):
         lifting_channel_ratio=lifting_channel_ratio,
         projection_channel_ratio=projection_channel_ratio,
         # Parameters from OTNO + FNO
-        use_mlp=use_mlp,
-        mlp_expansion=1.0 if use_mlp else None,
-        mlp_dropout=0,
+        use_channel_mlp=use_channel_mlp,
+        channel_mlp_expansion=1.0 if use_channel_mlp else None,
+        channel_mlp_dropout=0,
         norm=norm,
         factorization=factorization,
         n_layers=n_layers,

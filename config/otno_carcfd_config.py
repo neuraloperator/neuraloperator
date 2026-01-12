@@ -6,6 +6,7 @@ from .models import ModelConfig, OTNO_Small2d
 from .opt import OptimizationConfig, PatchingConfig
 from .wandb import WandbConfig
 
+
 class CarCFDDatasetConfig(ConfigBase):
     root: str = "~/processed-car-pressure-data"
     n_train: int = 500
@@ -22,6 +23,7 @@ class CarCFDOptConfig(OptimizationConfig):
     scheduler: str = "StepLR"
     step_size: int = 30
     gamma: float = 0.5
+
 
 class Default(ConfigBase):
     n_params_baseline: Optional[Any] = None

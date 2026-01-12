@@ -8,6 +8,7 @@ import numpy as np
 # the class will build, but no files will be loaded.
 try:
     import open3d as o3d
+
     o3d_warn = False
 except ModuleNotFoundError:
     o3d_warn = True
@@ -15,14 +16,16 @@ except ModuleNotFoundError:
 try:
     import ot
     from ot.bregman import empirical_sinkhorn2_geomloss
+
     ot_warn = False
 except ModuleNotFoundError:
-    ot_warn = True   
+    ot_warn = True
 
 import torch
 
 # Get the directory of the current script
 script_dir = Path(__file__).parent
+
 
 class OTDataModule:
     def __init__(
@@ -32,9 +35,9 @@ class OTDataModule:
         n_train: int = None,
         n_test: int = None,
         attributes: List[str] = None,
-        expand_factor: float = 3.0, 
+        expand_factor: float = 3.0,
         reg: float = 1e-06,
-        device: Union[str, torch.device] = 'cuda',
+        device: Union[str, torch.device] = "cuda",
     ):
         """MeshDataModule provides a general dataset for irregular coordinate meshes
             for use in a GNO-based architecture
@@ -58,7 +61,7 @@ class OTDataModule:
             as keys for each batch dict
         expand_factor : float, optional
             Scale factor to map physical mesh size to latent mesh size (e.g., torus/sphere).
-            Affects OT plan surjectivity: smaller values may lead to incomplete mappings, while larger values increase computational cost but improve surjectivity. 
+            Affects OT plan surjectivity: smaller values may lead to incomplete mappings, while larger values increase computational cost but improve surjectivity.
             Choose a value balancing accuracy and efficiency, by default 3.
         reg : float, optional
             Regularization coefficient for the Sinkhorn algorithm.
@@ -70,7 +73,9 @@ class OTDataModule:
         self.device = device
 
         if o3d_warn:
-            print("Warning: you are attempting to run MeshDataModule without the required dependency open3d.")
+            print(
+                "Warning: you are attempting to run MeshDataModule without the required dependency open3d."
+            )
             raise ModuleNotFoundError()
         if isinstance(root_dir, str):
             root_dir = Path(root_dir)
@@ -116,16 +121,20 @@ class OTDataModule:
             mesh = o3d.io.read_triangle_mesh(
                 str(data_dir / (item_dir_name + ind + "/tri_mesh.ply"))
             )
-            target = torch.from_numpy(np.asarray(mesh.vertices).squeeze().astype(np.float32())).to(self.device) #(3586,3) car vertices
+            target = torch.from_numpy(
+                np.asarray(mesh.vertices).squeeze().astype(np.float32())
+            ).to(self.device)  # (3586,3) car vertices
             mesh.compute_vertex_normals()
             normal = torch.from_numpy(np.asarray(mesh.vertex_normals).astype(np.float32()))
 
             # OT
-            n_t = len(target) # number of target samples
-            n_s_sqrt = int(np.sqrt(expand_factor)*np.ceil(np.sqrt(n_t))) # sqrt of the number of source samples
-            source = self.torus_grid(n_s_sqrt) # build source gird
-            _, log = empirical_sinkhorn2_geomloss(X_s=source.to(self.device), X_t=target, reg=reg, log=True) # utilize weighted Sinkhorn a=a.to(device), b=b.to(device),
-            gamma = log['lazy_plan'][:].detach() # convert the lazy tensor to torch.tensor (dense)            
+            n_t = len(target)  # number of target samples
+            n_s_sqrt = int(np.sqrt(expand_factor) * np.ceil(np.sqrt(n_t)))  # sqrt of the number of source samples
+            source = self.torus_grid(n_s_sqrt)  # build source gird
+            _, log = empirical_sinkhorn2_geomloss(
+                X_s=source.to(self.device), X_t=target, reg=reg, log=True
+            )  # utilize weighted Sinkhorn a=a.to(device), b=b.to(device),
+            gamma = log["lazy_plan"][:].detach()  # convert the lazy tensor to torch.tensor (dense)
 
             # normalize the OT plan matrix by column
             row_norms = torch.norm(gamma, p=1, dim=1, keepdim=True)
@@ -136,17 +145,19 @@ class OTDataModule:
 
             # encoder: target -> source
             distances = torch.cdist(transport, target)
-            indices_encoder = torch.argmin(distances, dim=1) # find the closest point in "target" (car vertices) to each point in "transport" (latent grids)
-            
+            # find the closest point in "target" (car vertices) to each point in "transport" (latent grids)
+            indices_encoder = torch.argmin(distances, dim=1)  
+
             # reset the transport as the closest point in target
             transport = target[indices_encoder]
             unique = len(torch.unique(indices_encoder))
             n_missed_points += n_t - unique
-            if unique!=n_t:
+            if unique != n_t:
                 n_non_surjective += 1
 
             # decoder: source -> target
-            indices_decoder = torch.argmin(distances, dim=0) #find the closest point in "transport" (latent grids) to each point in "target" (car vertices)
+            # find the closest point in "transport" (latent grids) to each point in "target" (car vertices)
+            indices_decoder = torch.argmin(distances, dim=0)
 
             item_dict = {
                 "target": target.cpu(),
@@ -155,43 +166,50 @@ class OTDataModule:
                 "ind_dec": indices_decoder.cpu(),
                 "nor_t": normal,
                 "nor_s": self.torus_normals(n_s_sqrt),
-                "trans": transport.cpu()
+                "trans": transport.cpu(),
             }
             for attr in attributes:
                 if attr not in item_dict:
                     attr_data = np.load(
                         str(data_dir / (item_dir_name + ind + "/" + attr + ".npy"))
-                    ) 
+                    )
                     item_dict[attr] = torch.from_numpy(attr_data.astype(np.float32()))
             data.append(item_dict)
 
         self.data = data
-        torch.save(data, script_dir / "data" / f"ot_expand{expand_factor}_reg{reg}_train{n_train}_test{n_test}.pt")
-        print(f"Number of none surjective OT plan is {n_non_surjective:d}; average missed points is {n_missed_points/(n_train+n_test):.2f}")
+        torch.save(
+            data,
+            script_dir
+            / "data"
+            / f"ot_expand{expand_factor}_reg{reg}_train{n_train}_test{n_test}.pt",
+        )
+        print(
+            f"Number of none surjective OT plan is {n_non_surjective:d}; average missed points is {n_missed_points/(n_train+n_test):.2f}"
+        )
 
     def read_indices(self, file_path):
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             indices = [line.strip() for line in file if line.strip().isdigit()]
         return indices
-    
-    def torus_grid(self, n_s_sqrt, r = 0.5, R = 1.0):
+
+    def torus_grid(self, n_s_sqrt, r=0.5, R=1.0):
         theta = torch.linspace(0, 2 * torch.pi, n_s_sqrt + 1)[:-1]
         phi = torch.linspace(0, 2 * torch.pi, n_s_sqrt + 1)[:-1]
         # Create a grid using meshgrid
-        X, Y = torch.meshgrid(theta, phi, indexing='ij')
+        X, Y = torch.meshgrid(theta, phi, indexing="ij")
         points = torch.stack((X, Y)).reshape((2, -1)).T
 
         x = (R + r * torch.cos(points[:, 0])) * torch.cos(points[:, 1])
         y = (R + r * torch.cos(points[:, 0])) * torch.sin(points[:, 1])
         z = r * torch.sin(points[:, 0])
         grid = torch.stack((x, y, z), dim=1)
-        
+
         return grid
 
-    def torus_normals(self, n_s_sqrt, r = 0.5, R = 1.0):
+    def torus_normals(self, n_s_sqrt, r=0.5, R=1.0):
         theta = torch.linspace(0, 2 * np.pi, n_s_sqrt + 1)[:-1]
         phi = torch.linspace(0, 2 * np.pi, n_s_sqrt + 1)[:-1]
-        theta, phi = torch.meshgrid(theta, phi, indexing='ij')
+        theta, phi = torch.meshgrid(theta, phi, indexing="ij")
 
         # Partial derivatives
         # dP/dtheta
