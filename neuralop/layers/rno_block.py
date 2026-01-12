@@ -7,6 +7,7 @@ from ..layers.spectral_convolution import SpectralConv
 from ..layers.fno_block import FNOBlocks
 from ..layers.complex import cselu
 
+
 class RNOCell(nn.Module):
     """N-Dimensional Recurrent Neural Operator cell. The RNO cell takes in an
     input and history function, and it outputs the next step of the hidden function.
@@ -83,11 +84,12 @@ class RNOCell(nn.Module):
     ----------
     .. [1] Paper: https://arxiv.org/abs/2308.08794
     """
+
     def __init__(
         self,
         n_modes,
         hidden_channels,
-        resolution_scaling_factor=None, 
+        resolution_scaling_factor=None,
         max_n_modes=None,
         fno_block_precision="full",
         use_channel_mlp=True,
@@ -111,7 +113,9 @@ class RNOCell(nn.Module):
     ):
         super().__init__()
         self.hidden_channels = hidden_channels
-        scaling_factor = None if not resolution_scaling_factor else [resolution_scaling_factor]
+        scaling_factor = (
+            None if not resolution_scaling_factor else [resolution_scaling_factor]
+        )
         fno_kwargs = {
             "n_layers": 1,
             "max_n_modes": max_n_modes,
@@ -139,7 +143,7 @@ class RNOCell(nn.Module):
         # while input x remains at the original resolution. Therefore, only f1, f3, and f5
         # (which process x) need resolution scaling, while f2, f4, and f6 (which process h)
         # operate at the already-scaled resolution.
-        
+
         self.input_gates = nn.ModuleList()
         self.hidden_gates = nn.ModuleList()
         self.biases = nn.ParameterList()
@@ -154,7 +158,7 @@ class RNOCell(nn.Module):
                     out_channels=hidden_channels,
                     n_modes=n_modes,
                     resolution_scaling_factor=scaling_factor,
-                    **fno_kwargs
+                    **fno_kwargs,
                 )
             )
             self.hidden_gates.append(
@@ -163,14 +167,14 @@ class RNOCell(nn.Module):
                     out_channels=hidden_channels,
                     n_modes=n_modes,
                     resolution_scaling_factor=None,
-                    **fno_kwargs
+                    **fno_kwargs,
                 )
             )
             if complex_data:
-                 self.biases.append(nn.Parameter(torch.randn(()) + 1j * torch.randn(())))
+                self.biases.append(nn.Parameter(torch.randn(()) + 1j * torch.randn(())))
             else:
-                 self.biases.append(nn.Parameter(torch.randn(())))
-    
+                self.biases.append(nn.Parameter(torch.randn(())))
+
     def forward(self, x, h):
         """Forward pass for RNO cell.
 
@@ -188,11 +192,15 @@ class RNOCell(nn.Module):
             Updated hidden state with shape (batch, hidden_channels, *spatial_dims_h)
         """
         # Update gate
-        update_gate = torch.sigmoid(self.input_gates[0](x) + self.hidden_gates[0](h) + self.biases[0])
-        
+        update_gate = torch.sigmoid(
+            self.input_gates[0](x) + self.hidden_gates[0](h) + self.biases[0]
+        )
+
         # Reset gate
-        reset_gate = torch.sigmoid(self.input_gates[1](x) + self.hidden_gates[1](h) + self.biases[1])
-        
+        reset_gate = torch.sigmoid(
+            self.input_gates[1](x) + self.hidden_gates[1](h) + self.biases[1]
+        )
+
         # Candidate state
         h_combined = self.input_gates[2](x) + self.hidden_gates[2](reset_gate * h) + self.biases[2]
         
@@ -201,9 +209,10 @@ class RNOCell(nn.Module):
         else:
             candidate_state = F.selu(h_combined)  # regular SELU for real data
 
-        h_next = (1. - update_gate) * h + update_gate * candidate_state
+        h_next = (1.0 - update_gate) * h + update_gate * candidate_state
 
         return h_next
+
 
 class RNOBlock(nn.Module):
     """N-Dimensional Recurrent Neural Operator layer. The RNO layer extends the
@@ -286,12 +295,13 @@ class RNOBlock(nn.Module):
     ----------
     .. [1] Paper: https://arxiv.org/abs/2308.08794
     """
+
     def __init__(
         self,
         n_modes,
         hidden_channels,
-        return_sequences=False, 
-        resolution_scaling_factor=None, 
+        return_sequences=False,
+        resolution_scaling_factor=None,
         max_n_modes=None,
         fno_block_precision="full",
         use_channel_mlp=True,
@@ -321,7 +331,7 @@ class RNOBlock(nn.Module):
 
         self.cell = RNOCell(
             n_modes,
-            hidden_channels, 
+            hidden_channels,
             resolution_scaling_factor=resolution_scaling_factor,
             max_n_modes=max_n_modes,
             fno_block_precision=fno_block_precision,
@@ -376,7 +386,9 @@ class RNOBlock(nn.Module):
             if not self.resolution_scaling_factor:
                 h_shape = (batch_size, self.hidden_channels, *dom_sizes)
             else:
-                scaled_sizes = tuple([int(round(self.resolution_scaling_factor*s)) for s in dom_sizes])
+                scaled_sizes = tuple(
+                    [int(round(self.resolution_scaling_factor * s)) for s in dom_sizes]
+                )
                 h_shape = (batch_size, self.hidden_channels, *scaled_sizes)
             h = torch.zeros(h_shape, dtype=x.dtype).to(x.device)
             h += self.bias_h

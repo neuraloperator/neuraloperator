@@ -56,5 +56,3 @@ class Default(ConfigBase):
     data: BurgersDatasetConfig = BurgersDatasetConfig()
     patching: PatchingConfig = PatchingConfig()
     wandb: WandbConfig = WandbConfig()
-
-

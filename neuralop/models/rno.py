@@ -20,7 +20,8 @@ from ..layers.complex import ComplexValued
 from ..layers.embeddings import GridEmbeddingND, GridEmbedding2D
 from .base_model import BaseModel
 
-class RNO(BaseModel, name='RNO'):
+
+class RNO(BaseModel, name="RNO"):
     """
     N-Dimensional Recurrent Neural Operator.
 
@@ -39,9 +40,9 @@ class RNO(BaseModel, name='RNO'):
     linear Fourier layers.
 
     Paper:
-    .. [RNO] Liu-Schiaffini, M., Singer, C. E., Kovachki, N., Schneider, T., 
-        Azizzadenesheli, K., & Anandkumar, A. (2023). Tipping point forecasting 
-        in non-stationary dynamics on function spaces. arXiv preprint 
+    .. [RNO] Liu-Schiaffini, M., Singer, C. E., Kovachki, N., Schneider, T.,
+        Azizzadenesheli, K., & Anandkumar, A. (2023). Tipping point forecasting
+        in non-stationary dynamics on function spaces. arXiv preprint
         arXiv:2308.08794.
 
     Main Parameters
@@ -155,6 +156,7 @@ class RNO(BaseModel, name='RNO'):
     conv_module : nn.Module, optional
         Module to use for FNOBlock's convolutions. Default: SpectralConv
     """
+
     def __init__(
         self,
         n_modes: Tuple[int, ...],
@@ -197,7 +199,7 @@ class RNO(BaseModel, name='RNO'):
         # n_modes is a special property - see the class' property for underlying mechanism
         # When updated, change should be reflected in fno blocks
         self.n_modes = n_modes
-        
+
         self.hidden_channels = hidden_channels
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -207,7 +209,7 @@ class RNO(BaseModel, name='RNO'):
         # init lifting and projection channels using ratios w.r.t hidden channels
         self.lifting_channel_ratio = lifting_channel_ratio
         self.lifting_channels = int(lifting_channel_ratio * self.hidden_channels)
-        
+
         self.projection_channel_ratio = projection_channel_ratio
         self.projection_channels = int(projection_channel_ratio * self.hidden_channels)
 
@@ -235,7 +237,7 @@ class RNO(BaseModel, name='RNO'):
             )
         else:
             self.domain_padding = None
-        
+
         ## Positional embedding
         if positional_embedding == "grid":
             spatial_grid_boundaries = [[0.0, 1.0]] * self.n_dim
@@ -260,7 +262,7 @@ class RNO(BaseModel, name='RNO'):
                 f"Error: tried to instantiate RNO positional embedding with {positional_embedding}, "
                 f"expected one of 'grid', GridEmbeddingND, GridEmbedding2D, or None"
             )
-        
+
         ## Resolution scaling factor
         if resolution_scaling_factor:
             if isinstance(resolution_scaling_factor, (float, int)):
@@ -300,7 +302,8 @@ class RNO(BaseModel, name='RNO'):
                 decomposition_kwargs=decomposition_kwargs,
                 conv_module=conv_module,
             )
-        for i in range(n_layers)]
+            for i in range(n_layers)
+        ]
         self.layers = nn.ModuleList(module_list)
 
         ## Lifting layer
@@ -501,12 +504,9 @@ class RNO(BaseModel, name='RNO'):
 
         for _ in range(num_steps):
             pred, states = self.forward(
-                x, 
-                states, 
-                return_hidden_states=True, 
-                keep_states_padded=True
+                x, states, return_hidden_states=True, keep_states_padded=True
             )
-            
+
             output.append(pred)
             x = pred.reshape((pred.shape[0], 1, *pred.shape[1:]))
             if grid_function:
