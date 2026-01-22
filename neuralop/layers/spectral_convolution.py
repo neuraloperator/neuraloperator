@@ -542,7 +542,7 @@ class SpectralConv(BaseSpectralConv):
             if mode_sizes[-1] % 2 == 0:
                 out_fft[..., -1].imag.zero_()
 
-            x = torch.fft.irfft(out_fft, dim=fft_dims[-1], norm=self.fft_norm)
+            x = torch.fft.irfft(out_fft, n=mode_sizes[-1], dim=fft_dims[-1], norm=self.fft_norm)
 
 
         if self.bias is not None:
