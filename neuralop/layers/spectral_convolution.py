@@ -522,17 +522,30 @@ class SpectralConv(BaseSpectralConv):
         if output_shape is not None:
             mode_sizes = output_shape
 
+
         if self.order > 1:
             out_fft = torch.fft.ifftshift(out_fft, dim=fft_dims[:-1])
-
+        
+        
+        # Inverse FFT 
+        # For real data, we need to enforce Hermitian symmetry conditions for irfft
+        # which is why we split the ifftn into a ifftn in (n-1) dimensions and a irfft in the last dimension
         if self.complex_data:
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
         else:
-            x = torch.fft.irfftn(
-                out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm
-            )
+            out_fft = torch.fft.ifftn(out_fft, s=mode_sizes[:-1], dim=fft_dims[:-1], norm=self.fft_norm)
+            
+            # Enforce Hermitian symmetry conditions for irfft
+            # 0th frequency must be real
+            out_fft[..., 0].imag.zero_()
+            # Nyquist frequency must be real if the spatial size is even
+            if mode_sizes[-1] % 2 == 0:
+                out_fft[..., -1].imag.zero_()
+
+            x = torch.fft.irfft(out_fft, dim=fft_dims[-1], norm=self.fft_norm)
+
 
         if self.bias is not None:
             x = x + self.bias
-
+          
         return x
