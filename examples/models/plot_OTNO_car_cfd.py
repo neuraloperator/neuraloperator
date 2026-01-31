@@ -336,7 +336,7 @@ def update_enc(frame):
 ani_enc = animation.FuncAnimation(
     fig_enc, update_enc, frames=T, interval=50, blit=False
 )
-
+ani_enc.save('car_to_torus_encoding.gif')
 # OT decoding process from the latent torus grid to the car surface
 T = 60
 movement_dec = np.zeros((T, n_s, 3))
@@ -385,3 +385,6 @@ def update_dec(frame):
 ani_dec = animation.FuncAnimation(
     fig_dec, update_dec, frames=T, interval=50, blit=False
 )
+ani_dec.save('torus_to_car_decoding.gif')
+
+# %%

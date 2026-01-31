@@ -37,7 +37,7 @@ from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
 
-device = "cpu"
+device = "cuda"
 
 # %%
 # .. raw:: html
@@ -191,15 +191,15 @@ for index in range(3):
     data = data_processor.preprocess(data, batched=False)
 
     # Input
-    x = data["x"]
+    x_plot = data["x"].cpu()
     # Ground-truth output
-    y = data["y"]
+    y_plot = data["y"].cpu()
     # Model prediction
-    out = model(x.unsqueeze(0))
+    out_plot = model(data["x"].unsqueeze(0)).cpu()
 
     # Plot input
     ax = fig.add_subplot(3, 3, index * 3 + 1)
-    ax.imshow(x[0], cmap="gray")
+    ax.imshow(x_plot[0], cmap="gray")
     if index == 0:
         ax.set_title("Input x")
     plt.xticks([], [])
@@ -207,7 +207,7 @@ for index in range(3):
 
     # Plot ground-truth output
     ax = fig.add_subplot(3, 3, index * 3 + 2)
-    ax.imshow(y.squeeze())
+    ax.imshow(y_plot.squeeze())
     if index == 0:
         ax.set_title("Ground-truth output")
     plt.xticks([], [])
@@ -215,7 +215,7 @@ for index in range(3):
 
     # Plot model prediction
     ax = fig.add_subplot(3, 3, index * 3 + 3)
-    ax.imshow(out.squeeze().detach().numpy())
+    ax.imshow(out_plot.squeeze().detach().numpy())
     if index == 0:
         ax.set_title("Model prediction")
     plt.xticks([], [])
@@ -247,15 +247,17 @@ for index in range(3):
     data = data_processor.preprocess(data, batched=False)
 
     # Input at higher-resolution
-    x = data["x"]
+    x_plot = data["x"].cpu()
     # Ground-truth output at higher-resolution
-    y = data["y"]
+    y_plot = data["y"].cpu()
     # Model prediction at higher-resolution
-    out = model(x.unsqueeze(0))
+    out = model(data["x"].unsqueeze(0))
+
+    out_plot = out.cpu()
 
     # Plot input at higher-resolution
     ax = fig.add_subplot(3, 3, index * 3 + 1)
-    ax.imshow(x[0], cmap="gray")
+    ax.imshow(x_plot[0], cmap="gray")
     if index == 0:
         ax.set_title("Input at 32x32")
     plt.xticks([], [])
@@ -263,7 +265,7 @@ for index in range(3):
 
     # Plot ground-truth output at higher-resolution
     ax = fig.add_subplot(3, 3, index * 3 + 2)
-    ax.imshow(y.squeeze())
+    ax.imshow(y_plot.squeeze())
     if index == 0:
         ax.set_title("Ground-truth at 32x32")
     plt.xticks([], [])
@@ -271,7 +273,7 @@ for index in range(3):
 
     # Plot model prediction at higher-resolution
     ax = fig.add_subplot(3, 3, index * 3 + 3)
-    ax.imshow(out.squeeze().detach().numpy())
+    ax.imshow(out_plot.squeeze().detach().numpy())
     if index == 0:
         ax.set_title("FNO prediction at 32x32")
     plt.xticks([], [])

@@ -32,7 +32,7 @@ from torchtnt.utils.flops import FlopTensorDispatchMode
 
 from neuralop.models import FNO
 
-device = "cpu"
+device = "cuda"
 
 # %%
 # .. raw:: html

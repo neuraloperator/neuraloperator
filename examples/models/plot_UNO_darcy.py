@@ -30,7 +30,7 @@ from neuralop.data.datasets import load_darcy_flow_small
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
 
-device = "cpu"
+device = "cuda"
 
 
 # %%
@@ -43,7 +43,7 @@ device = "cpu"
 # We load the Darcy-Flow dataset for training and testing.
 
 train_loader, test_loaders, data_processor = load_darcy_flow_small(
-    n_train=1000,
+    n_train=2000,
     batch_size=32,
     n_tests=[100, 50],
     test_resolutions=[16, 32],
@@ -141,7 +141,7 @@ sys.stdout.flush()
 # We create a Trainer object that handles the training loop for the U-NO
 trainer = Trainer(
     model=model,
-    n_epochs=30,
+    n_epochs=1000,
     device=device,
     data_processor=data_processor,
     wandb_log=False,  # Disable Weights & Biases logging
@@ -201,14 +201,16 @@ for index in range(3):
     data = data_processor.preprocess(data, batched=False)
     # Input x
     x = data["x"]
+    x_plot = x.cpu()
     # Ground-truth
     y = data["y"]
+    y_plot = y.cpu()
     # Model prediction: U-NO output
     out = model(x.unsqueeze(0).to(device)).cpu()
 
     # Plot input x
     ax = fig.add_subplot(3, 3, index * 3 + 1)
-    ax.imshow(x[0], cmap="gray")
+    ax.imshow(x_plot[0], cmap="gray")
     if index == 0:
         ax.set_title("Input x")
     plt.xticks([], [])
@@ -216,7 +218,7 @@ for index in range(3):
 
     # Plot ground-truth y
     ax = fig.add_subplot(3, 3, index * 3 + 2)
-    ax.imshow(y.squeeze())
+    ax.imshow(y_plot.squeeze())
     if index == 0:
         ax.set_title("Ground-truth y")
     plt.xticks([], [])
@@ -233,3 +235,5 @@ for index in range(3):
 fig.suptitle("U-NO predictions on 32x32 Darcy-Flow data", y=0.98)
 plt.tight_layout()
 fig.show()
+
+# %%

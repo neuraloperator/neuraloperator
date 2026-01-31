@@ -106,10 +106,13 @@ class DarcyDataset(PTDataset):
             files_to_download = []
             already_downloaded_files = [x.name for x in root_dir.iterdir()]
             for res in resolutions:
+                print(f" looking for darcy_train_{res}.pt or darcy_test_{res}.pt  in {root_dir}")
                 if (
+
                     f"darcy_train_{res}.pt" not in already_downloaded_files
                     or f"darcy_test_{res}.pt" not in already_downloaded_files
                 ):
+                    print(f"did not find ")
                     files_to_download.append(f"darcy_{res}.tgz")
             download_from_zenodo_record(
                 record_id=zenodo_record_id,

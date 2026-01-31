@@ -190,7 +190,7 @@ sys.stdout.flush()
 # Create the IncrementalFNOTrainer with our configuration
 trainer = IncrementalFNOTrainer(
     model=model,
-    n_epochs=20,
+    n_epochs=200,
     data_processor=data_transform,
     device=device,
     verbose=True,

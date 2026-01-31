@@ -12,13 +12,13 @@ class DarcyOptConfig(OptimizationConfig):
     learning_rate: float = 5e-3
     training_loss: str = "h1"
     weight_decay: float = 1e-4
-    scheduler: str = "StepLR"
+    scheduler: str = "CosineAnnealingLR"
     step_size: int = 60
     gamma: float = 0.5
 
 
 class DarcyDatasetConfig(ConfigBase):
-    folder: str = "~/data/darcy/"
+    folder: str = "/home/timm/Projects/PIML/neuraloperator/neuralop/data/datasets/data"
     batch_size: int = 8
     n_train: int = 1000
     train_resolution: int = 16
