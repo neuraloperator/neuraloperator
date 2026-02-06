@@ -1,213 +1,160 @@
-
 """
-This solves the 1D (invisid) Burgers equation using FC-PINO after self-similar transformation.
+Train FC-PINO on the 1D inviscid Burgers equation via self-similar reduction.
 
-More specifically:
+Problem setup
+------------
+The 1D inviscid Burgers equation is:
 
-Consider the 1D inviscid Burgers equation:
+    u_t + u * u_x = 0
 
-u_t + u*u_x = 0
+Using the self-similar ansatz:
 
-If we consider the ansantz:
+    u = (1 - t)^lambda * U(y),   y = x / (1 - t)^(1 + lambda)
 
-u = (1-t)^(lambda) * U(x / (1-t)^(1 + lambda))
+for lambda > 0, the PDE reduces to an ODE in the spatial variable y:
 
-for a fixed lambda in the positive reals, we get the folliwing equation:
+    -lambda * U + ((1 + lambda) * y + U) * U_y = 0
 
--lambda*U + ((1+lambda)*y + U) * U_y = 0
+For lambda = 1 / (2*i + 2) with i a non-negative integer, U admits smooth solutions. 
 
-for spatial variable y.
+This script uses lambda = 1/2 and enforces boundary conditions
+U(-2) = 1 and U(2) = -1 (odd solution) on the domain y in [-2, 2].
 
-In the case that lambda = (1/(2i + 2)) for i in the non-negative integers, we get smooth solutions for U.
+Training is physics-informed: the model predicts U(y), and losses are defined from the residual 
+of the ODE, boundary conditions, and optional smoothness (differentiated residual).
 
-Solcing this using FC-PINO, setting the Boundary conditions to be:
-
-U(-2) = 1
-
-and notitng that the solution must be odd, we can set
-
-U(2) = -1 and lambda = 1/2
-
-and solve this equation using FC-PINO on domain [-2, 2].
-
-For more detials, see:
-
+Reference
+---------
 https://arxiv.org/pdf/2211.15960
 """
 
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.optim import Adam
-
-
-import os
-import torch.nn as nn
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.ticker import FixedLocator
-
 
 from neuralop.losses.meta_losses import Relobralo
 from neuralop.layers.fourier_continuation import FCLegendre, FCGram
 from neuralop.models.fc_fno import FC_FNO
 
-
 torch.manual_seed(23)
 np.random.seed(23)
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+# ---------------------------------------------------------------------------
+# Options and hyperparameters
+# ---------------------------------------------------------------------------
 
+# PDE parameter: lambda in the self-similar reduction (smooth solution for lambda=1/2)
+l = 0.5
 
-plotting = False
-
-## Fourier Continuation function and parameters - can be gram/legendre
-## For more details see neuralop.layers.fourier_continuation
-contFunc = 'gram'
-contPoints = 50
-degree = 6
-
-## FNO Specific Parameters
-modes = 24
-lr = 0.0001
-
-
-plotInterval = 15000 ## How often you want to plot
-
-nEpochs = 60001 ## How many epochs to train for
-
-useSmoothLoss = True ## Whether to use the smoothness loss
-
-patience = 1000 ## Patience for Scheduler
-
-## Lambda value in burgers equation
-l = 0.5 
-
-## Domain of the problem 
-## NOTE: For self-simlar burgers equation, domain MUST be symmetric (i.e must go from (-n, n))
+# Spatial domain for y. Must be symmetric (-a, a) for the self-similar formulation.
 resolution1D = 400
-domain = (-2, 2) 
+domain = (-2, 2)
 
-if plotting:
-    fcName = 'FC-PINO'
-    plotting_directory = f'{fcName}_{contFunc}_1D_Burgers_plots'
-    os.makedirs(plotting_directory, exist_ok=True)
+# Fourier continuation: 'gram' or 'legendre' (see neuralop.layers.fourier_continuation)
+fc_choice = "gram"
+n_additional_pts = 50  # Number of additional points for continuation
+degree = 6  # Degree for continuation
+fc_classes = {"gram": FCGram, "legendre": FCLegendre}
+FC_object = fc_classes[fc_choice.lower()](d=degree, n_additional_pts=n_additional_pts).to("cuda")
 
-###############################
-# CONTINUATION FUNCTIONS
-###############################
-if contFunc.lower() == 'gram':
-    extension = FCGram(d=degree, n_additional_pts=contPoints).to('cuda')
-elif contFunc.lower() == 'legendre':
-    extension = FCLegendre(d=degree, n_additional_pts=contPoints).to('cuda')
+# Training parameters
+n_epochs = 60001  # Total training epochs
+lr = 0.0001  # Learning rate
+patience = 1000  # Epochs without improvement before LR is reduced (scheduler)
+useSmoothnessLoss = True  # Include smoothness loss (differentiated residual)
 
-###############################
-# MODEL INITIALIZATION
-###############################
+
+# ---------------------------------------------------------------------------
+# FC-FNO model: 1D input U(y), outputs U and optional derivatives
+# ---------------------------------------------------------------------------
 model = FC_FNO(
     in_channels=1,
-    Lengths= (domain[1] - domain[0],), ## Domain length
-    out_channels = 1,  
-    n_modes=(modes,),
-    hidden_channels = 200,
-    n_layers = 4,
-    FC_obj=extension,
+    domain_lengths=(domain[1] - domain[0],),
+    out_channels=1,
+    n_modes=(24,),
+    hidden_channels=200,
+    n_layers=4,
+    FC_object=FC_object,
     non_linearity=F.tanh,
-    projection_nonlinearity=F.tanh, ## Non-linearity of the projecton in FC_FNO, must be tanh or silu
-).to('cuda')
+    projection_nonlinearity=F.tanh,  # Must be tanh or silu in FC_FNO
+).to("cuda")
 
-params = [*model.parameters()]
-relobralo = Relobralo(params=params, num_losses=3)
+params = list(model.parameters())
+relobralo = Relobralo(params=params, num_losses=3)  # Multi-loss balancing
 
-y = torch.linspace(domain[0], domain[1], resolution1D + 1, device='cuda', dtype=torch.float64)[:-1].unsqueeze(0).unsqueeze(0)
+# Collocation grid: y in [domain[0], domain[1)], shape (1, 1, resolution1D)
+y = torch.linspace(domain[0], domain[1], resolution1D + 1, device="cuda", dtype=torch.float64)
+y = y[:-1].unsqueeze(0).unsqueeze(0)
+
 
 def getLosses(model, ep):
+    """
+    Compute physics-informed losses for the self-similar Burgers ODE.
 
-    ## FC-PINO, computing derivatives dx and dxx as in Burgers Equation
-    U, dxArr = model(y, derivs_to_compute=['dx', 'dxx'])
+    Residual: -lambda*U + ((1+lambda)*y + U)*U_y = 0.
+    Boundary: U(-2)=1, U(0)=0 (odd), U(2)=-1.
+    Optional smoothness: derivative of residual w.r.t. y.
 
-    ## Extract the derivatives and the solution
-    U = U.squeeze() ## (1, 1 x_res) ---> (x_res)
-    Uy = dxArr[0].squeeze() ## (1, 1 x_res) ---> (x_res)
-    Uyy = dxArr[1].squeeze() ## (1, 1 x_res) ---> (x_res)
+    Returns
+    -------
+    dict
+        Keys: "interior", "boundary", "smoothness", "total", "lambdas", "y".
+    """
 
-    ## Boundary loss
-    lossB = torch.norm(U[0] - 1) ** 2 + torch.norm(U[(resolution1D+1)//2]) ** 2 + torch.norm(U[-1] + 1) ** 2 
+    # Forward pass: get U and first/second derivatives w.r.t. y
+    U, dxArr = model(y, derivs_to_compute=["dx", "dxx"])
 
-    ## Interior loss
-    intLoss = -l*U + ((1+l)*y + U) * Uy   
-    lossI = torch.norm(intLoss)**2 / resolution1D
+    U = U.squeeze()  # (1, 1, n) -> (n)
+    Uy = dxArr[0].squeeze()  # dU/dy
+    Uyy = dxArr[1].squeeze()  # d²U/dy²
 
-    # Smoothness loss
-    if useSmoothLoss:
-        smoothLoss = ((1+l)*y + U) * Uyy + (1 + Uy) * Uy 
-        smoothnessLoss = torch.norm(smoothLoss)**2 / resolution1D
+    # Boundary loss: U(left)=1, U(mid)=0 (odd), U(right)=-1
+    lossB = (
+        torch.norm(U[0] - 1) ** 2
+        + torch.norm(U[(resolution1D + 1) // 2]) ** 2
+        + torch.norm(U[-1] + 1) ** 2
+    )
+
+    # Interior (PDE) loss: residual of -lambda*U + ((1+lambda)*y + U)*U_y = 0
+    residual = -l * U + ((1 + l) * y.squeeze() + U) * Uy
+    lossI = torch.norm(residual) ** 2 / resolution1D
+
+    # Smoothness loss: d/dy of residual (encourages smoother solutions)
+    if useSmoothnessLoss:
+        smoothness_residual = ((1 + l) * y.squeeze() + U) * Uyy + (1 + Uy) * Uy
+        smoothnessLoss = torch.norm(smoothness_residual) ** 2 / resolution1D
+        lossDict = {"Interior": lossI, "Boundary": lossB, "Smoothness": smoothnessLoss}
     else:
-        smoothnessLoss = 0
-    
-    ## Compute ReLoBraLo loss, For More, see neuralop.losses.meta_losses
-    if useSmoothLoss:
-        lossDict = {'Interior': lossI, 'Boundary': lossB, 'Smoothness': smoothnessLoss}
-        totalLoss, lambdas = relobralo(lossDict, step=ep)
-    else:
-        lossDict = {'Interior': lossI, 'Boundary': lossB}
-        totalLoss, lambdas = relobralo(lossDict, step=ep)
-    
+        smoothnessLoss = torch.tensor(0.0, device=U.device, dtype=U.dtype)
+        lossDict = {"Interior": lossI, "Boundary": lossB}
+    totalLoss, lambdas = relobralo(lossDict, step=ep)
+
     return {
         "interior": lossI,
-        "boundary": lossB, 
-        "smoothness": smoothnessLoss, 
-        "total": totalLoss, 
+        "boundary": lossB,
+        "smoothness": smoothnessLoss,
+        "total": totalLoss,
         "lambdas": lambdas,
         "y": y,
     }
 
-## Set an Optimizer and Scheduler
-optimizer = Adam(params, lr=lr, weight_decay=0) 
+
+# Optimizer and learning-rate scheduler
+optimizer = optim.AdamW(params, lr=lr)
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=patience, factor=0.5)
 
 
-################################################################
+# ---------------------------------------------------------------------------
 # Main training loop
-################################################################
-for ep in range(nEpochs):
-
+# ---------------------------------------------------------------------------
+for ep in range(n_epochs):
     optimizer.zero_grad()
-
     losses = getLosses(model, ep)
     loss = losses["total"]
-
     loss.backward()
     optimizer.step()
-    scheduler.step(loss) 
+    scheduler.step(loss)
 
-    print(f"epoch = {ep},\tloss = {loss.item()}") 
-            
-    x = losses["y"]
-    
-    if plotting == True:
-        if ep % plotInterval == 0:
-            U, dxArr = model(y, derivs_to_compute=['dx', 'dxx'])
-            Uy = dxArr[0].squeeze()
-            Uyy = dxArr[1].squeeze()
-            U = U.squeeze()
-    
-            ynp = y.squeeze().cpu().detach().numpy()
-            unp  = U.squeeze().detach().cpu().numpy()
-            dUnp = Uy.squeeze().detach().cpu().numpy()
-            dUUnp = Uyy.squeeze().detach().cpu().numpy()
-
-            ## Combined plot: U, dU, d²U all on one figure
-            fcNameTitle = fcName.replace('-', '-').title()
-            plt.figure(figsize=(14, 10))
-            plt.title(f'{fcNameTitle} FC-{contFunc.capitalize()}', fontsize=38)
-            plt.plot(ynp, unp, label=r'$U_\theta(y)$', linewidth=3)
-            plt.plot(ynp, dUnp, label=r'$\partial_y (U_\theta(y))$', linewidth=3)
-            plt.plot(ynp, dUUnp, label=r'$\partial_{yy} (U_\theta(y))$', linewidth=3)
-            plt.xlabel(r'$y$', fontsize=32)
-            plt.legend(fontsize=33)
-            plt.xticks(fontsize=20)
-            plt.yticks(fontsize=20)
-            plt.tight_layout()
-            plt.savefig(f"{plotting_directory}/U_dU_dUU_overlay_ep{ep}.pdf", dpi=300)
-            plt.close()
+    if ep % 100 == 0 or ep == n_epochs - 1:
+        print(f"epoch = {ep},\tloss = {loss.item()}")
