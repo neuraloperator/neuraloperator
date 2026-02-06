@@ -84,6 +84,13 @@ class FNOBlocks(nn.Module):
         Implementation parameter for SpectralConv. Options: "factorized", "reconstructed", by default "factorized"
     decomposition_kwargs : dict, optional
         Kwargs for tensor decomposition in SpectralConv, by default dict()
+    enforce_hermitian_symmetry : bool, optional
+        Whether to enforce Hermitian symmetry conditions when performing inverse FFT
+        for real-valued data. Only used when ``conv_module`` is :class:`SpectralConv`
+        or a subclass; ignored otherwise. When True, explicitly enforces that the 0th
+        frequency and Nyquist frequency are real-valued before calling irfft. When False,
+        relies on cuFFT's irfftn to handle symmetry automatically, which may fail on
+        certain GPUs or input sizes, causing line artifacts. By default True.
 
     References
     -----------
@@ -121,6 +128,7 @@ class FNOBlocks(nn.Module):
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
+        enforce_hermitian_symmetry=True,
     ):
         super().__init__()
         if isinstance(n_modes, int):
@@ -153,6 +161,7 @@ class FNOBlocks(nn.Module):
         self.separable = separable
         self.preactivation = preactivation
         self.ada_in_features = ada_in_features
+        self.enforce_hermitian_symmetry = enforce_hermitian_symmetry
 
         # apply real nonlin if data is real, otherwise CGELU
         if self.complex_data:
@@ -160,24 +169,32 @@ class FNOBlocks(nn.Module):
         else:
             self.non_linearity = non_linearity
 
+        def _conv_kwargs(i):
+            kwargs = dict(
+                resolution_scaling_factor=None
+                if resolution_scaling_factor is None
+                else self.resolution_scaling_factor[i],
+                max_n_modes=max_n_modes,
+                rank=rank,
+                fixed_rank_modes=fixed_rank_modes,
+                implementation=implementation,
+                separable=separable,
+                factorization=factorization,
+                fno_block_precision=fno_block_precision,
+                decomposition_kwargs=decomposition_kwargs,
+                complex_data=complex_data,
+            )
+            if isinstance(conv_module, type) and issubclass(conv_module, SpectralConv):
+                kwargs["enforce_hermitian_symmetry"] = enforce_hermitian_symmetry
+            return kwargs
+
         self.convs = nn.ModuleList(
             [
                 conv_module(
                     self.in_channels,
                     self.out_channels,
                     self.n_modes,
-                    resolution_scaling_factor=None
-                    if resolution_scaling_factor is None
-                    else self.resolution_scaling_factor[i],
-                    max_n_modes=max_n_modes,
-                    rank=rank,
-                    fixed_rank_modes=fixed_rank_modes,
-                    implementation=implementation,
-                    separable=separable,
-                    factorization=factorization,
-                    fno_block_precision=fno_block_precision,
-                    decomposition_kwargs=decomposition_kwargs,
-                    complex_data=complex_data,
+                    **_conv_kwargs(i),
                 )
                 for i in range(n_layers)
             ]

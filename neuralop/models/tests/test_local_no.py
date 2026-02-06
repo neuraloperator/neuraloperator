@@ -20,7 +20,7 @@ def test_local_no_without_disco(
     n_dim,
     mix_derivatives,
 ):
-    if torch.has_cuda:
+    if torch.cuda.is_available():
         device = "cuda"
         s = 32
         modes = 8
@@ -88,7 +88,7 @@ def test_local_no_with_disco(
 ):
     
     n_dim = 2
-    if torch.has_cuda:
+    if torch.cuda.is_available():
         device = "cuda"
         s = 32
         modes = 8

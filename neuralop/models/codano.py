@@ -125,6 +125,13 @@ class CODANO(nn.Module):
         The padding factor for each input channel. It zero pads each of the channel. Default: 0.25
     layer_kwargs : dict, optional
         Additional arguments for the CoDA blocks. Default: {}
+    enforce_hermitian_symmetry : bool, optional
+        Whether to enforce Hermitian symmetry conditions when performing inverse FFT
+        for real-valued data. Only used when the convolution module is :class:`SpectralConv`
+        or a subclass; ignored otherwise. When True, explicitly enforces that the 0th
+        frequency and Nyquist frequency are real-valued before calling irfft. When False,
+        relies on cuFFT's irfftn to handle symmetry automatically, which may fail on
+        certain GPUs or input sizes, causing line artifacts. By default True.
 
     References
     -----------
@@ -161,6 +168,7 @@ class CODANO(nn.Module):
         layer_kwargs={},
         domain_padding=0.25,
         enable_cls_token=False,
+        enforce_hermitian_symmetry=True,
     ):
         super().__init__()
         self.n_layers = n_layers
@@ -230,7 +238,7 @@ class CODANO(nn.Module):
         self.attention_scalings = attention_scaling_factors
         self.positional_encoding_modes = positional_encoding_modes
         self.static_channel_dim = static_channel_dim
-        self.layer_kwargs = layer_kwargs
+        self.layer_kwargs = {**layer_kwargs, "enforce_hermitian_symmetry": enforce_hermitian_symmetry}
         self.use_positional_encoding = use_positional_encoding
         self.use_horizontal_skip_connection = use_horizontal_skip_connection
         self.horizontal_skips_map = horizontal_skips_map

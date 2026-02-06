@@ -250,6 +250,15 @@ class SpectralConv(BaseSpectralConv):
           the decomposition
         Ignored if ``factorization is None``.
         By default 'reconstructed'.
+    enforce_hermitian_symmetry : bool, optional
+        Whether to enforce Hermitian symmetry conditions when performing inverse FFT
+        for real-valued data. When True, explicitly enforces that the 0th frequency
+        and Nyquist frequency are real-valued before calling irfft. 
+        When False, relies on cuFFT's irfftn to handle symmetry automatically, 
+        which may fail on certain GPUs or input sizes, causing line artifacts. 
+        Setting to True splits the inverse FFT into ifftn along (n-1) dimensions 
+        followed by irfft on the last dimension, with a small computational overhead. 
+        By default True.
     fixed_rank_modes : bool, optional
         Modes to not factorize, by default False.
         Ignored if ``factorization is None``.
@@ -293,6 +302,7 @@ class SpectralConv(BaseSpectralConv):
         rank=1.0,
         factorization=None,
         implementation="reconstructed",
+        enforce_hermitian_symmetry=True,
         fixed_rank_modes=False,
         decomposition_kwargs: Optional[dict] = None,
         init_std="auto",
@@ -320,7 +330,8 @@ class SpectralConv(BaseSpectralConv):
         self.rank = rank
         self.factorization = factorization
         self.implementation = implementation
-
+        self.enforce_hermitian_symmetry = enforce_hermitian_symmetry
+        
         self.resolution_scaling_factor: Union[
             None, List[List[float]]
         ] = validate_scaling_factor(resolution_scaling_factor, self.order)
@@ -526,24 +537,31 @@ class SpectralConv(BaseSpectralConv):
         if self.order > 1:
             out_fft = torch.fft.ifftshift(out_fft, dim=fft_dims[:-1])
         
-        
+
         # Inverse FFT 
-        # For real data, we need to enforce Hermitian symmetry conditions for irfft
-        # which is why we split the ifftn into a ifftn in (n-1) dimensions and a irfft in the last dimension
         if self.complex_data:
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+        
         else:
-            out_fft = torch.fft.ifftn(out_fft, s=mode_sizes[:-1], dim=fft_dims[:-1], norm=self.fft_norm)
+            # For real data, we need to enforce Hermitian symmetry conditions for irfft.
+            # On certain GPUs and for certain input sizes, this is not handled within irfftn in cuFFT, 
+            # and as a result causes line artifacts.  
+            # To fix this, we split the ifftn into a ifftn in (n-1) dimensions and a irfft in the last dimension,
+            # although it incurs a small additional computational cost.
             
-            # Enforce Hermitian symmetry conditions for irfft
-            # 0th frequency must be real
-            out_fft[..., 0].imag.zero_()
-            # Nyquist frequency must be real if the spatial size is even
-            if mode_sizes[-1] % 2 == 0:
-                out_fft[..., -1].imag.zero_()
-
-            x = torch.fft.irfft(out_fft, n=mode_sizes[-1], dim=fft_dims[-1], norm=self.fft_norm)
-
+            if self.enforce_hermitian_symmetry:
+                out_fft = torch.fft.ifftn(out_fft, s=mode_sizes[:-1], dim=fft_dims[:-1], norm=self.fft_norm)
+                # Enforce Hermitian symmetry conditions for irfft
+                # 0th frequency must be real
+                out_fft[..., 0].imag.zero_()
+                # Nyquist frequency must be real if the spatial size is even
+                if mode_sizes[-1] % 2 == 0:
+                    out_fft[..., -1].imag.zero_()
+                x = torch.fft.irfft(out_fft, n=mode_sizes[-1], dim=fft_dims[-1], norm=self.fft_norm)
+            
+            else:
+                x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+            
 
         if self.bias is not None:
             x = x + self.bias
