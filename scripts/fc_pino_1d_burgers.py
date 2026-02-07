@@ -33,9 +33,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 
-from neuralop.losses.meta_losses import Relobralo
 from neuralop.layers.fourier_continuation import FCLegendre, FCGram
 from neuralop.models.fc_fno import FC_FNO
+
+torch.set_default_dtype(torch.float64)
 
 torch.manual_seed(23)
 np.random.seed(23)
@@ -45,7 +46,7 @@ np.random.seed(23)
 # ---------------------------------------------------------------------------
 
 # PDE parameter: lambda in the self-similar reduction (smooth solution for lambda=1/2)
-l = 0.5
+pde_lambda = 0.5
 
 # Spatial domain for y. Must be symmetric (-a, a) for the self-similar formulation.
 resolution1D = 400
@@ -64,6 +65,11 @@ lr = 0.0001  # Learning rate
 patience = 1000  # Epochs without improvement before LR is reduced (scheduler)
 useSmoothnessLoss = True  # Include smoothness loss (differentiated residual)
 
+# PINO Loss Weights
+interior_weight = 3
+boundary_weight = 1
+smoothness_weight = 0.2
+
 
 # ---------------------------------------------------------------------------
 # FC-FNO model: 1D input U(y), outputs U and optional derivatives
@@ -72,23 +78,31 @@ model = FC_FNO(
     in_channels=1,
     domain_lengths=(domain[1] - domain[0],),
     out_channels=1,
-    n_modes=(24,),
-    hidden_channels=200,
+    n_modes=(32,),
+    hidden_channels=256,
     n_layers=4,
     FC_object=FC_object,
+    factorization="tucker",
+    rank=0.2,
     non_linearity=F.tanh,
     projection_nonlinearity=F.tanh,  # Must be tanh or silu in FC_FNO
 ).to("cuda")
 
+
 params = list(model.parameters())
-relobralo = Relobralo(params=params, num_losses=3)  # Multi-loss balancing
+
+
+# Optimizer and learning-rate scheduler
+optimizer = optim.AdamW(params, lr=lr)
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=patience, factor=0.5)
+
 
 # Collocation grid: y in [domain[0], domain[1)], shape (1, 1, resolution1D)
 y = torch.linspace(domain[0], domain[1], resolution1D + 1, device="cuda", dtype=torch.float64)
 y = y[:-1].unsqueeze(0).unsqueeze(0)
 
 
-def getLosses(model, ep):
+def getLosses(model):
     """
     Compute physics-informed losses for the self-similar Burgers ODE.
 
@@ -99,7 +113,7 @@ def getLosses(model, ep):
     Returns
     -------
     dict
-        Keys: "interior", "boundary", "smoothness", "total", "lambdas", "y".
+        Keys: "interior", "boundary", "smoothness", "total".
     """
 
     # Forward pass: get U and first/second derivatives w.r.t. y
@@ -117,32 +131,23 @@ def getLosses(model, ep):
     )
 
     # Interior (PDE) loss: residual of -lambda*U + ((1+lambda)*y + U)*U_y = 0
-    residual = -l * U + ((1 + l) * y.squeeze() + U) * Uy
+    residual = -pde_lambda * U + ((1 + pde_lambda) * y.squeeze() + U) * Uy
     lossI = torch.norm(residual) ** 2 / resolution1D
 
     # Smoothness loss: d/dy of residual (encourages smoother solutions)
     if useSmoothnessLoss:
-        smoothness_residual = ((1 + l) * y.squeeze() + U) * Uyy + (1 + Uy) * Uy
-        smoothnessLoss = torch.norm(smoothness_residual) ** 2 / resolution1D
-        lossDict = {"Interior": lossI, "Boundary": lossB, "Smoothness": smoothnessLoss}
+        smoothnessResidual = ((1 + pde_lambda) * y.squeeze() + U) * Uyy + (1 + Uy) * Uy
+        smoothnessLoss = torch.norm(smoothnessResidual) ** 2 / resolution1D
     else:
         smoothnessLoss = torch.tensor(0.0, device=U.device, dtype=U.dtype)
-        lossDict = {"Interior": lossI, "Boundary": lossB}
-    totalLoss, lambdas = relobralo(lossDict, step=ep)
+    totalLoss = interior_weight * lossI + boundary_weight * lossB + smoothness_weight * smoothnessLoss
 
     return {
         "interior": lossI,
         "boundary": lossB,
         "smoothness": smoothnessLoss,
         "total": totalLoss,
-        "lambdas": lambdas,
-        "y": y,
     }
-
-
-# Optimizer and learning-rate scheduler
-optimizer = optim.AdamW(params, lr=lr)
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=patience, factor=0.5)
 
 
 # ---------------------------------------------------------------------------
@@ -150,11 +155,17 @@ scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=patience, f
 # ---------------------------------------------------------------------------
 for ep in range(n_epochs):
     optimizer.zero_grad()
-    losses = getLosses(model, ep)
+    losses = getLosses(model)
     loss = losses["total"]
     loss.backward()
     optimizer.step()
     scheduler.step(loss)
 
-    if ep % 100 == 0 or ep == n_epochs - 1:
-        print(f"epoch = {ep},\tloss = {loss.item()}")
+    if ep % 200 == 0 or ep == n_epochs - 1:
+        print(
+            f"epoch = {ep} | "
+            f"total = {loss.item():.3e} | "
+            f"interior = {losses['interior'].item():.3e} | "
+            f"boundary = {losses['boundary'].item():.3e} | "
+            f"smoothness = {losses['smoothness'].item():.3e}"
+        )
