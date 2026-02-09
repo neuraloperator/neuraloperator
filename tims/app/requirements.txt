@@ -1,0 +1,8 @@
+streamlit
+torch
+matplotlib
+numpy
+pandas
+pathlib
+pickle
+json

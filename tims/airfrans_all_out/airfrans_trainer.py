@@ -273,7 +273,6 @@ class AirfransAllTrainer(Trainer):
                 y_true = sample['y'].to(self.device)
                 
                 # Calculate each channel's contribution for logging only
-                # These are detached values that won't bloat your 4090s' VRAM
                 for c in range(self.model.out_channels):
                     channel_err[c] += torch.mean((y_pred[:, c, ...] - y_true[:, c, ...])**2).item()            
          

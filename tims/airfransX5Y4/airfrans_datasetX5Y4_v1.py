@@ -16,6 +16,10 @@ import zencfg
 from neuralop.models.base_model import get_model
 from tqdm import tqdm
 
+from .airfrans_utils import AirfransUtils 
+
+from tims.dataset.tensor_dataset_with_props import TensorDatasetWithProps
+
 def get_dataset_stats(training_file):
     
     print(f"--- Loading Training Split: {training_file} ---")
@@ -25,7 +29,7 @@ def get_dataset_stats(training_file):
 
     # Names for your 5-Channel Input (x) and 4-Channel Target (y)
     x_names = ["cos(α)", "sin(α)", "Mask", "SDF","log10(Re)"]
-    y_names = ["u_deficit", "v_deficit", "Cp", "log10(ν_ratio)"]
+    y_names = ["u_deficit", "v_deficit", "Cp", "log10(ν_t/ν)"]
 
     def print_stats(tensor, names, title):
         print(f"\n{'='*85}")
@@ -60,7 +64,7 @@ def audit_data_processor(data_processor):
         in_s = data_processor.in_normalizer.std.flatten()
         
         print(f"\n[INPUTS] Found {len(in_m)} channels in Normalizer")
-        names = ["u_inf", "v_inf", "mask", "sdf"]
+        names = ["u_inf", "v_inf", "mask", "sdf","log_Re"]
         for i in range(min(len(in_m), len(names))):
             m, s = in_m[i].item(), in_s[i].item()
             status = "!! CORRUPTED !!" if i == 2 and abs(m) > 1e-3 else "OK"
@@ -161,17 +165,28 @@ class SelectiveDataProcessor(DefaultDataProcessor):
         if self.out_normalizer is not None:
             out = self.out_normalizer.inverse_transform(out)
         
-        # Ensure truth data is on same device as prediction for Loss/Metric calc
         if data is not None:
             if hasattr(out, 'device'):
-                for key in data:
-                    if hasattr(data[key], 'to'):
-                        data[key] = data[key].to(out.device)
-        
+                device = out.device
+                for key in list(data.keys()):
+                    # 🔥 THE FIX: Skip 'props' entirely or check for Tensor type
+                    if key == 'props':
+                        continue
+                    
+                    if isinstance(data[key], torch.Tensor):
+                        data[key] = data[key].to(device)
+            
+            # Reconstruct the output dictionary
+            # If 'out' is a single tensor from the FNO, we map it back to 'y'
+            if isinstance(out, torch.Tensor):
+                # CRITICAL FIX: Exclude 'y' from data to avoid overwriting prediction with ground truth
+                data_without_y = {k: v for k, v in data.items() if k != 'y'}
+                return {'y': out, **data_without_y}, data
             return out, data
+            
         return out
 
-class AirfransDatasetVelocity(PTDataset):
+class AirfransDataset(PTDataset):
     def __init__(
         self,
         data_dir: Union[Path, str],
@@ -234,13 +249,39 @@ class AirfransDatasetVelocity(PTDataset):
         
         # Load training data with custom filename
         train_file = data_dir / f"{dataset_name}_{train_split}_{train_resolution}x{train_resolution}.pt"
-        train_data = torch.load(train_file.as_posix())
+        train_data = torch.load(train_file.as_posix(),weights_only=False)
         
         x_train = train_data["x"].type(torch.float32).clone()
         y_train = train_data["y"].clone()
 
         y_train = y_train[:, :, :, :]  # keep all channels
 
+        # ... loading x_train, y_train ...
+
+        if 'props' not in train_data:
+            raise KeyError(f"CRITICAL ERROR: 'props' not found in {train_file}. "
+                           "Cannot calculate aerodynamic coefficients without metadata.")
+
+        raw_props = train_data['props']
+        
+        # Ensure self.train_props is always a LIST of dictionaries
+        # This makes indexing self.train_props[idx] consistent later
+        if isinstance(raw_props, dict) and 'foil_coords' in raw_props:
+            # If it's a 'flipped' dictionary (dict of lists/tensors), un-flip it
+            print("Detected collated dictionary in archive. Un-flipping...")
+            self.train_props = [
+                {k: v[i] for k, v in raw_props.items()} 
+                for i in range(x_train.size(0))
+            ]
+        elif isinstance(raw_props, list):
+            self.train_props = raw_props
+        else:
+            raise TypeError(f"Unknown props format in {train_file}: {type(raw_props)}")
+
+        # Validation Print
+        print(f"✅ Successfully loaded {len(self.train_props)} property entries.")
+        if 'airfoil_points' not in self.train_props[0]:
+            raise KeyError(f"Props found, but 'airfoil_points' is missing in {train_file}")
         print(f"Loading train db for {train_split} resolution {train_resolution} with {n_train} samples")
 
         print(f"x_train shape: {x_train.shape}, y_train shape: {y_train.shape}")
@@ -296,7 +337,7 @@ class AirfransDatasetVelocity(PTDataset):
             output_encoder = None
         
         # Create train dataset
-        self._train_db = TensorDataset(x_train, y_train)
+        self._train_db = TensorDatasetWithProps(x_train, y_train, props=self.train_props)
         
         # Create custom data processor that handles selective input normalization
         self._data_processor = SelectiveDataProcessor(
@@ -314,11 +355,25 @@ class AirfransDatasetVelocity(PTDataset):
             
             x_test = test_data["x"].type(torch.float32).clone()
             y_test = test_data["y"].clone()
+            y_test = y_test[:, :, :, :]  # keep all channels
+
+            props = test_data.get('props', None)
+            # add empty props if none found
+            if props is None:
+                props = [{} for _ in range(x_test.size(0))]
+            
+
+            test_db = TensorDatasetWithProps(x_test, y_test,props)
+            self._test_dbs[res] = test_db
+
+            if 'props' in test_data:
+                setattr(self, f"{test_split}_props", test_data['props'])
+            else:
+                setattr(self, f"{test_split}_props", None)
             
             del test_data
             
-            test_db = TensorDataset(x_test, y_test)
-            self._test_dbs[res] = test_db
+
     # Properties are inherited from PTDataset, so you don't need to redefine them
     # unless you want to add custom behavior
 
@@ -338,7 +393,10 @@ def load_airfrans_dataset(
     encoding="channel-wise",
     channel_dim=1,
 ):
-    dataset = AirfransDatasetVelocity(
+    
+    collate_with_props = AirfransUtils.collate_with_props
+
+    dataset = AirfransDataset(
         data_dir=data_dir,
         dataset_name=dataset_name,
         train_split=train_split,
@@ -359,6 +417,7 @@ def load_airfrans_dataset(
         batch_size=batch_size,
         num_workers=1,
         pin_memory=True,
+        collate_fn= collate_with_props,
         persistent_workers=False,
     )
 
@@ -371,10 +430,11 @@ def load_airfrans_dataset(
             shuffle=False,
             num_workers=1,
             pin_memory=True,
+            collate_fn=collate_with_props,
             persistent_workers=False,
         )
 
-    return train_loader, test_loaders, dataset.data_processor
+    return train_loader, test_loaders, dataset.data_processor,
 
 
 def load_trained_model(config, model_path, device='cuda'):

@@ -6,7 +6,18 @@ import torch
 import json
 from pathlib import Path
 from tqdm import tqdm
+import shutil
+import numpy as np
+import pyvista as pv
 
+from neuralop import data
+
+#torch.serialization.add_safe_globals([np._core.multiarray.scalar,
+#                                    np.dtype, 
+#                                    np.dtypes.Float64DType,
+#                                    np.dtypes.Float32DType,
+#                                    np._core.multiarray._reconstruct, 
+#                                    pv.core.pyvista_ndarray])
 
 def consolidate_airfrans_dataset(
     data_root: Path,
@@ -15,7 +26,8 @@ def consolidate_airfrans_dataset(
     xlim: float = 6.0,
     ylim: float = 3.0,
     xoffset: float = 1.0,
-    grid_sizes: list = [(64,64),(128,128), (256,256), (512,512), (1024,1024)]
+    grid_sizes: list = [(64,64),(128,128), (256,256), (512,512), (1024, 1024)]
+
 ):
     """
     Consolidate individual simulation .pt files into PTDataset format.
@@ -43,6 +55,7 @@ def consolidate_airfrans_dataset(
             # Collect all data for this split
             all_x = []
             all_y = []
+            all_props = []
             
             for sim_run in tqdm(sim_runs, desc=f"Loading {split_name}"):
                 sim_path = data_root 
@@ -53,6 +66,12 @@ def consolidate_airfrans_dataset(
                         data = torch.load(data_file)
                         all_x.append(data['x'].unsqueeze(0))  # Add batch dimension
                         all_y.append(data['y'].unsqueeze(0))  # Add batch dimension
+                        
+                        p = data.get('props', {})
+                        if isinstance(p, list) and len(p) > 0:
+                            all_props.append(p[0])
+                        else:
+                            all_props.append(p)
                     except Exception as e:
                         print(f"Error loading {data_file}: {e}")
                         continue
@@ -66,7 +85,8 @@ def consolidate_airfrans_dataset(
                 
                 consolidated_data = {
                     'x': consolidated_x,
-                    'y': consolidated_y
+                    'y': consolidated_y,
+                    'props': all_props
                 }
                 
                 # Determine if this is train or test split
@@ -77,12 +97,14 @@ def consolidate_airfrans_dataset(
                 print(f"  Saved {output_file} with {consolidated_x.shape[0]} samples")
                 print(f"    Input shape: {consolidated_x.shape}")
                 print(f"    Output shape: {consolidated_y.shape}")
+                print(f"    Props count: {len(all_props)}")
+                print(f"    Props keys: {list(all_props[0].keys()) if all_props else 'N/A'}")
 
 
 def main():
     # Configuration
-    data_root = Path("/home/timm/Projects/PIML/Dataset_PT_FNO/TrainingX5Y4")
-    output_dir = Path("/home/timm/Projects/PIML/Dataset_PT_FNO/TrainingX5Y4_consolidated")
+    data_root = Path("/home/timm/Projects/PIML/Dataset_PT_FNO_X5Y4/TrainingX5Y4")
+    output_dir = Path("/home/timm/Projects/PIML/Dataset_PT_FNO_X5Y4/TrainingX5Y4_consolidated")
     manifest_file = Path("/home/timm/Projects/PIML/Dataset/manifest.json")
     
     # Load manifest
@@ -109,6 +131,7 @@ def main():
            
         }
     
+    #grid_sizes=[(64,64),(128,128), (256,256), (512,512), (1024, 1024)]
     # Run consolidation
     consolidate_airfrans_dataset(
         data_root=data_root,
@@ -116,9 +139,10 @@ def main():
         splits_config=splits_config,
         xlim=6,
         ylim=3,
-        grid_sizes=[(64,64),(128,128), (256,256), (512,512)]
+        grid_sizes=[(1024, 1024)]
     )
-    
+    shutil.copy(manifest_file, Path(data_root) / "manifest.json")
+    shutil.copy(manifest_file, Path(output_dir) / "manifest.json")
     print(f"\nConsolidation complete! Files saved to {output_dir}")
     print("You can now use these with PTDataset:")
     for f in output_dir.glob("*.pt"):

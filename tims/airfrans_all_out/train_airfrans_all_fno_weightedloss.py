@@ -44,7 +44,8 @@ class WeightedL1Loss(torch.nn.Module):
     def __init__(self, weights=[1.0, 1.0, 1.0, 1.0], reduction='sum'):
         super().__init__()
         # Register weights as a buffer so they stay on the correct 4090
-        self.register_buffer('weights', torch.tensor(weights).view(1, 4, 1, 1))
+        num_weights = len(weights)
+        self.register_buffer('weights', torch.tensor(weights).view(1, num_weights, 1, 1))
         self.reduction = reduction
 
     def forward(self, pred, y, **kwargs):
@@ -78,8 +79,10 @@ class WeightedL2Loss(torch.nn.Module):
         weights: List of weights for [u, v, cp, nut]
         """
         super().__init__()
+
+        num_weights = len(weights)
         # Register as buffer so it moves to GPU with the model automatically
-        self.register_buffer('weights', torch.tensor(weights).view(1, 4, 1, 1))
+        self.register_buffer('weights', torch.tensor(weights).view(1, num_weights, 1, 1))
         self.reduction = reduction
 
     def forward(self, pred, y, **kwargs):

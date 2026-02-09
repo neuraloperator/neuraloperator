@@ -1,0 +1,2 @@
+epoch, time, train_err, encoded_u_loss, encoded_v_loss, encoded_cp_loss, encoded_lognutratio_loss, lr
+0, 262.46, 206.634491, 0.065777, 0.136812, 0.101954, 16.232286, 1.00e-03
