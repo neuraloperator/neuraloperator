@@ -266,28 +266,32 @@ class LocalNOBlocks(nn.Module):
         ), f"disco_layers must either provide a single bool value or a list of booleans of length n_layers,\
                     got {len(disco_layers)=}"
 
-        def _conv_kwargs(i):
-            kwargs = dict(
-                resolution_scaling_factor=None if resolution_scaling_factor is None else self.resolution_scaling_factor[i],
-                max_n_modes=max_n_modes,
-                rank=rank,
-                fixed_rank_modes=fixed_rank_modes,
-                implementation=implementation,
-                separable=separable,
-                factorization=factorization,
-                decomposition_kwargs=decomposition_kwargs,
-            )
-            if isinstance(conv_module, type) and issubclass(conv_module, SpectralConv):
-                kwargs["enforce_hermitian_symmetry"] = enforce_hermitian_symmetry
-            return kwargs
-
+        # One conv per layer. Only resolution_scaling_factor varies by layer index
         self.convs = nn.ModuleList(
             [
                 conv_module(
                     self.in_channels,
                     self.out_channels,
                     self.n_modes,
-                    **_conv_kwargs(i),
+                    # Per-layer scaling for super-resolution, or None if disabled
+                    resolution_scaling_factor=(
+                        self.resolution_scaling_factor[i]
+                        if resolution_scaling_factor is not None
+                        else None
+                    ),
+                    max_n_modes=max_n_modes,
+                    rank=rank,
+                    fixed_rank_modes=fixed_rank_modes,
+                    implementation=implementation,
+                    separable=separable,
+                    factorization=factorization,
+                    decomposition_kwargs=decomposition_kwargs,
+                    # Only SpectralConv (and subclasses) accept enforce_hermitian_symmetry. Others ignore it
+                    **(
+                        {"enforce_hermitian_symmetry": enforce_hermitian_symmetry}
+                        if issubclass(conv_module, SpectralConv)
+                        else {}
+                    ),
                 )
                 for i in range(n_layers)
             ]
