@@ -84,6 +84,23 @@ class WaveletUtils:
     @classmethod
     def get_phi_psi(cls, k, base):
         """
+        Generate scaling and wavelet basis functions for multi-resolution analysis.
+
+        This creates a hierarchical basis for function approximation using wavelets.
+        Think of it like building a family of functions that can represent any signal
+        at multiple levels of detail - coarse features (scaling functions) and fine
+        details (wavelet functions).
+
+        How it works:
+        1. Start with orthogonal polynomials (Legendre or Chebyshev) on [0,1]
+        2. These become our "scaling functions" (phi) - they capture smooth, low-frequency content
+        3. Create "wavelet functions" (psi) through orthogonalization - they capture details/edges
+        4. Wavelets are split into two halves: psi1 for [0, 0.5] and psi2 for [0.5, 1]
+
+        The result is a complete basis where:
+        - phi functions = "blur" or "smooth approximation" at a given scale
+        - psi functions = "details" or "differences" between scales
+
         Parameters
         ----------
         k : int
@@ -112,23 +129,6 @@ class WaveletUtils:
         psi2 : list of k callable functions
             Wavelet functions for right half-interval [0.5, 1]
             Each psi2[i] captures detail/difference information in the right half.
-
-        Generate scaling and wavelet basis functions for multi-resolution analysis.
-
-        This creates a hierarchical basis for function approximation using wavelets.
-        Think of it like building a family of functions that can represent any signal
-        at multiple levels of detail - coarse features (scaling functions) and fine
-        details (wavelet functions).
-
-        How it works:
-        1. Start with orthogonal polynomials (Legendre or Chebyshev) on [0,1]
-        2. These become our "scaling functions" (phi) - they capture smooth, low-frequency content
-        3. Create "wavelet functions" (psi) through orthogonalization - they capture details/edges
-        4. Wavelets are split into two halves: psi1 for [0, 0.5] and psi2 for [0.5, 1]
-
-        The result is a complete basis where:
-        - phi functions = "blur" or "smooth approximation" at a given scale
-        - psi functions = "details" or "differences" between scales
 
         Notes
         -----
@@ -443,6 +443,21 @@ class WaveletUtils:
 
 class SparseKernel(nn.Module):
     """
+    Sparse Spatial Convolution Kernel for Multiwavelet Networks.
+
+    This layer applies learned spatial convolutions to wavelet coefficients.
+    It's "sparse" in the sense that it uses small convolutional kernels (3x3)
+    rather than dense connections, making it computationally efficient.
+
+    Use case: Apply spatial mixing to wavelet detail coefficients, capturing
+    local patterns and textures in the spatial domain.
+
+    The layer automatically handles 1D, 2D, and 3D inputs by:
+    1. Reshaping input to (batch, channels, *spatial_dims)
+    2. Applying appropriate Conv{1,2,3}d layer
+    3. Projecting back to original channel structure
+    4. Reshaping to original format
+
     Parameters
     ----------
     k : int
@@ -482,21 +497,6 @@ class SparseKernel(nn.Module):
     >>> x = torch.randn(16, 32, 32, 1, 9)  # (B, H, W, c, k²)
     >>> output = layer(x)
     >>> assert output.shape == x.shape
-
-    Sparse Spatial Convolution Kernel for Multiwavelet Networks.
-
-    This layer applies learned spatial convolutions to wavelet coefficients.
-    It's "sparse" in the sense that it uses small convolutional kernels (3x3)
-    rather than dense connections, making it computationally efficient.
-
-    Use case: Apply spatial mixing to wavelet detail coefficients, capturing
-    local patterns and textures in the spatial domain.
-
-    The layer automatically handles 1D, 2D, and 3D inputs by:
-    1. Reshaping input to (batch, channels, *spatial_dims)
-    2. Applying appropriate Conv{1,2,3}d layer
-    3. Projecting back to original channel structure
-    4. Reshaping to original format
 
     """
 
@@ -561,22 +561,20 @@ class SparseKernel(nn.Module):
         original_shape = x.shape
 
         if self.n_dim == 1:
-            # (B, N, c, k) → (B, c*k, N)
+            # (B, N, c, k) -> (B, c*k, N)
             batch_size, n_points, num_channels, k = x.shape
-            x = x.view(batch_size, n_points, -1)  # (B, N, c*k)
-            x = x.permute(0, 2, 1)  # (B, c*k, N)
+            # move (c,k) next to batch: (B, c, k, N), then merge c and k
+            x = x.permute(0, 2, 3, 1).contiguous().reshape(batch_size, num_channels * k, n_points)
 
         elif self.n_dim == 2:
-            # (B, Nx, Ny, c, k²) → (B, c*k², Nx, Ny)
+            # (B, Nx, Ny, c, k²) -> (B, c*k², Nx, Ny)
             batch_size, nx, ny, num_channels, k_sq = x.shape
-            x = x.view(batch_size, nx, ny, -1)  # (B, Nx, Ny, c*k²)
-            x = x.permute(0, 3, 1, 2)  # (B, c*k², Nx, Ny)
+            x = x.permute(0, 3, 4, 1, 2).contiguous().reshape(batch_size, num_channels * k_sq, nx, ny)
 
         elif self.n_dim == 3:
-            # (B, Nx, Ny, T, c, k²) → (B, c*k², Nx, Ny, T)
+            # (B, Nx, Ny, T, c, k²) -> (B, c*k², Nx, Ny, T)
             batch_size, nx, ny, time_steps, num_channels, k_sq = x.shape
-            x = x.view(batch_size, nx, ny, time_steps, -1)  # (B, Nx, Ny, T, c*k²)
-            x = x.permute(0, 4, 1, 2, 3)  # (B, c*k², Nx, Ny, T)
+            x = x.permute(0, 4, 5, 1, 2, 3).contiguous().reshape(batch_size, num_channels * k_sq, nx, ny, time_steps)
 
         return x, original_shape
 
@@ -626,7 +624,7 @@ class SparseKernel(nn.Module):
         x = self.output_proj(x)
 
         # Restore exact original shape
-        x = x.view(original_shape)
+        x = x.reshape(original_shape)
 
         return x
 
@@ -776,19 +774,21 @@ class SparseKernelFT(nn.Module):
         original_shape = x.shape
 
         if self.n_dim == 1:
-            # (B, N, c, k) → (B, c*k, N)
+            # (B, N, c, k) -> (B, c*k, N)
             batch_size, n_points, num_channels, k = x.shape
-            x = x.view(batch_size, n_points, -1).permute(0, 2, 1)
-
+            # (B, N, c, k) -> (B, c, k, N) -> (B, c*k, N)
+            x = x.permute(0, 2, 3, 1).contiguous().reshape(batch_size, num_channels * k, n_points)
         elif self.n_dim == 2:
-            # (B, Nx, Ny, c, k²) → (B, c*k², Nx, Ny)
+            # (B, Nx, Ny, c, k²) -> (B, c*k², Nx, Ny)
             batch_size, nx, ny, num_channels, k_sq = x.shape
-            x = x.view(batch_size, nx, ny, -1).permute(0, 3, 1, 2)
+            # (B, Nx, Ny, c, k²) -> (B, c, k², Nx, Ny) -> (B, c*k², Nx, Ny)
+            x = x.permute(0, 3, 4, 1, 2).contiguous().reshape(batch_size, num_channels * k_sq, nx, ny)
 
         elif self.n_dim == 3:
-            # (B, Nx, Ny, T, c, k²) → (B, c*k², Nx, Ny, T)
+            # (B, Nx, Ny, T, c, k²) -> (B, c*k², Nx, Ny, T)
             batch_size, nx, ny, time_steps, num_channels, k_sq = x.shape
-            x = x.view(batch_size, nx, ny, time_steps, -1).permute(0, 4, 1, 2, 3)
+            # (B, Nx, Ny, T, c, k²) -> (B, c, k², Nx, Ny, T) -> (B, c*k², Nx, Ny, T)
+            x = x.permute(0, 4, 5, 1, 2, 3).contiguous().reshape(batch_size, num_channels * k_sq, nx, ny, time_steps)
 
         return x, original_shape
 
@@ -996,6 +996,12 @@ class SparseKernelFT(nn.Module):
 
 class MWNO_CZ(nn.Module):
     """
+    Multiwavelet Neural Operator Core Z-transform Layer.
+
+    This layer is the heart of the Multiwavelet Neural Operator (MWNO) architecture.
+    It works like a hierarchical image pyramid, but with learnable transformations
+    at each level.
+
     Parameters
     ----------
     k : int, default=3
@@ -1119,12 +1125,6 @@ class MWNO_CZ(nn.Module):
     >>> field = torch.randn(8, 32, 32, 20, 1, 9)
     >>> output = layer_3d(field)
     >>> assert output.shape == field.shape
-
-    Multiwavelet Neural Operator Core Z-transform Layer.
-
-    This layer is the heart of the Multiwavelet Neural Operator (MWNO) architecture.
-    It works like a hierarchical image pyramid, but with learnable transformations
-    at each level.
 
     Architecture:
     ------------

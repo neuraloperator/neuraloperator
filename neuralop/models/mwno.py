@@ -37,7 +37,7 @@ class MWNO(nn.Module):
         Wavelet basis size (number of polynomial basis functions). Default: 3
         k=2: Piecewise linear wavelets, k=3: Cubic wavelets, k=4: Quartic wavelets.
     c : int, optional
-        Number of parallel wavelet channels. Default: 1
+        Number of parallel wavelet channels. Default: 1, Recommended values: 1, 2
         Increases model capacity: total wavelet features = c * k^n_dim.
     n_layers : int, optional
         Number of MWNO_CZ transformation layers. Default: 3
@@ -95,7 +95,7 @@ class MWNO(nn.Module):
 
     >>> from neuralop.models import MWNO
     >>> # 1D time series operator
-    >>> model_1d = MWNO(alpha=12, n_dim=1, in_channels=1, out_channels=1)
+    >>> model_1d = MWNO(n_modes=[16], in_channels=1, out_channels=1)
     >>> x = torch.randn(32, 256, 1)  # (batch, time, channels)
     >>> y = model_1d(x)  # (32, 256) - channel squeezed
 
@@ -135,14 +135,10 @@ class MWNO(nn.Module):
 
     """
 
-    # Default hidden dimension when projection_channels=0
-    DEFAULT_PROJECTION_HIDDEN = 128
 
     def __init__(
             self,
-            n_modes: Optional[Union[int, Tuple[int, ...]]] = None,
-            alpha: Optional[int] = None,
-            n_dim: Optional[int] = None,
+            n_modes: Union[Tuple[int, ...], List[int]],
             in_channels: int = 1,
             out_channels: int = 1,
             k: int = 3,
@@ -153,14 +149,22 @@ class MWNO(nn.Module):
             projection_channels: int = 128,
             base: str = 'legendre',
             initializer: Optional[Callable] = None,
-            **kwargs
     ):
         super().__init__()
 
         # Parse and validate mode specification
-        self.n_modes, self.n_dim, alpha = self._parse_mode_specification(
-            n_modes, alpha, n_dim
-        )
+        if isinstance(n_modes, int):
+            n_modes = (n_modes,)
+        self.n_modes = tuple(n_modes)
+        self.n_dim = len(n_modes)
+        self.alpha = self.n_modes[0]
+
+        # Dim check
+        if self.n_dim not in [1, 2, 3]:
+            raise ValueError(
+                f"MWNO only supports 1D, 2D, and 3D. "
+                f"Got {self.n_dim}D from n_modes={n_modes}"
+            )
 
         # Store configuration
         self.in_channels = in_channels
@@ -170,7 +174,6 @@ class MWNO(nn.Module):
         self.n_layers = n_layers
         self.L = L
         self.base = base
-        self.alpha = alpha
 
         # Calculate channel multiplier for wavelet representation
         # 1D: c * k coefficients, 2D/3D: c * k^2 coefficients
@@ -189,7 +192,7 @@ class MWNO(nn.Module):
         self.mwno_layers = nn.ModuleList([
             MWNO_CZ(
                 k=k,
-                alpha=alpha,
+                alpha=self.alpha,
                 L=L,
                 c=c,
                 base=base,
@@ -206,80 +209,6 @@ class MWNO(nn.Module):
         # Apply custom initialization if provided
         if initializer is not None:
             self._reset_parameters(initializer)
-
-    def _parse_mode_specification(
-            self,
-            n_modes: Optional[Union[int, Tuple[int, ...]]],
-            alpha: Optional[int],
-            n_dim: Optional[int]
-    ) -> Tuple[Tuple[int, ...], int, int]:
-        """
-        Parse and validate the mode specification parameters.
-
-        Supports two ways to specify modes:
-        1. n_modes as tuple: directly specifies modes per dimension
-        2. alpha + n_dim: uses same alpha for all dimensions
-
-        Parameters
-        ----------
-        n_modes : int or Tuple[int, ...], optional
-            Direct mode specification
-        alpha : int, optional
-            Uniform modes for all dimensions
-        n_dim : int, optional
-            Number of spatial dimensions
-
-        Returns
-        -------
-        n_modes : Tuple[int, ...]
-            Parsed modes per dimension
-        n_dim : int
-            Number of spatial dimensions
-        alpha : int
-            Mode value (first element of n_modes)
-
-        Raises
-        ------
-        ValueError
-            If specification is invalid or ambiguous
-        """
-        if n_modes is not None:
-            if isinstance(n_modes, (tuple, list)):
-                # n_modes is tuple: infer n_dim from length
-                parsed_modes = tuple(n_modes)
-                parsed_n_dim = len(parsed_modes)
-                parsed_alpha = n_modes[0]
-            else:
-                # n_modes is int: assume 1D
-                parsed_alpha = n_modes
-                parsed_n_dim = 1
-                parsed_modes = (parsed_alpha,)
-
-        elif alpha is not None:
-            # Use alpha + n_dim specification
-            if n_dim is None:
-                parsed_n_dim = 1  # Default to 1D
-            else:
-                parsed_n_dim = n_dim
-            parsed_modes = tuple([alpha] * parsed_n_dim)
-            parsed_alpha = alpha
-
-        else:
-            raise ValueError(
-                "Either 'n_modes' or 'alpha' must be specified. "
-                "Examples:\n"
-                "  - MWNO(n_modes=(12, 12), ...)\n"
-                "  - MWNO(alpha=12, n_dim=2, ...)"
-            )
-
-        # Validate dimensionality
-        if parsed_n_dim not in [1, 2, 3]:
-            raise ValueError(
-                f"MWNO only supports 1D, 2D, and 3D. Got {parsed_n_dim}D.\n"
-                f"Parsed n_modes: {parsed_modes}"
-            )
-
-        return parsed_modes, parsed_n_dim, parsed_alpha
 
     def _build_lifting_layer(
             self,
@@ -344,15 +273,11 @@ class MWNO(nn.Module):
         nn.Module
             Projection layer (two-layer MLP with ReLU)
         """
-        if projection_channels > 0:
-            hidden_dim = projection_channels
-        else:
-            hidden_dim = self.DEFAULT_PROJECTION_HIDDEN
 
         return nn.Sequential(
-            nn.Linear(channel_multiplier, hidden_dim),
+            nn.Linear(channel_multiplier, projection_channels),
             nn.ReLU(inplace=True),
-            nn.Linear(hidden_dim, out_channels)
+            nn.Linear(projection_channels, out_channels)
         )
 
     def _reset_parameters(self, initializer: Callable) -> None:
@@ -433,49 +358,20 @@ class MWNO(nn.Module):
     def _reshape_to_wavelet_format(self, x: torch.Tensor) -> torch.Tensor:
         """
         Reshape lifted features to wavelet coefficient format.
-
-        Adds the wavelet basis dimension by splitting the channel dimension
-        into (wavelet_channels, basis_functions).
-
-        Parameters
-        ----------
-        x : torch.Tensor
-            Lifted features with shape (*spatial, c*k^n_dim)
-
-        Returns
-        -------
-        torch.Tensor
-            Wavelet format:
-            - 1D: (batch, n_points, c, k)
-            - 2D: (batch, height, width, c, k²)
-            - 3D: (batch, height, width, time, c, k²)
+        Splits the last dimension (c*k^n_dim) into (c, k^n_dim).
         """
-        if self.n_dim == 1:
-            batch_size, n_points, lifted_channels = x.shape
-            expected_channels = self.c * self.k
-            assert lifted_channels == expected_channels, (
-                f"Lifting produced {lifted_channels} channels, "
-                f"expected {expected_channels} (c={self.c} × k={self.k})"
-            )
-            return x.view(batch_size, n_points, self.c, self.k)
+        # Determine basis size: k for 1D, k^2 for 2D/3D
+        basis = self.k if self.n_dim == 1 else self.k ** 2
+        expected_channels = self.c * basis
 
-        elif self.n_dim == 2:
-            batch_size, height, width, lifted_channels = x.shape
-            expected_channels = self.c * self.k ** 2
-            assert lifted_channels == expected_channels, (
-                f"Lifting produced {lifted_channels} channels, "
-                f"expected {expected_channels} (c={self.c} × k²={self.k ** 2})"
-            )
-            return x.view(batch_size, height, width, self.c, self.k ** 2)
+        # Verify channel dimension matches
+        assert x.shape[-1] == expected_channels, (
+            f"Lifting produced {x.shape[-1]} channels, "
+            f"expected {expected_channels} (c={self.c} × basis={basis})"
+        )
 
-        elif self.n_dim == 3:
-            batch_size, height, width, time_steps, lifted_channels = x.shape
-            expected_channels = self.c * self.k ** 2
-            assert lifted_channels == expected_channels, (
-                f"Lifting produced {lifted_channels} channels, "
-                f"expected {expected_channels} (c={self.c} × k²={self.k ** 2})"
-            )
-            return x.view(batch_size, height, width, time_steps, self.c, self.k ** 2)
+        # Use unflatten to split the last dimension
+        return x.unflatten(-1, (self.c, basis))
 
     def _reshape_from_wavelet_format(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -494,19 +390,8 @@ class MWNO(nn.Module):
         torch.Tensor
             Standard format: (*spatial, c*k^n_dim)
         """
-        if self.n_dim == 1:
-            batch_size, n_points = x.shape[0], x.shape[1]
-            return x.view(batch_size, n_points, -1)
-
-        elif self.n_dim == 2:
-            batch_size, height, width = x.shape[0], x.shape[1], x.shape[2]
-            return x.view(batch_size, height, width, -1)
-
-        elif self.n_dim == 3:
-            batch_size, height, width, time_steps = (
-                x.shape[0], x.shape[1], x.shape[2], x.shape[3]
-            )
-            return x.view(batch_size, height, width, time_steps, -1)
+        # Collapse the last two dimensions (c, basis_functions) -> (channels)
+        return x.flatten(-2, -1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -545,9 +430,6 @@ class MWNO(nn.Module):
         >>> x = torch.randn(16, 64, 64, 1)
         >>> y = model(x)  # shape: (16, 64, 64) - channel squeezed
         """
-        # Validate input
-        self._validate_input_shape(x)
-
         # Lift to wavelet space
         x = self.lifting(x)
 

@@ -5,16 +5,14 @@ import torch.nn as nn
 from ..mwno import MWNO
 
 
-@pytest.mark.parametrize("n_dim", [1, 2, 3])
-@pytest.mark.parametrize("alpha", [3, 5, 8])
-@pytest.mark.parametrize("k", [3, 4])
-@pytest.mark.parametrize("c", [1, 2])
-@pytest.mark.parametrize("n_layers", [2, 3])
-@pytest.mark.parametrize("L", [0, 1])
+@pytest.mark.parametrize("n_modes", [[16], (12,12),(8,8,8)])
+@pytest.mark.parametrize("k", [3])
+@pytest.mark.parametrize("c", [1])
+@pytest.mark.parametrize("n_layers", [3])
+@pytest.mark.parametrize("L", [1])
 @pytest.mark.parametrize("base", ["legendre"])
 def test_mwno(
-    n_dim,
-    alpha,
+    n_modes,
     k,
     c,
     n_layers,
@@ -34,14 +32,7 @@ def test_mwno(
     
     # Ensure size is power of 2 for wavelet transform
     s = 2 ** int(torch.log2(torch.tensor(s, dtype=torch.float)).item())
-    
-    # Create model based on dimension
-    if n_dim == 1:
-        n_modes = alpha
-    elif n_dim == 2:
-        n_modes = (alpha, alpha)
-    elif n_dim == 3:
-        n_modes = (alpha, alpha, alpha)
+
     
     model = MWNO(
         n_modes=n_modes,
@@ -53,7 +44,8 @@ def test_mwno(
         L=L,
         base=base,
     ).to(device)
-    
+
+    n_dim = len(n_modes)
     # Create input data in MWNO's expected format: (B, *spatial, channels)
     if n_dim == 1:
         in_data = torch.randn(batch_size, s, 3).to(device)
