@@ -130,13 +130,9 @@ L = 3
 
 # Check if the number of frequencies satisfies the Nyquist-Criterion
 if L < len(x_normalized) / 2:
-    print(
-        f"Nyquist-Shannon sampling theorem is satisfied for the given number of frequencies {L}."
-    )
+    print(f"Nyquist-Shannon sampling theorem is satisfied for the given number of frequencies {L}.")
 else:
-    print(
-        f"Nyquist-Shannon sampling theorem is violated for the given number of frequencies {L}."
-    )
+    print(f"Nyquist-Shannon sampling theorem is violated for the given number of frequencies {L}.")
 
 # Build embedding: [sin(x), cos(x), sin(2x), cos(2x), ...]
 # Each frequency level contributes a sine and cosine pair
@@ -231,13 +227,9 @@ m_tensor = torch.tensor([m])
 
 # Check if the number of frequencies and parameter satisfies the Nyquist-Criterion
 if L <= len(x_normalized) / (2 * m):
-    print(
-        f"Nyquist-Shannon sampling theorem is satisfied for the given parameter {m} and number of frequencies {L}."
-    )
+    print(f"Nyquist-Shannon sampling theorem is satisfied for the given parameter {m} and number of frequencies {L}.")
 else:
-    print(
-        f"Nyquist-Shannon sampling theorem is violated for the given parameter {m} and number of frequencies {L}."
-    )
+    print(f"Nyquist-Shannon sampling theorem is violated for the given parameter {m} and number of frequencies {L}.")
 
 # Build amplitude-modulated embedding: m * g(x)
 g_amplitude = []
@@ -276,9 +268,7 @@ axes[0].locator_params(axis="y", nbins=5)
 for freq_idx in range(L):
     color = colors[freq_idx % len(colors)]
     sin_idx, cos_idx = 2 * freq_idx + 1, 2 * freq_idx + 2
-    axes[1].plot(
-        x, input_frequency[sin_idx], color=color, label=f"Channel {freq_idx + 1}"
-    )
+    axes[1].plot(x, input_frequency[sin_idx], color=color, label=f"Channel {freq_idx + 1}")
     axes[1].plot(x, input_frequency[cos_idx], color=color)
 axes[1].set_title("Frequency Modulation", fontsize=18, pad=20)
 axes[1].set_ylabel("Embedding value", fontsize=16)
@@ -364,13 +354,9 @@ L = 3
 
 # Check if the number of frequencies satisfies the Nyquist-Criterion
 if L <= 1 + torch.log2(torch.tensor(len(x_normalized) / 2)):
-    print(
-        f"Nyquist-Shannon sampling theorem is satisfied for the given number of frequencies {L}."
-    )
+    print(f"Nyquist-Shannon sampling theorem is satisfied for the given number of frequencies {L}.")
 else:
-    print(
-        f"Nyquist-Shannon sampling theorem is violated for the given number of frequencies {L}."
-    )
+    print(f"Nyquist-Shannon sampling theorem is violated for the given number of frequencies {L}.")
 
 # Define the transformer embedding
 # max_positions controls the frequency scaling in transformer-style embeddings
@@ -402,9 +388,7 @@ for freq_idx in range(L):
     color = colors[freq_idx % len(colors)]
     sin_idx, cos_idx = 2 * freq_idx, 2 * freq_idx + 1
 
-    axes[0].plot(
-        x, transformer_embedding[sin_idx], color=color, label=f"Channel {freq_idx + 1}"
-    )
+    axes[0].plot(x, transformer_embedding[sin_idx], color=color, label=f"Channel {freq_idx + 1}")
     axes[0].plot(x, transformer_embedding[cos_idx], color=color)
 
 axes[0].set_title("Transformer embedding", fontsize=18, pad=20)
@@ -417,9 +401,7 @@ for freq_idx in range(L):
     color = colors[freq_idx % len(colors)]
     sin_idx, cos_idx = 2 * freq_idx, 2 * freq_idx + 1
 
-    axes[1].plot(
-        x, nerf_embedding[sin_idx], color=color, label=f"Channel {freq_idx + 1}"
-    )
+    axes[1].plot(x, nerf_embedding[sin_idx], color=color, label=f"Channel {freq_idx + 1}")
     axes[1].plot(x, nerf_embedding[cos_idx], color=color)
 
 axes[1].set_title("NeRF embedding", fontsize=18, pad=20)
@@ -427,11 +409,7 @@ axes[1].set_xlabel("x", fontsize=16)
 axes[1].set_ylabel("Embedding value", fontsize=16)
 axes[1].locator_params(axis="y", nbins=5)
 
-plt.suptitle(
-    "Sinusoidal Embeddings using transformer and NeRF embedding types",
-    y=0.98,
-    fontsize=20,
-)
+plt.suptitle("Sinusoidal Embeddings using transformer and NeRF embedding types", y=0.98, fontsize=20)
 plt.tight_layout()
 plt.show()
 
@@ -476,13 +454,9 @@ m_tensor = torch.tensor([m])
 
 # Check if the number of frequencies and parameter satisfies the Nyquist-Criterion
 if L <= 1 + torch.log2(torch.tensor(len(x) / (2 * m))):
-    print(
-        f"Nyquist-Shannon sampling theorem is satisfied for the given parameter {m} and number of frequencies {L}."
-    )
+    print(f"Nyquist-Shannon sampling theorem is satisfied for the given parameter {m} and number of frequencies {L}.")
 else:
-    print(
-        f"Nyquist-Shannon sampling theorem is violated for the given parameter {m} and number of frequencies {L}."
-    )
+    print(f"Nyquist-Shannon sampling theorem is violated for the given parameter {m} and number of frequencies {L}.")
 
 # Define the NeRF embedding
 nerf_embedder = SinusoidalEmbedding(
@@ -529,13 +503,9 @@ m_tensor = torch.tensor([m])
 
 # Check if the number of frequencies and parameter satisfies the Nyquist-Criterion
 if L <= 1 + torch.log2(torch.tensor(len(x) / 2)):
-    print(
-        f"Nyquist-Shannon sampling theorem is satisfied for the given number of frequencies {L}."
-    )
+    print(f"Nyquist-Shannon sampling theorem is satisfied for the given number of frequencies {L}.")
 else:
-    print(
-        f"Nyquist-Shannon sampling theorem is violated for the given number of frequencies {L}."
-    )
+    print(f"Nyquist-Shannon sampling theorem is violated for the given number of frequencies {L}.")
 
 # Define the embedding
 nerf_embedder = SinusoidalEmbedding(
@@ -623,52 +593,42 @@ plt.show()
 #
 #    <div style="margin-top: 2em;"></div>
 #
-# Below, we include an example of using the `SinusoidalEmbedding` class to construct NeRF-style
-# embeddings for a 3D input.
+# Below, we include an example of using the `SinusoidalEmbedding` class to construct both
+# transformer- and NeRF-style embeddings for a 3D input.
 
 # %%
 
-# Define a 1D spatial domain and construct 3D input by repeating the normalized 1D domain
+# Define a 1D spatial domain and construct 3D input by repeating the 1D domain
 dim = 3
 x_1d = torch.linspace(0, 1, 1000)
-# Normalize to [0, 2π] and add channel dimension
-x_normalized_1d = torch.linspace(
-    0, 2 * torch.pi, x_1d.size(0), device=x_1d.device
-).unsqueeze(1)
-# Repeat for 3D input: shape (N, 3)
+# For transformer: normalize to [0, 2π] and repeat for 3D input, shape (N, 3)
+x_normalized_1d = torch.linspace(0, 2 * torch.pi, x_1d.size(0), device=x_1d.device).unsqueeze(1)
 x_normalized = x_normalized_1d.repeat(1, dim)
+# For NeRF: coordinates in [0, 1] per dimension, shape (N, 3)
+x_3d = x_1d.unsqueeze(1).repeat(1, dim)
 
 # Define the number of frequencies
 L = 3
 
 # Check if the number of frequencies satisfies the Nyquist-Criterion
 # For multi-dimensional inputs, the constraint applies to each dimension independently
-if L <= 1 + torch.log2(torch.tensor(len(x_normalized) / 2)):
-    print(
-        f"Nyquist-Shannon sampling theorem is satisfied for the given number of frequencies {L}."
-    )
+if L <= 1 + torch.log2(torch.tensor(len(x_3d) / 2)):
+    print(f"Nyquist-Shannon sampling theorem is satisfied for the given number of frequencies {L}.")
 else:
-    print(
-        f"Nyquist-Shannon sampling theorem is violated for the given number of frequencies {L}."
-    )
+    print(f"Nyquist-Shannon sampling theorem is violated for the given number of frequencies {L}.")
 
-# Define the transformer embedding
+# Transformer-style 3D embedding: use normalized coordinates [0, 2π]
 max_positions = 1000
 transformer_embedder = SinusoidalEmbedding(
-    in_channels=3,
+    in_channels=dim,
     num_frequencies=L,
     embedding_type="transformer",
     max_positions=max_positions,
 ).to(device)
-
-# Transformer example uses normalized coordinates; NeRF uses coordinates in [0, 1]
-# Apply transformer-style embedding
 transformer_embedding = transformer_embedder(x_normalized).permute(1, 0)
 
-# Define the NeRF embedding
+# NeRF-style 3D embedding: use coordinates in [0, 1] per dimension
 nerf_embedder = SinusoidalEmbedding(
     in_channels=dim, num_frequencies=L, embedding_type="nerf"
 ).to(device)
-
-# Apply NeRF-style embedding, with the domain [0, 1]
-nerf_embedding = nerf_embedder(x_1d.unsqueeze(1).repeat(1, dim)).permute(1, 0)
+nerf_embedding = nerf_embedder(x_3d).permute(1, 0)
