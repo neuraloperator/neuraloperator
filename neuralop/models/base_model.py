@@ -101,11 +101,29 @@ class BaseModel(torch.nn.Module):
 
         """
         state_dict = super().state_dict(destination=destination, prefix=prefix, keep_vars=keep_vars)
-        if state_dict.get('_metadata') == None:
-            state_dict['_metadata'] = self._init_kwargs
+        metadata_key = prefix + "_metadata"
+        if state_dict.get(metadata_key) is None:
+            state_dict[metadata_key] = self._init_kwargs
         else:
             warnings.warn("Attempting to update metadata for a module with metadata already in self.state_dict()")
         return state_dict
+
+    def _check_and_pop_metadata(self, state_dict, prefix):
+        """Pop this module's metadata from state_dict and run version checks.
+        """
+        metadata_key = prefix + "_metadata"
+        metadata = state_dict.pop(metadata_key, None)
+        if metadata is not None:
+            saved_version = metadata.get("_version", None)
+            if saved_version is None:
+                warnings.warn(
+                    f"Saved instance of {self.__class__} has no stored version attribute."
+                )
+            elif saved_version != self._version:
+                warnings.warn(
+                    f"Attempting to load a {self.__class__} of version {saved_version}, "
+                    f"but current version of {self.__class__} is {self._version}"
+                )
 
     def load_state_dict(self, state_dict, strict=True, assign=False):
         """load_state_dict subclasses nn.Module.load_state_dict() and adds a metadata field
@@ -130,19 +148,22 @@ class BaseModel(torch.nn.Module):
         _type_
             _description_
         """
-        metadata = state_dict.pop("_metadata", None)
-
-        if metadata is not None:
-            saved_version = metadata.get("_version", None)
-            if saved_version is None:
-                warnings.warn(f"Saved instance of {self.__class__} has no stored version attribute.")
-            if saved_version != self._version:
-                warnings.warn(
-                    f"Attempting to load a {self.__class__} of version {saved_version},"
-                    f"But current version of {self.__class__} is {self._version}"
-                )
-            # remove state dict metadata at the end to ensure proper loading with PyTorch module
+        self._check_and_pop_metadata(state_dict, "")
         return super().load_state_dict(state_dict, strict=strict, assign=assign)
+
+    def _load_from_state_dict(
+        self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+    ):
+        """Pop this module's _metadata from state_dict so it is not treated as an unexpected key.
+
+        When this module is used inside a container (e.g. nn.Sequential), the parent's
+        load_state_dict calls _load_from_state_dict with a prefixed state_dict; we must
+        remove our metadata key so strict loading does not fail.
+        """
+        self._check_and_pop_metadata(state_dict, prefix)
+        super()._load_from_state_dict(
+            state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+        )
 
     def save_checkpoint(self, save_folder, save_name):
         """Saves the model state and init param in the given folder under the given name"""

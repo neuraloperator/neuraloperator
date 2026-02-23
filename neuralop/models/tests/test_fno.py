@@ -1,7 +1,10 @@
 from math import prod
 
+import warnings
+
 import pytest
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from tensorly import tenalg
 
@@ -245,3 +248,30 @@ def test_fno_channel_mlp_params(channel_mlp_dropout, channel_mlp_expansion, non_
 
     # Check output size
     assert list(out.shape) == [batch_size, 1, *size]
+
+
+def test_fno_sequential_state_dict():
+    """Test for using FNOs inside nn.Sequential.
+    """
+
+    fno1 = FNO((8,), 2, 5, 32)
+    fno2 = FNO((8,), 5, 1, 32)
+    total_model = nn.Sequential(fno1, fno2)
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        state_dict = total_model.state_dict()
+    metadata_warnings = [x for x in w if "metadata" in str(getattr(x.message, "", ""))]
+    assert not metadata_warnings, "state_dict() should not warn about metadata"
+
+    assert "0._metadata" in state_dict
+    assert "1._metadata" in state_dict
+    assert "_metadata" not in state_dict, "container should not have unprefixed _metadata"
+    assert state_dict["0._metadata"]["_name"] == "FNO"
+    assert state_dict["1._metadata"]["_name"] == "FNO"
+
+    total_model_2 = nn.Sequential(
+        FNO((8,), 2, 5, 32),
+        FNO((8,), 5, 1, 32),
+    )
+    total_model_2.load_state_dict(state_dict, strict=True)
