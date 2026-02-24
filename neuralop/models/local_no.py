@@ -153,6 +153,13 @@ class LocalNO(BaseModel, name="LocalNO"):
         Whether to compute LocalNO forward pass with ResNet-style preactivation. Default: False
     conv_module : nn.Module, optional
         Module to use for LocalNOBlock's convolutions. Default: SpectralConv
+    enforce_hermitian_symmetry : bool, optional
+        Whether to enforce Hermitian symmetry conditions when performing inverse FFT
+        for real-valued data. Only used when ``conv_module`` is :class:`SpectralConv`
+        or a subclass; ignored otherwise. When True, explicitly enforces that the 0th
+        frequency and Nyquist frequency are real-valued before calling irfft. When False,
+        relies on cuFFT's irfftn to handle symmetry automatically, which may fail on
+        certain GPUs or input sizes, causing line artifacts. By default True.
 
     Examples
     ---------
@@ -220,6 +227,7 @@ class LocalNO(BaseModel, name="LocalNO"):
         separable: bool = False,
         preactivation: bool = False,
         conv_module: nn.Module = SpectralConv,
+        enforce_hermitian_symmetry: bool = True,
     ):
         super().__init__()
         self.n_dim = len(n_modes)
@@ -328,6 +336,7 @@ class LocalNO(BaseModel, name="LocalNO"):
             decomposition_kwargs=decomposition_kwargs,
             conv_module=conv_module,
             n_layers=n_layers,
+            enforce_hermitian_symmetry=enforce_hermitian_symmetry,
         )
 
         # if adding a positional embedding, add those channels to lifting

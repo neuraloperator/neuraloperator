@@ -138,6 +138,13 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         Additional parameters to pass to the tensor decomposition. Default: {}
     fno_conv_module : nn.Module, optional
         Spectral convolution module to use. Default: SpectralConv
+    fno_enforce_hermitian_symmetry : bool, optional
+        Whether to enforce Hermitian symmetry conditions when performing inverse FFT
+        for real-valued data in the FNO branch. Only used in :class:`SpectralConv`;
+        ignored otherwise. When True, explicitly enforces that the 0th frequency and
+        Nyquist frequency are real-valued before calling irfft. When False, relies on
+        cuFFT's irfftn to handle symmetry automatically, which may fail on certain
+        GPUs or input sizes, causing line artifacts. By default True.
     """
 
     def __init__(
@@ -184,6 +191,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
         fno_implementation="factorized",
         fno_decomposition_kwargs=dict(),
         fno_conv_module=SpectralConv,
+        fno_enforce_hermitian_symmetry=True,
     ):
         super().__init__()
 
@@ -272,6 +280,7 @@ class FNOGNO(BaseModel, name="FNOGNO"):
             implementation=fno_implementation,
             decomposition_kwargs=fno_decomposition_kwargs,
             conv_module=fno_conv_module,
+            enforce_hermitian_symmetry=fno_enforce_hermitian_symmetry,
         )
 
         self.gno_radius = gno_radius

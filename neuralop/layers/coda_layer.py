@@ -74,6 +74,13 @@ class CODALayer(nn.Module):
         Spectral convolution module to be used, by default SpectralConv
     joint_factorization : bool, optional
         Whether to factorize all spectralConv weights as one tensor, by default False
+    enforce_hermitian_symmetry : bool, optional
+        Whether to enforce Hermitian symmetry conditions when performing inverse FFT
+        for real-valued data. Only used when ``conv_module`` is :class:`SpectralConv`
+        or a subclass; ignored otherwise. When True, explicitly enforces that the 0th
+        frequency and Nyquist frequency are real-valued before calling irfft. When False,
+        relies on cuFFT's irfftn to handle symmetry automatically, which may fail on
+        certain GPUs or input sizes, causing line artifacts. By default True.
 
     References
     ----------
@@ -112,6 +119,7 @@ class CODALayer(nn.Module):
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=None,
+        enforce_hermitian_symmetry=True,
     ):
         super().__init__()
 
@@ -175,6 +183,7 @@ class CODALayer(nn.Module):
             separable=separable,
             factorization=factorization,
             decomposition_kwargs=decomposition_kwargs,
+            enforce_hermitian_symmetry=enforce_hermitian_symmetry,
         )
 
         kqv_args = dict(

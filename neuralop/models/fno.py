@@ -135,6 +135,13 @@ class FNO(BaseModel, name="FNO"):
         Whether to compute FNO forward pass with resnet-style preactivation. Default: False
     conv_module : nn.Module, optional
         Module to use for FNOBlock's convolutions. Default: SpectralConv
+    enforce_hermitian_symmetry : bool, optional
+        Whether to enforce Hermitian symmetry conditions when performing inverse FFT
+        for real-valued data. Only used when ``conv_module`` is :class:`SpectralConv`
+        or a subclass; ignored otherwise. When True, explicitly enforces that the 0th
+        frequency and Nyquist frequency are real-valued before calling irfft. When False,
+        relies on cuFFT's irfftn to handle symmetry automatically, which may fail on
+        certain GPUs or input sizes, causing line artifacts. By default True.
 
     Examples
     ---------
@@ -192,6 +199,7 @@ class FNO(BaseModel, name="FNO"):
         separable: bool = False,
         preactivation: bool = False,
         conv_module: nn.Module = SpectralConv,
+        enforce_hermitian_symmetry: bool = True,
     ):
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
@@ -296,6 +304,7 @@ class FNO(BaseModel, name="FNO"):
             decomposition_kwargs=decomposition_kwargs,
             conv_module=conv_module,
             n_layers=n_layers,
+            enforce_hermitian_symmetry=enforce_hermitian_symmetry,
         )
 
         ## Lifting layer
