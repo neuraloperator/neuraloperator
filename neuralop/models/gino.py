@@ -158,7 +158,7 @@ class GINO(BaseModel):
         GPUs or input sizes, causing line artifacts. By default True.
 
     References
-    -----------
+    ----------
     .. [1] : Li, Z., Kovachki, N., Choy, C., Li, B., Kossaifi, J., Otta, S.,
         Nabian, M., Stadler, M., Hundt, C., Azizzadenesheli, K., Anandkumar, A. (2023)
         Geometry-Informed Neural Operator for Large-Scale 3D PDEs. NeurIPS 2023,

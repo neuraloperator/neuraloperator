@@ -29,7 +29,7 @@ class LocalNO(BaseModel, name="LocalNO"):
     Fourier layers as detailed in [1]_.
 
     Parameters
-    ---------------
+    ----------
     n_modes : Tuple[int]
         Number of modes to keep in Fourier Layer, along each dimension.
         The dimensionality of the Local NO is inferred from len(n_modes).
@@ -162,7 +162,7 @@ class LocalNO(BaseModel, name="LocalNO"):
         certain GPUs or input sizes, causing line artifacts. By default True.
 
     Examples
-    ---------
+    --------
 
     >>> from neuralop.models import LocalNO
     >>> model = LocalNO(n_modes=(12,12), in_channels=1, out_channels=1, hidden_channels=64)
@@ -178,7 +178,7 @@ class LocalNO(BaseModel, name="LocalNO"):
             ... torch.nn.Module printout truncated ...
 
     References
-    -----------
+    ----------
     .. [1] Liu-Schiaffini M., Berner J., Bonev B., Kurth T., Azizzadenesheli K., Anandkumar A.;
         "Neural Operators with Localized Integral and Differential Kernels" (2024).
         ICML 2024, https://arxiv.org/pdf/2402.16845.

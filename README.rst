@@ -6,9 +6,9 @@
    :target: https://github.com/NeuralOperator/neuraloperator/actions/workflows/test.yml
 
 
-#######################################################################
+###############################################
 NeuralOperator: Learning in Infinite Dimensions
-#######################################################################
+###############################################
 
 NeuralOperator is a comprehensive PyTorch library for learning neural operators,
 containing the official implementation of Fourier Neural Operators and other neural operator architectures.

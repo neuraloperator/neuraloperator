@@ -28,8 +28,8 @@ class CODANO(nn.Module):
         The number of Fourier modes to use in integral operators in the CoDA-NO block along each dimension.
         Example: For a 5-layer 2D CoDA-NO, n_modes=[[16, 16], [16, 16], [16, 16], [16, 16], [16, 16]]
 
-    Other parameters
-    ---------------
+    Other Parameters
+    ----------------
     output_variable_codimension : int, optional
         The number of output channels (or output codomain dimension) corresponding to each input variable (or input channel).
         Example: For an input with 3 variables (channels) and output_variable_codimension=2, the output will have 6 channels (3 variables × 2 codimension). Default: 1
@@ -134,11 +134,11 @@ class CODANO(nn.Module):
         certain GPUs or input sizes, causing line artifacts. By default True.
 
     References
-    -----------
-    .. [1] : Rahman, Md Ashiqur, et al. "Pretraining codomain attention neural operators for solving multiphysics pdes." (2024).
-    NeurIPS 2024. https://arxiv.org/pdf/2403.12553.
-
-    .. [2] : Devlin, Jacob, et al. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.
+    ----------
+    .. [1] Rahman, Md Ashiqur, et al. "Pretraining codomain attention neural operators for solving multiphysics pdes." (2024).
+        NeurIPS 2024. https://arxiv.org/pdf/2403.12553.
+        
+    .. [2] Devlin, Jacob, et al. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.
 
     """
 

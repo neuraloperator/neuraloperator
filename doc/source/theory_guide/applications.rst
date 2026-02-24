@@ -5,7 +5,7 @@ Neural Operator Applications
 ============================
 
 This guide presents examples of neural operator applications across scientific and 
-engineering domains, demonstrating their transformative impact on computational 
+engineering domains [1]_, demonstrating their transformative impact on computational 
 science and real-world problem solving.
 
 Introduction
@@ -78,7 +78,7 @@ noise or missing information.
    <div style="margin-top: 3em;"></div>
 
 Nuclear Fusion and Plasma Physics
-==================================
+=================================
 
 **Magnetohydrodynamic Simulations**
 
@@ -145,7 +145,7 @@ and effectiveness of these technologies.
    <div style="margin-top: 3em;"></div>
 
 Weather and Climate Forecasting
-=================================
+===============================
 
 **Numerical Weather Prediction**
 
@@ -190,7 +190,7 @@ climate changes and inform mitigation strategies.
    <div style="margin-top: 3em;"></div>
 
 Medicine and Healthcare
-========================
+=======================
 
 **Medical Imaging Applications**
 
@@ -238,12 +238,12 @@ complex biological systems at unprecedented resolution.
    <div style="margin-top: 3em;"></div>
 
 Computer Vision
-================
+===============
 
 Neural operators have been effectively adapted to computer vision tasks. 
-They have served as efficient token mixers in vision transformers [32]_, sped up diffusion 
-model sampling for faster image and media generation [33]_, and have been applied in 
-image classification [34]_ and segmentation [35]_. 
+They have served as efficient token mixers in vision transformers [28]_, sped up diffusion 
+model sampling for faster image and media generation [29]_, and have been applied in 
+image classification [30]_ and segmentation [31]_. 
 
 Their ability to handle images at multiple resolutions and integrate with existing deep 
 learning methods makes them a versatile tool for vision applications.

@@ -1,4 +1,5 @@
-.. _fno_intro :
+.. _fno_intro:
+
 ========================
 Fourier Neural Operators
 ========================
@@ -245,7 +246,9 @@ one axis. Therefore it is sufficient to keep only two of the four corners of the
 
 Shifting the FFT signal
 -----------------------
-.. _fft_shift_explanation :
+
+.. _fft_shift_explanation:
+
 Equivalently, we could also apply a periodic FFT-shift using :code:`torch.fft.fftshift` to move the zero-frequency component
 to the center of the FFT matrix, such that the matrix would be indexed with modes :code:`-n//2, -n//2 + 1, ...-1, 0, 1, ...`
 as shown below:
@@ -263,7 +266,7 @@ as shown below:
    <div style="margin-top: 3em;"></div>
 
 Convolutional Filters in Fourier Space
----------------------------------------
+--------------------------------------
 
 .. image:: /_static/images/filters.jpg
   :width: 800
@@ -396,7 +399,7 @@ defined by :math:`a \mapsto u`. Note that although the PDE is linear, the soluti
    <div style="margin-top: 3em;"></div>
 
 Benchmarks for time-independent problems (Burgers and Darcy):
------------------------------------------------------------
+-------------------------------------------------------------
 
  - NN: a simple point-wise feedforward neural network.
  - RBM: the classical Reduced Basis Method (using a POD basis).
@@ -412,7 +415,7 @@ Benchmarks for time-independent problems (Burgers and Darcy):
    <div style="margin-top: 3em;"></div>
 
 Navier-Stokes Equation
------------------------
+----------------------
 
 We consider the 2D Navier-Stokes equation for a viscous,
 incompressible fluid in vorticity form on the unit torus:

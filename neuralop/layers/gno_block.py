@@ -22,12 +22,11 @@ class GNOBlock(nn.Module):
     Optionally, if provided, the input and output queries can have a positional embedding
     applied using the argument pos_embedding.
 
-    The kernel integral computed in IntegralTransform
-    computes one of the following:
-        (a) \\int_{A(x)} k(x, y) dy
-        (b) \\int_{A(x)} k(x, y) * f(y) dy
-        (c) \\int_{A(x)} k(x, y, f(y)) dy
-        (d) \\int_{A(x)} k(x, y, f(y)) * f(y) dy
+    The kernel integral computed in IntegralTransform computes one of:
+    (a) \\int_{A(x)} k(x, y) dy
+    (b) \\int_{A(x)} k(x, y) * f(y) dy
+    (c) \\int_{A(x)} k(x, y, f(y)) dy
+    (d) \\int_{A(x)} k(x, y, f(y)) * f(y) dy
 
     Parameters
     ----------
@@ -48,7 +47,7 @@ class GNOBlock(nn.Module):
         integral transform by summing ('sum') or averaging ('mean'), by default 'sum'
 
     Other Parameters
-    -----------------
+    ----------------
     transform_type : str, optional
         Which integral transform to compute. Options: 'linear_kernelonly', 'linear', 'nonlinear_kernelonly', 'nonlinear'.
         The mapping is:
@@ -96,7 +95,7 @@ class GNOBlock(nn.Module):
             uses PyTorch native fallback neighbor search.
 
     Examples
-    ---------
+    --------
     ```
     >>> gno = GNOBlock(in_channels=2, out_channels=12, coord_dim=3, radius=0.035)
 
@@ -118,8 +117,8 @@ class GNOBlock(nn.Module):
     ```
 
     References
-    -----------
-    .. [1] : Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya,
+    ----------
+    .. [1] Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya,
         Anima Anandkumar (2020). "Neural Operator: Graph Kernel Network for
         Partial Differential Equations." ArXiV, https://arxiv.org/pdf/2003.03485.
     """
@@ -228,8 +227,8 @@ class GNOBlock(nn.Module):
             hence its output shape must be d3 for the transforms
             (b) or (d). If None, (a) is computed.
 
-        Output
-        ----------
+        Returns
+        -------
         out_features : torch.Tensor of shape [batch, m, d3] or [m, d3]
             Output function given on the points x.
             d4 is the output size of the kernel k.

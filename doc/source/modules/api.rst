@@ -12,16 +12,16 @@ API reference
 
 .. _neuralop_models_ref:
 
-=======
+======
 Models
-=======
+======
 
 In :mod:`neuralop.models`, we provide neural operator models you can directly use on your applications.
 
 .. _fno_api:
 
 FNO
-----
+---
 
 We provide a general Fourier Neural Operator (FNO) that supports most usecases.
 
@@ -39,7 +39,7 @@ It works for any dimension, which is inferred based on `n_modes`
 .. _tfno_api:
 
 Tensorized FNO (TFNO)
-----------------------
+---------------------
 
 .. autosummary::
     :toctree: generated
@@ -52,7 +52,7 @@ Tensorized FNO (TFNO)
 .. _sfno_api:
 
 Spherical Fourier Neural Operators (SFNO)
---------------------------------------------
+-----------------------------------------
 
 .. autosummary::
     :toctree: generated
@@ -65,7 +65,7 @@ Spherical Fourier Neural Operators (SFNO)
 .. _gino_api:
 
 Geometry-Informed Neural Operators (GINO)
-------------------------------------------
+-----------------------------------------
 
 .. autosummary::
     :toctree: generated
@@ -78,7 +78,7 @@ Geometry-Informed Neural Operators (GINO)
 .. _local_no_api:
 
 Local Neural Operators (LocalNO)
---------------------------------------------
+--------------------------------
 
 .. autosummary::
     :toctree: generated
@@ -91,7 +91,7 @@ Local Neural Operators (LocalNO)
 .. _uno_api:
 
 U-shaped Neural Operators (U-NO)
----------------------------------
+--------------------------------
 
 .. autosummary::
     :toctree: generated
@@ -104,7 +104,7 @@ U-shaped Neural Operators (U-NO)
 .. _rno_api:
 
 Recurrent Neural Operators (RNO)
----------------------------------
+--------------------------------
 
 .. autosummary::
     :toctree: generated
@@ -117,7 +117,7 @@ Recurrent Neural Operators (RNO)
 .. _otno_api:
 
 Optimal Transport Neural Operators (OTNO)
-------------------------------------------
+-----------------------------------------
 
 .. autosummary::
     :toctree: generated
@@ -172,9 +172,9 @@ Codomain Attention Neural Operators (CODANO)
 
 .. _neuralop_layers_ref:
 
-=======
+======
 Layers
-=======
+======
 
 .. automodule:: neuralop.layers
     :no-members:
@@ -223,7 +223,7 @@ RNO Blocks
 .. _spectral_conv_api:
 
 Fourier Convolutions
----------------------
+--------------------
 .. automodule:: neuralop.layers.spectral_convolution
     :no-members:
     :no-inherited-members:
@@ -239,7 +239,7 @@ Fourier Convolutions
 .. _spherical_conv_api:
 
 Spherical Convolutions
------------------------
+----------------------
 
 .. automodule:: neuralop.layers.spherical_convolution
     :no-members:
@@ -474,9 +474,9 @@ Complex-value Support
    <hr style="margin: 4em 0; border: none; border-top: 2px solid #e0e0e0;">
 
 
-===================
+=================
 Model Dispatching
-===================
+=================
 We provide a utility function to create model instances from a configuration.
 It has the advantage of doing some checks on the parameters it receives.
 
@@ -497,9 +497,9 @@ It has the advantage of doing some checks on the parameters it receives.
 
    <hr style="margin: 4em 0; border: none; border-top: 2px solid #e0e0e0;">
 
-=========
+========
 Training
-=========
+========
 We provide functionality that automates the boilerplate code associated with 
 training a machine learning model to minimize a loss function on a dataset:
 
@@ -550,12 +550,12 @@ Multi-Grid Patching
 
    <hr style="margin: 4em 0; border: none; border-top: 2px solid #e0e0e0;">
 
-===============
+==============
 Loss Functions
-===============
+==============
 
 Data Losses
-------------
+-----------
 
 .. automodule:: neuralop.losses.data_losses
     :no-members:
@@ -658,14 +658,14 @@ Spectral projection utilities for enforcing physical constraints:
 
    <hr style="margin: 4em 0; border: none; border-top: 2px solid #e0e0e0;">
 
-========
+====
 Data
-========
+====
 
 In `neuralop.data`, we provide APIs for standardizing PDE datasets (`.datasets`) and transforming raw data into model inputs (`.transforms`).
 
 Datasets
-----------
+--------
 
 We ship a small dataset for testing:
 
@@ -730,14 +730,6 @@ We provide downloadable datasets for Darcy-Flow, Navier-Stokes, and Car-CFD.
     :template: function.rst
 
     load_mini_burgers_1dtime
-
-
-.. autosummary::
-    :toctree: generated
-    :template: class.rst
-
-    SphericalSWEDataset
-
 
 
 .. note::

@@ -109,7 +109,7 @@ class UNO(nn.Module):
         certain GPUs or input sizes, causing line artifacts. By default True.
 
     References
-    -----------
+    ----------
     .. [1] :
 
     Rahman, M.A., Ross, Z., Azizzadenesheli, K. "U-NO: U-shaped

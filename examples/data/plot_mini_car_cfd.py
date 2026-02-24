@@ -1,7 +1,7 @@
 """
 Visualizing computational fluid dynamics on a car
 ===================================================
-In this example we visualize a mesh drawn from the :ref:`CarCFDDataset <car_cfd_dataset_api>`.
+In this example we visualize a mesh drawn from the :class:`~neuralop.data.datasets.car_cfd_dataset.CarCFDDataset`.
 
 This tutorial demonstrates how to work with unstructured mesh data from computational fluid dynamics (CFD)
 simulations. We will explore the 3D geometry of a car and understand how pressure fields are distributed
@@ -48,7 +48,7 @@ np.random.seed(0)
 # The 3D Navier-Stokes equations were simulated for a variety of inlet velocities over each surface using the
 # **OpenFOAM** computational solver to predict pressure at every vertex on the mesh.
 # Each sample here also has an inlet velocity scalar and a pressure field that maps 1-to-1 with the vertices on the mesh.
-# The :ref:`full CarCFDDataset <car_cfd_dataset_api>` is stored in triangle mesh files for downstream processing.
+# The :class:`CarCFDDataset <neuralop.data.datasets.car_cfd_dataset.CarCFDDataset>` (full dataset) is stored in triangle mesh files for downstream processing.
 # For the sake of simplicity, we've packaged a few examples of the data after processing in tensor form to visualize here:
 
 data_list = load_mini_car()
@@ -169,7 +169,7 @@ plt.draw()
 #    <div style="margin-top: 3em;"></div>
 #
 # Connecting neighbors to query
-# ----------------------------
+# ------------------------------
 # First, let's make a simple utiltiy to add arrows to our 3D plot:
 
 import numpy as np

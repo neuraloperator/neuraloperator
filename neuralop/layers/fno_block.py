@@ -65,7 +65,7 @@ class FNOBlocks(nn.Module):
         If None, no skip connection is added. See layers.skip_connections for more details
 
     Other Parameters
-    -------------------
+    ----------------
     complex_data : bool, optional
         Whether the FNO's data takes on complex values in space, by default False
     separable : bool, optional
@@ -93,7 +93,7 @@ class FNOBlocks(nn.Module):
         certain GPUs or input sizes, causing line artifacts. By default True.
 
     References
-    -----------
+    ----------
     .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
            Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
     .. [2] Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid

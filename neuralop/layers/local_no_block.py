@@ -107,7 +107,7 @@ class LocalNOBlocks(nn.Module):
         If None, no skip connection is added. See layers.skip_connections for more details
 
     Other Parameters
-    ---------------
+    ----------------
     complex_data : bool, optional
         Whether the data takes complex values in space, by default False
     separable : bool, optional
