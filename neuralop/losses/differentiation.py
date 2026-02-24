@@ -43,12 +43,33 @@ class FiniteDiff:
         When False, uses high-order one-sided differences at boundaries.
         Only used for 3D fields.
 
-    Notes
-    -----
-    **Derivative methods:** dx(u, order=1), dy(u, order=1), dz(u, order=1).
-    **Vector calculus:** laplacian(u), gradient(u), divergence(u), curl(u).
-    **First-order:** Interior (2nd order central): (f_{i+1} - f_{i-1})/(2h); boundaries use 3rd order one-sided stencils.
-    **Second-order:** Interior: (f_{i+1} - 2f_i + f_{i-1})/(h²); boundaries use 3rd order stencils.
+
+    Available Methods
+    ----------------
+    Derivative Methods:
+    - dx(u, order=1): Compute derivative with respect to x
+    - dy(u, order=1): Compute derivative with respect to y (2D/3D only)
+    - dz(u, order=1): Compute derivative with respect to z (3D only)
+
+    Vector Calculus Operators:
+    - laplacian(u): Compute the Laplacian ∇²f
+    - gradient(u): Compute the gradient ∇f (returns vector field)
+    - divergence(u): Compute the divergence ∇·u (for vector fields)
+    - curl(u): Compute the curl ∇×u (for vector fields, 2D/3D only)
+
+
+    Mathematical Formulas
+    ---------------------
+    For first-order derivatives:
+    - Interior: (f_{i+1} - f_{i-1})/(2h)  [2nd order central]
+    - Left boundary: (-11f_0 + 18f_1 - 9f_2 + 2f_3)/(6h)  [3rd order forward]
+    - Right boundary: (-2f_{n-4} + 9f_{n-3} - 18f_{n-2} + 11f_{n-1})/(6h)  [3rd order backward]
+
+    For second-order derivatives:
+    - Interior: (f_{i+1} - 2f_i + f_{i-1})/(h²)  [2nd order central]
+    - Left boundary: (2f_0 - 5f_1 + 4f_2 - f_3)/(h²)  [3rd order forward]
+    - Right boundary: (-f_{n-4} + 4f_{n-3} - 5f_{n-2} + 2f_{n-1})/(h²)  [3rd order backward]
+    
 
     Examples
     --------
