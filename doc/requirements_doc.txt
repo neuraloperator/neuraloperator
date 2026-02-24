@@ -1,4 +1,4 @@
-setuptools>=40.0
+setuptools>=40.0,<80
 matplotlib
 myst-nb
 numpydoc

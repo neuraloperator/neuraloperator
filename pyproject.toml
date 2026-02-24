@@ -5,7 +5,6 @@ authors = [
     {name = "Jean Kossaifi <jean.kossaifi@gmail.com>, David Pitt <david.h.pitt@gmail.com>, Nik Kovachki, Zongyi Li", email="david.h.pitt@gmail.com"},
 ]
 dependencies = [
-    "setuptools>=40.0",
     "wandb",
     "ruamel-yaml",
     "zencfg",
@@ -55,6 +54,7 @@ doc = [
     "sphinx",
     "sphinx-gallery",
     "sphinx-design",
+    "setuptools>=40.0,<80",
     "tensorly_sphinx_theme",
     "torchtnt",
     "torch_harmonics==0.7.4"
@@ -69,6 +69,7 @@ all = [
     "sphinx",
     "sphinx-gallery",
     "sphinx-design",
+    "setuptools>=40.0,<80",
     "tensorly_sphinx_theme",
     "torchtnt",
     "numpy>=1.25",
