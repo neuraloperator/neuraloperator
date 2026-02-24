@@ -10,7 +10,7 @@ Once installed, you can import it as ``neuralop``::
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Basic Install
---------------
+-------------
 
 Pre-requisites
 ++++++++++++++

@@ -263,7 +263,7 @@ as shown below:
    <div style="margin-top: 3em;"></div>
 
 Convolutional Filters in Fourier Space
----------------------------------------
+--------------------------------------
 
 .. image:: /_static/images/filters.jpg
   :width: 800
@@ -396,7 +396,7 @@ defined by :math:`a \mapsto u`. Note that although the PDE is linear, the soluti
    <div style="margin-top: 3em;"></div>
 
 Benchmarks for time-independent problems (Burgers and Darcy):
------------------------------------------------------------
+-------------------------------------------------------------
 
  - NN: a simple point-wise feedforward neural network.
  - RBM: the classical Reduced Basis Method (using a POD basis).
@@ -412,7 +412,7 @@ Benchmarks for time-independent problems (Burgers and Darcy):
    <div style="margin-top: 3em;"></div>
 
 Navier-Stokes Equation
------------------------
+----------------------
 
 We consider the 2D Navier-Stokes equation for a viscous,
 incompressible fluid in vorticity form on the unit torus:

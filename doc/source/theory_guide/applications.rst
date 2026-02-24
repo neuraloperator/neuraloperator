@@ -78,7 +78,7 @@ noise or missing information.
    <div style="margin-top: 3em;"></div>
 
 Nuclear Fusion and Plasma Physics
-==================================
+=================================
 
 **Magnetohydrodynamic Simulations**
 
@@ -145,7 +145,7 @@ and effectiveness of these technologies.
    <div style="margin-top: 3em;"></div>
 
 Weather and Climate Forecasting
-=================================
+===============================
 
 **Numerical Weather Prediction**
 
@@ -190,7 +190,7 @@ climate changes and inform mitigation strategies.
    <div style="margin-top: 3em;"></div>
 
 Medicine and Healthcare
-========================
+=======================
 
 **Medical Imaging Applications**
 
@@ -238,7 +238,7 @@ complex biological systems at unprecedented resolution.
    <div style="margin-top: 3em;"></div>
 
 Computer Vision
-================
+===============
 
 Neural operators have been effectively adapted to computer vision tasks. 
 They have served as efficient token mixers in vision transformers [32]_, sped up diffusion 
