@@ -1,8 +1,10 @@
 matplotlib
 myst-nb
 numpydoc
+setuptools>=40.0
 sphinx
 sphinx-gallery
 sphinx-design
 tensorly_sphinx_theme
+torchtnt
 torch-harmonics

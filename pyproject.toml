@@ -54,6 +54,7 @@ doc = [
     "sphinx",
     "sphinx-gallery",
     "sphinx-design",
+    "setuptools>=40.0",
     "tensorly_sphinx_theme",
     "torchtnt",
     "torch_harmonics==0.7.4"
@@ -68,6 +69,7 @@ all = [
     "sphinx",
     "sphinx-gallery",
     "sphinx-design",
+    "setuptools>=40.0",
     "tensorly_sphinx_theme",
     "torchtnt",
     "numpy>=1.25",
