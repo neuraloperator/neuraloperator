@@ -6,6 +6,13 @@ import torch.nn.functional as F
 from neuralop.models.fc_fno import FC_FNO
 from neuralop.layers.fourier_continuation import FCGram, FCLegendre
 
+
+@pytest.fixture(scope="module", autouse=True)
+def restore_default_dtype_after_fcfno_tests():
+    """Restore default dtype to float32 after all FC_FNO tests. Module scope so FC_FNO tests keep float64 default."""
+    yield
+    torch.set_default_dtype(torch.float32)
+
 # Fixed variables
 in_channels = 1
 out_channels = 1
