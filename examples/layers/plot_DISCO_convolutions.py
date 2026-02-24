@@ -58,14 +58,13 @@ from neuralop.layers.discrete_continuous_convolution import (
 #    <div style="margin-top: 3em;"></div>
 #
 # Let's start by loading an example image
-os.system(
-    "curl https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Albert_Einstein_Head.jpg/360px-Albert_Einstein_Head.jpg -o ./einstein.jpg"
-)
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+einstein_path = os.path.join(_script_dir, "einstein.jpg")
 
 nx = 90
 ny = 120
 
-img = image.imread("./einstein.jpg")
+img = image.imread(einstein_path)
 data = nn.functional.interpolate(
     torch.from_numpy(img).unsqueeze(0).unsqueeze(0), size=(ny, nx)
 ).squeeze()
