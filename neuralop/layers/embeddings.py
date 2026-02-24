@@ -47,10 +47,10 @@ class GridEmbedding2D(Embedding):
         ----------
         spatial_dims : torch.size
              sizes of spatial resolution
-        device : literal 'cpu' or 'cuda:*'
-            where to load data
+        device : str
+            Device to load data (e.g. 'cpu' or 'cuda:*').
         dtype : str
-            dtype to encode data
+            dtype to encode data.
 
         Returns
         -------
@@ -123,11 +123,11 @@ class GridEmbeddingND(nn.Module):
         Parameters
         ----------
         spatial_dims : torch.Size
-             sizes of spatial resolution
-        device : literal 'cpu' or 'cuda:*'
-            where to load data
+            Sizes of spatial resolution.
+        device : str
+            Device to load data (e.g. 'cpu' or 'cuda:*').
         dtype : str
-            dtype to encode data
+            dtype to encode data.
 
         Returns
         -------
@@ -146,8 +146,8 @@ class GridEmbeddingND(nn.Module):
 
     def forward(self, data, batched=True):
         """
-        Params
-        --------
+        Parameters
+        ----------
         data: torch.Tensor
             assumes shape (batch (optional), channels, x_1, x_2, ...x_n)
         batched: bool
@@ -258,7 +258,7 @@ class SinusoidalEmbedding(Embedding):
     def forward(self, x):
         """
         Parameters
-        -----------
+        ----------
         x: torch.Tensor
             shape (n_in, self.in_channels) or (batch, n_in, self.in_channels)
         """

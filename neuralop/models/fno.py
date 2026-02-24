@@ -33,8 +33,8 @@ class FNO(BaseModel, name="FNO"):
 
     For a deeper dive into the FNO architecture, refer to :ref:`fno_intro`.
 
-    Main Parameters
-    ---------------
+    Parameters
+    ----------
     n_modes : Tuple[int, ...]
         Number of modes to keep in Fourier Layer, along each dimension.
         The dimensionality of the FNO is inferred from len(n_modes).
@@ -51,8 +51,8 @@ class FNO(BaseModel, name="FNO"):
     n_layers : int, optional
         Number of Fourier Layers. Default: 4
 
-    Other parameters
-    ---------------
+    Other Parameters
+    ----------------
     lifting_channel_ratio : Number, optional
         Ratio of lifting channels to hidden_channels.
         The number of lifting channels in the lifting block of the FNO is
@@ -135,10 +135,16 @@ class FNO(BaseModel, name="FNO"):
         Whether to compute FNO forward pass with resnet-style preactivation. Default: False
     conv_module : nn.Module, optional
         Module to use for FNOBlock's convolutions. Default: SpectralConv
+    enforce_hermitian_symmetry : bool, optional
+        Whether to enforce Hermitian symmetry conditions when performing inverse FFT
+        for real-valued data. Only used when ``conv_module`` is :class:`SpectralConv`
+        or a subclass; ignored otherwise. When True, explicitly enforces that the 0th
+        frequency and Nyquist frequency are real-valued before calling irfft. When False,
+        relies on cuFFT's irfftn to handle symmetry automatically, which may fail on
+        certain GPUs or input sizes, causing line artifacts. By default True.
 
     Examples
-    ---------
-
+    --------
     >>> from neuralop.models import FNO
     >>> model = FNO(n_modes=(12,12), in_channels=1, out_channels=1, hidden_channels=64)
     >>> model
@@ -153,7 +159,7 @@ class FNO(BaseModel, name="FNO"):
             ... torch.nn.Module printout truncated ...
 
     References
-    -----------
+    ----------
     .. [1] :
 
     Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
@@ -192,6 +198,7 @@ class FNO(BaseModel, name="FNO"):
         separable: bool = False,
         preactivation: bool = False,
         conv_module: nn.Module = SpectralConv,
+        enforce_hermitian_symmetry: bool = True,
     ):
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
@@ -296,6 +303,7 @@ class FNO(BaseModel, name="FNO"):
             decomposition_kwargs=decomposition_kwargs,
             conv_module=conv_module,
             n_layers=n_layers,
+            enforce_hermitian_symmetry=enforce_hermitian_symmetry,
         )
 
         ## Lifting layer

@@ -25,12 +25,12 @@ section.
    <div style="margin-top: 4em;"></div>
 
 Development Setup
-------------------
+-----------------
 
 .. _fork-and-clone:
 
 Fork and Clone the Repository
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. **Fork the repository** on GitHub by clicking the "Fork" button
 
@@ -81,7 +81,7 @@ Set Up Environment
 
 
 Development Workflow
----------------------
+--------------------
 
 .. _create-branch:
 
@@ -90,7 +90,7 @@ Development Workflow
    <div style="margin-top: 2em;"></div>
 
 Create a Branch and Make Changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
@@ -148,7 +148,7 @@ Write Tests
    <div style="margin-top: 2em;"></div>
 
 Run Tests and Quality Checks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
@@ -210,7 +210,7 @@ Development Guidelines
    <div style="margin-top: 2em;"></div>
 
 Code Style
-~~~~~~~~~~~
+~~~~~~~~~~
 
 - **Follow PEP 8** style guidelines for Python code
 - **Use meaningful names** for variables, functions, and classes
@@ -251,7 +251,7 @@ Testing Requirements
    <div style="margin-top: 2em;"></div>
 
 Building Documentation
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 The HTML documentation is built using Sphinx:
 
@@ -327,7 +327,7 @@ shape annotations are especially helpful where applicable.
    <div style="margin-top: 4em;"></div>
 
 Adding a New Model or Layer
-----------------------------
+---------------------------
 
 We welcome various types of contributions:
 
@@ -341,7 +341,7 @@ We welcome various types of contributions:
    <div style="margin-top: 2em;"></div>
 
 Adding a New Neural Operator Model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To add a new neural operator model:
 
@@ -373,7 +373,7 @@ To add a new neural operator model:
    <div style="margin-top: 2em;"></div>
 
 Adding a New Layer
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 To add a new layer:
 

@@ -53,8 +53,8 @@ class NeighborSearch(nn.Module):
         radius : float
             Radius of each ball: B(queries[j], radius)
 
-        Output
-        ----------
+        Returns
+        -------
         return_dict : dict
             Dictionary with keys: neighbors_index, neighbors_row_splits
                 neighbors_index: torch.Tensor with dtype=torch.int64
@@ -89,8 +89,7 @@ def native_neighbor_search(
     between two arbitrary coordinate meshes.
 
     Parameters
-    -----------
-
+    ----------
     data : torch.Tensor
         vector of data points from which to find neighbors
     queries : torch.Tensor

@@ -23,43 +23,16 @@ def spectral_projection_divergence_free(u, domain_size, constraint_modes):
     torch.Tensor
         Divergence-free projected velocity field with [batch, 2, height, width] shape.
         The output maintains the same shape as the input while satisfying ∇·u = 0.
-    
-    
 
-    Mathematical formulation:
-    -------------------------
-    
-    This method implements a Helmholtz-Hodge projection in the spectral domain
-    to project velocity fields onto the space of divergence-free functions.
-    
-    The Helmholtz-Hodge projection is given by:
-        û_proj = û - (k·û)/|k|² * k
-    where û is the Fourier transform of the velocity field, k is the wavenumber vector, 
-    and û_proj is the projected divergence-free field.
-    
-    The projection enforces ∇·u = 0 in the spectral domain by removing the
-    irrotational component of the velocity field.
-    
-        
-    Periodicity Assumption:
-    -----------------------
-    Just like most spectral methods, this spectral projection assumes the given and 
-    desired velocity fields are periodic. 
-    
-    If the velocity fields are not periodic, 
-    one way to apply this spectral projection is to proceed as follows:
-      1) extend the velocity fields to periodic velocity fields on a larger domain, using 
-          Fourier continuation for instance (see neuralop.layers.fourier_continuation) 
-      2) apply the spectral projection to the periodic fields on the extended domain.
-      3) truncate the result back to the original domain.
-      
-    This is similar to how Fourier/spectral differentiation can still be performed 
-    on non-periodic fields (see neuralop.losses.fourier_diff for implementation details).
-    
+    Notes
+    -----
+    **Mathematical formulation:** Helmholtz-Hodge projection in spectral domain:
+    û_proj = û - (k·û)/|k|² * k. Enforces ∇·u = 0 by removing the irrotational component.
+    **Periodicity:** Velocity fields are assumed periodic. For non-periodic fields, extend
+    via Fourier continuation (neuralop.layers.fourier_continuation), project, then truncate.
 
-    References:
-    -----------
-    
+    References
+    ----------
     The method is based on the spectral projection approach described in:
     
         [1] Towards Enforcing Hard Physics Constraints in Operator Learning Frameworks

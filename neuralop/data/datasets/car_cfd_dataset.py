@@ -19,8 +19,7 @@ class CarCFDDataset(MeshDataModule):
     3D grid of query points, as well as the inlet velocity. Outputs are pressure
     values at each centroid of the triangle mesh.
 
-        .. warning::
-
+    .. warning::
         ``CarCFDDataset`` inherits from ``MeshDataModule``, which requires the optional ``open3d`` dependency.
         See :ref:`open3d_dependency` for more information.
 

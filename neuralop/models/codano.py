@@ -28,8 +28,8 @@ class CODANO(nn.Module):
         The number of Fourier modes to use in integral operators in the CoDA-NO block along each dimension.
         Example: For a 5-layer 2D CoDA-NO, n_modes=[[16, 16], [16, 16], [16, 16], [16, 16], [16, 16]]
 
-    Other parameters
-    ---------------
+    Other Parameters
+    ----------------
     output_variable_codimension : int, optional
         The number of output channels (or output codomain dimension) corresponding to each input variable (or input channel).
         Example: For an input with 3 variables (channels) and output_variable_codimension=2, the output will have 6 channels (3 variables × 2 codimension). Default: 1
@@ -125,13 +125,20 @@ class CODANO(nn.Module):
         The padding factor for each input channel. It zero pads each of the channel. Default: 0.25
     layer_kwargs : dict, optional
         Additional arguments for the CoDA blocks. Default: {}
+    enforce_hermitian_symmetry : bool, optional
+        Whether to enforce Hermitian symmetry conditions when performing inverse FFT
+        for real-valued data. Only used when the convolution module is :class:`SpectralConv`
+        or a subclass; ignored otherwise. When True, explicitly enforces that the 0th
+        frequency and Nyquist frequency are real-valued before calling irfft. When False,
+        relies on cuFFT's irfftn to handle symmetry automatically, which may fail on
+        certain GPUs or input sizes, causing line artifacts. By default True.
 
     References
-    -----------
-    .. [1] : Rahman, Md Ashiqur, et al. "Pretraining codomain attention neural operators for solving multiphysics pdes." (2024).
-    NeurIPS 2024. https://arxiv.org/pdf/2403.12553.
-
-    .. [2] : Devlin, Jacob, et al. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.
+    ----------
+    .. [1] Rahman, Md Ashiqur, et al. "Pretraining codomain attention neural operators for solving multiphysics pdes." (2024).
+        NeurIPS 2024. https://arxiv.org/pdf/2403.12553.
+        
+    .. [2] Devlin, Jacob, et al. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.
 
     """
 
@@ -161,20 +168,21 @@ class CODANO(nn.Module):
         layer_kwargs={},
         domain_padding=0.25,
         enable_cls_token=False,
+        enforce_hermitian_symmetry=True,
     ):
         super().__init__()
         self.n_layers = n_layers
         assert len(n_modes) == n_layers, "number of modes for all layers are not given"
         assert (
-            len(n_heads) == n_layers or n_heads is None
+            n_heads is None or len(n_heads) == n_layers
         ), "number of Attention head for all layers are not given"
         assert (
-            len(per_layer_scaling_factors) == n_layers
-            or per_layer_scaling_factors is None
+            per_layer_scaling_factors is None
+            or len(per_layer_scaling_factors) == n_layers
         ), "scaling for all layers are not given"
         assert (
-            len(attention_scaling_factors) == n_layers
-            or attention_scaling_factors is None
+            attention_scaling_factors is None
+            or len(attention_scaling_factors) == n_layers
         ), "attention scaling for all layers are not given"
         if use_positional_encoding:
             assert positional_encoding_dim > 0, "positional encoding dim is not given"
@@ -230,7 +238,7 @@ class CODANO(nn.Module):
         self.attention_scalings = attention_scaling_factors
         self.positional_encoding_modes = positional_encoding_modes
         self.static_channel_dim = static_channel_dim
-        self.layer_kwargs = layer_kwargs
+        self.layer_kwargs = {**layer_kwargs, "enforce_hermitian_symmetry": enforce_hermitian_symmetry}
         self.use_positional_encoding = use_positional_encoding
         self.use_horizontal_skip_connection = use_horizontal_skip_connection
         self.horizontal_skips_map = horizontal_skips_map

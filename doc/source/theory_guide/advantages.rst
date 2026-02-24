@@ -1,8 +1,8 @@
 .. _neural_op_advantages:
 
-===============================
+==============================
 Advantages of Neural Operators
-===============================
+==============================
 
 This guide explores the key advantages of neural operators over traditional 
 neural networks and numerical methods for solving partial differential equations 
@@ -53,7 +53,7 @@ ensures that the learned mapping respects the continuous nature of the problem.
    <div style="margin-top: 3em;"></div>
 
 Function Representation and Computational Flexibility
-====================================================
+=====================================================
 
 The ability to output continuous functions is useful for follow-up computations.
 
@@ -91,7 +91,7 @@ This capability enables:
    <div style="margin-top: 3em;"></div>
 
 Universal Approximation Capability
-===================================
+==================================
 
 Fourier neural operators (and other neural operators) are universal operator approximators, 
 in the sense that any sufficiently smooth operator can be approximated to arbitrary accuracy using a 

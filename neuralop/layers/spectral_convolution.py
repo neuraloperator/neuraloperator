@@ -201,8 +201,7 @@ class SpectralConv(BaseSpectralConv):
             of size I_1, ..., I_N, please provide modes M_K that are I_1 < M_K <= I_N
             We will automatically keep the right amount of modes: specifically, for the
             last mode only, if you specify M_N modes we will use M_N // 2 + 1 modes
-            as the real FFT is redundant along that last dimension. For more information on
-            mode truncation, refer to :ref:`fourier_layer_impl`
+            as the real FFT is redundant along that last dimension. See the theory guide for mode truncation details.
 
 
         .. note::
@@ -215,9 +214,8 @@ class SpectralConv(BaseSpectralConv):
         Whether data takes on complex values in the spatial domain, by default False.
         If True, uses different logic for FFT contraction and uses full FFT instead of real-valued.
     max_n_modes : int tuple or None, optional
-        * If not None, **maximum** number of modes to keep in Fourier Layer, along each dim
-            The number of modes (`n_modes`) cannot be increased beyond that.
-        * If None, all the n_modes are used.
+        If not None, maximum number of modes to keep in Fourier Layer along each dim
+        (n_modes cannot be increased beyond that). If None, all n_modes are used.
         By default None.
     bias : bool, optional
         Whether to add a learnable bias to the output, by default True.
@@ -250,6 +248,15 @@ class SpectralConv(BaseSpectralConv):
           the decomposition
         Ignored if ``factorization is None``.
         By default 'reconstructed'.
+    enforce_hermitian_symmetry : bool, optional
+        Whether to enforce Hermitian symmetry conditions when performing inverse FFT
+        for real-valued data. When True, explicitly enforces that the 0th frequency
+        and Nyquist frequency are real-valued before calling irfft. 
+        When False, relies on cuFFT's irfftn to handle symmetry automatically, 
+        which may fail on certain GPUs or input sizes, causing line artifacts. 
+        Setting to True splits the inverse FFT into ifftn along (n-1) dimensions 
+        followed by irfft on the last dimension, with a small computational overhead. 
+        By default True.
     fixed_rank_modes : bool, optional
         Modes to not factorize, by default False.
         Ignored if ``factorization is None``.
@@ -266,15 +273,11 @@ class SpectralConv(BaseSpectralConv):
         Device to place the layer on, by default None.
 
     References
-    -----------
-    .. [1] :
-
-    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
+    ----------
+    .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
         Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
-
-    .. [2] :
-
-    Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
+        
+    .. [2] Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
         Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024).
         TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
     """
@@ -293,6 +296,7 @@ class SpectralConv(BaseSpectralConv):
         rank=1.0,
         factorization=None,
         implementation="reconstructed",
+        enforce_hermitian_symmetry=True,
         fixed_rank_modes=False,
         decomposition_kwargs: Optional[dict] = None,
         init_std="auto",
@@ -320,7 +324,8 @@ class SpectralConv(BaseSpectralConv):
         self.rank = rank
         self.factorization = factorization
         self.implementation = implementation
-
+        self.enforce_hermitian_symmetry = enforce_hermitian_symmetry
+        
         self.resolution_scaling_factor: Union[
             None, List[List[float]]
         ] = validate_scaling_factor(resolution_scaling_factor, self.order)
@@ -522,17 +527,44 @@ class SpectralConv(BaseSpectralConv):
         if output_shape is not None:
             mode_sizes = output_shape
 
+
         if self.order > 1:
             out_fft = torch.fft.ifftshift(out_fft, dim=fft_dims[:-1])
+        
 
+        # Inverse FFT 
         if self.complex_data:
+            # For complex data, we can use ifftn.
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+        
         else:
-            x = torch.fft.irfftn(
-                out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm
-            )
+            # For real data, we need to enforce Hermitian symmetry conditions for irfft.
+            # On certain GPUs and for certain input sizes, this is not handled within irfftn in cuFFT, 
+            # and as a result causes line artifacts.  
+            # To fix this, we split the ifftn into a ifftn in (n-1) dimensions and a irfft in the last dimension,
+            # although it incurs a small additional computational cost.
+            
+            if self.enforce_hermitian_symmetry:
+                out_fft = torch.fft.ifftn(out_fft, s=mode_sizes[:-1], dim=fft_dims[:-1], norm=self.fft_norm)
+                
+                # Enforce Hermitian symmetry conditions for irfft
+                # 0th frequency must be real
+                out_fft[..., 0].imag.zero_()
+                
+                # Nyquist frequency must be real if the spatial size is even
+                if mode_sizes[-1] % 2 == 0:
+                    out_fft[..., -1].imag.zero_()
+                
+                # Now that the Hermitian symmetry conditions are enforced, we can use irfft on the last dimension.
+                x = torch.fft.irfft(out_fft, n=mode_sizes[-1], dim=fft_dims[-1], norm=self.fft_norm)
+            
+            else:
+                
+                # If Hemrmitian symmetry is not a concern, we can use irfftn on all dimensions.
+                x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+            
 
         if self.bias is not None:
             x = x + self.bias
-
+          
         return x

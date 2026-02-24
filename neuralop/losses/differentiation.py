@@ -731,8 +731,9 @@ def get_non_uniform_fd_weights(
     """
     Compute finite difference weights for approximating the first order derivative
     on an unstructured grid of points
-    Parameters:
-    -----------
+
+    Parameters
+    ----------
     points : torch tensor of shape (N, d) containing the d coordinates of the N points
     num_neighbors: int for the number of nearest neighbors to include in the stencil (including the point itself)
                     At least 3 and at most N
@@ -744,8 +745,8 @@ def get_non_uniform_fd_weights(
                         Sometimes torch.linalg.lstsq(A, b).solution creates artifacts so can add regularizer
                         But regularizer can deteriorate performance when system is well-conditioned
 
-    Returns:
-    --------
+    Returns
+    -------
     indices : torch tensor of shape (N, k) for the indices of k nearest neighbors (including the point itself)
     fd_weights : torch tensor of weights of shape (N, len(derivative_indices), k)
                 fd_weights[i,j,m] contains the weights for the m-th nearest neighbor
@@ -820,9 +821,9 @@ def non_uniform_fd(
     regularize_lstsq=False,
 ):
     """Finite difference approximation of first order derivatives on unstructured point clouds.
-    
-    Parameters:
-    -----------
+
+    Parameters
+    ----------
     points : torch tensor of shape (N, d) containing the d coordinates of the N points
     values : torch tensor of shape (N) containing the values of the function at the N points
     radius : float, the cutoff distance to use a neighbor as radius
@@ -834,8 +835,8 @@ def non_uniform_fd(
                         Sometimes torch.linalg.lstsq(A, b).solution creates artifacts so can add regularizer
                         But regularizer can deteriorate performance when system is well-conditioned
 
-    Returns:
-    --------
+    Returns
+    -------
     derivatives: tensor of shape (len(derivative_indices), N) of derivatives
             e.g. in 2D with derivative_indices=[0, 1], derivatives[0] is df(x,y)/dx and derivatives[1] is df(x,y)/dy
 
@@ -860,8 +861,8 @@ class FourierDiff:
     This class provides comprehensive methods for computing derivatives using Fourier/spectral
     methods with support for both periodic and non-periodic functions through Fourier continuation:
     - Periodic functions: Direct Fourier differentiation using FFT
-    - Non-periodic functions: Fourier continuation (FC) is used to extend functions to larger domain 
-            on which the functions are periodic before applying Fourier differentiation with FFT.
+    - Non-periodic functions: Fourier continuation (FC) is used to extend functions to a larger
+      domain on which the functions are periodic before applying Fourier differentiation with FFT.
 
     The class also provides gradient, divergence, curl, and Laplacian operations.
 
