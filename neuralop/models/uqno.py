@@ -27,7 +27,7 @@ class UQNO(BaseModel, name="UQNO"):
         If None, a deep copy of base_model is used. Default: None
 
     References
-    -----------
+    ----------
     .. [1] :
 
     Ma, Z., Pitt, D., Azizzadenesheli, K., and Anandkumar, A. (2024).

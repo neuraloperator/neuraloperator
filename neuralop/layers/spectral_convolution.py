@@ -266,7 +266,7 @@ class SpectralConv(BaseSpectralConv):
         Device to place the layer on, by default None.
 
     References
-    -----------
+    ----------
     .. [1] :
 
     Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential

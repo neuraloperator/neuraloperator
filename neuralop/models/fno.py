@@ -33,8 +33,8 @@ class FNO(BaseModel, name="FNO"):
 
     For a deeper dive into the FNO architecture, refer to :ref:`fno_intro`.
 
-    Main Parameters
-    ---------------
+    Parameters
+    ----------
     n_modes : Tuple[int, ...]
         Number of modes to keep in Fourier Layer, along each dimension.
         The dimensionality of the FNO is inferred from len(n_modes).
@@ -51,8 +51,8 @@ class FNO(BaseModel, name="FNO"):
     n_layers : int, optional
         Number of Fourier Layers. Default: 4
 
-    Other parameters
-    ---------------
+    Other Parameters
+    ----------------
     lifting_channel_ratio : Number, optional
         Ratio of lifting channels to hidden_channels.
         The number of lifting channels in the lifting block of the FNO is
@@ -137,8 +137,7 @@ class FNO(BaseModel, name="FNO"):
         Module to use for FNOBlock's convolutions. Default: SpectralConv
 
     Examples
-    ---------
-
+    --------
     >>> from neuralop.models import FNO
     >>> model = FNO(n_modes=(12,12), in_channels=1, out_channels=1, hidden_channels=64)
     >>> model
@@ -153,7 +152,7 @@ class FNO(BaseModel, name="FNO"):
             ... torch.nn.Module printout truncated ...
 
     References
-    -----------
+    ----------
     .. [1] :
 
     Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential

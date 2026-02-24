@@ -241,9 +241,9 @@ Computer Vision
 ===============
 
 Neural operators have been effectively adapted to computer vision tasks. 
-They have served as efficient token mixers in vision transformers [32]_, sped up diffusion 
-model sampling for faster image and media generation [33]_, and have been applied in 
-image classification [34]_ and segmentation [35]_. 
+They have served as efficient token mixers in vision transformers [28]_, sped up diffusion 
+model sampling for faster image and media generation [29]_, and have been applied in 
+image classification [30]_ and segmentation [31]_. 
 
 Their ability to handle images at multiple resolutions and integrate with existing deep 
 learning methods makes them a versatile tool for vision applications.

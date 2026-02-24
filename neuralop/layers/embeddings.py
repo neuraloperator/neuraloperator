@@ -146,8 +146,8 @@ class GridEmbeddingND(nn.Module):
 
     def forward(self, data, batched=True):
         """
-        Params
-        --------
+        Parameters
+        ----------
         data: torch.Tensor
             assumes shape (batch (optional), channels, x_1, x_2, ...x_n)
         batched: bool
@@ -258,7 +258,7 @@ class SinusoidalEmbedding(Embedding):
     def forward(self, x):
         """
         Parameters
-        -----------
+        ----------
         x: torch.Tensor
             shape (n_in, self.in_channels) or (batch, n_in, self.in_channels)
         """

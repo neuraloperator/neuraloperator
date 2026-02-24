@@ -45,8 +45,8 @@ class RNO(BaseModel, name="RNO"):
         in non-stationary dynamics on function spaces. arXiv preprint
         arXiv:2308.08794.
 
-    Main Parameters
-    ---------------
+    Parameters
+    ----------
     n_modes : Tuple[int, ...]
         Number of modes to keep in Fourier Layer, along each dimension.
         The dimensionality of the RNO is inferred from ``len(n_modes)``.
@@ -71,8 +71,8 @@ class RNO(BaseModel, name="RNO"):
         RNO's recurrent structure already provides temporal gradient pathways,
         so skip connections are optional and may not always improve performance.
 
-    Other parameters
-    ---------------
+    Other Parameters
+    ----------------
     lifting_channel_ratio : Number, optional
         Ratio of lifting channels to hidden_channels.
         The number of lifting channels in the lifting block of the RNO is

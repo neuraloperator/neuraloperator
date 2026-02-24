@@ -1,4 +1,5 @@
-.. _fno_intro :
+.. _fno_intro:
+
 ========================
 Fourier Neural Operators
 ========================
@@ -245,7 +246,9 @@ one axis. Therefore it is sufficient to keep only two of the four corners of the
 
 Shifting the FFT signal
 -----------------------
-.. _fft_shift_explanation :
+
+.. _fft_shift_explanation:
+
 Equivalently, we could also apply a periodic FFT-shift using :code:`torch.fft.fftshift` to move the zero-frequency component
 to the center of the FFT matrix, such that the matrix would be indexed with modes :code:`-n//2, -n//2 + 1, ...-1, 0, 1, ...`
 as shown below:

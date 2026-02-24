@@ -43,33 +43,12 @@ class FiniteDiff:
         When False, uses high-order one-sided differences at boundaries.
         Only used for 3D fields.
 
-
-    Available Methods
-    ----------------
-    Derivative Methods:
-    - dx(u, order=1): Compute derivative with respect to x
-    - dy(u, order=1): Compute derivative with respect to y (2D/3D only)
-    - dz(u, order=1): Compute derivative with respect to z (3D only)
-
-    Vector Calculus Operators:
-    - laplacian(u): Compute the Laplacian ∇²f
-    - gradient(u): Compute the gradient ∇f (returns vector field)
-    - divergence(u): Compute the divergence ∇·u (for vector fields)
-    - curl(u): Compute the curl ∇×u (for vector fields, 2D/3D only)
-
-
-    Mathematical Formulas
-    ---------------------
-    For first-order derivatives:
-    - Interior: (f_{i+1} - f_{i-1})/(2h)  [2nd order central]
-    - Left boundary: (-11f_0 + 18f_1 - 9f_2 + 2f_3)/(6h)  [3rd order forward]
-    - Right boundary: (-2f_{n-4} + 9f_{n-3} - 18f_{n-2} + 11f_{n-1})/(6h)  [3rd order backward]
-
-    For second-order derivatives:
-    - Interior: (f_{i+1} - 2f_i + f_{i-1})/(h²)  [2nd order central]
-    - Left boundary: (2f_0 - 5f_1 + 4f_2 - f_3)/(h²)  [3rd order forward]
-    - Right boundary: (-f_{n-4} + 4f_{n-3} - 5f_{n-2} + 2f_{n-1})/(h²)  [3rd order backward]
-    
+    Notes
+    -----
+    **Derivative methods:** dx(u, order=1), dy(u, order=1), dz(u, order=1).
+    **Vector calculus:** laplacian(u), gradient(u), divergence(u), curl(u).
+    **First-order:** Interior (2nd order central): (f_{i+1} - f_{i-1})/(2h); boundaries use 3rd order one-sided stencils.
+    **Second-order:** Interior: (f_{i+1} - 2f_i + f_{i-1})/(h²); boundaries use 3rd order stencils.
 
     Examples
     --------
@@ -731,8 +710,9 @@ def get_non_uniform_fd_weights(
     """
     Compute finite difference weights for approximating the first order derivative
     on an unstructured grid of points
-    Parameters:
-    -----------
+
+    Parameters
+    ----------
     points : torch tensor of shape (N, d) containing the d coordinates of the N points
     num_neighbors: int for the number of nearest neighbors to include in the stencil (including the point itself)
                     At least 3 and at most N
@@ -744,8 +724,8 @@ def get_non_uniform_fd_weights(
                         Sometimes torch.linalg.lstsq(A, b).solution creates artifacts so can add regularizer
                         But regularizer can deteriorate performance when system is well-conditioned
 
-    Returns:
-    --------
+    Returns
+    -------
     indices : torch tensor of shape (N, k) for the indices of k nearest neighbors (including the point itself)
     fd_weights : torch tensor of weights of shape (N, len(derivative_indices), k)
                 fd_weights[i,j,m] contains the weights for the m-th nearest neighbor
@@ -820,9 +800,9 @@ def non_uniform_fd(
     regularize_lstsq=False,
 ):
     """Finite difference approximation of first order derivatives on unstructured point clouds.
-    
-    Parameters:
-    -----------
+
+    Parameters
+    ----------
     points : torch tensor of shape (N, d) containing the d coordinates of the N points
     values : torch tensor of shape (N) containing the values of the function at the N points
     radius : float, the cutoff distance to use a neighbor as radius
@@ -834,8 +814,8 @@ def non_uniform_fd(
                         Sometimes torch.linalg.lstsq(A, b).solution creates artifacts so can add regularizer
                         But regularizer can deteriorate performance when system is well-conditioned
 
-    Returns:
-    --------
+    Returns
+    -------
     derivatives: tensor of shape (len(derivative_indices), N) of derivatives
             e.g. in 2D with derivative_indices=[0, 1], derivatives[0] is df(x,y)/dx and derivatives[1] is df(x,y)/dy
 
@@ -860,8 +840,8 @@ class FourierDiff:
     This class provides comprehensive methods for computing derivatives using Fourier/spectral
     methods with support for both periodic and non-periodic functions through Fourier continuation:
     - Periodic functions: Direct Fourier differentiation using FFT
-    - Non-periodic functions: Fourier continuation (FC) is used to extend functions to larger domain 
-            on which the functions are periodic before applying Fourier differentiation with FFT.
+    - Non-periodic functions: Fourier continuation (FC) is used to extend functions to a larger
+      domain on which the functions are periodic before applying Fourier differentiation with FFT.
 
     The class also provides gradient, divergence, curl, and Laplacian operations.
 

@@ -102,7 +102,7 @@ class UNO(nn.Module):
         FFT normalization mode. Default: "forward"
 
     References
-    -----------
+    ----------
     .. [1] :
 
     Rahman, M.A., Ross, Z., Azizzadenesheli, K. "U-NO: U-shaped
