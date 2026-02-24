@@ -125,11 +125,11 @@ If you use NeuralOperator in an academic paper, please cite [1]_::
                      Zongyi Li and
                      David Pitt and
                      Miguel Liu-Schiaffini and
-                     Valentin Duruisseaux and
                      Robert Joseph George and
                      Boris Bonev and
                      Kamyar Azizzadenesheli and
                      Julius Berner and
+                     Valentin Duruisseaux and
                      Anima Anandkumar},
       title     = {A Library for Learning Neural Operators},
       journal   = {arXiv preprint arXiv:2412.10354},
