@@ -136,7 +136,7 @@ If you use NeuralOperator in an academic paper, please cite [1]_::
       year      = {2025},
    }
 
-and consider citing [2]_, [3]_, [4]_::
+and consider citing [2]_ and [3]_::
 
    @article{duruisseaux2025guide,
       author    = {Valentin Duruisseaux and
@@ -164,24 +164,9 @@ and consider citing [2]_, [3]_, [4]_::
       year      = {2023},
    }
 
-   @article{berner2025principled,
-      author    = {Julius Berner and
-                     Miguel Liu-Schiaffini and
-                     Jean Kossaifi and
-                     Valentin Duruisseaux and
-                     Boris Bonev and
-                     Kamyar Azizzadenesheli and
-                     Anima Anandkumar},
-      title     = {Principled Approaches for Extending Neural Architectures to Function Spaces for Operator Learning},
-      journal   = {arXiv preprint arXiv:2506.10973},
-      year      = {2025},
-   }
-
 
 .. [1] Kossaifi, J., Kovachki, N., Li, Z., Pitt, D., Liu-Schiaffini, M., Duruisseaux, V., George, R., Bonev, B., Azizzadenesheli, K., Berner, J., and Anandkumar, A., "A Library for Learning Neural Operators", 2025. https://arxiv.org/abs/2412.10354.
 
 .. [2] Duruisseaux, V., Kossaifi, J., and Anandkumar, A., "Fourier Neural Operators Explained: A Practical Perspective", 2025. https://arxiv.org/abs/2512.01421.
 
 .. [3] Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhattacharya, K., Stuart, A., and Anandkumar, A., “Neural Operator: Learning Maps Between Function Spaces with Applications to PDEs”, JMLR, 24(1):89, 2023. https://arxiv.org/abs/2108.08481.
-
-.. [4] Berner, J., Liu-Schiaffini, M., Kossaifi, J., Duruisseaux, V., Bonev, B., Azizzadenesheli, K., and Anandkumar, A., "Principled Approaches for Extending Neural Architectures to Function Spaces for Operator Learning", 2025. https://arxiv.org/abs/2506.10973.
