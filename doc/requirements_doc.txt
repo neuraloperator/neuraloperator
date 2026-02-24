@@ -1,7 +1,7 @@
+setuptools>=40.0
 matplotlib
 myst-nb
 numpydoc
-setuptools>=40.0
 sphinx
 sphinx-gallery
 sphinx-design
