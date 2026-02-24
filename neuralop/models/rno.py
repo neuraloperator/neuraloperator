@@ -39,7 +39,8 @@ class RNO(BaseModel, name="RNO"):
     where * is element-wise, the b_i's are bias functions, and W_i, U_i are
     linear Fourier layers.
 
-    Paper:
+    References
+    ----------
     .. [RNO] Liu-Schiaffini, M., Singer, C. E., Kovachki, N., Schneider, T.,
         Azizzadenesheli, K., & Anandkumar, A. (2023). Tipping point forecasting
         in non-stationary dynamics on function spaces. arXiv preprint

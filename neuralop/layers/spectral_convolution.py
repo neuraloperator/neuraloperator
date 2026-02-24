@@ -201,8 +201,7 @@ class SpectralConv(BaseSpectralConv):
             of size I_1, ..., I_N, please provide modes M_K that are I_1 < M_K <= I_N
             We will automatically keep the right amount of modes: specifically, for the
             last mode only, if you specify M_N modes we will use M_N // 2 + 1 modes
-            as the real FFT is redundant along that last dimension. For more information on
-            mode truncation, refer to :ref:`fourier_layer_impl`
+            as the real FFT is redundant along that last dimension. See the theory guide for mode truncation details.
 
 
         .. note::
@@ -215,9 +214,8 @@ class SpectralConv(BaseSpectralConv):
         Whether data takes on complex values in the spatial domain, by default False.
         If True, uses different logic for FFT contraction and uses full FFT instead of real-valued.
     max_n_modes : int tuple or None, optional
-        * If not None, **maximum** number of modes to keep in Fourier Layer, along each dim
-            The number of modes (`n_modes`) cannot be increased beyond that.
-        * If None, all the n_modes are used.
+        If not None, maximum number of modes to keep in Fourier Layer along each dim
+        (n_modes cannot be increased beyond that). If None, all n_modes are used.
         By default None.
     bias : bool, optional
         Whether to add a learnable bias to the output, by default True.
@@ -267,14 +265,10 @@ class SpectralConv(BaseSpectralConv):
 
     References
     ----------
-    .. [1] :
-
-    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
+    .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
         Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
-
-    .. [2] :
-
-    Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
+        
+    .. [2] Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
         Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024).
         TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
     """

@@ -22,12 +22,11 @@ class GNOBlock(nn.Module):
     Optionally, if provided, the input and output queries can have a positional embedding
     applied using the argument pos_embedding.
 
-    The kernel integral computed in IntegralTransform
-    computes one of the following:
-        (a) \\int_{A(x)} k(x, y) dy
-        (b) \\int_{A(x)} k(x, y) * f(y) dy
-        (c) \\int_{A(x)} k(x, y, f(y)) dy
-        (d) \\int_{A(x)} k(x, y, f(y)) * f(y) dy
+    The kernel integral computed in IntegralTransform computes one of:
+    (a) \\int_{A(x)} k(x, y) dy
+    (b) \\int_{A(x)} k(x, y) * f(y) dy
+    (c) \\int_{A(x)} k(x, y, f(y)) dy
+    (d) \\int_{A(x)} k(x, y, f(y)) * f(y) dy
 
     Parameters
     ----------
@@ -119,7 +118,7 @@ class GNOBlock(nn.Module):
 
     References
     ----------
-    .. [1] : Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya,
+    .. [1] Zongyi Li, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya,
         Anima Anandkumar (2020). "Neural Operator: Graph Kernel Network for
         Partial Differential Equations." ArXiV, https://arxiv.org/pdf/2003.03485.
     """

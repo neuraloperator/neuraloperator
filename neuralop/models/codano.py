@@ -128,10 +128,10 @@ class CODANO(nn.Module):
 
     References
     ----------
-    .. [1] : Rahman, Md Ashiqur, et al. "Pretraining codomain attention neural operators for solving multiphysics pdes." (2024).
-    NeurIPS 2024. https://arxiv.org/pdf/2403.12553.
-
-    .. [2] : Devlin, Jacob, et al. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.
+    .. [1] Rahman, Md Ashiqur, et al. "Pretraining codomain attention neural operators for solving multiphysics pdes." (2024).
+        NeurIPS 2024. https://arxiv.org/pdf/2403.12553.
+        
+    .. [2] Devlin, Jacob, et al. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.
 
     """
 

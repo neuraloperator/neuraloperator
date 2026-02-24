@@ -5,7 +5,7 @@ Neural Operator Applications
 ============================
 
 This guide presents examples of neural operator applications across scientific and 
-engineering domains, demonstrating their transformative impact on computational 
+engineering domains [1]_, demonstrating their transformative impact on computational 
 science and real-world problem solving.
 
 Introduction

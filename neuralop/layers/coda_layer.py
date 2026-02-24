@@ -77,7 +77,7 @@ class CODALayer(nn.Module):
 
     References
     ----------
-    .. [1]: M. Rahman, R. George, M. Elleithy, D. Leibovici, Z. Li, B. Bonev,
+    .. [1] M. Rahman, R. George, M. Elleithy, D. Leibovici, Z. Li, B. Bonev,
         C. White, J. Berner, R. Yeh, J. Kossaifi, K. Azizzadenesheli, A. Anandkumar (2024).
         "Pretraining Codomain Attention Neural Operators for Solving Multiphysics PDEs."
         arxiv:2403.12553

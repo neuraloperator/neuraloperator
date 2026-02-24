@@ -732,14 +732,6 @@ We provide downloadable datasets for Darcy-Flow, Navier-Stokes, and Car-CFD.
     load_mini_burgers_1dtime
 
 
-.. autosummary::
-    :toctree: generated
-    :template: class.rst
-
-    SphericalSWEDataset
-
-
-
 .. note::
     Additional datasets are available with optional dependencies:
     
