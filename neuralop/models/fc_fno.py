@@ -11,8 +11,6 @@ from ..layers.channel_mlp import LinearChannelMLP
 from ..models.fno import FNO
 from ..losses.differentiation import *
 
-torch.set_default_dtype(torch.float64)
-
 
 class FC_FNO(FNO):
     """Fourier Continuation based Fourier Neural Operator.

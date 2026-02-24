@@ -38,6 +38,7 @@ from neuralop.models.fc_fno import FC_FNO
 
 torch.set_default_dtype(torch.float64)
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
 torch.manual_seed(23)
 np.random.seed(23)
 
@@ -57,7 +58,7 @@ fc_choice = "gram"
 n_additional_pts = 50  # Number of additional points for continuation
 degree = 6  # Degree for continuation
 fc_classes = {"gram": FCGram, "legendre": FCLegendre}
-FC_object = fc_classes[fc_choice.lower()](d=degree, n_additional_pts=n_additional_pts).to("cuda")
+FC_object = fc_classes[fc_choice.lower()](d=degree, n_additional_pts=n_additional_pts).to(device)
 
 # Training parameters
 n_epochs = 60001  # Total training epochs
@@ -86,7 +87,7 @@ model = FC_FNO(
     rank=0.2,
     non_linearity=F.tanh,
     projection_nonlinearity=F.tanh,  # Must be tanh or silu in FC_FNO
-).to("cuda")
+).to(device)
 
 
 params = list(model.parameters())
@@ -98,7 +99,7 @@ scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=patience, f
 
 
 # Collocation grid: y in [domain[0], domain[1)], shape (1, 1, resolution1D)
-y = torch.linspace(domain[0], domain[1], resolution1D + 1, device="cuda", dtype=torch.float64)
+y = torch.linspace(domain[0], domain[1], resolution1D + 1, device=device, dtype=torch.float64)
 y = y[:-1].unsqueeze(0).unsqueeze(0)
 
 

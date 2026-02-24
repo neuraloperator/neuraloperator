@@ -7,11 +7,16 @@ from neuralop.models.fc_fno import FC_FNO
 from neuralop.layers.fourier_continuation import FCGram, FCLegendre
 
 
-@pytest.fixture(scope="module", autouse=True)
-def restore_default_dtype_after_fcfno_tests():
-    """Restore default dtype to float32 after all FC_FNO tests. Module scope so FC_FNO tests keep float64 default."""
-    yield
-    torch.set_default_dtype(torch.float32)
+@pytest.fixture(autouse=True)
+def fcfno_tests_run_at_fp64():
+    """Run FC_FNO tests at float64; restore previous default dtype after each test."""
+    prev = torch.get_default_dtype()
+    torch.set_default_dtype(torch.float64)
+    try:
+        yield
+    finally:
+        torch.set_default_dtype(prev)
+
 
 # Fixed variables
 in_channels = 1
