@@ -58,7 +58,10 @@ from neuralop.layers.discrete_continuous_convolution import (
 #    <div style="margin-top: 3em;"></div>
 #
 # Let's start by loading an example image
-_script_dir = os.path.dirname(os.path.abspath(__file__))
+try:
+    _script_dir = os.path.dirname(os.path.abspath(__file__))
+except NameError:
+    _script_dir = os.getcwd()
 einstein_path = os.path.join(_script_dir, "einstein.jpg")
 
 nx = 90
