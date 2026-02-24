@@ -102,6 +102,7 @@ class FC_FNO(FNO):
         separable: bool = False,
         preactivation: bool = False,
         conv_module: nn.Module = SpectralConv,
+        enforce_hermitian_symmetry: bool = True,
         FC_object: Optional[nn.Module] = None,
         projection_nonlinearity: nn.Module = F.tanh,
         domain_lengths: Tuple[float, ...] = None,
@@ -142,6 +143,7 @@ class FC_FNO(FNO):
             separable=separable,
             preactivation=preactivation,
             conv_module=conv_module,
+            enforce_hermitian_symmetry=enforce_hermitian_symmetry,
         )
 
         # Convert FNO block weights to complex double precision for higher precision

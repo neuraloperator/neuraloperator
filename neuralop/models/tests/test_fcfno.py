@@ -89,6 +89,7 @@ multiple_deriv_combos = [
 @pytest.mark.parametrize("lengths_num", test_lengths)
 @pytest.mark.parametrize("projection_nonlinearity", projection_nonlinearities)
 @pytest.mark.parametrize("FC_object", fc_objects)
+@pytest.mark.parametrize("enforce_hermitian_symmetry", [True, False])
 def test_fcfno_single_derivative_combinations(
     modes_num,
     lengths_num,
@@ -96,6 +97,7 @@ def test_fcfno_single_derivative_combinations(
     derivs_to_compute,
     n_dim,
     FC_object,
+    enforce_hermitian_symmetry,
 ):
     output, dx_arr, input_resolution = _run_fcfno(
         modes_num=modes_num,
@@ -104,6 +106,7 @@ def test_fcfno_single_derivative_combinations(
         projection_nonlinearity=projection_nonlinearity,
         derivs_to_compute=derivs_to_compute,
         FC_object=FC_object,
+        enforce_hermitian_symmetry=enforce_hermitian_symmetry,
     )
     _assert_model_outputs(output, dx_arr, input_resolution, FC_object)
 
