@@ -52,22 +52,24 @@ class CompositeTransform(Transform):
 
         See class docstring for detailed parameter descriptions.
         """
-        super.__init__()
+        super().__init__()
         self.transforms = transforms
 
     def transform(self, data_dict):
         for tform in self.transforms:
-            data_dict = tform.transform(self.data_dict)
+            data_dict = tform.transform(data_dict)
         return data_dict
 
     def inverse_transform(self, data_dict):
         for tform in self.transforms[::-1]:
-            data_dict = tform.transform(self.data_dict)
+            data_dict = tform.inverse_transform(data_dict)
         return data_dict
 
     def to(self, device):
         # all Transforms are required to implement .to()
-        self.transforms = [t.to(device) for t in self.transforms if hasattr(t, "to")]
+        self.transforms = [
+            t.to(device) if hasattr(t, "to") else t for t in self.transforms
+        ]
         return self
 
 
@@ -91,20 +93,21 @@ class DictTransform(Transform):
     """
 
     def __init__(self, transform_dict, input_mappings, return_mappings=None):
+        super().__init__()
         self.transforms = transform_dict
         self.output_fields = transform_dict.keys()
         self.input_mappings = input_mappings
         self.return_mappings = return_mappings
 
-        assert (
-            transform_dict.keys() == input_mappings.keys()
-        ), f"Error: expected keys in transform_dict and input_mappings to match,\
+        assert transform_dict.keys() == input_mappings.keys(), (
+            f"Error: expected keys in transform_dict and input_mappings to match,\
              received {transform_dict.keys()=}\n{input_mappings.keys()=}"
+        )
         if self.return_mappings:
-            assert (
-                transform_dict.keys() == return_mappings.keys()
-            ), f"Error: expected keys in transform_dict and return_mappings to match,\
+            assert transform_dict.keys() == return_mappings.keys(), (
+                f"Error: expected keys in transform_dict and return_mappings to match,\
              received {transform_dict.keys()=}\n{return_mappings.keys()=}"
+            )
 
     def transform(self, tensor_dict):
         """
@@ -133,7 +136,6 @@ class DictTransform(Transform):
         out = torch.zeros_like(x)
         for field, indices in self.input_mappings.items():
             decoded = self.transforms[field].inverse_transform(x[indices])
-            print(f"{decoded.shape=}")
             if self.return_mappings:
                 decoded = decoded[self.return_mappings[field]]
             out[indices] = decoded
@@ -141,11 +143,13 @@ class DictTransform(Transform):
         return out
 
     def cpu(self):
-        self.encoders = {k: v.cpu() for k, v in self.transforms.items()}
+        self.transforms = {k: v.cpu() for k, v in self.transforms.items()}
+        return self
 
     def cuda(self):
-        self.encoders = {k: v.cuda() for k, v in self.transforms.items()}
+        self.transforms = {k: v.cuda() for k, v in self.transforms.items()}
+        return self
 
     def to(self, device):
-        self.encoders = {k: v.to(device) for k, v in self.transforms.items()}
+        self.transforms = {k: v.to(device) for k, v in self.transforms.items()}
         return self
