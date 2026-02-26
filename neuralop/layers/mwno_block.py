@@ -994,7 +994,7 @@ class SparseKernelFT(nn.Module):
         return x
 
 
-class MWNO_CZ(nn.Module):
+class MWNOBlock(nn.Module):
     """
     Multiwavelet Neural Operator Core Z-transform Layer.
 
@@ -1109,19 +1109,19 @@ class MWNO_CZ(nn.Module):
     Examples
     --------
     >>> # 1D signal processing
-    >>> layer_1d = MWNO_CZ(k=3, alpha=5, L=0, c=1, n_dim=1)
+    >>> layer_1d = MWNOBlock(k=3, alpha=5, L=0, c=1, n_dim=1)
     >>> signal = torch.randn(32, 128, 1, 3)
     >>> output = layer_1d(signal)
     >>> assert output.shape == signal.shape
 
     >>> # 2D image processing
-    >>> layer_2d = MWNO_CZ(k=4, alpha=8, L=1, c=2, n_dim=2)
+    >>> layer_2d = MWNOBlock(k=4, alpha=8, L=1, c=2, n_dim=2)
     >>> image = torch.randn(16, 64, 64, 2, 16)
     >>> output = layer_2d(image)
     >>> assert output.shape == image.shape
 
     >>> # 3D spatio-temporal processing
-    >>> layer_3d = MWNO_CZ(k=3, alpha=5, L=0, c=1, n_dim=3)
+    >>> layer_3d = MWNOBlock(k=3, alpha=5, L=0, c=1, n_dim=3)
     >>> field = torch.randn(8, 32, 32, 20, 1, 9)
     >>> output = layer_3d(field)
     >>> assert output.shape == field.shape

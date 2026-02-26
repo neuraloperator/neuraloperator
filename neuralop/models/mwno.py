@@ -6,7 +6,7 @@ from torch import Tensor
 from typing import List, Tuple, Union, Literal, Optional, Callable
 import math
 
-from ..layers.mwno_block import MWNO_CZ
+from ..layers.mwno_block import MWNOBlock
 
 
 class MWNO(nn.Module):
@@ -40,7 +40,7 @@ class MWNO(nn.Module):
         Number of parallel wavelet channels. Default: 1, Recommended values: 1, 2
         Increases model capacity: total wavelet features = c * k^n_dim.
     n_layers : int, optional
-        Number of MWNO_CZ transformation layers. Default: 3
+        Number of MWNOBlock transformation layers. Default: 3
         More layers = deeper hierarchical processing.
 
     Other parameters
@@ -190,7 +190,7 @@ class MWNO(nn.Module):
         )
 
         self.mwno_layers = nn.ModuleList([
-            MWNO_CZ(
+            MWNOBlock(
                 k=k,
                 alpha=self.alpha,
                 L=L,
