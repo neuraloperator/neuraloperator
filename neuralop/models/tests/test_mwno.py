@@ -6,8 +6,8 @@ from ..mwno import MWNO
 
 
 @pytest.mark.parametrize("n_modes", [[16], (12,12),(8,8,8)])
-@pytest.mark.parametrize("k", [3])
-@pytest.mark.parametrize("c", [1,2])
+@pytest.mark.parametrize("k", [4])
+@pytest.mark.parametrize("c", [4, 16])
 @pytest.mark.parametrize("n_layers", [3])
 @pytest.mark.parametrize("L", [1])
 @pytest.mark.parametrize("base", ["legendre"])

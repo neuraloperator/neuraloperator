@@ -34,10 +34,9 @@ class MWNO(nn.Module):
         Number of output function channels. Determined by the problem.
         Set to 1 for scalar outputs (will auto-squeeze).
     k : int, optional
-        Wavelet basis size (number of polynomial basis functions). Default: 3
-        k=2: Piecewise linear wavelets, k=3: Cubic wavelets, k=4: Quartic wavelets.
+        Wavelet basis size (number of polynomial basis functions). Default: 4
     c : int, optional
-        Number of parallel wavelet channels. Default: 1, Recommended values: 1, 2
+        Number of parallel wavelet channels. Default: 16, Recommended values: 16
         Increases model capacity: total wavelet features = c * k^n_dim.
     n_layers : int, optional
         Number of MWNOBlock transformation layers. Default: 3
@@ -141,8 +140,8 @@ class MWNO(nn.Module):
             n_modes: Union[Tuple[int, ...], List[int]],
             in_channels: int = 1,
             out_channels: int = 1,
-            k: int = 3,
-            c: int = 1,
+            k: int = 4,
+            c: int = 16,
             n_layers: int = 3,
             L: int = 0,
             lifting_channels: int = 0,
