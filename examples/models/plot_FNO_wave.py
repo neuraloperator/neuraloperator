@@ -32,7 +32,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 from neuralop.models import FNO
-from neuralop import Trainer
 from neuralop.training import AdamW
 from neuralop.utils import count_model_params
 from neuralop import LpLoss, H1Loss
@@ -57,7 +56,7 @@ device = "cpu"
 #    \mathcal{G}: u(x, y, t=0) \mapsto u(x, y, t=T)
 
 
-def generate_wave_samples(n_samples, nx=64, c=1.0, T=0.5, dt=0.005):
+def generate_wave_samples(n_samples, nx=64, c=1.0, T=0.5, dt=0.005, seed=42):
     """Generate wave equation samples using leapfrog integration.
 
     Parameters
@@ -81,18 +80,18 @@ def generate_wave_samples(n_samples, nx=64, c=1.0, T=0.5, dt=0.005):
         Solutions u(x, y, t=T).
     """
     Lx = 2.0
-    dx = Lx / nx
+    dx = Lx / nx  # periodic grid spacing (no endpoint)
     nt = int(T / dt)
     fd = FiniteDiff(dim=2, h=(dx, dx))
 
     inputs = []
     outputs = []
-    rng = np.random.default_rng(42)
+    rng = np.random.default_rng(seed)
 
     for _ in range(n_samples):
         # Random initial condition: superposition of 1-4 Gaussian bumps
         n_bumps = rng.integers(1, 5)
-        x_coords = torch.linspace(0, Lx, nx, device=device)
+        x_coords = torch.linspace(0, Lx - dx, nx, device=device)
         X = x_coords.repeat(nx, 1).T
         Y = x_coords.repeat(nx, 1)
 
@@ -106,8 +105,10 @@ def generate_wave_samples(n_samples, nx=64, c=1.0, T=0.5, dt=0.005):
 
         inputs.append(u.clone())
 
-        # Leapfrog integration: u^{n+1} = 2u^n - u^{n-1} + c^2 dt^2 laplacian(u^n)
-        u_prev = u.clone()
+        # Leapfrog integration with 2nd-order accurate start (zero initial velocity):
+        # u^{-1} = u^0 + 0.5 * (c*dt)^2 * laplacian(u^0)
+        lap0 = fd.laplacian(u)
+        u_prev = u + 0.5 * (c * dt) ** 2 * lap0
         for _ in range(nt):
             lap = fd.laplacian(u)
             u_next = 2 * u - u_prev + (c * dt) ** 2 * lap
@@ -133,10 +134,10 @@ def generate_wave_samples(n_samples, nx=64, c=1.0, T=0.5, dt=0.005):
 
 print("Generating training data...")
 sys.stdout.flush()
-train_x, train_y = generate_wave_samples(200, nx=64, c=1.0, T=0.5)
+train_x, train_y = generate_wave_samples(200, nx=64, c=1.0, T=0.5, seed=42)
 print("Generating test data...")
 sys.stdout.flush()
-test_x, test_y = generate_wave_samples(50, nx=64, c=1.0, T=0.5)
+test_x, test_y = generate_wave_samples(50, nx=64, c=1.0, T=0.5, seed=12345)
 
 # Wrap in TensorDataset and DataLoader
 train_dataset = torch.utils.data.TensorDataset(train_x, train_y)

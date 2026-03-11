@@ -50,11 +50,11 @@ c = 1.0  # Wave speed
 T = 2.0  # Total simulation time
 dt = 0.005  # Time step (CFL: c*dt/dx < 1/sqrt(2))
 
-## Create grid
+## Create grid (periodic: endpoint=False, so spacing = L/n)
 dx = Lx / nx
 dy = Ly / ny
-X = torch.linspace(0, Lx, nx, device=device).repeat(ny, 1).T
-Y = torch.linspace(0, Ly, ny, device=device).repeat(nx, 1)
+X = torch.linspace(0, Lx - dx, nx, device=device).repeat(ny, 1).T
+Y = torch.linspace(0, Ly - dy, ny, device=device).repeat(nx, 1)
 nt = int(T / dt)
 
 ## CFL stability check
@@ -81,8 +81,10 @@ u = (
     + 0.7 * torch.exp(-((X - 1.4) ** 2 + (Y - 1.4) ** 2) / 0.03)
 ).to(device)
 
-## Initial velocity: zero (quiescent start)
-u_prev = u.clone()
+## Initial velocity: zero — use Taylor expansion for 2nd-order accurate start:
+## u^{-1} = u^0 + 0.5 * (c*dt)^2 * laplacian(u^0)
+lap_u0 = fd.laplacian(u)
+u_prev = u + 0.5 * (c * dt) ** 2 * lap_u0
 
 # %%
 # .. raw:: html
@@ -122,7 +124,7 @@ print(f"Saved {len(u_evolution)} frames from {nt} time steps")
 # Animate our solution
 # --------------------
 # Unlike diffusion which smooths out, watch how the wave equation preserves
-# structure as pulses propagate, reflect, and interfere.
+# structure as pulses propagate, wrap around the domain, and interfere.
 
 num_frames = min(100, len(u_evolution))
 frame_indices = (
