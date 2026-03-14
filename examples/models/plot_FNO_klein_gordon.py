@@ -33,10 +33,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 from neuralop.models import FNO
-from neuralop import Trainer
 from neuralop.training import AdamW
 from neuralop.utils import count_model_params
-from neuralop import LpLoss, H1Loss
+from neuralop import H1Loss
 
 device = "cpu"
 
@@ -229,7 +228,6 @@ sys.stdout.flush()
 optimizer = AdamW(model.parameters(), lr=1e-2, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
-l2loss = LpLoss(d=1, p=2)
 h1loss = H1Loss(d=1)
 
 print("\n### TRAINING ###")
@@ -297,7 +295,7 @@ sys.stdout.flush()
 # We show 3 test samples: input (initial condition), ground-truth output,
 # and the FNO prediction.
 
-x_grid = np.linspace(0, 1, nx)
+x_grid = np.linspace(0, 1, nx, endpoint=False)
 
 fig, axes = plt.subplots(3, 1, figsize=(10, 8))
 for idx in range(3):

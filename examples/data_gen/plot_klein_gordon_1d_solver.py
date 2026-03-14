@@ -107,14 +107,14 @@ for m in mass_values:
     # Taylor expansion for first leapfrog step:
     # u(dt) = u(0) + dt*u_t(0) + 0.5*dt^2*u_tt(0)
     # With u_t(0)=0: u(dt) = u(0) + 0.5*dt^2*(c^2*u_xx - m^2*u)
-    u_xx = fd.dx(fd.dx(u))
+    u_xx = fd.dx(u, order=2)
     u_prev = u + 0.5 * dt**2 * (c**2 * u_xx - m**2 * u)
 
     snapshots = [u.cpu().numpy().copy()]
     energies = []
 
     for step in range(nt):
-        u_xx = fd.dx(fd.dx(u))
+        u_xx = fd.dx(u, order=2)
         u_next = 2 * u - u_prev + dt**2 * (c**2 * u_xx - m**2 * u)
 
         # Compute energy using time-centered velocity (accurate for leapfrog)
