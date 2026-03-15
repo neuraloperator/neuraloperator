@@ -17,18 +17,16 @@ def test_kg_spectral_conv_output_shape(dim):
     assert y.shape == (2, out_ch, *spatial)
 
 
-@pytest.mark.parametrize("per_channel", [False, True])
-def test_kg_spectral_conv_per_channel(per_channel):
-    """Test shared vs per-channel KG parameters."""
+def test_kg_spectral_conv_per_channel():
+    """Test that KG parameters are always per-channel."""
     in_ch, out_ch = 2, 4
-    layer = KGSpectralConv(
-        in_ch, out_ch, n_modes=(8,), per_channel=per_channel
-    )
+    layer = KGSpectralConv(in_ch, out_ch, n_modes=(8,))
 
-    expected_shape = (out_ch,) if per_channel else (1,)
-    assert layer.log_T.shape == expected_shape
-    assert layer.log_c.shape == expected_shape
-    assert layer.log_chi.shape == expected_shape
+    assert layer.log_T.shape == (out_ch,)
+    assert layer.log_c.shape == (out_ch,)
+    assert layer.log_chi.shape == (out_ch,)
+    assert layer.alpha_real.shape == (out_ch, 8)
+    assert layer.alpha_imag.shape == (out_ch, 8)
 
     x = torch.randn(1, in_ch, 32)
     y = layer(x)
@@ -47,24 +45,41 @@ def test_kg_spectral_conv_gradient_flow():
     assert layer.log_T.grad is not None
     assert layer.log_c.grad is not None
     assert layer.log_chi.grad is not None
+    assert layer.alpha_real.grad is not None
+    assert layer.alpha_imag.grad is not None
     assert layer.channel_weight.grad is not None
     assert x.grad is not None
 
 
 def test_kg_spectral_conv_identity_at_T0():
-    """When T -> 0, the KG filter is cos(0) = 1 (identity)."""
+    """When T -> 0, the KG filter approaches identity."""
     layer = KGSpectralConv(
-        1, 1, n_modes=(16,), init_T=1e-8, init_c=1.0, init_chi=1.0, bias=False,
+        1,
+        1,
+        n_modes=(16,),
+        init_T=1e-8,
+        init_c=1.0,
+        init_chi=1.0,
+        bias=False,
     )
-    # Set channel weight to identity
+    # Set channel weight to identity, alpha to 1+0j
     with torch.no_grad():
         layer.channel_weight.fill_(1.0)
+        layer.alpha_real.fill_(1.0)
+        layer.alpha_imag.fill_(0.0)
 
     x = torch.randn(1, 1, 64)
     y = layer(x)
 
-    # With T ~ 0, cos(T * omega) ~ 1, so output ~ input
-    torch.testing.assert_close(y, x, atol=1e-4, rtol=1e-4)
+    # With T ~ 0, exp(-iT*omega) ~ 1, so output ~ input
+    # (only n_modes=16 low frequencies pass; high freqs zeroed)
+    # Check that the low-frequency content is preserved
+    x_hat = torch.fft.rfft(x, norm="forward")
+    y_hat = torch.fft.rfft(y, norm="forward")
+    # First 16 modes should match
+    torch.testing.assert_close(y_hat[:, :, :16], x_hat[:, :, :16], atol=1e-4, rtol=1e-4)
+    # High-frequency modes should be near zero
+    assert y_hat[:, :, 16:].abs().max() < 1e-5
 
 
 def test_kg_spectral_conv_no_bias():
@@ -88,15 +103,15 @@ def test_kg_spectral_conv_complex_data():
 
 
 def test_kg_spectral_conv_parameter_efficiency():
-    """KG layer should have far fewer parameters than standard SpectralConv."""
+    """KG layer should have fewer parameters than standard SpectralConv."""
     in_ch, out_ch, n_modes = 16, 16, (32,)
 
     kg_layer = KGSpectralConv(in_ch, out_ch, n_modes=n_modes)
     kg_params = sum(p.numel() for p in kg_layer.parameters())
 
-    # Standard SpectralConv would have in_ch * out_ch * prod(n_modes) complex params
-    # plus bias. KG has: 3 (T, c, chi) + in_ch * out_ch (channel_weight) + out_ch (bias)
-    fno_spectral_params = in_ch * out_ch * n_modes[0] * 2  # *2 for complex
+    # Standard SpectralConv: in_ch * out_ch * prod(n_modes) * 2 (complex)
+    # KG: 3*out_ch + 2*out_ch*prod(n_modes) + in_ch*out_ch + out_ch
+    fno_spectral_params = in_ch * out_ch * n_modes[0] * 2
     assert kg_params < fno_spectral_params
 
 

@@ -4,14 +4,20 @@ A physics-constrained spectral convolution layer that encodes the
 Klein-Gordon dispersion relation as a learnable spectral filter.
 
 Instead of learning arbitrary complex weights in Fourier space
-(as in the standard FNO SpectralConv), this layer uses the exact
-solution operator of the Klein-Gordon equation:
+(as in the standard FNO SpectralConv), this layer parameterizes the
+spectral filter via the exact solution operator of the Klein-Gordon
+equation:
 
-    H(k) = cos(T * sqrt(c^2 |k|^2 + chi^2))
+    H(k) = exp(-i T sqrt(c^2 |k|^2 + chi^2))
 
-with only 3 learnable scalar parameters (T, c, chi), plus a linear
-channel mixing matrix. This makes it dramatically more
-parameter-efficient for wave-type (hyperbolic) PDEs.
+with per-channel learnable (T, c, chi) parameters, plus per-mode
+learnable amplitude weights. This makes it dramatically more
+parameter-efficient for wave-type (hyperbolic) PDEs while retaining
+enough expressiveness for practical learning.
+
+Like the standard SpectralConv, this layer operates only on the
+first ``n_modes`` low-frequency modes and zeros out higher
+frequencies (the skip connection in FNOBlocks handles the residual).
 
 Mathematical background
 -----------------------
@@ -22,10 +28,6 @@ function in d dimensions is the Matern kernel family [1]_:
 - Matern(nu=0.5) = exp(-r/l)            ... 1D KG Green's function
 - Matern(nu=1.5) = (1+sqrt(3)r/l)e^(-sqrt(3)r/l)  ... 3D KG
 - Matern(nu -> inf) = exp(-r^2/2l^2)    ... RBF (diffusion limit)
-
-The standard RBF kernel used in SVMs and GPs is the diffusion
-(infinite smoothness) limit. The KG filter offers finite-smoothness
-alternatives motivated by wave physics.
 
 References
 ----------
@@ -54,14 +56,20 @@ class KGSpectralConv(BaseSpectralConv):
     """Klein-Gordon Spectral Convolution
 
     Applies a physics-constrained spectral filter based on the Klein-Gordon
-    dispersion relation: ``H(k) = cos(T * sqrt(c^2 |k|^2 + chi^2))``.
+    dispersion relation, with per-mode learnable amplitudes.
 
-    This layer is a drop-in alternative to
-    :class:`~neuralop.layers.spectral_convolution.SpectralConv` for
-    wave-type PDEs. It trades the FNO's unconstrained Fourier weights
-    (O(C_in * C_out * prod(n_modes)) parameters) for a physics-constrained
-    filter with only 3 scalar parameters plus a channel mixing matrix
-    (O(C_in * C_out + 3) parameters).
+    The spectral weight for output channel ``o`` at wavenumber ``k`` is::
+
+        W_o(k) = alpha_o(k) * exp(-i T_o sqrt(c_o^2 |k|^2 + chi_o^2))
+
+    where ``alpha_o(k)`` is a learnable complex amplitude per mode, and
+    ``(T_o, c_o, chi_o)`` are per-channel dispersion parameters.
+
+    This is a drop-in replacement for
+    :class:`~neuralop.layers.spectral_convolution.SpectralConv`. It
+    matches SpectralConv's mode-truncation behavior (operating only on
+    the first ``n_modes`` low-frequency modes) while using far fewer
+    parameters.
 
     Parameters
     ----------
@@ -71,57 +79,29 @@ class KGSpectralConv(BaseSpectralConv):
         Number of output channels.
     n_modes : int or tuple of int
         Number of Fourier modes to retain along each spatial dimension.
-        For real-valued data, the last dimension is automatically adjusted
-        for the real FFT redundancy.
     init_T : float, optional
-        Initial propagation time parameter. Default: 1.0.
+        Initial propagation time. Default: 1.0.
     init_c : float, optional
-        Initial wave speed parameter. Default: 1.0.
+        Initial wave speed. Default: 1.0.
     init_chi : float, optional
-        Initial mass/dispersion parameter. Default: 0.1.
-    per_channel : bool, optional
-        If True, learn separate (T, c, chi) per output channel.
-        Default: False (shared across channels).
+        Initial mass/dispersion. Default: 0.1.
     bias : bool, optional
-        If True, add a learnable bias term. Default: True.
+        If True, add a learnable bias. Default: True.
     complex_data : bool, optional
-        If True, input data is complex-valued in the spatial domain.
-        Default: False.
+        If True, input is complex in the spatial domain. Default: False.
     fft_norm : str, optional
-        Normalization mode for FFT. Default: ``'forward'``.
+        FFT normalization mode. Default: ``'forward'``.
     device : torch.device or None, optional
         Device for parameters. Default: None.
-
-    Notes
-    -----
-    **When to use this layer:**
-
-    - The underlying PDE is hyperbolic (wave equation, Klein-Gordon,
-      Maxwell's equations, linearized Euler)
-    - Training data is limited and you need parameter efficiency
-    - You want a physically interpretable spectral filter
-
-    **When to prefer standard SpectralConv:**
-
-    - The PDE is parabolic (diffusion, heat equation)
-    - You have abundant training data
-    - Maximum expressiveness is more important than parameter efficiency
-
-    **Dispersion relation limits:**
-
-    - chi = 0: reduces to the wave equation filter cos(T c |k|)
-    - T = 0: identity operator (no time evolution)
-    - c -> 0: uniform damping cos(T chi) independent of k
 
     Examples
     --------
     >>> layer = KGSpectralConv(in_channels=3, out_channels=3, n_modes=(16,))
-    >>> x = torch.randn(4, 3, 64)   # batch=4, channels=3, nx=64
+    >>> x = torch.randn(4, 3, 64)
     >>> y = layer(x)
     >>> y.shape
     torch.Size([4, 3, 64])
 
-    >>> # 2D case
     >>> layer_2d = KGSpectralConv(in_channels=1, out_channels=1, n_modes=(16, 16))
     >>> x2d = torch.randn(2, 1, 64, 64)
     >>> y2d = layer_2d(x2d)
@@ -137,11 +117,24 @@ class KGSpectralConv(BaseSpectralConv):
         init_T: float = 1.0,
         init_c: float = 1.0,
         init_chi: float = 0.1,
-        per_channel: bool = False,
         bias: bool = True,
         complex_data: bool = False,
         fft_norm: str = "forward",
         device=None,
+        # Backward compat: ignored old arg
+        per_channel=None,
+        # Accept (and ignore) FNOBlocks kwargs for drop-in compatibility
+        max_n_modes=None,
+        rank=None,
+        factorization=None,
+        implementation=None,
+        separable=None,
+        resolution_scaling_factor=None,
+        fno_block_precision=None,
+        fixed_rank_modes=None,
+        decomposition_kwargs=None,
+        init_std=None,
+        **kwargs,
     ):
         super().__init__(device=device)
 
@@ -155,33 +148,54 @@ class KGSpectralConv(BaseSpectralConv):
         self._n_modes = list(n_modes)
         self.order = len(self._n_modes)
 
-        # KG dispersion parameters (learnable, stored in log-space for positivity)
-        param_shape = (out_channels,) if per_channel else (1,)
+        # Per-channel KG dispersion parameters (log-space for positivity)
         self.log_T = nn.Parameter(
-            torch.full(param_shape, float(np.log(max(init_T, 1e-8))), device=device)
+            torch.full((out_channels,), float(np.log(max(init_T, 1e-8))), device=device)
         )
         self.log_c = nn.Parameter(
-            torch.full(param_shape, float(np.log(max(init_c, 1e-8))), device=device)
+            torch.full((out_channels,), float(np.log(max(init_c, 1e-8))), device=device)
         )
         self.log_chi = nn.Parameter(
-            torch.full(param_shape, float(np.log(max(init_chi, 1e-8))), device=device)
+            torch.full(
+                (out_channels,), float(np.log(max(init_chi, 1e-8))), device=device
+            )
         )
 
-        # Channel mixing weights
-        init_std = (2 / (in_channels + out_channels)) ** 0.5
+        # Per-mode learnable complex amplitude: (out_channels, *n_modes)
+        alpha_shape = (out_channels, *self._n_modes)
+        self.alpha_real = nn.Parameter(torch.ones(alpha_shape, device=device))
+        self.alpha_imag = nn.Parameter(torch.zeros(alpha_shape, device=device))
+
+        # Channel mixing (mode-independent): (in_channels, out_channels)
+        fan_std = (2 / (in_channels + out_channels)) ** 0.5
         self.channel_weight = nn.Parameter(
-            init_std * torch.randn(in_channels, out_channels, device=device)
+            fan_std * torch.randn(in_channels, out_channels, device=device)
         )
 
         if bias:
             self.bias = nn.Parameter(
-                init_std
-                * torch.randn(
-                    *((out_channels,) + (1,) * self.order), device=device
-                )
+                fan_std
+                * torch.randn(*((out_channels,) + (1,) * self.order), device=device)
             )
         else:
             self.bias = None
+
+    def transform(self, x, output_shape=None):
+        """Transform input for skip connections (identity or resample).
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor.
+        output_shape : tuple of int or None
+            Target spatial shape. If None or same as input, returns identity.
+        """
+        in_shape = list(x.shape[2:])
+        if output_shape is None or list(output_shape) == in_shape:
+            return x
+        from .resample import resample
+
+        return resample(x, 1.0, list(range(2, x.ndim)), output_shape=list(output_shape))
 
     @property
     def n_modes(self):
@@ -193,55 +207,62 @@ class KGSpectralConv(BaseSpectralConv):
             n_modes = [n_modes]
         self._n_modes = list(n_modes)
 
-    def _compute_kg_filter(self, spatial_sizes):
-        """Compute the KG spectral filter H(k) on the FFT frequency grid.
+    def _compute_kg_filter(self, kept_sizes, spatial_sizes):
+        """Compute the KG spectral filter on the truncated frequency grid.
 
         Parameters
         ----------
+        kept_sizes : list of int
+            Number of modes kept per dimension (after truncation).
         spatial_sizes : list of int
-            Spatial dimensions of the input (e.g. [nx] or [nx, ny]).
+            Full spatial dimensions of the input.
 
         Returns
         -------
         H : torch.Tensor
-            Real-valued spectral filter of shape
-            ``(out_channels or 1, k1, k2, ...)``.
+            Complex spectral filter of shape ``(out_channels, *kept_sizes)``.
         """
         T = torch.exp(self.log_T)
         c = torch.exp(self.log_c)
         chi = torch.exp(self.log_chi)
 
-        # Build wavenumber grid
+        # Build wavenumber grid only for the kept low-frequency modes
         freq_components = []
-        for i, size in enumerate(spatial_sizes):
-            if i == len(spatial_sizes) - 1 and not self.complex_data:
-                freqs = torch.fft.rfftfreq(size, device=T.device) * 2 * np.pi
-            else:
-                freqs = torch.fft.fftfreq(size, device=T.device) * 2 * np.pi
+        for i, (kept, full_size) in enumerate(zip(kept_sizes, spatial_sizes)):
+            # Frequencies: 0, 2π/N, 2·2π/N, ..., (kept-1)·2π/N
+            freqs = torch.arange(kept, device=T.device, dtype=torch.float32)
+            freqs = freqs * (2 * np.pi / full_size)
             freq_components.append(freqs)
 
         grids = torch.meshgrid(*freq_components, indexing="ij")
         k_squared = sum(g**2 for g in grids)  # |k|^2
 
-        # Reshape parameters for broadcasting: (channels, 1, 1, ...)
-        ndim = len(spatial_sizes)
+        # Reshape (out_channels,) -> (out_channels, 1, 1, ...)
+        ndim = len(kept_sizes)
         shape = (-1,) + (1,) * ndim
-        c_sq = c.view(shape) ** 2
-        chi_sq = chi.view(shape) ** 2
-        T_val = T.view(shape)
+        omega = torch.sqrt(
+            c.view(shape) ** 2 * k_squared.unsqueeze(0) + chi.view(shape) ** 2
+        )
 
-        # omega(k) = sqrt(c^2 |k|^2 + chi^2)
-        omega = torch.sqrt(c_sq * k_squared.unsqueeze(0) + chi_sq)
+        # Complex propagator: exp(-i T omega)
+        phase = -T.view(shape) * omega
+        H = torch.complex(torch.cos(phase), torch.sin(phase))
 
-        # H(k) = cos(T * omega(k))
-        H = torch.cos(T_val * omega)
+        # Modulate by per-mode learnable amplitude
+        alpha = torch.complex(self.alpha_real, self.alpha_imag)
+        # Truncate alpha to match actual kept sizes (may differ from n_modes)
+        slices = tuple(slice(0, k) for k in kept_sizes)
+        alpha_trunc = alpha[(slice(None),) + slices]
+        H = alpha_trunc * H
 
         return H
 
     @property
     def n_kernel_params(self):
-        """Number of learnable parameters in the spectral filter (T, c, chi)."""
-        return self.log_T.numel() + self.log_c.numel() + self.log_chi.numel()
+        """Number of learnable parameters in the spectral kernel."""
+        n_kg = self.log_T.numel() + self.log_c.numel() + self.log_chi.numel()
+        n_alpha = self.alpha_real.numel() + self.alpha_imag.numel()
+        return n_kg + n_alpha
 
     @property
     def n_total_params(self):
@@ -258,22 +279,22 @@ class KGSpectralConv(BaseSpectralConv):
     ) -> torch.Tensor:
         """Apply the Klein-Gordon spectral filter.
 
+        Matches SpectralConv behavior: operates only on the first
+        ``n_modes`` low-frequency modes and zeros out higher frequencies.
+
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor of shape ``(batch, in_channels, n1, ..., nd)``.
+            Input of shape ``(batch, in_channels, n1, ..., nd)``.
         output_shape : tuple of int or None, optional
-            If provided, the output spatial dimensions will be resized
-            to this shape via the inverse FFT. Default: None (same size
-            as input).
+            Target spatial dimensions for the output.
 
         Returns
         -------
         torch.Tensor
-            Output tensor of shape ``(batch, out_channels, n1, ..., nd)``
-            (or ``output_shape`` if provided).
+            Output of shape ``(batch, out_channels, n1, ..., nd)``.
         """
-        batchsize, channels, *mode_sizes = x.shape
+        batchsize, channels, *spatial_sizes = x.shape
         fft_dims = list(range(-self.order, 0))
 
         # Forward FFT
@@ -282,25 +303,44 @@ class KGSpectralConv(BaseSpectralConv):
         else:
             x_hat = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
 
-        # Channel mixing: (batch, in_ch, k...) -> (batch, out_ch, k...)
-        # Cast weight to match x_hat dtype (real -> complex is fine)
-        w = self.channel_weight.to(x_hat.dtype)
-        out_hat = torch.einsum("bi...,io->bo...", x_hat, w)
+        fft_sizes = list(x_hat.shape[2:])
 
-        # Apply KG spectral filter (real-valued, broadcasts over batch)
-        H = self._compute_kg_filter(mode_sizes)
-        out_hat = out_hat * H.unsqueeze(0).to(out_hat.dtype)
+        # Allocate output at full FFT resolution, initialized to zeros
+        # (high-frequency modes stay zero — same as SpectralConv)
+        out_hat = torch.zeros(
+            batchsize,
+            self.out_channels,
+            *fft_sizes,
+            device=x.device,
+            dtype=torch.cfloat,
+        )
+
+        # Determine how many modes to keep per dimension
+        kept_sizes = [min(nm, fs) for nm, fs in zip(self._n_modes, fft_sizes)]
+        mode_slices = tuple(slice(0, k) for k in kept_sizes)
+        full_slices = (slice(None), slice(None)) + mode_slices
+
+        # Extract low-frequency modes from input
+        x_low = x_hat[full_slices]  # (B, C_in, *kept_sizes)
+
+        # Channel mixing: (B, C_in, *k) @ (C_in, C_out) -> (B, C_out, *k)
+        w = self.channel_weight.to(x_low.dtype)
+        out_low = torch.einsum("bi...,io->bo...", x_low, w)
+
+        # Compute and apply KG spectral filter (complex, per-channel)
+        H = self._compute_kg_filter(kept_sizes, spatial_sizes)
+        out_low = out_low * H.unsqueeze(0)  # broadcast over batch
+
+        # Place back into zero-padded output
+        out_slices = (slice(None), slice(None)) + mode_slices
+        out_hat[out_slices] = out_low
 
         # Inverse FFT
-        out_sizes = output_shape if output_shape is not None else mode_sizes
+        out_sizes = output_shape if output_shape is not None else spatial_sizes
         if self.complex_data:
-            x = torch.fft.ifftn(
-                out_hat, s=out_sizes, dim=fft_dims, norm=self.fft_norm
-            )
+            x = torch.fft.ifftn(out_hat, s=out_sizes, dim=fft_dims, norm=self.fft_norm)
         else:
-            x = torch.fft.irfftn(
-                out_hat, s=out_sizes, dim=fft_dims, norm=self.fft_norm
-            )
+            x = torch.fft.irfftn(out_hat, s=out_sizes, dim=fft_dims, norm=self.fft_norm)
 
         if self.bias is not None:
             x = x + self.bias
@@ -311,13 +351,12 @@ class KGSpectralConv(BaseSpectralConv):
         T = torch.exp(self.log_T).detach()
         c = torch.exp(self.log_c).detach()
         chi = torch.exp(self.log_chi).detach()
-        T_str = f"{T.item():.4g}" if T.numel() == 1 else str(T.tolist())
-        c_str = f"{c.item():.4g}" if c.numel() == 1 else str(c.tolist())
-        chi_str = f"{chi.item():.4g}" if chi.numel() == 1 else str(chi.tolist())
         return (
             f"in_channels={self.in_channels}, out_channels={self.out_channels}, "
             f"n_modes={self._n_modes}, "
-            f"T={T_str}, c={c_str}, chi={chi_str}, "
+            f"T_range=[{T.min().item():.3g}, {T.max().item():.3g}], "
+            f"c_range=[{c.min().item():.3g}, {c.max().item():.3g}], "
+            f"chi_range=[{chi.min().item():.3g}, {chi.max().item():.3g}], "
             f"kernel_params={self.n_kernel_params}, "
             f"total_params={self.n_total_params}"
         )

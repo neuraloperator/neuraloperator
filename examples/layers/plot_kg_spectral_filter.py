@@ -105,9 +105,7 @@ ax.legend()
 ax.axhline(0, color="gray", linewidth=0.5)
 ax.set_ylim(-1.2, 1.2)
 
-fig.suptitle(
-    "Klein-Gordon spectral filter vs standard neural operator filters", y=1.02
-)
+fig.suptitle("Klein-Gordon spectral filter vs standard neural operator filters", y=1.02)
 plt.tight_layout()
 fig.show()
 
