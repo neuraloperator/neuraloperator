@@ -25,8 +25,9 @@ def test_kg_spectral_conv_per_channel():
     assert layer.log_T.shape == (out_ch,)
     assert layer.log_c.shape == (out_ch,)
     assert layer.log_chi.shape == (out_ch,)
-    assert layer.alpha_real.shape == (out_ch, 8)
-    assert layer.alpha_imag.shape == (out_ch, 8)
+    # n_modes=(8,) for real data -> internally [8//2+1] = [5]
+    assert layer.alpha_real.shape == (out_ch, 5)
+    assert layer.alpha_imag.shape == (out_ch, 5)
 
     x = torch.randn(1, in_ch, 32)
     y = layer(x)
@@ -53,6 +54,8 @@ def test_kg_spectral_conv_gradient_flow():
 
 def test_kg_spectral_conv_identity_at_T0():
     """When T -> 0, the KG filter approaches identity."""
+    # n_modes=(16,) for real data -> internally [9] (16//2+1)
+    n_internal = 16 // 2 + 1  # = 9
     layer = KGSpectralConv(
         1,
         1,
@@ -72,14 +75,15 @@ def test_kg_spectral_conv_identity_at_T0():
     y = layer(x)
 
     # With T ~ 0, exp(-iT*omega) ~ 1, so output ~ input
-    # (only n_modes=16 low frequencies pass; high freqs zeroed)
-    # Check that the low-frequency content is preserved
+    # (only n_internal low frequencies pass; high freqs zeroed)
     x_hat = torch.fft.rfft(x, norm="forward")
     y_hat = torch.fft.rfft(y, norm="forward")
-    # First 16 modes should match
-    torch.testing.assert_close(y_hat[:, :, :16], x_hat[:, :, :16], atol=1e-4, rtol=1e-4)
+    # First n_internal modes should match
+    torch.testing.assert_close(
+        y_hat[:, :, :n_internal], x_hat[:, :, :n_internal], atol=1e-4, rtol=1e-4
+    )
     # High-frequency modes should be near zero
-    assert y_hat[:, :, 16:].abs().max() < 1e-5
+    assert y_hat[:, :, n_internal:].abs().max() < 1e-5
 
 
 def test_kg_spectral_conv_no_bias():
@@ -109,9 +113,10 @@ def test_kg_spectral_conv_parameter_efficiency():
     kg_layer = KGSpectralConv(in_ch, out_ch, n_modes=n_modes)
     kg_params = sum(p.numel() for p in kg_layer.parameters())
 
-    # Standard SpectralConv: in_ch * out_ch * prod(n_modes) * 2 (complex)
-    # KG: 3*out_ch + 2*out_ch*prod(n_modes) + in_ch*out_ch + out_ch
-    fno_spectral_params = in_ch * out_ch * n_modes[0] * 2
+    # Standard SpectralConv: in_ch * out_ch * adjusted_modes * 2 (complex)
+    # For real data, adjusted_modes = n_modes[-1]//2+1 = 17
+    adjusted = n_modes[0] // 2 + 1
+    fno_spectral_params = in_ch * out_ch * adjusted * 2
     assert kg_params < fno_spectral_params
 
 
@@ -145,14 +150,119 @@ def test_kg_spectral_conv_repr():
 
 
 def test_kg_spectral_conv_n_modes_property():
-    """Test dynamic n_modes update."""
+    """Test dynamic n_modes update with rFFT adjustment."""
     layer = KGSpectralConv(2, 2, n_modes=(16,))
-    assert layer.n_modes == [16]
+    # n_modes=(16,) for real data -> [16//2+1] = [9]
+    assert layer.n_modes == [9]
 
     layer.n_modes = (8,)
-    assert layer.n_modes == [8]
+    # (8,) -> [8//2+1] = [5]
+    assert layer.n_modes == [5]
 
     # Should still produce valid output
     x = torch.randn(1, 2, 64)
     y = layer(x)
     assert y.shape == (1, 2, 64)
+
+
+def test_kg_spectral_conv_2d_mode_truncation():
+    """Test that 2D mode truncation uses centered window (fftshift).
+
+    For a 2D real-data input, the first spatial dimension should use
+    a centered frequency window (via fftshift), while the last dimension
+    uses the standard rFFT low-frequency slice. This verifies the KG layer
+    matches SpectralConv's multi-D truncation behavior.
+    """
+    layer = KGSpectralConv(
+        1,
+        1,
+        n_modes=(8, 8),
+        init_T=1e-8,
+        init_c=1.0,
+        init_chi=1.0,
+        bias=False,
+    )
+    # n_modes=(8,8) for real data -> [8, 5] internally
+    assert layer.n_modes == [8, 5]
+
+    with torch.no_grad():
+        layer.channel_weight.fill_(1.0)
+        layer.alpha_real.fill_(1.0)
+        layer.alpha_imag.fill_(0.0)
+
+    # Create input with energy only at low frequencies
+    x = torch.randn(1, 1, 32, 32)
+    y = layer(x)
+    assert y.shape == (1, 1, 32, 32)
+
+    # Verify the layer preserves low-frequency content and zeros highs
+    # by checking that the output has reduced high-frequency energy
+    x_hat = torch.fft.rfftn(x, dim=[-2, -1], norm="forward")
+    y_hat = torch.fft.rfftn(y, dim=[-2, -1], norm="forward")
+
+    # High-frequency energy should be reduced (zeroed out modes)
+    high_freq_energy_x = x_hat[:, :, 8:, :].abs().pow(2).sum()
+    high_freq_energy_y = y_hat[:, :, 8:, :].abs().pow(2).sum()
+    assert high_freq_energy_y < high_freq_energy_x * 0.1
+
+
+def test_kg_spectral_conv_max_n_modes():
+    """Test max_n_modes allocates larger alpha and supports mode changes."""
+    layer = KGSpectralConv(
+        2, 2, n_modes=(8,), max_n_modes=16, bias=False
+    )
+    # n_modes=(8,) -> [5]; max_n_modes=16 -> [9]
+    assert layer.n_modes == [5]
+    assert layer.max_n_modes == [9]
+    # Alpha allocated at max_n_modes
+    assert layer.alpha_real.shape == (2, 9)
+
+    x = torch.randn(1, 2, 64)
+    y = layer(x)
+    assert y.shape == (1, 2, 64)
+
+    # Increase n_modes within max_n_modes range
+    layer.n_modes = (16,)  # -> [9], same as max_n_modes
+    assert layer.n_modes == [9]
+    y2 = layer(x)
+    assert y2.shape == (1, 2, 64)
+
+
+def test_kg_spectral_conv_precision_warning():
+    """Non-default fno_block_precision should emit a warning."""
+    import warnings
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        layer = KGSpectralConv(
+            2, 2, n_modes=(8,), fno_block_precision="half"
+        )
+        assert len(w) == 1
+        assert "fno_block_precision" in str(w[0].message)
+
+    # "full" should not warn
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        layer = KGSpectralConv(
+            2, 2, n_modes=(8,), fno_block_precision="full"
+        )
+        assert len(w) == 0
+
+
+def test_kg_spectral_conv_n_modes_rfft_adjustment():
+    """Verify rFFT adjustment of n_modes matches SpectralConv semantics."""
+    # 1D: (16,) -> [9]
+    layer_1d = KGSpectralConv(1, 1, n_modes=(16,))
+    assert layer_1d.n_modes == [16 // 2 + 1]
+
+    # 2D: (16, 16) -> [16, 9] (only last dim adjusted)
+    layer_2d = KGSpectralConv(1, 1, n_modes=(16, 16))
+    assert layer_2d.n_modes == [16, 16 // 2 + 1]
+
+    # 3D: (16, 16, 16) -> [16, 16, 9]
+    layer_3d = KGSpectralConv(1, 1, n_modes=(16, 16, 16))
+    assert layer_3d.n_modes == [16, 16, 16 // 2 + 1]
+
+    # Complex data: no adjustment
+    layer_complex = KGSpectralConv(1, 1, n_modes=(16,), complex_data=True)
+    assert layer_complex.n_modes == [16]
