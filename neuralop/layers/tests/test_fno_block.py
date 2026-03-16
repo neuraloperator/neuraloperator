@@ -101,6 +101,30 @@ def test_FNOBlock_norm(norm, n_dim):
     assert list(res.shape[2:]) == size[:n_dim]
 
 
+@pytest.mark.parametrize("norm_groups", [1, 2, 4, 8])
+def test_FNOBlock_group_norm(norm_groups):
+    """Test FNOBlocks with group_norm and custom norm_groups"""
+    modes = (8, 8, 8)
+    hidden_channels = 16
+    n_layers = 1
+    
+    block = FNOBlocks(
+        in_channels=hidden_channels,
+        out_channels=hidden_channels,
+        n_modes=modes,
+        n_layers=n_layers,
+        norm="group_norm",
+        norm_groups=norm_groups,
+    )
+    
+    # Check that GroupNorm layers are correctly initialized
+    assert block.norm is not None
+    for norm_layer in block.norm:
+        assert isinstance(norm_layer, torch.nn.GroupNorm)
+        assert norm_layer.num_groups == norm_groups
+        assert norm_layer.num_channels == hidden_channels
+
+
 @pytest.mark.parametrize("n_dim", [1, 2, 3])
 def test_FNOBlock_complex_data(n_dim):
     """Test FNO layers with complex input data"""

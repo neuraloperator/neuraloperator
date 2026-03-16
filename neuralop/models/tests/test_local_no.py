@@ -139,3 +139,28 @@ def test_local_no_with_disco(
         if param.grad is None:
             n_unused_params += 1
     assert n_unused_params == 0, f"{n_unused_params} parameters were unused!"
+
+
+def test_local_no_group_norm():
+    """Test LocalNO with group_norm and custom norm_groups"""
+    norm_groups = 4
+    hidden_channels = 16
+    size = (12, 12)
+    model = LocalNO(
+        in_channels=3,
+        out_channels=1,
+        default_in_shape=size,
+        hidden_channels=hidden_channels,
+        n_modes=(5, 5),
+        n_layers=2,
+        diff_layers=True,
+        disco_layers=False,
+        conv_padding_mode="zeros",
+        norm="group_norm",
+        norm_groups=norm_groups,
+    )
+
+    for norm_layer in model.local_no_blocks.norm:
+        assert isinstance(norm_layer, torch.nn.GroupNorm)
+        assert norm_layer.num_groups == norm_groups
+        assert norm_layer.num_channels == hidden_channels

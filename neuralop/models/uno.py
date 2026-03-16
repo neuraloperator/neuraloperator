@@ -68,6 +68,8 @@ class UNO(nn.Module):
         Non-linearity module to use. Default: F.gelu
     norm : str, optional
         Normalization layer to use. Options: "ada_in", "group_norm", "instance_norm", None. Default: None
+    norm_groups : int, optional
+        Number of groups for GroupNorm, by default 1
     preactivation : bool, optional
         Whether to use ResNet-style preactivation. Default: False
     fno_skip : str, optional
@@ -133,6 +135,7 @@ class UNO(nn.Module):
         channel_mlp_expansion=0.5,
         non_linearity=F.gelu,
         norm=None,
+        norm_groups=1,
         preactivation=False,
         fno_skip="linear",
         horizontal_skip="linear",
@@ -285,6 +288,7 @@ class UNO(nn.Module):
                     resolution_scaling_factor=[self.uno_scalings[i]],
                     non_linearity=non_linearity,
                     norm=norm,
+                    norm_groups=norm_groups,
                     preactivation=preactivation,
                     fno_skip=fno_skip,
                     channel_mlp_skip=channel_mlp_skip,

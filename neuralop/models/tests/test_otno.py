@@ -106,3 +106,21 @@ def test_otno_output_shape(n_s_sqrt, n_target_points):
 
     assert list(out.shape) == [batch_size, n_target_points]
     assert out.isfinite().all()
+
+
+def test_otno_group_norm():
+    """Test OTNO with group_norm and custom norm_groups"""
+    norm_groups = 4
+    model = OTNO(
+        n_modes=n_modes,
+        hidden_channels=hidden_channels,
+        in_channels=in_channels,
+        out_channels=out_channels,
+        n_layers=n_layers,
+        norm="group_norm",
+        norm_groups=norm_groups,
+    )
+
+    for norm_layer in model.fno_blocks.norm:
+        assert isinstance(norm_layer, torch.nn.GroupNorm)
+        assert norm_layer.num_groups == norm_groups

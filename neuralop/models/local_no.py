@@ -96,6 +96,8 @@ class LocalNO(BaseModel, name="LocalNO"):
         Non-linear activation function module to use. Default: F.gelu
     norm : str, optional
         Normalization layer to use. Options: "ada_in", "group_norm", "instance_norm", None. Default: None
+    norm_groups : int, optional
+        Number of groups for GroupNorm, by default 1
     complex_data : bool, optional
         Whether data is complex-valued. If True, initializes complex-valued modules. Default: False
     use_channel_mlp : bool, optional
@@ -208,6 +210,7 @@ class LocalNO(BaseModel, name="LocalNO"):
         positional_embedding: Union[str, nn.Module] = "grid",
         non_linearity: nn.Module = F.gelu,
         norm: str = None,
+        norm_groups: int = 1,
         complex_data: bool = False,
         use_channel_mlp: bool = False,
         channel_mlp_dropout: float = 0,
@@ -323,6 +326,7 @@ class LocalNO(BaseModel, name="LocalNO"):
             non_linearity=non_linearity,
             stabilizer=stabilizer,
             norm=norm,
+            norm_groups=norm_groups,
             preactivation=preactivation,
             local_no_skip=local_no_skip,
             channel_mlp_skip=channel_mlp_skip,

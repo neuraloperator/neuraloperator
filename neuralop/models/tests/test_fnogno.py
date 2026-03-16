@@ -97,3 +97,23 @@ def test_fnogno(gno_transform_type, fno_n_modes, gno_batched, gno_pos_embed_type
     if gno_batched:
         # assert f[1:] accumulates no grad
         assert not f.grad[1:].nonzero().any()
+
+
+def test_fnogno_group_norm():
+    """Test FNOGNO with group_norm and custom fno_norm_groups"""
+    fno_norm_groups = 4
+    model = FNOGNO(
+        in_channels=3,
+        out_channels=2,
+        gno_radius=0.2,
+        gno_coord_dim=2,
+        fno_n_modes=(8, 8),
+        fno_hidden_channels=16,
+        fno_norm="group_norm",
+        fno_norm_groups=fno_norm_groups,
+        gno_use_open3d=False,
+    )
+
+    for norm_layer in model.fno_blocks.norm:
+        assert isinstance(norm_layer, torch.nn.GroupNorm)
+        assert norm_layer.num_groups == fno_norm_groups

@@ -75,6 +75,8 @@ class FNO(BaseModel, name="FNO"):
         Non-Linear activation function module to use. Default: F.gelu
     norm : Literal["ada_in", "group_norm", "instance_norm"], optional
         Normalization layer to use. Options: "ada_in", "group_norm", "instance_norm", None. Default: None
+    norm_groups : int, optional
+        Number of groups for GroupNorm, by default 1
     complex_data : bool, optional
         Whether the data is complex-valued. If True, initializes complex-valued modules. Default: False
     use_channel_mlp : bool, optional
@@ -179,6 +181,7 @@ class FNO(BaseModel, name="FNO"):
         positional_embedding: Union[str, nn.Module] = "grid",
         non_linearity: nn.Module = F.gelu,
         norm: Literal["ada_in", "group_norm", "instance_norm"] = None,
+        norm_groups: int = 1,
         complex_data: bool = False,
         use_channel_mlp: bool = True,
         channel_mlp_dropout: float = 0,
@@ -289,6 +292,7 @@ class FNO(BaseModel, name="FNO"):
             non_linearity=non_linearity,
             stabilizer=stabilizer,
             norm=norm,
+            norm_groups=norm_groups,
             preactivation=preactivation,
             fno_skip=fno_skip,
             channel_mlp_skip=channel_mlp_skip,

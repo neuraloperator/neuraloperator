@@ -228,3 +228,25 @@ def test_RNOBlock_factorization(factorization, complex_data):
     out = layer(x)
     assert out.shape == (batch_size, width, *size)
     assert out.dtype == dtype
+
+
+@pytest.mark.parametrize("norm_groups", [1, 2, 4, 8])
+def test_RNOBlock_group_norm(norm_groups):
+    """Test RNOBlock with group_norm and custom norm_groups"""
+    modes = (8, 8)
+    hidden_channels = 16
+
+    layer = RNOBlock(
+        n_modes=modes,
+        hidden_channels=hidden_channels,
+        norm="group_norm",
+        norm_groups=norm_groups,
+    )
+
+    # RNOBlock contains an RNOCell which contains 6 FNOBlocks (3 input + 3 hidden gates)
+    for fno_block in [*layer.cell.input_gates, *layer.cell.hidden_gates]:
+        assert fno_block.norm is not None
+        for norm_layer in fno_block.norm:
+            assert isinstance(norm_layer, torch.nn.GroupNorm)
+            assert norm_layer.num_groups == norm_groups
+            assert norm_layer.num_channels == hidden_channels
