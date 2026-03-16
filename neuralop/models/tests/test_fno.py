@@ -178,6 +178,42 @@ def test_fno_advanced_params(norm, use_channel_mlp, channel_mlp_skip, fno_skip, 
     loss.backward()
 
 
+def test_fno_group_norm():
+    """Test FNO with group_norm and custom norm_groups"""
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    modes = 5
+    hidden_channels = 16
+    batch_size = 2
+    n_layers = 2
+    n_dim = 2
+    size = (12,) * n_dim
+    n_modes = (modes,) * n_dim
+    norm_groups = 4
+
+    model = FNO(
+        in_channels=3,
+        out_channels=1,
+        n_modes=n_modes,
+        hidden_channels=hidden_channels,
+        n_layers=n_layers,
+        norm="group_norm",
+        norm_groups=norm_groups,
+    ).to(device)
+
+    in_data = torch.randn(batch_size, 3, *size).to(device)
+
+    # Test forward pass
+    out = model(in_data)
+
+    # Check output size
+    assert list(out.shape) == [batch_size, 1, *size]
+
+    # Verify norm_groups propagation
+    for norm_layer in model.fno_blocks.norm:
+        assert isinstance(norm_layer, torch.nn.GroupNorm)
+        assert norm_layer.num_groups == norm_groups
+
+
 @pytest.mark.parametrize("positional_embedding", ["grid", None])
 @pytest.mark.parametrize("domain_padding", [None, 0.1, [0.1, 0.2]])
 def test_fno_embedding_and_padding(positional_embedding, domain_padding):

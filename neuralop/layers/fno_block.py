@@ -51,6 +51,8 @@ class FNOBlocks(nn.Module):
         Stabilizing module to use between certain layers. Options: "tanh", None, by default None
     norm : Literal["ada_in", "group_norm", "instance_norm", "batch_norm"], optional
         Normalization layer to use. Options: "ada_in", "group_norm", "instance_norm", "batch_norm", None, by default None
+    norm_groups : int, optional
+        Number of groups for GroupNorm, by default 1
     ada_in_features : int, optional
         Number of features for adaptive instance norm above, by default None
     preactivation : bool, optional
@@ -116,6 +118,7 @@ class FNOBlocks(nn.Module):
         non_linearity=F.gelu,
         stabilizer=None,
         norm=None,
+        norm_groups=1,
         ada_in_features=None,
         preactivation=False,
         fno_skip="linear",
@@ -265,7 +268,7 @@ class FNOBlocks(nn.Module):
         elif norm == "group_norm":
             self.norm = nn.ModuleList(
                 [
-                    nn.GroupNorm(num_groups=1, num_channels=self.out_channels)
+                    nn.GroupNorm(num_groups=norm_groups, num_channels=self.out_channels)
                     for _ in range(n_layers * self.n_norms)
                 ]
             )
