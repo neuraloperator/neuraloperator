@@ -139,7 +139,7 @@ class BaseModel(torch.nn.Module):
             if saved_version != self._version:
                 warnings.warn(
                     f"Attempting to load a {self.__class__} of version {saved_version},"
-                    f"But current version of {self.__class__} is {saved_version}"
+                    f"But current version of {self.__class__} is {self._version}"
                 )
             # remove state dict metadata at the end to ensure proper loading with PyTorch module
         return super().load_state_dict(state_dict, strict=strict, assign=assign)
@@ -170,7 +170,6 @@ class BaseModel(torch.nn.Module):
 
         version = init_kwargs.pop("_version", None)
         if hasattr(cls, "_version") and version != cls._version:
-            print(version)
             warnings.warn(f'Checkpoint saved for version {version} of model {cls._name} but current code is version {cls._version}')
         
         # Remove metadata fields that shouldn't be passed to __init__

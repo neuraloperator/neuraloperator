@@ -85,21 +85,31 @@ def test_SpectralConv(factorization, implementation, separable, dim, complex_dat
     assert list(res.shape[2:]) == [12 * 2] * dim
 
 
-def test_SpectralConv_resolution_scaling_factor():
-    """Test SpectralConv with upsampled or downsampled outputs"""
-    modes = (4, 4, 4, 4)
-    size = [6] * 4
-    for dim in [1, 2, 3, 4]:
-        # Downsample outputs
-        conv = SpectralConv(3, 3, modes[:dim], resolution_scaling_factor=0.5)
+@pytest.mark.parametrize("enforce_hermitian_symmetry", [True, False])
+@pytest.mark.parametrize("dim", [1, 2, 3])
+@pytest.mark.parametrize("spatial_size", [8, 9])  # Even and odd: Nyquist handling differs
+@pytest.mark.parametrize("resolution_scaling_factor", [None, 0.5, 2])
+@pytest.mark.parametrize("modes", [(4, 4, 4), (4, 5, 7)])
+def test_SpectralConv2(enforce_hermitian_symmetry, dim, spatial_size, modes, resolution_scaling_factor):
+    modes = modes[:dim]
+    size = [spatial_size] * dim
+    if resolution_scaling_factor is None:
+        out_size = size
+    else:
+        out_size = [round(s * resolution_scaling_factor) for s in size]
 
-        x = torch.randn(2, 3, *size[:dim])
-        res = conv(x)
-        assert list(res.shape[2:]) == [m // 2 for m in size[:dim]]
+    # Test with real-valued data
+    conv = SpectralConv(
+        3,
+        4,
+        modes,
+        enforce_hermitian_symmetry=enforce_hermitian_symmetry,
+        complex_data=False,
+        resolution_scaling_factor=resolution_scaling_factor,
+    )
+    x = torch.randn(2, 3, *size, dtype=torch.float32)
+    res = conv(x)
 
-        # Upsample outputs
-        conv = SpectralConv(3, 3, modes[:dim], resolution_scaling_factor=2)
-
-        x = torch.randn(2, 3, *size[:dim])
-        res = conv(x)
-        assert list(res.shape[2:]) == [m * 2 for m in size[:dim]]
+    assert res.shape == (2, 4, *out_size)
+    assert res.dtype == torch.float32
+    assert not torch.is_complex(res)

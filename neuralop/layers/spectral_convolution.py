@@ -201,8 +201,7 @@ class SpectralConv(BaseSpectralConv):
             of size I_1, ..., I_N, please provide modes M_K that are I_1 < M_K <= I_N
             We will automatically keep the right amount of modes: specifically, for the
             last mode only, if you specify M_N modes we will use M_N // 2 + 1 modes
-            as the real FFT is redundant along that last dimension. For more information on
-            mode truncation, refer to :ref:`fourier_layer_impl`
+            as the real FFT is redundant along that last dimension. See the theory guide for mode truncation details.
 
 
         .. note::
@@ -211,54 +210,74 @@ class SpectralConv(BaseSpectralConv):
 
         This can be updated dynamically during training.
 
-    max_n_modes : int tuple or None, default is None
-        * If not None, **maximum** number of modes to keep in Fourier Layer, along each dim
-            The number of modes (`n_modes`) cannot be increased beyond that.
-        * If None, all the n_modes are used.
-
-    separable : bool, default is True
-        whether to use separable implementation of contraction
-        if True, contracts factors of factorized
-        tensor weight individually
-    init_std : float or 'auto', default is 'auto'
-        std to use for the init
-    factorization : str or None, {'tucker', 'cp', 'tt'}, default is None
+    complex_data : bool, optional
+        Whether data takes on complex values in the spatial domain, by default False.
+        If True, uses different logic for FFT contraction and uses full FFT instead of real-valued.
+    max_n_modes : int tuple or None, optional
+        If not None, maximum number of modes to keep in Fourier Layer along each dim
+        (n_modes cannot be increased beyond that). If None, all n_modes are used.
+        By default None.
+    bias : bool, optional
+        Whether to add a learnable bias to the output, by default True.
+    separable : bool, optional
+        Whether to use separable implementation of contraction.
+        If True, contracts factors of factorized tensor weight individually.
+        By default False.
+    resolution_scaling_factor : float, list of float, or None, optional
+        Scaling factor(s) for resolution scaling. If provided, the output resolution
+        will be scaled by this factor along each spatial dimension.
+        By default None.
+    fno_block_precision : str, optional
+        Precision mode for FNO block operations. Options: 'full', 'half', 'mixed'.
+        By default 'full'.
+    rank : float, optional
+        Rank of the tensor factorization of the Fourier weights, by default 1.0.
+        Ignored if ``factorization is None``.
+    factorization : str or None, optional
+        Tensor factorization type. Options: {'tucker', 'cp', 'tt'}.
         If None, a single dense weight is learned for the FNO.
         Otherwise, that weight, used for the contraction in the Fourier domain
         is learned in factorized form. In that case, `factorization` is the
         tensor factorization of the parameters weight used.
-    rank : float or rank, optional
-        Rank of the tensor factorization of the Fourier weights, by default 1.0
-        Ignored if ``factorization is None``
-    fixed_rank_modes : bool, optional
-        Modes to not factorize, by default False
-        Ignored if ``factorization is None``
-    fft_norm : str, optional
-        fft normalization parameter, by default 'forward'
-    implementation : {'factorized', 'reconstructed'}, optional, default is 'factorized'
-        If factorization is not None, forward mode to use::
+        By default None.
+    implementation : {'factorized', 'reconstructed'}, optional
+        If factorization is not None, forward mode to use:
         * `reconstructed` : the full weight tensor is reconstructed from the
           factorization and used for the forward pass
         * `factorized` : the input is directly contracted with the factors of
           the decomposition
-        Ignored if ``factorization is None``
-    decomposition_kwargs : dict, optional, default is {}
-        Optionaly additional parameters to pass to the tensor decomposition
-        Ignored if ``factorization is None``
-    complex_data: bool, optional
-        whether data takes on complex values in the spatial domain, by default False
-        if True, uses different logic for FFT contraction and uses full FFT instead of real-valued
+        Ignored if ``factorization is None``.
+        By default 'reconstructed'.
+    enforce_hermitian_symmetry : bool, optional
+        Whether to enforce Hermitian symmetry conditions when performing inverse FFT
+        for real-valued data. When True, explicitly enforces that the 0th frequency
+        and Nyquist frequency are real-valued before calling irfft. 
+        When False, relies on cuFFT's irfftn to handle symmetry automatically, 
+        which may fail on certain GPUs or input sizes, causing line artifacts. 
+        Setting to True splits the inverse FFT into ifftn along (n-1) dimensions 
+        followed by irfft on the last dimension, with a small computational overhead. 
+        By default True.
+    fixed_rank_modes : bool, optional
+        Modes to not factorize, by default False.
+        Ignored if ``factorization is None``.
+    decomposition_kwargs : dict or None, optional
+        Optional additional parameters to pass to the tensor decomposition.
+        Ignored if ``factorization is None``.
+        By default None.
+    init_std : float or 'auto', optional
+        Standard deviation to use for weight initialization, by default 'auto'.
+        If 'auto', uses (2 / (in_channels + out_channels)) ** 0.5.
+    fft_norm : str, optional
+        FFT normalization parameter, by default 'forward'.
+    device : torch.device or None, optional
+        Device to place the layer on, by default None.
 
     References
-    -----------
-    .. [1] :
-
-    Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
+    ----------
+    .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
         Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
-
-    .. [2] :
-
-    Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
+        
+    .. [2] Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
         Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024).
         TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
     """
@@ -274,9 +293,10 @@ class SpectralConv(BaseSpectralConv):
         separable=False,
         resolution_scaling_factor: Optional[Union[Number, List[Number]]] = None,
         fno_block_precision="full",
-        rank=0.5,
+        rank=1.0,
         factorization=None,
         implementation="reconstructed",
+        enforce_hermitian_symmetry=True,
         fixed_rank_modes=False,
         decomposition_kwargs: Optional[dict] = None,
         init_std="auto",
@@ -304,15 +324,14 @@ class SpectralConv(BaseSpectralConv):
         self.rank = rank
         self.factorization = factorization
         self.implementation = implementation
-
+        self.enforce_hermitian_symmetry = enforce_hermitian_symmetry
+        
         self.resolution_scaling_factor: Union[
             None, List[List[float]]
         ] = validate_scaling_factor(resolution_scaling_factor, self.order)
 
         if init_std == "auto":
             init_std = (2 / (in_channels + out_channels)) ** 0.5
-        else:
-            init_std = init_std
 
         if isinstance(fixed_rank_modes, bool):
             if fixed_rank_modes:
@@ -340,18 +359,14 @@ class SpectralConv(BaseSpectralConv):
         tensor_kwargs = decomposition_kwargs if decomposition_kwargs is not None else {}
 
         # Create/init spectral weight tensor
-
-        if factorization is None:
-            self.weight = torch.tensor(weight_shape, dtype=torch.cfloat)
-        else:
-            self.weight = FactorizedTensor.new(
-                weight_shape,
-                rank=self.rank,
-                factorization=factorization,
-                fixed_rank_modes=fixed_rank_modes,
-                **tensor_kwargs,
-                dtype=torch.cfloat,
-            )
+        self.weight = FactorizedTensor.new(
+            weight_shape,
+            rank=self.rank,
+            factorization=factorization,
+            fixed_rank_modes=fixed_rank_modes,
+            **tensor_kwargs,
+            dtype=torch.cfloat,
+        )
         self.weight.normal_(0, init_std)
 
         self._contract = get_contract_fun(
@@ -512,17 +527,44 @@ class SpectralConv(BaseSpectralConv):
         if output_shape is not None:
             mode_sizes = output_shape
 
-        if self.order > 1:
-            out_fft = torch.fft.fftshift(out_fft, dim=fft_dims[:-1])
 
+        if self.order > 1:
+            out_fft = torch.fft.ifftshift(out_fft, dim=fft_dims[:-1])
+        
+
+        # Inverse FFT 
         if self.complex_data:
+            # For complex data, we can use ifftn.
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+        
         else:
-            x = torch.fft.irfftn(
-                out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm
-            )
+            # For real data, we need to enforce Hermitian symmetry conditions for irfft.
+            # On certain GPUs and for certain input sizes, this is not handled within irfftn in cuFFT, 
+            # and as a result causes line artifacts.  
+            # To fix this, we split the ifftn into a ifftn in (n-1) dimensions and a irfft in the last dimension,
+            # although it incurs a small additional computational cost.
+            
+            if self.enforce_hermitian_symmetry:
+                out_fft = torch.fft.ifftn(out_fft, s=mode_sizes[:-1], dim=fft_dims[:-1], norm=self.fft_norm)
+                
+                # Enforce Hermitian symmetry conditions for irfft
+                # 0th frequency must be real
+                out_fft[..., 0].imag.zero_()
+                
+                # Nyquist frequency must be real if the spatial size is even
+                if mode_sizes[-1] % 2 == 0:
+                    out_fft[..., -1].imag.zero_()
+                
+                # Now that the Hermitian symmetry conditions are enforced, we can use irfft on the last dimension.
+                x = torch.fft.irfft(out_fft, n=mode_sizes[-1], dim=fft_dims[-1], norm=self.fft_norm)
+            
+            else:
+                
+                # If Hemrmitian symmetry is not a concern, we can use irfftn on all dimensions.
+                x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
+            
 
         if self.bias is not None:
             x = x + self.bias
-
+          
         return x

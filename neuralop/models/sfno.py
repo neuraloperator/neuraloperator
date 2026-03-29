@@ -11,3 +11,4 @@ SFNO = partialclass("SFNO", FNO, factorization="dense", conv_module=SphericalCon
 SFNO.__doc__ = SFNO.__doc__.replace("Fourier", "Spherical Fourier", 1)
 SFNO.__doc__ = SFNO.__doc__.replace("FNO", "SFNO")
 SFNO.__doc__ = SFNO.__doc__.replace("fno", "sfno")
+SFNO.__doc__ = SFNO.__doc__.replace(":ref:`sfno_intro`", ":ref:`fno_intro`")

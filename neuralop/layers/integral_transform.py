@@ -122,7 +122,7 @@ class IntegralTransform(nn.Module):
             If batched, these must remain constant
             over the whole batch so no batch dim is needed.
         neighbors : dict
-            The sets A(x) given in CRS format. The
+            The sets :math:`A(x)` given in CRS format. The
             dict must contain the keys "neighbors_index"
             and "neighbors_row_splits." For descriptions
             of the two, see NeighborSearch.
@@ -143,10 +143,10 @@ class IntegralTransform(nn.Module):
             suppose d1=1 and let y_1 < y_2 < ... < y_{n+1}
             be some points. Then, for a Riemann sum,
             the weights are y_{j+1} - y_j. If None,
-            1/|A(x)| is used.
+            :math:`1/|A(x)|` is used.
 
-        Output
-        ----------
+        Returns
+        -------
         out_features : torch.Tensor of shape [batch, m, d4] or [m, d4]
             Output function given on the points x.
             d4 is the output size of the kernel k.

@@ -23,7 +23,7 @@ class LpLoss(object):
     
     Note that LpLoss always averages over the spatial dimensions.
 
-    .. note ::
+    .. note::
         In function space, the Lp norm is an integral over the
         entire domain. To ensure the norm converges to the integral,
         we scale the matrix norm by quadrature weights along each spatial dimension.
@@ -43,17 +43,15 @@ class LpLoss(object):
         either single scalar for each dim, or one per dim
 
         .. note::
-
-        To perform quadrature, ``LpLoss`` scales ``measure`` by the size
-        of each spatial dimension of ``x``, and multiplies them with
-        ||x-y||, such that the final norm is a scaled average over the spatial
-        dimensions of ``x``.
+            To perform quadrature, ``LpLoss`` scales ``measure`` by the size
+            of each spatial dimension of ``x``, and multiplies them with
+            ||x-y||, such that the final norm is a scaled average over the spatial
+            dimensions of ``x``.
     reduction : str, optional
         whether to reduce across the batch and channel dimensions
         by summing ('sum') or averaging ('mean')
 
         .. warning::
-
             ``LpLoss`` always reduces over the spatial dimensions according to ``self.measure``.
             `reduction` only applies to the batch and channel dimensions.
     eps : float, optional
@@ -61,8 +59,7 @@ class LpLoss(object):
 
     Examples
     --------
-
-    ```
+    See the module docstring or the user guide for usage examples.
     """
 
     def __init__(self, d=1, p=2, measure=1.0, reduction="sum", eps=1e-8):
@@ -113,8 +110,8 @@ class LpLoss(object):
         """
         reduce x across the batch according to `self.reduction`
 
-        Params
-        ------
+        Parameters
+        ----------
         x: torch.Tensor
             inputs
         """
@@ -218,7 +215,7 @@ class LpLoss(object):
 class H1Loss(object):
     """H1 Sobolev norm between two d-dimensional discretized functions.
 
-    .. note ::
+    .. note::
         In function space, the Sobolev norm is an integral over the
         entire domain. To ensure the norm converges to the integral,
         we scale the matrix norm by quadrature weights along each spatial dimension.
@@ -235,18 +232,16 @@ class H1Loss(object):
         either single scalar for each dim, or one per dim
 
         .. note::
-
-        To perform quadrature, ``H1Loss`` scales ``measure`` by the size
-        of each spatial dimension of ``x``, and multiplies them with
-        ||x-y||, such that the final norm is a scaled average over the spatial
-        dimensions of ``x``.
+            To perform quadrature, ``H1Loss`` scales ``measure`` by the size
+            of each spatial dimension of ``x``, and multiplies them with
+            ||x-y||, such that the final norm is a scaled average over the spatial
+            dimensions of ``x``.
 
     reduction : str, optional
         whether to reduce across the batch and channel dimension
         by summing ('sum') or averaging ('mean')
 
-        .. warning :
-
+        .. warning::
             H1Loss always averages over the spatial dimensions.
             `reduction` only applies to the batch and channel dimensions.
     eps : float, optional
@@ -386,8 +381,8 @@ class H1Loss(object):
         """
         reduce x across the batch according to `self.reduction`
 
-        Params
-        ------
+        Parameters
+        ----------
         x: torch.Tensor
             inputs
         """
@@ -498,7 +493,7 @@ class H1Loss(object):
 class HdivLoss(object):
     """Hdiv Sobolev norm between two d-dimensional discretized functions.
 
-    .. note ::
+    .. note::
         In function space, the Sobolev norm is an integral over the
         entire domain. To ensure the norm converges to the integral,
         we scale the matrix norm by quadrature weights along each spatial dimension.
@@ -515,18 +510,16 @@ class HdivLoss(object):
         either single scalar for each dim, or one per dim
 
         .. note::
-
-        To perform quadrature, ``HdivLoss`` scales ``measure`` by the size
-        of each spatial dimension of ``x``, and multiplies them with
-        ||x-y||, such that the final norm is a scaled average over the spatial
-        dimensions of ``x``.
+            To perform quadrature, ``HdivLoss`` scales ``measure`` by the size
+            of each spatial dimension of ``x``, and multiplies them with
+            ||x-y||, such that the final norm is a scaled average over the spatial
+            dimensions of ``x``.
 
     reduction : str, optional
         whether to reduce across the batch and channel dimension
         by summing ('sum') or averaging ('mean')
 
-        .. warning :
-
+        .. warning::
             HdivLoss always averages over the spatial dimensions.
             `reduction` only applies to the batch and channel dimensions.
     eps : float, optional
@@ -664,8 +657,8 @@ class HdivLoss(object):
         """
         reduce x across the batch according to `self.reduction`
 
-        Params
-        ------
+        Parameters
+        ----------
         x: torch.Tensor
             inputs
         """
@@ -782,17 +775,16 @@ class PointwiseQuantileLoss(object):
         value, between 0 and 1, of the proportion of points
         in the output domain expected to fall within predicted quantiles
     reduction : str, optional
-    whether to reduce across the batch and channel dimensions
-    by summing ('sum') or averaging ('mean')
+        whether to reduce across the batch and channel dimensions
+        by summing ('sum') or averaging ('mean')
 
-    .. warning :
-
+    .. warning::
         PointwiseQuantileLoss always averages over the spatial dimensions.
         `reduction` only applies to the batch and channel dimensions.
 
     References
-    -----------
-    .. _[1] : Ma, Z., Pitt, D., Azizzadenesheli, K., Anandkumar, A., (2024).
+    ----------
+    .. [1] Ma, Z., Pitt, D., Azizzadenesheli, K., Anandkumar, A., (2024).
         Calibrated Uncertainty Quantification for Operator Learning via Conformal Prediction
         TMLR 2024, https://openreview.net/pdf?id=cGpegxy12T
     """
@@ -812,8 +804,8 @@ class PointwiseQuantileLoss(object):
         """
         reduce x across the batch according to `self.reduction`
 
-        Params
-        ------
+        Parameters
+        ----------
         x: torch.Tensor
             inputs
         """

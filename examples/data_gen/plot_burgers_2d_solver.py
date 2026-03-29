@@ -9,9 +9,9 @@ its use to create a simple numerical solver for Burgers' equation in 2d.
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Import the library
 # ------------------
 # We first import our `neuralop` library and required dependencies.
@@ -19,15 +19,15 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from neuralop.losses.differentiation import FiniteDiff  
+from neuralop.losses.differentiation import FiniteDiff
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Defining our problem
 # --------------------
 # We aim to solve the 2D viscous Burger's equations:
@@ -39,32 +39,32 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #    \frac{\partial v}{\partial t} + u \frac{\partial v}{\partial x} + v \frac{\partial v}{\partial y} = \nu \left(\frac{\partial^2 v}{\partial x^2} + \frac{\partial^2 v}{\partial y^2}\right)
 
 ## Simulation parameters
-Lx, Ly = 2.0, 2.0   # Domain lengths
-nx, ny = 64, 64   # Grid resolution
-T = 1    # Total simulation time
+Lx, Ly = 2.0, 2.0  # Domain lengths
+nx, ny = 64, 64  # Grid resolution
+T = 1  # Total simulation time
 dt = 0.001  # Time step
-nu = 0.04   # Viscosity
+nu = 0.04  # Viscosity
 
 ## Create grid
-X = torch.linspace(0, Lx, nx, device=device).repeat(ny, 1).T 
-Y = torch.linspace(0, Ly, ny, device=device).repeat(nx, 1)  
-dx = Lx / (nx-1)
-dy = Ly / (ny-1)
+X = torch.linspace(0, Lx, nx, device=device).repeat(ny, 1).T
+Y = torch.linspace(0, Ly, ny, device=device).repeat(nx, 1)
+dx = Lx / (nx - 1)
+dy = Ly / (ny - 1)
 nt = int(T / dt)
 
 ## Initialize finite difference operator
 fd = FiniteDiff(dim=2, h=(dx, dy))
 
-## Initial condition 
+## Initial condition
 u = -torch.sin(2 * np.pi * Y).to(device)
-v =  torch.cos(2 * np.pi * X).to(device)
+v = torch.cos(2 * np.pi * X).to(device)
 
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Simulate evolution using numerical solver
 # -----------------------------------------
 
@@ -72,7 +72,6 @@ u_evolution = [u.clone()]
 v_evolution = [v.clone()]
 
 for _ in range(nt):
-    
     # Compute first-order derivatives
     u_x = fd.dx(u)
     u_y = fd.dy(u)
@@ -88,7 +87,7 @@ for _ in range(nt):
     # Evolve in time using Euler's method
     u_next = u + dt * (-u * u_x - v * u_y + nu * (u_xx + u_yy))
     v_next = v + dt * (-u * v_x - v * v_y + nu * (v_xx + v_yy))
-    
+
     u, v = u_next.clone(), v_next.clone()
     u_evolution.append(u.clone())
     v_evolution.append(v.clone())
@@ -98,14 +97,16 @@ v_evolution = torch.stack(v_evolution).cpu().numpy()
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Animating the solution
 # ----------------------
 
 num_frames = 100
-frame_indices = torch.linspace(0, len(u_evolution) - 1, num_frames, dtype=torch.int).cpu().numpy()
+frame_indices = (
+    torch.linspace(0, len(u_evolution) - 1, num_frames, dtype=torch.int).cpu().numpy()
+)
 u_frames = u_evolution[frame_indices]
 v_frames = v_evolution[frame_indices]
 
@@ -115,7 +116,8 @@ axs[0].set_title("Velocity u")
 plt.colorbar(cmap_u, ax=axs[0], shrink=0.75) 
 cmap_v = axs[1].imshow(v_frames[0], extent=[0, Lx, 0, Ly], origin="lower", cmap="plasma")
 axs[1].set_title("Velocity v")
-plt.colorbar(cmap_v, ax=axs[1], shrink=0.75) 
+plt.colorbar(cmap_v, ax=axs[1], shrink=0.75)
+
 
 def update(frame):
     cmap_u.set_data(u_frames[frame])

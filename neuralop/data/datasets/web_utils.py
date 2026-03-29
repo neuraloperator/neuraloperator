@@ -149,6 +149,8 @@ def download_from_zenodo_record(
         list of filenames to download from record.
         If None, downloads all. Default None
     """
+    if files_to_download is not None and len(files_to_download) == 0:
+        return
     zenodo_api_url = "https://zenodo.org/api/records/"
     url = f"{zenodo_api_url}{record_id}"
     resp = requests.get(url)

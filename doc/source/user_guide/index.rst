@@ -1,6 +1,7 @@
-.. _user_guide :
+.. _user_guide:
+
 User Guide
-===========
+==========
 
 NeuralOperator provides all the tools you need 
 to easily use, build and train neural operators for your own applications
@@ -8,7 +9,7 @@ and learn mapping between function spaces, in PyTorch.
 
 
 NeuralOperator library structure
----------------------------------
+--------------------------------
 
 Here are the main components of the library:
 
@@ -39,7 +40,7 @@ The main :mod:`neuralop` module provides convenient imports for the most commonl
    <div style="margin-top: 4em;"></div>
 
 Available Neural Operator Models
----------------------------------
+--------------------------------
 
 The :mod:`neuralop.models` module includes several state-of-the-art neural operator architectures:
 
@@ -85,7 +86,7 @@ The :mod:`neuralop.data` module provides comprehensive data handling capabilitie
    <div style="margin-top: 4em;"></div>
 
 Training Neural Operator Models
---------------------------------
+-------------------------------
 
 Our library makes it easy for anyone with data drawn from a system governed by a 
 PDE to train and test Neural Operator models. 
@@ -213,7 +214,7 @@ during training, allowing:
    <div style="margin-top: 2em;"></div>
 
 Example Usage
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 Below is a complete example demonstrating CPU offloading integration 
 with NeuralOperator training:
@@ -332,7 +333,7 @@ No changes are needed in your existing training code:
    <div style="margin-top: 2em;"></div>
 
 Performance Considerations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Memory vs Speed Trade-off**
     CPU offloading reduces GPU memory usage at the cost of increased 
@@ -379,7 +380,7 @@ Performance Considerations
    <div style="margin-top: 4em;"></div>
 
 Interactive examples with code
------------------------------
+------------------------------
 We also provide interactive examples that show our library and neural operator 
 models in action. 
 To get up to speed on the code, and look through some interactive examples 

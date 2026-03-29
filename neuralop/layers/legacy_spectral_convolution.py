@@ -163,7 +163,6 @@ def get_contract_fun(weight, implementation="reconstructed", separable=False):
     """
     if implementation == "reconstructed":
         if separable:
-            print("SEPARABLE")
             return _contract_dense_separable
         else:
             return _contract_dense
@@ -307,8 +306,6 @@ class SpectralConv(BaseSpectralConv):
 
         if init_std == "auto":
             init_std = (2 / (in_channels + out_channels)) ** 0.5
-        else:
-            init_std = init_std
 
         if isinstance(fixed_rank_modes, bool):
             if fixed_rank_modes:

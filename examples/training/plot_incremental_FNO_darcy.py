@@ -17,9 +17,9 @@ increases the model capacity as training progresses.
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Import dependencies
 # -------------------
 # We import the necessary modules for incremental FNO training
@@ -37,9 +37,9 @@ from neuralop import LpLoss, H1Loss
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Loading the Darcy-Flow dataset
 # ------------------------------
 # We load the Darcy-Flow dataset with multiple resolutions for incremental training.
@@ -56,9 +56,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Configuring incremental training
 # --------------------------------
 # We set up the incremental FNO model with a small starting number of modes.
@@ -68,19 +68,19 @@ incremental = True
 if incremental:
     starting_modes = (2, 2)  # Start with very few modes
 else:
-    starting_modes = (16, 16)  # Standard number of modes
+    starting_modes = (8, 8)  # Standard number of modes
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Creating the incremental FNO model
 # ----------------------------------
 # We create an FNO model with a maximum number of modes that can be reached
 # during incremental training. The model starts with fewer modes and grows.
 model = FNO(
-    max_n_modes=(16, 16),    # Maximum modes the model can reach
+    max_n_modes=(8, 8),  # Maximum modes the model can reach
     n_modes=starting_modes,  # Starting number of modes
     hidden_channels=32,
     in_channels=1,
@@ -91,9 +91,9 @@ n_params = count_model_params(model)
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Setting up the optimizer and scheduler
 # -------------------------------------
 # We use AdamW optimizer with weight decay for regularization
@@ -102,14 +102,14 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Configuring incremental data processing
 # ---------------------------------------
 # If one wants to use Incremental Resolution, one should use the IncrementalDataProcessor.
 # When passed to the trainer, the trainer will automatically update the resolution.
-# 
+#
 # Key parameters for incremental resolution:
 #
 # - incremental_resolution: bool, default is False. If True, increase the resolution of the input incrementally
@@ -124,32 +124,32 @@ data_transform = IncrementalDataProcessor(
     in_normalizer=None,
     out_normalizer=None,
     device=device,
-    subsampling_rates=[2, 1],      # Resolution scaling factors
-    dataset_resolution=16,          # Base resolution
-    dataset_indices=[2, 3],        # Dataset indices for regularization
-    epoch_gap=10,                  # Epochs between resolution updates
-    verbose=True,                  # Print progress information
+    subsampling_rates=[2, 1],  # Resolution scaling factors
+    dataset_resolution=16,  # Base resolution
+    dataset_indices=[2, 3],  # Dataset indices for regularization
+    epoch_gap=10,  # Epochs between resolution updates
+    verbose=True,  # Print progress information
 )
 
 data_transform = data_transform.to(device)
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Setting up loss functions
 # -------------------------
 # We use H1 loss for training and L2 loss for evaluation
-l2loss = LpLoss(d=2, p=2)  
-h1loss = H1Loss(d=2)       
+l2loss = LpLoss(d=2, p=2)
+h1loss = H1Loss(d=2)
 train_loss = h1loss
 eval_losses = {"h1": h1loss, "l2": l2loss}
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Displaying training configuration
 # ---------------------------------
 # We display the model parameters, optimizer, scheduler, and loss functions
@@ -165,16 +165,16 @@ sys.stdout.flush()
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Configuring the IncrementalFNOTrainer
 # --------------------------------------
 # We set up the IncrementalFNOTrainer with various incremental learning options.
 # Other options include setting incremental_loss_gap = True.
 # If one wants to use incremental resolution, set it to True.
 # In this example we only update the modes and not the resolution.
-# When using incremental resolution, keep in mind that the number of modes 
+# When using incremental resolution, keep in mind that the number of modes
 # initially set should be strictly less than the resolution.
 #
 # Key parameters for incremental training:
@@ -194,20 +194,20 @@ trainer = IncrementalFNOTrainer(
     data_processor=data_transform,
     device=device,
     verbose=True,
-    incremental_loss_gap=False,     # Use gradient-based incremental learning
-    incremental_grad=True,          # Enable gradient-based mode updates
-    incremental_grad_eps=0.9999,    # Gradient variance threshold
-    incremental_loss_eps=0.001,     # Loss gap threshold
-    incremental_buffer=5,           # Buffer modes for gradient calculation
-    incremental_max_iter=1,         # Initial iterations
-    incremental_grad_max_iter=2,    # Maximum gradient accumulation iterations
+    incremental_loss_gap=False,  # Use gradient-based incremental learning
+    incremental_grad=True,  # Enable gradient-based mode updates
+    incremental_grad_eps=0.9999,  # Gradient variance threshold
+    incremental_loss_eps=0.001,  # Loss gap threshold
+    incremental_buffer=5,  # Buffer modes for gradient calculation
+    incremental_max_iter=1,  # Initial iterations
+    incremental_grad_max_iter=2,  # Maximum gradient accumulation iterations
 )
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Training the incremental FNO model
 # ----------------------------------
 # We train the model using incremental meta-learning. The trainer will:
@@ -228,9 +228,9 @@ trainer.train(
 
 # %%
 # .. raw:: html
-# 
+#
 #    <div style="margin-top: 3em;"></div>
-# 
+#
 # Visualizing incremental FNO predictions
 # ----------------------------------------
 # We visualize the model's predictions after incremental training.
@@ -254,7 +254,7 @@ for index in range(3):
     y = data["y"].to(device)
     # Model prediction: incremental FNO output
     out = model(x.unsqueeze(0))
-    
+
     # Plot input x
     ax = fig.add_subplot(3, 3, index * 3 + 1)
     x = x.cpu().squeeze().detach().numpy()

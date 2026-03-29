@@ -81,7 +81,7 @@ def get_wandb_api_key(api_key_file="../config/wandb_api_key.txt"):
 def spectrum_2d(signal, n_observations, normalize=True):
     """This function computes the spectrum of a 2D signal using the Fast Fourier Transform (FFT).
 
-    Paramaters
+    Parameters
     ----------
     signal : a tensor of shape (T * n_observations * n_observations)
         A 2D discretized signal represented as a 1D tensor with shape

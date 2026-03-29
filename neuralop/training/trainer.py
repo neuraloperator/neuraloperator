@@ -116,7 +116,7 @@ class Trainer:
         If a device is provided, the model and data processor are loaded to device here.
 
         Parameters
-        -----------
+        ----------
         train_loader: torch.utils.data.DataLoader
             training dataloader
         test_loaders: dict[torch.utils.data.DataLoader]
@@ -751,8 +751,8 @@ class Trainer:
         """
         Resume training from save_dir created by `neuralop.training.save_training_state`
 
-        Params
-        ------
+        Parameters
+        ----------
         save_dir: Union[str, Path]
             directory in which training state is saved
             (see neuralop.training.training_state)

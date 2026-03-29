@@ -10,7 +10,7 @@ Once installed, you can import it as ``neuralop``::
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Basic Install
---------------
+-------------
 
 Pre-requisites
 ++++++++++++++
@@ -64,7 +64,8 @@ Then install the package (here in editable mode with `-e`, or equivalently `--ed
 Advanced dependencies
 ---------------------
 
-.. _open3d_dependency :
+.. _open3d_dependency:
+
 Fast 3D spatial computing with Open3D
 +++++++++++++++++++++++++++++++++++++
 
@@ -80,7 +81,7 @@ compatible with specific builds of PyTorch and CUDA. Check the sub-package
 
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. _torch_scatter_dependency :
+.. _torch_scatter_dependency:
 
 Sparse computations with PyTorch-Scatter
 ++++++++++++++++++++++++++++++++++++++++

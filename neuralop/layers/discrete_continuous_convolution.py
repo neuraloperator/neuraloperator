@@ -402,7 +402,7 @@ class DiscreteContinuousConv2d(DiscreteContinuousConv):
         # compute the cutoff radius based on the bandlimit of the input field
         # TODO: Attention - this heuristic is ad-hoc! Make sure to set it yourself!
         if radius_cutoff is None:
-            radius_cutoff = radius_cutoff = 2 / float(math.sqrt(self.n_out) - 1)
+            radius_cutoff = 2 / float(math.sqrt(self.n_out) - 1)
 
         if radius_cutoff <= 0.0:
             raise ValueError("Error, radius_cutoff has to be positive.")

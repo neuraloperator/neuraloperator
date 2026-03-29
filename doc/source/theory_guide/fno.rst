@@ -1,14 +1,16 @@
-.. _fno_intro :
+.. _fno_intro:
+
 ========================
 Fourier Neural Operators
 ========================
 
 
-This guide introduces the Fourier neural operator which can be used to solve a family of PDEs from scratch.
+This guide introduces the Fourier neural operator (FNO) which can be used to solve a family of PDEs from scratch.
 It is the first work that can learn resolution-invariant solution operators for the Navier-Stokes equation,
 achieving state-of-the-art accuracy among all existing deep learning methods and
 up to 1000x faster than traditional solvers.
-Also, check out the paper [1]_ and article [2]_.
+
+Check out the original FNO paper [1]_ and the comprehensive practical guide to FNOs [2]_ for more details.
 
 .. raw:: html
 
@@ -244,7 +246,9 @@ one axis. Therefore it is sufficient to keep only two of the four corners of the
 
 Shifting the FFT signal
 -----------------------
-.. _fft_shift_explanation :
+
+.. _fft_shift_explanation:
+
 Equivalently, we could also apply a periodic FFT-shift using :code:`torch.fft.fftshift` to move the zero-frequency component
 to the center of the FFT matrix, such that the matrix would be indexed with modes :code:`-n//2, -n//2 + 1, ...-1, 0, 1, ...`
 as shown below:
@@ -262,7 +266,7 @@ as shown below:
    <div style="margin-top: 3em;"></div>
 
 Convolutional Filters in Fourier Space
----------------------------------------
+--------------------------------------
 
 .. image:: /_static/images/filters.jpg
   :width: 800
@@ -395,7 +399,7 @@ defined by :math:`a \mapsto u`. Note that although the PDE is linear, the soluti
    <div style="margin-top: 3em;"></div>
 
 Benchmarks for time-independent problems (Burgers and Darcy):
------------------------------------------------------------
+-------------------------------------------------------------
 
  - NN: a simple point-wise feedforward neural network.
  - RBM: the classical Reduced Basis Method (using a POD basis).
@@ -411,7 +415,7 @@ Benchmarks for time-independent problems (Burgers and Darcy):
    <div style="margin-top: 3em;"></div>
 
 Navier-Stokes Equation
------------------------
+----------------------
 
 We consider the 2D Navier-Stokes equation for a viscous,
 incompressible fluid in vorticity form on the unit torus:
@@ -541,8 +545,9 @@ References
 
    <div style="margin-top: 1em"></div>
 
-.. [2] Hao, K. (2021, October 20). Ai has cracked a key mathematical puzzle for understanding our world.
-       MIT Technology Review. https://www.technologyreview.com/2020/10/30/1011435/ai-fourier-neural-network-cracks-navier-stokes-and-partial-differential-equations/
+.. [2] Fourier Neural Operators Explained: A Practical Perspective
+    Valentin Duruisseaux, Jean Kossaifi, Anima Anandkumar, 2025. 
+    https://arxiv.org/abs/2512.01421.
 
 .. raw:: html
 

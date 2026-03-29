@@ -100,9 +100,16 @@ class UNO(nn.Module):
         Percentage of padding to use. If not None, percentage of padding to use. Default: None
     fft_norm : str, optional
         FFT normalization mode. Default: "forward"
+    enforce_hermitian_symmetry : bool, optional
+        Whether to enforce Hermitian symmetry conditions when performing inverse FFT
+        for real-valued data. Only used when the convolution module is :class:`SpectralConv`
+        or a subclass; ignored otherwise. When True, explicitly enforces that the 0th
+        frequency and Nyquist frequency are real-valued before calling irfft. When False,
+        relies on cuFFT's irfftn to handle symmetry automatically, which may fail on
+        certain GPUs or input sizes, causing line artifacts. By default True.
 
     References
-    -----------
+    ----------
     .. [1] :
 
     Rahman, M.A., Ross, Z., Azizzadenesheli, K. "U-NO: U-shaped
@@ -140,6 +147,7 @@ class UNO(nn.Module):
         decomposition_kwargs=dict(),
         domain_padding=None,
         verbose=False,
+        enforce_hermitian_symmetry=True,
     ):
         super().__init__()
         self.n_layers = n_layers
@@ -267,8 +275,6 @@ class UNO(nn.Module):
                     prev_out + self.uno_out_channels[self.horizontal_skips_map[i]]
                 )
 
-            print(f"{fno_skip=}")
-            print(f"{channel_mlp_skip=}")
             self.fno_blocks.append(
                 self.operator_block(
                     in_channels=prev_out,
@@ -288,6 +294,8 @@ class UNO(nn.Module):
                     separable=separable,
                     factorization=factorization,
                     decomposition_kwargs=decomposition_kwargs,
+                    conv_module=self.integral_operator,
+                    enforce_hermitian_symmetry=enforce_hermitian_symmetry,
                 )
             )
 

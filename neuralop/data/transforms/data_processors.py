@@ -369,9 +369,8 @@ class MGPatchingDataProcessor(DataProcessor):
         Preprocess data assuming that if encoder exists, it has
         encoded all data during data loading
 
-        Params
-        ------
-
+        Parameters
+        ----------
         data_dict: dict
             dictionary keyed with 'x', 'y' etc
             represents one batch of data input to a model
@@ -393,9 +392,8 @@ class MGPatchingDataProcessor(DataProcessor):
         """
         Postprocess model outputs.
 
-        Params
-        ------
-
+        Parameters
+        ----------
         data_dict: dict
             dictionary keyed with 'x', 'y' etc
             represents one batch of data input to a model

@@ -32,6 +32,15 @@ def CGELU(x: torch.Tensor):
     return F.gelu(x.real).type(torch.cfloat) + 1j * F.gelu(x.imag).type(torch.cfloat)
 
 
+def cselu(x: torch.Tensor):
+    """Complex-valued SELU activation
+    Apply SELU to real and imag part of the input separately, then combine as complex number
+    Args:
+        x: complex tensor
+    """
+    return F.selu(x.real).type(torch.cfloat) + 1j * F.selu(x.imag).type(torch.cfloat)
+
+
 def ctanh(x: torch.Tensor):
     """Complex-valued tanh stabilizer
     Apply ctanh is real and imag part of the input separately, then combine as complex number
