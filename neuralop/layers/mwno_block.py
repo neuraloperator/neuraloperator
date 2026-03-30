@@ -9,7 +9,7 @@ from functools import partial
 from scipy.special import eval_legendre
 from numpy.polynomial.legendre import Legendre
 from numpy.polynomial.chebyshev import Chebyshev
-
+from numpy.polynomial.polynomial import Polynomial as PowerPolynomial
 
 
 class WaveletUtils:
@@ -80,6 +80,84 @@ class WaveletUtils:
         """
         mask = np.logical_or(x<lower_bound, x>upper_bound) * 1.0
         return np.polynomial.polynomial.Polynomial(phi_coeffs)(x) * (1-mask)
+
+    @staticmethod
+    def _gram_schmidt_wavelet_coeffs(
+        scaling_coeffs: np.ndarray, scaling_2x_coeffs: np.ndarray, k: int
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Multiwavelet Gram–Schmidt in power basis (same recipe for Legendre / Chebyshev rows).
+        """
+        wavelet_left_coeffs = np.zeros((k, k))
+        wavelet_right_coeffs = np.zeros((k, k))
+
+        for basis_idx in range(k):
+            wavelet_left_coeffs[basis_idx, :] = scaling_2x_coeffs[basis_idx, :]
+
+            for scaling_idx in range(k):
+                a = scaling_2x_coeffs[basis_idx, :basis_idx + 1]
+                b = scaling_coeffs[scaling_idx, :scaling_idx + 1]
+                product_poly = np.convolve(a, b)
+                product_poly[np.abs(product_poly) < 1e-8] = 0
+
+                projection = (product_poly * 1 / (np.arange(len(product_poly)) + 1) *
+                              np.power(0.5, 1 + np.arange(len(product_poly)))).sum()
+
+                wavelet_left_coeffs[basis_idx, :] -= projection * scaling_coeffs[scaling_idx, :]
+                wavelet_right_coeffs[basis_idx, :] -= projection * scaling_coeffs[scaling_idx, :]
+
+            for prev_wavelet_idx in range(basis_idx):
+                a = scaling_2x_coeffs[basis_idx, :basis_idx + 1]
+                b = wavelet_left_coeffs[prev_wavelet_idx, :]
+                product_poly = np.convolve(a, b)
+                product_poly[np.abs(product_poly) < 1e-8] = 0
+
+                projection = (product_poly * 1 / (np.arange(len(product_poly)) + 1) *
+                              np.power(0.5, 1 + np.arange(len(product_poly)))).sum()
+
+                wavelet_left_coeffs[basis_idx, :] -= projection * wavelet_left_coeffs[prev_wavelet_idx, :]
+                wavelet_right_coeffs[basis_idx, :] -= projection * wavelet_left_coeffs[prev_wavelet_idx, :]
+
+            a = wavelet_left_coeffs[basis_idx, :]
+            product_poly = np.convolve(a, a)
+            product_poly[np.abs(product_poly) < 1e-8] = 0
+            norm_squared_left = (product_poly * 1 / (np.arange(len(product_poly)) + 1) *
+                                 np.power(0.5, 1 + np.arange(len(product_poly)))).sum()
+
+            a = wavelet_right_coeffs[basis_idx, :]
+            product_poly = np.convolve(a, a)
+            product_poly[np.abs(product_poly) < 1e-8] = 0
+            norm_squared_right = (product_poly * 1 / (np.arange(len(product_poly)) + 1) *
+                                  (1 - np.power(0.5, 1 + np.arange(len(product_poly))))).sum()
+
+            norm = np.sqrt(norm_squared_left + norm_squared_right)
+            if norm < 1e-14:
+                wavelet_left_coeffs[basis_idx, :] = 0
+                wavelet_right_coeffs[basis_idx, :] = 0
+            else:
+                wavelet_left_coeffs[basis_idx, :] /= norm
+                wavelet_right_coeffs[basis_idx, :] /= norm
+
+            wavelet_left_coeffs[np.abs(wavelet_left_coeffs) < 1e-8] = 0
+            wavelet_right_coeffs[np.abs(wavelet_right_coeffs) < 1e-8] = 0
+
+        return wavelet_left_coeffs, wavelet_right_coeffs
+
+    @staticmethod
+    def _chebyshev_coeff_matrix_to_power_basis(coeff_matrix: np.ndarray, k: int) -> np.ndarray:
+        """Convert each row from Chebyshev-domain coeffs to power (Polynomial) coeffs."""
+        out = np.zeros((k, k))
+        for i in range(k):
+            row = coeff_matrix[i, :]
+            inds = np.where(np.abs(row) > 1e-15)[0]
+            if inds.size == 0:
+                continue
+            nz = inds[-1] + 1
+            cheb = Chebyshev(row[:nz])
+            pw = cheb.convert(kind=PowerPolynomial)
+            coef = np.asarray(pw.coef, dtype=float)
+            out[i, :len(coef)] = coef
+        return out
 
     @classmethod
     def get_phi_psi(cls, k, base):
@@ -162,67 +240,9 @@ class WaveletUtils:
                 coeffs_2x = poly_stretched.coef * np.sqrt(2) * np.sqrt(2 * basis_idx + 1)
                 scaling_2x_coeffs[basis_idx, :len(coeffs_2x)] = coeffs_2x
 
-            # Initialize wavelet coefficients
-            wavelet_left_coeffs = np.zeros((k, k))  # psi1: wavelets on [0, 0.5]
-            wavelet_right_coeffs = np.zeros((k, k))  # psi2: wavelets on [0.5, 1]
-
-            # Gram-Schmidt orthogonalization to construct wavelets
-            for basis_idx in range(k):
-                # Start with scaled basis function
-                wavelet_left_coeffs[basis_idx, :] = scaling_2x_coeffs[basis_idx, :]
-
-                # Step 1: Orthogonalize against all scaling functions
-                # This ensures wavelets capture "detail" not in the smooth approximation
-                for scaling_idx in range(k):
-                    # Compute inner product via polynomial convolution + integration
-                    a = scaling_2x_coeffs[basis_idx, :basis_idx + 1]
-                    b = scaling_coeffs[scaling_idx, :scaling_idx + 1]
-                    product_poly = np.convolve(a, b)
-                    product_poly[np.abs(product_poly) < 1e-8] = 0
-
-                    # Integrate over [0, 0.5] using monomial integral formula
-                    projection = (product_poly * 1 / (np.arange(len(product_poly)) + 1) *
-                                  np.power(0.5, 1 + np.arange(len(product_poly)))).sum()
-
-                    # Subtract projection
-                    wavelet_left_coeffs[basis_idx, :] -= projection * scaling_coeffs[scaling_idx, :]
-                    wavelet_right_coeffs[basis_idx, :] -= projection * scaling_coeffs[scaling_idx, :]
-
-                # Step 2: Orthogonalize against all previous wavelets
-                # This ensures each wavelet is independent
-                for prev_wavelet_idx in range(basis_idx):
-                    a = scaling_2x_coeffs[basis_idx, :basis_idx + 1]
-                    b = wavelet_left_coeffs[prev_wavelet_idx, :]
-                    product_poly = np.convolve(a, b)
-                    product_poly[np.abs(product_poly) < 1e-8] = 0
-
-                    projection = (product_poly * 1 / (np.arange(len(product_poly)) + 1) *
-                                  np.power(0.5, 1 + np.arange(len(product_poly)))).sum()
-
-                    wavelet_left_coeffs[basis_idx, :] -= projection * wavelet_left_coeffs[prev_wavelet_idx, :]
-                    wavelet_right_coeffs[basis_idx, :] -= projection * wavelet_left_coeffs[prev_wavelet_idx, :]
-
-                # Step 3: Normalize to unit L2 norm
-                # Compute ||psi||^2 = integral over [0, 0.5] + integral over [0.5, 1]
-                a = wavelet_left_coeffs[basis_idx, :]
-                product_poly = np.convolve(a, a)
-                product_poly[np.abs(product_poly) < 1e-8] = 0
-                norm_squared_left = (product_poly * 1 / (np.arange(len(product_poly)) + 1) *
-                                     np.power(0.5, 1 + np.arange(len(product_poly)))).sum()
-
-                a = wavelet_right_coeffs[basis_idx, :]
-                product_poly = np.convolve(a, a)
-                product_poly[np.abs(product_poly) < 1e-8] = 0
-                norm_squared_right = (product_poly * 1 / (np.arange(len(product_poly)) + 1) *
-                                      (1 - np.power(0.5, 1 + np.arange(len(product_poly))))).sum()
-
-                norm = np.sqrt(norm_squared_left + norm_squared_right)
-                wavelet_left_coeffs[basis_idx, :] /= norm
-                wavelet_right_coeffs[basis_idx, :] /= norm
-
-                # Clean up numerical noise
-                wavelet_left_coeffs[np.abs(wavelet_left_coeffs) < 1e-8] = 0
-                wavelet_right_coeffs[np.abs(wavelet_right_coeffs) < 1e-8] = 0
+            wavelet_left_coeffs, wavelet_right_coeffs = cls._gram_schmidt_wavelet_coeffs(
+                scaling_coeffs, scaling_2x_coeffs, k
+            )
 
             # Create callable functions using numpy's polynomial evaluation
             # Note: np.polyval expects coefficients in descending order
@@ -254,10 +274,22 @@ class WaveletUtils:
                     coeffs_2x = poly_stretched.coef * np.sqrt(2) * 2 / np.sqrt(np.pi)
                     scaling_2x_coeffs[basis_idx, :len(coeffs_2x)] = coeffs_2x
 
-            # For Chebyshev, wavelets are handled differently (compact support)
+            # Gram–Schmidt uses power-basis convolution; convert Chebyshev rows first.
+            scaling_coeffs = cls._chebyshev_coeff_matrix_to_power_basis(scaling_coeffs, k)
+            scaling_2x_coeffs = cls._chebyshev_coeff_matrix_to_power_basis(scaling_2x_coeffs, k)
+            wavelet_left_coeffs, wavelet_right_coeffs = cls._gram_schmidt_wavelet_coeffs(
+                scaling_coeffs, scaling_2x_coeffs, k
+            )
+
             phi = [partial(cls.phi_, scaling_coeffs[i, :]) for i in range(k)]
-            psi1 = [partial(cls.phi_, np.zeros(k), lb=0, ub=0.5) for i in range(k)]
-            psi2 = [partial(cls.phi_, np.zeros(k), lb=0.5, ub=1) for i in range(k)]
+            psi1 = [
+                partial(cls.phi_, wavelet_left_coeffs[i, :], lower_bound=0, upper_bound=0.5)
+                for i in range(k)
+            ]
+            psi2 = [
+                partial(cls.phi_, wavelet_right_coeffs[i, :], lower_bound=0.5, upper_bound=1)
+                for i in range(k)
+            ]
 
         return phi, psi1, psi2
 
@@ -712,6 +744,26 @@ class SparseKernelFT(nn.Module):
         if n_dim in [2, 3]:
             self.output_proj = nn.Linear(in_channels, in_channels)
 
+    @staticmethod
+    def _rfft_positive_modes(axis_len: int, alpha: int) -> int:
+        """Modes along the last axis of ``rfft2`` / ``rfftn`` (non-negative freqs only)."""
+        return min(int(alpha), axis_len // 2 + 1)
+
+    @staticmethod
+    def _full_fft_axis_symmetric_modes(n: int, alpha: int) -> Tuple[int, int]:
+        """
+        Sizes for ``[:m_pos]`` and ``[-m_neg:]`` along a full complex FFT axis so the two
+        index ranges do not overlap (requires ``m_pos + m_neg <= n``; we use ``m_pos = m_neg``).
+
+        For ``n <= 1`` only the DC bin exists: fill the low slice only and set ``m_neg = 0``
+        (``tensor[-0:]`` would alias the whole axis).
+        """
+        a = int(alpha)
+        if n <= 1:
+            return min(a, max(n, 0)), 0
+        m = min(a, n // 2)
+        return m, m
+
     def _init_frequency_weights(self, in_channels):
         """
         Initialize learnable frequency domain weights.
@@ -883,36 +935,39 @@ class SparseKernelFT(nn.Module):
           Layout: [0, 1, 2, ..., M//2]
 
         We need to handle both positive and negative frequencies in the first
-        dimension carefully to avoid indexing errors.
+        dimension carefully. The low/high index blocks must not overlap (capped at
+        ``nx // 2`` per side); the library's :class:`~neuralop.layers.spectral_convolution.SpectralConv`
+        uses ``fftshift`` and related conventions for the same redundancy issue.
         """
         batch_size, channels, nx, ny = x.shape
 
         # 2D Real FFT: (B, C, Nx, Ny) → (B, C, Nx, Ny//2+1)
         x_fft = torch.fft.rfft2(x, dim=(-2, -1))
 
-        # Determine how many modes to use in each dimension
-        num_modes_x = min(self.alpha, nx // 2 + 1)
-        num_modes_y = min(self.alpha, ny // 2 + 1)
+        # Along x the layout is a full length-nx axis; low/high slices [:m] and [-m:] overlap if
+        # 2*m > nx (e.g. m = nx//2+1). Cap symmetric modes at nx//2 (see also library SpectralConv).
+        mx_pos, mx_neg = self._full_fft_axis_symmetric_modes(nx, self.alpha)
+        num_modes_y = self._rfft_positive_modes(ny, self.alpha)
 
         # Initialize output in frequency domain
         output_fft = torch.zeros(batch_size, channels, nx, ny // 2 + 1,
                                  device=x.device, dtype=torch.cfloat)
 
-        # CORRECT frequency indexing:
-        # Positive frequencies in x: [0, 1, ..., num_modes_x-1]
-        output_fft[:, :, :num_modes_x, :num_modes_y] = torch.einsum(
-            "bixy,ioxy->boxy",
-            x_fft[:, :, :num_modes_x, :num_modes_y],
-            self.weights1[:, :, :num_modes_x, :num_modes_y]
-        )
+        # Low x-frequencies: [0, mx_pos)
+        if mx_pos > 0 and num_modes_y > 0:
+            output_fft[:, :, :mx_pos, :num_modes_y] = torch.einsum(
+                "bixy,ioxy->boxy",
+                x_fft[:, :, :mx_pos, :num_modes_y],
+                self.weights1[:, :, :mx_pos, :num_modes_y]
+            )
 
-        # Negative frequencies in x: [-num_modes_x, ..., -1]
-        # In FFT layout, these are at indices [nx-num_modes_x:nx]
-        output_fft[:, :, -num_modes_x:, :num_modes_y] = torch.einsum(
-            "bixy,ioxy->boxy",
-            x_fft[:, :, -num_modes_x:, :num_modes_y],
-            self.weights2[:, :, :num_modes_x, :num_modes_y]
-        )
+        # High x-frequencies (negative wavenumbers in FFT order); skip if mx_neg==0 (e.g. nx<=1)
+        if mx_neg > 0 and num_modes_y > 0:
+            output_fft[:, :, -mx_neg:, :num_modes_y] = torch.einsum(
+                "bixy,ioxy->boxy",
+                x_fft[:, :, -mx_neg:, :num_modes_y],
+                self.weights2[:, :, :mx_neg, :num_modes_y]
+            )
 
         # Inverse FFT back to spatial domain
         x = torch.fft.irfft2(output_fft, s=(nx, ny), dim=(-2, -1))
@@ -938,49 +993,54 @@ class SparseKernelFT(nn.Module):
         - weights2: (-x, +y, +z)
         - weights3: (+x, -y, +z)
         - weights4: (-x, -y, +z)
+
+        Along ``x`` and ``y`` we cap symmetric mode counts so ``[:m]`` and ``[-m:]`` do not overlap;
+        along ``z`` only non-negative rfft bins are used.
         """
         batch_size, channels, nx, ny, nz = x.shape
 
         # 3D Real FFT: (B, C, Nx, Ny, Nz) → (B, C, Nx, Ny, Nz//2+1)
         x_fft = torch.fft.rfftn(x, dim=(-3, -2, -1))
 
-        # Determine how many modes to use
-        num_modes_x = min(self.alpha, nx // 2 + 1)
-        num_modes_y = min(self.alpha, ny // 2 + 1)
-        num_modes_z = min(self.alpha, nz // 2 + 1)
+        mx_pos, mx_neg = self._full_fft_axis_symmetric_modes(nx, self.alpha)
+        my_pos, my_neg = self._full_fft_axis_symmetric_modes(ny, self.alpha)
+        num_modes_z = self._rfft_positive_modes(nz, self.alpha)
 
         # Initialize output
         output_fft = torch.zeros(batch_size, channels, nx, ny, nz // 2 + 1,
                                  device=x.device, dtype=torch.cfloat)
 
-        # Apply weights to all 4 quadrants
         # Quadrant 1: (+x, +y, +z)
-        output_fft[:, :, :num_modes_x, :num_modes_y, :num_modes_z] = torch.einsum(
-            "bixyz,ioxyz->boxyz",
-            x_fft[:, :, :num_modes_x, :num_modes_y, :num_modes_z],
-            self.weights1[:, :, :num_modes_x, :num_modes_y, :num_modes_z]
-        )
+        if mx_pos > 0 and my_pos > 0 and num_modes_z > 0:
+            output_fft[:, :, :mx_pos, :my_pos, :num_modes_z] = torch.einsum(
+                "bixyz,ioxyz->boxyz",
+                x_fft[:, :, :mx_pos, :my_pos, :num_modes_z],
+                self.weights1[:, :, :mx_pos, :my_pos, :num_modes_z]
+            )
 
         # Quadrant 2: (-x, +y, +z)
-        output_fft[:, :, -num_modes_x:, :num_modes_y, :num_modes_z] = torch.einsum(
-            "bixyz,ioxyz->boxyz",
-            x_fft[:, :, -num_modes_x:, :num_modes_y, :num_modes_z],
-            self.weights2[:, :, :num_modes_x, :num_modes_y, :num_modes_z]
-        )
+        if mx_neg > 0 and my_pos > 0 and num_modes_z > 0:
+            output_fft[:, :, -mx_neg:, :my_pos, :num_modes_z] = torch.einsum(
+                "bixyz,ioxyz->boxyz",
+                x_fft[:, :, -mx_neg:, :my_pos, :num_modes_z],
+                self.weights2[:, :, :mx_neg, :my_pos, :num_modes_z]
+            )
 
         # Quadrant 3: (+x, -y, +z)
-        output_fft[:, :, :num_modes_x, -num_modes_y:, :num_modes_z] = torch.einsum(
-            "bixyz,ioxyz->boxyz",
-            x_fft[:, :, :num_modes_x, -num_modes_y:, :num_modes_z],
-            self.weights3[:, :, :num_modes_x, :num_modes_y, :num_modes_z]
-        )
+        if mx_pos > 0 and my_neg > 0 and num_modes_z > 0:
+            output_fft[:, :, :mx_pos, -my_neg:, :num_modes_z] = torch.einsum(
+                "bixyz,ioxyz->boxyz",
+                x_fft[:, :, :mx_pos, -my_neg:, :num_modes_z],
+                self.weights3[:, :, :mx_pos, :my_neg, :num_modes_z]
+            )
 
         # Quadrant 4: (-x, -y, +z)
-        output_fft[:, :, -num_modes_x:, -num_modes_y:, :num_modes_z] = torch.einsum(
-            "bixyz,ioxyz->boxyz",
-            x_fft[:, :, -num_modes_x:, -num_modes_y:, :num_modes_z],
-            self.weights4[:, :, :num_modes_x, :num_modes_y, :num_modes_z]
-        )
+        if mx_neg > 0 and my_neg > 0 and num_modes_z > 0:
+            output_fft[:, :, -mx_neg:, -my_neg:, :num_modes_z] = torch.einsum(
+                "bixyz,ioxyz->boxyz",
+                x_fft[:, :, -mx_neg:, -my_neg:, :num_modes_z],
+                self.weights4[:, :, :mx_neg, :my_neg, :num_modes_z]
+            )
 
         # Inverse FFT
         x = torch.fft.irfftn(output_fft, s=(nx, ny, nz), dim=(-3, -2, -1))
@@ -1024,6 +1084,9 @@ class MWNOBlock(nn.Module):
         - L=1: Stop 1 level before coarsest
         - L=2: Stop 2 levels before coarsest
         Useful when very coarse scales aren't needed.
+        Must satisfy ``L < num_scales`` with ``num_scales = floor(log2(spatial_size))`` on the
+        wavelet axis. :class:`~neuralop.models.mwno.MWNO` checks this once per ``forward``;
+        standalone ``MWNOBlock`` use must satisfy the inequality manually.
 
     c : int, default=1
         Number of channels in wavelet coefficients.
