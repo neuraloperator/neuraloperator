@@ -10,6 +10,7 @@ n_heads, head_n_channels) and supports optional rotary positional embeddings.
 import torch
 from torch import nn
 import math
+from torch.nn.init import xavier_uniform_
 
 
 class GalerkinAttention(nn.Module):
@@ -59,6 +60,8 @@ class GalerkinAttention(nn.Module):
         self.head_n_channels = head_n_channels
         self.in_channels = in_channels
         self.out_channels = out_channels
+        if n_modes < 1:
+            raise ValueError(f"n_modes must be >= 1, got {n_modes}")
         self.n_modes = n_modes
         self.project_query = project_query
 
@@ -76,7 +79,43 @@ class GalerkinAttention(nn.Module):
             else nn.Identity()
         )
 
+        self.init_gain = 1 / math.sqrt(head_n_channels)
+        self.diagonal_weight = self.init_gain
+        self.initialize_qkv_weights()
+
         self.alpha = nn.Parameter(torch.ones(1))
+
+    def init_weight(self, weight, init_fn):
+        """Initialize projection matrix with gain and optional diagonal bias.
+
+        Initializes weights for each head with predefined initialization function and gain.
+        See Table 8 in https://arxiv.org/pdf/2105.14995.pdf
+        """
+        for param in weight.parameters():
+            if param.ndim > 1:
+                for h in range(self.n_heads):
+                    init_fn(param[h * self.head_n_channels:(h + 1) * self.head_n_channels, :],
+                            gain=self.init_gain)
+
+    def initialize_qkv_weights(self):
+        """Initialize QKV projection weights with xavier uniform and diagonal bias."""
+        init_fn = xavier_uniform_
+        if self.project_query:
+            self.init_weight(self.to_q, init_fn)
+        self.init_weight(self.to_k, init_fn)
+        self.init_weight(self.to_v, init_fn)
+
+    def normalize_wrt_domain(self, u, norm_fn):
+        """Normalize input with respect to domain, reshape for multi-head attention."""
+        batch_size = u.shape[0]
+        num_points = u.shape[2]
+        # InstanceNorm1d expects [N, C, L], so transpose from [B, H, N, C] to [BH, C, N]
+        u = u.permute(0, 1, 3, 2).contiguous()
+        u = u.view(batch_size * self.n_heads, self.head_n_channels, num_points)
+        u = norm_fn(u)
+        u = u.view(batch_size, self.n_heads, self.head_n_channels, num_points)
+        # Transpose back to [B, H, N, C]
+        return u.permute(0, 1, 3, 2).contiguous()
 
     def forward(
         self,
@@ -110,8 +149,16 @@ class GalerkinAttention(nn.Module):
         if u_qry is None:
             u_qry = u_src
 
-        batch_size, num_points, _ = u_src.shape
+        batch_size, num_src, _ = u_src.shape
+        num_qry = u_qry.shape[1]
         pos_dim = pos_src.shape[-1] if pos_src is not None else 0
+
+        if num_qry != num_src:
+            raise ValueError(
+                f"GalerkinAttention currently only supports self-attention "
+                f"(num_qry == num_src), got num_qry={num_qry} and num_src={num_src}. "
+                f"For cross-attention with different lengths, use AttentionKernelIntegral."
+            )
 
         q = self.to_q(u_qry)
         k = self.to_k(u_src)
@@ -131,6 +178,8 @@ class GalerkinAttention(nn.Module):
                 pos_y = pos_src[..., 1]
                 k_freqs_x = positional_embedding_module(pos_x)
                 k_freqs_y = positional_embedding_module(pos_y)
+                k_freqs_x = k_freqs_x.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
+                k_freqs_y = k_freqs_y.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
 
                 if u_qry is u_src and pos_qry is None:
                     q_freqs_x, q_freqs_y = k_freqs_x, k_freqs_y
@@ -139,16 +188,20 @@ class GalerkinAttention(nn.Module):
                     pq_y = pos_qry[..., 1] if pos_qry is not None else pos_y
                     q_freqs_x = positional_embedding_module(pq_x)
                     q_freqs_y = positional_embedding_module(pq_y)
+                    q_freqs_x = q_freqs_x.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
+                    q_freqs_y = q_freqs_y.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
 
-                q = _apply_rotary_2d(q, q_freqs_x, q_freqs_y)
-                k = _apply_rotary_2d(k, k_freqs_x, k_freqs_y)
+                q = positional_embedding_module.apply_2d_rotary_pos_emb(q, q_freqs_x, q_freqs_y)
+                k = positional_embedding_module.apply_2d_rotary_pos_emb(k, k_freqs_x, k_freqs_y)
             elif pos_dim == 1:
                 k_freqs = positional_embedding_module(pos_src[..., 0])
+                k_freqs = k_freqs.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
                 q_freqs = positional_embedding_module(
                     pos_qry[..., 0] if pos_qry is not None else pos_src[..., 0]
                 )
-                q = _apply_rotary_1d(q, q_freqs)
-                k = _apply_rotary_1d(k, k_freqs)
+                q_freqs = q_freqs.unsqueeze(1).repeat([1, self.n_heads, 1, 1])
+                q = positional_embedding_module.apply_1d_rotary_pos_emb(q, q_freqs)
+                k = positional_embedding_module.apply_1d_rotary_pos_emb(k, k_freqs)
 
         q_fft = torch.fft.rfft(q, dim=2, norm="ortho")
         k_fft = torch.fft.rfft(k, dim=2, norm="ortho")
@@ -165,41 +218,19 @@ class GalerkinAttention(nn.Module):
         kernel_conj_flip = kernel.conj().flip(-2)
         kernel_full = torch.cat([kernel, kernel_conj_flip], dim=2)[:, :, :n_freqs, :]
 
-        attn = torch.fft.irfft(kernel_full, n=num_points, dim=2, norm="ortho")
+        attn = torch.fft.irfft(kernel_full, n=num_src, dim=2, norm="ortho")
 
         if weights is not None:
-            attn = attn * weights.view(1, 1, -1, 1)
+            if weights.dim() == 1:
+                attn = attn * weights.view(1, 1, -1, 1)
+            else:
+                attn = attn * weights.view(weights.shape[0], 1, -1, 1)
 
         out = attn * v
         out = out.permute(0, 2, 1, 3).contiguous()
-        out = out.view(batch_size, num_points, self.n_heads * self.head_n_channels)
+        out = out.view(batch_size, num_src, self.n_heads * self.head_n_channels)
         out = self.to_out(out)
 
         if return_kernel:
             return out, kernel
         return out
-
-
-def _apply_rotary_1d(x, freqs):
-    """Apply 1D rotary positional embedding."""
-    d = x.shape[-1] // 2
-    x_real, x_imag = x[..., :d], x[..., d:]
-    x_rot_real = x_real * freqs - x_imag * freqs.flipud()
-    x_rot_imag = x_real * freqs.flipud() + x_imag * freqs
-    return torch.cat([x_rot_real, x_rot_imag], dim=-1)
-
-
-def _apply_rotary_2d(x, freqs_x, freqs_y):
-    """Apply 2D rotary positional embedding (RoPE)."""
-    d = x.shape[-1] // 2
-    x1, x2 = x[..., :d], x[..., d:]
-    d1, d2 = d // 2, d // 2
-    x1r, x1i = x1[..., :d1], x1[..., d1:]
-    x2r, x2i = x2[..., :d2], x2[..., d2:]
-    fx1 = freqs_x.unsqueeze(-1)
-    fx2 = freqs_y.unsqueeze(-1)
-    x1r_out = x1r * fx1 - x1i * fx1.flipud()
-    x1i_out = x1r * fx1.flipud() + x1i * fx1
-    x2r_out = x2r * fx2 - x2i * fx2.flipud()
-    x2i_out = x2r * fx2.flipud() + x2i * fx2
-    return torch.cat([torch.cat([x1r_out, x1i_out], -1), torch.cat([x2r_out, x2i_out], -1)], -1)

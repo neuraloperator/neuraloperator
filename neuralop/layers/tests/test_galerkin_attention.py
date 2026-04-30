@@ -78,12 +78,11 @@ def test_GalerkinAttention_return_kernel():
 
 
 def test_GalerkinAttention_cross_attention():
-    """Test cross-attention with separate query and source."""
+    """Test cross-attention with same sequence length (different input tensors)."""
     head_n_channels = 16
     channels = 32
     n_heads = 2
-    num_src = 64
-    num_qry = 32
+    num_points = 64
     batch_size = 2
 
     layer = GalerkinAttention(
@@ -94,11 +93,11 @@ def test_GalerkinAttention_cross_attention():
         n_modes=8,
     )
 
-    src = torch.randn(batch_size, num_src, channels)
-    qry = torch.randn(batch_size, num_qry, channels)
+    src = torch.randn(batch_size, num_points, channels)
+    qry = torch.randn(batch_size, num_points, channels)
 
     out = layer(u_src=src, u_qry=qry)
-    assert out.shape == (batch_size, num_qry, channels)
+    assert out.shape == (batch_size, num_points, channels)
 
 
 def test_GalerkinAttention_different_io_channels():
