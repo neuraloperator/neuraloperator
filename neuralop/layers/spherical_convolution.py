@@ -435,16 +435,19 @@ class SphericalConv(BaseSpectralConv):
         self._build_modulator(mode_modulation)
 
     def _build_embedding(self, embed: Optional[dict]) -> None:
-        self.embed_config = embed
         self._k_grid_cache = {}
         if embed is None:
+            self.embed_config = None
             return
 
-        embed_dim = int(embed.get("dim", 32))
-        alpha = embed.get("alpha", -2.0)
-        r = embed.get("r", 10000.0)
-        type_t = embed.get("type_t", "sinusoidal")
-        type_k = embed.get("type_k", "power")
+        # Copy so resolved defaults don't leak back into the caller's dict.
+        self.embed_config = dict(embed)
+
+        embed_dim = int(self.embed_config.get("dim", 32))
+        alpha = self.embed_config.get("alpha", -2.0)
+        r = self.embed_config.get("r", 10000.0)
+        type_t = self.embed_config.get("type_t", "sinusoidal")
+        type_k = self.embed_config.get("type_k", "power")
 
         self.embed_config["dim"] = embed_dim
         self.embed_config["alpha"] = alpha
@@ -521,7 +524,15 @@ class SphericalConv(BaseSpectralConv):
         batch_size = t.shape[0]
 
         if embed_type == "power":
-            t_embed = (t.clamp_min(1) ** self.t_powers.unsqueeze(0)) * (t > 0)
+            # Power embedding is only defined for positive t (it raises t to a
+            # negative-to-zero range of exponents). Fail loudly rather than
+            # silently zeroing the embedding for t <= 0.
+            if not torch.all(t > 0):
+                raise ValueError(
+                    "embed['type_t']='power' requires t > 0; "
+                    f"got t.min()={t.min().item()}."
+                )
+            t_embed = t ** self.t_powers.unsqueeze(0)
         else:  # 'sinusoidal'
             t_scaled = t * self.t_inv_freqs.unsqueeze(0)
             t_embed = torch.cat([torch.sin(t_scaled), torch.cos(t_scaled)], dim=-1)
@@ -593,6 +604,12 @@ class SphericalConv(BaseSpectralConv):
             return self.modulator(combined)
         if self.modulation_type == "complex":
             mlp_out = self.modulator(combined)
+            # Complex modulator output was sized to 2 * mod_target_channels in
+            # `_build_modulator`. The split width is `mod_target_channels`,
+            # which equals `in_channels` when `pre_modulate=True` (the
+            # multiplier acts on the pre-contraction input) and
+            # `out_channels` when `pre_modulate=False` (acts on the
+            # post-contraction output).
             n = self.mod_target_channels
             return torch.complex(mlp_out[:, :n, ...], mlp_out[:, n:, ...])
         # 'polar'

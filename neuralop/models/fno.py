@@ -405,6 +405,11 @@ class FNO(BaseModel, name="FNO"):
                 t = t.expand(x.shape[0], 1)
             elif t.ndim == 1:
                 t = t.unsqueeze(-1)
+            if t.ndim != 2 or t.shape[1] != 1 or t.shape[0] != x.shape[0]:
+                raise ValueError(
+                    f"t must broadcast to shape ({x.shape[0]}, 1); got tensor with "
+                    f"shape {tuple(t.shape)} for x batch {x.shape[0]}."
+                )
 
         # append spatial pos embedding if set
         if self.positional_embedding is not None:

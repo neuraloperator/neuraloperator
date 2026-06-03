@@ -419,18 +419,20 @@ class SpectralConv(BaseSpectralConv):
         self._build_modulator(mode_modulation)
 
     def _build_embedding(self, embed: Optional[dict]) -> None:
-        self.embed_config = embed
         self._k_grid_cache = {}
         if embed is None:
+            self.embed_config = None
             return
 
-        embed_dim = int(embed.get("dim", 32))
-        alpha = embed.get("alpha", -2.0)
-        r = embed.get("r", 10000.0)
-        type_t = embed.get("type_t", "sinusoidal")
-        type_k = embed.get("type_k", "power")
+        # Copy so resolved defaults don't leak back into the caller's dict.
+        self.embed_config = dict(embed)
 
-        # Persist resolved values for inspection.
+        embed_dim = int(self.embed_config.get("dim", 32))
+        alpha = self.embed_config.get("alpha", -2.0)
+        r = self.embed_config.get("r", 10000.0)
+        type_t = self.embed_config.get("type_t", "sinusoidal")
+        type_k = self.embed_config.get("type_k", "power")
+
         self.embed_config["dim"] = embed_dim
         self.embed_config["alpha"] = alpha
         self.embed_config["r"] = r
@@ -508,7 +510,15 @@ class SpectralConv(BaseSpectralConv):
         batch_size = t.shape[0]
 
         if embed_type == "power":
-            t_embed = (t.clamp_min(1) ** self.t_powers.unsqueeze(0)) * (t > 0)
+            # Power embedding is only defined for positive t (it raises t to a
+            # negative-to-zero range of exponents). Fail loudly rather than
+            # silently zeroing the embedding for t <= 0.
+            if not torch.all(t > 0):
+                raise ValueError(
+                    "embed['type_t']='power' requires t > 0; "
+                    f"got t.min()={t.min().item()}."
+                )
+            t_embed = t ** self.t_powers.unsqueeze(0)
         else:  # 'sinusoidal'
             t_scaled = t * self.t_inv_freqs.unsqueeze(0)
             t_embed = torch.cat([torch.sin(t_scaled), torch.cos(t_scaled)], dim=-1)
@@ -580,6 +590,12 @@ class SpectralConv(BaseSpectralConv):
             return self.modulator(combined)
         if self.modulation_type == "complex":
             mlp_out = self.modulator(combined)
+            # Complex modulator output was sized to 2 * in_channels in
+            # `_build_modulator`; the first half is the real part and the
+            # second half is the imaginary part of a per-mode complex
+            # multiplier. The factor multiplies the kept FFT input, which
+            # has `in_channels` channels, so the split width must be
+            # `in_channels`.
             return torch.complex(
                 mlp_out[:, : self.in_channels, ...],
                 mlp_out[:, self.in_channels :, ...],
@@ -750,6 +766,16 @@ class SpectralConv(BaseSpectralConv):
 
         # Optional (t, k)-modulation: multiply the kept spectral
         # coefficients by a learned multiplier before contraction.
+        #
+        # Note on Hermitian symmetry: for real-valued spatial data the
+        # modulation factor is in general *not* Hermitian (e.g. a polar
+        # `exp(1j*theta)` factor with real theta produces non-conjugate
+        # values across positive/negative frequencies). The Hermitian
+        # symmetry enforcement below (zeroing imag at DC and Nyquist)
+        # therefore clips the modulation contribution at those two bins
+        # to keep the irfft output real. This is intentional and matches
+        # the design: the modulator can shape mid-band frequencies freely
+        # but the DC/Nyquist response stays real-valued.
         if self.modulator is not None:
             if t is None:
                 raise ValueError(

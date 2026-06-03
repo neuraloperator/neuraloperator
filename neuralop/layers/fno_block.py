@@ -327,14 +327,17 @@ class FNOBlocks(nn.Module):
         self._build_norm_modulator(norm_modulation, n_layers)
 
     def _build_time_embedding(self, embed: Optional[dict]) -> None:
-        self.embed_config = embed
         if embed is None:
+            self.embed_config = None
             return
 
-        embed_dim = int(embed.get("dim", 32))
-        alpha = embed.get("alpha", -2.0)
-        r = embed.get("r", 10000.0)
-        type_t = embed.get("type_t", "sinusoidal")
+        # Copy so resolved defaults don't leak back into the caller's dict.
+        self.embed_config = dict(embed)
+
+        embed_dim = int(self.embed_config.get("dim", 32))
+        alpha = self.embed_config.get("alpha", -2.0)
+        r = self.embed_config.get("r", 10000.0)
+        type_t = self.embed_config.get("type_t", "sinusoidal")
 
         self.embed_config["dim"] = embed_dim
         self.embed_config["alpha"] = alpha
@@ -420,7 +423,15 @@ class FNOBlocks(nn.Module):
         """Embed scalar time ``t`` to shape ``(B, embed_dim, 1)``."""
         embed_type = self.embed_config["type_t"]
         if embed_type == "power":
-            t_embed = (t.clamp_min(1) ** self.t_powers.unsqueeze(0)) * (t > 0)
+            # Power embedding is only defined for positive t (it raises t to a
+            # negative-to-zero range of exponents). Fail loudly rather than
+            # silently zeroing the embedding for t <= 0.
+            if not torch.all(t > 0):
+                raise ValueError(
+                    "embed['type_t']='power' requires t > 0; "
+                    f"got t.min()={t.min().item()}."
+                )
+            t_embed = t ** self.t_powers.unsqueeze(0)
         else:  # 'sinusoidal'
             t_scaled = t * self.t_inv_freqs.unsqueeze(0)
             t_embed = torch.cat([torch.sin(t_scaled), torch.cos(t_scaled)], dim=-1)

@@ -20,14 +20,14 @@ def _embed(dim=8):
     }
 
 
-def _mode_mod(mod_type="real"):
+def _mode_mod(mod_type="real", pre_modulate=True, share_m=True):
     return {
         "enabled": True,
         "type": mod_type,
         "hidden_channels": 16,
         "full_res": False,
-        "share_m": True,
-        "pre_modulate": True,
+        "share_m": share_m,
+        "pre_modulate": pre_modulate,
     }
 
 
@@ -155,8 +155,13 @@ def test_sfno_backward(n_modes, n_layers):
 )
 @pytest.mark.parametrize("n_modes", [(4, 4), (5, 6)])
 @pytest.mark.parametrize("mod_type", ["real", "complex", "polar"])
-def test_t_emb_sfno_forward(n_modes, mod_type):
-    """t_emb_SFNO with mode + norm modulation runs and returns the right shape."""
+@pytest.mark.parametrize("pre_modulate", [True, False])
+def test_t_emb_sfno_forward(n_modes, mod_type, pre_modulate):
+    """t_emb_SFNO with mode + norm modulation runs and returns the right shape.
+
+    Parametrized over pre_modulate so both branches (multiplier acting on
+    in_channels before contraction, or out_channels after) are exercised.
+    """
     device = "cuda" if torch.cuda.is_available() else "cpu"
     batch_size = 2
     size = (12, 12)
@@ -168,7 +173,7 @@ def test_t_emb_sfno_forward(n_modes, mod_type):
         n_modes=n_modes,
         n_layers=2,
         embed=_embed(),
-        mode_modulation=_mode_mod(mod_type),
+        mode_modulation=_mode_mod(mod_type, pre_modulate=pre_modulate),
         norm_modulation=_norm_mod(),
     ).to(device)
 
