@@ -13,7 +13,7 @@ import warnings
 warnings.filterwarnings("once", category=UserWarning)
 
 
-from ..layers.embeddings import GridEmbeddingND, GridEmbedding2D
+from ..layers.embeddings import GridEmbeddingND, GridEmbedding2D, LatticeEmbedding
 from ..layers.spectral_convolution import SpectralConv
 from ..layers.padding import DomainPadding
 from ..layers.fno_block import FNOBlocks
@@ -69,6 +69,7 @@ class FNO(BaseModel, name="FNO"):
           Assumes the inputs are discretized over a grid with entry [0,0,...] at the origin and side lengths of 1.
         - GridEmbeddingND: Uses this module directly (see :mod:`neuralop.embeddings.GridEmbeddingND` for details).
         - GridEmbedding2D: Uses this module directly for 2D cases.
+        - LatticeEmbedding: Appends rank-1 lattice coordinates for lattice data.
         - None: Does nothing.
         Default: "grid"
     non_linearity : nn.Module, optional
@@ -201,12 +202,16 @@ class FNO(BaseModel, name="FNO"):
         separable: bool = False,
         preactivation: bool = False,
         conv_module: nn.Module = SpectralConv,
+        index_set=None,
+        spectral_transform=None,
+        data_dim=None,
         enforce_hermitian_symmetry: bool = True,
     ):
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
         super().__init__()
         self.n_dim = len(n_modes)
+        self.data_dim = self.n_dim if data_dim is None else data_dim
 
         # n_modes is a special property - see the class' property for underlying mechanism
         # When updated, change should be reflected in fno blocks
@@ -236,30 +241,38 @@ class FNO(BaseModel, name="FNO"):
         self.preactivation = preactivation
         self.complex_data = complex_data
         self.fno_block_precision = fno_block_precision
+        self.index_set = index_set
+        self.spectral_transform = spectral_transform
 
         ## Positional embedding
         if positional_embedding == "grid":
-            spatial_grid_boundaries = [[0.0, 1.0]] * self.n_dim
+            spatial_grid_boundaries = [[0.0, 1.0]] * self.data_dim
             self.positional_embedding = GridEmbeddingND(
                 in_channels=self.in_channels,
-                dim=self.n_dim,
+                dim=self.data_dim,
                 grid_boundaries=spatial_grid_boundaries,
             )
         elif isinstance(positional_embedding, GridEmbedding2D):
-            if self.n_dim == 2:
+            if self.data_dim == 2:
                 self.positional_embedding = positional_embedding
             else:
                 raise ValueError(
-                    f"Error: expected {self.n_dim}-d positional embeddings, got {positional_embedding}"
+                    f"Error: expected {self.data_dim}-d positional embeddings, got {positional_embedding}"
                 )
         elif isinstance(positional_embedding, GridEmbeddingND):
+            self.positional_embedding = positional_embedding
+        elif isinstance(positional_embedding, LatticeEmbedding):
+            self.positional_embedding = positional_embedding
+        elif isinstance(positional_embedding, nn.Module) and hasattr(
+            positional_embedding, "out_channels"
+        ):
             self.positional_embedding = positional_embedding
         elif positional_embedding is None:
             self.positional_embedding = None
         else:
             raise ValueError(
                 f"Error: tried to instantiate FNO positional embedding with {positional_embedding},\
-                              expected one of 'grid', GridEmbeddingND"
+                              expected one of 'grid', GridEmbeddingND, LatticeEmbedding, or an nn.Module with out_channels"
             )
 
         ## Domain padding
@@ -306,6 +319,9 @@ class FNO(BaseModel, name="FNO"):
             factorization=factorization,
             decomposition_kwargs=decomposition_kwargs,
             conv_module=conv_module,
+            index_set=index_set,
+            spectral_transform=spectral_transform,
+            data_dim=self.data_dim,
             n_layers=n_layers,
             enforce_hermitian_symmetry=enforce_hermitian_symmetry,
         )
@@ -314,13 +330,13 @@ class FNO(BaseModel, name="FNO"):
         # if adding a positional embedding, add those channels to lifting
         lifting_in_channels = self.in_channels
         if self.positional_embedding is not None:
-            lifting_in_channels += self.n_dim
+            lifting_in_channels = self.positional_embedding.out_channels
         self.lifting = ChannelMLP(
             in_channels=lifting_in_channels,
             out_channels=self.hidden_channels,
             hidden_channels=self.lifting_channels,
             n_layers=2,
-            n_dim=self.n_dim,
+            n_dim=self.data_dim,
             non_linearity=non_linearity,
         )
         if self.complex_data:
@@ -332,7 +348,7 @@ class FNO(BaseModel, name="FNO"):
             out_channels=out_channels,
             hidden_channels=self.projection_channels,
             n_layers=2,
-            n_dim=self.n_dim,
+            n_dim=self.data_dim,
             non_linearity=non_linearity,
         )
         if self.complex_data:
@@ -377,6 +393,8 @@ class FNO(BaseModel, name="FNO"):
 
         if output_shape is None:
             output_shape = [None] * self.n_layers
+        elif isinstance(output_shape, int):
+            output_shape = [None] * (self.n_layers - 1) + [output_shape]
         elif isinstance(output_shape, tuple):
             output_shape = [None] * (self.n_layers - 1) + [output_shape]
 
