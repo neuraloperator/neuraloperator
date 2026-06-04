@@ -823,17 +823,26 @@ class SpectralConv(BaseSpectralConv):
                     out_fft, s=mode_sizes[:-1], dim=fft_dims[:-1], norm=self.fft_norm
                 )
 
-                # Enforce Hermitian symmetry conditions for irfft
-                # 0th frequency must be real
-                out_fft[..., 0].imag.zero_()
+                # Enforce Hermitian symmetry without in-place mutation of a
+                # tensor that participates in autograd. In-place ops on the
+                # complex ifftn output (`out_fft[..., 0].imag.zero_()`) leave
+                # a saved tensor that MKL FFT cannot reconcile during the
+                # irfft backward, triggering "Inconsistent configuration
+                # parameters" on CPU. Build a multiplicative mask along the
+                # last spectral axis instead: zero imag at DC (and at the
+                # Nyquist bin if the last spatial size is even).
+                last_size = mode_sizes[-1]
+                mask = torch.ones(
+                    out_fft.shape[-1], dtype=out_fft.real.dtype, device=out_fft.device
+                )
+                mask[0] = 0.0
+                if last_size % 2 == 0:
+                    mask[-1] = 0.0
+                mask = mask.view(*([1] * (out_fft.ndim - 1)), -1)
+                out_fft = torch.complex(out_fft.real, out_fft.imag * mask)
 
-                # Nyquist frequency must be real if the spatial size is even
-                if mode_sizes[-1] % 2 == 0:
-                    out_fft[..., -1].imag.zero_()
-
-                # Now that the Hermitian symmetry conditions are enforced, we can use irfft on the last dimension.
                 x = torch.fft.irfft(
-                    out_fft, n=mode_sizes[-1], dim=fft_dims[-1], norm=self.fft_norm
+                    out_fft, n=last_size, dim=fft_dims[-1], norm=self.fft_norm
                 )
 
             else:
