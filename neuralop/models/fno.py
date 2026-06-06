@@ -138,6 +138,14 @@ class FNO(BaseModel, name="FNO"):
         Whether to compute FNO forward pass with resnet-style preactivation. Default: False
     conv_module : nn.Module, optional
         Module to use for FNOBlock's convolutions. Default: SpectralConv
+     index_set : IndexSet or None, optional
+        Fourier modes to keep and learn weights for. If None, the layer uses a
+        ``HyperRectangleIndexSet`` with storage capacity derived from
+        ``max_n_modes`` when given, and otherwise from ``n_modes``.
+    spectral_transform : object or None, optional
+        Spectral transform backend. If None, the layer uses the default
+        regular-grid FFT backend, ``RegularGridFFT``. Custom transforms must
+        provide ``forward_transform``, ``inverse_transform``.
     enforce_hermitian_symmetry : bool, optional
         Whether to enforce Hermitian symmetry conditions when performing inverse FFT
         for real-valued data. Only used when ``conv_module`` is :class:`SpectralConv`
@@ -204,14 +212,13 @@ class FNO(BaseModel, name="FNO"):
         conv_module: nn.Module = SpectralConv,
         index_set=None,
         spectral_transform=None,
-        data_dim=None,
         enforce_hermitian_symmetry: bool = True,
     ):
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
         super().__init__()
         self.n_dim = len(n_modes)
-        self.data_dim = self.n_dim if data_dim is None else data_dim
+        self.data_dim = (spectral_transform.data_dim if spectral_transform is not None else self.n_dim)
 
         # n_modes is a special property - see the class' property for underlying mechanism
         # When updated, change should be reflected in fno blocks
@@ -321,7 +328,6 @@ class FNO(BaseModel, name="FNO"):
             conv_module=conv_module,
             index_set=index_set,
             spectral_transform=spectral_transform,
-            data_dim=self.data_dim,
             n_layers=n_layers,
             enforce_hermitian_symmetry=enforce_hermitian_symmetry,
         )

@@ -401,7 +401,6 @@ class SpectralConv(BaseSpectralConv):
 
         self.fno_block_precision = fno_block_precision
         self.rank = rank
-        requested_factorization = factorization
         self.factorization = factorization
         self.implementation = implementation
         self.enforce_hermitian_symmetry = enforce_hermitian_symmetry
@@ -419,14 +418,8 @@ class SpectralConv(BaseSpectralConv):
                 fixed_rank_modes = [0]
             else:
                 fixed_rank_modes = None
-        if factorization is None:
-            factorization = "Dense"  # No factorization
-
-        weight_shape = self.spectral_transform.weight_shape(
-            self.index_set, true_max_n_modes=self.true_max_n_modes
-        )
         if (
-            requested_factorization is not None
+            factorization is not None
             and isinstance(self.spectral_transform, Rank1LatticeFFT)
             and isinstance(self.index_set, HyperRectangleIndexSet)
         ):
@@ -435,6 +428,12 @@ class SpectralConv(BaseSpectralConv):
                 "Rank1LatticeFFT and HyperRectangleIndexSet. Use factorization=None "
                 "or use a flat explicit index set."
             )
+        if factorization is None:
+            factorization = "Dense"  # No factorization
+
+        weight_shape = self.spectral_transform.weight_shape(
+            self.index_set, true_max_n_modes=self.true_max_n_modes
+        )
         if separable:
             if in_channels != out_channels:
                 raise ValueError(

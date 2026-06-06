@@ -80,6 +80,14 @@ class FNOBlocks(nn.Module):
         Module to use for convolutions in FNO block, by default SpectralConv
     joint_factorization : bool, optional
         Whether to factorize all spectralConv weights as one tensor, by default False
+    index_set : IndexSet or None, optional
+        Fourier modes to keep and learn weights for. If None, the layer uses a
+        ``HyperRectangleIndexSet`` with storage capacity derived from
+        ``max_n_modes`` when given, and otherwise from ``n_modes``.
+    spectral_transform : object or None, optional
+        Spectral transform backend. If None, the layer uses the default
+        regular-grid FFT backend, ``RegularGridFFT``. Custom transforms must
+        provide ``forward_transform``, ``inverse_transform``.
     fixed_rank_modes : bool, optional
         Fixed_rank_modes parameter for SpectralConv, by default False
     implementation : str, optional
@@ -130,7 +138,6 @@ class FNOBlocks(nn.Module):
         conv_module=SpectralConv,
         index_set=None,
         spectral_transform=None,
-        data_dim=None,
         fixed_rank_modes=False,
         implementation="factorized",
         decomposition_kwargs=dict(),
@@ -141,7 +148,11 @@ class FNOBlocks(nn.Module):
             n_modes = [n_modes]
         self._n_modes = n_modes
         self.n_dim = len(n_modes)
-        self.data_dim = self.n_dim if data_dim is None else data_dim
+        self.data_dim = (
+            spectral_transform.data_dim
+            if spectral_transform is not None
+            else self.n_dim
+        )
 
         self.resolution_scaling_factor: Union[
             None, List[List[float]]

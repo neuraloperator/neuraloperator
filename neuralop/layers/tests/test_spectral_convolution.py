@@ -162,7 +162,7 @@ def test_SpectralConv_complex_centers_last_fft_dimension():
     coordinates = torch.arange(size)
     # This function is constant in the first dimension and mode -1 in the second dimension
     signal = torch.exp(-2j * torch.pi * coordinates / size)
-    x = signal.reshape(1, 1, 1, size).expand(1, 1, size, size)
+    x = signal.reshape(1, 1, 1, size).expand(1, 1, size, size).contiguous()
 
     y = conv(x)
 
@@ -195,7 +195,7 @@ def test_SpectralConv_complex_odd_max_n_modes_difference():
     coordinates = torch.arange(size)
     # This function is constant in the first dimension and mode -1 in the second dimension.
     signal = torch.exp(-2j * torch.pi * coordinates / size)
-    x = signal.reshape(1, 1, 1, size).expand(1, 1, size, size)
+    x = signal.reshape(1, 1, 1, size).expand(1, 1, size, size).contiguous()
 
     y = conv(x)
 
@@ -278,7 +278,7 @@ def test_SpectralConv_real_explicit_index_set_uses_rfft_representative():
 
     x1 = torch.arange(size).reshape(1, size)
     signal = torch.cos(2 * torch.pi * x1 / size) # This is using cosine (not exp)
-    x = signal.reshape(1, 1, 1, size).expand(1, 1, size, size)
+    x = signal.reshape(1, 1, 1, size).expand(1, 1, size, size).contiguous()
 
     torch.testing.assert_close(conv(x), x, atol=1e-6, rtol=1e-6)
 
@@ -322,7 +322,7 @@ def test_SpectralConv_hyperbolic_cross_uses_radius_from_n_modes():
 
     coordinates = torch.arange(size)
     signal = torch.exp(2j * torch.pi * 2 * coordinates / size)
-    x = signal.reshape(1, 1, size, 1).expand(1, 1, size, size)
+    x = signal.reshape(1, 1, size, 1).expand(1, 1, size, size).contiguous()
 
     # n_modes=(3, 3) gives active radius 1 for the hyperbolic cross, so mode
     # [2, 0] is allocated in the weight tensor but is not active yet.
@@ -539,7 +539,6 @@ def test_rank1_lattice_coordinates():
     expected_coordinates = torch.tensor(
         [[0, 0], [1 / 5, 3 / 5], [2 / 5, 1 / 5], [3 / 5, 4 / 5], [4 / 5, 2 / 5]]
     )
-
     torch.testing.assert_close(
         rank1_lattice_points(z, 5), expected_coordinates
     )

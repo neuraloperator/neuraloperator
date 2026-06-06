@@ -4,15 +4,21 @@ from itertools import product
 from math import prod
 
 import torch
+import numpy as np
 
 
 def rank1_lattice_points(z, n, device=None, dtype=None):
     """Return rank-1 lattice points ``(j * z mod n) / n``."""
-    z = torch.as_tensor(z, device=device, dtype=torch.long)
-    lattice = torch.remainder(torch.outer(torch.arange(n, device=device), z), n)
+    if isinstance(z, torch.Tensor):
+        z_array = z.cpu().numpy().astype(object)
+    else:
+        z_array = np.array(z, dtype=object)
+
+    n_int = int(n)
+    lattice = (np.outer(np.arange(n_int, dtype=object), z_array) % n_int) / n
     if dtype is None:
         dtype = torch.get_default_dtype()
-    return lattice.to(dtype=dtype) / n
+    return torch.as_tensor(lattice.astype(np.float64), dtype=dtype, device=device)
 
 
 def _coordinate_dtype(dtype):

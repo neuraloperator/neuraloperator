@@ -1,16 +1,11 @@
-"""Fourier transform backends for spectral convolution layers.
-
-References
-----------
-.. [1] Dilen, J., Keller, A., Kuo, F. Y., Nuyens, D. "Fourier Neural Operators
-    with Rank-1 Lattice Points and Hyperbolic Cross" (2026).
-    https://arxiv.org/abs/0000.00000.
-"""
+"""Fourier transform backends for spectral convolution layers."""
 
 from dataclasses import dataclass
+from abc import ABC, abstractmethod
 import warnings
 
 import torch
+import numpy as np
 
 from .index_sets import HyperRectangleIndexSet, RadialIndexSet
 from .resample import resample
@@ -37,11 +32,63 @@ class FourierTransformState:
     dims_to_fft_shift: tuple
 
 
-class RegularGridFFT:
+class SpectralTransform(ABC):
+    def __init__(
+            self,
+            order,
+            complex_data,
+            fft_norm,
+    ):
+        self.order = order
+        self.complex_data = complex_data
+        self.fft_norm = fft_norm
+
+    @abstractmethod
+    def forward_transform(self, x):
+        pass
+
+    @abstractmethod
+    def inverse_transform(self, out_fft, mode_sizes, state):
+        pass
+
+    @abstractmethod
+    def resize_fft(self, x_fft, output_shape, index_set, true_n_modes, state):
+        pass
+
+    @abstractmethod
+    def transform(self, x, output_shape, index_set, true_n_modes):
+        pass
+
+    @abstractmethod
+    def weight_shape(self, index_set, true_max_n_modes):
+        pass
+
+    @abstractmethod
+    def selection(self,
+        index_set,
+        fft_size,
+        max_n_modes,
+        true_n_modes,
+        true_max_n_modes,
+        separable=False,
+        device=None,
+    ):
+        pass
+        
+    @property
+    @abstractmethod
+    def data_dim(self):
+        return self.order
+
+class RegularGridFFT(SpectralTransform):
     """
     Regular-grid Fourier transform backend used by the default FNO.
 
     This code was factored out of the SpectralConv class.
+    References
+    ----------
+    .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
+        Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
     """
 
     def __init__(
@@ -51,9 +98,7 @@ class RegularGridFFT:
         fft_norm="forward",
         enforce_hermitian_symmetry=True,
     ):
-        self.order = order # Dimensionality of the FFT
-        self.complex_data = complex_data
-        self.fft_norm = fft_norm
+        super().__init__(order=order, complex_data=complex_data, fft_norm=fft_norm)
         self.enforce_hermitian_symmetry = enforce_hermitian_symmetry
         self._selection_cache = {}
 
@@ -64,6 +109,7 @@ class RegularGridFFT:
             fft_size[-1] = fft_size[-1] // 2 + 1
         fft_dims = tuple(range(-self.order, 0))
 
+        x = x.contiguous()
         if self.complex_data:
             x_fft = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
             dims_to_fft_shift = fft_dims
@@ -267,21 +313,24 @@ class RegularGridFFT:
             x_index=tuple(slices_x), weight_index=tuple(slices_w)
         )
 
-
-class Rank1LatticeFFT:
+class Rank1LatticeFFT(SpectralTransform):
     """Rank-1 lattice transform backend.
 
     The data transform is one-dimensional, while the index set still contains
     multi-dimensional Fourier modes. A mode k is stored at coefficient
     ``dot(k, z) mod n`` in the one-dimensional FFT.
+
+    References
+    ----------
+    .. [1] Dilen, J., Keller, A., Kuo, F. Y., Nuyens, D. "Fourier Neural Operators
+        with Rank-1 Lattice Points and Hyperbolic Cross" (2026).
+        https://arxiv.org/abs/0000.00000.
     """
 
     def __init__(self, n, z, complex_data=False, fft_norm="forward"):
+        super().__init__(order=1, complex_data=complex_data, fft_norm=fft_norm)
         self.n = int(n)
         self.z = torch.as_tensor(z, dtype=torch.long)
-        self.order = 1
-        self.complex_data = complex_data
-        self.fft_norm = fft_norm
         self._selection_cache = {}
 
     def forward_transform(self, x):
@@ -317,8 +366,10 @@ class Rank1LatticeFFT:
     def _coefficients(self, modes, fft_size, device, n=None):
         if n is None:
             n = self.n
-        z = self.z.to(device=device)
-        coefficients = torch.sum(modes * z, dim=1) % n
+        z_int = self.z.cpu().numpy().astype(object)   # Python arbitrary precision integers
+        modes_int = modes.cpu().numpy().astype(object)      
+        coefficients = np.sum(modes_int * z_int, axis=1) % n
+        coefficients = torch.as_tensor(coefficients.astype(np.int64), device=device, dtype=torch.long)
 
         if len(torch.unique(coefficients)) != coefficients.numel():
             warnings.warn("Aliasing is taking place in rank-1 lattice coefficients.")

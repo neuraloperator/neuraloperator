@@ -1,11 +1,4 @@
-"""Fourier index sets used by spectral convolution backends.
-
-References
-----------
-.. [1] Dilen, J., Keller, A., Kuo, F. Y., Nuyens, D. "Fourier Neural Operators
-    with Rank-1 Lattice Points and Hyperbolic Cross" (2026).
-    https://arxiv.org/abs/0000.00000.
-"""
+"""Fourier index sets used by spectral convolution backends."""
 
 from math import ceil, prod
 from typing import Optional, Sequence
@@ -117,6 +110,11 @@ class HyperRectangleIndexSet(RadialIndexSet):
     weights : Sequence[float], optional
         Per-dimension weights. The active number of modes in each dimension is
         ``round(2 * radius * weight[j])``.
+        
+    References
+    ----------
+    .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
+        Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
     """
 
     def __init__(
@@ -238,6 +236,13 @@ class HyperbolicCrossIndexSet(RadialIndexSet, ExplicitIndexSet):
 
     ``beta=0`` is treated as the exceptional hyperrectangle case. Otherwise
     ``beta`` must be at least 1.
+
+
+    References
+    ----------
+    .. [1] Dilen, J., Keller, A., Kuo, F. Y., Nuyens, D. "Fourier Neural Operators
+        with Rank-1 Lattice Points and Hyperbolic Cross" (2026).
+        https://arxiv.org/abs/0000.00000.
     """
 
     def __init__(
