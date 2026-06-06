@@ -812,25 +812,28 @@ class SpectralConv(BaseSpectralConv):
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
 
         else:
-            # For real data, we need to enforce Hermitian symmetry conditions for irfft.
-            # On certain GPUs and for certain input sizes, this is not handled within irfftn in cuFFT,
-            # and as a result causes line artifacts.
-            # To fix this, we split the ifftn into a ifftn in (n-1) dimensions and a irfft in the last dimension,
-            # although it incurs a small additional computational cost.
-
-            if self.enforce_hermitian_symmetry:
+            # For real spatial data we need an irfftn. cuFFT can produce
+            # line artifacts at DC / Nyquist on certain GPUs and input sizes
+            # when calling irfftn directly, so when running on CUDA with
+            # `enforce_hermitian_symmetry=True` we split the transform:
+            # ifftn over the leading (n-1) dims, explicit Hermitian
+            # enforcement on the last axis, then irfft on the last dim.
+            #
+            # On CPU (MKL or Accelerate) irfftn handles Hermitian symmetry
+            # correctly by construction, and the split path provokes an
+            # MKL DFTI "Inconsistent configuration parameters" failure in
+            # the backward pass when mode modulation is present — the
+            # in-place mutation of the complex ifftn output leaves a saved
+            # tensor whose layout MKL FFT cannot reconcile during the
+            # gradient computation. So we restrict the split to CUDA and
+            # use irfftn elsewhere.
+            if self.enforce_hermitian_symmetry and out_fft.is_cuda:
                 out_fft = torch.fft.ifftn(
                     out_fft, s=mode_sizes[:-1], dim=fft_dims[:-1], norm=self.fft_norm
                 )
-
-                # Enforce Hermitian symmetry without in-place mutation of a
-                # tensor that participates in autograd. In-place ops on the
-                # complex ifftn output (`out_fft[..., 0].imag.zero_()`) leave
-                # a saved tensor that MKL FFT cannot reconcile during the
-                # irfft backward, triggering "Inconsistent configuration
-                # parameters" on CPU. Build a multiplicative mask along the
-                # last spectral axis instead: zero imag at DC (and at the
-                # Nyquist bin if the last spatial size is even).
+                # Zero imag at DC (and Nyquist if the last spatial size is
+                # even) via an out-of-place multiplicative mask, so the
+                # saved tensor used by irfft's backward is not mutated.
                 last_size = mode_sizes[-1]
                 mask = torch.ones(
                     out_fft.shape[-1], dtype=out_fft.real.dtype, device=out_fft.device
@@ -844,10 +847,7 @@ class SpectralConv(BaseSpectralConv):
                 x = torch.fft.irfft(
                     out_fft, n=last_size, dim=fft_dims[-1], norm=self.fft_norm
                 )
-
             else:
-
-                # If Hemrmitian symmetry is not a concern, we can use irfftn on all dimensions.
                 x = torch.fft.irfftn(
                     out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm
                 )
