@@ -112,7 +112,7 @@ class PTDataset:
         Path(root_dir).joinpath(f"{dataset_name}_train_{train_resolution}.pt").as_posix()
         )
 
-        x_train = (data["x"].to(dtype) if dtype is not None else data["x"]).clone()
+        x_train = data["x"].to(dtype).clone()
         if channels_squeezed:
             x_train = x_train.unsqueeze(channel_dim)
 
@@ -209,7 +209,7 @@ class PTDataset:
             print(f"Loading test db for resolution {res} with {n_test} samples ")
             data = torch.load(Path(root_dir).joinpath(f"{dataset_name}_test_{res}.pt").as_posix())
 
-            x_test = (data["x"].to(dtype) if dtype is not None else data["x"]).clone()
+            x_test = data["x"].to(dtype).clone()
             if channels_squeezed:
                 x_test = x_test.unsqueeze(channel_dim)
             # optionally subsample along data indices
