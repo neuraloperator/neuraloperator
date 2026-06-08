@@ -3,7 +3,7 @@ Training a FNO using the hyperbolic cross index set and rank-1 lattices
 =======================================================================
 
 We train a FNO using the hyperbolic cross index set and rank-1 lattices on a stationary flow dataset using a series expansion for the random field.
-The output is compared to the 
+The output is compared to the output of a FNO using a hyperrectangle index set and a grid discretization.
 
 This tutorial demonstrates both how the hyperbolic cross index set and rank-1 lattices can be used for the FNO.
 
