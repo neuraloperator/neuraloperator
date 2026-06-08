@@ -4,6 +4,7 @@ from ..utils import validate_scaling_factor
 
 import torch
 from torch import nn
+from numpy import isclose
 
 import tensorly as tl
 from tensorly.plugins import use_opt_einsum
@@ -530,7 +531,7 @@ class SpectralConv(BaseSpectralConv):
     def _validate_index_set_radius(self):
         if isinstance(self.index_set, RadialIndexSet):
             expected_radius = self.index_set.radius_from_n_modes(self.true_max_n_modes)
-            if self.index_set.radius != expected_radius:
+            if not isclose(self.index_set.radius, expected_radius):
                 raise ValueError(
                     "Expected index_set.radius to agree with true_max_n_modes[0] "
                     f"(got radius={self.index_set.radius}, expected {expected_radius})."
