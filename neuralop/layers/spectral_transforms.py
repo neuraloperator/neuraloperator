@@ -76,7 +76,6 @@ class SpectralTransform(ABC):
         pass
         
     @property
-    @abstractmethod
     def data_dim(self):
         return self.order
 

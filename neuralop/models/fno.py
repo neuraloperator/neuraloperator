@@ -138,7 +138,7 @@ class FNO(BaseModel, name="FNO"):
         Whether to compute FNO forward pass with resnet-style preactivation. Default: False
     conv_module : nn.Module, optional
         Module to use for FNOBlock's convolutions. Default: SpectralConv
-     index_set : IndexSet or None, optional
+    index_set : IndexSet or None, optional
         Fourier modes to keep and learn weights for. If None, the layer uses a
         ``HyperRectangleIndexSet`` with storage capacity derived from
         ``max_n_modes`` when given, and otherwise from ``n_modes``.
@@ -337,26 +337,47 @@ class FNO(BaseModel, name="FNO"):
         lifting_in_channels = self.in_channels
         if self.positional_embedding is not None:
             lifting_in_channels = self.positional_embedding.out_channels
-        self.lifting = ChannelMLP(
-            in_channels=lifting_in_channels,
-            out_channels=self.hidden_channels,
-            hidden_channels=self.lifting_channels,
-            n_layers=2,
-            n_dim=self.data_dim,
-            non_linearity=non_linearity,
-        )
+        if lifting_channel_ratio == 0: # Linear lifting layer
+            self.lifting = ChannelMLP(
+                 in_channels=lifting_in_channels,
+                out_channels=self.hidden_channels,
+                hidden_channels=self.lifting_channels,
+                n_layers=1,
+                n_dim=self.data_dim,
+                non_linearity=non_linearity,
+            )
+        else:
+            self.lifting = ChannelMLP(
+                in_channels=lifting_in_channels,
+                out_channels=self.hidden_channels,
+                hidden_channels=self.lifting_channels,
+                n_layers=2,
+                n_dim=self.data_dim,
+                non_linearity=non_linearity,
+            )
+            
         if self.complex_data:
             self.lifting = ComplexValued(self.lifting)
 
         ## Projection layer
-        self.projection = ChannelMLP(
-            in_channels=self.hidden_channels,
-            out_channels=out_channels,
-            hidden_channels=self.projection_channels,
-            n_layers=2,
-            n_dim=self.data_dim,
-            non_linearity=non_linearity,
-        )
+        if self.projection_channel_ratio == 0: # Linear projecting layer
+            self.projection = ChannelMLP(
+                in_channels=self.hidden_channels,
+                out_channels=out_channels,
+                hidden_channels=self.projection_channels,
+                n_layers=1,
+                n_dim=self.data_dim,
+                non_linearity=non_linearity,
+            )
+        else:
+            self.projection = ChannelMLP(
+                in_channels=self.hidden_channels,
+                out_channels=out_channels,
+                hidden_channels=self.projection_channels,
+                n_layers=2,
+                n_dim=self.data_dim,
+                non_linearity=non_linearity,
+            )
         if self.complex_data:
             self.projection = ComplexValued(self.projection)
 
