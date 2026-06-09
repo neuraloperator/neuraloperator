@@ -185,13 +185,13 @@ def test_modulated_forward_shape(dim, mod_type, type_t, type_k):
 def test_modulated_backward_grads_all_params(mod_type):
     torch.manual_seed(0)
     layer = SpectralConv(
-        2,
+        3,
         3,
         (6, 6),
         embed=_embed(dim=8),
         mode_modulation=_mode_mod(mod_type),
     )
-    x = torch.randn(2, 2, 10, 10, requires_grad=True)
+    x = torch.randn(2, 3, 10, 10, requires_grad=True)
     t = torch.tensor([[0.5], [1.5]])
     y = layer(x, t)
     y.sum().backward()
