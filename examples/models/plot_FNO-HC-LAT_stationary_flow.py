@@ -10,6 +10,12 @@ This tutorial demonstrates both how the hyperbolic cross index set and rank-1 la
 There are two versions of the experiment:
  - A small model that can be trained on a CPU in a few minutes.
  - A practical model that can be trained on a GPU in under an hour, allowing the comparison of the different index set and discretization to that of a grid FNO.
+
+References
+----------
+.. [1] Dilen, J., Keller, A., Kuo, F. Y., Nuyens, D. "Fourier Neural Operators
+    with Rank-1 Lattice Points and Hyperbolic Cross" (2026).
+    https://arxiv.org/abs/2606.08871. 
 """
 
 from neuralop.data.datasets.tensor_dataset import TensorDataset
@@ -118,7 +124,7 @@ def generate_stationary_flow_dataset(
 
     h_modes = torch.as_tensor(list(map(lambda x: x[0], h_r_pairs)))
     h_modes_lattice = torch.inner(h_modes, z.flip(dims=[0])) % n
-    
+
     r_values = torch.as_tensor(list(map(lambda x: x[1], h_r_pairs)))
 
     # Actual data generation
@@ -130,12 +136,12 @@ def generate_stationary_flow_dataset(
 
         # Define a
         a_coeff_grid = torch.zeros(batchsize, res, res, dtype=data_type)
-        a_coeff_grid[:, 0, 0] = 1 
-            
-        
+        a_coeff_grid[:, 0, 0] = 1
+
+
         a_coeff_lattice = torch.zeros(batchsize, n, dtype=data_type)
-        a_coeff_lattice[:, 0] = 1 
-            
+        a_coeff_lattice[:, 0] = 1
+
         coeff_vector_real= (random_coefficients[iteration * batchsize:(iteration + 1) * batchsize, ::2])
         coeff_vector_complex = (random_coefficients[iteration * batchsize:(iteration + 1) * batchsize, 1::2])
         coeff_vector = coeff_vector_real + 1j * coeff_vector_complex
@@ -145,7 +151,7 @@ def generate_stationary_flow_dataset(
         # Grid calculation
         a_coeff_grid[:, h_modes[:, 1], h_modes[:, 0]] += scaled_coeff_vector
         x[(batchsize * iteration):(batchsize * (iteration + 1))] = torch.fft.ifftn(a_coeff_grid, dim=[1, 2], norm="forward")
-        
+
         A_reg, f_reg = createMatrixVectorSystem_grid(a_coeff_grid, f_coeff_reg, modes, M_calc, alpha_calc)
         u_coeff_reg = torch.linalg.solve(A_reg, f_reg)
 
@@ -157,7 +163,7 @@ def generate_stationary_flow_dataset(
         # Lattice calculation
         a_coeff_lattice[:, h_modes_lattice] += scaled_coeff_vector
         x_lattice[(batchsize * iteration):(batchsize * (iteration + 1))] = torch.fft.ifftn(a_coeff_lattice, dim=[-1], norm="forward")
-    
+
         A_lattice, f_lattice = createMatrixVectorSystem_lattice(a_coeff_lattice, f_coeff_lattice, modes, n, z, M_calc, alpha_calc)
         u_coeff_lattice = torch.linalg.solve(A_lattice, f_lattice)
 
@@ -165,12 +171,12 @@ def generate_stationary_flow_dataset(
         gc.collect()
 
         y_lattice[(batchsize * iteration):(batchsize * (iteration + 1))] = reconstructU_lattice(u_coeff_lattice, modes, n, z)
-    
+
         iteration += 1
 
     data["x"] = x
     data["y"] = y
-        
+
     lattice_data["x"] = x_lattice
     lattice_data["y"] = y_lattice
 
@@ -252,7 +258,7 @@ def createMatrixVectorSystem_grid(a_coeff, f_coeff, modes, M, alpha=0):
 
     if modes.dtype != torch.int:
         modes = modes.to(dtype=torch.int)
-        
+
     device = a_coeff.device
     if modes.device != device:
         modes = modes.to(device=device)
@@ -269,7 +275,7 @@ def createMatrixVectorSystem_grid(a_coeff, f_coeff, modes, M, alpha=0):
     if alpha != 0:
         mask = abs(torch.prod(torch.max(abs(a_indices), torch.ones_like(a_indices))[:], dim=-1))**(2 * alpha) <= M
     else:
-        mask = (torch.prod(a_indices[:] >= -M, dim=-1)) * (torch.prod(a_indices[:] <= M, dim=-1)) 
+        mask = (torch.prod(a_indices[:] >= -M, dim=-1)) * (torch.prod(a_indices[:] <= M, dim=-1))
     a_indices_masked = torch.repeat_interleave(mask.unsqueeze(-1), n_dims, dim=-1) * a_indices
 
     A_shape = [n_modes] * n_dims
@@ -324,10 +330,10 @@ def createMatrixVectorSystem_lattice(a_coeff, f_coeff, modes, n, z, M, alpha=0):
     assert(modes.shape[-1] == len(z))
 
     batchsize = a_coeff.shape[0]
-    
+
     if modes.dtype != torch.int:
         modes = modes.to(dtype=torch.int)
-        
+
     device = a_coeff.device
     if modes.device != device:
         modes = modes.to(device=device)
@@ -344,14 +350,14 @@ def createMatrixVectorSystem_lattice(a_coeff, f_coeff, modes, n, z, M, alpha=0):
     if alpha != 0:
         mask = abs(torch.prod(torch.max(abs(a_indices), torch.ones_like(a_indices))[:], dim=-1))**(2 * alpha) <= M
     else:
-        mask = (torch.prod(a_indices[:] >= -M, dim=-1)) * (torch.prod(a_indices[:] <= M, dim=-1)) 
+        mask = (torch.prod(a_indices[:] >= -M, dim=-1)) * (torch.prod(a_indices[:] <= M, dim=-1))
     a_indices_masked = torch.repeat_interleave(mask.unsqueeze(-1), n_dim, dim=-1) * a_indices
     a_indices_masked = (torch.linalg.matmul(a_indices_masked.to(dtype=torch.int32), z.to(dtype=torch.int32)) % n).to(dtype=torch.int)
-    
+
     if (a_coeff.dtype == torch.complex64) or (a_coeff.dtype == torch.float32):
         A = torch.zeros((batchsize, n_modes, n_modes)).to(torch.complex64)
     elif (a_coeff.dtype == torch.complex128) or (a_coeff.dtype == torch.float64):
-        A = torch.zeros((batchsize, n_modes, n_modes)).to(torch.complex128)   
+        A = torch.zeros((batchsize, n_modes, n_modes)).to(torch.complex128)
 
     A += torch.repeat_interleave((torch.sum(L * H, axis=-1)).unsqueeze(0), batchsize, axis=0)
     A *= a_coeff[:, a_indices_masked[:, :]]
@@ -363,7 +369,7 @@ def createMatrixVectorSystem_lattice(a_coeff, f_coeff, modes, n, z, M, alpha=0):
 
 def reconstructU_grid(u_coeff: torch.Tensor, modes: torch.Tensor, res: int):
     """
-    Reconstructs 'u' on a regular grid with given resolution 
+    Reconstructs 'u' on a regular grid with given resolution
     using the provided Fourier coefficients and there position.
 
     Parameters:
@@ -474,11 +480,11 @@ def run_experiment(epochs, n_training_samples, n_test_samples, n_generalization_
         device = "cuda"
     else:
         device = "cpu"
-    
+
     path = "stationary_flow_example"
     if not os.path.exists(path):
         os.mkdir(path)
-    
+
 
     # Generate data
     print("Started generating training dataset")
@@ -512,7 +518,7 @@ def run_experiment(epochs, n_training_samples, n_test_samples, n_generalization_
     optimizer = torch.optim.Adam(grid_model.parameters(), lr=0.01, weight_decay=1e-8)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, factor=0.8, patience=50)
     loss = ComplexLpLoss(d=2)
-    
+
     trainer = Trainer(
         model=grid_model,
         n_epochs=epochs,
@@ -538,7 +544,7 @@ def run_experiment(epochs, n_training_samples, n_test_samples, n_generalization_
     optimizer = torch.optim.Adam(grid_model.parameters(), lr=0.01, weight_decay=1e-8)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, factor=0.8, patience=50)
     loss = ComplexLpLoss(d=2)
-    
+
     trainer = Trainer(
         model=lattice_model,
         n_epochs=epochs,
@@ -549,7 +555,7 @@ def run_experiment(epochs, n_training_samples, n_test_samples, n_generalization_
     )
     optimizer = torch.optim.Adam(lattice_model.parameters(), lr=0.01, weight_decay=1e-8)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, factor=0.8, patience=50)
-    
+
 
     print("Started training lattice model")
     trainer.train(
@@ -633,7 +639,7 @@ def generate_datasets(n_samples, batch_size=16, seed=0):
         pin_memory=True,
         persistent_workers=False,
     )
-    
+
     del x_data
     del y_data
 

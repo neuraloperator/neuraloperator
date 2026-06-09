@@ -180,7 +180,7 @@ class LatticeEmbedding(Embedding):
     ----------
     .. [1] Dilen, J., Keller, A., Kuo, F. Y., Nuyens, D. "Fourier Neural
         Operators with Rank-1 Lattice Points and Hyperbolic Cross" (2026).
-        https://arxiv.org/abs/0000.00000.
+        https://arxiv.org/abs/2606.08871.
     """
 
     def __init__(self, in_channels: int, z: torch.Tensor):

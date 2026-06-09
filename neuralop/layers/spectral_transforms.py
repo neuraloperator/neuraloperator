@@ -74,7 +74,7 @@ class SpectralTransform(ABC):
         device=None,
     ):
         pass
-        
+
     @property
     def data_dim(self):
         return self.order
@@ -323,7 +323,7 @@ class Rank1LatticeFFT(SpectralTransform):
     ----------
     .. [1] Dilen, J., Keller, A., Kuo, F. Y., Nuyens, D. "Fourier Neural Operators
         with Rank-1 Lattice Points and Hyperbolic Cross" (2026).
-        https://arxiv.org/abs/0000.00000.
+        https://arxiv.org/abs/2606.08871.
     """
 
     def __init__(self, n, z, complex_data=False, fft_norm="forward"):
@@ -366,7 +366,7 @@ class Rank1LatticeFFT(SpectralTransform):
         if n is None:
             n = self.n
         z_int = self.z.cpu().numpy().astype(object)   # Python arbitrary precision integers
-        modes_int = modes.cpu().numpy().astype(object)      
+        modes_int = modes.cpu().numpy().astype(object)
         coefficients = np.sum(modes_int * z_int, axis=1) % n
         coefficients = torch.as_tensor(coefficients.astype(np.int64), device=device, dtype=torch.long)
 

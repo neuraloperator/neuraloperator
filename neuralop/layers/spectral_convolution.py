@@ -185,7 +185,7 @@ Number = Union[int, float]
 class SpectralConv(BaseSpectralConv):
     """SpectralConv implements the Spectral Convolution component of a Fourier layer
     described. 
-    
+
     It is implemented as described in [1]_ and [2]_.
 
     Parameters
@@ -322,14 +322,14 @@ class SpectralConv(BaseSpectralConv):
     ----------
     .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
         Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
-        
+
     .. [2] Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
         Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024).
         TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
 
     .. [3] Dilen, J., Keller, A., Kuo, F. Y., Nuyens, D. "Fourier Neural Operators
         with Rank-1 Lattice Points and Hyperbolic Cross" (2026).
-        https://arxiv.org/abs/0000.00000.
+        https://arxiv.org/abs/2606.08871.
     """
 
     def __init__(
@@ -405,7 +405,7 @@ class SpectralConv(BaseSpectralConv):
         self.factorization = factorization
         self.implementation = implementation
         self.enforce_hermitian_symmetry = enforce_hermitian_symmetry
-        
+
         self.resolution_scaling_factor: Union[
             None, List[List[float]]
         ] = validate_scaling_factor(resolution_scaling_factor, self.order)
@@ -606,5 +606,5 @@ class SpectralConv(BaseSpectralConv):
 
         if self.bias is not None:
             x = x + self.bias
-          
+
         return x
