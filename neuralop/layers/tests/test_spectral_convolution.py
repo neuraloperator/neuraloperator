@@ -1,7 +1,17 @@
+import os
+
 import pytest
 import torch
 from tltorch import FactorizedTensor
 from ..spectral_convolution import SpectralConv
+
+
+def _clamp_mkl_threads():
+    """Force single-threaded execution to avoid oneMKL DFTI plan inconsistency in autograd FFT."""
+    if torch.backends.mkl.is_available():
+        torch.set_num_threads(1)
+        os.environ["OMP_NUM_THREADS"] = "1"
+        os.environ["MKL_NUM_THREADS"] = "1"
 
 
 @pytest.mark.parametrize("factorization", ["Dense", "CP", "Tucker", "TT"])
@@ -183,6 +193,7 @@ def test_modulated_forward_shape(dim, mod_type, type_t, type_k):
 
 @pytest.mark.parametrize("mod_type", ["real", "complex", "polar"])
 def test_modulated_backward_grads_all_params(mod_type):
+    _clamp_mkl_threads()
     torch.manual_seed(0)
     layer = SpectralConv(
         3,
