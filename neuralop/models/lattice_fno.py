@@ -53,6 +53,5 @@ def LatticeFNO(
         spectral_transform=Rank1LatticeFFT(n=n, z=z, complex_data=complex_data),
         positional_embedding=positional_embedding,
         complex_data=complex_data,
-        data_dim=1,
         **kwargs,
     )
