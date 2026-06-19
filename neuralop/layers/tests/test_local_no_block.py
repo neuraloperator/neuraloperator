@@ -165,3 +165,30 @@ def test_LocalNOBlock_skip_connections(local_no_skip, channel_mlp_skip):
 
     res_no_mlp = block_no_mlp(x)
     assert res_no_mlp.shape == (2, 4, *size)
+
+
+@pytest.mark.parametrize("norm_groups", [1, 2, 4, 8])
+def test_LocalNOBlock_group_norm(norm_groups):
+    """Test LocalNOBlocks with group_norm and custom norm_groups"""
+    modes = (8, 8)
+    hidden_channels = 16
+    n_layers = 1
+    size = [12] * 2
+
+    block = LocalNOBlocks(
+        in_channels=hidden_channels,
+        out_channels=hidden_channels,
+        n_modes=modes,
+        default_in_shape=tuple(size),
+        n_layers=n_layers,
+        norm="group_norm",
+        norm_groups=norm_groups,
+        diff_layers=[True],
+        disco_layers=[False],
+    )
+
+    assert block.norm is not None
+    for norm_layer in block.norm:
+        assert isinstance(norm_layer, torch.nn.GroupNorm)
+        assert norm_layer.num_groups == norm_groups
+        assert norm_layer.num_channels == hidden_channels

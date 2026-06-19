@@ -49,6 +49,8 @@ class RNOCell(nn.Module):
         Stabilizing module to use between certain layers. Options: "tanh", None, by default None
     norm : Literal["ada_in", "group_norm", "instance_norm", "batch_norm"], optional
         Normalization layer to use. Options: "ada_in", "group_norm", "instance_norm", "batch_norm", None, by default None
+    norm_groups : int, optional
+        Number of groups for GroupNorm, by default 1
     ada_in_features : int, optional
         Number of features for adaptive instance norm above, by default None
     preactivation : bool, optional
@@ -105,6 +107,7 @@ class RNOCell(nn.Module):
         non_linearity=F.gelu,
         stabilizer=None,
         norm=None,
+        norm_groups=1,
         ada_in_features=None,
         preactivation=False,
         fno_skip="linear",
@@ -134,6 +137,7 @@ class RNOCell(nn.Module):
             "non_linearity": non_linearity,
             "stabilizer": stabilizer,
             "norm": norm,
+            "norm_groups": norm_groups,
             "preactivation": preactivation,
             "fno_skip": fno_skip,
             "channel_mlp_skip": channel_mlp_skip,
@@ -269,6 +273,8 @@ class RNOBlock(nn.Module):
         Stabilizing module to use between certain layers. Options: "tanh", None, by default None
     norm : Literal["ada_in", "group_norm", "instance_norm", "batch_norm"], optional
         Normalization layer to use. Options: "ada_in", "group_norm", "instance_norm", "batch_norm", None, by default None
+    norm_groups : int, optional
+        Number of groups for GroupNorm, by default 1
     ada_in_features : int, optional
         Number of features for adaptive instance norm above, by default None
     preactivation : bool, optional
@@ -326,6 +332,7 @@ class RNOBlock(nn.Module):
         non_linearity=F.gelu,
         stabilizer=None,
         norm=None,
+        norm_groups=1,
         ada_in_features=None,
         preactivation=False,
         fno_skip="linear",
@@ -358,6 +365,7 @@ class RNOBlock(nn.Module):
             non_linearity=non_linearity,
             stabilizer=stabilizer,
             norm=norm,
+            norm_groups=norm_groups,
             preactivation=preactivation,
             fno_skip=fno_skip,
             channel_mlp_skip=channel_mlp_skip,

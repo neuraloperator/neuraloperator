@@ -14,6 +14,34 @@ from ..utils import validate_scaling_factor
 Number = Union[int, float]
 
 
+def _make_conv_bias(in_channels, out_channels, n_dim, kernel_size):
+    """Create the local convolutional bias term used alongside SpectralConv."""
+    if kernel_size < 1:
+        raise ValueError(f"conv_bias_kernel must be >= 1, got {kernel_size}")
+
+    if kernel_size == 1:
+        return skip_connection(
+            in_channels,
+            out_channels,
+            skip_type="linear",
+            n_dim=n_dim,
+        )
+
+    if n_dim > 3:
+        raise NotImplementedError(
+            "conv_bias_kernel > 1 is only implemented for 1D, 2D, and 3D FNO blocks."
+        )
+
+    conv_module = getattr(nn, f"Conv{n_dim}d")
+    return conv_module(
+        in_channels,
+        out_channels,
+        kernel_size=kernel_size,
+        padding="same",
+        bias=False,
+    )
+
+
 class FNOBlocks(nn.Module):
     """FNOBlocks implements a sequence of Fourier layers.
 
@@ -50,6 +78,8 @@ class FNOBlocks(nn.Module):
         Stabilizing module to use between certain layers. Options: "tanh", None, by default None
     norm : Literal["ada_in", "group_norm", "instance_norm", "batch_norm"], optional
         Normalization layer to use. Options: "ada_in", "group_norm", "instance_norm", "batch_norm", None, by default None
+    norm_groups : int, optional
+        Number of groups for GroupNorm, by default 1
     ada_in_features : int, optional
         Number of features for adaptive instance norm above, by default None
     preactivation : bool, optional
@@ -59,6 +89,10 @@ class FNOBlocks(nn.Module):
     fno_skip : str, optional
         Module to use for FNO skip connections. Options: "linear", "soft-gating", "identity", None, by default "linear"
         If None, no skip connection is added. See layers.skip_connections for more details
+    conv_bias_kernel : int, optional
+        Kernel size for the local convolutional bias term used when ``fno_skip="linear"``.
+        ``1`` preserves the default pointwise bias term, while larger kernels add a
+        local convolution alongside the global spectral convolution. Default: 1
     channel_mlp_skip : str, optional
         Module to use for ChannelMLP skip connections. Options: "linear", "soft-gating", "identity", None, by default "soft-gating"
         If None, no skip connection is added. See layers.skip_connections for more details
@@ -115,9 +149,11 @@ class FNOBlocks(nn.Module):
         non_linearity=F.gelu,
         stabilizer=None,
         norm=None,
+        norm_groups=1,
         ada_in_features=None,
         preactivation=False,
         fno_skip="linear",
+        conv_bias_kernel=1,
         channel_mlp_skip="soft-gating",
         complex_data=False,
         separable=False,
@@ -153,6 +189,7 @@ class FNOBlocks(nn.Module):
         self.fixed_rank_modes = fixed_rank_modes
         self.decomposition_kwargs = decomposition_kwargs
         self.fno_skip = fno_skip
+        self.conv_bias_kernel = conv_bias_kernel
         self.channel_mlp_skip = channel_mlp_skip
         self.complex_data = complex_data
 
@@ -222,8 +259,24 @@ class FNOBlocks(nn.Module):
         )
 
         if fno_skip is not None:
-            self.fno_skips = nn.ModuleList(
-                [
+            if fno_skip.lower() == "linear":
+                # FourCastNet v3-like local + global convolutions: the spectral
+                # path is global, while larger kernels give this bias term locality.
+                fno_skip_modules = [
+                    _make_conv_bias(
+                        self.in_channels,
+                        self.out_channels,
+                        self.n_dim,
+                        conv_bias_kernel,
+                    )
+                    for _ in range(n_layers)
+                ]
+            else:
+                if conv_bias_kernel != 1:
+                    raise ValueError(
+                        "conv_bias_kernel can only differ from 1 when fno_skip='linear'."
+                    )
+                fno_skip_modules = [
                     skip_connection(
                         self.in_channels,
                         self.out_channels,
@@ -232,8 +285,12 @@ class FNOBlocks(nn.Module):
                     )
                     for _ in range(n_layers)
                 ]
-            )
+            self.fno_skips = nn.ModuleList(fno_skip_modules)
         else:
+            if conv_bias_kernel != 1:
+                raise ValueError(
+                    "conv_bias_kernel can only differ from 1 when fno_skip='linear'."
+                )
             self.fno_skips = None
         if self.complex_data and self.fno_skips is not None:
             self.fno_skips = nn.ModuleList([ComplexValued(x) for x in self.fno_skips])
@@ -286,7 +343,7 @@ class FNOBlocks(nn.Module):
         elif norm == "group_norm":
             self.norm = nn.ModuleList(
                 [
-                    nn.GroupNorm(num_groups=1, num_channels=self.out_channels)
+                    nn.GroupNorm(num_groups=norm_groups, num_channels=self.out_channels)
                     for _ in range(n_layers * self.n_norms)
                 ]
             )

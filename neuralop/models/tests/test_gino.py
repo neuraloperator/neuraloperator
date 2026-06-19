@@ -119,3 +119,24 @@ def test_gino(gno_transform_type, latent_feature_dim, gno_coord_dim, gno_pos_emb
     if batch_size > 1:
         # assert f[1:] accumulates no grad
         assert not x.grad[1:].nonzero().any()
+
+
+def test_gino_group_norm():
+    """Test GINO with group_norm and custom fno_norm_groups"""
+    fno_norm_groups = 4
+    model = GINO(
+        in_channels=in_channels,
+        out_channels=out_channels,
+        gno_coord_dim=3,
+        in_gno_radius=0.3,
+        out_gno_radius=0.3,
+        fno_n_modes=fno_n_modes,
+        fno_hidden_channels=16,
+        fno_norm="group_norm",
+        fno_norm_groups=fno_norm_groups,
+        gno_use_open3d=False,
+    )
+
+    for norm_layer in model.fno_blocks.norm:
+        assert isinstance(norm_layer, torch.nn.GroupNorm)
+        assert norm_layer.num_groups == fno_norm_groups

@@ -91,6 +91,8 @@ class LocalNOBlocks(nn.Module):
         Stabilizing module between layers. Options: "tanh". By default None
     norm : Literal["ada_in", "group_norm", "instance_norm"], optional
         Normalization layer to use, by default None
+    norm_groups : int, optional
+        Number of groups for GroupNorm, by default 1
     ada_in_features : int, optional
         Number of features for adaptive instance normalization, by default None
     preactivation : bool, optional
@@ -178,6 +180,7 @@ class LocalNOBlocks(nn.Module):
         non_linearity=F.gelu,
         stabilizer=None,
         norm=None,
+        norm_groups=1,
         ada_in_features=None,
         preactivation=False,
         local_no_skip="linear",
@@ -409,7 +412,7 @@ class LocalNOBlocks(nn.Module):
         elif norm == "group_norm":
             self.norm = nn.ModuleList(
                 [
-                    nn.GroupNorm(num_groups=1, num_channels=self.out_channels)
+                    nn.GroupNorm(num_groups=norm_groups, num_channels=self.out_channels)
                     for _ in range(n_layers * self.n_norms)
                 ]
             )

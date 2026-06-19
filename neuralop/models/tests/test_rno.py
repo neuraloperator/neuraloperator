@@ -306,3 +306,28 @@ def test_rno_predict():
     # Check output size
     expected_shape = [batch_size, num_steps, 3] + list(size)
     assert list(predictions.shape) == expected_shape
+
+
+def test_rno_group_norm():
+    """Test RNO with group_norm and custom norm_groups"""
+    norm_groups = 4
+    width = 16
+    model = RNO(
+        in_channels=3,
+        out_channels=1,
+        hidden_channels=width,
+        n_modes=(5, 5),
+        n_layers=2,
+        norm="group_norm",
+        norm_groups=norm_groups,
+    )
+
+    # RNO stacks RNOBlocks; each contains an RNOCell with input/hidden FNOBlocks
+    for rno_block in model.layers:
+        cell = rno_block.cell
+        for fno_block in [*cell.input_gates, *cell.hidden_gates]:
+            assert fno_block.norm is not None
+            for norm_layer in fno_block.norm:
+                assert isinstance(norm_layer, torch.nn.GroupNorm)
+                assert norm_layer.num_groups == norm_groups
+                assert norm_layer.num_channels == width
