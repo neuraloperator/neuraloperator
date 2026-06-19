@@ -1,5 +1,6 @@
 from ..resample import resample
 import torch
+import numpy as np
 
 
 def test_resample():
@@ -75,3 +76,100 @@ def test_resample_fourier_mode():
             assert y_real.dtype == x_real.dtype
             assert not torch.is_complex(y_real)
             torch.testing.assert_close(y_real, expected_real, atol=1e-5, rtol=1e-5)
+
+
+def test_resampling_odd_resolution():
+    test_res = [15, 31, 63]
+    resample_factor = 2
+
+    for res in test_res:
+        # Define discretizations
+        res_increased = int(res * resample_factor)
+        ticks = torch.tensor(np.linspace(0, 1, res_increased, endpoint=False), dtype=torch.float32)
+        X_increased, _, _ = torch.meshgrid((ticks, ticks, ticks), indexing="ij")
+        X = X_increased[::resample_factor, ::resample_factor, ::resample_factor]
+
+        # Calculate test function for both original and increased resolution
+        h = (res-1)//2
+        f_eval = torch.cos(2 * torch.pi * (h * X))
+        f_eval_increased = torch.cos(2 * torch.pi * (h * X_increased))
+
+        # Resample test function and check that the error is close to zero.
+        f_eval_resampled = resample(f_eval.unsqueeze(0).unsqueeze(0), res_scale=1.0, axis=list(range(2, 5)), output_shape=(res_increased, res_increased, res_increased)).squeeze(0).squeeze(0)
+        relative_error = (torch.linalg.norm(f_eval_increased - f_eval_resampled) / torch.linalg.norm(f_eval_increased))
+        assert(relative_error < 1e-5)
+        
+def test_resampling_even_resolution():
+    test_res = [16, 32, 64]
+    resample_factor = 2
+
+    for res in test_res:
+        # Define discretizations
+        res_increased = int(res * resample_factor)
+        ticks = torch.tensor(np.linspace(0, 1, res_increased, endpoint=False), dtype=torch.float32)
+        X_increased, _, _ = torch.meshgrid((ticks, ticks, ticks), indexing="ij")
+        X = X_increased[::resample_factor, ::resample_factor, ::resample_factor]
+
+        # Calculate test function for both original and increased resolution
+        h = res//2 - 1
+        f_eval = torch.cos(2 * torch.pi * (h * X))
+        f_eval_increased = torch.cos(2 * torch.pi * (h * X_increased))
+
+        # Resample test function and check that the error is close to zero.
+        f_eval_resampled = resample(f_eval.unsqueeze(0).unsqueeze(0), res_scale=1.0, axis=list(range(2, 5)), output_shape=(res_increased, res_increased, res_increased)).squeeze(0).squeeze(0)
+        relative_error = (torch.linalg.norm(f_eval_increased - f_eval_resampled) / torch.linalg.norm(f_eval_increased))
+        assert(relative_error < 1e-5)
+
+def test_resampling_complex_odd_resolution():
+    test_res = [15, 31, 63]
+    resample_factor = 2
+
+    for res in test_res:
+        # Define discretizations
+        res_increased = int(res * resample_factor)
+        ticks = torch.tensor(np.linspace(0, 1, res_increased, endpoint=False), dtype=torch.float32)
+        X_increased, _, _ = torch.meshgrid((ticks, ticks, ticks), indexing="ij")
+        X = X_increased[::resample_factor, ::resample_factor, ::resample_factor]
+
+        # Calculate test function for both original and increased resolution
+        h = (res-1)//2
+        f_eval = torch.cos(2 * torch.pi * (h * X)) + 1j * torch.sin(2 * torch.pi * (h * X))
+        f_eval_increased = torch.cos(2 * torch.pi * (h * X_increased)) + 1j * torch.sin(2 * torch.pi * (h * X_increased))
+
+        # Resample 'f_eval'
+        f_eval_resampled = resample(f_eval.unsqueeze(0).unsqueeze(0), res_scale=1.0, axis=list(range(2, 5)), output_shape=(res_increased, res_increased, res_increased)).squeeze(0).squeeze(0)
+        
+        # The resampled function should be complex valued
+        assert(torch.norm(f_eval_resampled.imag) > 1e-5)
+
+        # Check that the error is close to zero.
+        relative_error = (torch.linalg.norm(f_eval_increased - f_eval_resampled) / torch.linalg.norm(f_eval_increased))
+        assert(relative_error < 1e-5)
+    
+    
+
+def test_resampling_complex_even_resolution():
+    test_res = [16, 32, 64]
+    resample_factor = 2
+
+    for res in test_res:
+        # Define discretizations
+        res_increased = int(res * resample_factor)
+        ticks = torch.tensor(np.linspace(0, 1, res_increased, endpoint=False), dtype=torch.float32)
+        X_increased, _, _ = torch.meshgrid((ticks, ticks, ticks), indexing="ij")
+        X = X_increased[::resample_factor, ::resample_factor, ::resample_factor]
+
+        # Calculate test function for both original and increased resolution
+        h = res//2 - 1
+        f_eval = torch.cos(2 * torch.pi * (h * X)) + 1j * torch.sin(2 * torch.pi * (h * X))
+        f_eval_increased = torch.cos(2 * torch.pi * (h * X_increased)) + 1j * torch.sin(2 * torch.pi * (h * X_increased))
+
+        # Resample 'f_eval'
+        f_eval_resampled = resample(f_eval.unsqueeze(0).unsqueeze(0), res_scale=1.0, axis=list(range(2, 5)), output_shape=(res_increased, res_increased, res_increased)).squeeze(0).squeeze(0)
+        
+        # The resampled function should be complex valued
+        assert(torch.norm(f_eval_resampled.imag) > 1e-5)
+
+        # Check that the error is close to zero.
+        relative_error = (torch.linalg.norm(f_eval_increased - f_eval_resampled) / torch.linalg.norm(f_eval_increased))
+        assert(relative_error < 1e-5)
