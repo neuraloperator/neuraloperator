@@ -19,6 +19,39 @@ use_opt_einsum("optimal")
 einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
+class _MKLSafeRFFTN(torch.autograd.Function):
+    """rfftn whose backward forces .contiguous() on the gradient before irfftn.
+
+    On x86 CPU with oneMKL, the gradient that autograd assembles through the
+    mode-modulation path can be non-contiguous (because multiplying by the
+    modulation factor produces a conjugated, possibly strided view). When
+    PyTorch's native rfftn backward passes that non-contiguous tensor to
+    MKL's irfftn, DFTI raises "Inconsistent configuration parameters". Calling
+    .contiguous() on the gradient first resolves the layout before MKL sees it.
+    The mathematical result is identical to torch.fft.rfftn.
+    """
+
+    @staticmethod
+    def forward(ctx, x, dim, norm):
+        ctx.signal_sizes = [x.shape[d] for d in dim]
+        ctx.dim = list(dim)
+        ctx.norm = norm
+        return torch.fft.rfftn(x, dim=dim, norm=norm)
+
+    @staticmethod
+    def backward(ctx, grad):
+        return (
+            torch.fft.irfftn(
+                grad.contiguous(),
+                s=ctx.signal_sizes,
+                dim=ctx.dim,
+                norm=ctx.norm,
+            ),
+            None,  # dim
+            None,  # norm
+        )
+
+
 def _contract_dense(x, weight, separable=False):
     order = tl.ndim(x)
     # batch-size, in_channels, x, y...
@@ -682,7 +715,7 @@ class SpectralConv(BaseSpectralConv):
             x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
             dims_to_fft_shift = fft_dims
         else:
-            x = torch.fft.rfftn(x, norm=self.fft_norm, dim=fft_dims)
+            x = _MKLSafeRFFTN.apply(x, tuple(fft_dims), self.fft_norm)
             # When x is real in spatial domain, the last half of the last dim is redundant.
             # See :ref:`fft_shift_explanation` for discussion of the FFT shift.
             dims_to_fft_shift = fft_dims[:-1]
