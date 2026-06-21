@@ -807,6 +807,17 @@ class SpectralConv(BaseSpectralConv):
             out_fft = torch.fft.ifftshift(out_fft, dim=fft_dims[:-1])
 
         # Inverse FFT
+        #
+        # .contiguous() is called on out_fft before every inverse FFT.
+        # out_fft[slices_x] = ... (line above) is an in-place indexed scatter;
+        # when mode modulation is active the scatter target is in the autograd
+        # graph, and MKL's DFTI planner cannot reconcile the resulting memory
+        # layout with the plan it needs for the backward pass, producing
+        # "Inconsistent configuration parameters". A contiguous() copy gives
+        # MKL a fresh, standard-layout tensor and eliminates the error while
+        # keeping the operation fully differentiable.
+        out_fft = out_fft.contiguous()
+
         if self.complex_data:
             # For complex data, we can use ifftn.
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
@@ -818,15 +829,6 @@ class SpectralConv(BaseSpectralConv):
             # `enforce_hermitian_symmetry=True` we split the transform:
             # ifftn over the leading (n-1) dims, explicit Hermitian
             # enforcement on the last axis, then irfft on the last dim.
-            #
-            # On CPU (MKL or Accelerate) irfftn handles Hermitian symmetry
-            # correctly by construction, and the split path provokes an
-            # MKL DFTI "Inconsistent configuration parameters" failure in
-            # the backward pass when mode modulation is present — the
-            # in-place mutation of the complex ifftn output leaves a saved
-            # tensor whose layout MKL FFT cannot reconcile during the
-            # gradient computation. So we restrict the split to CUDA and
-            # use irfftn elsewhere.
             if self.enforce_hermitian_symmetry and out_fft.is_cuda:
                 out_fft = torch.fft.ifftn(
                     out_fft, s=mode_sizes[:-1], dim=fft_dims[:-1], norm=self.fft_norm
