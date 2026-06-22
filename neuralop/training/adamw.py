@@ -11,7 +11,8 @@ from .tensorgrad import TensorGRaDProjector
 class AdamW(Optimizer):
     """
     Implements AdamW (Adam with weight decay fix [1]_), and offers
-    optional TensorGRaD projection (see [2]_) for memory-efficient training.
+    optional GaLore projection (see [2]_) using the TensorGRaD tensor
+    projector (see [3]_) for memory-efficient training.
 
     Parameters
     ----------
@@ -50,7 +51,12 @@ class AdamW(Optimizer):
     .. _[1] : Loschchilov, I. and Hutter, F. (2019). Decoupled Decay Regularization.
          ICLR 2019, https://arxiv.org/pdf/1711.05101.
 
-    .. _[2] : Loeschcke, S., Pitt, D., George, R., Zhao, J., Luo, C.,
+    .. _[2] : Zhao, J., Zhang, Z., Chen, B., Wang, Z., Anandkumar, A.,
+        Tian, Y. (2024).
+        GaLore: Memory-Efficient LLM Training by Gradient Low-Rank Projection.
+        ICML 2024, https://arxiv.org/abs/2403.03507.
+
+    .. _[3] : Loeschcke, S., Pitt, D., George, R., Zhao, J., Luo, C.,
         Tian, Y., Kossaifi, J., Anandkumar, A. (2025).
         TensorGRaD: Tensor Gradient Robust Decomposition for Memory-Efficient
         Neural Operator Training. arXiv preprint,
