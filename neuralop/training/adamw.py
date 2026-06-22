@@ -95,7 +95,7 @@ class AdamW(Optimizer):
         }
         super().__init__(params, defaults)
 
-        # Keep optional TensorGrad compressed-gradient parameters separate for projection
+        # Keep optional GaLore parameters separate for projection.
         if galore_params is not None:
             self.add_param_group(
                 {
@@ -140,7 +140,7 @@ class AdamW(Optimizer):
                 if "step" not in state:
                     state["step"] = 0
 
-                # TensorGRaD Projection
+                # GaLore projection.
                 if group.get("galore", False):
                     if "projector" not in state:
                         state["projector"] = TensorGRaDProjector(
@@ -185,7 +185,7 @@ class AdamW(Optimizer):
                 # compute norm gradient
                 norm_grad = exp_avg / denom
 
-                # TensorGRaD projection Back
+                # GaLore projection back.
                 if group.get("galore", False):
                     norm_grad = state["projector"].project_back(norm_grad)
 
