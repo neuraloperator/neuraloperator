@@ -79,6 +79,23 @@ def test_tensorgrad_low_rank_projection_updates_after_gap():
     ]
 
 
+def test_tensorgrad_low_rank_projection_warm_restart_updates():
+    """Warm restart should pass TensorLy a valid Tucker initialization."""
+
+    full_rank_tensor = torch.randn(4, 4)
+    projector = TensorGRaDProjector(
+        rank=(2, 2),
+        update_proj_gap=1,
+        warm_restart=True,
+    )
+
+    first_projection = projector.project(full_rank_tensor, 0)
+    second_projection = projector.project(full_rank_tensor, 1)
+
+    assert first_projection.shape == (2, 2)
+    assert second_projection.shape == (2, 2)
+
+
 @pytest.mark.parametrize("galore_param_pct", [0.25, 0.5, 1.0])
 def test_galore_adamw_rank(galore_param_pct):
     """AdamW's legacy low-rank path should store optimizer state in projected size."""

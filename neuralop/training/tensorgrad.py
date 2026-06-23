@@ -77,7 +77,12 @@ class TensorGRaDProjector:
         else:
             matrix = weights.data
 
-        init = self.proj_tensor if self.warm_restart and self.proj_tensor else "svd"
+        if self.warm_restart and self.proj_tensor is not None:
+            init_factors = [factor.to(matrix.device) for factor in self.proj_tensor]
+            init_core = self.transform(init_factors, matrix)
+            init = (init_core, init_factors)
+        else:
+            init = "svd"
         if self.activation_checkpoint:
             core, factors = checkpoint(tucker, matrix, rank, init)
         else:
