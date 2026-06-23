@@ -19,37 +19,32 @@ use_opt_einsum("optimal")
 einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
-class _MKLSafeRFFTN(torch.autograd.Function):
-    """rfftn whose backward forces .contiguous() on the gradient before irfftn.
+class _ContiguousBackward(torch.autograd.Function):
+    """Identity in the forward pass; returns a contiguous gradient in backward.
 
-    On x86 CPU with oneMKL, the gradient that autograd assembles through the
-    mode-modulation path can be non-contiguous (because multiplying by the
-    modulation factor produces a conjugated, possibly strided view). When
-    PyTorch's native rfftn backward passes that non-contiguous tensor to
-    MKL's irfftn, DFTI raises "Inconsistent configuration parameters". Calling
-    .contiguous() on the gradient first resolves the layout before MKL sees it.
-    The mathematical result is identical to torch.fft.rfftn.
+    PyTorch's native FFT autograd dispatches the transform's backward (an
+    ``_fft_r2c`` / ``_fft_c2r`` / ``_fft_c2c`` ATen op) on whatever gradient
+    tensor it receives. On x86 CPU with Intel oneMKL, a gradient with
+    non-standard strides makes DFTI raise "Inconsistent configuration
+    parameters". The common offender is the zero-stride tensor that ``.sum()``
+    / broadcast backward produces (e.g. ``loss.sum().backward()`` flowing into
+    the inverse transform). Forcing the gradient contiguous before it reaches
+    the FFT backward avoids the error.
+
+    ``.contiguous()`` only changes memory layout, so gradient *values* are
+    unchanged and stay exact. This is the key difference from re-deriving an
+    FFT's adjoint by hand: ``torch.fft.irfftn`` is the *inverse* of ``rfftn``,
+    not its *adjoint* (vector-Jacobian product), so using it as a custom
+    backward silently corrupts gradients.
     """
 
     @staticmethod
-    def forward(ctx, x, dim, norm):
-        ctx.signal_sizes = [x.shape[d] for d in dim]
-        ctx.dim = list(dim)
-        ctx.norm = norm
-        return torch.fft.rfftn(x, dim=dim, norm=norm)
+    def forward(ctx, x):
+        return x
 
     @staticmethod
-    def backward(ctx, grad):
-        return (
-            torch.fft.irfftn(
-                grad.contiguous(),
-                s=ctx.signal_sizes,
-                dim=ctx.dim,
-                norm=ctx.norm,
-            ),
-            None,  # dim
-            None,  # norm
-        )
+    def backward(ctx, grad_output):
+        return grad_output.contiguous()
 
 
 def _contract_dense(x, weight, separable=False):
@@ -715,10 +710,15 @@ class SpectralConv(BaseSpectralConv):
             x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
             dims_to_fft_shift = fft_dims
         else:
-            x = _MKLSafeRFFTN.apply(x, tuple(fft_dims), self.fft_norm)
+            x = torch.fft.rfftn(x, dim=fft_dims, norm=self.fft_norm)
             # When x is real in spatial domain, the last half of the last dim is redundant.
             # See :ref:`fft_shift_explanation` for discussion of the FFT shift.
             dims_to_fft_shift = fft_dims[:-1]
+
+        # Sanitize the gradient that flows into the forward transform's backward
+        # so MKL's DFTI never sees non-contiguous strides (see
+        # _ContiguousBackward). No-op in the forward pass.
+        x = _ContiguousBackward.apply(x)
 
         if self.order > 1:
             x = torch.fft.fftshift(x, dim=dims_to_fft_shift)
@@ -840,17 +840,6 @@ class SpectralConv(BaseSpectralConv):
             out_fft = torch.fft.ifftshift(out_fft, dim=fft_dims[:-1])
 
         # Inverse FFT
-        #
-        # .contiguous() is called on out_fft before every inverse FFT.
-        # out_fft[slices_x] = ... (line above) is an in-place indexed scatter;
-        # when mode modulation is active the scatter target is in the autograd
-        # graph, and MKL's DFTI planner cannot reconcile the resulting memory
-        # layout with the plan it needs for the backward pass, producing
-        # "Inconsistent configuration parameters". A contiguous() copy gives
-        # MKL a fresh, standard-layout tensor and eliminates the error while
-        # keeping the operation fully differentiable.
-        out_fft = out_fft.contiguous()
-
         if self.complex_data:
             # For complex data, we can use ifftn.
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
@@ -886,6 +875,12 @@ class SpectralConv(BaseSpectralConv):
                 x = torch.fft.irfftn(
                     out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm
                 )
+
+        # Sanitize the gradient that flows into the inverse transform's
+        # backward. Without this, `.sum()` / broadcast backward delivers a
+        # zero-stride gradient that makes MKL's DFTI raise "Inconsistent
+        # configuration parameters" (see _ContiguousBackward).
+        x = _ContiguousBackward.apply(x)
 
         if self.bias is not None:
             x = x + self.bias
