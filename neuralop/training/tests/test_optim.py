@@ -96,6 +96,61 @@ def test_tensorgrad_low_rank_projection_warm_restart_updates():
     assert second_projection.shape == (2, 2)
 
 
+def test_tensorgrad_low_rank_projection_activation_checkpoint():
+    """Activation checkpointing should preserve Tucker and transform kwargs."""
+
+    full_rank_tensor = torch.randn(4, 4)
+    projector = TensorGRaDProjector(
+        rank=(2, 2),
+        update_proj_gap=1,
+        warm_restart=True,
+        activation_checkpoint=True,
+    )
+
+    low_rank_tensor = projector.project(full_rank_tensor, 0)
+    projected_back = projector.project_back(low_rank_tensor)
+    second_projection = projector.project(full_rank_tensor, 1)
+
+    assert low_rank_tensor.shape == (2, 2)
+    assert projected_back.shape == full_rank_tensor.shape
+    assert second_projection.shape == (2, 2)
+
+
+def test_tensorgrad_low_rank_projection_passes_tucker_n_iter_max(monkeypatch):
+    """Configured Tucker iteration count should be passed to TensorLy."""
+
+    calls = []
+
+    def fake_tucker(input_tensor, *, rank, init, n_iter_max):
+        calls.append(
+            {
+                "rank": rank,
+                "init": init,
+                "n_iter_max": n_iter_max,
+            }
+        )
+        core = torch.zeros(rank, dtype=input_tensor.dtype, device=input_tensor.device)
+        factors = [
+            torch.eye(
+                dim,
+                rank_dim,
+                dtype=input_tensor.dtype,
+                device=input_tensor.device,
+            )
+            for dim, rank_dim in zip(input_tensor.shape, rank)
+        ]
+        return core, factors
+
+    monkeypatch.setattr("neuralop.training.tensorgrad.tucker", fake_tucker)
+    full_rank_tensor = torch.randn(4, 4)
+    projector = TensorGRaDProjector(rank=(2, 2), tucker_n_iter_max=3)
+
+    low_rank_tensor = projector.project(full_rank_tensor, 0)
+
+    assert low_rank_tensor.shape == (2, 2)
+    assert calls == [{"rank": (2, 2), "init": "svd", "n_iter_max": 3}]
+
+
 @pytest.mark.parametrize("galore_param_pct", [0.25, 0.5, 1.0])
 def test_galore_adamw_rank(galore_param_pct):
     """AdamW's legacy low-rank path should store optimizer state in projected size."""

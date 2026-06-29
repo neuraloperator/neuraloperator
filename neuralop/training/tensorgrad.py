@@ -83,22 +83,41 @@ class TensorGRaDProjector:
             init = (init_core, init_factors)
         else:
             init = "svd"
+
+        def tucker_decomposition(input_tensor):
+            return tucker(
+                input_tensor,
+                rank=rank,
+                init=init,
+                n_iter_max=self.tucker_n_iter_max,
+            )
+
         if self.activation_checkpoint:
-            core, factors = checkpoint(tucker, matrix, rank, init)
+            core, factors = checkpoint(
+                tucker_decomposition,
+                matrix,
+                use_reentrant=False,
+            )
         else:
-            core, factors = tucker(matrix, rank=rank, init=init)
+            core, factors = tucker_decomposition(matrix)
         del core
         return factors
 
     def transform(self, factors, x):
+        def multi_mode_dot(input_tensor):
+            return tenalg.multi_mode_dot(input_tensor, factors, transpose=True)
+
         if self.activation_checkpoint:
-            return checkpoint(tenalg.multi_mode_dot, x, factors, Transpose=True)
-        return tenalg.multi_mode_dot(x, factors, transpose=True)
+            return checkpoint(multi_mode_dot, x, use_reentrant=False)
+        return multi_mode_dot(x)
 
     def inverse_transform(self, factors, x):
+        def multi_mode_dot(input_tensor):
+            return tenalg.multi_mode_dot(input_tensor, factors)
+
         if self.activation_checkpoint:
-            return checkpoint(tenalg.multi_mode_dot, x, factors)
-        return tenalg.multi_mode_dot(x, factors)
+            return checkpoint(multi_mode_dot, x, use_reentrant=False)
+        return multi_mode_dot(x)
 
 
 class UnstructuredSparseProjector:
