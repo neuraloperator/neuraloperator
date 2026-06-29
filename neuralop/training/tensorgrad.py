@@ -84,15 +84,15 @@ class TensorGRaDProjector:
         else:
             init = "svd"
         if self.activation_checkpoint:
-            core, factors = checkpoint(tucker, matrix, rank, init)
+            core, factors = checkpoint(tucker, matrix, rank=rank, init=init, n_iter_max=self.tucker_n_iter_max, use_reentrant=False)
         else:
-            core, factors = tucker(matrix, rank=rank, init=init)
+            core, factors = tucker(matrix, rank=rank, init=init, n_iter_max=self.tucker_n_iter_max)
         del core
         return factors
 
     def transform(self, factors, x):
         if self.activation_checkpoint:
-            return checkpoint(tenalg.multi_mode_dot, x, factors, Transpose=True)
+            return checkpoint(tenalg.multi_mode_dot, x, factors, transpose=True, use_reentrant=False)
         return tenalg.multi_mode_dot(x, factors, transpose=True)
 
     def inverse_transform(self, factors, x):

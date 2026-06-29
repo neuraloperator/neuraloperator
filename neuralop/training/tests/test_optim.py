@@ -3,6 +3,7 @@ from torch.nn import Parameter
 from torch.testing import assert_close
 import pytest
 import math
+import neuralop.training.tensorgrad as tensorgrad_module
 
 from ..adamw import AdamW
 from ..tensorgrad import (
@@ -94,6 +95,50 @@ def test_tensorgrad_low_rank_projection_warm_restart_updates():
 
     assert first_projection.shape == (2, 2)
     assert second_projection.shape == (2, 2)
+
+
+def test_tensorgrad_activation_checkpoint_projection():
+    """Checkpointed TensorLy calls should preserve projection behavior."""
+
+    full_rank_tensor = torch.randn(4, 4)
+    projector = TensorGRaDProjector(
+        rank=(2, 2),
+        activation_checkpoint=True,
+    )
+
+    low_rank_tensor = projector.project(full_rank_tensor, 0)
+
+    assert low_rank_tensor.shape == (2, 2)
+
+
+@pytest.mark.parametrize("activation_checkpoint", [False, True])
+def test_tensorgrad_projector_passes_tucker_n_iter_max(
+    monkeypatch,
+    activation_checkpoint,
+):
+    """The projector should wire tucker_n_iter_max into TensorLy Tucker calls."""
+
+    n_iter_max_values = []
+
+    def fake_tucker(tensor, *, rank, init, n_iter_max):
+        n_iter_max_values.append(n_iter_max)
+        factors = [
+            torch.eye(dim, rank_dim, dtype=tensor.dtype, device=tensor.device)
+            for dim, rank_dim in zip(tensor.shape, rank)
+        ]
+        return tensor, factors
+
+    monkeypatch.setattr(tensorgrad_module, "tucker", fake_tucker)
+
+    projector = TensorGRaDProjector(
+        rank=(2, 2),
+        tucker_n_iter_max=3,
+        activation_checkpoint=activation_checkpoint,
+    )
+
+    projector.get_projection_tensor(torch.randn(4, 4), (2, 2))
+
+    assert n_iter_max_values == [3]
 
 
 @pytest.mark.parametrize("galore_param_pct", [0.25, 0.5, 1.0])
