@@ -537,12 +537,16 @@ class SpectralConv(BaseSpectralConv):
         embeds = []
         for p in range(self.n_params):
             tp = t[:, p: p + 1]  # (B, 1)
-            if not torch.all(tp > 0):
-                raise ValueError(
-                    "embed['type_t']='power' requires t > 0; "
-                    f"got t[:, {p}].min()={tp.min().item()}."
-                )
             if embed_type == "power":
+                # Power embedding is only defined for positive t (it raises t to
+                # a negative-to-zero range of exponents). Fail loudly rather than
+                # silently zeroing the embedding for t <= 0. Sinusoidal is valid
+                # for any real t, so it is intentionally left unguarded.
+                if not torch.all(tp > 0):
+                    raise ValueError(
+                        "embed['type_t']='power' requires t > 0; "
+                        f"got t[:, {p}].min()={tp.min().item()}."
+                    )
                 tp_embed = tp ** self.t_powers.unsqueeze(0)
             else:  # sinusoidal
                 tp_scaled = tp * self.t_inv_freqs.unsqueeze(0)

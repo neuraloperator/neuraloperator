@@ -418,6 +418,109 @@ def test_fno_t_broadcast(t_factory):
     assert list(out.shape) == [B, 1, 12, 12]
 
 
+@pytest.mark.parametrize("mod_type", ["real", "complex", "polar"])
+def test_fno_vector_valued_conditioning(mod_type):
+    """n_params > 1: t of shape (B, P) runs forward and backward."""
+    torch.manual_seed(0)
+    P = 5
+    model = FNO(
+        in_channels=2,
+        out_channels=2,
+        n_modes=(6, 6),
+        hidden_channels=8,
+        n_layers=2,
+        embed=_embed(),
+        mode_modulation=_mode_mod(mod_type),
+        norm_modulation=_norm_mod(),
+        n_params=P,
+    )
+    assert model._time_conditioned is True
+
+    B = 4
+    x = torch.randn(B, 2, 12, 12, requires_grad=True)
+    t = torch.rand(B, P)
+    out = model(x, t=t)
+    assert list(out.shape) == [B, 2, 12, 12]
+    assert torch.isfinite(out).all()
+
+    out.sum().backward()
+    assert x.grad is not None
+    for name, param in model.named_parameters():
+        assert param.grad is not None, f"no grad for {name}"
+
+
+@pytest.mark.parametrize("modulation", ["mode", "norm"])
+def test_fno_sinusoidal_conditioning_accepts_nonpositive_t(modulation):
+    """Sinusoidal embedding must accept t <= 0 on both modulation paths.
+
+    Regression test: sin/cos are well-defined for any real t, so the t > 0
+    guard belongs only to the 'power' embedding. A stray unconditional guard
+    (as once existed on the mode_modulation path) breaks signed conditioning
+    parameters, which is the whole point of vector-valued conditioning.
+    """
+    torch.manual_seed(0)
+    embed = _embed()
+    embed["type_t"] = "sinusoidal"
+    kwargs = dict(
+        in_channels=2,
+        out_channels=2,
+        n_modes=(6, 6),
+        hidden_channels=8,
+        n_layers=1,
+        embed=embed,
+        n_params=3,
+    )
+    if modulation == "mode":
+        kwargs["mode_modulation"] = _mode_mod("real")
+    else:
+        kwargs["norm_modulation"] = _norm_mod()
+    model = FNO(**kwargs)
+
+    x = torch.randn(2, 2, 12, 12)
+    t = torch.tensor([[-1.0, 0.0, 2.0], [-0.5, -3.0, 1.0]])  # negatives and zero
+    out = model(x, t=t)
+    assert list(out.shape) == [2, 2, 12, 12]
+    assert torch.isfinite(out).all()
+
+
+def test_fno_power_conditioning_rejects_nonpositive_t():
+    """The power embedding must still reject t <= 0 (per-parameter)."""
+    torch.manual_seed(0)
+    embed = _embed()
+    embed["type_t"] = "power"
+    model = FNO(
+        in_channels=2,
+        out_channels=1,
+        n_modes=(6, 6),
+        hidden_channels=8,
+        n_layers=1,
+        embed=embed,
+        mode_modulation=_mode_mod("real"),
+        n_params=2,
+    )
+    x = torch.randn(2, 2, 12, 12)
+    with pytest.raises(ValueError, match=r"requires t > 0"):
+        model(x, t=torch.tensor([[1.0, -1.0], [2.0, 3.0]]))
+
+
+def test_fno_vector_conditioning_rejects_wrong_param_count():
+    """A (B, P) t whose P != n_params raises a clear shape error."""
+    torch.manual_seed(0)
+    model = FNO(
+        in_channels=2,
+        out_channels=1,
+        n_modes=(6, 6),
+        hidden_channels=8,
+        n_layers=1,
+        embed=_embed(),
+        mode_modulation=_mode_mod("real"),
+        n_params=4,
+    )
+    x = torch.randn(2, 2, 12, 12)
+    with pytest.raises(ValueError, match=r"shape \(2, 4\)"):
+        model(x, t=torch.rand(2, 3))
+
+
 def test_fno_time_conditioned_t_defaults_to_one():
     """A time-conditioned FNO with t omitted defaults to t=1 and runs."""
     torch.manual_seed(0)
