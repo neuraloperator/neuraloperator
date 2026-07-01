@@ -38,13 +38,13 @@ class FNO(BaseModel, name="FNO"):
     n_modes : Tuple[int, ...]
         Number of modes to keep in Fourier Layer, along each dimension.
         The dimensionality of the FNO is inferred from len(n_modes).
-        n_modes must be larger enough but smaller than max_resolution//2 (Nyquist frequency)
+        n_modes must be large enough but smaller than max_resolution//2 (Nyquist frequency)
     in_channels : int
         Number of channels in input function. Determined by the problem.
     out_channels : int
         Number of channels in output function. Determined by the problem.
     hidden_channels : int
-        Width of the FNO (i.e. number of channels).
+        Width of the FNO (i.e., number of channels).
         This significantly affects the number of parameters of the FNO.
         Good starting point can be 64, and then increased if more expressivity is needed.
         Update lifting_channel_ratio and projection_channel_ratio accordingly since they are proportional to hidden_channels.
@@ -212,6 +212,7 @@ class FNO(BaseModel, name="FNO"):
         embed: Optional[dict] = None,
         mode_modulation: Optional[dict] = None,
         norm_modulation: Optional[dict] = None,
+        n_params: int = 1,
     ):
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
@@ -252,6 +253,7 @@ class FNO(BaseModel, name="FNO"):
         self.preactivation = preactivation
         self.complex_data = complex_data
         self.fno_block_precision = fno_block_precision
+        self.n_params = n_params
 
         ## Positional embedding
         if positional_embedding == "grid":
@@ -291,9 +293,8 @@ class FNO(BaseModel, name="FNO"):
             self.domain_padding = None
 
         ## Resolution scaling factor
-        if resolution_scaling_factor is not None:
-            if isinstance(resolution_scaling_factor, (float, int)):
-                resolution_scaling_factor = [resolution_scaling_factor] * self.n_layers
+        if resolution_scaling_factor is not None and isinstance(resolution_scaling_factor, (float, int)):
+            resolution_scaling_factor = [resolution_scaling_factor] * self.n_layers
         self.resolution_scaling_factor = resolution_scaling_factor
 
         ## FNO blocks. Modulation kwargs default to None; passing them is a
@@ -329,6 +330,7 @@ class FNO(BaseModel, name="FNO"):
             embed=embed,
             mode_modulation=mode_modulation,
             norm_modulation=norm_modulation,
+            n_params=n_params,
         )
 
         ## Lifting layer
@@ -409,16 +411,21 @@ class FNO(BaseModel, name="FNO"):
 
         if self._time_conditioned:
             if t is None:
-                t = 1
+                t = torch.ones(
+                    x.shape[0], self.n_params, dtype=x.dtype, device=x.device
+                )
             if not isinstance(t, torch.Tensor):
                 t = torch.tensor(t, dtype=x.dtype, device=x.device)
             if t.ndim == 0:
                 t = t.expand(x.shape[0], 1)
             elif t.ndim == 1:
-                t = t.unsqueeze(-1)
-            if t.ndim != 2 or t.shape[1] != 1 or t.shape[0] != x.shape[0]:
+                if t.shape[0] == self.n_params:
+                    t = t.unsqueeze(0).expand(x.shape[0], self.n_params)
+                elif t.shape[0] == x.shape[0]:
+                    t = t.unsqueeze(-1)
+            if t.ndim != 2 or t.shape[1] != self.n_params or t.shape[0] != x.shape[0]:
                 raise ValueError(
-                    f"t must broadcast to shape ({x.shape[0]}, 1); got tensor with "
+                    f"t must have shape ({x.shape[0]}, {self.n_params}); got tensor with "
                     f"shape {tuple(t.shape)} for x batch {x.shape[0]}."
                 )
 
@@ -566,10 +573,10 @@ class t_emb_FNO(FNO):
     >>> y = model(torch.randn(2, 1, 16, 16), t=0.5)
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, n_params: int = 1, **kwargs):
         kwargs.setdefault("embed", _T_EMB_DEFAULT_EMBED.copy())
         kwargs.setdefault("mode_modulation", _T_EMB_DEFAULT_MODE_MOD.copy())
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, n_params=n_params, **kwargs)
 
 
 class t_emb_TFNO(t_emb_FNO):

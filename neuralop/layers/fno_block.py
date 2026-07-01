@@ -162,11 +162,12 @@ class FNOBlocks(nn.Module):
         conv_module=SpectralConv,
         fixed_rank_modes=False,
         implementation="factorized",
-        decomposition_kwargs=dict(),
+        decomposition_kwargs={},
         enforce_hermitian_symmetry=True,
         embed: Optional[dict] = None,
         mode_modulation: Optional[dict] = None,
         norm_modulation: Optional[dict] = None,
+        n_params=1,
     ):
         super().__init__()
         if isinstance(n_modes, int):
@@ -203,11 +204,7 @@ class FNOBlocks(nn.Module):
         self.enforce_hermitian_symmetry = enforce_hermitian_symmetry
 
         # apply real nonlin if data is real, otherwise CGELU
-        if self.complex_data:
-            self.non_linearity = CGELU
-        else:
-            self.non_linearity = non_linearity
-
+        self.non_linearity = CGELU if self.complex_data else non_linearity
         # Track which modulation pathways are active for the forward dispatch.
         self._mode_mod_enabled = mode_modulation is not None and mode_modulation.get(
             "enabled", True
@@ -223,6 +220,7 @@ class FNOBlocks(nn.Module):
         if embed is not None or mode_modulation is not None:
             extra_modulation_kwargs["embed"] = embed
             extra_modulation_kwargs["mode_modulation"] = mode_modulation
+            extra_modulation_kwargs["n_params"] = n_params
 
         # One conv per layer. Only resolution_scaling_factor varies by layer index
         self.convs = nn.ModuleList(
@@ -380,10 +378,10 @@ class FNOBlocks(nn.Module):
                 "norm_modulation is only supported with preactivation=False; "
                 "got preactivation=True."
             )
-        self._build_time_embedding(embed)
+        self._build_time_embedding(embed, n_params=n_params)
         self._build_norm_modulator(norm_modulation, n_layers)
 
-    def _build_time_embedding(self, embed: Optional[dict]) -> None:
+    def _build_time_embedding(self, embed: Optional[dict], n_params: int = 1) -> None:
         if embed is None:
             self.embed_config = None
             return
@@ -401,6 +399,7 @@ class FNOBlocks(nn.Module):
         self.embed_config["r"] = r
         self.embed_config["type_t"] = type_t
         self.embed_dim = embed_dim
+        self.n_params = n_params
 
         if type_t == "power":
             self.register_buffer("t_powers", torch.linspace(alpha, 0.0, embed_dim))
@@ -467,7 +466,7 @@ class FNOBlocks(nn.Module):
         self.norm_modulator = nn.ModuleList(
             [
                 ChannelMLP(
-                    in_channels=self.embed_dim,
+                    in_channels=self.n_params * self.embed_dim,
                     out_channels=total_out_dim,
                     hidden_channels=hidden_channels,
                     n_dim=1,
@@ -477,22 +476,26 @@ class FNOBlocks(nn.Module):
         )
 
     def _embed_t(self, t: torch.Tensor) -> torch.Tensor:
-        """Embed scalar time ``t`` to shape ``(B, embed_dim, 1)``."""
         embed_type = self.embed_config["type_t"]
-        if embed_type == "power":
-            # Power embedding is only defined for positive t (it raises t to a
-            # negative-to-zero range of exponents). Fail loudly rather than
-            # silently zeroing the embedding for t <= 0.
-            if not torch.all(t > 0):
-                raise ValueError(
-                    "embed['type_t']='power' requires t > 0; "
-                    f"got t.min()={t.min().item()}."
+        embeds = []
+        for p in range(self.n_params):
+            tp = t[:, p: p + 1]
+            if embed_type == "power":
+                if not torch.all(tp > 0):
+                    raise ValueError(
+                        "embed['type_t']='power' requires t > 0; "
+                        f"got t[:, {p}].min()={tp.min().item()}."
+                    )
+                tp_embed = tp ** self.t_powers.unsqueeze(0)
+            else:  # sinusoidal
+                tp_scaled = tp * self.t_inv_freqs.unsqueeze(0)
+                tp_embed = torch.cat(
+                    [torch.sin(tp_scaled), torch.cos(tp_scaled)], dim=-1
                 )
-            t_embed = t ** self.t_powers.unsqueeze(0)
-        else:  # 'sinusoidal'
-            t_scaled = t * self.t_inv_freqs.unsqueeze(0)
-            t_embed = torch.cat([torch.sin(t_scaled), torch.cos(t_scaled)], dim=-1)
-        return t_embed.unsqueeze(-1)
+            embeds.append(tp_embed)
+
+        t_embed = torch.cat(embeds, dim=-1)  # (B, P*embed_dim)
+        return t_embed.unsqueeze(-1)  # (B, P*embed_dim, 1)
 
     def _get_modulation_params(self, t: torch.Tensor, layer_idx: int) -> dict:
         """Return AdaIN scale/shift and gate params for the given layer.
@@ -550,11 +553,7 @@ class FNOBlocks(nn.Module):
             )
 
         if self.stabilizer == "tanh":
-            if self.complex_data:
-                x = ctanh(x)
-            else:
-                x = torch.tanh(x)
-
+            x = ctanh(x) if self.complex_data else torch.tanh(x)
         # The conv accepts `t` only when mode_modulation was configured at
         # construction time; pass it positionally so SpectralConv-family
         # signatures (x, t, output_shape) work uniformly.
@@ -582,11 +581,7 @@ class FNOBlocks(nn.Module):
             x_mlp = self.channel_mlp[index](x)
             if self._mod_flags["gate_2"]:
                 x_mlp = x_mlp * torch.sigmoid(mods["gate2"])
-            if self.channel_mlp_skips is not None:
-                x = x_mlp + x_skip_channel_mlp
-            else:
-                x = x_mlp
-
+            x = x_mlp + x_skip_channel_mlp if self.channel_mlp_skips is not None else x_mlp
         if self.norm is not None:
             x = self.norm[self.n_norms * index + 1](x)
 
@@ -619,11 +614,7 @@ class FNOBlocks(nn.Module):
             )
 
         if self.stabilizer == "tanh":
-            if self.complex_data:
-                x = ctanh(x)
-            else:
-                x = torch.tanh(x)
-
+            x = ctanh(x) if self.complex_data else torch.tanh(x)
         if self._mode_mod_enabled:
             x_fno = self.convs[index](x, t, output_shape=output_shape)
         else:

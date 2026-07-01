@@ -109,13 +109,13 @@ def _contract_tucker(x, tucker_weight, separable=False):
     out_sym = einsum_symbols[order]
     out_syms = list(x_syms)
     if separable:
-        core_syms = einsum_symbols[order + 1 : 2 * order]
+        core_syms = einsum_symbols[order + 1: 2 * order]
         # factor_syms = [einsum_symbols[1]+core_syms[0]] #in only
         # x, y, ...
         factor_syms = [xs + rs for (xs, rs) in zip(x_syms[1:], core_syms)]
 
     else:
-        core_syms = einsum_symbols[order + 1 : 2 * order + 1]
+        core_syms = einsum_symbols[order + 1: 2 * order + 1]
         out_syms[1] = out_sym
         factor_syms = [
             einsum_symbols[1] + core_syms[0],
@@ -143,10 +143,11 @@ def _contract_tt(x, tt_weight, separable=False):
         out_syms[0] = x_syms[0]
     else:
         out_syms = list(x_syms)
-    rank_syms = list(einsum_symbols[order + 1 :])
+    rank_syms = list(einsum_symbols[order + 1:])
     tt_syms = []
-    for i, s in enumerate(weight_syms):
-        tt_syms.append([rank_syms[i], s, rank_syms[i + 1]])
+    tt_syms.extend(
+        [rank_syms[i], s, rank_syms[i + 1]] for i, s in enumerate(weight_syms)
+    )
     eq = (
         "".join(x_syms)
         + ","
@@ -178,10 +179,7 @@ def get_contract_fun(weight, implementation="reconstructed", separable=False):
     function : (x, weight) -> x * weight in Fourier space
     """
     if implementation == "reconstructed":
-        if separable:
-            return _contract_dense_separable
-        else:
-            return _contract_dense
+        return _contract_dense_separable if separable else _contract_dense
     elif implementation == "factorized":
         if torch.is_tensor(weight):
             return _contract_dense
@@ -265,7 +263,7 @@ class SpectralConv(BaseSpectralConv):
     factorization : str or None, optional
         Tensor factorization type. Options: {'tucker', 'cp', 'tt'}.
         If None, a single dense weight is learned for the FNO.
-        Otherwise, that weight, used for the contraction in the Fourier domain
+        Otherwise, that weight, used for the contraction in the Fourier domain,
         is learned in factorized form. In that case, `factorization` is the
         tensor factorization of the parameters weight used.
         By default None.
@@ -317,7 +315,7 @@ class SpectralConv(BaseSpectralConv):
         By default ``None``; no mode modulation is applied and ``forward``
         ignores ``t``.
     mode_modulation : dict or None, optional
-        Configuration for the optional per-mode modulation MLP. When set
+        Configuration for the optional per-mode modulation MLP. When set,
         the layer applies a learned ``(t, k)``-dependent multiplier to the
         spectral coefficients before the convolution contraction. Keys:
 
@@ -361,6 +359,7 @@ class SpectralConv(BaseSpectralConv):
         device=None,
         embed: Optional[dict] = None,
         mode_modulation: Optional[dict] = None,
+        n_params: int = 1,
     ):
         super().__init__(device=device)
 
@@ -393,11 +392,8 @@ class SpectralConv(BaseSpectralConv):
             init_std = (2 / (in_channels + out_channels)) ** 0.5
 
         if isinstance(fixed_rank_modes, bool):
-            if fixed_rank_modes:
-                # If bool, keep the number of layers fixed
-                fixed_rank_modes = [0]
-            else:
-                fixed_rank_modes = None
+            # If bool, keep the number of layers fixed
+            fixed_rank_modes = [0] if fixed_rank_modes else None
         self.fft_norm = fft_norm
 
         if factorization is None:
@@ -433,20 +429,20 @@ class SpectralConv(BaseSpectralConv):
         )
 
         if bias:
-            self.bias = nn.Parameter(
+            self.bias = nn.Parameter((
                 init_std
-                * torch.randn(*(tuple([self.out_channels]) + (1,) * self.order))
-            )
+                * torch.randn(*((self.out_channels,) + (1,) * self.order))
+            ))
         else:
             self.bias = None
 
         # Optional (t, k)-modulation pathway. When both dicts are None
         # (the default) self.modulator is None and forward is identical to
         # the unmodulated spectral conv.
-        self._build_embedding(embed)
+        self._build_embedding(embed, n_params=n_params)
         self._build_modulator(mode_modulation)
 
-    def _build_embedding(self, embed: Optional[dict]) -> None:
+    def _build_embedding(self, embed: Optional[dict], n_params: int = 1) -> None:
         self._k_grid_cache = {}
         if embed is None:
             self.embed_config = None
@@ -468,6 +464,7 @@ class SpectralConv(BaseSpectralConv):
         self.embed_config["type_k"] = type_k
 
         self.embed_dim = embed_dim
+        self.n_params = n_params
 
         if type_t == "power":
             self.register_buffer("t_powers", torch.linspace(alpha, 0.0, embed_dim))
@@ -502,7 +499,7 @@ class SpectralConv(BaseSpectralConv):
         self.modulation_full_res = mode_modulation.get("full_res", False)
 
         # Input to modulator: D features for t plus n_dims * D for k.
-        in_features = self.embed_dim * (self.order + 1)
+        in_features = self.embed_dim * (self.order + self.n_params)
 
         if self.modulation_type in ("real", "polar"):
             mod_out_channels = self.in_channels
@@ -537,20 +534,22 @@ class SpectralConv(BaseSpectralConv):
         embed_type = self.embed_config["type_t"]
         batch_size = t.shape[0]
 
-        if embed_type == "power":
-            # Power embedding is only defined for positive t (it raises t to a
-            # negative-to-zero range of exponents). Fail loudly rather than
-            # silently zeroing the embedding for t <= 0.
-            if not torch.all(t > 0):
+        embeds = []
+        for p in range(self.n_params):
+            tp = t[:, p: p + 1]  # (B, 1)
+            if not torch.all(tp > 0):
                 raise ValueError(
                     "embed['type_t']='power' requires t > 0; "
-                    f"got t.min()={t.min().item()}."
+                    f"got t[:, {p}].min()={tp.min().item()}."
                 )
-            t_embed = t ** self.t_powers.unsqueeze(0)
-        else:  # 'sinusoidal'
-            t_scaled = t * self.t_inv_freqs.unsqueeze(0)
-            t_embed = torch.cat([torch.sin(t_scaled), torch.cos(t_scaled)], dim=-1)
+            if embed_type == "power":
+                tp_embed = tp ** self.t_powers.unsqueeze(0)
+            else:  # sinusoidal
+                tp_scaled = tp * self.t_inv_freqs.unsqueeze(0)
+                tp_embed = torch.cat([torch.sin(tp_scaled), torch.cos(tp_scaled)], dim=-1)
+            embeds.append(tp_embed)
 
+        t_embed = torch.cat(embeds, dim=-1)
         return t_embed.reshape(batch_size, -1, *([1] * len(shape))).expand(
             batch_size, -1, *shape
         )
@@ -626,7 +625,7 @@ class SpectralConv(BaseSpectralConv):
             # `in_channels`.
             return torch.complex(
                 mlp_out[:, : self.in_channels, ...],
-                mlp_out[:, self.in_channels :, ...],
+                mlp_out[:, self.in_channels:, ...],
             )
         # 'polar'
         theta = self.modulator(combined)
@@ -641,10 +640,8 @@ class SpectralConv(BaseSpectralConv):
 
         if self.resolution_scaling_factor is not None and output_shape is None:
             out_shape = tuple(
-                [
-                    round(s * r)
-                    for (s, r) in zip(in_shape, self.resolution_scaling_factor)
-                ]
+                round(s * r)
+                for (s, r) in zip(in_shape, self.resolution_scaling_factor)
             )
         elif output_shape is not None:
             out_shape = output_shape
@@ -662,13 +659,11 @@ class SpectralConv(BaseSpectralConv):
 
     @n_modes.setter
     def n_modes(self, n_modes):
-        if isinstance(n_modes, int):  # Should happen for 1D FNO only
-            n_modes = [n_modes]
-        else:
-            n_modes = list(n_modes)
-        # the real FFT is skew-symmetric, so the last mode has a redundacy if our data is real in space
+        # Should happen for 1D FNO only
+        n_modes = [n_modes] if isinstance(n_modes, int) else list(n_modes)
+        # the real FFT is skew-symmetric, so the last mode has a redundancy if our data is real in space
         # As a design choice we do the operation here to avoid users dealing with the +1
-        # if we use the full FFT we cannot cut off informtion from the last mode
+        # if we use the full FFT we cannot cut off information from the last mode
         if not self.complex_data:
             n_modes[-1] = n_modes[-1] // 2 + 1
         self._n_modes = n_modes
@@ -745,10 +740,7 @@ class SpectralConv(BaseSpectralConv):
         ]
         # if contraction is separable, weights have shape (channels, modes_x, ...)
         # otherwise they have shape (in_channels, out_channels, modes_x, ...)
-        if self.separable:
-            slices_w = [slice(None)]  # channels
-        else:
-            slices_w = [slice(None), slice(None)]  # in_channels, out_channels
+        slices_w = [slice(None)] if self.separable else [slice(None), slice(None)]
         if self.complex_data:
             slices_w += [
                 slice(start // 2, -start // 2) if start else slice(start, None)
@@ -767,13 +759,8 @@ class SpectralConv(BaseSpectralConv):
 
         ### Pick the first n_modes modes of FFT signal along each dim
 
-        # if separable conv, weight tensor only has one channel dim
-        if self.separable:
-            weight_start_idx = 1
-        # otherwise drop first two dims (in_channels, out_channels)
-        else:
-            weight_start_idx = 2
-
+        # if separable conv, weight tensor only has one channel dim; otherwise drop first two dims (in_channels, out_channels)
+        weight_start_idx = 1 if self.separable else 2
         slices_x = [slice(None), slice(None)]  # Batch_size, channels
 
         for all_modes, kept_modes in zip(
@@ -827,10 +814,8 @@ class SpectralConv(BaseSpectralConv):
 
         if self.resolution_scaling_factor is not None and output_shape is None:
             mode_sizes = tuple(
-                [
-                    round(s * r)
-                    for (s, r) in zip(mode_sizes, self.resolution_scaling_factor)
-                ]
+                round(s * r)
+                for (s, r) in zip(mode_sizes, self.resolution_scaling_factor)
             )
 
         if output_shape is not None:
