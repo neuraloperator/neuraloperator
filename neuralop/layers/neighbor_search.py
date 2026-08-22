@@ -104,16 +104,23 @@ def native_neighbor_search(
     # keep zero-distance points
     eps = 1e-7
     all_dists = torch.where(all_dists == 0., eps, all_dists)
-    dists = torch.where(all_dists <= radius, all_dists, 0.) # i,j is 1 if j is i's neighbor 
-    nbr_indices = dists.nonzero()[:,1:].reshape(-1,) # only keep the column indices
+    dists = torch.where(all_dists <= radius, all_dists, 0.) # i,j is 1 if j is i's neighbor
+    neighbor_mask = dists > 0
+    nbr_indices = neighbor_mask.nonzero()[:,1:].reshape(-1,) # only keep the column indices
     if return_norm:
-        weights = dists[dists.nonzero(as_tuple=True)]
+        weights = dists[neighbor_mask]
         nbr_dict["weights"] = weights **2 # weighting function computed on squared norms
-    in_nbr = torch.where(dists > 0, 1., 0.,)
-    nbrhd_sizes = torch.cumsum(torch.sum(in_nbr, dim=1), dim=0) # num points in each neighborhood, summed cumulatively
-    splits = torch.cat((torch.tensor([0.]).to(queries.device), nbrhd_sizes))
-    
+
+    # CSR row splits are integer counts. Accumulating them in floating point loses
+    # precision once the total number of neighbors exceeds the exact integer range
+    # of the dtype (2**24 for float32).
+    neighbor_counts = neighbor_mask.sum(dim=1, dtype=torch.int64)
+    nbrhd_sizes = torch.cumsum(neighbor_counts, dim=0)
+    splits = torch.cat(
+        (torch.zeros(1, dtype=torch.int64, device=queries.device), nbrhd_sizes)
+    )
+
     nbr_dict["neighbors_index"] = nbr_indices.long().to(queries.device)
-    nbr_dict["neighbors_row_splits"] = splits.long()
+    nbr_dict["neighbors_row_splits"] = splits
 
     return nbr_dict
