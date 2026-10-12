@@ -3,7 +3,7 @@ from zencfg import ConfigBase
 
 
 class ModelConfig(ConfigBase):
-    arch: str
+    model_arch: str
     data_channels: int
     out_channels: int
 
