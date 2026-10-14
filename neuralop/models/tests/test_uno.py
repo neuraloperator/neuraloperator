@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.mark.parametrize(
-    "input_shape", [(32, 3, 64, 55), (32, 3, 100, 105), (32, 3, 133, 95)]
+    "input_shape", [(2, 3, 64, 55), (2, 3, 100, 105), (2, 3, 133, 95)]
 )
 def test_UNO(input_shape):
     horizontal_skips_map = {4: 0, 3: 1}
