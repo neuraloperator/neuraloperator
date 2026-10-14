@@ -225,3 +225,114 @@ class IntegralTransform(nn.Module):
             use_scatter=self.use_torch_scatter,
         )
         return out_features
+
+    def chunked_forward(self, y, neighbors, x=None, f_y=None, weights=None, chunk_size=1024):
+        """Compute the kernel integral transform in chunks of neighbor messages.
+
+        This method is mathematically equivalent to :meth:`forward` for sum and mean
+        reductions, but limits the number of edge messages computed per chunk.
+        The neighborhood graph is still constructed in full, and autograd can
+        retain activations from every chunk during training.
+
+        Parameters
+        ----------
+        chunk_size : int, optional
+            Maximum number of neighbor messages to compute at once, by default 1024
+
+        Other parameters are the same as for :meth:`forward`.
+        """
+        if not isinstance(chunk_size, int) or chunk_size <= 0:
+            raise ValueError("chunk_size must be a positive integer")
+
+        if x is None:
+            x = y
+
+        neighbor_indices = neighbors["neighbors_index"]
+        splits = neighbors["neighbors_row_splits"]
+
+        # Let the regular implementation handle empty neighborhoods so that custom
+        # channel MLPs retain their normal empty-input behavior.
+        if neighbor_indices.numel() == 0:
+            return self.forward(y, neighbors, x=x, f_y=f_y, weights=weights)
+
+        num_reps = splits[1:] - splits[:-1]
+        destination = torch.repeat_interleave(
+            torch.arange(num_reps.numel(), device=splits.device), num_reps
+        )
+
+        batched = False
+        if f_y is not None:
+            if f_y.ndim == 3:
+                batched = True
+                batch_size = f_y.shape[0]
+
+        nbr_weights = neighbors.get("weights")
+        if nbr_weights is None:
+            nbr_weights = weights
+        if nbr_weights is None and self.weighting_fn is not None:
+            raise KeyError("if a weighting function is provided, your neighborhoods must contain weights.")
+        if nbr_weights is not None:
+            reduction = "sum"
+        else:
+            reduction = self.reduction
+
+        out_features = None
+        for start in range(0, neighbor_indices.numel(), chunk_size):
+            end = min(start + chunk_size, neighbor_indices.numel())
+            edge_slice = slice(start, end)
+            edge_indices = neighbor_indices[edge_slice]
+            edge_destination = destination[edge_slice]
+
+            if f_y is not None:
+                in_features = f_y[:, edge_indices, :] if batched else f_y[edge_indices]
+
+            rep_features = y[edge_indices]
+            self_features = x[edge_destination]
+            agg_features = torch.cat([rep_features, self_features], dim=-1)
+            if f_y is not None and self.transform_type in (
+                "nonlinear_kernelonly",
+                "nonlinear",
+            ):
+                if batched:
+                    agg_features = agg_features.repeat(
+                        [batch_size] + [1] * agg_features.ndim
+                    )
+                agg_features = torch.cat([agg_features, in_features], dim=-1)
+
+            rep_features = self.channel_mlp(agg_features)
+
+            if f_y is not None and self.transform_type != "nonlinear_kernelonly":
+                if rep_features.ndim == 2 and batched:
+                    rep_features = rep_features.unsqueeze(0).repeat(
+                        [batch_size] + [1] * rep_features.ndim
+                    )
+                rep_features.mul_(in_features)
+
+            if nbr_weights is not None:
+                edge_weights = nbr_weights[edge_slice].unsqueeze(-1).unsqueeze(0)
+                if self.weighting_fn is not None:
+                    edge_weights = self.weighting_fn(edge_weights)
+                if not batched:
+                    edge_weights = edge_weights.squeeze(0)
+                rep_features.mul_(edge_weights)
+
+            if out_features is None:
+                if batched:
+                    output_shape = [batch_size, num_reps.numel(), rep_features.shape[-1]]
+                else:
+                    output_shape = [num_reps.numel(), rep_features.shape[-1]]
+                out_features = rep_features.new_zeros(output_shape)
+
+            if batched:
+                out_features.index_add_(1, edge_destination, rep_features)
+            else:
+                out_features.index_add_(0, edge_destination, rep_features)
+
+        if reduction == "mean":
+            divisor = num_reps.to(dtype=out_features.dtype).clamp_min(1)
+            if batched:
+                out_features = out_features / divisor.view(1, -1, 1)
+            else:
+                out_features = out_features / divisor.view(-1, 1)
+
+        return out_features

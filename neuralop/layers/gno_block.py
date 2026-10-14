@@ -248,3 +248,26 @@ class GNOBlock(nn.Module):
         )
 
         return out_features
+
+    def chunked_forward(self, y, x, f_y=None, chunk_size=1024):
+        """Compute the GNO output while limiting materialized neighbor messages.
+
+        Parameters are the same as for :meth:`forward`, with ``chunk_size`` specifying
+        the maximum number of neighbor messages processed at once.
+        """
+        neighbors_dict = self.neighbor_search(data=y, queries=x, radius=self.radius)
+
+        if self.pos_embedding is not None:
+            y_embed = self.pos_embedding(y)
+            x_embed = self.pos_embedding(x)
+        else:
+            y_embed = y
+            x_embed = x
+
+        return self.integral_transform.chunked_forward(
+            y=y_embed,
+            x=x_embed,
+            neighbors=neighbors_dict,
+            f_y=f_y,
+            chunk_size=chunk_size,
+        )
