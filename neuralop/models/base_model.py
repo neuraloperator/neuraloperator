@@ -217,6 +217,8 @@ def get_model(config):
 
     # Remove model_arch from config as it's not a model parameter
     model_config.pop("model_arch", None)
+    # zencfg includes the configuration class name when serializing a config.
+    model_config.pop("_config_name", None)
 
     # Set the number of input channels depending on channels in data + mg patching
     data_channels = model_config.pop("data_channels")
