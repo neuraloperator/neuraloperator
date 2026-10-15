@@ -399,9 +399,9 @@ class SpectralConv(BaseSpectralConv):
                         f"Provided {incremental_n_modes} for actual "
                         f"n_modes={self.n_modes}."
                     )
-            self.weight_slices = [slice(None)] * 2 + [
+            self.weight_slices = (slice(None),) * 2 + tuple(
                 slice(None, n // 2) for n in self._incremental_n_modes
-            ]
+            )
             self.half_n_modes = [m // 2 for m in self._incremental_n_modes]
 
     def transform(self, x, layer_index=0, output_shape=None):
@@ -485,7 +485,7 @@ class SpectralConv(BaseSpectralConv):
 
         for i, boundaries in enumerate(itertools.product(*mode_indexing)):
             # Keep all modes for first 2 modes (batch-size and channels)
-            idx_tuple = [slice(None), slice(None)] + [slice(*b) for b in boundaries]
+            idx_tuple = (slice(None), slice(None)) + tuple(slice(*b) for b in boundaries)
 
             # For 2D: [:, :, :height, :width] and [:, :, -height:, width]
             out_fft[idx_tuple] = self._contract(
