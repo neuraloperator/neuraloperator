@@ -13,7 +13,7 @@ import torch.nn.functional as F
 
 from neuralop import H1Loss, LpLoss, BurgersEqnLoss, ICLoss, get_model
 from neuralop.data.datasets import load_mini_burgers_1dtime
-from neuralop.training import AdamW
+from neuralop.training import AdamW, setup
 from neuralop.utils import get_wandb_api_key, count_model_params, get_project_root
 from neuralop.losses.meta_losses import Relobralo, SoftAdapt
 
@@ -29,7 +29,9 @@ config = make_config_from_cli(Default)
 config = config.to_dict()
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Apply the same device and precision setup used by the other training entry
+# points. The PINO config opts into IEEE float32 by default for reproducibility.
+device, is_logger = setup(config)
 
 
 # Set up WandB logging

@@ -10,6 +10,8 @@ class OptimizationConfig(ConfigBase):
     weight_decay: float = 1e-4
     eval_interval: int = 1
     mixed_precision: bool = False
+    # Keep the historical default; set False to disable TF32 when needed.
+    allow_tf32: bool = True
     scheduler: Literal["StepLR", "ReduceLROnPlateau", "CosineAnnealingLR"] = "StepLR"
     scheduler_T_max: int = 500
     scheduler_patience: int = 50

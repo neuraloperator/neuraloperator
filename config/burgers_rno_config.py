@@ -29,6 +29,7 @@ class BurgersOptConfig(ConfigBase):
     weight_decay: float = 0.0
     eval_interval: int = 1
     mixed_precision: bool = False
+    allow_tf32: bool = True
     scheduler: str = "StepLR"
     scheduler_patience: int = 100
     step_size: int = 60

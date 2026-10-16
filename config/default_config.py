@@ -58,6 +58,7 @@ class Opt(ConfigBase):
     scheduler: str = "StepLR"
     step_size: int = 100
     gamma: float = 0.5
+    allow_tf32: bool = True
 
 
 class Data(ConfigBase):

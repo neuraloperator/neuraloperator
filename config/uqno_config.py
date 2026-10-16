@@ -54,6 +54,7 @@ class UQNODarcyDatasetConfig(ConfigBase):
 class UQNO_OptConfig(ConfigBase):
     alpha: float = 0.9
     delta: float = 0.95
+    allow_tf32: bool = True
     solution: SolutionModelOptConfig = SolutionModelOptConfig()
     residual: ResidualModelOptConfig = ResidualModelOptConfig()
 
