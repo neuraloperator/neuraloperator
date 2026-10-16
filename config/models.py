@@ -3,7 +3,7 @@ from zencfg import ConfigBase
 
 
 class ModelConfig(ConfigBase):
-    arch: str
+    model_arch: str
     data_channels: int
     out_channels: int
 
@@ -18,17 +18,17 @@ class FNOConfig(ModelConfig):
     projection_channel_ratio: int = 4
     n_layers: int = 4
     domain_padding: float = 0.0
-    norm: str = "None"
+    norm: Optional[str] = None
     fno_skip: str = "linear"
     implementation: str = "factorized"
     use_channel_mlp: bool = True
     channel_mlp_expansion: float = 0.5
     channel_mlp_dropout: float = 0
     separable: bool = False
-    factorization: str = "None"
+    factorization: Optional[str] = None
     rank: float = 1.0
     fixed_rank_modes: bool = False
-    stabilizer: str = "None"
+    stabilizer: Optional[str] = None
 
 
 class SimpleFNOConfig(FNOConfig):

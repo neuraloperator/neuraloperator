@@ -1,3 +1,4 @@
+import pytest
 import torch
 import time
 from tensorly import tenalg
@@ -45,3 +46,21 @@ def test_from_config():
 
     loss = out.sum()
     loss.backward()
+
+
+@pytest.mark.parametrize("include_config_name", [False, True])
+def test_model_config_metadata(include_config_name):
+    config = make_config(TestConfig).to_dict()
+    if include_config_name:
+        config.model["_config_name"] = "FNO_Small2d"
+    else:
+        config.model.pop("_config_name", None)
+    original_model_config = config.model.copy()
+
+    model = get_model(config)
+
+    assert config.model == original_model_config
+    assert "_config_name" not in model._init_kwargs
+    assert model.fno_blocks.norm is None
+    assert model.factorization is None
+    assert model.fno_blocks.stabilizer is None
