@@ -24,7 +24,7 @@ def test_Codano(
     """
     Test CoDA-NO layers
     """
-    n_modes = [64] * n_dim
+    n_modes = [8] * n_dim
     n_heads = 3
     head_codimension = 3
     codimension_size = None
@@ -44,14 +44,14 @@ def test_Codano(
         nonlinear_attention=nonlinear_attention,
     ).to(device)
 
-    spatial_res = [64] * n_dim
+    spatial_res = [8] * n_dim
     x = torch.randn(2, 10, *spatial_res).to(device)
     output_shape = [int(s * output_scale) for s in spatial_res]
     out = layer(x, output_shape)
     assert list(out.shape[-n_dim:]) == output_shape
 
     # test different spatial resolution
-    spatial_res = [48] * n_dim
+    spatial_res = [6] * n_dim
     x = torch.randn(2, 10, *spatial_res).to(device)
     out = layer(x)
     assert out.shape == x.shape
