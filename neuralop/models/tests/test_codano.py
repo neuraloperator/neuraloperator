@@ -53,10 +53,10 @@ def test_CODANO(
         enable_cls_token=use_cls_token,
     )
 
-    in_data = torch.randn(2, n_variables, 32, 32)
+    in_data = torch.randn(2, n_variables, 16, 16)
 
     if static_channel_dim > 0:
-        static_channels = torch.randn(2, static_channel_dim, 32, 32)
+        static_channels = torch.randn(2, static_channel_dim, 16, 16)
     else:
         static_channels = None
 
@@ -64,7 +64,7 @@ def test_CODANO(
     out = model(in_data, static_channels, variable_ids)
 
     # Check output size
-    assert list(out.shape) == [2, n_variables, 32, 32]
+    assert list(out.shape) == [2, n_variables, 16, 16]
 
     # test different resolutions
     # also different sets of variables
@@ -75,14 +75,14 @@ def test_CODANO(
     else:
         input_var_ids = None
 
-    in_data = torch.randn(2, new_n_var, 64, 64)
+    in_data = torch.randn(2, new_n_var, 32, 32)
     if static_channel_dim > 0:
-        static_channels = torch.randn(2, static_channel_dim, 64, 64)
+        static_channels = torch.randn(2, static_channel_dim, 32, 32)
     else:
         static_channels = None
 
     out = model(in_data, static_channels, input_var_ids)
-    assert list(out.shape) == [2, new_n_var, 64, 64]
+    assert list(out.shape) == [2, new_n_var, 32, 32]
 
     # Test backward pass
     out.sum().backward()
@@ -92,6 +92,6 @@ def test_CODANO(
         model._extend_positional_encoding("T")
         input_var_ids = input_var_ids + ["T"]
 
-    in_data = torch.randn(2, new_n_var + 1, 64, 64)
+    in_data = torch.randn(2, new_n_var + 1, 32, 32)
     out = model(in_data, static_channels, input_var_ids)
-    assert list(out.shape) == [2, new_n_var + 1, 64, 64]
+    assert list(out.shape) == [2, new_n_var + 1, 32, 32]
