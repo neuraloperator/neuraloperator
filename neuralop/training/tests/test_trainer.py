@@ -5,7 +5,7 @@ from pathlib import Path
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
-from neuralop.models import FNO
+from neuralop.models import FNO, ConditionalFNO
 from neuralop.data.datasets import load_darcy_flow_small
 
 from neuralop import Trainer, LpLoss, H1Loss
@@ -175,6 +175,50 @@ def test_load_from_checkpoint():
 
     # clean up dummy checkpoint directory after testing
     shutil.rmtree("./full_states")
+
+
+def test_conditional_fno_trainer():
+    """ConditionalFNO trains through the Trainer.
+    """
+    torch.manual_seed(0)
+    cond_dim = 8
+
+    class ConditionedDataset(Dataset):
+        def __init__(self, n_examples, size=16):
+            self.x = torch.randn(n_examples, 1, size, size)
+            self.y = torch.randn(n_examples, 1, size, size)
+            self.e = torch.randn(n_examples, cond_dim)
+
+        def __getitem__(self, idx):
+            return {"x": self.x[idx], "y": self.y[idx], "condition_embedding": self.e[idx]}
+
+        def __len__(self):
+            return self.x.shape[0]
+
+    model = ConditionalFNO(
+        n_modes=(8, 8),
+        in_channels=1,
+        out_channels=1,
+        hidden_channels=16,
+        condition_embedding_channels=cond_dim,
+        mode_modulation=True,
+    )
+
+    train_loader = DataLoader(ConditionedDataset(8), batch_size=4)
+    trainer = Trainer(model=model, n_epochs=1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30)
+    l2loss = LpLoss(d=2, p=2)
+
+    trainer.train(
+        train_loader=train_loader,
+        test_loaders={},
+        optimizer=optimizer,
+        scheduler=scheduler,
+        regularizer=None,
+        training_loss=l2loss,
+        eval_losses=None,
+    )
 
 
 # enure that the model incrementally increases in frequency modes

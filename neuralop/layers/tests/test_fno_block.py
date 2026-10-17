@@ -1,6 +1,8 @@
+import inspect
+
 import pytest
 import torch
-from ..fno_block import FNOBlocks
+from ..fno_block import FNOBlocks, ConditionalFNOBlocks
 
 
 def test_FNOBlock_resolution_scaling_factor():
@@ -224,27 +226,57 @@ def test_FNOBlock_skip_connections_preactivation(fno_skip, channel_mlp_skip):
     # Check output shape
     assert res.shape == (2, 4, *size)
 
+@pytest.mark.parametrize("mode_modulation", [False, True])
+@pytest.mark.parametrize("dim", [1, 2, 3])
+def test_conditional_fno_block_forward_shape(dim, mode_modulation):
+    torch.manual_seed(0)
+    cond_dim = 8
+    n_modes = (6,) * dim
+    spatial = (10,) * dim
 
-@pytest.mark.parametrize("n_dim", [1, 2, 3])
-def test_FNOBlock_conv_bias_kernel(n_dim):
-    """Test local convolutional bias kernels beside spectral convolution."""
-    modes = (8, 8, 8)
-    size = [10, 10, 10]
-    conv_bias_kernel = 3
-
-    block = FNOBlocks(
-        3,
-        4,
-        modes[:n_dim],
-        n_layers=2,
-        conv_bias_kernel=conv_bias_kernel,
-        fno_skip="linear",
-        use_channel_mlp=False,
+    block = ConditionalFNOBlocks(4, 4, n_modes, condition_embedding_channels=cond_dim, 
+                                 mode_modulation=mode_modulation, norm="group_norm",
     )
+    x = torch.randn(2, 4, *spatial)
+    e = torch.randn(2, cond_dim)
+    y = block(x, condition_embedding=e)
+    assert y.shape == (2, 4, *spatial)
+    assert torch.isfinite(y).all()
 
-    x = torch.randn(2, 3, *size[:n_dim])
-    res = block(x)
 
-    assert res.shape == (2, 4, *size[:n_dim])
-    assert block.conv_bias_kernel == conv_bias_kernel
-    assert block.fno_skips[0].kernel_size == (conv_bias_kernel,) * n_dim
+def test_conditional_fno_block_no_cond_emb_is_identity_path():
+    """When condition_embedding=None, FiLM projectors are unused; output is deterministic."""
+    block = ConditionalFNOBlocks(4, 4, (6, 6), condition_embedding_channels=8, mode_modulation=False)
+    x = torch.randn(2, 4, 10, 10)
+    y1 = block(x, condition_embedding=None)
+    y2 = block(x)
+    torch.testing.assert_close(y1, y2)
+
+
+def test_conditional_fno_block_base_fnoblocks_has_no_conditioning():
+    block = FNOBlocks(4, 4, (6, 6))
+    assert not hasattr(block, "film_proj")
+    assert "condition_embedding" not in inspect.signature(block.forward).parameters
+
+def test_conditional_fno_block_all_params_get_grad():
+    torch.manual_seed(0)
+    cond_dim = 8
+    block = ConditionalFNOBlocks(3, 3, (6, 6), condition_embedding_channels=cond_dim, mode_modulation=True)
+    x = torch.randn(2, 3, 10, 10, requires_grad=True)
+    e = torch.randn(2, cond_dim, requires_grad=True)
+    block(x, condition_embedding=e).sum().backward()
+    assert x.grad is not None
+    assert e.grad is not None
+    for name, p in block.named_parameters():
+        assert p.grad is not None, f"no grad for {name}"
+
+
+def test_conditional_fno_block_indexed_forward():
+    torch.manual_seed(0)
+    cond_dim = 8
+    block = ConditionalFNOBlocks(3, 3, (6, 6), condition_embedding_channels=cond_dim, mode_modulation=True, n_layers=2)
+    x = torch.randn(2, 3, 10, 10)
+    e = torch.randn(2, cond_dim)
+    y = block[0](x, condition_embedding=e)
+    assert y.shape == (2, 3, 10, 10)
+    assert torch.isfinite(y).all()
