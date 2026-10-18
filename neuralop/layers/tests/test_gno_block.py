@@ -108,3 +108,39 @@ def test_gno_block(
     if batch_size > 1 and gno_transform_type != "linear":
         # assert f_y[1:] accumulates no grad if it's used
         assert not f_y.grad[1:].nonzero().any()
+
+
+@pytest.mark.parametrize("reduction", ["sum", "mean"])
+@pytest.mark.parametrize("transform_type", ["linear", "nonlinear", "nonlinear_kernelonly"])
+@pytest.mark.parametrize("batch_size", [None, 1, 2])
+@pytest.mark.parametrize("device", ["cpu"] + (["cuda"] if torch.cuda.is_available() else []))
+def test_gno_block_chunked_forward(reduction, transform_type, batch_size, device):
+    torch.manual_seed(0)
+    gno_block = GNOBlock(
+        in_channels=in_channels,
+        out_channels=out_channels,
+        coord_dim=2,
+        pos_embedding_type=None,
+        radius=10.0,
+        reduction=reduction,
+        transform_type=transform_type,
+        channel_mlp_layers=[16, 16],
+        use_torch_scatter_reduce=False,
+        use_open3d_neighbor_search=False,
+    ).to(device)
+    input_geom = torch.rand(12, 2, device=device, requires_grad=True)
+    output_queries = torch.rand(9, 2, device=device, requires_grad=True)
+    shape = (12, in_channels) if batch_size is None else (batch_size, 12, in_channels)
+    f_y = torch.rand(shape, device=device, requires_grad=True)
+
+    expected = gno_block(input_geom, output_queries, f_y=f_y)
+    actual = gno_block.chunked_forward(
+        input_geom, output_queries, f_y=f_y, chunk_size=7
+    )
+
+    assert torch.allclose(actual, expected)
+    inputs = (input_geom, output_queries, f_y, *gno_block.parameters())
+    expected_grads = torch.autograd.grad(expected.sum(), inputs)
+    actual_grads = torch.autograd.grad(actual.sum(), inputs)
+    for actual_grad, expected_grad in zip(actual_grads, expected_grads):
+        torch.testing.assert_close(actual_grad, expected_grad)
