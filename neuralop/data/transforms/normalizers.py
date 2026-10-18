@@ -142,13 +142,10 @@ class UnitGaussianNormalizer(Transform):
         )
         self.n_elements += n_elements
 
-        # 1/(n_i + n_j) * (n_i * sum(x_i^2)/n_i + sum(x_j^2) - (n_i*sum(x_i)/n_i + sum(x_j))^2)
-        # = 1/(n_i + n_j)  * (sum(x_i^2) + sum(x_j^2) - sum(x_i)^2 - 2sum(x_i)sum(x_j) - sum(x_j)^2))
-        # multiply by (n_i + n_j) / (n_i + n_j + 1) for unbiased estimator
-        self.std = (
-            torch.sqrt(self.squared_mean - self.mean**2)
-            * self.n_elements
-            / (self.n_elements - 1)
+        # Apply the sample-size correction to variance before taking its square root.
+        self.std = torch.sqrt(
+            (self.squared_mean - self.mean**2)
+            * (self.n_elements / (self.n_elements - 1))
         )
 
     def transform(self, x):
