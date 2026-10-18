@@ -134,10 +134,10 @@ class Trainer:
 
             * if 'single_step', predicts one input-output pair and evaluates loss.
 
-            * if 'autoregressive', autoregressively predicts output using last step's
+            * if 'autoregression', autoregressively predicts output using last step's
             output as input for a number of steps defined by the temporal dimension of the batch.
             This requires specially batched data with a data processor whose ``.preprocess`` and
-            ``.postprocess`` both take ``idx`` as an argument.
+            ``.postprocess`` both take ``step`` as an argument.
         save_every: int, optional, default is None
             if provided, interval at which to save checkpoints
         save_best: str, optional, default is None
@@ -415,8 +415,17 @@ class Trainer:
         errors : dict
             dict[f'{log_prefix}_{loss_name}] = loss for loss in loss_dict
         """
-        # Ensure model and data processor are loaded to the proper device
 
+        # Validate the evaluation mode before doing any work
+        if mode == "autoregressive":
+            mode = "autoregression"
+        if mode not in ("single_step", "autoregression"):
+            raise ValueError(
+                f"Unknown evaluation mode {mode!r}. "
+                "Expected 'single_step' or 'autoregression'."
+            )
+        
+        # Ensure model and data processor are loaded to the proper device
         self.model = self.model.to(self.device)
         if self.data_processor is not None and self.data_processor.device != self.device:
             self.data_processor = self.data_processor.to(self.device)
@@ -625,9 +634,19 @@ class Trainer:
         eval_step_losses = {loss_name: 0.0 for loss_name in eval_losses.keys()}
         # eval_rollout_losses = {loss_name: 0. for loss_name in eval_losses.keys()}
 
-        t = 0
         if max_steps is None:
+            if self.data_processor is None:
+                raise ValueError(
+                    "Autoregressive evaluation without a data_processor "
+                    "requires max_steps to be set."
+                )
             max_steps = float("inf")
+        elif max_steps < 1:
+            raise ValueError(
+                f"max_steps must be a positive integer or None, got {max_steps}."
+            )
+
+        t = 0
 
         # only increment the sample count once
         sample_count_incr = False
