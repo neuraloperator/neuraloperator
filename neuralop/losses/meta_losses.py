@@ -271,7 +271,9 @@ class SoftAdapt(Aggregator):
             lmbda: torch.Tensor = torch.ones_like(self.prev_losses)
             lmbda_sum: torch.Tensor = torch.zeros_like(self.init_loss)
             losses_stacked: torch.Tensor = torch.stack(list(losses.values()))
-            normalizer: torch.Tensor = (losses_stacked / self.prev_losses).max()
+            normalizer: torch.Tensor = (
+                losses_stacked / (self.prev_losses + self.eps)
+            ).max()
             for i, key in enumerate(losses.keys()):
                 with torch.no_grad():
                     lmbda[i] = torch.exp(
@@ -412,10 +414,10 @@ class Relobralo(Aggregator):
         else:
             losses_stacked: torch.Tensor = torch.stack(list(losses.values()))
             normalizer_prev: torch.Tensor = (
-                losses_stacked / (self.tau * self.prev_losses)
+                losses_stacked / (self.tau * self.prev_losses + self.eps)
             ).max()
             normalizer_init: torch.Tensor = (
-                losses_stacked / (self.tau * self.init_losses)
+                losses_stacked / (self.tau * self.init_losses + self.eps)
             ).max()
 
             # define a Bernoulli-sampled variable that determines whether to use initial
