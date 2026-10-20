@@ -52,22 +52,24 @@ class CompositeTransform(Transform):
 
         See class docstring for detailed parameter descriptions.
         """
-        super.__init__()
+        super().__init__()
         self.transforms = transforms
 
     def transform(self, data_dict):
         for tform in self.transforms:
-            data_dict = tform.transform(self.data_dict)
+            data_dict = tform.transform(data_dict)
         return data_dict
 
     def inverse_transform(self, data_dict):
         for tform in self.transforms[::-1]:
-            data_dict = tform.transform(self.data_dict)
+            data_dict = tform.inverse_transform(data_dict)
         return data_dict
 
     def to(self, device):
-        # all Transforms are required to implement .to()
-        self.transforms = [t.to(device) for t in self.transforms if hasattr(t, "to")]
+        # transforms without a to() method are kept unchanged
+        self.transforms = [
+            t.to(device) if hasattr(t, "to") else t for t in self.transforms
+        ]
         return self
 
 
