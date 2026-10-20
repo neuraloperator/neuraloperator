@@ -21,6 +21,7 @@ class CarCFDOptConfig(ConfigBase):
     training_loss: str = "l2"
     testing_loss: str = "l2"
     weight_decay: float = 1e-4
+    allow_tf32: bool = True
     scheduler: str = "StepLR"
     step_size: int = 50
     gamma: float = 0.5
