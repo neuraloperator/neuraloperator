@@ -53,3 +53,21 @@ def test_fallback_nb_search():
 
     return_dict = compute_norm_separate(return_dict, coords, coords)
     print(return_dict["squared_norm"])
+
+
+def test_large_neighbor_counts_keep_csr_consistent():
+    # This creates just over 2**24 coincident pairs, the point where float32
+    # cumulative counts can no longer represent every integer exactly.
+    n_points = 4097
+    data = torch.zeros(n_points, 1)
+    queries = torch.zeros(n_points, 1)
+
+    result = native_neighbor_search(data, queries, radius=1.0)
+    expected_pairs = n_points * n_points
+    expected_splits = torch.arange(
+        0, expected_pairs + 1, n_points, dtype=torch.long
+    )
+
+    assert result["neighbors_index"].numel() == expected_pairs
+    assert result["neighbors_row_splits"].dtype == torch.long
+    torch.testing.assert_close(result["neighbors_row_splits"], expected_splits)

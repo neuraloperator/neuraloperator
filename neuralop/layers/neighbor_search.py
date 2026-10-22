@@ -109,9 +109,18 @@ def native_neighbor_search(
     if return_norm:
         weights = dists[dists.nonzero(as_tuple=True)]
         nbr_dict["weights"] = weights **2 # weighting function computed on squared norms
-    in_nbr = torch.where(dists > 0, 1., 0.,)
-    nbrhd_sizes = torch.cumsum(torch.sum(in_nbr, dim=1), dim=0) # num points in each neighborhood, summed cumulatively
-    splits = torch.cat((torch.tensor([0.]).to(queries.device), nbrhd_sizes))
+    # Keep neighborhood counts in an integer dtype. Accumulating them in
+    # float32 loses exactness once the total exceeds 2**24, which can make
+    # neighbors_row_splits disagree with neighbors_index.
+    nbrhd_sizes = torch.cumsum(
+        torch.sum(dists > 0, dim=1, dtype=torch.long), dim=0
+    )
+    splits = torch.cat(
+        (
+            torch.zeros(1, dtype=torch.long, device=queries.device),
+            nbrhd_sizes,
+        )
+    )
     
     nbr_dict["neighbors_index"] = nbr_indices.long().to(queries.device)
     nbr_dict["neighbors_row_splits"] = splits.long()
