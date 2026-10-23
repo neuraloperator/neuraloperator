@@ -80,7 +80,9 @@ class GNOBlock(nn.Module):
         Default None, by default None
     use_torch_scatter_reduce : bool, optional
         Whether to use torch-scatter to perform grouped reductions in the IntegralTransform.
-        If False, uses native Python reduction in neuralop.layers.segment_csr, by default True
+        If False, uses native PyTorch segment reduction when available, by default True.
+        Native reduction is also selected automatically while tracing with
+        ``torch.compile``.
 
         .. warning::
 
