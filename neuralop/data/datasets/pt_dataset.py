@@ -63,6 +63,13 @@ class PTDataset:
         If not, we need to unsqueeze it to explicitly have a channel dim.
         Only applies when there is only one data channel, as in our example problems
         Defaults to True
+    train_path : Union[Path, str], optional
+        Path to the training data file. If not provided, the path is constructed from
+        ``root_dir``, ``dataset_name``, and ``train_resolution``.
+    test_paths : List[Union[Path, str]], optional
+        Paths to the test data files, in the same order as ``test_resolutions``. If not
+        provided, the paths are constructed from ``root_dir``, ``dataset_name``, and
+        each test resolution.
 
     All datasets are required to expose the following attributes after init:
 
@@ -90,6 +97,8 @@ class PTDataset:
         channel_dim=1,
         dtype=None,
         channels_squeezed=True,
+        train_path: Optional[Union[Path, str]] = None,
+        test_paths: Optional[List[Union[Path, str]]] = None,
     ):
         """Initialize the PTDataset.
 
@@ -106,11 +115,18 @@ class PTDataset:
         self.test_resolutions = test_resolutions
         self.test_batch_sizes = test_batch_sizes
 
+        if test_paths is not None and len(test_paths) != len(test_resolutions):
+            raise ValueError(
+                "test_paths must contain one path for each test resolution"
+            )
+
         # Load train data
 
-        data = torch.load(
-        Path(root_dir).joinpath(f"{dataset_name}_train_{train_resolution}.pt").as_posix()
-        )
+        if train_path is None:
+            train_path = Path(root_dir).joinpath(
+                f"{dataset_name}_train_{train_resolution}.pt"
+            )
+        data = torch.load(Path(train_path).as_posix())
 
         x_train = data["x"].to(dtype).clone()
         if channels_squeezed:
@@ -205,9 +221,15 @@ class PTDataset:
 
         # load test data
         self._test_dbs = {}
-        for res, n_test in zip(test_resolutions, n_tests):
+        if test_paths is None:
+            test_paths = [
+                Path(root_dir).joinpath(f"{dataset_name}_test_{res}.pt")
+                for res in test_resolutions
+            ]
+
+        for res, n_test, test_path in zip(test_resolutions, n_tests, test_paths):
             print(f"Loading test db for resolution {res} with {n_test} samples ")
-            data = torch.load(Path(root_dir).joinpath(f"{dataset_name}_test_{res}.pt").as_posix())
+            data = torch.load(Path(test_path).as_posix())
 
             x_test = data["x"].to(dtype).clone()
             if channels_squeezed:
