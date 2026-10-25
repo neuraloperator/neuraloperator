@@ -24,19 +24,30 @@ indices = [0, 1, 5, 0, 1, 2, 6, 1, 2, 3, 7, 2, 3, 4, 8,
 splits = [0, 3, 7, 11, 15, 18, 22, 27, 32, 37, 41, 45, 50,
           55, 60, 64, 68, 73, 78, 83, 87, 90, 94, 98, 102, 105]
 
-def test_fallback_nb_search():
+def test_fallback_nb_search(monkeypatch):
     mesh_grid = np.stack(
         np.meshgrid(*[np.linspace(0, 1, 5) for _ in range(2)], indexing="ij"), axis=-1
     )
     coords = torch.Tensor(
         mesh_grid.reshape(-1, 2)
     )  # reshape into n**d x d coord points
+    cumsum_dtypes = []
+    torch_cumsum = torch.cumsum
+
+    def record_cumsum_dtype(input, *args, **kwargs):
+        cumsum_dtypes.append(input.dtype)
+        return torch_cumsum(input, *args, **kwargs)
+
+    monkeypatch.setattr(torch, "cumsum", record_cumsum_dtype)
+
     return_dict = native_neighbor_search(
         data=coords, queries=coords, radius=0.3, return_norm=True
     )
 
     assert return_dict["neighbors_index"].tolist() == indices
     assert return_dict["neighbors_row_splits"].tolist() == splits
+    assert cumsum_dtypes == [torch.int64]
+    assert return_dict["neighbors_row_splits"][-1] == len(indices)
     print(f"{return_dict['weights']=}")
 
     def compute_norm_separate(nbrs, data, queries):
