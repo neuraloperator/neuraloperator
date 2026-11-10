@@ -1,7 +1,45 @@
 import numpy as np
-import itertools
 import torch
 import torch.nn.functional as F
+
+
+def _resample_axis(x, new_res, axis):
+    orig_dtype = x.dtype
+    if orig_dtype in (torch.float16, torch.bfloat16):
+        x = x.to(torch.float32)
+
+    axis = axis % x.ndim
+    old_res = x.shape[axis]
+
+    X = torch.fft.rfft(x, dim=axis, norm="forward")
+
+    newshape = list(x.shape)
+    newshape[axis] = new_res // 2 + 1
+    Y = torch.zeros(newshape, dtype=X.dtype, device=x.device)
+
+    modes = min(old_res, new_res)
+    sl = [slice(None)] * x.ndim
+    sl[axis] = slice(0, modes // 2 + 1)
+    modes_X = X[tuple(sl)]
+
+    if modes % 2 == 0 and new_res != old_res:
+        factor = 0.5 if new_res > old_res else 2.0
+        sl_head = [slice(None)] * x.ndim
+        sl_head[axis] = slice(0, modes // 2)
+        sl_nyq = [slice(None)] * x.ndim
+        sl_nyq[axis] = slice(modes // 2, modes // 2 + 1)
+        modes_X = torch.cat(
+            [modes_X[tuple(sl_head)], modes_X[tuple(sl_nyq)] * factor], dim=axis
+        )
+
+    Y[tuple(sl)] = modes_X
+
+    y = torch.fft.irfft(Y, n=new_res, dim=axis, norm="forward")
+
+    if orig_dtype in (torch.float16, torch.bfloat16):
+        y = y.to(orig_dtype)
+
+    return y
 
 
 def resample(x, res_scale, axis, output_shape=None):
@@ -11,11 +49,13 @@ def resample(x, res_scale, axis, output_shape=None):
     for efficiency, applying linear interpolation for 1D data and bicubic interpolation for 2D data
     directly in the spatial domain.
 
-    For 3D or higher-dimensional inputs, the ``resample`` function switches to a spectral interpolation
-    method  based on the Fourier transform. The input is transformed into the frequency domain using a
-    real n-dimensional FFT, which decomposes the signal into its frequency components. By resizing
-    this frequency representation and then applying an inverse FFT, the function achieves smooth,
-    alias-free interpolation that preserves the signal’s overall structure.
+    For 3D or higher-dimensional inputs, the ``resample`` function performs separable real Fourier
+    interpolation sequentially along each specified axis, assuming periodic boundary conditions.
+    When resizing along an axis where the minimum of the old and new resolution is even, the Nyquist
+    frequency component is adjusted to preserve signal amplitude: for upsampling, the input Nyquist
+    coefficient is scaled by 0.5 (as its energy splits across positive and negative frequencies in the
+    larger spectrum); for downsampling, the output Nyquist coefficient is scaled by 2.0. Unchanged
+    dimensions receive no adjustment.
 
     Parameters
     ----------
@@ -40,63 +80,43 @@ def resample(x, res_scale, axis, output_shape=None):
     else:
         assert len(res_scale) == len(axis), "leght of res_scale and axis are not same"
 
-    old_size = x.shape[-len(axis) :]
     if output_shape is None:
-        new_size = tuple([int(round(s * r)) for (s, r) in zip(old_size, res_scale)])
+        new_size = tuple(
+            [int(round(x.shape[a] * r)) for (a, r) in zip(axis, res_scale)]
+        )
     else:
-        new_size = output_shape
+        new_size = tuple(output_shape)
 
     if len(axis) == 1:
         return F.interpolate(x, size=new_size[0], mode="linear", align_corners=True)
     if len(axis) == 2:
         return F.interpolate(x, size=new_size, mode="bicubic", align_corners=True)
 
-    X = torch.fft.rfftn(x.float(), norm="forward", dim=axis)
+    for a, s in zip(axis, new_size):
+        x = _resample_axis(x, s, a)
 
-    new_fft_size = list(new_size)
-    new_fft_size[-1] = new_fft_size[-1] // 2 + 1  # Redundant last coefficient
-    new_fft_size_c = [min(i, j) for (i, j) in zip(new_fft_size, X.shape[-len(axis) :])]
-    out_fft = torch.zeros(
-        [x.shape[0], x.shape[1], *new_fft_size], device=x.device, dtype=torch.cfloat
-    )
-
-    mode_indexing = [((None, m//2), (-m//2, None)) for m in new_fft_size_c[:-1]] + [((None, new_fft_size_c[-1]), )]
-    for i, boundaries in enumerate(itertools.product(*mode_indexing)):
-        idx_tuple = [slice(None), slice(None)] + [slice(*b) for b in boundaries]
-
-        idx_tuple = tuple(idx_tuple)
-        out_fft[idx_tuple] = X[idx_tuple]
-    y = torch.fft.irfftn(out_fft, s=new_size, norm="forward", dim=axis)
-
-    return y
+    return x
 
 
 def iterative_resample(x, res_scale, axis):
     if isinstance(axis, list) and isinstance(res_scale, (float, int)):
         res_scale = [res_scale] * len(axis)
-    if not isinstance(axis, list) and isinstance(res_scale,list):
-      raise Exception("Axis is not a list but Scale factors are")
-    if isinstance(axis, list) and isinstance(res_scale,list) and len(res_scale) != len(axis):
-      raise Exception("Axis and Scal factor are in different sizes")
+    if not isinstance(axis, list) and isinstance(res_scale, list):
+        raise Exception("Axis is not a list but Scale factors are")
+    if (
+        isinstance(axis, list)
+        and isinstance(res_scale, list)
+        and len(res_scale) != len(axis)
+    ):
+        raise Exception("Axis and Scal factor are in different sizes")
 
     if isinstance(axis, list):
         for i in range(len(res_scale)):
             rs = res_scale[i]
             a = axis[i]
-            x = resample(x, rs, a)
+            new_res = int(round(rs * x.shape[a]))
+            x = _resample_axis(x, new_res, a)
         return x
 
-    old_res = x.shape[axis]
-    X = torch.fft.rfft(x, dim=axis, norm="forward")
-    newshape = list(x.shape)
-    new_res = int(round(res_scale * newshape[axis]))
-    newshape[axis] = new_res // 2 + 1
-
-    Y = torch.zeros(newshape, dtype=X.dtype, device=x.device)
-
-    modes = min(new_res, old_res)
-    sl = [slice(None)] * x.ndim
-    sl[axis] = slice(0, modes // 2 + 1)
-    Y[tuple(sl)] = X[tuple(sl)]
-    y = torch.fft.irfft(Y, n=new_res, dim=axis, norm="forward")
-    return y
+    new_res = int(round(res_scale * x.shape[axis]))
+    return _resample_axis(x, new_res, axis)
