@@ -1,4 +1,5 @@
 from math import ceil, floor
+from operator import index as operator_index
 
 import torch
 from torch.utils.data import DataLoader
@@ -119,6 +120,19 @@ class SphericalSWEDataset(torch.utils.data.Dataset):
         return inp, tar
 
     def __getitem__(self, index):
+        try:
+            index = operator_index(index)
+        except TypeError as exc:
+            raise TypeError(
+                f"{type(self).__name__} indices must be integers, "
+                f"not {type(index).__name__}"
+            ) from exc
+
+        if index < 0 or index >= len(self):
+            raise IndexError(
+                f"index {index} is out of range for dataset of length {len(self)}"
+            )
+
         with torch.inference_mode():
             with torch.no_grad():
                 inp, tar = self._get_sample()
