@@ -87,10 +87,14 @@ def test_SpectralConv(factorization, implementation, separable, dim, complex_dat
 
 @pytest.mark.parametrize("enforce_hermitian_symmetry", [True, False])
 @pytest.mark.parametrize("dim", [1, 2, 3])
-@pytest.mark.parametrize("spatial_size", [8, 9])  # Even and odd: Nyquist handling differs
+@pytest.mark.parametrize(
+    "spatial_size", [8, 9]
+)  # Even and odd: Nyquist handling differs
 @pytest.mark.parametrize("resolution_scaling_factor", [None, 0.5, 2])
 @pytest.mark.parametrize("modes", [(4, 4, 4), (4, 5, 7)])
-def test_SpectralConv2(enforce_hermitian_symmetry, dim, spatial_size, modes, resolution_scaling_factor):
+def test_SpectralConv2(
+    enforce_hermitian_symmetry, dim, spatial_size, modes, resolution_scaling_factor
+):
     modes = modes[:dim]
     size = [spatial_size] * dim
     if resolution_scaling_factor is None:
@@ -117,6 +121,7 @@ def test_SpectralConv2(enforce_hermitian_symmetry, dim, spatial_size, modes, res
 
 # ConditionalSpectralConv tests
 
+
 @pytest.mark.parametrize("dim", [1, 2, 3])
 @pytest.mark.parametrize("modulation_type", ["real", "complex", "polar"])
 @pytest.mark.parametrize("type_k", ["power", "sinusoidal"])
@@ -127,7 +132,9 @@ def test_conditional_spectral_conv_forward_shape(dim, modulation_type, type_k):
     cond_dim = 8
 
     layer = ConditionalSpectralConv(
-        2, 3, n_modes,
+        2,
+        3,
+        n_modes,
         condition_embedding_channels=cond_dim,
         modulation_type=modulation_type,
         type_k=type_k,
@@ -138,21 +145,26 @@ def test_conditional_spectral_conv_forward_shape(dim, modulation_type, type_k):
     assert y.shape == (2, 3, *spatial)
     assert torch.isfinite(y).all()
 
+
 def test_conditional_spectral_conv_no_embedding_raises():
     layer = ConditionalSpectralConv(2, 3, (6, 6), condition_embedding_channels=8)
     with pytest.raises(ValueError, match="condition_embedding"):
         layer(torch.randn(2, 2, 10, 10), condition_embedding=None)
+
 
 def test_conditional_spectral_conv_wrong_width_raises():
     layer = ConditionalSpectralConv(2, 3, (6, 6), condition_embedding_channels=8)
     with pytest.raises(ValueError, match="condition_embedding_channels"):
         layer(torch.randn(2, 2, 10, 10), condition_embedding=torch.randn(2, 5))
 
+
 def test_conditional_spectral_conv_backward():
     """ConditionalSpectralConv is affine in x, so analytic grad == finite difference."""
     torch.manual_seed(0)
     cond_dim = 6
-    layer = ConditionalSpectralConv(2, 2, (6, 6), condition_embedding_channels=cond_dim, modulation_type="polar")
+    layer = ConditionalSpectralConv(
+        2, 2, (6, 6), condition_embedding_channels=cond_dim, modulation_type="polar"
+    )
     x = torch.randn(2, 2, 8, 8, requires_grad=True)
     e = torch.randn(2, cond_dim)
     w = torch.randn(2, 2, 8, 8)
@@ -173,7 +185,41 @@ def test_conditional_spectral_conv_backward():
 def test_conditional_spectral_conv_odd_k_embed_dim(type_k, k_embed_dim):
     """The k-embedding must give exactly k_embed_dim channels per axis for any
     size; odd sinusoidal sizes previously mismatched the modulator MLP width."""
-    layer = ConditionalSpectralConv(3, 3, (6, 6), condition_embedding_channels=8,
-                                    type_k=type_k, k_embed_dim=k_embed_dim)
+    layer = ConditionalSpectralConv(
+        3,
+        3,
+        (6, 6),
+        condition_embedding_channels=8,
+        type_k=type_k,
+        k_embed_dim=k_embed_dim,
+    )
     y = layer(torch.randn(2, 3, 10, 10), condition_embedding=torch.randn(2, 8))
     assert y.shape == (2, 3, 10, 10)
+
+
+@pytest.mark.parametrize("fno_block_precision", ["half", "mixed"])
+@pytest.mark.parametrize("dim", [1, 2, 3])
+def test_spectral_conv_precision_non_power_of_two(fno_block_precision, dim):
+    """Verify that SpectralConv supports non-power-of-two spatial dimensions
+    under half and mixed precision without cuFFT crashes (#322)."""
+    torch.manual_seed(0)
+    sizes = (14, 18, 22)[:dim]
+    modes = (6, 6, 6)[:dim]
+
+    conv = SpectralConv(
+        in_channels=2,
+        out_channels=3,
+        n_modes=modes,
+        fno_block_precision=fno_block_precision,
+    )
+    x = torch.randn(2, 2, *sizes)
+    res = conv(x)
+    assert res.shape == (2, 3, *sizes)
+    assert torch.isfinite(res).all()
+
+    if torch.cuda.is_available():
+        conv_cuda = conv.cuda()
+        x_cuda = x.cuda()
+        res_cuda = conv_cuda(x_cuda)
+        assert res_cuda.shape == (2, 3, *sizes)
+        assert torch.isfinite(res_cuda).all()

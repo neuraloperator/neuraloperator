@@ -19,6 +19,11 @@ use_opt_einsum("optimal")
 einsum_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
+def _is_power_of_two(n: int) -> bool:
+    """Return True if n is a positive power of two (n = 2^k for integer k >= 0)."""
+    return n > 0 and (n & (n - 1)) == 0
+
+
 def _contract_dense(x, weight, separable=False):
     order = tl.ndim(x)
     # batch-size, in_channels, x, y...
@@ -183,8 +188,8 @@ Number = Union[int, float]
 
 class SpectralConv(BaseSpectralConv):
     """SpectralConv implements the Spectral Convolution component of a Fourier layer
-    described. 
-    
+    described.
+
     It is implemented as described in [1]_ and [2]_.
 
     Parameters
@@ -252,11 +257,11 @@ class SpectralConv(BaseSpectralConv):
     enforce_hermitian_symmetry : bool, optional
         Whether to enforce Hermitian symmetry conditions when performing inverse FFT
         for real-valued data. When True, explicitly enforces that the 0th frequency
-        and Nyquist frequency are real-valued before calling irfft. 
-        When False, relies on cuFFT's irfftn to handle symmetry automatically, 
-        which may fail on certain GPUs or input sizes, causing line artifacts. 
-        Setting to True splits the inverse FFT into ifftn along (n-1) dimensions 
-        followed by irfft on the last dimension, with a small computational overhead. 
+        and Nyquist frequency are real-valued before calling irfft.
+        When False, relies on cuFFT's irfftn to handle symmetry automatically,
+        which may fail on certain GPUs or input sizes, causing line artifacts.
+        Setting to True splits the inverse FFT into ifftn along (n-1) dimensions
+        followed by irfft on the last dimension, with a small computational overhead.
         By default True.
     fixed_rank_modes : bool, optional
         Modes to not factorize, by default False.
@@ -277,7 +282,7 @@ class SpectralConv(BaseSpectralConv):
     ----------
     .. [1] Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential
         Equations" (2021). ICLR 2021, https://arxiv.org/pdf/2010.08895.
-        
+
     .. [2] Kossaifi, J., Kovachki, N., Azizzadenesheli, K., Anandkumar, A. "Multi-Grid
         Tensorized Fourier Neural Operator for High-Resolution PDEs" (2024).
         TMLR 2024, https://openreview.net/pdf?id=AWiDlO63bH.
@@ -326,10 +331,10 @@ class SpectralConv(BaseSpectralConv):
         self.factorization = factorization
         self.implementation = implementation
         self.enforce_hermitian_symmetry = enforce_hermitian_symmetry
-        
-        self.resolution_scaling_factor: Union[
-            None, List[List[float]]
-        ] = validate_scaling_factor(resolution_scaling_factor, self.order)
+
+        self.resolution_scaling_factor: Union[None, List[List[float]]] = (
+            validate_scaling_factor(resolution_scaling_factor, self.order)
+        )
 
         if init_std == "auto":
             init_std = (2 / (in_channels + out_channels)) ** 0.5
@@ -376,7 +381,8 @@ class SpectralConv(BaseSpectralConv):
 
         if bias:
             self.bias = nn.Parameter(
-                init_std * torch.randn(*(tuple([self.out_channels]) + (1,) * self.order))
+                init_std
+                * torch.randn(*(tuple([self.out_channels]) + (1,) * self.order))
             )
         else:
             self.bias = None
@@ -386,7 +392,10 @@ class SpectralConv(BaseSpectralConv):
 
         if self.resolution_scaling_factor is not None and output_shape is None:
             out_shape = tuple(
-                [round(s * r) for (s, r) in zip(in_shape, self.resolution_scaling_factor)]
+                [
+                    round(s * r)
+                    for (s, r) in zip(in_shape, self.resolution_scaling_factor)
+                ]
             )
         elif output_shape is not None:
             out_shape = output_shape
@@ -415,12 +424,11 @@ class SpectralConv(BaseSpectralConv):
             n_modes[-1] = n_modes[-1] // 2 + 1
         self._n_modes = n_modes
 
-
     def _modulate_modes(self, x_hat, modes, condition_embedding=None):
         """Hook called on the kept spectral modes before the weight contraction.
         The base implementation does nothing. Override in a subclass to apply
         per-mode conditioning.
-        
+
         See ConditionalSpectralConv)
 
         Parameters
@@ -453,11 +461,27 @@ class SpectralConv(BaseSpectralConv):
 
         fft_size = list(mode_sizes)
         if not self.complex_data:
-            fft_size[-1] = fft_size[-1] // 2 + 1  # Redundant last coefficient in real spatial data
+            fft_size[-1] = (
+                fft_size[-1] // 2 + 1
+            )  # Redundant last coefficient in real spatial data
         fft_dims = list(range(-self.order, 0))
 
-        if self.fno_block_precision == "half":
+        # FFT requires float32 when:
+        # 1. Running on CPU (MKL/PocketFFT does not support Half FFT).
+        # 2. Running on CUDA with non-power-of-two spatial dimensions (cuFFT limitation, #322).
+        is_half_input = self.fno_block_precision == "half" or x.dtype in (
+            torch.float16,
+            torch.bfloat16,
+        )
+        fft_needs_fp32 = is_half_input and (
+            not x.is_cuda
+            or any(not _is_power_of_two(s) for s in [x.shape[d] for d in fft_dims])
+        )
+
+        if self.fno_block_precision == "half" and not fft_needs_fp32:
             x = x.half()
+        elif fft_needs_fp32 and x.dtype != torch.float32:
+            x = x.float()
 
         if self.complex_data:
             x = torch.fft.fftn(x, norm=self.fft_norm, dim=fft_dims)
@@ -471,9 +495,11 @@ class SpectralConv(BaseSpectralConv):
         if self.order > 1:
             x = torch.fft.fftshift(x, dim=dims_to_fft_shift)
 
-        if self.fno_block_precision == "mixed":
-            # if 'mixed', the above fft runs in full precision, but the
-            # following operations run at half precision
+        if self.fno_block_precision == "mixed" or (
+            self.fno_block_precision == "half" and fft_needs_fp32
+        ):
+            # if 'mixed' or fallback from non-power-of-two cuFFT/CPU, the above fft runs in full precision,
+            # but the following operations run at half precision
             x = x.chalf()
 
         if self.fno_block_precision in ["half", "mixed"]:
@@ -487,7 +513,9 @@ class SpectralConv(BaseSpectralConv):
         # if current modes are less than max, start indexing modes closer to the center of the weight tensor
         starts = [
             (max_modes - min(size, n_mode))
-            for (size, n_mode, max_modes) in zip(fft_size, self.n_modes, self.max_n_modes)
+            for (size, n_mode, max_modes) in zip(
+                fft_size, self.n_modes, self.max_n_modes
+            )
         ]
         # if contraction is separable, weights have shape (channels, modes_x, ...)
         # otherwise they have shape (in_channels, out_channels, modes_x, ...)
@@ -522,7 +550,9 @@ class SpectralConv(BaseSpectralConv):
 
         slices_x = [slice(None), slice(None)]  # Batch_size, channels
 
-        for all_modes, kept_modes in zip(fft_size, list(weight.shape[weight_start_idx:])):
+        for all_modes, kept_modes in zip(
+            fft_size, list(weight.shape[weight_start_idx:])
+        ):
             # After fft-shift, the 0th frequency is located at n // 2 in each direction
             # We select n_modes modes around the 0th frequency (kept at index n//2) by grabbing indices
             # n//2 - n_modes//2  to  n//2 + n_modes//2       if n_modes is even
@@ -546,47 +576,69 @@ class SpectralConv(BaseSpectralConv):
         out_fft[slices_x] = self._contract(x_kept, weight, separable=self.separable)
 
         if self.resolution_scaling_factor is not None and output_shape is None:
-            mode_sizes = tuple([round(s * r) for (s, r) in zip(mode_sizes, self.resolution_scaling_factor)])
+            mode_sizes = tuple(
+                [
+                    round(s * r)
+                    for (s, r) in zip(mode_sizes, self.resolution_scaling_factor)
+                ]
+            )
 
         if output_shape is not None:
             mode_sizes = output_shape
 
-
         if self.order > 1:
             out_fft = torch.fft.ifftshift(out_fft, dim=fft_dims[:-1])
-        
 
-        # Inverse FFT 
+        # Inverse FFT
+        # Inverse FFT requires float32 when:
+        # 1. Running on CPU (MKL/PocketFFT does not support Half/ComplexHalf FFT).
+        # 2. Running on CUDA with non-power-of-two spatial dimensions (cuFFT limitation, #322).
+        chalf_dtype = getattr(torch, "chalf", torch.complex32)
+        is_half_out_fft = out_fft.dtype in (torch.complex32, chalf_dtype)
+        ifft_needs_fp32 = is_half_out_fft and (
+            not out_fft.is_cuda or any(not _is_power_of_two(s) for s in mode_sizes)
+        )
+        if ifft_needs_fp32:
+            out_fft = out_fft.cfloat()
+
         if self.complex_data:
             # For complex data, we can use ifftn.
             x = torch.fft.ifftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
-        
+
         else:
             # For real data, we need to enforce Hermitian symmetry conditions for irfft.
-            # On certain GPUs and for certain input sizes, this is not handled within irfftn in cuFFT, 
-            # and as a result causes line artifacts.  
+            # On certain GPUs and for certain input sizes, this is not handled within irfftn in cuFFT,
+            # and as a result causes line artifacts.
             # To fix this, we split the ifftn into a ifftn in (n-1) dimensions and a irfft in the last dimension,
             # although it incurs a small additional computational cost.
-            
+
             if self.enforce_hermitian_symmetry:
-                out_fft = torch.fft.ifftn(out_fft, s=mode_sizes[:-1], dim=fft_dims[:-1], norm=self.fft_norm)
-                
+                out_fft = torch.fft.ifftn(
+                    out_fft, s=mode_sizes[:-1], dim=fft_dims[:-1], norm=self.fft_norm
+                )
+
                 # Enforce Hermitian symmetry conditions for irfft
                 # 0th frequency must be real
                 out_fft[..., 0].imag.zero_()
-                
+
                 # Nyquist frequency must be real if the spatial size is even
                 if mode_sizes[-1] % 2 == 0:
                     out_fft[..., -1].imag.zero_()
-                
+
                 # Now that the Hermitian symmetry conditions are enforced, we can use irfft on the last dimension.
-                x = torch.fft.irfft(out_fft, n=mode_sizes[-1], dim=fft_dims[-1], norm=self.fft_norm)
-            
+                x = torch.fft.irfft(
+                    out_fft, n=mode_sizes[-1], dim=fft_dims[-1], norm=self.fft_norm
+                )
+
             else:
-                
+
                 # If Hemrmitian symmetry is not a concern, we can use irfftn on all dimensions.
-                x = torch.fft.irfftn(out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm)
-            
+                x = torch.fft.irfftn(
+                    out_fft, s=mode_sizes, dim=fft_dims, norm=self.fft_norm
+                )
+
+        if ifft_needs_fp32 and self.fno_block_precision == "half":
+            x = x.half()
 
         if self.bias is not None:
             x = x + self.bias
@@ -646,9 +698,13 @@ class ConditionalSpectralConv(SpectralConv):
         elif type_k == "sinusoidal":
             num_freqs = (k_embed_dim + 1) // 2
             indices = torch.arange(0, num_freqs, dtype=torch.float32)
-            self.register_buffer("k_inv_freqs", 10000.0 ** (-2.0 * indices / k_embed_dim))
+            self.register_buffer(
+                "k_inv_freqs", 10000.0 ** (-2.0 * indices / k_embed_dim)
+            )
         else:
-            raise ValueError(f"unknown type_k: {type_k!r}. expected 'power' or 'sinusoidal'.")
+            raise ValueError(
+                f"unknown type_k: {type_k!r}. expected 'power' or 'sinusoidal'."
+            )
 
         in_features = condition_embedding_channels + k_embed_dim * self.order
         if modulation_type in ("real", "polar"):
@@ -715,14 +771,20 @@ class ConditionalSpectralConv(SpectralConv):
         kept_shape = tuple(x_hat.shape[2:])
         n_kept = len(kept_shape)
 
-        t_feat = condition_embedding.reshape(B, -1, *([1] * n_kept)).expand(B, -1, *kept_shape)
-        k_feat = self._embed_k(kept_shape, device=x_hat.device).expand(B, -1, *kept_shape)
+        t_feat = condition_embedding.reshape(B, -1, *([1] * n_kept)).expand(
+            B, -1, *kept_shape
+        )
+        k_feat = self._embed_k(kept_shape, device=x_hat.device).expand(
+            B, -1, *kept_shape
+        )
         mlp_out = self.modulator(torch.cat([t_feat, k_feat], dim=1))
 
         if self.modulation_type == "real":
             factor = mlp_out
         elif self.modulation_type == "complex":
-            factor = torch.complex(mlp_out[:, : self.in_channels], mlp_out[:, self.in_channels :])
+            factor = torch.complex(
+                mlp_out[:, : self.in_channels], mlp_out[:, self.in_channels :]
+            )
         else:  # polar
             factor = torch.exp(1j * mlp_out)
 
