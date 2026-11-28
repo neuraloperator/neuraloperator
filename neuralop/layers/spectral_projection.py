@@ -1,5 +1,5 @@
-import torch
 import numpy as np
+import torch
 import torch.nn.functional as F
 
 
@@ -9,8 +9,9 @@ def spectral_projection_divergence_free(u, domain_size, constraint_modes):
     Parameters
     ----------
     u : torch.Tensor
-        Input velocity field [batch, 2, height, width] where the last two
-        dimensions represent the 2D velocity components (u_x, u_y)
+        Input velocity field of shape ``[batch, 2, height, width]``, where channel 0
+        and channel 1 represent the velocity components along the ``height`` (dim -2)
+        and ``width`` (dim -1) spatial axes, matching :meth:`FourierDiff.divergence`.
     domain_size : float or tuple of float
         Physical domain size. If float, assumes square domain with same size for height and width.
         If tuple, should be (height_size, width_size) for non-square domains.
@@ -27,7 +28,8 @@ def spectral_projection_divergence_free(u, domain_size, constraint_modes):
     Notes
     -----
     **Mathematical formulation:** Helmholtz-Hodge projection in spectral domain:
-    û_proj = û - (k·û)/|k|² * k. Enforces ∇·u = 0 by removing the irrotational component.
+    û_proj = û - (k·û)/|k|² * k for nonzero wavenumbers ``k != 0``, while preserving
+    the zero-wavenumber (mean/DC) mode. Enforces ∇·u = 0 by removing the irrotational component.
     **Periodicity:** Velocity fields are assumed periodic. For non-periodic fields, extend
     via Fourier continuation (neuralop.layers.fourier_continuation), project, then truncate.
 
@@ -50,7 +52,7 @@ def spectral_projection_divergence_free(u, domain_size, constraint_modes):
     
     device = u.device
     dtype = u.dtype
-    batch_size, channels, height, width = u.shape
+    _, _, height, width = u.shape
     
     # Get domain size
     if isinstance(domain_size, (int, float)):
@@ -59,6 +61,8 @@ def spectral_projection_divergence_free(u, domain_size, constraint_modes):
     elif isinstance(domain_size, (tuple, list)) and len(domain_size) == 2:
         # Non-square domain: separate sizes for height and width
         domain_height, domain_width = float(domain_size[0]), float(domain_size[1])
+    else:
+        raise ValueError(f"domain_size must be a float or 2-tuple/list, got {domain_size!r}")
     
     # Ensure constraint modes do not exceed input dimensions
     constraint_modes = (min(constraint_modes[0], height), min(constraint_modes[1], width))
@@ -74,29 +78,37 @@ def spectral_projection_divergence_free(u, domain_size, constraint_modes):
                     (width - constraint_modes[1])//2 : (width - constraint_modes[1])//2 + constraint_modes[1]]
         u_ft = torch.fft.ifftshift(u_ft, dim=(2, 3))
     
-    # Set up wavenumber grids for spectral operations
-    ky = 2*np.pi * torch.fft.fftfreq(constraint_modes[0], d=domain_height/constraint_modes[0]).to(dtype).to(device)
-    kx = 2*np.pi * torch.fft.fftfreq(constraint_modes[1], d=domain_width/constraint_modes[1]).to(dtype).to(device)
-    KX, KY = torch.meshgrid(kx, ky, indexing='ij' if constraint_modes[0] == constraint_modes[1] else 'xy')
+    # Set up wavenumber grids along (height, width) regardless of aspect ratio
+    k_height = (
+        2
+        * np.pi
+        * torch.fft.fftfreq(constraint_modes[0], d=domain_height / constraint_modes[0], device=device, dtype=dtype)
+    )
+    k_width = (
+        2
+        * np.pi
+        * torch.fft.fftfreq(constraint_modes[1], d=domain_width / constraint_modes[1], device=device, dtype=dtype)
+    )
+    K_height, K_width = torch.meshgrid(k_height, k_width, indexing="ij")
     
+    # Apply Helmholtz-Hodge projection on nonzero modes: û_proj = û - (k·û)/|k|² * k
+    # Leaving k = 0 untouched preserves the spatial mean (constant flows already satisfy ∇·u = 0).
+    k_dot_u = K_height * u_ft[:, 0, :, :] + K_width * u_ft[:, 1, :, :]
+    k_squared = K_height**2 + K_width**2
+    nonzero_k = k_squared > 0
+    safe_k_squared = torch.where(nonzero_k, k_squared, torch.ones_like(k_squared))
+    proj_coeff = torch.where(nonzero_k, k_dot_u / safe_k_squared, torch.zeros_like(k_dot_u))
     
-    # Apply Helmholtz-Hodge projection: û_proj = û - (k·û)/|k|² * k
-    k_dot_u = KX * u_ft[:, 0, :, :] + KY * u_ft[:, 1, :, :]
-    k_squared = KX**2 + KY**2 + 1e-8    # Add small epsilon to avoid division by zero
-    
-    projected_u_ft = u_ft - (k_dot_u / k_squared).unsqueeze(1) * torch.stack([KX, KY], dim=0).unsqueeze(0)
-    
-    # Handle zero mode explicitly
-    projected_u_ft[:, :, 0, 0] = 0.0
-    
+    k_grid = torch.stack([K_height, K_width], dim=0).unsqueeze(0)
+    projected_u_ft = u_ft - proj_coeff.unsqueeze(1) * k_grid
     
     # Pad zeros back to full resolution if needed
     if height != constraint_modes[0] or width != constraint_modes[1]:
-        projected_u_ft = torch.fft.fftshift(projected_u_ft)
+        projected_u_ft = torch.fft.fftshift(projected_u_ft, dim=(2, 3))
         pad_h = height - constraint_modes[0]
         pad_w = width - constraint_modes[1]
         projected_u_ft = F.pad(projected_u_ft, [pad_w//2, pad_w - pad_w//2, pad_h//2, pad_h - pad_h//2])
-        projected_u_ft = torch.fft.ifftshift(projected_u_ft)
+        projected_u_ft = torch.fft.ifftshift(projected_u_ft, dim=(2, 3))
     
     # Transform back to physical space
     return torch.fft.ifftn(projected_u_ft, dim=(2, 3)).real
